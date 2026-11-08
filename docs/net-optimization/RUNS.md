@@ -157,3 +157,30 @@ p2纠错协议在86ce3330/680dee60、任何v2实跑前冻结：原Relay未加延
 | 42521539154 | full netlab / fc1903c89d37f711a93eb52877f3f14bd58ab7be | 在途；40项8并行，真实时间窗+新增相位+六方向失败诊断 |
 
 恢复时先取三项活动任务（另有42519778236），不因轮询超时重启。各run实际source/environment和原日志为准；不能把这次full35项或前一版短矩阵当作未来源码完成证明。
+
+
+## 2026-11-09 窗口过期修复与独立稳定性
+
+以上三项等待记录已结束：42519778236为26pass/1fail，p2末轮16.2秒超10秒，所有21个p7相位绿（交互2.26–2.60秒、闲置4.39–18.56秒），p3最坏703.7/573.3/458.6ms，零错/退役；证据ack-time-phases-42519778236。42521515341仅hop_diagnostics签名格式失败，未执行单元（journal-number-node-42521515341），其formatter patch已应用。42521539154为28pass/12fail，40项8并行2001秒（ack-time-full-42521539154）。
+
+full40红项：f3没声明no_relay；f4在180秒内未通过m；f4s腿应答后0.4秒回carried、但30.5秒后又Relay且期末Relay；d2/d4未选Direct；p1移动5/11、p1j准备未Direct、p1s移动5/5；p3最坏1.1秒且零错/退役；p5切换/打洞断言；p6r p95 223.21ms；p7i20.0543秒。其余6个p7相位绿，p2本次绿。p2i报告red79.8秒但Rust未assert，不能计达标。完整交叉负载不能全归CPU，亦不能拿它代替独立稳定性。
+
+控制均为fdd1b3f80de655e8430c9ee00362da1109f06fd2：
+
+| Run | 任务 / source tree | snapshot | 结果 / 证据目录 |
+| --- | --- | --- | --- |
+| 42524575725 | net-node / c4c0324c69ca3d55c3d031d1b9cfb2f8ddc552da | 2a7cb33abfb4b4a016ff217d600b7f4514a5e811 | SUCCESS，核心66pass/1ignored、hop9、wires10、journal28，journal-number-node-42524575725 |
+| 42524600966 | netlab-recovery / 同c4c0324c | cdabfe166a39f07958b22cbe71755f8c5c9d3b42 | SUCCESS 6/6，recovery-diagnostic-42524600966 |
+| 42524625685 | netlab-stability / 同c4c0324c | 093b405cb04e0483ea818c6cfa4172b928e20515 | FAILURE 2pass/2fail、1880.44秒，stability-isolated-42524625685 |
+| 42525350514 | net-vendor / 7af2b013aef23546977fc07e545b63827b0b4e16 | 851e0be25cc924c3677b312013ac270143c47b61 | 预期产品红：Noq434绿、iroh26pass/1fail，quality-expiry-red-42525350514 |
+| 42526508917 | net-vendor / f182946f57f13110a16433e1a1bdaf093e3aef2c | d709594aa36daf3313f5d65bf0e2f3cf4e70de0d | SUCCESS Noq434/iroh27，quality-expiry-green-42526508917 |
+| 42527295249 | netlab-dynamic / 6f9a77e399e25e1c3b57eb8d52136fcd04e3d92a | dbcf6d949d8de4be03ce247d1b2bc29e3c59de2c | 在途，过期修复后，p2/p3+七个p7相位3轮27项 |
+| 42527316922 | netlab-smoke / 同6f9a77e3 | e600c180ba602727678ed55dd1bd554a341fe599 | 在途，过期修复后9项2场景并行 |
+
+独立恢复p2收敛750.2/727.6/753.1ms，max32.65/31.53/31.88ms；p3最坏640.6/705.8/578.4ms，零错/退役。先前16.2秒失败保留，不以不同VM三绿宣布消除偶发。
+
+独立稳定性单场景顺序、每项一次，保留p1s自身忙CPU与20次300ms停顿：p1空闲600秒两端移动0/0、零退役；p5在150/300/600ms各4次停顿，均零Relay切换/零打洞，最慢回显266.9/469.3/973.7ms。p1j准备失败（alpha未Direct，日志见Relay约23–25ms、Direct约21–22ms；尚未进入600秒测量），不能把它记为600秒抖动红。p1s确实测量红：600秒移动14/2、零退役、最慢回显658.8ms。说明抖动不能全部用full交叉负载解释。部分selected事件快照质量已接近/反转，不能当作底层决策瞬间输入；需确定性复现确认流程，先不盲调门槛。
+
+窗口过期红：近2秒窗口只剩1ms样本，派生quality却仍300ms。4ec6ab2e在窗口缩小时复用record的中位数计算，空窗保留最后已知值；样本时间、ACK计数、确认记录不刷新，不新增timer/探测。红绿源仅后者修正派生值，实际网络因果仍待新两项结果。实际Entry持久化回读已由42524575725验证，兼容修复不再等待旧格式任务。
+
+实验源现已锚定57个本地不可变refs，清单source-refs.json；已校验每个snapshot:source与source_tree一致。活动源已锚定但仍须补终态environment/mode/结果。
