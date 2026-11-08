@@ -232,14 +232,22 @@ async fn punch_rounds(n: &LabNode) -> u64 {
 /// paired, and direct to each other on both sides.
 struct Pair {
     _lab: Lab,
-    _relay: crate::lab::Relay,
+    relay: crate::lab::Relay,
     a: LabNode,
     b: LabNode,
 }
 
 async fn pair(s: &str, before: impl AsyncFnOnce(&Device, &Device)) -> Pair {
+    pair_with_relay(s, before, None).await
+}
+
+async fn pair_with_relay(
+    s: &str,
+    before: impl AsyncFnOnce(&Device, &Device),
+    relay_rtt: Option<Duration>,
+) -> Pair {
     let lab = Lab::new().await.unwrap();
-    let r = relay(&lab, s, "relay", None).await;
+    let r = relay(&lab, s, "relay", relay_rtt).await;
     let lan = network(&lab, "lan").await;
     let second = network(&lab, "second").await;
     let da = two_legs(&lab, "a", &lan, &second).await;
@@ -260,7 +268,7 @@ async fn pair(s: &str, before: impl AsyncFnOnce(&Device, &Device)) -> Pair {
     }
     Pair {
         _lab: lab,
-        _relay: r,
+        relay: r,
         a,
         b,
     }
@@ -286,19 +294,26 @@ async fn one_speed(s: &str, one_way: u32, jitter: u32) {
 /// of alpha's legs with a keystroke in it, both residents on one CPU with
 /// two busy loops (p1s).
 async fn one_speed_stalling(s: &str, one_way: u32, jitter: u32, stalls: bool) {
-    let p = pair(s, async |da, db| {
-        for d in [da, db] {
-            for i in ["eth0", "eth1"] {
-                let cond = LinkCondition::new().latency_ms(one_way).jitter_ms(jitter);
-                d.iface(i)
-                    .unwrap()
-                    .set_condition(cond, LinkDirection::Egress)
-                    .await
-                    .unwrap();
+    let p = pair_with_relay(
+        s,
+        async |da, db| {
+            for d in [da, db] {
+                for i in ["eth0", "eth1"] {
+                    let cond = LinkCondition::new().latency_ms(one_way).jitter_ms(jitter);
+                    d.iface(i)
+                        .unwrap()
+                        .set_condition(cond, LinkDirection::Egress)
+                        .await
+                        .unwrap();
+                }
             }
-        }
-    })
+        },
+        Some(Duration::from_millis(100)),
+    )
     .await;
+    let iface = p.relay.dev.default_iface().unwrap();
+    iface.clear_condition(LinkDirection::Both).await.unwrap();
+    eprintln!("[netlab] stability bootstrap v2: relay edge 100ms cleared before settling");
     // Settled: the first minute is the dial's.
     tokio::time::sleep(Duration::from_secs(30)).await;
     let since = now_ms();
