@@ -282,6 +282,16 @@ fn path_diagnostics(n: &crate::lab::LabNode, peer: &crate::lab::LabNode) {
     }
 }
 
+fn hop_diagnostics(
+    x: &crate::lab::LabNode,
+    y: &crate::lab::LabNode,
+    m: &crate::lab::LabNode,
+) {
+    for (n, peer) in [(x, y), (y, x), (x, m), (m, x), (y, m), (m, y)] {
+        path_diagnostics(n, peer);
+    }
+}
+
 /// The relay's one way, as f4 measures it: 22 ms (hinton to turing's
 /// relay; the phone's carried road through turing is about 20 ms).
 const F4_RELAY_ONE_WAY: u32 = 22;
@@ -327,8 +337,7 @@ async fn f4_lab(
         .until(&x, Duration::from_secs(180), |l| l.hop == Hop::Forwarded)
         .await;
     if hopped.is_none() {
-        path_diagnostics(&x, &y);
-        path_diagnostics(&y, &x);
+        hop_diagnostics(&x, &y, &m);
         result(
             s,
             false,
@@ -559,10 +568,7 @@ async fn f4_stall(s: &str, st: Stall) {
         && (on_relay.is_none() || after_answer.is_some_and(|ms| ms <= 1500));
     let secs = |at: u64| format!("{:.1}s", at.saturating_sub(t) as f64 / 1000.0);
     if !ok {
-        path_diagnostics(&x, &y);
-        path_diagnostics(&y, &x);
-        path_diagnostics(&m, &x);
-        path_diagnostics(&m, &y);
+        hop_diagnostics(&x, &y, &m);
     }
     result(
         s,
@@ -730,8 +736,7 @@ async fn f4i_a_new_connection_does_not_write_its_first_road_as_a_move() {
     let ok =
         back.is_some() && first.as_ref().is_some_and(|(_, c, _)| c == "started") && to_relay == 0;
     if !ok {
-        path_diagnostics(&x, &y);
-        path_diagnostics(&y, &x);
+        hop_diagnostics(&x, &y, &m);
     }
     result(
         s,

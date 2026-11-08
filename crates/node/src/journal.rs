@@ -1941,9 +1941,16 @@ mod tests {
             peer: Some("y".into()),
             what,
         };
+        let current = entry(event);
+        let line = serde_json::to_string(&current).unwrap();
+        let decoded: Entry = serde_json::from_str(&line).unwrap();
+        assert_eq!(
+            decoded.what, current.what,
+            "the persisted journal entry is readable"
+        );
         let name_of = str::to_owned;
         assert_eq!(
-            words(&entry(event), &name_of),
+            words(&current, &name_of),
             words(&entry(serde_json::from_str(old).unwrap()), &name_of),
             "diagnostic quality does not change the displayed path sentence"
         );

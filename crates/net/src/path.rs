@@ -42,10 +42,21 @@ pub struct PathFact {
     /// open, exactly one is.
     pub selected: bool,
     /// QUIC's smoothed estimate, retained for transport diagnostics.
+    #[serde(deserialize_with = "deserialize_rtt_millis")]
     pub rtt_ms: u128,
     pub quality: Option<PathQuality>,
     /// Diagnostic data only — never drawn on screen.
     pub addr: String,
+}
+
+// Journal events are internally tagged, so serde buffers their fields.
+// That buffer supports the u64 JSON numbers used for measured milliseconds,
+// but cannot deserialize u128 directly. Preserve PathFact's arithmetic type.
+fn deserialize_rtt_millis<'de, D>(deserializer: D) -> Result<u128, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    u64::deserialize(deserializer).map(u128::from)
 }
 
 /// The rule: the **selected** path decides; none selected = Unknown, not
