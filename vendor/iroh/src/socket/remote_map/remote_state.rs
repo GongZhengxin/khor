@@ -1302,9 +1302,9 @@ impl RemoteStateActor {
         }
     }
 
-    /// khor patch 19: a selected path that stopped answering, or whose round trip
-    /// rose well past the lowest it read since it was selected, starts a hole-punching round
-    /// now: the other direct roads may have been closed (only one direct path is kept per
+    /// khor patch 19/34: a selected path that stopped answering, or whose round trip
+    /// stays well past its floor with fresh evidence, starts a hole-punching round:
+    /// the other direct roads may have been closed (only one direct path is kept per
     /// connection without a backup) and only a round opens them again.  Upstream checks every
     /// [`UPGRADE_INTERVAL`] (60 s), and only whether some direct path is under 10 ms.  One
     /// round per episode; the round's own spacing ([`HOLEPUNCH_ATTEMPTS_INTERVAL`]) holds.
@@ -1313,6 +1313,9 @@ impl RemoteStateActor {
     /// transport estimator moves an eighth of the way per sample. One ACK-delay-corrected sample well
     /// over the floor has the path pinged every tick for [`PROBE_FOR`], once per episode:
     /// the recent sample median then distinguishes sustained slowing from a single spike.
+    /// Normal quality must stay high for that window and have two post-decision samples;
+    /// quality above the entire window retains immediate exploration rather than waiting
+    /// for round trips that cannot fit. The existing probe spacing and budget do not change.
     ///
     /// A road that stopped answering starts a round only once it kept the connection waiting
     /// [`PUNCH_SILENT_AFTER`] (a shorter stall the selector rides out on the road, or leaves
@@ -1335,7 +1338,10 @@ impl RemoteStateActor {
             .get(&selected)
             .filter(|s| s.answered.is_none())
             .map(|s| s.stall(now));
-        let watched = self.state.watch.tick(rtt, sample, stall, now);
+        let measured = &self.state.measured;
+        let watched = self.state.watch.tick(rtt, sample, stall, now, |since| {
+            measured.samples_after(&selected, since) >= 2
+        });
         if watched.probe {
             // One copy is enough: the road's RTT is the copy's that takes the samples.
             let copy = self.connections.values().find_map(|c| {
@@ -2177,7 +2183,7 @@ pub struct PathSelectionContext<'a> {
     source: PathsSource<'a>,
 }
 
-/// khor patch 19: the selected direct path as the measurement ticks watch it
+/// khor patch 19: the selected path as the measurement ticks watch it
 /// ([`RemoteStateActor::watch_selected`]).
 #[derive(Debug, Default)]
 struct Watch {
@@ -2185,6 +2191,8 @@ struct Watch {
     floor: Option<Duration>,
     /// Whether a round was already started for its rising past the floor, or its going silent.
     degraded: bool,
+    /// When the selected road's quality most recently rose above its floor margin.
+    slowing_since: Option<Instant>,
     /// When it was last probed ([`PROBE_FOR`], [`PROBE_SPACING`]), and whether it was already
     /// for this rise (once per episode, like `degraded`).
     probed_at: Option<Instant>,
@@ -2207,6 +2215,7 @@ impl Watch {
     fn reset(&mut self) {
         self.floor = None;
         self.degraded = false;
+        self.slowing_since = None;
         self.probed = false;
     }
 
@@ -2221,7 +2230,15 @@ impl Watch {
 
     /// One tick: the selected road's round trip `rtt`, the largest RTT sample it took since the
     /// last tick, and how long it has kept the connection waiting if it is silent.
-    fn tick(&mut self, rtt: Duration, sample: Duration, stall: Option<Duration>, now: Instant) -> Watched {
+    /// `sampled_after` requires two independent observations of packets sent after its marker.
+    fn tick(
+        &mut self,
+        rtt: Duration,
+        sample: Duration,
+        stall: Option<Duration>,
+        now: Instant,
+        sampled_after: impl FnOnce(Instant) -> bool,
+    ) -> Watched {
         let floor = self.floor.map_or(rtt, |f| f.min(rtt));
         self.floor = Some(floor);
         let by = DEGRADED_BY.max(floor / 2);
@@ -2236,8 +2253,20 @@ impl Watch {
             self.probed_at = Some(now);
         }
         let probe = self.probed_at.is_some_and(|at| now < at + PROBE_FOR);
+        let slowing = rtt > GOOD_ENOUGH_LATENCY && rtt >= floor + by;
+        if slowing {
+            self.slowing_since.get_or_insert(now);
+        } else {
+            self.slowing_since = None;
+        }
+        let confirmed = self.slowing_since.is_some_and(|since| {
+            now >= since + PROBE_FOR && sampled_after(since)
+        });
+        // Normal quality needs post-decision round trips, not a single spike or a stale
+        // reading after the actor resumes. A road slower than the probe window cannot
+        // supply those in time, so keep its existing fast exploration, like a true silence.
         let worse = stall.is_some_and(|s| s >= PUNCH_SILENT_AFTER)
-            || (rtt > GOOD_ENOUGH_LATENCY && rtt >= floor + by);
+            || (slowing && (rtt > PROBE_FOR || confirmed));
         let mut punch = false;
         if worse && !self.degraded {
             // Within the spacing the episode waits for it, still degraded.
@@ -3490,19 +3519,77 @@ mod tests {
     fn the_watch_punches_on_a_long_stall_once_per_spacing() {
         let t0 = Instant::now();
         let mut w = Watch::default();
-        assert_eq!(w.tick(MS(2), MS(0), None, t0), Watched::default());
-        assert!(!w.tick(MS(2), MS(0), Some(MS(400)), t0 + MS(250)).punch, "a 400 ms stall: no round");
-        assert!(w.tick(MS(2), MS(0), Some(MS(1000)), t0 + MS(500)).punch, "a second: a round");
-        assert!(!w.tick(MS(2), MS(0), Some(MS(1250)), t0 + MS(750)).punch, "once per episode");
+        assert_eq!(w.tick(MS(2), MS(0), None, t0, |_| false), Watched::default());
+        assert!(!w.tick(MS(2), MS(0), Some(MS(400)), t0 + MS(250), |_| false).punch, "a 400 ms stall: no round");
+        assert!(w.tick(MS(2), MS(0), Some(MS(1000)), t0 + MS(500), |_| false).punch, "a second: a round");
+        assert!(!w.tick(MS(2), MS(0), Some(MS(1250)), t0 + MS(750), |_| false).punch, "once per episode");
         // The selection moves away and back, the road stalls again: within the spacing, no round.
         w.reset();
-        assert!(!w.tick(MS(2), MS(0), None, t0 + MS(2000)).punch);
-        assert!(!w.tick(MS(2), MS(0), Some(MS(1500)), t0 + MS(3000)).punch, "within 30 s");
+        assert!(!w.tick(MS(2), MS(0), None, t0 + MS(2000), |_| false).punch);
+        assert!(!w.tick(MS(2), MS(0), Some(MS(1500)), t0 + MS(3000), |_| false).punch, "within 30 s");
         assert!(
-            w.tick(MS(2), MS(0), Some(MS(1500)), t0 + PUNCH_SPACING + MS(500)).punch,
+            w.tick(MS(2), MS(0), Some(MS(1500)), t0 + PUNCH_SPACING + MS(500), |_| false).punch,
             "the episode still degraded once the spacing is up"
         );
         assert!(!w.may_punch(t0 + PUNCH_SPACING + MS(600)), "and the spacing counts from it");
+    }
+
+    #[test]
+    fn a_single_slow_quality_sample_is_probed_before_holepunching() {
+        let t0 = Instant::now();
+        let mut watch = Watch::default();
+        watch.tick(MS(1), MS(1), None, t0, |_| false);
+        let spike = watch.tick(MS(150), MS(150), None, t0 + MS(250), |_| false);
+        assert_eq!(spike, Watched { probe: true, punch: false });
+        let recovered = watch.tick(MS(2), MS(2), None, t0 + MS(500), |_| true);
+        assert!(!recovered.punch, "the probe corrected the isolated slow reading");
+    }
+
+    #[test]
+    fn slow_quality_without_post_decision_samples_cannot_punch_after_a_pause() {
+        let t0 = Instant::now();
+        let mut watch = Watch::default();
+        watch.tick(MS(1), MS(1), None, t0, |_| false);
+        let began = t0 + MS(250);
+        watch.tick(MS(150), MS(150), None, began, |_| false);
+        let late = began + PROBE_FOR + MS(100);
+        let old = watch.tick(MS(150), MS(0), None, late, |since| {
+            assert_eq!(since, began);
+            false
+        });
+        assert!(!old.punch, "elapsed time and a cached reading are not new evidence");
+        let fresh = watch.tick(MS(150), MS(150), None, late + MS(500), |since| {
+            assert_eq!(since, began);
+            true
+        });
+        assert!(fresh.punch, "fresh sustained slowing can still discover other roads");
+    }
+
+    #[test]
+    fn a_recovered_quality_restarts_confirmation_without_resetting_probe_spacing() {
+        let t0 = Instant::now();
+        let mut watch = Watch::default();
+        watch.tick(MS(1), MS(1), None, t0, |_| false);
+        watch.tick(MS(150), MS(150), None, t0 + MS(250), |_| false);
+        watch.tick(MS(1), MS(1), None, t0 + MS(500), |_| false);
+        let again = t0 + MS(750);
+        watch.tick(MS(150), MS(150), None, again, |_| false);
+        assert!(!watch.tick(MS(150), MS(150), None, t0 + MS(2250), |_| true).punch);
+        let sustained = watch.tick(MS(150), MS(150), None, again + PROBE_FOR, |since| {
+            assert_eq!(since, again);
+            true
+        });
+        assert!(sustained.punch);
+        assert!(!sustained.probe, "foreground samples do not start another probe burst");
+    }
+
+    #[test]
+    fn quality_slower_than_the_probe_window_does_not_wait_for_new_round_trips() {
+        let t0 = Instant::now();
+        let mut watch = Watch::default();
+        watch.tick(MS(1), MS(1), None, t0, |_| false);
+        assert!(watch.tick(MS(2500), MS(2500), None, t0 + MS(250), |_| false).punch);
+        assert!(!watch.tick(MS(2500), MS(0), None, t0 + MS(500), |_| false).punch);
     }
 
     /// A road slowing past its floor still starts a round, and one sample well over it has the
@@ -3511,11 +3598,15 @@ mod tests {
     fn the_watch_punches_on_a_slowed_road_and_probes_a_slow_sample() {
         let t0 = Instant::now();
         let mut w = Watch::default();
-        w.tick(MS(1), MS(0), None, t0);
-        let probed = w.tick(MS(3), MS(17), None, t0 + MS(250));
+        w.tick(MS(1), MS(0), None, t0, |_| false);
+        let probed = w.tick(MS(3), MS(17), None, t0 + MS(250), |_| false);
         assert_eq!(probed, Watched { probe: true, punch: false });
-        assert!(w.tick(MS(21), MS(21), None, t0 + MS(2500)).punch, "21 ms over a 1 ms floor");
-        assert!(!w.tick(MS(1), MS(0), None, t0 + MS(3000)).punch);
+        assert!(!w.tick(MS(21), MS(21), None, t0 + MS(2500), |_| false).punch);
+        assert!(w.tick(MS(21), MS(21), None, t0 + MS(4500), |since| {
+            assert_eq!(since, t0 + MS(2500));
+            true
+        }).punch, "sustained quality with two post-decision observations");
+        assert!(!w.tick(MS(1), MS(0), None, t0 + MS(5000), |_| false).punch);
         assert!(!w.degraded, "back under the floor's half margin");
     }
 
