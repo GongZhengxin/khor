@@ -625,6 +625,10 @@ cargo 的 feature 合并后这些探测也读 macOS 系统设置里的代理，�
 
 ### 1. `src/socket/remote_map/remote_state.rs`
 
+2026-11-09复核：#4522已于9月29日关闭、未合并；1.4.1已有简化contains去重。
+下面OPEN为原始历史，不能当作当前状态。固定来源与逐块退出边界见
+[UPSTREAM.md](../../docs/net-optimization/UPSTREAM.md)；本轮尚未升级依赖或证明全部补丁可退出。
+
 - 用的是上游 PR **#4522**「fix(iroh): bound and deduplicate pending_open_paths」的改法
   （PR 头提交 `eaca51d4c003f8a9f3764bd7ff7eca1a8dbdc309`，基于 main；截至 2026-09-21 仍是 OPEN，未合并）。
   它修的是 issue **#4390** 和 **#4509**（两条都还 OPEN）。
@@ -660,7 +664,7 @@ UDP 到不了，连系统自带的 `/usr/bin/nc` 也一样），开往其余候�
 308/310 个样本都在 `open_path_on_all_conns` 里；bridge 的 `devices` 请求（→ serve 的 `Op::Hops` →
 `remote_info`）从几十毫秒涨到 52950ms，然后再也不回来。
 
-上游没有带修复的版本可升，所以只能在本地打补丁。
+最初vendor时尚无可用上游修复，因而本地打补丁。2026-11-09已有1.4.1简化去重；整组补丁是否可退出仍需逐项验证，不能沿用旧结论。
 
 ## 怎么验
 
@@ -683,10 +687,8 @@ queue grew to 256 entries after 4 ticks
 
 ## 什么时候删
 
-上游发出包含 #4522（或等价修复）的 iroh 版本后：
-
-1. 把依赖升到那个版本；
-2. 删掉整个 `vendor/` 目录、根 `Cargo.toml` 的 `[patch.crates-io]` 段和 `exclude = ["vendor"]`；
-3. 跑全套门，再跑 smoke。
-
-在那之前升级 iroh，要把新版本重新拷进来、重新打这个补丁，并更新本文件的「来源」。
+这份目录已包含多项独立补丁，补丁1出现上游等价实现不再构成删除整树的条件。
+按[上游核查](../../docs/net-optimization/UPSTREAM.md)逐条验证目标行为、接口与覆盖后，
+可在隔离升级候选中删除对应实现，并跑相同协议的恢复/稳定性/转发与原生回归。
+只有全部剩余本地行为都有已验证替代时，才删除vendor子树和相应Cargo patch/exclude配置；
+任何未退出补丁都保留原因、覆盖、上游状态和退出条件。原始来源与失败记录不能随升级丢失。

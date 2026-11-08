@@ -10,7 +10,7 @@
 - 旧生产基线main/rc8 `6485cb83d3b1f0bb93d4633825dc956623d78af9`。`khor-net-baseline` detached该提交，只改fixture与远端测试脚本，生产源码原样。
 - 控制 `/Volumes/disk0/Khor/worktrees/current/khor-build-net`，`feat/net`，最新6af0ac3已push（新增netlab-stalls：原p1s/p5完整时长单场景各一次）；此前fdd1b3f与0e5788c补核心单元，fdd1b3f新增独立netlab-recovery（三轮p2/p3）、netlab-stability（p1/p1j/p1s/p5单轮），full也显式写mode8并行。两个main不动，产品feature尚未推origin。
 - 证据 `/Volumes/disk0/Khor/evidence/net/`；source/environment/mode与原日志是准确版本证据。
-- 权威索引：PLAN、REQUIREMENTS、ACCEPTANCE、DESIGN、RUNS、REPORT、NEXT-DESIGN。历史不是当前状态。图谱是部分增量图；先图工具，缺失后定向读，不擅自建立CodeGraph索引。
+- 权威索引：PLAN、REQUIREMENTS、ACCEPTANCE、DESIGN、RUNS、REPORT、NEXT-DESIGN、UPSTREAM。历史不是当前状态。图谱是部分增量图；先图工具，缺失后定向读，不擅自建立CodeGraph索引。
 
 N0部分；N1仍有产品红；N2–N5未完成。完整范围保留，不能以单元或p6绿替代整计划。
 
@@ -91,3 +91,6 @@ N0部分；N1仍有产品红；N2–N5未完成。完整范围保留，不能以
 本轮p2只纠正测试的体验定义、补实际回显测量；Entry兼容已红→绿，过期修复434/27绿，实际动态25/27且p3含15秒超时；不能以单元或短绿完成恢复。f4最长回显含人为3/8秒断腿及超慢备用，不能套p3“已有快备用时<1秒”的目标；其原恢复后1.5秒/无回退门保持。详细收据/失败分类在RUNS，阶段报告不代表最终完成。
 
 外盘缺失，主仓只读git show feat/net:docs/net-optimization/STATE.md与PLAN恢复已提交计划，不覆盖原未提交内容。
+
+
+上游只读核查已开始：UPSTREAM.md记录iroh已发布1.4.1、Noq/proto已发布1.4.0，源码包与registry checksum核对并固定VCS；#4522实际9月29日关闭未合并，1.4.1有简化去重。已修正旧“等补丁1后删整个vendor”的过时退出条件。未升级依赖，45条补丁尚未逐项审完，不能用发布版本名证明当前N1已解决。原始证据在evidence/net/upstream-20261109。
