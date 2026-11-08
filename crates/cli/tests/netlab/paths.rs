@@ -714,7 +714,9 @@ async fn p2i_the_road_in_use_slows_while_idle() {
 /// The known unshaped roads in p2. A connection's old smoothed RTT
 /// cannot prove its current quality; echo samples verify responsiveness.
 async fn on_a_fast_road(n: &LabNode, peer: &LabNode) -> bool {
-    let Some(link) = n.link(peer).await else { return false };
+    let Some(link) = n.link(peer).await else {
+        return false;
+    };
     link.hop == Hop::Relay
         || (link.hop == Hop::Direct && current(n, peer).as_deref() == Some("lan"))
 }
@@ -758,10 +760,7 @@ async fn slows(s: &str, typing: bool) {
     let mut samples = Vec::new();
     let mut errors = Vec::new();
     while slowed.elapsed() < Duration::from_secs(90) {
-        if back.is_none()
-            && on_a_fast_road(&p.a, &p.b).await
-            && on_a_fast_road(&p.b, &p.a).await
-        {
+        if back.is_none() && on_a_fast_road(&p.a, &p.b).await && on_a_fast_road(&p.b, &p.a).await {
             back = Some(slowed.elapsed());
         }
         if typing {
@@ -816,7 +815,10 @@ async fn slows(s: &str, typing: bool) {
     );
     assert_eq!(retired, 0, "no wire retired");
     if typing {
-        assert!(ok, "fast recovery and responsive echoes within their budgets");
+        assert!(
+            ok,
+            "fast recovery and responsive echoes within their budgets"
+        );
     }
 }
 

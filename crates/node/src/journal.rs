@@ -251,6 +251,10 @@ pub enum What {
         addr: String,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         rtt_ms: Option<u64>,
+        /// The selector's cached facts at this event, including quality,
+        /// sample age and count. Diagnostic only; no additional polling.
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        measurements: Vec<khor_net::path::PathFact>,
     },
     /// Path changes of a connection to the peer that iroh's event buffer
     /// dropped before they were read (vendor/iroh patch 21). The next
@@ -724,6 +728,7 @@ pub fn words(e: &Entry, name_of: &dyn Fn(&str) -> String) -> String {
             road,
             addr,
             rtt_ms,
+            ..
         } => {
             let mut s = if change == "opened" {
                 msg::journal_path_opened(addr)
@@ -1620,6 +1625,7 @@ mod tests {
                     road: "direct".into(),
                     addr: "172.16.185.103:35156".into(),
                     rtt_ms: Some(2),
+                    measurements: vec![],
                 },
             ),
             at(
@@ -1907,6 +1913,41 @@ mod tests {
     }
 
     /// net-e: a carried path names what carries it — 「改为通过 turing」,
+    #[test]
+    fn path_measurements_keep_old_journals_readable_and_preserve_the_evidence() {
+        let old = r#"{"e":"path","change":"selected","road":"relay","addr":"r.example","rtt_ms":300}"#;
+        let mut event: What = serde_json::from_str(old).unwrap();
+        let What::Path { measurements, .. } = &mut event else {
+            panic!("path event")
+        };
+        assert!(measurements.is_empty());
+        measurements.push(khor_net::path::PathFact {
+            relay: true,
+            carried: false,
+            selected: true,
+            rtt_ms: 300,
+            quality: Some(khor_net::path::PathQuality {
+                rtt: Duration::from_millis(5),
+                age: Duration::from_millis(750),
+                samples: 2,
+            }),
+            addr: "r.example".into(),
+        });
+        let encoded = serde_json::to_string(&event).unwrap();
+        assert_eq!(serde_json::from_str::<What>(&encoded).unwrap(), event);
+        let entry = |what| Entry {
+            at: 0,
+            peer: Some("y".into()),
+            what,
+        };
+        let name_of = str::to_owned;
+        assert_eq!(
+            words(&entry(event), &name_of),
+            words(&entry(serde_json::from_str(old).unwrap()), &name_of),
+            "diagnostic quality does not change the displayed path sentence"
+        );
+    }
+
     /// 「改为经 SSH 转连」 — where it said 「改走转连：，往返 0 ms」.
     #[test]
     fn a_carried_path_says_what_carries_it() {
@@ -1925,6 +1966,7 @@ mod tests {
                 road: "carried".into(),
                 addr: addr.into(),
                 rtt_ms,
+                measurements: vec![],
             },
         };
         assert_eq!(
@@ -1961,6 +2003,7 @@ mod tests {
                 road: road.into(),
                 addr: addr.into(),
                 rtt_ms: None,
+                measurements: vec![],
             },
         };
         assert_eq!(

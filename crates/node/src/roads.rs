@@ -361,6 +361,10 @@ fn follow(
                     road: road.to_owned(),
                     addr,
                     rtt_ms,
+                    measurements: weak
+                        .upgrade()
+                        .map(|c| khor_net::path::path_facts(&c))
+                        .unwrap_or_default(),
                 },
             );
         }
