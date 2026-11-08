@@ -49,7 +49,7 @@ use std::time::{Duration, Instant, SystemTime};
 use khor_core::Hop;
 use patchbay::{Device, IpSupport, Lab, LinkCondition, LinkDirection, Nat, Router, RouterPreset};
 
-use crate::lab::{LabNode, mesh, node, qad_relays_dual, relay, result};
+use crate::lab::{LabNode, mesh, node, qad_relays_dual, relay, result, sample_diagnostics};
 use crate::scratch::Reaped;
 
 fn now_ms() -> u64 {
@@ -388,6 +388,8 @@ async fn one_speed_stalling(s: &str, one_way: u32, jitter: u32, stalls: bool) {
             traffic.1 - traffic0.1,
         ),
     );
+    sample_diagnostics(s, &p.a);
+    sample_diagnostics(s, &p.b);
     assert!(
         worst <= 1,
         "at most one move in ten minutes: alpha {ma:?}, beta {mb:?}"

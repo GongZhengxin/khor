@@ -23,7 +23,7 @@ use std::time::Duration;
 use khor_core::Hop;
 use patchbay::Lab;
 
-use crate::lab::{mesh, node, relay, result, slow, word};
+use crate::lab::{mesh, node, relay, result, sample_diagnostics, slow, word};
 use crate::nat::{Net, router};
 
 /// Each machine's own link: 10 ms each way, so the legs are measurable.
@@ -588,6 +588,9 @@ async fn f4_stall(s: &str, st: Stall) {
             now.as_ref().map_or("nothing".into(), word),
         ),
     );
+    sample_diagnostics(s, &x);
+    sample_diagnostics(s, &y);
+    sample_diagnostics(s, &m);
     assert!(
         longest < 20_000,
         "no rest on the relay: {:.1}s",

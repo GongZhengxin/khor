@@ -833,6 +833,17 @@ impl RttEstimator {
     pub(crate) fn update_at(&mut self, ack_delay: Duration, sent: Instant, received: Instant) {
         self.update(ack_delay, received.saturating_duration_since(sent));
         self.sample_times = Some((sent, received));
+        debug!(
+            target: "khor_net_samples",
+            ?sent,
+            ?received,
+            raw = ?self.latest,
+            delay = ?ack_delay,
+            minimum = ?self.min,
+            sample = ?self.latest_sample,
+            counter = self.samples,
+            "ACK sample"
+        );
     }
 
     /// Conservative estimate of RTT

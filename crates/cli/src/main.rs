@@ -1,5 +1,14 @@
 //! Native terminal entry point for the shared command engine.
 fn main() {
+    #[cfg(feature = "net-diagnostics")]
+    if std::env::var_os("KHOR_NET_DIAGNOSTICS").is_some() {
+        let _ = tracing_subscriber::fmt()
+            .with_env_filter("khor_net_samples=debug")
+            .with_target(true)
+            .with_ansi(false)
+            .with_writer(std::io::stderr)
+            .try_init();
+    }
     if let Some(code) = khor_commands::console_main_if_requested(start_web) {
         std::process::exit(code);
     }

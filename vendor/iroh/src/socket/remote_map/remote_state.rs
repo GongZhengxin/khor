@@ -1028,6 +1028,7 @@ impl RemoteStateActor {
             return true;
         };
         let Some(from) = self.state.selected_path.clone() else {
+            debug!(target: "khor_net_samples", ?to, "select without a current road");
             self.state.moving.clear();
             return true;
         };
@@ -1036,6 +1037,7 @@ impl RemoteStateActor {
             .values()
             .any(|c| c.paths.values().any(|t| *t == from));
         if !open {
+            debug!(target: "khor_net_samples", ?from, ?to, "select after current road closed");
             self.state.moving.clear();
             return true;
         }
@@ -1047,6 +1049,10 @@ impl RemoteStateActor {
             .filter(|s| s.answered.is_none())
             .copied();
         let now = Instant::now();
+        let starting = self.state.moving.to() != Some(to);
+        let since = self.state.moving.to.as_ref()
+            .filter(|(road, _)| road == to)
+            .map_or(now, |(_, since)| *since);
         let measured = &self.state.measured;
         let sampled = |road: &transports::FourTuple, after: Instant| {
             measured.samples_after(road, after) >= 2
@@ -1069,6 +1075,20 @@ impl RemoteStateActor {
                 |after| sampled(to, after),
             ),
         };
+        if step == Step::Go || starting && matches!(step, Step::Hold { .. }) {
+            debug!(
+                target: "khor_net_samples",
+                ?from,
+                ?to,
+                ?now,
+                ?since,
+                failed = silence.is_some(),
+                ?step,
+                readings = ?measured.rtts,
+                silent = ?measured.silent,
+                "move decision"
+            );
+        }
         let ping = match step {
             Step::Go => return true,
             Step::Rest => return false,
@@ -2612,6 +2632,7 @@ impl Measured {
                 })
             {
                 silence.answered = Some(now);
+                debug!(target: "khor_net_samples", ?tuple, ?now, ?silence, "road answered after judgment");
             }
             if silence.answered.is_some() {
                 answered.push((tuple.clone(), silence.rehold));
@@ -2634,6 +2655,7 @@ impl Measured {
                 .answered
                 .is_none_or(|at| now < at + SILENT_HOLD && !quick.contains(tuple));
             if !held {
+                debug!(target: "khor_net_samples", ?tuple, ?now, ?silence, quick = quick.contains(tuple), "road recovery hold ended");
                 back.insert(tuple.clone(), now);
             }
             held

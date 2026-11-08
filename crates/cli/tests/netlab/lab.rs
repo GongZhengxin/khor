@@ -268,6 +268,9 @@ pub async fn node_on(
         .envs(env.iter().copied())
         .stdout(Stdio::null())
         .stderr(std::fs::File::create(home.0.join("serve.log")).unwrap());
+    if std::env::var("NETLAB_DIAGNOSTICS").as_deref() == Ok("1") {
+        cmd.env("KHOR_NET_DIAGNOSTICS", "1");
+    }
     let child = dev.spawn_command_sync(cmd).unwrap();
     let began = Instant::now();
     while !home.0.join(".khor/endpoint.json").exists() {
@@ -289,6 +292,26 @@ pub async fn node_on(
         home,
         serve: Some(Reaped(child)),
     }
+}
+
+/// Preserve optional decision/ACK logs after measurement, before scratch cleanup.
+/// These runs include logging overhead and are not ordinary SLO measurements.
+pub fn sample_diagnostics(scenario: &str, n: &LabNode) {
+    if std::env::var("NETLAB_DIAGNOSTICS").as_deref() != Ok("1") {
+        return;
+    }
+    let text = std::fs::read_to_string(n.home.0.join("serve.log")).unwrap();
+    assert!(
+        text.contains("khor_net_samples"),
+        "{} has no sample diagnostics",
+        n.name
+    );
+    let dir = std::env::var_os("NETLAB_DIAGNOSTICS_DIR").expect("diagnostic artifact directory");
+    let dir = Path::new(&dir);
+    std::fs::create_dir_all(dir).unwrap();
+    let path = dir.join(format!("{scenario}-{}.log", n.name));
+    std::fs::write(&path, text).unwrap();
+    eprintln!("[netlab-diagnostic] {}: {}", n.name, path.display());
 }
 
 impl LabNode {

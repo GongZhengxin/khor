@@ -2,7 +2,16 @@
 
 2026-11-09 · owner=root，串行，无子智能体。
 
-恢复速读：六项网络run已全部终态，当前无活动任务；最新Watch动态27/27，但p1s移动3/1、转发f4s1513ms超1500ms，N1仍红。先看下文“最新终态”与NEXT-DESIGN；接下来实现默认关闭的诊断构建取实际决策/ACK证据，原时长/负载/门槛保持，不重复提交旧run。
+恢复速读：上一批六项已终态；最新Watch动态27/27，但p1s移动3/1、转发f4s1513ms超1500ms，N1仍红。默认关闭的诊断候选已写；当前仅42536677230（netlab-diagnostic）及42536711138（net-vendor）在途，先查它们，不重复提交。两者同tree1113605d、controlc3b117d；见下表。原时长/负载/门槛保持。
+
+## 当前活动任务
+
+| Run | 任务 | source tree / snapshot | 状态 |
+| --- | --- | --- | --- |
+| 42536677230 | netlab-diagnostic | 1113605daf5597c2663d5e6468c45dade34031c9 / 72b0f7e13c0cb7142db033434cbd8182a1ba610a | 已调度，原p1s/f4s各一次1线程，日志模式不作为SLO |
+| 42536711138 | net-vendor | 同1113605d / 71a5b250ed41979a7e8d66d01991b06254b813d3 | 已调度，根格式与435Noq/33iroh回归 |
+
+两者basedf5b0864 dirty，controlc3b117d（已push feat/net）。CLI可选net-diagnostics依赖已锁tracing-subscriber0.3.23，无新版本解析；显式环境开关才安装subscriber，默认构建不开日志。现有9项产品Python、1项control准备、sh-n/bash-n与diff-check通过；Rust格式/锁/编译待远端，不能记绿。图部分覆盖，3个受改函数测试缺口由原p1s/f4s及可选CLI实际启动验证，不新增镜像单元。
 
 ## 授权、位置与完整范围
 

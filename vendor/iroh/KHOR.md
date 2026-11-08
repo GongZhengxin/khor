@@ -12,6 +12,14 @@
 
 ## 补丁
 
+### 诊断说明：迁移与恢复的实际输入（2026-11-09，feat/net）
+
+`khor_net_samples` tracing target在迁移第一次Hold/Go与当前路已关闭的直接选择处记录实际
+Reading/Silence及确认起点；静默恢复记录决定后应答与hold解除。未改变策略/探测/计时，
+默认CLI不安装subscriber。仅`net-diagnostics`可选构建且显式环境开关启用；
+netlab-diagnostic保留原p1s/f4s完整负载并将serve.log作为artifact保存。
+日志开销不可算普通SLO；根因确认并有更持久的低开销事实记录后可移除这些诊断调用。
+
 ### 34. 普通慢质量先验证，再触发打洞（2026-11-09，feat/net）
 
 近期中位数可能暂时只有一次慢ACK。Watch原来读到慢quality即打洞，与同时开启的2秒探测并行，

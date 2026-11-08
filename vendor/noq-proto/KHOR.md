@@ -166,4 +166,12 @@ khor 从 f6d6d7fd 起双向打开地址观察（`endpoint::transport()`）。客
 为什么要它：一条只有打字的连接，BBRv3 把空闲后的那一阵输出按它上回见过的带宽去配速，
 所以一屏输出比 Cubic 慢两到三倍（`crates/net/tests/congestion.rs`，audit/net-2.md）。
 
-上游发版带上这个修复后，这个目录和那一行 patch 就可以去掉。
+上游含等价修复后，仅评估退出本条补丁；整个vendor及patch行必须等全部本地补丁都有
+等价覆盖、准确源回归与退出证据后才可删除，不能用BBR一项退出替代其余补丁审计。
+
+### 诊断说明：ACK采样分量（2026-11-09，feat/net）
+
+`RttEstimator::update_at`用`khor_net_samples` target记录采样包发送/ACK处理时刻、raw RTT、
+传入ACK-delay、min RTT、既有校正值和实际样本计数。只观察已有计算，不改任何数学/时钟。
+默认CLI无subscriber；可选net-diagnostics构建显式开启后用于识别CPU停顿与ACK校正偏差，
+日志模式不作为SLO成绩，完成定因或有等价低开销诊断后可移除。

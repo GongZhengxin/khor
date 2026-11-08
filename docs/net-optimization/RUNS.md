@@ -289,3 +289,5 @@ control **6af0ac328457a8c3aea9157e8b2ffcd65ae7e5c2**已push feat/net，新增net
 - **42532877270 FAILURE 8/9**，probe-before-punch-hop-42532877270。三轮3/0、2/1、3/0，477.90/467.09/461.77秒。f4腿应答后0.8/0.0/0.3秒；f4i34.3/15.1/12.6秒；f4s0.0/**1513ms**/0.2秒，原1500ms门红。日志一位小数显示1.5秒但assert原值1513ms，不可四舍五入为通过。均无回退；饱和0只说明selected记录不晚于最后腿heard记录。
 
 目前无活动run。下一步可选诊断构建保留原场景与门槛，记录实际决策输入和ACK校正分量；日志改变开销，不得当作普通SLO成绩。p1s剩余移动、f4s超限尚未定因，不先放宽门槛或按缓存快照调策略。N1仍红，N2–N5完整范围不变。
+
+随后调度诊断候选（只加观察，不改策略）：basedf5b0864 dirty、tree1113605daf5597c2663d5e6468c45dade34031c9、controlc3b117d。42536677230 netlab-diagnostic，snapshot72b0f7e13c0cb7142db033434cbd8182a1ba610a；42536711138 net-vendor，snapshot71a5b250ed41979a7e8d66d01991b06254b813d3。前者原p1s/f4s一次1线程，显式诊断模式，保存原serve.log而非尾部采样；不算普通SLO。后者根格式/Noq/Iroh回归。CLI用可选feature与环境开关启用已锁0.3.23 subscriber，默认构建不启用。9项产品Python、1项control准备及两脚本语法/diff检查通过，Rust待远端结果。
