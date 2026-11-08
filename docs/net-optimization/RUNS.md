@@ -85,3 +85,27 @@ quality输入一致性预期红 **42510628203**：tree `fa664f056b152393d7c5e8b4
 
 
 42514304126仅格式失败：新f4诊断的matches宏需多行，未执行单元，不算产品红。证据backup-source-unit-42514304126/format.patch已检查并应用，无本机formatter调用；待新源复验。
+
+
+格式修正41c8af78后的 **42514729034 net-unit**：clean tree `7ba783704556f3893cfb1bd1dc9fb6d1fc3d4b74`，snapshot `955b3e90dbefc3a7f8b4b8ade950a1ca793b0ea1`，controlc6a20c5，在途。42513843436短矩阵已FAILURE，待下载/分类诊断，不把观察超时当终止。
+
+## 最新终态与p2协议纠错
+
+以上“在途/待结果”为当时记录；以下是终态。所有证据已下载，原失败不删除。
+
+- **42514729034 SUCCESS 66pass/1ignored**；证据backup-source-unit-42514729034。只覆盖当时源，未覆盖后加p2 v2与f4_stall诊断。
+- **42513580645 FAILURE**：三轮分别3pass/1fail、3pass/1fail、4pass。p3最坏530.5/732.0/740.9ms，均零错误/退役；p7 active2.4233/2.6044/2.4252秒、idle19.5757/19.5113/18.7489秒。旧p2前两轮AlphaRelay/BetaLAN后约390/410次成功回显仍未bothLAN，第三轮1.4秒bothLAN；原门未测每次回显分布，不能回填体验通过。证据backup-dynamic-old-protocol-42513580645。
+- **42513843436 FAILURE 7pass/2fail**：f4绿（腿应答后0.2秒回carried，无回退）；f4i本次绿（22.4秒回m，无回退）；f4s红（23.0秒carried、应答后14.0秒、最长Relay17.8秒、slowest echo10.1秒）。p2另一红为LAN-only类型门；p3最坏563.7ms零错/退役，p6四项绿（p95 64.59/148.30/87.07/115.82ms）。证据backup-hop-diagnostic-42513843436；没有path-diagnostic行，因为本轮f4i通过而当时f4s尚未挂失败诊断。后来fixture补到f4_stall，不改拓扑/门槛。
+
+p2纠错协议在86ce3330/680dee60、任何v2实跑前冻结：原Relay未加延迟，必须LAN与速度优先冲突；改验明确快集合LAN/Relay并加逐次真实回显门，10秒/零错误/零退役保留。Link旧平滑RTT无年龄，不拿它冒充新鲜值设门。旧LAN-only数据全部保留，p3真实卡顿继续有效。
+
+相同v2 fixture三轮顺序对照（controlc6a20c5）：
+
+| Run | 生产代码 / source tree | snapshot | 状态 |
+| --- | --- | --- | --- |
+| 42516040900 | baseline6485cb83 / 02851ae57ad3df1c0a4e67db171f8148152fd82e | 6fc450c403b4d4022172a19f5ff0ed695f63781c | 在途 |
+| 42516056972 | candidate680dee60 / e0f8ac95368e27248abe9db96296f949f1d85cbd | 1c86ed462d76d423c63e640e9ac1913de48f213d | 在途 |
+
+两版paths.rs相同；baseline生产代码保持648不动。候选包含新增f4失败输出但compare不运行f4。恢复先查询，不因轮询超时再提交。
+
+源码持久化：37个实验快照已建本地不可变`refs/khor/net-evidence/<run>`，清单证据根source-refs.json。每个ref的`:source`子树校验匹配source_tree，避免七天artifact和未引用git对象过期后丢失脏树实验源。未推外部、未覆盖任何工作树；新run终态后仍须补环境/模式/结果证据。

@@ -702,7 +702,7 @@ async fn p7_a_recovered_direct_road_is_taken_while_idle() {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
-async fn p2_the_road_in_use_slows_and_the_lan_takes_over() {
+async fn p2_the_road_in_use_slows_and_a_fast_road_takes_over() {
     slows("p2", true).await;
 }
 
@@ -711,7 +711,16 @@ async fn p2i_the_road_in_use_slows_while_idle() {
     slows("p2i", false).await;
 }
 
-/// p2 (`typing`: an echo every 200 ms from alpha) and p2i (nothing).
+/// The known unshaped roads in p2. A connection's old smoothed RTT
+/// cannot prove its current quality; echo samples verify responsiveness.
+async fn on_a_fast_road(n: &LabNode, peer: &LabNode) -> bool {
+    let Some(link) = n.link(peer).await else { return false };
+    link.hop == Hop::Relay
+        || (link.hop == Hop::Direct && current(n, peer).as_deref() == Some("lan"))
+}
+
+/// The unshaped relay is also a valid fast road. Preserve the topology
+/// and require measured recovery, rather than forcing a direct path.
 async fn slows(s: &str, typing: bool) {
     // The LAN slow at first (30 ms), so the connection lands on the
     // second road.
@@ -736,53 +745,78 @@ async fn slows(s: &str, typing: bool) {
     delay(&p.a.dev, "eth0", 0, LinkDirection::Both).await;
     tokio::time::sleep(Duration::from_secs(20)).await;
     let held = [current(&p.a, &p.b), current(&p.b, &p.a)];
+    assert!(
+        held.iter().any(|r| r.as_deref() == Some("second")),
+        "preparation: at least one end uses the road about to slow: {held:?}"
+    );
     // Now the road in use slows to about 21 ms.
     let since = now_ms();
     let slowed = Instant::now();
     delay(&p.a.dev, "eth1", 10, LinkDirection::Both).await;
     delay(&p.b.dev, "eth1", 1, LinkDirection::Egress).await;
-    let (mut back, mut echoes) = (None, 0);
+    let (mut back, mut post) = (None, 0);
+    let mut samples = Vec::new();
+    let mut errors = Vec::new();
     while slowed.elapsed() < Duration::from_secs(90) {
-        if [current(&p.a, &p.b), current(&p.b, &p.a)]
-            .iter()
-            .all(|c| c.as_deref() == Some("lan"))
+        if back.is_none()
+            && on_a_fast_road(&p.a, &p.b).await
+            && on_a_fast_road(&p.b, &p.a).await
         {
             back = Some(slowed.elapsed());
-            break;
         }
         if typing {
-            let (_, error) = echo(&p.a).await;
-            assert_eq!(error, None, "every echo answers");
-            echoes += 1;
+            let (took, error) = echo(&p.a).await;
+            samples.push(took);
+            if let Some(error) = error {
+                errors.push(error);
+            }
+            if back.is_some() {
+                post += 1;
+                if post >= 30 {
+                    break;
+                }
+            }
             tokio::time::sleep(Duration::from_millis(200)).await;
         } else {
+            if back.is_some() {
+                break;
+            }
             tokio::time::sleep(Duration::from_millis(250)).await;
         }
     }
     let retired = lines(&p.a, Some(&p.b), "retired", since).len()
         + lines(&p.b, Some(&p.a), "retired", since).len();
-    let ok = back.is_some_and(|b| b <= Duration::from_secs(10)) && retired == 0;
+    let held_fast = on_a_fast_road(&p.a, &p.b).await && on_a_fast_road(&p.b, &p.a).await;
+    samples.sort();
+    let p95 = samples
+        .get((samples.len() * 95).div_ceil(100).saturating_sub(1))
+        .copied();
+    let worst = samples.last().copied();
+    let responsive = !typing
+        || (post >= 30
+            && errors.is_empty()
+            && p95.is_some_and(|t| t < Duration::from_millis(200))
+            && worst.is_some_and(|t| t < Duration::from_secs(1)));
+    let ok = back.is_some_and(|b| b <= Duration::from_secs(10))
+        && held_fast
+        && retired == 0
+        && responsive;
+    let roads = (p.a.link(&p.b).await, p.b.link(&p.a).await);
     result(
         s,
         ok,
         format!(
-            "held {held:?} at equal speed; {} after the slowdown both on the LAN {}; alpha {:?}, beta {:?}; retired {retired}",
-            if typing {
-                format!("typing ({echoes} echoes),")
-            } else {
-                "idle,".to_owned()
-            },
+            "held {held:?} at equal speed; typing {typing}; after the slowdown both on an unshaped road {}, held {held_fast}; n={} post={post} p50 {:?} p95 {p95:?} max {worst:?}, errors {errors:?}; alpha {:?}, beta {:?}; retired {retired}; roads {roads:?}",
             back.map_or("not within 90 s".into(), |b| format!("after {b:.1?}")),
+            samples.len(),
+            samples.get(samples.len().saturating_sub(1) / 2),
             moves(&p.a, &p.b, since),
             moves(&p.b, &p.a, since),
         ),
     );
     assert_eq!(retired, 0, "no wire retired");
     if typing {
-        assert!(
-            back.is_some_and(|b| b <= Duration::from_secs(10)),
-            "back on the LAN within 10 s, took {back:?}"
-        );
+        assert!(ok, "fast recovery and responsive echoes within their budgets");
     }
 }
 

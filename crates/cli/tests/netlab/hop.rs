@@ -558,6 +558,12 @@ async fn f4_stall(s: &str, st: Stall) {
         && stayed
         && (on_relay.is_none() || after_answer.is_some_and(|ms| ms <= 1500));
     let secs = |at: u64| format!("{:.1}s", at.saturating_sub(t) as f64 / 1000.0);
+    if !ok {
+        path_diagnostics(&x, &y);
+        path_diagnostics(&y, &x);
+        path_diagnostics(&m, &x);
+        path_diagnostics(&m, &y);
+    }
     result(
         s,
         ok,
