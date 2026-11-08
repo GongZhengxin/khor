@@ -206,3 +206,32 @@ full40红项：f3没声明no_relay；f4在180秒内未通过m；f4s腿应答后0
 
 
 42528714010终态 **SUCCESS 434Noq/29iroh**，证据decision-proof-green-42528714010。新增两回归先红后绿；原快路不等慢路/原黑洞离开测试仍绿。源码已提交6eabe635；提交前核当前vendor/Noq/策略文件与绿snapshot:source无diff。新确认可能多一个取证阶段，实际p1s/f4/p7目标与探测开销仍须网络证据；余三项新源任务和42527295249旧确认/过期修复相位任务均未结束。
+
+
+## 过期修复后的正式三轮：黑洞仍有真实长卡顿
+
+42527295249已 **FAILURE 25pass/2fail**，三轮9/0、8/1、8/1（362.79/371.43/367.23秒），证据quality-expiry-phases-42527295249，tree6f9a77e399e25e1c3b57eb8d52136fcd04e3d92a、snapshotdbcf6d949d8de4be03ce247d1b2bc29e3c59de2c、controlfdd1b3f。单场景顺序、三轮27项。
+
+- p2收敛1.5/4.0/1.1秒，max58.15/62.52/50.23ms，零错/退役；全部通过。
+- p7共21项全绿，交互2.26–3.10秒、闲置2.51–18.41秒；闲置phase0为18.356/18.408/18.358秒，仍有20秒裕量问题。
+- p3最坏612.4ms/1.3秒/15.3秒。末轮还有10.3秒请求，1次15秒超时，零退役；alpha Relay@1s、beta Second@1s。既已选备用仍卡顿，不能只用路径类型收敛证明请求恢复，不能当执行器问题删除。
+
+在此源之后的6eabe635只修快速确认，三个实际网络任务仍在途，不能借其未出结果覆盖旧失败。当前新增 **42529470019 net-vendor**：basee45cac03、tree65bdf14629fee79159010ae273c7582179c53d58、snapshot50542c58de1cdbb5f4e9d8758c090f8280071895、controlfdd1b3f。仅复用原真实虚拟计时黑洞fixture增加“先改status、后达到不应答”的回归，保留原先故障后移路及健康同速覆盖；未改生产Noq。预期检验只在status改变时检查是否漏掉后续PTO达到的不应答，尚未取得结果，不预认定为这次netlab的全部原因。
+
+
+42529470019终态预期产品红（late-backup-red-42529470019）：**434pass/1fail**，仅新增先移路用例失败在“a failed backup must release data even if the move came first”。没有编译/格式错误；Noq失败后脚本未运行iroh，不能记iroh新红或新绿。
+
+候选保持原判据，只在Backup既有LossDetection事件重新置位检查，由poll_transmit统一重排；不引入独立timer/逐次发送扫描。回归额外检查<300ms不重排，并在相同虚拟时序验证<1秒释放及健康路完整流交付。p3仅在失败后补两端路径事件，不加测量请求。
+
+以下同tree `6cbec16a56889023db95e92f6a4dc657aa6a6805`、basee45cac03 dirty、controlfdd1b3f：
+
+| Run | 任务 | snapshot | 状态 |
+| --- | --- | --- | --- |
+| 42529931673 | net-vendor | fb8718047f9584b6dcd3f239cea7ce1aef5bca02 | 在途，目标435/29 |
+| 42530014989 | netlab-recovery | 544da02c21aff9aaad98a94bcdc3b0fdbbb72e2a | 在途，p2/p3三轮6项 |
+| 42530060891 | netlab-smoke | 39c8968ba8ccc7e49c6df6e5e2d31fdedf0b53ca | 在途，9项2场景并行 |
+
+6eabe635三项旧Noq网络任务仍独立在途，不把它们当作这份新Noq代码验证；它们用于分离确认修正对稳定性/转发/相位的影响。
+
+
+42529931673终态 **SUCCESS 435Noq/29iroh**，证据late-backup-green-42529931673；Noq新增后移路故障用例先红后绿，另外<300ms不重排、<1秒原PTO释放及完整流交付均通过，既有434与iroh29全绿。代码已提交ff399658，提交前核全部vendor/策略/p3文件与绿snapshot:source一致。当前66份实验源ref已验证，终态收据已刷新，余5份网络任务仍在途；不能用单元代替实际p3/f4。

@@ -20,7 +20,7 @@
 沿现有Backup LossDetection timeout将重排检查标记交给下一次poll_transmit，仍使用同一
 unanswered_for与速度判据、MTU排除、原丢包/拥塞计量及QUIC去重。无独立timer、无应用请求重放，
 健康同速与未满300ms停顿不重排；新增用例还验证原PTO释放后健康路收到完整流字节。
-候选单元及真实p3/f4/稳定性尚待新源验证。仅在status改变或Backup恢复事件检查，不在每次读stats/发送时扫描。
+候选42529931673单元435Noq/29iroh全绿；真实p3/f4/稳定性仍需新源证据。仅在status改变或Backup恢复事件检查，不在每次读stats/发送时扫描。
 本地未提上游；上游具备等价后移路故障重排后，以本组及p3/f4/短停顿覆盖复验退出。
 
 ### 10. RTT样本携带发送与ACK处理时刻（2026-11-09，feat/net）
