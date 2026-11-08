@@ -184,3 +184,25 @@ full40红项：f3没声明no_relay；f4在180秒内未通过m；f4s腿应答后0
 窗口过期红：近2秒窗口只剩1ms样本，派生quality却仍300ms。4ec6ab2e在窗口缩小时复用record的中位数计算，空窗保留最后已知值；样本时间、ACK计数、确认记录不刷新，不新增timer/探测。红绿源仅后者修正派生值，实际网络因果仍待新两项结果。实际Entry持久化回读已由42524575725验证，兼容修复不再等待旧格式任务。
 
 实验源现已锚定57个本地不可变refs，清单source-refs.json；已校验每个snapshot:source与source_tree一致。活动源已锚定但仍须补终态environment/mode/结果。
+
+
+42527316922终态 **SUCCESS 9/9**，373.32秒、2场景并行；证据quality-expiry-smoke-42527316922，准确source/environment见该目录。p2 1.0秒、n34/post30、p95 36.70/max40.55ms，零错/退役；p3最坏642.6ms，零错/退役；f4/f4s腿应答后0.3/0.4秒回carried且无回退，f4i19.6秒回m；p6d23.57/p6r123.02/ref-d24.11/ref-r106.38ms p95。早于下一项确认候选，不替代防抖验证。
+
+新增确认回归取红 **42528150054 net-vendor**：base645363cd、treeb82736a93788817c0f8a2d8397ae4d5c6d352ebc、snapshotd760ea482545bf86350ebd555722dbe14c532ada、controlfdd1b3f；在途。仅新增两条行为回归，生产逻辑仍为4ec：决定前两个包不能触发快速迁移，等待快候选时应同时探测当前路。拟最小候选与恢复边界见NEXT-DESIGN，尚未修改生产逻辑。
+
+
+42528150054终态预期产品红（decision-proof-red-42528150054）：Noq434全绿，iroh27pass/2fail，恰为新两条回归；一条旧值Go，另一条旧Hold不探测from。不是编译/格式红。候选只改确认取证起点与等待时双路复测，快分支仍不强制等慢当前路，不改黑洞leave/收益/固定确认时长。
+
+确认候选source tree `86619b975d12358a8ee99aefee4407857efdbe6b`，base645363cd dirty，controlfdd1b3f：
+
+| Run | 任务 | snapshot | 状态 |
+| --- | --- | --- | --- |
+| 42528714010 | net-vendor | b82b415a8bb99fcc905cc1799141c7d7f9de0677 | 在途，434Noq/29iroh目标 |
+| 42528746575 | netlab-stability | bf2c40d5cd2c5fff34e30bc81038156300cc2cc5 | 在途，单场景长稳4项，原准备/忙CPU保留 |
+| 42528783380 | netlab-hop | 97263e13d067b978bb73b8be3aa2b7921151140e | 在途，转发3场景×3轮 |
+| 42528841695 | netlab-dynamic | 05d5a15898b11633f6356cd60d2761ac6f813137 | 在途，p2/p3+7相位×3轮 |
+
+全部source已锚定；清单现62个refs，不依赖snapshot远端分支或artifact保留。确认期间可能比旧快分支多PING，受原4秒确认/30秒冷却边界约束，尚无后台开销结论。
+
+
+42528714010终态 **SUCCESS 434Noq/29iroh**，证据decision-proof-green-42528714010。新增两回归先红后绿；原快路不等慢路/原黑洞离开测试仍绿。源码已提交6eabe635；提交前核当前vendor/Noq/策略文件与绿snapshot:source无diff。新确认可能多一个取证阶段，实际p1s/f4/p7目标与探测开销仍须网络证据；余三项新源任务和42527295249旧确认/过期修复相位任务均未结束。
