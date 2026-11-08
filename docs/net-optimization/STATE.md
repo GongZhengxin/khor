@@ -6,9 +6,9 @@
 
 活动目标“完成计划”已授权PLAN实施/验证，取代最初仅规划状态。速度/体验优先，个人可信设备网。未合main、未发布、未采购/部署中继。本机source-only；Linux用私库GitHub job，Mac沿macserver。其他GUI/治理worktree、现装App和用户原会话保持独立。
 
-- 产品 `/Volumes/disk0/Khor/worktrees/current/khor-net`，`feat/net`；真实样本时间窗4fa3f1b3、p7相位6a45e488、journal数字回读6b3644f5、恢复/稳定性独立模式与路径诊断e480dc2e、窗口质量同步过期4ec6ab2e；确认取证6eabe635；Noq后移路故障重检ff399658（已提交，tree6cbec16a是提交前快照）与p3失败诊断；相应文档/实验状态继续更新（活动表tree86619b97是该修正提交前的快照）。更早ACK/Backup修复及p2协议仍保留。恢复先核git HEAD/diff，不能按摘要覆盖。
+- 产品 `/Volumes/disk0/Khor/worktrees/current/khor-net`，`feat/net`；真实样本时间窗4fa3f1b3、p7相位6a45e488、journal数字回读6b3644f5、恢复/稳定性独立模式与路径诊断e480dc2e、窗口质量同步过期4ec6ab2e；确认取证6eabe635、稳定性准备协议309c1bbc/fixture f8292b59、探测后打洞519ad4aa；Noq后移路故障重检ff399658（已提交，tree6cbec16a是提交前快照）与p3失败诊断；相应文档/实验状态继续更新（活动表tree86619b97是该修正提交前的快照）。更早ACK/Backup修复及p2协议仍保留。恢复先核git HEAD/diff，不能按摘要覆盖。
 - 旧生产基线main/rc8 `6485cb83d3b1f0bb93d4633825dc956623d78af9`。`khor-net-baseline` detached该提交，只改fixture与远端测试脚本，生产源码原样。
-- 控制 `/Volumes/disk0/Khor/worktrees/current/khor-build-net`，`feat/net`，最新fdd1b3f；此前0e5788c补核心单元，fdd1b3f新增独立netlab-recovery（三轮p2/p3）、netlab-stability（p1/p1j/p1s/p5单轮），full也显式写mode8并行。两个main不动，产品feature尚未推origin。
+- 控制 `/Volumes/disk0/Khor/worktrees/current/khor-build-net`，`feat/net`，最新6af0ac3已push（新增netlab-stalls：原p1s/p5完整时长单场景各一次）；此前fdd1b3f与0e5788c补核心单元，fdd1b3f新增独立netlab-recovery（三轮p2/p3）、netlab-stability（p1/p1j/p1s/p5单轮），full也显式写mode8并行。两个main不动，产品feature尚未推origin。
 - 证据 `/Volumes/disk0/Khor/evidence/net/`；source/environment/mode与原日志是准确版本证据。
 - 权威索引：PLAN、REQUIREMENTS、ACCEPTANCE、DESIGN、RUNS、REPORT、NEXT-DESIGN。历史不是当前状态。图谱是部分增量图；先图工具，缺失后定向读，不擅自建立CodeGraph索引。
 
@@ -41,19 +41,32 @@ N0部分；N1仍有产品红；N2–N5未完成。完整范围保留，不能以
 
 20. 后移路Backup修复 **42529931673 SUCCESS 435Noq/29iroh**（late-backup-green-42529931673）：旧434pass/1fail已红→绿，额外验证<300ms不重排、该虚拟时序<1秒释放并在健康路收到完整流。代码ff399658将原内部status标记改为恢复重检，Backup LossDetection也置位，下一次poll_transmit用同一判据处理。提交前核全部vendor/策略/p3源与绿快照无diff；p3失败末尾加两端缓存诊断。实际恢复仍待42530014989/42530060891，不能据单元声称15秒已消除。
 
+
+21. 确认取证版6eabe635的 **42528841695 SUCCESS 27/27**（decision-proof-phases-42528841695）：p2 976.7/752.8ms/3.0秒，max32.29/32.11/31.55ms；p3最坏461.2/613.8/493.3ms，零错/退役。21个p7全绿，交互2.38–2.79秒、闲置5.62–19.67秒；phase0 19.61/19.58/19.67秒，裕量仍小。早于ff Noq后移路修复，不互相替代。
+22. 同6e源 **42528746575 FAILURE 1pass/3fail、1311.33秒**（decision-proof-stability-42528746575）：p1空闲600秒0/0移动；p1j和p1s均在Direct准备门失败，未进入对应600秒；p5零Relay切换，但150ms组打洞0/1、300ms组2/3，原短停顿门红。600ms观察组2/2、最慢回显1.1秒，原门不变。不能把这次p1s准备失败说成CPU防抖改善。
+23. 同6e源 **42528783380 FAILURE 8/9**（decision-proof-hop-42528783380）：前两轮全绿，末轮f4腿应答后2.2秒回carried，超1.5秒；另两轮1.0/0.6秒。f4s三轮0.5/1.0/0.8秒且无回退，f4i22.7/29.8/18.8秒且无回退。ff Noq版转发三轮42531477192在途，不能用8绿删除末轮红。
+24. ff Noq版 **42530014989 SUCCESS 6/6**（late-backup-recovery-42530014989）：p2 2.9/3.1/1.3秒、max<37ms；p3最坏591.9/428.7/602.2ms，零错/退役。已取实际重复恢复证据，但不能据此把旧15秒全部定因或称最终源长回归达成。
+25. ff Noq版 **42530060891 FAILURE 8/9**（late-backup-smoke-42530060891）：f4i准备在LabNode.with/Node::open_as处document transfer state busy，未进入恢复测量；其余p2/p3/p6四项/f4/f4s绿。p3最坏594.5ms、零错/退役，f4应答后0.2秒回carried，f4s不晚于最后一腿记录heard，均无回退。Busy来源是文档状态真实非阻塞门，原生产保护不改；不能把该准备失败称网络恢复红，也不能称整项绿。
+26. 稳定性准备v2在309c1bbc先冻结，f8292b59实现：只在one_speed三场景准备时给Relay设备100ms往返，达两端Direct后清掉双向条件，再原30秒settle/600秒测量；观察期不限制类型，忙CPU/20次停顿/原切换门保留，p5/p2/p3不改。42530871452第一方SUCCESS 66pass/1ignored（stability-bootstrap-unit-42530871452）。同4个fixture/脚本已复制baseline，生产648未动；A/B在活动表，旧红不回填。
+
+
+27. Watch首慢值立即打洞已 **42531529275产品红：435Noq绿/iroh29pass1fail**（probe-before-punch-red-42531529275），实际probe与punch同时true。519ad4aa修正后 **42532303734 SUCCESS 435Noq/33iroh**（probe-before-punch-green-42532303734，tree63ddfeff/snapshot5da5fad0/controlfdd）：普通慢质量持续原2秒窗且两个采样包在该次开始后发出才打洞，恢复取消本次确认；不增探测预算/独立timer。原无应答1秒通道、RTT超2秒立即探索和30秒节流保留。另3项新覆盖不是都在旧版取红。提交前核全部vendor/策略/fixture与绿快照一致。实际忙CPU/短停顿、相位和转发验证见活动3项，不能由单元收口。
+28. control6af0ac3新增netlab-stalls，保留原p1s 600秒/20次300ms/忙CPU与p5三组各4次30秒间隔，不缩短门槛；完整稳定性A/B和full仍保留。source-only产品9项、control准备1项及bash-n通过；新task实际prepare已成功、Linux network在跑、Mac development跳过。新3run同tree5f40be2e（base519 dirty，仅后续接口/文档变化），源码已锚定，共75个refs，清单source-refs.json。
+
 42513039282是首轮候选编译错误（path_stats引用/可变借用）；已改先收集backup ID再读状态。独立分类，不能记产品红。
 
 ## 当前必须先查询的活动任务
 
 | Run | 任务 / 源码 | 最后观察 |
 | --- | --- | --- |
-| 42528746575 | netlab-stability，同tree86619b97，snapshotbf2c40d5 | in_progress；单场景p1/p1j/p1s/p5各一次，p1j原Direct准备门保留 |
-| 42528783380 | netlab-hop，同tree86619b97，snapshot97263e13 | in_progress；f4/f4s/f4i三轮9项，检查恢复1.5秒门 |
-| 42528841695 | netlab-dynamic，同tree86619b97，snapshot05d5a158 | in_progress；p2/p3+7相位三轮27项 |
-| 42530014989 | netlab-recovery，同tree6cbec16a，snapshot544da02c | in_progress；新Noq候选p2/p3三轮6项，p3失败附两端路径诊断 |
-| 42530060891 | netlab-smoke，同tree6cbec16a，snapshot39c8968b | in_progress；新Noq候选9项2并行 |
+| 42531361022 | netlab-stability，ff399658生产/准备v2，treee4912fda，snapshot591b7399，controlfdd | in_progress；p1/p1j/p1s/p5单场景完整观察 |
+| 42531408799 | netlab-stability，baseline648生产，tree0e9bf325，snapshot1b3f7a1b，controlfdd | in_progress；相同fixture/脚本，未动baseline生产 |
+| 42531477192 | netlab-hop，ff399658生产，treee4912fda，snapshota432378e，controlfdd | in_progress；新Noq版f4/f4s/f4i三轮9项 |
+| 42532770351 | netlab-stalls，Watch版519ad4aa/tree5f40be2e，snapshotb23eef27，control6af0ac3 | in_progress；原p1s/p5完整时长单场景各一次 |
+| 42532849927 | netlab-dynamic，同tree5f40be2e，snapshotdc805277，control6af0ac3 | in_progress；p2/p3+七相位三轮27项 |
+| 42532877270 | netlab-hop，同tree5f40be2e，snapshot43c7f6ee，control6af0ac3 | in_progress；f4/f4s/f4i三轮9项 |
 
-只查询上述五项，不重复提交旧任务。新增文件先stage，snapshot排除untracked。实验源已锚定到本地`refs/khor/net-evidence/<run>`，不依赖七天artifact保留；数量及清单以证据根source-refs.json为准。快照含source/子树，读取例：`git show refs/khor/net-evidence/42512359677:source/vendor/noq-proto/src/connection/mod.rs`。校验`git rev-parse REF:source`必须等于收据source_tree；不能把parentless快照直接覆盖工作树。
+只查询上述六项，不重复提交旧任务。新增文件先stage，snapshot排除untracked。实验源已锚定到本地`refs/khor/net-evidence/<run>`，不依赖七天artifact保留；数量及清单以证据根source-refs.json为准。快照含source/子树，读取例：`git show refs/khor/net-evidence/42512359677:source/vendor/noq-proto/src/connection/mod.rs`。校验`git rev-parse REF:source`必须等于收据source_tree；不能把parentless快照直接覆盖工作树。
 
 42517477095只报p2格式，42517864599和42518102550只报journal字符串格式，均未跑相应单元。patch已检查/应用；第二次与第三次是同一格式问题，不能算三项新鲜性产品红。证据分别speed-v2-unit、path-measurement-node、ack-time-format对应run目录。
 
@@ -72,6 +85,7 @@ N0部分；N1仍有产品红；N2–N5未完成。完整范围保留，不能以
 - Reading时间窗缺口已确定性红→绿，21相位/三次p3绿，但p2又一红；长稳定性/CPU长尾仍需在途结果。ACK处理不是内核收包时刻，置信/波动未齐。p7各phase新建同拓扑，门10/20秒不改。新完整fixture40项，旧35项不覆盖新增相位。journal解码修正不改网络选择；继续定向必要修改，不能以短绿完成N1。
 - 新确认回归42528150054已确定性红：434Noq绿、iroh27pass/2fail，旧快分支用决定前两个包直接Go，Hold跳过当前路。当前候选要求since后包，Hold的探测起点也不早于since，并在等待快候选时复测当前路；快候选有原两个新观测仍可提前Go，不强制等当前慢路；黑洞leave、门槛/闲置探索不改。vendor补丁33记录原因/退出，图工具不覆盖vendor，已定向读调用/测试。目标是补证据缺口，不声称p1s已消除。新源单元42528714010已SUCCESS 434Noq/29iroh；长稳/转发/相位三项在途。代码已提交6eabe635。
 - 后移路故障回归42529470019已434pass/1fail，恰为新用例，未执行后续iroh单元。当前Noq将原status_changed内部标记改为recheck_backups，Backup的既有LossDetection timeout也置位，再由下一次poll_transmit用原判据重排；没有独立timer/每次发送扫描/应用请求重放。新用例保留故障前后两个时序，并检查<300ms不重排、旧字节从健康路收到。p3失败末尾附两端缓存路径事件，不改测量。候选42529931673已SUCCESS 435Noq/29iroh，代码ff399658；真实恢复/短矩阵在途；不能把确定性bug当作15秒实际卡顿的全部定因。
+- 新最高优先：Watch在第一份慢quality时就may_punch，未等既有PROBE_FOR探测确认；这与p5多余打洞一致但尚非全部定因。42531529275已取得确定性红，519ad4aa/42532303734已435/33绿；普通慢质量原2秒+两个开始后观测，旧值/actor暂停不算新证据。现有探测预算不变，前台STREAM可提供新证据；已超整个2秒窗的极慢RTT仍立即探索，原故障1秒通道/30秒节流保留。真实结果仍待新3run，不以单元替代。
 - N1达标后按PLAN推进N2期限/竞速/缓存/取消/随机退避/0-RTT、N3混合负载/能耗、N4故障域/中继方案、N5补丁退出/真实设备/最终Quality。REQUIREMENTS逐项审计保留。
 
 本轮p2只纠正测试的体验定义、补实际回显测量；Entry兼容已红→绿，过期修复434/27绿，实际动态25/27且p3含15秒超时；不能以单元或短绿完成恢复。f4最长回显含人为3/8秒断腿及超慢备用，不能套p3“已有快备用时<1秒”的目标；其原恢复后1.5秒/无回退门保持。详细收据/失败分类在RUNS，阶段报告不代表最终完成。

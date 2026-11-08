@@ -235,3 +235,44 @@ full40红项：f3没声明no_relay；f4在180秒内未通过m；f4s腿应答后0
 
 
 42529931673终态 **SUCCESS 435Noq/29iroh**，证据late-backup-green-42529931673；Noq新增后移路故障用例先红后绿，另外<300ms不重排、<1秒原PTO释放及完整流交付均通过，既有434与iroh29全绿。代码已提交ff399658，提交前核全部vendor/策略/p3文件与绿snapshot:source一致。当前66份实验源ref已验证，终态收据已刷新，余5份网络任务仍在途；不能用单元代替实际p3/f4。
+
+
+## 2026-11-09 确认版终态与准备v2
+
+下列前3项同tree86619b975d12358a8ee99aefee4407857efdbe6b、controlfdd1b3f，早于ff399658：
+
+- **42528841695 SUCCESS 27/27**，decision-proof-phases-42528841695。p2 976.7/752.8ms/3.0秒，max32.29/32.11/31.55ms；p3 461.2/613.8/493.3ms，零错/退役。21个p7全绿，交互2.38–2.79秒、闲置5.62–19.67秒；phase0为19.6105/19.5826/19.6735秒，裕量小。每轮359.64/355.58/359.18秒。
+- **42528746575 FAILURE 1pass/3fail**，1311.33秒，decision-proof-stability-42528746575。p1空闲600秒0/0；p1j、p1s均Direct准备失败，未测各自600秒。p5零Relay切换，150ms组打洞0/1、300ms组2/3触发原短停顿红；600ms观察组打洞2/2、最慢回显1.1秒。不能称p1s防抖已经改善。
+- **42528783380 FAILURE 8/9**，decision-proof-hop-42528783380。三轮3/0、3/0、2/1，554.53/485.29/514.06秒。f4应答后1.0/0.6/2.2秒，末轮超1.5秒；均无回退。f4s 0.5/1.0/0.8秒全绿，f4i22.7/29.8/18.8秒全绿。
+
+以下ff399658源码tree6cbec16a/controlfdd：
+
+- **42530014989 SUCCESS 6/6**，late-backup-recovery-42530014989。p2 2.9/3.1/1.3秒，max36.43/34.95/36.66ms；p3 591.9/428.7/602.2ms，零错/退役；每轮172.20/167.52/165.26秒。
+- **42530060891 FAILURE 8/9**，305.58秒2并行，late-backup-smoke-42530060891。f4i准备阶段LabNode.with的Node::open_as报document transfer state busy，并未进入网络恢复测量。p2/p3、p6四项、f4/f4s绿；p3 594.5ms零错/退役，p6d35.16/p6r112.88/ref-d25.24/ref-r110.97ms p95。f4应答后0.2秒；f4s selected记录早于最后一腿heard，饱和差值0而非证明真实恢复耗时为零，均无回退。独立状态门测试明确Busy是实际非阻塞保护；当前不改生产存储，也不删除失败。
+
+稳定性准备v2先309c1bbc冻结、后f8292b59实现。设备Relay100ms往返只用于one_speed准备，清除后再原30秒settle/600秒测量；p1s忙CPU/20次300ms、原最多一次移动/零退役均保留。只复制paths.rs/hop.rs/dev.py/netlab.sh至baseline；已逐文件相同，并核其全部diff只在这四文件，baseline生产仍648。
+
+| Run | 任务 / tree | snapshot | 状态 |
+| --- | --- | --- | --- |
+| 42530871452 | net-unit / e4912fda2dcb2caf8aed2324495d48c8e1cff424 | b372912e515416278e81fe4b97e9a250b6e6d3e5 | SUCCESS 66pass/1ignored，stability-bootstrap-unit-42530871452 |
+| 42531361022 | candidate netlab-stability / 同e4912fda | 591b73995f7e88fd6f629bedde75e99a046a1b46 | 在途，ff生产+准备v2 |
+| 42531408799 | baseline netlab-stability / 0e9bf325d47377ac4c7b09b8d8ef68cd53b2e62c | 1b3f7a1bbadee364f746f3c9e8df449509e6f87d | 在途，648生产+相同fixture |
+| 42531477192 | netlab-hop / 同e4912fda | a432378e2dbd779482bdffad75e5851a7c51b002 | 在途，新Noq版三轮9项 |
+| 42531529275 | net-vendor / 80b4f2a6f891a9f9d96874ed206007cb8149523f | a17654f76db3e8eb80bdb616d31a8918d15a47c9 | 在途，Watch单次慢质量不能立即打洞的回归取红，生产未改 |
+
+均controlfdd1b3f。Watch当前在首次慢quality直接打洞，未等既有2秒探测窗；新回归仅提出行为要求，未将静态分析记为复现成功。下一候选须保留真实故障1秒通道/30秒节流、要求决定后新往返，避免仅延长固定等待而让旧样本/CPU暂停通过。
+
+
+42531529275终态预期产品红：Noq435绿，iroh29pass/1fail，单次150ms质量同时probe/punch为true；证据probe-before-punch-red-42531529275。
+
+Watch候选 **42532303734 SUCCESS 435Noq/33iroh**：basef8292b59 dirty、tree63ddfeff21b634bbb79e0cf104f07a6117ca8b6e、snapshot5da5fad0b37e8a93d3c34f26e7f0e64ace4ab0ab、controlfdd，证据probe-before-punch-green-42532303734。代码519ad4aa；提交前核vendor/策略/fixture与绿快照一致。普通质量持续原2秒+两个开始后包的独立观测才打洞；原探测预算不变，前台样本仍可确认。极慢RTT超2秒不等放不进预算的往返；原故障1秒/打洞30秒节流保留。3个附加覆盖为新绿，不能声称都已旧源取红。
+
+control **6af0ac328457a8c3aea9157e8b2ffcd65ae7e5c2**已push feat/net，新增netlab-stalls（原p1s/p5完整时长各1次/1线程），不替代完整A/B/full。产品9项、control准备1项Python及network.sh bash-n通过。当前3个Watch网络run同tree `5f40be2e96dae66a8d57cb82afe1e447014c194b`、base519ad4aa dirty（后续接口/文档变化），control6af：
+
+| Run | 任务 | snapshot | 状态 |
+| --- | --- | --- | --- |
+| 42532770351 | netlab-stalls | b23eef27de00b6214e09e82416f764f108044a6f | 在途；实际prepare成功、Linux network运行、Mac跳过 |
+| 42532849927 | netlab-dynamic | dc80527796731ec472955f5c593b5069f2e82d59 | 在途，27项三轮 |
+| 42532877270 | netlab-hop | 43c7f6ee25e5dd488c1d3fdbb262dfbb06a0c711 | 在途，9项三轮 |
+
+源码ref清单75份已验证，所有终态收据已刷新；其余3个旧Watch（新Noq）网络任务继续独立保留，不互相替代源码结论。
