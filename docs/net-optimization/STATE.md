@@ -1,53 +1,49 @@
 # feat/net 当前状态与恢复入口
 
-更新时间：2026-11-09 · 所有者 root，串行。
+2026-11-09 · owner=root，串行，无子智能体。
 
 ## 当前授权与位置
 
-用户活动目标 **“完成计划”**，已授权按 [PLAN](PLAN.md) 实施与验证；此前仅规划状态已替代。速度/体验优先，个人可信设备网络。**未合 main、未发布、未采购或部署中继。**
+活动目标 **“完成计划”**，已授权按PLAN实施验证，取代最初仅规划状态。速度/体验优先；个人可信设备网。未合main、未发布、未采购/部署中继。本机source-only，无Cargo/Node/native重型工作；Linux用私库GitHub job，Mac沿macserver任务。
 
-- 产品：`/Volumes/disk0/Khor/worktrees/current/khor-net`，`feat/net`，产品实现检查点 `9b80cb5d`，测试/计划检查点 `30335781`；实际HEAD及后续文档提交以git log为准，先核对diff。
-- 创建基线 main/rc8：`6485cb83d3b1f0bb93d4633825dc956623d78af9`；旧生产代码对照树 `khor-net-baseline` detached该提交，只改fixture、netlab顺序执行脚本和远端入口。
-- 私库控制器：`/Volumes/disk0/Khor/worktrees/current/khor-build-net`，`feat/net`。网络Linux job独立，Mac任务沿既有macserver入口；本机source-only，不做Cargo/Node/native重型工作。
-- 证据：`/Volumes/disk0/Khor/evidence/net/`；[运行账本](RUNS.md)、[逐项完成审计](REQUIREMENTS.md)、[验收协议](ACCEPTANCE.md)、[设计](DESIGN.md)。初期过程移至 [历史](HISTORY-20261109-initial.md)。
-- 其他GUI/治理任务独立，不修改它们的worktree、现装App或用户既有会话。
+- 产品：`/Volumes/disk0/Khor/worktrees/current/khor-net`，branch `feat/net`。实现检查点9b80cb5d，计划/测试30335781、cbcc8abe；最新HEAD与暂存/未暂存内容以现场为准。
+- 基线：main/rc8 `6485cb83d3b1f0bb93d4633825dc956623d78af9`。`khor-net-baseline` detached该提交；只改paths fixture、netlab.sh与dev.py，生产源码原样。
+- 私库控制：`/Volumes/disk0/Khor/worktrees/current/khor-build-net`，`feat/net`，当前d7d1af1。控制main不动；产品feat/net尚未推origin。
+- 证据根：`/Volumes/disk0/Khor/evidence/net/`。收据source.json、environment.json、measurement-mode.json及原日志绑定准确版本。
+- 权威文档：[PLAN](PLAN.md)、[REQUIREMENTS](REQUIREMENTS.md)、[ACCEPTANCE](ACCEPTANCE.md)、[DESIGN](DESIGN.md)、[RUNS](RUNS.md)、[阶段报告](REPORT.md)、[下一设计检查点](NEXT-DESIGN.md)。初始过程保留HISTORY，非当前状态。
+- GUI/治理任务独立；不改其worktree、现装App、原用户会话。图谱是不完整增量图，低风险/零flow不是无影响证明；先图工具，缺失后定向读，不擅自建立CodeGraph索引。
 
-## 已确认事实
+## 最高优先级：p2/p3恢复回归
 
-1. 旧策略速度回归红；首版全承载速度优先、统一bind和迁移确认的单元62通过、1 ignored。
-2. 修正反向wire准备后的真实p6：旧策略快中继场景 p95 369.78ms，候选152.12ms并选Relay；反向快Direct两版均绿。仅一次A/B，尚不能完成N0/N1。
-3. hop清理原固定10ms与选路25%/5ms矛盾，已统一改善规则，并允许慢Direct参与hop发现；节点hop9/wires10通过，对应tree067d62b5。
-4. p7动态取得产品红：Direct300ms恢复为LAN后，交互和闲置都45秒未回，目标分别10/20秒；无请求错误。
-5. 当前正在修复ACK样本计数/新鲜度与近期质量估计，并加入STREAM活跃期每对端最多5秒一次的既有备用探测。拥塞控制平滑RTT不变，闲置不新增计时器。单元63通过/1 ignored；首次p7交互2.64秒、闲置18.16秒、零错误，目标10/20秒均绿。需重复与防抖验证。
-6. vendor测试入口第一次因excluded workspace的dev-dependencies失败，是执行器准备问题。改独立manifest与对应lock；iroh lock仅将noq-proto指向既有本地补丁，版本不变。独立manifest/committed lock实跑SUCCESS：noq431、iroh路径21通过，日志fresh-vendor-42509174050。
+正式3次顺序对照已结束。p6r旧3红、新3绿（候选p95 110–117ms，接近固定Relay参照）；但候选p2为13.0/16.4/6.9秒，p3为755ms/9.9秒/15.3秒并1次请求超时。旧版p2/p3三轮均绿。**当前N1未完成，先修此回归，不推进N2实现，不调宽门槛。** 完整数据见REPORT。
 
-## 活动任务与下一步
+当前排查假设：raw ACK往返未扣对端ACK-delay，可能误读活动路质量/丢掉备用；另外，黑洞后速度优先可选同速Relay，历史RTT仍快的黑洞Backup可能未被resend_off_slow_backups重排，流数据继续等旧路。尚未定因，不把Direct硬优先加回来遮盖恢复问题。
 
-- **完整baseline 42507224815**：最后观察仍在network执行；先查询实时状态，下载完整证据；不因工具超时另提交。
-- 42508069745/42508095178 已结束并下载，见RUNS。较早两次node任务均已下载确认仅格式失败，patch已应用。
-- 最新采样/hop/p7已提交9b80cb5d，新增文档均跟踪。当前差异是固定好路径参照与compare入口。源码快照排除untracked。
-- 同一准确源码tree `064925806d1c3962f715942d7f637a4b6257783f` 已提交：net-unit **42509122554**、netlab-dynamic **42509155432**、net-vendor **42509174050**；control `16474c5`。恢复unit与dynamic已成功并下载，vendor已成功；编译/准备失败先分类，产品失败保留原门槛。
-- 正式三次顺序A/B在途：baseline **42509612220**（tree f95f6e54）、candidate **42509632238**（tree4549630f）；candidate完整矩阵 **42509652259**（同tree4549630f）。control419b5f0。
-- 首次baseline compare42509569373因漏同步并行度开关已主动取消，是准备输入错误，不算产品结果。正式baseline已补相同netlab.sh；生产代码仍为6485cb83。
-- 三次顺序动态重复 **42509803932** 在途，tree90757944（base30335781，产品与9b80相同，新增参照/文档），control9d915b7。候选完整矩阵检验防抖/尖峰/转发。
-- N1下一个已知输入不一致与N2建连/期限审计见 [NEXT-DESIGN](NEXT-DESIGN.md)。先拿在途证据，再取新回归红、统一quality/age/count缓存。
+## 最新代码与证据边界
 
-## 阶段状态
+1. 统一全承载速度排序、bind、改善门槛、迁移确认；hop发现/清理门槛统一。首版63pass，node hop9/wires10通过。
+2. ACK样本计数/近2秒最多8观测中位数、有界STREAM活跃备用刷新：p7首次及三次顺序重复均绿，但闲置19.64–19.73秒已近20秒，尚缺相位/负载裕量。正式p2/p3重复红即来自这一版。
+3. 共享quality/age/count输入：2项行为回归63pass/2fail已取红；随后PathState只读缓存/Path.measurement、PathFact与清理接线，**42511021381 SUCCESS（66pass/1ignored）**、**42511084014 SUCCESS（noq431/iroh路径22）**。读取不探测，缓存更新不通知paths_stream。质量/时间/样本量同一代表副本；age是actor观测时刻，非noq实际ACK接收时刻，CPU延迟读仍有缺口。
+4. 最新工作区增加ACK-delay校正样本：RttEstimator.latest_sample保存原平滑算法已用的校正输入；原raw latest/PTO/拥塞数学不变，有可扣/不可扣ACK-delay测试。该变更在上述66/431/22快照之后，尚未验证。
 
-| 阶段 | 当前状态 | 未完成关键项 |
+## 先查询这些既有任务，不重复提交
+
+| Run | 版本/任务 | 当前最后观察 |
 | --- | --- | --- |
-| P0 | 计划/恢复入口已建立 | 持续维护 |
-| N0 | 部分 | 完整baseline、固定好路、重复、其他工作负载指标 |
-| N1 | 首版静态绿，动态修复中 | 样本新鲜度/置信、p7、全承载防抖/转发与重复 |
-| N2 | 未完成 | 竞速/缓存失效/总预算/取消/退避与写语义完整核对 |
-| N3 | 未完成 | 混合负载、背压/公平、共享vs分连接、闲置能耗 |
-| N4 | 未完成 | 双端不对称/故障域/发现/双家与中继容量运维设计 |
-| N5 | 未完成 | 补丁覆盖/退出、短全长矩阵、Mac/真手机、多机、最终Quality |
+| 42509652259 | tree4549630f，API前完整matrix，control419b5f0 | in_progress；已有p2/p3回归，不算最终源码验收 |
+| 42511301780 | treef8eba3f5，共享API、ACK校正前短矩阵，controld7d1af1 | in_progress；2并行，含f4/f4s/f4i |
+| 42511866017 | tree05a5c757，最新ACK校正vendor，snapshot e3c172fa，controld7d1af1 | 新提交，先查/下载 |
+| 42511895143 | 同tree05a5c757，最新ACK校正短矩阵，snapshot6e5479ac | 新提交，先查/下载 |
 
-逐项缺口以REQUIREMENTS为准。不得把首批选路通过、某次编译绿或单一网络场景绿称为整体完成。
+最近已结束/下载：baseline full42507224815（23pass/8fail，6测量红+2配对busy；另p2i报告红未assert）、baseline compare42509612220（每轮仅p6r红）、candidate compare42509632238（p6全绿，p2/p3回归）、动态重复42509803932全绿、共享API单元42511021381与42511084014全绿。42509569373因baseline漏同步线程开关主动取消，正式42509612220已补齐；不计产品失败。
 
-## 跨 compact/session 接续
+## 下一步
 
-读本文件、PLAN、REQUIREMENTS及最新用户指令；核对绝对路径/branch/HEAD/完整diff和既有任务状态。证据仅对source.json绑定的tree有效；不要用摘要覆盖未提交内容，不重复提交仍活跃任务。本树图谱为不完整增量图，不能由低风险/零flow推断无影响；已先使用图工具，缺失范围定向读源码，不擅自建立CodeGraph索引。
+1. 核对branch/HEAD/完整diff，保留当前代码；查询上表并下载收据/原日志，分类准备/编译/产品故障。新源码不能由旧在途结果代替。
+2. 判断ACK校正是否改善p2/p3；仅一次绿不足，修复版本重跑正式3次。若仍红，构造noq同速黑洞Backup在飞流数据的确定性测试，结合实际路径/journal定位再修。
+3. 继续N1防抖/CPU/转发、样本年龄/可信度与备用/相位开销；必要时补采样真实时刻，不把观测时刻冒充ACK发生时刻。
+4. N1稳定后按PLAN推进N2期限/竞速/缓存/取消/随机退避与读写0-RTT，随后N3混合负载/能耗、N4故障域/中继方案、N5补丁退出/真实设备/最终Quality。REQUIREMENTS完整缺口保留。
 
-外盘缺失，在主仓只读 `git show feat/net:docs/net-optimization/STATE.md` 与PLAN恢复已提交计划；保留原未提交内容。
+当前所有阶段完成度：N0部分，N1实施且有产品红，N2–N5未完成。不得以单元绿、静态p6改善或若干阶段交付替代“完成计划”。
+
+外盘缺失，在主仓只读 `git show feat/net:docs/net-optimization/STATE.md` 与PLAN恢复已提交内容，不覆盖外盘原未提交修改。

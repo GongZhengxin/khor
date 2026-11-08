@@ -15,7 +15,7 @@
 
 `RttEstimator` 对每个合法RTT更新递增计数（相同数值也递增）；初始化估计不算样本。
 `PathStats` 新增 `latest_rtt` / `rtt_samples`，iroh可以区分新测量和旧平均值，避免备用恢复后仍被旧慢值困住。
-平滑RTT、PTO、拥塞数学与线上协议不变；最新样本含接收ACK所需时间，与既有 `latest` 同义。
+平滑RTT、PTO、拥塞数学与线上协议不变；后续校正候选：`latest_sample` 保存与平滑器同一次更新所用的ACK-delay校正样本，避免把对端延迟确认算作网络变慢；原raw `latest`、保守RTT、PTO和拥塞数学不变。新增 `khor_selection_samples_do_not_count_peer_ack_delay_as_network_latency` 覆盖可扣与不可扣的ACK-delay。此候选由p2/p3重复回归触发，尚待验证，不能直接称其为该回归定因。
 回归 `khor_equal_rtt_samples_are_fresh_and_latest_is_not_the_smoothed_value`，全noq单元与iroh p7动态场景。
 新候选未验证；上游未提交。上游具备同等观测接口后，在原恢复/防抖场景复验并移除字段补丁。
 

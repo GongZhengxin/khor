@@ -767,6 +767,8 @@ pub struct RttEstimator {
     samples: u64,
     /// The most recent RTT measurement made when receiving an ack for a previously unacked packet
     latest: Duration,
+    /// khor: the same sample after the ACK-delay correction used by smoothing.
+    latest_sample: Duration,
     /// The smoothed RTT of the connection, computed as described in RFC6298
     smoothed: Option<Duration>,
     /// The RTT variance, computed as described in RFC6298
@@ -780,6 +782,7 @@ impl RttEstimator {
         Self {
             samples: 0,
             latest: initial_rtt,
+            latest_sample: initial_rtt,
             smoothed: None,
             var: initial_rtt / 2,
             min: initial_rtt,
@@ -801,6 +804,7 @@ impl RttEstimator {
     pub(crate) fn reset_initial_rtt(&mut self, initial_rtt: Duration) {
         if self.smoothed.is_none() {
             self.latest = initial_rtt;
+            self.latest_sample = initial_rtt;
             self.var = initial_rtt / 2;
             self.min = initial_rtt;
         }
@@ -811,8 +815,8 @@ impl RttEstimator {
         self.smoothed.unwrap_or(self.latest)
     }
 
-    pub(crate) fn latest(&self) -> Duration {
-        self.latest
+    pub(crate) fn latest_sample(&self) -> Duration {
+        self.latest_sample
     }
 
     pub(crate) fn sample_count(&self) -> u64 {
@@ -841,6 +845,7 @@ impl RttEstimator {
     pub(crate) fn update(&mut self, ack_delay: Duration, rtt: Duration) {
         self.samples = self.samples.saturating_add(1);
         self.latest = rtt;
+        self.latest_sample = rtt;
         // https://www.rfc-editor.org/rfc/rfc9002.html#section-5.2-3:
         // min_rtt does not adjust for ack_delay to avoid underestimating.
         self.min = cmp::min(self.min, self.latest);
@@ -851,6 +856,7 @@ impl RttEstimator {
             } else {
                 self.latest
             };
+            self.latest_sample = adjusted_rtt;
             let var_sample = smoothed.abs_diff(adjusted_rtt);
             self.var = (3 * self.var + var_sample) / 4;
             self.smoothed = Some((7 * smoothed + adjusted_rtt) / 8);
@@ -1220,8 +1226,21 @@ mod tests {
         assert_eq!(rtt.get(), Duration::from_millis(10));
         rtt.update(Duration::ZERO, Duration::from_millis(1));
         assert_eq!(rtt.sample_count(), 3);
-        assert_eq!(rtt.latest(), Duration::from_millis(1));
-        assert!(rtt.get() > rtt.latest(), "congestion keeps its smoothed estimator");
+        assert_eq!(rtt.latest_sample(), Duration::from_millis(1));
+        assert!(rtt.get() > rtt.latest_sample(), "congestion keeps its smoothed estimator");
+    }
+
+    #[test]
+    fn khor_selection_samples_do_not_count_peer_ack_delay_as_network_latency() {
+        let ms = Duration::from_millis;
+        let mut rtt = RttEstimator::new(ms(1));
+        rtt.update(Duration::ZERO, ms(1));
+        rtt.update(ms(20), ms(21));
+        assert_eq!(rtt.latest_sample(), ms(1));
+        assert_eq!(rtt.get(), ms(1));
+        assert_eq!(rtt.conservative(), ms(21), "recovery retains its raw latest RTT");
+        rtt.update(ms(50), ms(30));
+        assert_eq!(rtt.latest_sample(), ms(30), "ACK delay cannot push a sample below min RTT");
     }
 
     #[test]

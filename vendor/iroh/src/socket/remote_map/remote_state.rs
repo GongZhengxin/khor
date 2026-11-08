@@ -26,7 +26,9 @@ use tracing::{Instrument, Level, Span, debug, error, event, info_span, instrumen
 use self::path_state::RemotePathState;
 pub(crate) use self::path_watcher::PathStateReceiver;
 pub use self::{
-    path_watcher::{Path, PathEvent, PathEventStream, PathList, PathListIter, PathListStream},
+    path_watcher::{
+        Path, PathEvent, PathEventStream, PathList, PathListIter, PathListStream, PathMeasurement,
+    },
     remote_info::{RemoteInfo, TransportAddrInfo, TransportAddrUsage},
 };
 use super::{MappedAddrs, Source};
@@ -327,7 +329,7 @@ struct State {
     backup_path: Option<transports::FourTuple>,
     /// khor patch 17: when the selected path was selected.
     selected_at: Option<Instant>,
-    /// khor patch 19: the selected direct path, watched for slowing down or going silent.
+    /// khor patch 19/29: the selected path, watched for slowing down or going silent.
     watch: Watch,
     /// khor patch 17: the move being confirmed ([`RemoteStateActor::confirm_move`]).
     moving: Moving,
@@ -1192,9 +1194,8 @@ impl RemoteStateActor {
     /// two connections, and a road is a path on each; the copy that last took an RTT sample
     /// is the one that says how fast the road is now (a copy that carries nothing keeps the
     /// RTT of its last keepalive), and any copy that stopped answering makes the road silent
-    /// until a copy of it takes a new sample after that.  Returns the largest RTT sample the
-    /// selected road's copies took since the last read (khor patch 19): the step of the
-    /// smoothed RTT is an eighth of the sample's distance from it (RFC 6298).
+    /// until a copy of it takes a new sample after that. Returns the largest new ACK-delay-corrected
+    /// sample observed on the selected road (khor patch 19/29), independently of smoothing.
     ///
     /// Also returns how long the selected road has kept a packet waiting, if it has after a
     /// probe timeout ([`Self::probe_others`]).
@@ -1260,6 +1261,11 @@ impl RemoteStateActor {
             r.recent.retain(|(at, _)| now.saturating_duration_since(*at) < CONFIRM_FOR);
             present.contains(key) || !r.changed.is_empty()
         });
+        for conn in self.connections.values() {
+            conn.path_state.record_measurements(conn.paths.iter().filter_map(|(id, road)| {
+                measured.observation(road).map(|observation| (*id, observation))
+            }));
+        }
         // carry (10-23): a road far faster than the one in use comes back at its first round
         // trip, and so does the one in use ([`SILENT_HOLD`]).  Only while the one in use is the
         // relay or a carried road, as in [`Moving::step`]: between direct roads the hold, and
@@ -1333,7 +1339,7 @@ impl RemoteStateActor {
     /// round per episode; the round's own spacing ([`HOLEPUNCH_ATTEMPTS_INTERVAL`]) holds.
     ///
     /// A path that is idle but for its keepalive has one RTT sample every 5 s, and the
-    /// transport estimator moves an eighth of the way per sample. One raw ACK sample well
+    /// transport estimator moves an eighth of the way per sample. One ACK-delay-corrected sample well
     /// over the floor has the path pinged every tick for [`PROBE_FOR`], once per episode:
     /// the recent sample median then distinguishes sustained slowing from a single spike.
     ///
@@ -2477,8 +2483,8 @@ struct Reading {
     samples: u64,
     quality: Duration,
     recent: VecDeque<(Instant, Duration)>,
-    /// The ticks within the last [`CONFIRM_FOR`] with a new ACK-based sample, the last one last:
-    /// about how many samples it took.
+    /// Ticks within the last [`CONFIRM_FOR`] with a new ACK-based sample, oldest first.
+    /// This counts observation ticks rather than every ACK received between ticks.
     changed: VecDeque<Instant>,
     /// When a new ACK-based sample was last observed.
     at: Instant,
@@ -2602,7 +2608,7 @@ impl Measured {
         });
     }
 
-    /// khor patch 17: a road's round trip and when any copy of it last took a sample.  The
+    /// khor patch 17/29: a road's quality and its representative copy's sample time. The
     /// copy that took the most samples within [`CONFIRM_FOR`] speaks for the road, the freshest
     /// of those on a tie, and a copy whose path closed still does until that time is up.  A
     /// copy that carries nothing has a sample per keepalive, which moves its smoothed RTT an
@@ -2611,10 +2617,20 @@ impl Measured {
     /// for a tick and the confirmation began again, three times; and when the copy that
     /// carried the road closed, the idle one left read 4 ms.
     fn road(&self, road: &transports::FourTuple) -> Option<(Duration, Instant)> {
-        let copies = self.rtts.values().filter(|r| r.road == *road);
-        let latest = copies.clone().map(|r| r.at).max()?;
-        let speaks = copies.max_by_key(|r| (r.changed.len(), r.at))?;
-        Some((speaks.quality, latest))
+        let speaks = self.representative(road)?;
+        Some((speaks.quality, speaks.at))
+    }
+
+    fn representative(&self, road: &transports::FourTuple) -> Option<&Reading> {
+        self.rtts.values().filter(|r| r.road == *road)
+            .max_by_key(|r| (r.changed.len(), r.at))
+    }
+
+    fn observation(&self, road: &transports::FourTuple) -> Option<PathMeasurement> {
+        let speaks = self.representative(road)?;
+        (speaks.samples > 0).then(|| {
+            PathMeasurement::new(speaks.quality, speaks.at, speaks.recent.len())
+        })
     }
 
     /// A numerical EWMA change is not a sample counter. Require two
@@ -3207,6 +3223,36 @@ mod tests {
         refresh.observe(3, t + MS(20000));
         assert_eq!(refresh.take(0, t + MS(20000)), None);
         assert_eq!(refresh.take(2, t + MS(20000)), Some(0));
+    }
+
+    #[test]
+    fn shared_quality_and_age_come_from_the_same_representative_copy() {
+        let now = Instant::now();
+        let road = addr(1);
+        let mut stats = PathStats::default();
+        stats.rtt = MS(50);
+        stats.latest_rtt = MS(5);
+        stats.rtt_samples = 1;
+        let mut busy = Reading::new(road.clone(), &stats, now - MS(1000));
+        stats.rtt_samples = 2;
+        busy.observe(&stats, now - MS(750));
+        stats.rtt_samples = 3;
+        busy.observe(&stats, now - MS(500));
+        stats.rtt = MS(20);
+        stats.latest_rtt = MS(20);
+        stats.rtt_samples = 1;
+        let quiet = Reading::new(road.clone(), &stats, now);
+        let mut measured = Measured::default();
+        measured.rtts.insert((ConnId(0), PathId::ZERO), busy);
+        measured.rtts.insert((ConnId(1), PathId::ZERO), quiet);
+        let observation = measured.observation(&road).unwrap();
+        assert_eq!(observation.rtt(), MS(5));
+        assert_eq!(observation.samples(), 3);
+        assert!(observation.age() >= MS(500));
+        assert_eq!(measured.road(&road), Some((MS(5), now - MS(500))));
+        let other = addr(2);
+        measured.rtts.insert((ConnId(2), PathId::ZERO), Reading::new(other.clone(), &PathStats::default(), now));
+        assert!(measured.observation(&other).is_none(), "an initial estimate is not observed quality");
     }
 
     fn reading(road: &transports::FourTuple, at: Instant) -> Reading {

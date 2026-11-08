@@ -30,7 +30,10 @@ use std::{
 };
 
 use iroh_base::TransportAddr;
-use n0_future::{StreamExt, time::Duration};
+use n0_future::{
+    StreamExt,
+    time::{Duration, Instant},
+};
 use noq::WeakPathHandle;
 use noq_proto::PathId;
 use smallvec::SmallVec;
@@ -110,6 +113,37 @@ struct PathData {
     handle: WeakPathHandle,
     remote_addr: TransportAddr,
     local_addr: LocalTransportAddr,
+    measurement: Option<PathMeasurement>,
+}
+
+/// The quality observation used by path selection, shared across connections.
+/// This is separate from the transport's smoothed RTT and recovery state.
+#[derive(Debug, Clone, Copy)]
+pub struct PathMeasurement {
+    rtt: Duration,
+    at: Instant,
+    samples: usize,
+}
+
+impl PathMeasurement {
+    pub(super) fn new(rtt: Duration, at: Instant, samples: usize) -> Self {
+        Self { rtt, at, samples }
+    }
+
+    /// The recent sample median used by the selector.
+    pub fn rtt(&self) -> Duration {
+        self.rtt
+    }
+
+    /// Time since the selector observed a new ACK sample on the representative copy.
+    pub fn age(&self) -> Duration {
+        Instant::now().saturating_duration_since(self.at)
+    }
+
+    /// Observation ticks in the quality window, not the number of packets.
+    pub fn samples(&self) -> usize {
+        self.samples
+    }
 }
 
 impl PathData {
@@ -185,6 +219,7 @@ impl PathStateSender {
                 handle,
                 remote_addr: remote_addr.clone(),
                 local_addr: local_addr.clone(),
+                measurement: None,
             };
             match state.list.iter().position(|e| e.handle.id() == id) {
                 Some(idx) => state.list[idx] = entry,
@@ -197,6 +232,21 @@ impl PathStateSender {
             remote_addr,
             local_addr,
         });
+    }
+
+    /// Refreshes read-only measurements without emitting a lifecycle notification.
+    /// Applications polling path lists can inspect the latest facts; paths_stream
+    /// does not become a new 250 ms wakeup source.
+    pub(super) fn record_measurements(
+        &self,
+        measurements: impl Iterator<Item = (PathId, PathMeasurement)>,
+    ) {
+        let mut state = self.shared.state.lock().expect("poisoned");
+        for (id, measurement) in measurements {
+            if let Some(path) = state.list.iter_mut().find(|p| p.handle.id() == id) {
+                path.measurement = Some(measurement);
+            }
+        }
     }
 
     /// Records that a path was abandoned by `noq`.
@@ -497,6 +547,13 @@ impl<'conn> Path<'conn> {
     /// Returns the path's round-trip time estimate.
     pub fn rtt(&self) -> Duration {
         self.stats().rtt
+    }
+
+    /// The selector's observation for this network path, if an ACK sample
+    /// has been observed. Its age and sample count come from the same copy.
+    /// Reading it never probes or changes the path.
+    pub fn measurement(&self) -> Option<PathMeasurement> {
+        self.data.measurement
     }
 
     /// khor patch 21 (vendor/iroh/KHOR.md): sends a PING on this path now, so whether the

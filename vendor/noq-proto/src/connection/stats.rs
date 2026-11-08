@@ -218,8 +218,8 @@ impl std::fmt::Debug for FrameStats {
 pub struct PathStats {
     /// Current best estimate of this connection's latency (round-trip-time).
     pub rtt: Duration,
-    /// khor: last ACK-based RTT and its monotonic sample count. Policy can
-    /// refresh measurements without changing congestion's smoothed RTT.
+    /// khor: latest ACK-based RTT with the same ACK-delay correction as
+    /// smoothing, and its monotonic sample count. Congestion is unchanged.
     pub latest_rtt: Duration,
     pub rtt_samples: u64,
     /// Statistics about datagrams and bytes sent on this path.

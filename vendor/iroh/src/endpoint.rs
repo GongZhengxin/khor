@@ -52,7 +52,7 @@ pub use super::socket::{
     BindError, DirectAddr, DirectAddrType,
     remote_map::{
         HolepunchRound, Path, PathEvent, PathEventStream, PathList, PathListIter,
-        PathListStream, RemoteInfo, TransportAddrInfo, TransportAddrUsage,
+        PathListStream, PathMeasurement, RemoteInfo, TransportAddrInfo, TransportAddrUsage,
     },
     transports::LocalTransportAddr,
 };

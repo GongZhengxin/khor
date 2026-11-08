@@ -24,7 +24,15 @@ pub enum PathKind {
     Unknown,
 }
 
-/// One path's current facts, copied verbatim from iroh's observations.
+/// The selector's quality and the evidence behind it, copied from iroh.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct PathQuality {
+    pub rtt: Duration,
+    pub age: Duration,
+    pub samples: usize,
+}
+
+/// Transport statistics and the independent quality used by selection.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct PathFact {
     pub relay: bool,
@@ -33,7 +41,9 @@ pub struct PathFact {
     /// Whether application data rides this path right now. With several
     /// open, exactly one is.
     pub selected: bool,
+    /// QUIC's smoothed estimate, retained for transport diagnostics.
     pub rtt_ms: u128,
+    pub quality: Option<PathQuality>,
     /// Diagnostic data only — never drawn on screen.
     pub addr: String,
 }
@@ -88,6 +98,11 @@ pub fn path_facts(conn: &iroh::endpoint::Connection) -> Vec<PathFact> {
             carried: matches!(p.remote_addr(), iroh::TransportAddr::Custom(_)),
             selected: p.is_selected(),
             rtt_ms: p.rtt().as_millis(),
+            quality: p.measurement().map(|m| PathQuality {
+                rtt: m.rtt(),
+                age: m.age(),
+                samples: m.samples(),
+            }),
             addr: format!("{:?}", p.remote_addr()),
         })
         .collect();
@@ -104,11 +119,16 @@ pub fn selected_beats_carried(facts: &[PathFact]) -> bool {
     let Some(selected) = facts.iter().find(|f| f.selected && !f.carried) else {
         return false;
     };
-    let duration = |ms: u128| Duration::from_millis(ms.min(u128::from(u64::MAX)) as u64);
+    let rtt = |f: &PathFact| {
+        f.quality.as_ref().map_or_else(
+            || Duration::from_millis(f.rtt_ms.min(u128::from(u64::MAX)) as u64),
+            |q| q.rtt,
+        )
+    };
     !facts.iter().any(|f| {
         f.carried
-            && f.rtt_ms > 0
-            && crate::carry::improves(duration(f.rtt_ms), duration(selected.rtt_ms), false)
+            && (f.quality.is_some() || f.rtt_ms > 0)
+            && crate::carry::improves(rtt(f), rtt(selected), false)
     })
 }
 
@@ -149,8 +169,46 @@ mod tests {
             carried: true,
             selected,
             rtt_ms,
+            quality: (rtt_ms > 0).then(|| quality(rtt_ms)),
             addr: "Custom(khor)".into(),
         }
+    }
+
+    fn quality(rtt_ms: u128) -> PathQuality {
+        PathQuality {
+            rtt: Duration::from_millis(rtt_ms as u64),
+            age: Duration::ZERO,
+            samples: 2,
+        }
+    }
+
+    #[test]
+    fn cleanup_does_not_remove_a_hop_that_current_quality_would_select() {
+        let mut selected = path(true, true, 20);
+        selected.quality = Some(quality(300));
+        let mut hop = carried(false, 100);
+        hop.quality = Some(quality(5));
+        assert!(!selected_beats_carried(&[selected, hop]));
+    }
+
+    #[test]
+    fn cleanup_does_not_keep_a_hop_because_of_old_transport_history() {
+        let mut selected = path(false, true, 500);
+        selected.quality = Some(quality(5));
+        let mut hop = carried(false, 5);
+        hop.quality = Some(quality(300));
+        assert!(selected_beats_carried(&[selected, hop]));
+    }
+
+    #[test]
+    fn a_measured_submillisecond_hop_is_not_an_unknown_zero() {
+        let mut hop = carried(false, 0);
+        hop.quality = Some(PathQuality {
+            rtt: Duration::from_micros(500),
+            age: Duration::ZERO,
+            samples: 2,
+        });
+        assert!(!selected_beats_carried(&[path(true, true, 10), hop]));
     }
 
     #[test]
@@ -211,6 +269,7 @@ mod tests {
             carried: false,
             selected,
             rtt_ms,
+            quality: Some(quality(rtt_ms)),
             addr: if relay {
                 "http://relay:3340".into()
             } else {

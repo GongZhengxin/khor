@@ -20,7 +20,7 @@ pub(crate) use self::remote_state::{PEER_OBSERVED_FOR, PeerObserved};
 pub(super) use self::remote_state::RemoteStateMessage;
 pub use self::remote_state::{
     HolepunchRound, Path, PathEvent, PathEventStream, PathList, PathListIter, PathListStream,
-    RemoteInfo, TransportAddrInfo, TransportAddrUsage,
+    PathMeasurement, RemoteInfo, TransportAddrInfo, TransportAddrUsage,
 };
 #[cfg(feature = "unstable-custom-transports")]
 pub use self::remote_state::{

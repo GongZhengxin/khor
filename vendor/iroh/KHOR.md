@@ -20,6 +20,12 @@
 STREAM活跃期跨连接去重、轮转刷新已有备用，每对端最多5秒一个PING；PING/ACK不延长活跃期，闲置无新增timer。
 选中Relay/Custom也监测退化，沿用现有探测/打洞节流。
 
+后续同轮补充：通过既有PathState共享只读 `Path::measurement()`（质量、样本年龄、窗口内观测tick数），
+诊断和hop看守读取与选择器相同的代表副本。质量与时间戳不再分别取不同连接的值。
+没有ACK样本时返回None；`Path::rtt()`仍是传输平滑估计。发布缓存不通知paths_stream，读取不发包。
+补充回归 `shared_quality_and_age_come_from_the_same_representative_copy` 与khor-net两个相反历史RTT的清理回归。
+首次p7与431/21单元已通过的是补充API前版本；新API/看守接线的结果需单独对应source tree。
+
 回归：noq最新样本计数测试、iroh `equal_rtt_samples_are_fresh_and_recovery_does_not_use_the_old_average`、
 `active_refresh_is_bounded_rotates_and_does_not_sustain_itself`，动态netlab `paths::p7_`；完整p1/p1j/p1s/p2/p3/f4检查噪声/恢复。
 旧版p7两场景45秒未回快Direct；新候选尚待验证，不以本条记录宣告通过。上游未提交；上游提供可区分真实新样本的路径测量与
