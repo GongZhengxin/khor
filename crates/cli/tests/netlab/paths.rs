@@ -941,6 +941,10 @@ async fn p3_the_road_in_use_goes_black_and_nothing_waits() {
         )
         .collect();
     let ok = worst <= Duration::from_secs(1) && failed == 0 && retired.is_empty();
+    if !ok {
+        crate::hop::path_diagnostics(&p.a, &p.b);
+        crate::hop::path_diagnostics(&p.b, &p.a);
+    }
     result(
         s,
         ok,

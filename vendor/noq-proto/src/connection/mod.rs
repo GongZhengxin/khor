@@ -301,10 +301,9 @@ pub struct Connection {
     /// [`Connection::local_cid_state`] since some of this has to be kept around for some
     /// time after a path is abandoned.
     abandoned_paths: AbandonedPaths,
-    /// khor patch 7 (vendor/noq-proto/KHOR.md): a path's local status changed since the last
-    /// [`Self::poll_transmit`], which resends what is in flight on far slower backup paths
-    /// ([`Self::resend_off_backups`]).
-    khor_status_changed: bool,
+    /// khor: a path status or backup recovery timeout requires the next
+    /// [`Self::poll_transmit`] to check outstanding backup data ([`Self::resend_off_backups`]).
+    khor_recheck_backups: bool,
 
     /// State for n0's (<https://n0.computer>) nat traversal protocol.
     n0_nat_traversal: n0_nat_traversal::State,
@@ -430,7 +429,7 @@ impl Connection {
             remote_max_path_id: PathId::ZERO,
             max_path_id_with_cids: PathId::ZERO,
             abandoned_paths: Default::default(),
-            khor_status_changed: false,
+            khor_recheck_backups: false,
 
             n0_nat_traversal: Default::default(),
             qlog,
@@ -831,7 +830,7 @@ impl Connection {
                     .pending
                     .path_status
                     .insert(path_id);
-                self.khor_status_changed = true;
+                self.khor_recheck_backups = true;
                 prev
             }
             None => path.local_status(),
@@ -1036,7 +1035,7 @@ impl Connection {
             false => NonZeroUsize::MIN,
             true => max_datagrams,
         };
-        if mem::take(&mut self.khor_status_changed) {
+        if mem::take(&mut self.khor_recheck_backups) {
             self.resend_off_backups(now);
         }
 
@@ -2595,6 +2594,9 @@ impl Connection {
                         PathTimer::LossDetection => {
                             self.on_loss_detection_timeout(now, path_id);
                             if let Some(path) = self.paths.get_mut(&path_id) {
+                                if path.data.local_status() == PathStatus::Backup {
+                                    self.khor_recheck_backups = true;
+                                }
                                 self.qlog
                                     .emit_recovery_metrics(path_id, &mut path.data, now);
                             } else {
@@ -3470,9 +3472,10 @@ impl Connection {
     /// after it on the fast one: netlab f4, turing's connection to the phone took the relay
     /// (1.7 s late) for a second while the phone's direct leg was black, came back to direct
     /// one tick after the leg answered, and the hop's stream on it delivered nothing new for
-    /// 1.5 s more, until the last bytes sent by relay arrived.  Run when a path's local status
-    /// changed ([`Self::set_path_status`]); the copies that do arrive late are duplicates the
-    /// receiver drops. Between live paths of about one speed nothing is resent.
+    /// 1.5 s more, until the last bytes sent by relay arrived. Run after a path's local status
+    /// changed ([`Self::set_path_status`]) or a backup's loss detection timeout: it can become
+    /// unanswered after the status change. Late copies are duplicates the receiver drops.
+    /// Between live paths of about one speed nothing is resent.
     fn resend_off_backups(&mut self, now: Instant) {
         let fastest = self
             .paths

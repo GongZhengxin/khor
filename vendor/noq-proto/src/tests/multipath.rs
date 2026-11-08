@@ -2449,6 +2449,15 @@ fn what_is_in_flight_on_a_backup_of_one_speed_is_not_resent() -> TestResult {
 /// The failed route stays black throughout; no wall-clock sleep is used.
 #[test]
 fn a_blackholed_backup_resends_in_flight_even_if_its_last_rtt_was_fast() -> TestResult {
+    blackholed_backup_resends_after_move(false)
+}
+
+#[test]
+fn a_backup_that_fails_after_the_path_move_releases_its_in_flight_data() -> TestResult {
+    blackholed_backup_resends_after_move(true)
+}
+
+fn blackholed_backup_resends_after_move(move_before_silence: bool) -> TestResult {
     let _guard = subscribe();
     let mut pair = ConnPair::builder().enable_multipath().connect();
     let routing = pair.routes.as_basic();
@@ -2486,8 +2495,22 @@ fn a_blackholed_backup_resends_in_flight_even_if_its_last_rtt_was_fast() -> Test
     pair.send_stream(Client, stream).write(b"past the blackhole").unwrap();
     let sent = pair.time;
     pair.drive_client();
+    let mut lost_before = pair.conn_mut(Client).path_stats(PathId::ZERO).unwrap().lost_packets;
+    if move_before_silence {
+        let now = pair.time;
+        let stats = pair.conn_mut(Client).path_stats(PathId::ZERO).unwrap();
+        assert!(stats.unanswered_for(now).is_none());
+        pair.set_path_status(Client, second, PathStatus::Available)?;
+        pair.set_path_status(Client, PathId::ZERO, PathStatus::Backup)?;
+        pair.drive_client();
+        let lost = pair.conn_mut(Client).path_stats(PathId::ZERO).unwrap().lost_packets;
+        assert_eq!(lost, lost_before, "not yet silent: the move keeps healthy-speed data in flight");
+    }
     for _ in 0..32 {
         let stats = pair.conn_mut(Client).path_stats(PathId::ZERO).unwrap();
+        if move_before_silence && pair.time < sent + Duration::from_millis(300) {
+            assert_eq!(stats.lost_packets, lost_before, "a short stall must not release backup data");
+        }
         if stats.pto_count >= 2 && pair.time >= sent + Duration::from_millis(350) {
             break;
         }
@@ -2496,12 +2519,17 @@ fn a_blackholed_backup_resends_in_flight_even_if_its_last_rtt_was_fast() -> Test
     let stats = pair.conn_mut(Client).path_stats(PathId::ZERO).unwrap();
     assert!(stats.pto_count >= 2);
     assert!(pair.time >= sent + Duration::from_millis(350));
-    let lost_before = stats.lost_packets;
-    pair.set_path_status(Client, second, PathStatus::Available)?;
-    pair.set_path_status(Client, PathId::ZERO, PathStatus::Backup)?;
+    if !move_before_silence {
+        lost_before = stats.lost_packets;
+        pair.set_path_status(Client, second, PathStatus::Available)?;
+        pair.set_path_status(Client, PathId::ZERO, PathStatus::Backup)?;
+    }
     pair.drive_client();
     let lost = pair.conn_mut(Client).path_stats(PathId::ZERO).unwrap().lost_packets;
-    assert!(lost > lost_before, "a failed backup must release data at the path move");
+    assert!(lost > lost_before, "a failed backup must release data even if the move came first");
+    if move_before_silence {
+        assert!(pair.time < sent + Duration::from_secs(1), "the next recovery timeout releases it");
+    }
     pair.time += Duration::from_millis(5);
     pair.drive_server();
     assert_matches!(pair.streams(Server).accept(Dir::Uni), Some(id) if id == stream);
