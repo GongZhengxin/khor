@@ -135,10 +135,8 @@ const CONFIRM_MAX: Duration = Duration::from_secs(4);
 const CONFIRM_REST: Duration = Duration::from_secs(30);
 
 /// khor patch 17 (flap, 10-23): the slack in [`far_faster`], so that two fast roads a few
-/// milliseconds apart are not far apart.  Only moves off the relay or a carried road are
-/// weighed so ([`RemoteStateActor::confirm_move`]); between direct roads the confirmation
-/// stays as it was, where one stall's sample lifted a 1 ms road to 17 ms against the other's
-/// 3.4 ms (netlab p1 under load).
+/// milliseconds apart are not far apart. All transports use this comparison; a slow sample
+/// alone must not bypass fresh confirmation on an otherwise fast road (netlab p1s).
 const FAR_FASTER_BY: Duration = Duration::from_millis(10);
 
 /// khor patch 17 (flap, 10-23): whether a path of round trip `to` is far faster than one of
@@ -1020,10 +1018,10 @@ impl RemoteStateActor {
     /// other road, idle, has nothing in flight to show it: netlab p1s (300 ms spikes on both of
     /// alpha's roads) left the road in use for the other on the spike and came back.
     ///
-    /// 10-23 (flap): off the relay or a carried road, the two paths' readings go into the
-    /// confirmation ([`Moving::step`]): a path far faster than the one in use is taken once it
-    /// answered since the move began, and a path in use slower than the confirmation itself is
-    /// not waited on for a sample.  Between direct roads nothing changed.
+    /// feat/net: all transports use the two paths' readings in [`Moving::step`]. A much
+    /// faster candidate can leave early with samples sent after the move began; meanwhile
+    /// the current road is also probed so one scheduling spike can be corrected. A current
+    /// road slower than the confirmation itself is not waited on for a sample.
     fn confirm_move(&mut self, to: Option<&transports::FourTuple>) -> bool {
         let Some(to) = to.filter(|to| self.state.selected_path.as_ref() != Some(*to)) else {
             self.state.moving.clear();
@@ -2325,6 +2323,10 @@ impl Moving {
     /// that read 1743 ms.  And a path moved from whose round trip is longer than [`CONFIRM_FOR`]
     /// is not asked for a sample, nor pinged for one: it cannot take one in the confirmation,
     /// and a relay that read 4994 ms had the move off it given up and rest 30 s.
+    ///
+    /// feat/net: candidate packets must have been sent after this decision began, including
+    /// on the fast branch. While waiting, also probe the current road within the existing
+    /// confirmation budget; a single scheduling spike must be allowed to correct itself.
     fn step(
         &mut self,
         to: &transports::FourTuple,
@@ -2353,12 +2355,8 @@ impl Moving {
         };
         let far = far_faster(to_rtt, from_rtt);
         let from_slow = from_rtt > CONFIRM_FOR;
-        let from_needed = !far && !from_slow;
-        // carry (10-23): a sample in the tick the move began is fresh too: a road back from a
-        // silence at its first round trip ([`Measured::mark_silent`]) is wanted on the tick
-        // that read it, and waited a tick and a ping more for another.
-        let fresh = since.checked_sub(RESELECT_INTERVAL).unwrap_or(since);
-        if far && to_sampled(fresh) {
+        let from_needed = !from_slow;
+        if far && to_sampled(since) {
             self.to = None;
             return Step::Go;
         }
@@ -2371,7 +2369,7 @@ impl Moving {
             self.rest = Some((to.clone(), now + CONFIRM_REST));
             return Step::Rest;
         }
-        let tick = now.checked_sub(RESELECT_INTERVAL).unwrap_or(now);
+        let tick = now.checked_sub(RESELECT_INTERVAL).unwrap_or(now).max(since);
         Step::Hold {
             from: from_needed && !from_sampled(tick),
             to: !to_sampled(tick),
@@ -3579,9 +3577,29 @@ mod tests {
         assert_eq!(m.leave(&to, t0 + CONFIRM_MAX, began, |_| false), Step::Go, "nothing answers: go all the same");
     }
 
+    #[test]
+    fn a_far_faster_move_cannot_be_confirmed_by_packets_sent_before_it_began() {
+        let t0 = Instant::now();
+        let to = addr(2);
+        let mut moving = Moving::default();
+        let sent = [t0 - MS(200), t0 - MS(100)];
+        let sampled = |after: Instant| sent.iter().filter(|sent| **sent > after).count() >= 2;
+        let step = moving.step(&to, t0, MS(300), MS(2), |_| false, sampled);
+        assert_ne!(step, Step::Go, "both candidate packets predate the decision");
+    }
+
+    #[test]
+    fn a_far_faster_move_probes_the_current_road_after_a_slow_sample() {
+        let t0 = Instant::now();
+        let to = addr(2);
+        let mut moving = Moving::default();
+        let step = moving.step(&to, t0, MS(300), MS(2), |_| false, |_| false);
+        assert_eq!(step, Step::Hold { from: true, to: true });
+    }
+
     /// flap (10-23): a move to a road far faster than the one in use (the carried road through
     /// turing at 20 ms, off a relay that read 1743 ms) is made once the road moved to took a
-    /// sample since the move began: no [`CONFIRM_FOR`], and no sample asked of the slow one.
+    /// sample since the move began: no [`CONFIRM_FOR`], and no sample required of the slow one.
     /// A move between roads of about one speed is confirmed as before.
     #[test]
     fn a_far_faster_road_is_taken_without_the_two_second_confirm() {
@@ -3598,10 +3616,12 @@ mod tests {
         assert!(matches!(m.step(&to, tick, MS(30), MS(20), yes, yes), Step::Hold { .. }), "one speed: the two seconds");
         assert!(matches!(m.step(&to, tick, MS(300), MS(150), yes, yes), Step::Hold { .. }), "twice and 10 ms is not");
         assert_eq!(m.step(&to, tick, MS(309), MS(116), yes, yes), Step::Go, "the relay at 309 ms, the hop at 116 ms");
-        // carry (10-23): sampled in the tick before the move began is sampled.
+        // feat/net: packets from before the decision cannot confirm the fast branch.
         let mut m = Moving::default();
         let last_tick = |after: Instant| after < t0 - MS(100);
-        assert_eq!(m.step(&to, t0, MS(856), MS(174), no, last_tick), Step::Go, "its sample of the last tick");
+        assert_eq!(m.step(&to, t0, MS(856), MS(174), no, last_tick), Step::Hold { from: true, to: true });
+        let answered = t0 + MS(500);
+        assert_eq!(m.step(&to, answered, MS(856), MS(174), no, |after| after < answered), Step::Go);
         let mut m = Moving::default();
         let older = |after: Instant| after < t0 - MS(400);
         assert!(matches!(m.step(&to, t0, MS(856), MS(174), no, older), Step::Hold { to: true, .. }), "an older one is not");
