@@ -293,3 +293,5 @@ control **6af0ac328457a8c3aea9157e8b2ffcd65ae7e5c2**已push feat/net，新增net
 随后调度诊断候选（只加观察，不改策略）：basedf5b0864 dirty、tree1113605daf5597c2663d5e6468c45dade34031c9、controlc3b117d。42536677230 netlab-diagnostic，snapshot72b0f7e13c0cb7142db033434cbd8182a1ba610a；42536711138 net-vendor，snapshot71a5b250ed41979a7e8d66d01991b06254b813d3。前者原p1s/f4s一次1线程，显式诊断模式，保存原serve.log而非尾部采样；不算普通SLO。后者根格式/Noq/Iroh回归。CLI用可选feature与环境开关启用已锁0.3.23 subscriber，默认构建不启用。9项产品Python、1项control准备及两脚本语法/diff检查通过，Rust待远端结果。
 
 42536711138终态 **SUCCESS：根格式、435Noq、33iroh**，decision-diagnostics-unit-42536711138。已核5f69db3f与快照全部vendor/CLI/脚本无diff；未以此声明可选CLI feature已编译（诊断run仍在途）。77份源码ref，当前只有诊断pending。覆盖审计发现33过滤器遗漏net_report/socket的khor_回归，control322835b已加入额外`--lib khor_`与单独日志；仅控制分支push，追加覆盖尚未执行，不回填本次成绩。
+
+追加覆盖 **42537392595 net-vendor** 已调度：based5e926bf clean、tree d7f8f38cdeaabefc398f5580a747c7e599209c49、snapshot a256f6708e9ad3920c1d01561b785e6e1425d1bd、control322835b。生产代码与5f69db3f相同，只增文档/控制执行覆盖。包含原435/33及khor_选家/QAD/网桥专项，结果待取；不当作重复旧33就证明遗漏覆盖。78份源码锚点，当前两项pending。

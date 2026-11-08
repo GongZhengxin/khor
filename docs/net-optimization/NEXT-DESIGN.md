@@ -23,6 +23,9 @@
 
 ## N2：已审计的建连、取消与期限事实
 
+ACCEPTANCE已冻结N2的预算贯通/取消所有权/竞争释放/0-RTT及写入次数行为协议，尚未写N2代码或取得行为红。
+当前静态核查仍绑定5f69db3f对应link.rs/wires.rs原生产内容；N1未达标，不把这些要求当作实现。
+
 - link.rs::dial_with最多两个JoinSet任务，共用within；成功者胜出，Drop中止其余任务。底层连接/流释放还需实测。
 - 首试dial_addr包含全部已知直连、中继、mDNS及承载，第二个identity尝试仍带nearby提示；Won标签不能当实际路径类型。第二次固定1500ms不是“Relay一律延后1500ms”。
 - dial_within为max(10秒,12倍近期RTT)，上限25秒；有by时扣剩余。Wires会在故障后移除失效RTT。失效地址/重启/端口改变仍需场景对照，再决定缓存和竞速策略。
