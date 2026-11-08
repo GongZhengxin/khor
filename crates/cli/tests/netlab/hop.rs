@@ -264,7 +264,7 @@ fn path_lines(
 
 /// On a failed hop scenario, keep the last routing/discovery facts in
 /// the artifact before its scratch residents are reaped.
-fn path_diagnostics(n: &crate::lab::LabNode, peer: &crate::lab::LabNode) {
+pub(super) fn path_diagnostics(n: &crate::lab::LabNode, peer: &crate::lab::LabNode) {
     let rows: Vec<_> = n
         .journal(Some(peer))
         .into_iter()
@@ -282,11 +282,7 @@ fn path_diagnostics(n: &crate::lab::LabNode, peer: &crate::lab::LabNode) {
     }
 }
 
-fn hop_diagnostics(
-    x: &crate::lab::LabNode,
-    y: &crate::lab::LabNode,
-    m: &crate::lab::LabNode,
-) {
+fn hop_diagnostics(x: &crate::lab::LabNode, y: &crate::lab::LabNode, m: &crate::lab::LabNode) {
     for (n, peer) in [(x, y), (y, x), (x, m), (m, x), (y, m), (m, y)] {
         path_diagnostics(n, peer);
     }

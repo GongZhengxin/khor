@@ -201,7 +201,7 @@ def main():
     config.add_argument("--restore", action="store_true")
     config.add_argument("--install-command", action="store_true", help="Also install ~/.local/bin/khor-dev")
     check = sub.add_parser("check", help="Submit a tracked WIP snapshot asynchronously")
-    check.add_argument("--task", choices=["fast", "native", "lab", "resolve", "updates", "ios-lab-prepare", "ios-lab", "ios-keyboard", "net-unit", "net-node", "net-vendor", "netlab-smoke", "netlab-dynamic", "netlab-compare", "netlab-hop", "netlab"], default="fast")
+    check.add_argument("--task", choices=["fast", "native", "lab", "resolve", "updates", "ios-lab-prepare", "ios-lab", "ios-keyboard", "net-unit", "net-node", "net-vendor", "netlab-smoke", "netlab-dynamic", "netlab-compare", "netlab-hop", "netlab-recovery", "netlab-stability", "netlab"], default="fast")
     check.add_argument("--builder-ref", default="main", help="Control workflow branch; use feat/net for network task development")
     for action in [check, sub.add_parser("status"), sub.add_parser("result")]:
         action.add_argument("--builder-repo", default="colehank/khor-build")

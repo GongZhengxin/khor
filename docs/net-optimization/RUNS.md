@@ -120,8 +120,40 @@ p2纠错协议在86ce3330/680dee60、任何v2实跑前冻结：原Relay未加延
 
 | Run | 任务 / source tree | snapshot | 状态 |
 | --- | --- | --- | --- |
-| 42517915206 | netlab-hop / 87f4555d149816be3fbc74801aac98a7357c74de | fd10c974e5e2c032f5cef62627675e747b1bb26b | 在途，f4/f4s/f4i三轮 |
-| 42517959505 | full netlab / 87f4555d149816be3fbc74801aac98a7357c74de | 6c42bd86d9193953f9fde0821346e343e55067b6 | 在途，35项8并行 |
-| 42518379039 | net-vendor / 915fec4f91a79525b6d2fac33ee728048004be93 | d24a4cc9f51c7cb580b170bf2e2171c2801fbb80 | 在途，格式修正后验证真实样本时刻预期红 |
+| 42517915206 | netlab-hop / 87f4555d149816be3fbc74801aac98a7357c74de | fd10c974e5e2c032f5cef62627675e747b1bb26b | SUCCESS，f4/f4s/f4i三轮9/9；hop-isolated-42517915206 |
+| 42517959505 | full netlab / 87f4555d149816be3fbc74801aac98a7357c74de | 6c42bd86d9193953f9fde0821346e343e55067b6 | FAILURE，23pass/12fail，35项1864.48秒8并行；ack-backup-full-42517959505 |
+| 42518379039 | net-vendor / 915fec4f91a79525b6d2fac33ee728048004be93 | d24a4cc9f51c7cb580b170bf2e2171c2801fbb80 | 产品红，Noq434绿、iroh22pass/3fail；ack-time-red-42518379039 |
 
 后两类源不同：前两run生产代码仍为ACK校正+Backup修复、Reading用actor观测时刻。42518379039只向Noq暴露采样包发送/ACK处理时刻，保持原RTT/PTO/拥塞数学，新增Noq元数据一致性与iroh三项回归（无ACK初始估计变化、延迟读stats、积压旧包不能确认新往返）；尚未修改Reading消费逻辑。全部control781a907。恢复先取真实红，不能把格式错误或静态判断当作回归已经复现。
+
+真实时间窗修复 **42519038936 SUCCESS**：tree `5b137c71dd44ea439111d41b724acc7fb4871d00`，snapshot `997e58aca525718f24617443b2fb109425c5760e`，control781a907，434Noq/26iroh全绿；证据ack-time-green-42519038936。保留3项旧源真实红，第四项是后加静默覆盖。实现4fa3f1b3，p7相位先7cfa922d冻结、后6a45e488补5个case，共7相位；不改10/20秒目标。
+
+同clean6a45e488/tree `2c18140bb83f52ca7c6ff0508980977667b1dbfc`，control0e5788c（给net-node补核心khor-net单元）：
+
+| Run | 任务 / snapshot | 结果 |
+| --- | --- | --- |
+| 42519750741 | net-node / 641d2e83ad9250e2a634a5bcca51c64b07ad0bbe | 格式/核心66pass1ignored/hop9/wires10绿，journal27pass1fail；新诊断Entry兼容产品红，ack-time-node-42519750741 |
+| 42519778236 | netlab-dynamic / 64a72fa8fd51a021c2517c0b889e277bd64d174a | 在途，p2/p3+7个p7相位，单场景顺序三轮27项 |
+| 42519803507 | netlab-smoke / 053f6d67243e454ee874cc1e35a71b8bda74c364 | SUCCESS 9/9，2场景并行380.40秒；ack-time-smoke-42519803507 |
+
+最新短矩阵：p2快路1.0秒、p95 33.7ms/max45.7ms、零错/退役；p3最坏609ms零错/退役；p6d18.68/p6r106.05/ref-d29.22/ref-r106.27ms p95全绿；f4腿应答后0.9秒/f4s1.0秒回carried且无回退，f4i9.3秒回m。仅一次，不能替代本源码三轮或长稳定性。f4/f4s的3/8秒断腿期间没有快路，最长回显3.7/8.8秒是记录值，不套p3快备用目标。
+
+42519750741失败原因：新What::Path嵌PathFact含u128，serde内部tag缓冲不支持直接deserialize_u128；已取真实产品红，不算格式失败。Netlab::LabNode::journal直接读原始JSON Value，所以既有实验路径日志仍完整，正式journal Entry回读另外需要修。6b3644f5保留算术类型，读取JSON的u64毫秒数字再扩展，并验证实际持久化Entry及显示句；不改网络选择。
+
+首次该修正 **42520842668**：tree `a7b1a498994cb2cef7544f44ebf75f73b987ba8f`，snapshot `775b8e61ca09161bc24460b868ee55f56625c71e`，control0e5788c；仅新assert格式失败，未执行单元。证据journal-number-node-42520842668；patch与当前源反向校验通过，已按其格式落盘。
+
+35项full42517959505终态分类：
+
+- 准备未达4项：f4/f4s/f4i在180秒内未经m，p1j beta没到Direct，未进入相应测量。
+- 原断言红8项：f3没声明no_relay；Plain NAT d2/d4未选Direct（尚不能推断直连路径未打开）；p1移动5/3、p1s7/9；p2快集合13.5秒、max424ms、零错误/退役；p5短卡顿切换/打洞；固定Direct参照p95 1.5628秒、max2.6313秒。
+- p2i报告red15.7秒而Rust未assert，不能计达标。p3最坏656ms零错/退役、p6自动两向及Relay固定参照、p7两项均绿。
+- 18行f4准备失败诊断仅x/y的Relay/拨号/settled，无hop/Carried记录，缺M腿和道路书事实，不足以定因。6b3644f5把三个f4失败出口都扩到x/y/m六方向；完整8并行压力不能与独立9/9转发混为一条性能结论。
+
+当前clean6b3644f5/tree `75ca1f10d591b5cc29f0189775847461475a0a4c`，control0e5788c：
+
+| Run | 任务 / snapshot | 状态 |
+| --- | --- | --- |
+| 42521515341 | net-node / 853f56ed862f13915c14b6f924ac7f14f8e1e95d | 在途；格式与核心/hop/wires/journal，含Entry数字修正 |
+| 42521539154 | full netlab / fc1903c89d37f711a93eb52877f3f14bd58ab7be | 在途；40项8并行，真实时间窗+新增相位+六方向失败诊断 |
+
+恢复时先取三项活动任务（另有42519778236），不因轮询超时重启。各run实际source/environment和原日志为准；不能把这次full35项或前一版短矩阵当作未来源码完成证明。

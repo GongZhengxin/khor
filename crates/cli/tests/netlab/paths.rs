@@ -252,7 +252,11 @@ async fn pair(s: &str, before: impl AsyncFnOnce(&Device, &Device)) -> Pair {
     for (x, y) in [(&a, &b), (&b, &a)] {
         x.until(y, Duration::from_secs(90), |l| l.hop == Hop::Direct)
             .await
-            .unwrap_or_else(|| panic!("{} goes direct to {}", x.name, y.name));
+            .unwrap_or_else(|| {
+                crate::hop::path_diagnostics(x, y);
+                crate::hop::path_diagnostics(y, x);
+                panic!("{} goes direct to {}", x.name, y.name)
+            });
     }
     Pair {
         _lab: lab,
@@ -344,6 +348,10 @@ async fn one_speed_stalling(s: &str, one_way: u32, jitter: u32, stalls: bool) {
     let changes = lines(&p.a, None, "network", since).len();
     let worst = ma.len().max(mb.len());
     let ok = worst <= 1 && retired == 0;
+    if !ok {
+        crate::hop::path_diagnostics(&p.a, &p.b);
+        crate::hop::path_diagnostics(&p.b, &p.a);
+    }
     result(
         s,
         ok,
@@ -832,6 +840,10 @@ async fn slows(s: &str, typing: bool) {
         && retired == 0
         && responsive;
     let roads = (p.a.link(&p.b).await, p.b.link(&p.a).await);
+    if typing {
+        crate::hop::path_diagnostics(&p.a, &p.b);
+        crate::hop::path_diagnostics(&p.b, &p.a);
+    }
     result(
         s,
         ok,
