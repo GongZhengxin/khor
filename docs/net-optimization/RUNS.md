@@ -82,3 +82,6 @@ quality输入一致性预期红 **42510628203**：tree `fa664f056b152393d7c5e8b4
 
 
 当前源接线/第一方格式 **42514304126 net-unit**：tree `cb25e12597100ca70f27a1c0cdfd0d06a94c5347`，snapshot `bc56f16f9f7b481ff80387d2acb3a3ca038737ce`，basecba1ea80，controlc6a20c5。在途。生产代码与433/22绿源相同，包含f4诊断与最新文档；若格式失败，保留formatter patch并应用后再验证。
+
+
+42514304126仅格式失败：新f4诊断的matches宏需多行，未执行单元，不算产品红。证据backup-source-unit-42514304126/format.patch已检查并应用，无本机formatter调用；待新源复验。

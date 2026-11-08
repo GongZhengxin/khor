@@ -30,7 +30,7 @@ N0部分；N1仍有产品红；N2–N5未完成。完整范围保留，不能以
 | --- | --- | --- |
 | 42513580645 | netlab-dynamic，tree6465d105，snapshote67ddf7b，controlc6a20c5 | in_progress；p2/p3/p7单场景顺序3轮 |
 | 42513843436 | netlab-smoke，tree6e61d014，snapshot66dac4d7，controlc6a20c5 | in_progress；同生产代码，另加f4失败journal尾部诊断；2场景并行 |
-| 42514304126 | net-unit，treecb25e125，snapshotbc56f16f，controlc6a20c5 | 新提交，检查第一方格式与最终当前API接线单元 |
+| 42514304126 | net-unit，treecb25e125，snapshotbc56f16f，controlc6a20c5 | 仅f4诊断matches格式失败，未跑单元；formatter patch已应用，接下来复验 |
 
 没有其他旧在途任务。恢复先查这三个，观察超时不重启。新增文件先stage，snapshot排除untracked。
 
@@ -43,6 +43,6 @@ N0部分；N1仍有产品红；N2–N5未完成。完整范围保留，不能以
 - 当前确认样本只按actor观测计数；真实ACK发送/接收时间、延迟读stats、积压ACK、置信/波动仍缺。若稳定性仍红，优先验证确认是否误用故障前发出的包及far_faster捷径，别仅靠加大固定阈值压住。
 - N1达标后按PLAN推进N2期限/竞速/缓存/取消/随机退避/0-RTT、N3混合负载/能耗、N4故障域/中继方案、N5补丁退出/真实设备/最终Quality。REQUIREMENTS逐项审计保留。
 
-本轮新增f4诊断没有网络行为变化；第一方格式/最终准确源码检查仍需完成。详细运行收据/失败分类在RUNS，阶段报告不代表最终完成。
+本轮新增f4诊断没有网络行为变化；第一方格式的远端patch已应用，正在复验；最终准确源码检查仍需完成。详细运行收据/失败分类在RUNS，阶段报告不代表最终完成。
 
 外盘缺失，主仓只读git show feat/net:docs/net-optimization/STATE.md与PLAN恢复已提交计划，不覆盖原未提交内容。

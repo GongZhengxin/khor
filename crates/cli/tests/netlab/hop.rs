@@ -269,7 +269,10 @@ fn path_diagnostics(n: &crate::lab::LabNode, peer: &crate::lab::LabNode) {
         .journal(Some(peer))
         .into_iter()
         .filter(|e| {
-            matches!(e["e"].as_str(), Some("hop" | "dial" | "settled" | "path" | "retired"))
+            matches!(
+                e["e"].as_str(),
+                Some("hop" | "dial" | "settled" | "path" | "retired")
+            )
         })
         .rev()
         .take(50)
