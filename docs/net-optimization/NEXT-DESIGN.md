@@ -38,4 +38,10 @@ ACCEPTANCE已冻结N2的预算贯通/取消所有权/竞争释放/0-RTT及写入
 
 ## 后续完整范围
 
+NAT验收再审计：nat.rs::two_on的Want::Direct只等Link.hop==Direct，没有核对已打开但未选中的Direct路径。
+Plain Relay未注入额外延迟，当前速度优先下“没选Direct”本身不能区分穿透失败和质量无明显收益。
+roads::follow已经记录IP的PathEvent::Opened（对应Noq Established），可先取两端opened/selected与有效样本，
+再决定是否需要按可达性/最终体验拆验收。此处只是静态缺口，未认定d2/d4一定已经打通；
+原75秒PUNCH/10秒STUCK和历史全矩阵红保留，尚未修改fixture或回填通过。
+
 N1稳定后继续N2–N5：期限/取消/缓存/竞速/退避与0-RTT，交互与批量公平/能耗，中继及登记故障域/布局容量方案，所有vendor补丁退出条件、Mac/手机/多机及准确最终源Quality。真实设备结论不由Linux实验室结果替代；不自动合main、发布或采购部署中继。
