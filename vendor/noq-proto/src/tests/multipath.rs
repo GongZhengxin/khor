@@ -2443,3 +2443,71 @@ fn what_is_in_flight_on_a_backup_of_one_speed_is_not_resent() -> TestResult {
     assert_eq!(lost, lost_before, "one speed: left to its own acknowledgement");
     Ok(())
 }
+
+/// A failed road keeps its last good RTT. Moving to a live road must
+/// release its outstanding stream bytes even when both RTTs were equal.
+/// The failed route stays black throughout; no wall-clock sleep is used.
+#[test]
+fn a_blackholed_backup_resends_in_flight_even_if_its_last_rtt_was_fast() -> TestResult {
+    let _guard = subscribe();
+    let mut pair = ConnPair::builder().enable_multipath().connect();
+    let routing = pair.routes.as_basic();
+    let (mut ca, mut sa) = (routing.client_addr, routing.server_addr);
+    let addrs_client = vec![ca, {
+        ca.set_port(ca.port() + 1);
+        ca
+    }];
+    let addrs_server = vec![sa, {
+        sa.set_port(sa.port() + 1);
+        sa
+    }];
+    pair.routes =
+        ManyToManyRouting::simple_symmetric(addrs_client.clone(), addrs_server.clone()).into();
+    let second = pair.open_path(
+        Client,
+        FourTuple {
+            local_ip: Some(addrs_client[1].ip()),
+            remote: addrs_server[1],
+        },
+        PathStatus::Backup,
+    )?;
+    pair.drive();
+    while pair.poll(Client).is_some() {}
+    while pair.poll(Server).is_some() {}
+    pair.conn_mut(Client).khor_set_rtt(PathId::ZERO, Duration::from_millis(20));
+    pair.conn_mut(Client).khor_set_rtt(second, Duration::from_millis(20));
+
+    // Removing the first route drops both directions permanently, while
+    // the second remains reachable with exactly the same addresses.
+    pair.routes = ManyToManyRouting::simple_symmetric(
+        [addrs_client[1]], [addrs_server[1]],
+    ).into();
+    let stream = pair.streams(Client).open(Dir::Uni).unwrap();
+    pair.send_stream(Client, stream).write(b"past the blackhole").unwrap();
+    let sent = pair.time;
+    pair.drive_client();
+    for _ in 0..32 {
+        let stats = pair.conn_mut(Client).path_stats(PathId::ZERO).unwrap();
+        if stats.pto_count >= 2 && pair.time >= sent + Duration::from_millis(350) {
+            break;
+        }
+        assert!(pair.step(), "the outstanding data keeps a recovery timer");
+    }
+    let stats = pair.conn_mut(Client).path_stats(PathId::ZERO).unwrap();
+    assert!(stats.pto_count >= 2);
+    assert!(pair.time >= sent + Duration::from_millis(350));
+    let lost_before = stats.lost_packets;
+    pair.set_path_status(Client, second, PathStatus::Available)?;
+    pair.set_path_status(Client, PathId::ZERO, PathStatus::Backup)?;
+    pair.drive_client();
+    let lost = pair.conn_mut(Client).path_stats(PathId::ZERO).unwrap().lost_packets;
+    assert!(lost > lost_before, "a failed backup must release data at the path move");
+    pair.time += Duration::from_millis(5);
+    pair.drive_server();
+    assert_matches!(pair.streams(Server).accept(Dir::Uni), Some(id) if id == stream);
+    let mut recv = pair.recv_stream(Server, stream);
+    let mut chunks = recv.read(true).unwrap();
+    assert_matches!(chunks.next(usize::MAX), Ok(Some(chunk)) if chunk.bytes == &b"past the blackhole"[..]);
+    let _ = chunks.finalize();
+    Ok(())
+}

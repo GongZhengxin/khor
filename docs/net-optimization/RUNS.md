@@ -60,3 +60,25 @@ quality输入一致性预期红 **42510628203**：tree `fa664f056b152393d7c5e8b4
 后续API短矩阵 **42511301780**：tree `f8eba3f5cb00780bc3b95d159fe5f421374ce409`，snapshot `083053a77e25ea76db83ef59218149bbccc09c29`，controld7d1af1；加入f4/f4s/f4i、2并行。它仍在ACK-delay校正前，待结果。
 
 最新ACK-delay候选同tree `05a5c7575d72b524a081a28b48b62afc9c4824b1`、basecbcc8abe、controld7d1af1：vendor **42511866017**，snapshot `e3c172fa2112d40b87a9a343cee69e4e541bca2e`；短矩阵 **42511895143**，snapshot `6e5479ace12e63a8671c23a3fb2dd4ef8c2aac1d`。尚待验证。该候选保存与平滑器一致的校正样本，未改变raw latest/PTO/拥塞数学；不能凭代码推断已修p2/p3。
+
+
+42511866017已SUCCESS：noq432、iroh22；证据ack-sample-vendor-42511866017。42511301780已FAILURE，8pass/1fail，证据shared-quality-smoke-42511301780：p2 2.6秒、p3 worst536.9ms（0错/退役）、f4/f4s与4项p6全绿；f4i first started正确，但恢复后2次selected relay、回hop58.6秒，违反无回退断言。
+
+同速黑洞在飞数据预期红 **42512359677**：tree `d35655265579a8477072a5831c7135c0bd9f8da2`，basecba1ea80，snapshot `edd23810981b29bc57e292fbb40e03df19835cdd`，controld7d1af1。仅新增真实虚拟PTO/永久移除旧路的多路径流交付回归，未修改重发逻辑；待结果。
+
+
+42512359677已产品红：432pass/1fail，same-speed blackhole test在旧路数据立即重排断言失败；证据blackhole-backup-red-42512359677。42513039282（tree1ad7b266、snapshot7c71583a）仅编译失败，因path_stats引用/借用；证据blackhole-backup-candidate-42513039282，已结构性修正。
+
+重排修复候选：**42513546687 net-vendor SUCCESS**，tree `6465d10558e05566d7aa621fcc911e432ee8019f`，snapshot `516e70a650e05ed2b40a085d42bec7a3d774a448`，basecba1ea80；control以environment为准。真实网络动态 **42513580645** 同tree6465d105，snapshot `e67ddf7b3a6d72b2545d1a17be014c0d8d6ffea9`，controlc6a20c5，p2/p3/p7单线程各3轮，在途。
+
+42511895143已FAILURE 8pass/1fail，仅f4i前置未达，证据ack-sample-smoke-42511895143。ACK校正p2 973ms，p3最坏696ms、零错/退役，f4/f4s与p6全绿；仅一次，不能替代正式3次。
+
+42509652259完整旧采样candidate已FAILURE：35项21pass/14fail，1968.35秒；证据candidate-full-42509652259。此源早于共享API/ACK校正/失败Backup重排。保留原p1/p1j/p1s/f4/f4s/f3/p2/p5等回归，不把旧源问题静默删掉。
+
+
+42513546687已下载blackhole-backup-green-42513546687，**433Noq/22iroh全绿**，environment证实control `c6a20c5a733a0778985c3960bc6490820da60d41`。同速黑洞回归现在不仅重排计量通过，流数据在健康路交付也通过。
+
+带f4失败诊断的短矩阵 **42513843436**：tree `6e61d014c82c25b24f2bf4cfaab7a4e5f92043b3`，snapshot `66dac4d7271a6cf336492d141253b8be299a2a32`，basecba1ea80，controlc6a20c5。在途。生产代码与tree6465d105相同，仅追加f4失败时最后50个路由journal到artifact；不改变拓扑/门槛/工作负载。
+
+
+当前源接线/第一方格式 **42514304126 net-unit**：tree `cb25e12597100ca70f27a1c0cdfd0d06a94c5347`，snapshot `bc56f16f9f7b481ff80387d2acb3a3ca038737ce`，basecba1ea80，controlc6a20c5。在途。生产代码与433/22绿源相同，包含f4诊断与最新文档；若格式失败，保留formatter patch并应用后再验证。

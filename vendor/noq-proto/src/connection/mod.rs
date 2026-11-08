@@ -303,7 +303,7 @@ pub struct Connection {
     abandoned_paths: AbandonedPaths,
     /// khor patch 7 (vendor/noq-proto/KHOR.md): a path's local status changed since the last
     /// [`Self::poll_transmit`], which resends what is in flight on far slower backup paths
-    /// ([`Self::resend_off_slow_backups`]).
+    /// ([`Self::resend_off_backups`]).
     khor_status_changed: bool,
 
     /// State for n0's (<https://n0.computer>) nat traversal protocol.
@@ -1037,7 +1037,7 @@ impl Connection {
             true => max_datagrams,
         };
         if mem::take(&mut self.khor_status_changed) {
-            self.resend_off_slow_backups(now);
+            self.resend_off_backups(now);
         }
 
         // Each call to poll_transmit can only send datagrams to one destination, because
@@ -3463,10 +3463,9 @@ impl Connection {
         );
     }
 
-    /// khor patch 7 (vendor/noq-proto/KHOR.md): **resends what is in flight on a backup path far
-    /// slower than the path data goes on now** (twice its round trip and [`KHOR_FAR_BY`] are
-    /// still no more), as if lost: stream data and whatever else is retransmittable goes out
-    /// again on the available path at once.
+    /// khor patch 7/9: resends outstanding data on a backup that stopped answering or is far
+    /// slower than the path data goes on now. A blackholed path retains its last good RTT;
+    /// the same unanswered predicate used by selection must also release its in-flight data.
     ///
     /// A stream is delivered in order, so what went out on a slow path holds up all that came
     /// after it on the fast one: netlab f4, turing's connection to the phone took the relay
@@ -3474,8 +3473,8 @@ impl Connection {
     /// one tick after the leg answered, and the hop's stream on it delivered nothing new for
     /// 1.5 s more, until the last bytes sent by relay arrived.  Run when a path's local status
     /// changed ([`Self::set_path_status`]); the copies that do arrive late are duplicates the
-    /// receiver drops.  Between paths of about one speed nothing is resent.
-    fn resend_off_slow_backups(&mut self, now: Instant) {
+    /// receiver drops. Between live paths of about one speed nothing is resent.
+    fn resend_off_backups(&mut self, now: Instant) {
         let fastest = self
             .paths
             .iter()
@@ -3489,17 +3488,22 @@ impl Connection {
         let Some(fastest) = fastest else {
             return;
         };
-        let slow: Vec<PathId> = self
+        let backups: Vec<PathId> = self
             .paths
             .iter()
             .filter(|(id, p)| {
                 !self.abandoned_paths.contains(id)
                     && p.data.local_status() == PathStatus::Backup
-                    && fastest * 2 + KHOR_FAR_BY <= p.data.rtt.get()
             })
             .map(|(id, _)| *id)
             .collect();
-        for path_id in slow {
+        for path_id in backups {
+            let far_slower = fastest * 2 + KHOR_FAR_BY <= self.path_data(path_id).rtt.get();
+            if !far_slower
+                && self.path_stats(path_id).is_none_or(|stats| stats.unanswered_for(now).is_none())
+            {
+                continue;
+            }
             let Some(space) = self.spaces[SpaceId::Data].number_spaces.get(&path_id) else {
                 continue;
             };
@@ -3517,7 +3521,7 @@ impl Connection {
             if pns.is_empty() {
                 continue;
             }
-            trace!(%path_id, count = pns.len(), "resending what is in flight on a slow backup path");
+            trace!(%path_id, count = pns.len(), "resending what is in flight on a slow or unanswered backup path");
             self.handle_lost_packets(
                 SpaceId::Data,
                 path_id,
@@ -7769,7 +7773,7 @@ fn get_max_ack_delay(params: &TransportParameters) -> Duration {
 /// Prevents overflow and improves behavior in extreme circumstances.
 const MAX_BACKOFF_EXPONENT: u32 = 16;
 
-/// khor patch 7: the slack in "far slower" ([`Connection::resend_off_slow_backups`]), so that
+/// khor patch 7: the slack in "far slower" ([`Connection::resend_off_backups`]), so that
 /// two fast paths a few milliseconds apart are not far apart.
 const KHOR_FAR_BY: Duration = Duration::from_millis(10);
 

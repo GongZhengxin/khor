@@ -82,36 +82,12 @@ const ACTOR_MAX_IDLE_TIMEOUT: Duration = Duration::from_secs(60);
 /// tick sends nothing: it reads each path's stats and moves the selection when they say so.
 const RESELECT_INTERVAL: Duration = Duration::from_millis(250);
 
-/// khor patch 17: probe timeouts in a row, with nothing acknowledged since, after which a path
-/// counts as not answering ([`unanswered`]).  Two is RFC 9002's tail-loss probe and its
-/// retry: about three probe timeouts since the packet went out, ~75 ms on a 1 ms path.
-pub(crate) const UNANSWERED_PTOS: u32 = 2;
-
-/// khor patch 17: and nothing at all heard on the path for this long, and the oldest packet
-/// it leaves unacknowledged out this long or three probe timeouts, whichever is longer
-/// ([`unanswered_for`]).  Three probe timeouts on a fast path are shorter than the machine
-/// stalling: under load (netlab, 20 scenarios side by side) both ends of a 1 ms path miss two
-/// probe timeouts while every path still works.
-pub(crate) const UNANSWERED_FOR: Duration = Duration::from_millis(300);
-
-/// khor patch 17: how long a path has kept a packet waiting, when it is not answering:
-/// [`UNANSWERED_PTOS`] probe timeouts in a row, nothing heard on it for [`UNANSWERED_FOR`],
-/// and the oldest ack-eliciting packet still in flight on it out for `UNANSWERED_FOR` or three
-/// of its probe timeouts, whichever is longer (vendor/noq-proto patch 3).  `None`: it answers.
-///
-/// The wait counts from that packet, not from the last packet heard (2026-10-21, net-flap):
-/// an idle path hears its keepalive's ACK every 5 s, so the last packet heard was seconds ago
-/// whenever the next keepalive's ACK came a little late, and a 2 ms road whose ACK was 100 ms
-/// late (Wi-Fi power save, a machine stalling) read as dead: MacLab↔hinton left for the relay
-/// and came back within a second 212 times in a day, and the machines' two LAN roads traded
-/// places 230–330 times.
+/// khor patch 17/30: the shared path-liveness observation. The transport's
+/// in-flight retransmission and the selector must agree about a failed
+/// path even while its last measured RTT is still fast. This retains the
+/// previous two-PTO / max(300 ms, 3 PTO) / recent-packet guards.
 pub(crate) fn unanswered_for(stats: &PathStats, now: std::time::Instant) -> Option<Duration> {
-    let waited = now.saturating_duration_since(stats.unacked_since?);
-    let heard = stats.last_received.map(|at| now.saturating_duration_since(at));
-    (stats.pto_count >= UNANSWERED_PTOS
-        && waited >= UNANSWERED_FOR.max(stats.pto * 3)
-        && heard.is_none_or(|heard| heard >= UNANSWERED_FOR))
-    .then_some(waited)
+    stats.unanswered_for(now)
 }
 
 /// khor patch 17: how long a road that stopped answering has to answer again before it is a
@@ -147,7 +123,7 @@ const PROBE_SPACING: Duration = Duration::from_secs(30);
 const CONFIRM_FOR: Duration = Duration::from_secs(2);
 
 /// khor patch 17 (10-21): how long the selected road keeps a packet waiting before the other
-/// roads are pinged ([`RemoteStateActor::probe_others`]): half of [`UNANSWERED_FOR`].
+/// roads are pinged ([`RemoteStateActor::probe_others`]): half of the 300 ms unanswered floor.
 const PROBE_OTHERS_AFTER: Duration = Duration::from_millis(150);
 
 /// khor patch 17 (10-21): a move whose two paths did not both take a sample in this long is
@@ -2844,8 +2820,8 @@ impl<'a> PathSelectionData<'a> {
         }
     }
 
-    /// khor patch 17: whether the path answers: on no connection [`UNANSWERED_PTOS`] probe
-    /// timeouts in a row with nothing heard for [`UNANSWERED_FOR`].  A path that sent and
+    /// khor patch 17: whether the path answers: on no connection two probe
+    /// timeouts in a row with nothing heard for 300 ms.  A path that sent and
     /// heard nothing back keeps the round trip it last measured, so its RTT alone never says
     /// it is gone; noq abandons it only at its idle timeout.  Each path's ACKs come back on
     /// that path (vendor/noq-proto patch 4), so its probe timeouts are its own round trip's,

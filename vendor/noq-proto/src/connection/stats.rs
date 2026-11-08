@@ -270,6 +270,24 @@ pub struct PathStats {
     pub pto: Duration,
 }
 
+impl PathStats {
+    /// khor: how long an ACK-eliciting packet has waited on a path that
+    /// is no longer answering. A short scheduling stall or an idle path
+    /// is not a failure: require two probe timeouts, at least three
+    /// unbacked-off PTOs (with a 300 ms floor), and no recent packet.
+    /// Selection and retransmission use this same observation rule.
+    pub fn unanswered_for(&self, now: Instant) -> Option<Duration> {
+        const MIN_PROBES: u32 = 2;
+        const MIN_SILENCE: Duration = Duration::from_millis(300);
+        let waited = now.saturating_duration_since(self.unacked_since?);
+        let heard = self.last_received.map(|at| now.saturating_duration_since(at));
+        (self.pto_count >= MIN_PROBES
+            && waited >= MIN_SILENCE.max(self.pto * 3)
+            && heard.is_none_or(|heard| heard >= MIN_SILENCE))
+        .then_some(waited)
+    }
+}
+
 /// Connection statistics.
 ///
 /// The fields here are a sum of the respective fields in the [`PathStats`] for all the

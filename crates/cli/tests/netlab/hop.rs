@@ -262,6 +262,23 @@ fn path_lines(
         .collect()
 }
 
+/// On a failed hop scenario, keep the last routing/discovery facts in
+/// the artifact before its scratch residents are reaped.
+fn path_diagnostics(n: &crate::lab::LabNode, peer: &crate::lab::LabNode) {
+    let rows: Vec<_> = n
+        .journal(Some(peer))
+        .into_iter()
+        .filter(|e| {
+            matches!(e["e"].as_str(), Some("hop" | "dial" | "settled" | "path" | "retired"))
+        })
+        .rev()
+        .take(50)
+        .collect();
+    for row in rows.into_iter().rev() {
+        eprintln!("[netlab-path-diagnostic] {} -> {} {row}", n.name, peer.name);
+    }
+}
+
 /// The relay's one way, as f4 measures it: 22 ms (hinton to turing's
 /// relay; the phone's carried road through turing is about 20 ms).
 const F4_RELAY_ONE_WAY: u32 = 22;
@@ -307,6 +324,8 @@ async fn f4_lab(
         .until(&x, Duration::from_secs(180), |l| l.hop == Hop::Forwarded)
         .await;
     if hopped.is_none() {
+        path_diagnostics(&x, &y);
+        path_diagnostics(&y, &x);
         result(
             s,
             false,
@@ -701,6 +720,10 @@ async fn f4i_a_new_connection_does_not_write_its_first_road_as_a_move() {
         .count();
     let ok =
         back.is_some() && first.as_ref().is_some_and(|(_, c, _)| c == "started") && to_relay == 0;
+    if !ok {
+        path_diagnostics(&x, &y);
+        path_diagnostics(&y, &x);
+    }
     result(
         s,
         ok,

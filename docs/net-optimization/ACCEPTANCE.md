@@ -44,4 +44,6 @@ python3 scripts/dev.py check --task netlab --builder-ref feat/net
 
 专用 `netlab-dynamic` 以 `NETLAB_TEST_THREADS=1` 顺序运行 p7，避免普通性能验证夹入其他场景的CPU负载。`NETLAB_TEST_THREADS` 默认仍为8，完整矩阵保留原有并行压力；报告必须写清执行模式，不能混用数字。
 
+control c6a20c5 起，`netlab-dynamic` 将 p2/p3/p7 一起顺序重复3次，覆盖变慢、黑洞及好路恢复；老control的动态任务仅含p7。具体filters/线程数/重复次数由每run的measurement-mode.json固定，恢复时按准确版本解释结果。
+
 2026-11-09 几何核对：`lab::slow(relay,40ms)` 给经过中继设备的单腿设置40ms往返，设备A→中继→B端到端约80ms。早期结果行“relay40ms”是设备配置值，实际路径读数84/88ms与此一致。已改标签和说明，拓扑、负载、200ms请求门槛及10/20秒恢复目标均未改变。
