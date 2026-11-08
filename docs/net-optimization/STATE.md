@@ -2,16 +2,18 @@
 
 2026-11-09 · owner=root，串行，无子智能体。
 
-恢复速读：上一批六项已终态；最新Watch动态27/27，但p1s移动3/1、转发f4s1513ms超1500ms，N1仍红。默认关闭的诊断候选已写；当前仅42536677230（netlab-diagnostic）及42536711138（net-vendor）在途，先查它们，不重复提交。两者同tree1113605d、controlc3b117d；见下表。原时长/负载/门槛保持。
+恢复速读：上一批六项已终态；最新Watch动态27/27，但p1s移动3/1、转发f4s1513ms超1500ms，N1仍红。默认关闭的诊断候选已写；42536677230（netlab-diagnostic）在途，42536711138（net-vendor）已SUCCESS 435Noq/33iroh及根格式。两者同tree1113605d、controlc3b117d；原时长/负载/门槛保持。
 
 ## 当前活动任务
 
 | Run | 任务 | source tree / snapshot | 状态 |
 | --- | --- | --- | --- |
 | 42536677230 | netlab-diagnostic | 1113605daf5597c2663d5e6468c45dade34031c9 / 72b0f7e13c0cb7142db033434cbd8182a1ba610a | 已调度，原p1s/f4s各一次1线程，日志模式不作为SLO |
-| 42536711138 | net-vendor | 同1113605d / 71a5b250ed41979a7e8d66d01991b06254b813d3 | 已调度，根格式与435Noq/33iroh回归 |
+| 42536711138 | net-vendor | 同1113605d / 71a5b250ed41979a7e8d66d01991b06254b813d3 | SUCCESS，根格式与435Noq/33iroh；decision-diagnostics-unit-42536711138已下载 |
 
 两者basedf5b0864 dirty，controlc3b117d（已push feat/net）。CLI可选net-diagnostics依赖已锁tracing-subscriber0.3.23，无新版本解析；显式环境开关才安装subscriber，默认构建不开日志。现有9项产品Python、1项control准备、sh-n/bash-n与diff-check通过；Rust格式/锁/编译待远端，不能记绿。图部分覆盖，3个受改函数测试缺口由原p1s/f4s及可选CLI实际启动验证，不新增镜像单元。
+
+42536711138已通过，提交5f69db3f全部vendor/CLI/脚本与其快照源逐文件无diff；可选CLI feature的实际编译仍由诊断run确认，不从Noq/Iroh单元推出。源码锚点现77份。VENDOR-AUDIT逐项盘点全部45条，明确Noq1/4/5/6覆盖缺口；当前33过滤器没执行net_report/socket的khor_测试。control322835b已push，后续net-vendor追加该过滤器并单独存iroh-home-unit.log；其覆盖尚未取得新结果。上游逐函数等价与真实设备验证继续保留，N5未完成。
 
 ## 授权、位置与完整范围
 

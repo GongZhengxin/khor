@@ -94,3 +94,16 @@ Watch确认改变使用netlab-stalls：单场景顺序运行原p1s与p5，各一
 p1s仍600秒/20次300ms/原忙CPU，p5仍150/300/600ms各4次、每次30秒间隔；不缩短计时或改门。
 已有完整稳定性A/B与最终full仍需保留；此模式只省去未被Watch改动的普通空闲/抖动准备轮次，
 不能代替全范围验收。源码与control commit单独回执，不将不同执行模式的数字混为同条件统计。
+
+## 可选诊断模式与vendor覆盖补齐
+
+`netlab-diagnostic`只用于定因：原p1s/f4s完整时长、负载和断言，各一次1线程。
+显式NETLAB_DIAGNOSTICS=1才以CLI的net-diagnostics可选feature编译并启用subscriber；
+记录ACK raw/delay/corrected、实际迁移Reading/Silence及恢复hold，测量结束后保存各节点原serve.log。
+默认构建不安装subscriber。日志改变CPU/IO开销，诊断结果不能作为普通SLO或与普通模式混算。
+生产策略变化后须关闭日志重新跑同条件回归。
+
+control322835b起，`net-vendor`除原Noq全单元与iroh remote_state过滤器外，额外运行iroh `--lib khor_`，
+覆盖此前遗漏的net_report家中继/QAD与socket网桥测试，分别保存iroh-home-unit.log。
+这不代表iroh全158个单元都执行，也不能从旧33个路径单元绿回填这些遗漏测试。
+补丁逐项缺口见[VENDOR-AUDIT](VENDOR-AUDIT.md)，原生代理/真机/能耗仍独立验收。
