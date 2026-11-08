@@ -535,6 +535,64 @@ async fn echo(a: &LabNode) -> (Duration, Option<String>) {
     (t.elapsed(), error)
 }
 
+/// NET-01: the same endpoint pair has a slow direct road and a fast
+/// relay, or the reverse. NAT on each default uplink keeps the shared
+/// second network as the only usable direct road; relay traffic avoids
+/// that interface entirely.
+async fn speed_first(s: &str, direct_ms: u32, want: Hop) {
+    let lab = Lab::new().await.unwrap();
+    let r = relay(&lab, s, "relay", Some(Duration::from_millis(40))).await;
+    let left = crate::nat::router(&lab, "left", crate::nat::Net::Strict).await;
+    let right = crate::nat::router(&lab, "right", crate::nat::Net::Strict).await;
+    let second = network(&lab, "second").await;
+    let da = two_legs(&lab, "a", &left, &second).await;
+    let db = two_legs(&lab, "b", &right, &second).await;
+    delay(&da, "eth1", direct_ms / 2, LinkDirection::Both).await;
+    let a = node(s, da, "alpha", &[&r], &[]).await;
+    let b = node(s, db, "beta", &[&r], &[]).await;
+    mesh(&[&a, &b]).await;
+    tokio::time::sleep(Duration::from_secs(10)).await;
+    let reached = a
+        .until(&b, Duration::from_secs(15), |l| l.hop == want)
+        .await
+        .is_some();
+    let mut samples = Vec::new();
+    let mut errors = Vec::new();
+    for _ in 0..30 {
+        let (took, error) = echo(&a).await;
+        samples.push(took);
+        if let Some(error) = error {
+            errors.push(error);
+        }
+        tokio::time::sleep(Duration::from_millis(200)).await;
+    }
+    samples.sort();
+    let p95 = samples[28];
+    let roads = (a.link(&b).await, b.link(&a).await);
+    let held = roads.0.as_ref().is_some_and(|l| l.hop == want)
+        && roads.1.as_ref().is_some_and(|l| l.hop == want);
+    let ok = reached && held && errors.is_empty() && p95 < Duration::from_millis(200);
+    result(
+        s,
+        ok,
+        format!(
+            "direct {direct_ms}ms, relay 40ms, want {want:?}; reached {reached}, held {held}; n=30 p50 {:?} p95 {p95:?} max {:?}; errors {errors:?}; roads {roads:?}",
+            samples[14], samples[29]
+        ),
+    );
+    assert!(ok, "the measured faster road carries responsive requests");
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn p6_a_fast_relay_beats_a_live_slow_direct_road() {
+    speed_first("p6r", 300, Hop::Relay).await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn p6_a_fast_direct_road_beats_a_slow_relay() {
+    speed_first("p6d", 0, Hop::Direct).await;
+}
+
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn p2_the_road_in_use_slows_and_the_lan_takes_over() {
     slows("p2", true).await;

@@ -2,7 +2,7 @@
 
 本页写现状；连接要变成什么样、分几期走，见 [CONNECT.md](CONNECT.md)。
 
-2026-11-09 网络优化（`feat/net`）：新的速度优先方向、阶段与验收见 [优化计划](net-optimization/PLAN.md)，跨会话接续先读 [当前状态](net-optimization/STATE.md)。当前仅规划；下文直连优先仍是实现记录，新目标以优化计划为准。
+2026-11-09 网络优化（`feat/net`）：新的速度优先方向、阶段与验收见 [优化计划](net-optimization/PLAN.md)，跨会话接续先读 [当前状态](net-optimization/STATE.md)。优化实施已启动，当前进度与验证边界以 STATE 为准；下文历史直连优先规则由新计划取代。
 
 ## 身份与配对
 

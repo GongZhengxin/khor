@@ -12,6 +12,17 @@
 
 ## 补丁
 
+### 28. 速度优先时所有路径都确认新鲜测量（2026-11-09，feat/net）
+
+`RemoteStateActor::confirm_move` 不再无条件放行“从中继/转连到直连”。Khor 的
+`RoadOrder` 已按有效 RTT 比较所有承载，直连也可能较慢；绕过确认会让一个新路径的
+初始样本压过旧路径的新鲜数据。所有仍开放的路径都经过同一个 `Moving` 确认，
+`from_rtt` 对所有承载取实际测量，明显快得多时在新样本答上后快速迁移。
+
+回归入口：`khor-net` 的 `measured_speed_wins_for_every_transport_pair` 与
+netlab `paths::p6_`；既有 p1/p1j/p1s/p2/p3/p5 与转连场景检查防抖和恢复。
+本条是实现记录，通过状态与对照证据见 `docs/net-optimization/STATE.md`，不能仅凭此处宣告验证完成。
+
 二十七处。
 
 ### 27. `src/socket.rs`：容器和虚拟机的网桥地址不进直接地址（2026-10-21，net-home）

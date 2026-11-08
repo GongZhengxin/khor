@@ -125,6 +125,27 @@ class RemoteDevelopmentTest(unittest.TestCase):
         self.assertIn("NOT validated locally", result.stdout + result.stderr)
         self.assertEqual(Path("graph-hook-ran").read_text(), "graph")
 
+    def test_submit_dispatches_the_selected_control_branch_and_records_it(self):
+        request_id = "a" * 32
+        run = dict(databaseId=123, displayTitle="dev net-unit " + request_id, url="https://example.invalid/run")
+        def command(*args):
+            if args[:2] == ("gh", "api"):
+                return json.dumps({"private": True})
+            if args[:3] == ("gh", "run", "list"):
+                return json.dumps([run])
+            return ""
+        info = dict(base_commit="b" * 40, tree="c" * 40, snapshot_commit="d" * 40, excluded_untracked_count=0)
+        args = SimpleNamespace(builder_repo="private/build", builder_ref="feat/net", task="net-unit")
+        with patch.object(dev, "command", side_effect=command) as calls, patch.object(dev, "snapshot", return_value=info), patch.object(dev, "upload_snapshot") as upload, patch.object(dev, "state_dir", return_value=Path("receipts")), patch.object(dev.uuid, "uuid4", return_value=SimpleNamespace(hex=request_id)), contextlib.redirect_stdout(io.StringIO()):
+            dev.submit(args)
+        calls.assert_any_call("git", "check-ref-format", "refs/heads/feat/net")
+        dispatch = next(c.args for c in calls.call_args_list if c.args[:3] == ("gh", "workflow", "run"))
+        self.assertEqual(dispatch[dispatch.index("--ref") + 1], "feat/net")
+        self.assertEqual(upload.call_count, 1)
+        receipt = json.loads((Path("receipts/runs") / (request_id + ".json")).read_text())
+        self.assertEqual(receipt["builder_ref"], "feat/net")
+        self.assertEqual(receipt["databaseId"], 123)
+
     def test_result_rejects_an_artifact_for_other_source(self):
         output = Path("download")
         output.mkdir()

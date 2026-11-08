@@ -120,9 +120,11 @@ def submit(args):
     details = json.loads(command("gh", "api", f"repos/{repository}"))
     if not details["private"]:
         raise ValueError("Source snapshots must go to a PRIVATE build-control repository")
+    builder_ref = getattr(args, "builder_ref", "main")
+    git("check-ref-format", "refs/heads/" + builder_ref)
     info = snapshot()
     identifier = uuid.uuid4().hex
-    info.update({"repository": repository, "task": args.task, "request_id": identifier,
+    info.update({"repository": repository, "builder_ref": builder_ref, "task": args.task, "request_id": identifier,
                  "snapshot_ref": "dev-snapshots/" + identifier})
     records = state_dir() / "runs"
     records.mkdir(parents=True, exist_ok=True)
@@ -130,7 +132,7 @@ def submit(args):
     record.write_text(json.dumps(info, indent=2) + "\n")
     print(f"Source tree {info['tree']}; base {info['base_commit']}; untracked files excluded: {info['excluded_untracked_count']}", flush=True)
     upload_snapshot(info)
-    command("gh", "workflow", "run", "development.yml", "--repo", repository, "--ref", "main",
+    command("gh", "workflow", "run", "development.yml", "--repo", repository, "--ref", builder_ref,
             "-f", "snapshot_sha=" + info["snapshot_commit"], "-f", "task=" + args.task, "-f", "request_id=" + identifier)
     for _ in range(20):
         runs = json.loads(command("gh", "run", "list", "--repo", repository, "--workflow", "development.yml",
@@ -199,7 +201,8 @@ def main():
     config.add_argument("--restore", action="store_true")
     config.add_argument("--install-command", action="store_true", help="Also install ~/.local/bin/khor-dev")
     check = sub.add_parser("check", help="Submit a tracked WIP snapshot asynchronously")
-    check.add_argument("--task", choices=["fast", "native", "lab", "resolve", "updates", "ios-lab-prepare", "ios-lab", "ios-keyboard"], default="fast")
+    check.add_argument("--task", choices=["fast", "native", "lab", "resolve", "updates", "ios-lab-prepare", "ios-lab", "ios-keyboard", "net-unit", "netlab-smoke", "netlab"], default="fast")
+    check.add_argument("--builder-ref", default="main", help="Control workflow branch; use feat/net for network task development")
     for action in [check, sub.add_parser("status"), sub.add_parser("result")]:
         action.add_argument("--builder-repo", default="colehank/khor-build")
         if action != check:

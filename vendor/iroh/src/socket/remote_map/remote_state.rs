@@ -1026,10 +1026,9 @@ impl RemoteStateActor {
     /// The moves an event asks for are held the same way (10-17, fourth leg): a hole-punching
     /// round opens paths on every connection, each opening ran the selector at once on its
     /// handshake's RTT against the road in use, and under load p1 moved 20 times in ten
-    /// minutes, three in one second.  Only a move onto a direct path from the relay or a
-    /// carried road is made at once: no selector weighs RTT across that line (khor's
-    /// `RoadOrder` and upstream's `BiasedRttPathSelector` both take direct whenever it is open),
-    /// so there is nothing to confirm.
+    /// minutes, three in one second. Every move from an open path now goes through
+    /// confirmation (feat/net): khor compares RTT across transport kinds, so moving onto
+    /// direct is no longer an unconditional upgrade.
     ///
     /// A move whose two paths do not both take a sample within [`CONFIRM_MAX`] is given up,
     /// and not tried again for [`CONFIRM_REST`] ([`Moving`]).
@@ -1057,7 +1056,7 @@ impl RemoteStateActor {
             .connections
             .values()
             .any(|c| c.paths.values().any(|t| *t == from));
-        if !open || (!from.is_ip() && to.is_ip()) {
+        if !open {
             self.state.moving.clear();
             return true;
         }
@@ -1078,15 +1077,12 @@ impl RemoteStateActor {
                 .state
                 .moving
                 .leave(to, now, silence.began, |after| sampled(to, after)),
-            // Between direct roads the readings are not weighed: a zero for the road moved
-            // from is neither far slower nor slower than the confirmation.
+            // feat/net: every transport compares fresh measured readings. A direct
+            // candidate gets neither an unconditional upgrade nor a different gain rule.
             None => self.state.moving.step(
                 to,
                 now,
-                measured
-                    .road(&from)
-                    .filter(|_| !from.is_ip())
-                    .map_or(Duration::ZERO, |(rtt, _)| rtt),
+                measured.road(&from).map_or(Duration::ZERO, |(rtt, _)| rtt),
                 measured.road(to).map_or(Duration::MAX, |(rtt, _)| rtt),
                 |after| sampled(&from, after),
                 |after| sampled(to, after),
