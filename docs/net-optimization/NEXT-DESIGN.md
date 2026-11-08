@@ -1,0 +1,26 @@
+# 下个设计检查点（进行中，不能当作实现/验证）
+
+2026-11-09。N1目前首次p7绿，完整/重复仍在途；下列是准确源码审计结果及待证实假设，完整范围仍见PLAN/REQUIREMENTS。
+
+## N1：让看守、诊断与选择读同一份质量事实
+
+当前选路读取 `RemoteStateActor::Measured` 的近期样本中位数；`khor_net::path::path_facts` 仍通过 `Path::rtt()` 读取QUIC平滑RTT。共享改善函数只能统一门槛，尚未统一输入：恢复时新中位数与旧平均值可能给hop清理不同结论。这是静态已确认的输入不一致，尚未取得本轮对应产品红。
+
+建议下一步：先加入“旧transport RTT/新quality结论相反”的行为回归，取红；再从现有PathStateSender/Receiver发布同一份质量、来源观测时刻和样本量。选择是状态所有者；应用只读缓存，不另建过滤器或额外计时器。PathStats.rtt保持传输估计语义，诊断另外显示quality/age/count；没有ACK样本就明确未知。发布测量不应让paths_stream每250ms唤醒应用；其原生命周期通知契约保留。
+
+同一路的quality、age、sample count必须来自被选为代表的同一连接副本。当前 `Measured::road` 的quality取近期样本多的副本，timestamp却取所有副本最新值；诊断不能沿用这种混合来声称质量新鲜。冷门/长闲连接、路径重开、网络变化与积压ACK仍需验证。
+
+覆盖：khor-net path/helper单元；iroh缓存发布/相同样本/过时副本；hop/wires；动态、p1/p1j/p1s、f4及空闲开销。新变更后的证据不得由当前在途旧源码结果代替。
+
+## N2：当前建连、取消与期限事实
+
+- `link.rs::dial_with` 最多两个JoinSet任务，共用一个 `within` 计时器；先返回的成功者胜出。Drop JoinSet会abort任务，但底层连接/流是否在取消后及时释放还需实际观测，不能只凭容器名称断言完成。
+- 第一次尝试用 `endpoint::dial_addr(id,direct,relays)`，包含所有已知直连、中继、mDNS及可用自承载；第二次“identity”仍通过dial_addr添加nearby提示。因此 `Won::Direct/Relay` 是尝试标签，不是实际数据面类型，后续对照须读取真正selected path。
+- 第二次尝试有固定1500ms延迟。它是应对失效地址的第二次尝试，不等于“中继一律1500ms后才有机会”；首试本已包含中继。需先复现旧地址/端口、重启和慢路，再确定是否缩短/删除或改变候选入口，避免误把双握手当真正独立路径竞速。
+- `dial_within` 现为max(10秒,12倍近期RTT)、上限25秒；被告知离开的对端预算更短；有by时只给剩余时间。Wires会把因故障失效的旧RTT从下次拨号预算中移除，这部分已有基础。
+- `line_to_inner` 的同对端/协议拨号锁等待与 `hop_ahead` 在调用dial前发生；by仅在dial里扣除剩余，并未单独约束锁等待。`ask_early` 也在锁与hop准备后才进入拨号timeout，已接受early请求的answer又在其后等待。
+- `ask_on` 计算总by，但首个普通 `line_to` 没有传by，只有读请求的redial用line_to_by。请求exchange另有按RTT的ACK/处理预算。须冻结整操作目标，检查外层IPC期限、锁等待、hop、拨号、早数据、exchange、一次读重试全部共用何种剩余预算；远端计算慢不能简单记为网络坏。
+- 请求仅 `is_reading` 在未到达时重试；`rides_early` 是单独准入门。已有Aborts/RetireUnheard保护早数据任务和取消后未应答连接。先跑原安全/取消回归，再补中断时已执行写入不重放的证据；不把普通拨号竞速扩展成写请求竞速。
+- Wires后台失败退避为5秒起指数翻倍、上限300秒，目前确定性；前台请求不受后台退避拒绝，sleep/relay-depart有长静默规则。加入随机扰动前要让journal写下的计划与实际同一次选择一致，不能在next_backoff和failed各抽一次。
+
+这些结论绑定目前9b80cb5d生产代码。下阶段优先按行为复现，再按最小边界修改；本文件不是新增具体阈值或已验证最优参数。
