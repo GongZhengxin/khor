@@ -6,8 +6,8 @@
 
 用户活动目标 **“完成计划”**，已授权按 [PLAN](PLAN.md) 实施与验证；此前仅规划状态已替代。速度/体验优先，个人可信设备网络。**未合 main、未发布、未采购或部署中继。**
 
-- 产品：`/Volumes/disk0/Khor/worktrees/current/khor-net`，`feat/net`，已提交 HEAD `bc6cded2`；后续有暂存/未暂存修改，先核对实际 diff。
-- 创建基线 main/rc8：`6485cb83d3b1f0bb93d4633825dc956623d78af9`；旧生产代码对照树 `khor-net-baseline` detached该提交，只改fixture和远端入口。
+- 产品：`/Volumes/disk0/Khor/worktrees/current/khor-net`，`feat/net`，已提交 HEAD `9b80cb5d`；后续有暂存/未暂存修改，先核对实际 diff。
+- 创建基线 main/rc8：`6485cb83d3b1f0bb93d4633825dc956623d78af9`；旧生产代码对照树 `khor-net-baseline` detached该提交，只改fixture、netlab顺序执行脚本和远端入口。
 - 私库控制器：`/Volumes/disk0/Khor/worktrees/current/khor-build-net`，`feat/net`。网络Linux job独立，Mac任务沿既有macserver入口；本机source-only，不做Cargo/Node/native重型工作。
 - 证据：`/Volumes/disk0/Khor/evidence/net/`；[运行账本](RUNS.md)、[逐项完成审计](REQUIREMENTS.md)、[验收协议](ACCEPTANCE.md)、[设计](DESIGN.md)。初期过程移至 [历史](HISTORY-20261109-initial.md)。
 - 其他GUI/治理任务独立，不修改它们的worktree、现装App或用户既有会话。
@@ -18,16 +18,18 @@
 2. 修正反向wire准备后的真实p6：旧策略快中继场景 p95 369.78ms，候选152.12ms并选Relay；反向快Direct两版均绿。仅一次A/B，尚不能完成N0/N1。
 3. hop清理原固定10ms与选路25%/5ms矛盾，已统一改善规则，并允许慢Direct参与hop发现；节点hop9/wires10通过，对应tree067d62b5。
 4. p7动态取得产品红：Direct300ms恢复为LAN后，交互和闲置都45秒未回，目标分别10/20秒；无请求错误。
-5. 当前正在修复ACK样本计数/新鲜度与近期质量估计，并加入STREAM活跃期每对端最多5秒一次的既有备用探测。拥塞控制平滑RTT不变，闲置不新增计时器。**验证在途，尚未证明目标通过。**
+5. 当前正在修复ACK样本计数/新鲜度与近期质量估计，并加入STREAM活跃期每对端最多5秒一次的既有备用探测。拥塞控制平滑RTT不变，闲置不新增计时器。单元63通过/1 ignored；首次p7交互2.64秒、闲置18.16秒、零错误，目标10/20秒均绿。需重复与防抖验证。
 6. vendor测试入口第一次因excluded workspace的dev-dependencies失败，是执行器准备问题。改独立manifest与对应lock；iroh lock仅将noq-proto指向既有本地补丁，版本不变。需要实跑确认。
 
 ## 活动任务与下一步
 
 - **完整baseline 42507224815**：最后观察仍在network执行；先查询实时状态，下载完整证据；不因工具超时另提交。
-- 42508069745/42508095178 已结束并下载，见RUNS。较早两次node格式任务还需下载分类，不把未读失败称产品故障。
-- 最新采样修改在vendor四文件；未跟踪REQUIREMENTS等新文档需先stage，源码快照排除untracked。
-- 同一准确源码tree `064925806d1c3962f715942d7f637a4b6257783f` 已提交：net-unit **42509122554**、netlab-dynamic **42509155432**、net-vendor **42509174050**；control `16474c5`。恢复先查询并下载，编译/准备失败先分类，产品失败保留原门槛。
-- p7达到目标后，跑防抖/短尖峰/原转发回归，再补关键场景3次重复、固定好路径参照与候选完整矩阵。
+- 42508069745/42508095178 已结束并下载，见RUNS。较早两次node任务均已下载确认仅格式失败，patch已应用。
+- 最新采样/hop/p7已提交9b80cb5d，新增文档均跟踪。当前差异是固定好路径参照与compare入口。源码快照排除untracked。
+- 同一准确源码tree `064925806d1c3962f715942d7f637a4b6257783f` 已提交：net-unit **42509122554**、netlab-dynamic **42509155432**、net-vendor **42509174050**；control `16474c5`。恢复unit与dynamic已成功并下载，vendor仍在途；编译/准备失败先分类，产品失败保留原门槛。
+- 正式三次顺序A/B在途：baseline **42509612220**（tree f95f6e54）、candidate **42509632238**（tree4549630f）；candidate完整矩阵 **42509652259**（同tree4549630f）。control419b5f0。
+- 首次baseline compare42509569373因漏同步并行度开关已主动取消，是准备输入错误，不算产品结果。正式baseline已补相同netlab.sh；生产代码仍为6485cb83。
+- 首次p7绿后，补三次顺序动态重复；候选完整矩阵检验防抖/尖峰/转发。
 
 ## 阶段状态
 

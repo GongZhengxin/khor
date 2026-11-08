@@ -541,7 +541,7 @@ async fn echo(a: &LabNode) -> (Duration, Option<String>) {
 /// that interface entirely.
 struct SpeedPair {
     _lab: Lab,
-    _relay: crate::lab::Relay,
+    relay: crate::lab::Relay,
     a: LabNode,
     b: LabNode,
 }
@@ -566,15 +566,26 @@ async fn speed_pair(s: &str, direct_ms: u32) -> SpeedPair {
         .expect("beta can query alpha before measurement");
     SpeedPair {
         _lab: lab,
-        _relay: r,
+        relay: r,
         a,
         b,
     }
 }
 
-async fn speed_first(s: &str, direct_ms: u32, want: Hop) {
+async fn speed_first(s: &str, direct_ms: u32, want: Hop, only: bool) {
     let pair = speed_pair(s, direct_ms).await;
     let (a, b) = (&pair.a, &pair.b);
+    if only {
+        // Same topology and workload, with the competing data path
+        // blocked after setup. This is a reachable steady-state
+        // reference, not a different machine's ping result.
+        let other = if want == Hop::Relay {
+            b.dev.iface("eth1").unwrap().ip().unwrap()
+        } else {
+            pair.relay.dev.ip().unwrap()
+        };
+        drop_between(&a.dev, &other.to_string(), true);
+    }
     tokio::time::sleep(Duration::from_secs(10)).await;
     let reached = a
         .until(&b, Duration::from_secs(15), |l| l.hop == want)
@@ -600,7 +611,7 @@ async fn speed_first(s: &str, direct_ms: u32, want: Hop) {
         s,
         ok,
         format!(
-            "direct {direct_ms}ms, relay edge 40ms (~80ms end-to-end), want {want:?}; reached {reached}, held {held}; n=30 p50 {:?} p95 {p95:?} max {:?}; errors {errors:?}; roads {roads:?}",
+            "direct {direct_ms}ms, relay edge 40ms (~80ms end-to-end), want {want:?}, only {only}; reached {reached}, held {held}; n=30 p50 {:?} p95 {p95:?} max {:?}; errors {errors:?}; roads {roads:?}",
             samples[14], samples[29]
         ),
     );
@@ -609,12 +620,22 @@ async fn speed_first(s: &str, direct_ms: u32, want: Hop) {
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn p6_a_fast_relay_beats_a_live_slow_direct_road() {
-    speed_first("p6r", 300, Hop::Relay).await;
+    speed_first("p6r", 300, Hop::Relay, false).await;
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn p6_a_fast_direct_road_beats_a_slow_relay() {
-    speed_first("p6d", 0, Hop::Direct).await;
+    speed_first("p6d", 0, Hop::Direct, false).await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn p6_reference_with_only_the_fast_relay_usable() {
+    speed_first("p6ref-r", 300, Hop::Relay, true).await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn p6_reference_with_only_the_fast_direct_road_usable() {
+    speed_first("p6ref-d", 0, Hop::Direct, true).await;
 }
 
 /// A slow direct candidate becomes fast while the relay is carrying.
