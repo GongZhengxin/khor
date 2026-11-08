@@ -78,7 +78,11 @@
 - 最终源码补充验证 **42506109052**：base `2fee06a6`，tree `d0fdb004c164b19b3efa9de4eb789c6897e8306c`，snapshot `0d7bfad4f8cc072445c0679dcfb3595eb40b74d9`，control branch feat/net；待结果。新 [DESIGN.md](DESIGN.md) 记录状态所有者、首版参数和仍需完成的动态采样/备用/调度/寻址设计点。
 - 首批实现已提交 `2fee06a6`。当前新增 DESIGN 与状态记录会另作检查点；尚未推产品 feat/net，也未合 main/发布。
 
-- final-source unit **42506109052 SUCCESS**（产品代码含所有 bind 注册与 settling 回归）；原始收据/日志目录 `/Volumes/disk0/Khor/evidence/net/final-unit-42506109052`，具体计数以其中 net-unit.log 为准。
+- final-source unit **42506109052 SUCCESS**（产品代码含所有 bind 注册与 settling 回归）；原始收据/日志目录 `/Volumes/disk0/Khor/evidence/net/final-unit-42506109052`，62 passed / 0 failed / 1 ignored，格式通过。
 - baseline smoke **42505323213 FAILURE** 已下载 `/Volumes/disk0/Khor/evidence/net/baseline-smoke-42505323213`：namespace/netem/nft 与 CLI 构建成功；p2 green（3.8s，retired 0）、p3 green（worst 944.2ms，0 failed/retired）。p6r 为产品红：两端约302/303ms直连，p50 326.98ms、p95 351.32ms，未选40ms中继。p6d 是测试准备红：beta 尚未建立 outgoing wire，18.6s 时仍 Idle，不能算快直连产品失败。
 - 已补 beta→alpha 显式读请求建立反向 outgoing wire，再开始10秒预热，未修改任何验收阈值。为保证同条件对照，新建 detached baseline worktree `/Volumes/disk0/Khor/worktrees/current/khor-net-baseline` @6485cb83；仅复制修正后的 `crates/cli/tests/netlab/paths.rs` 与提交入口 `scripts/dev.py`，生产源码全部原样。不要在该 baseline 树修产品代码。
 - corrected baseline smoke **42506330051**：base6485cb83，tree `e73903a3cfab4455baba0a35664c2c148c61fb99`，snapshot `5a8bcad37c04740c732719f6e9e77f4ec136e2c0`，control f01d070。candidate smoke **42506345592**：base2fee06a6，tree `ee158fdb53a8f5cda8020218772a53cfed89f4b4`，snapshot `3c92b03d8e53468010da6dc1f71a6834950049ef`，control f01d070。两者均用相同新版 p6 fixture，待实际结果。
+
+- 检查点 `4fe743b1` 已保存设计与 p6 fixture 修正。之后仅补充本条状态。final-unit 42506109052 为62 passed / 0 failed / 1 ignored；当前 smoke 的产品代码与该单元源码一致，harness 新增了反向连接准备。
+- 恢复后必须先查 42506330051 / 42506345592 的实时状态并下载结果。原 baseline p6r 红仍是有效产品证据，p6d 准备红已修；不能将两者合并称为两个产品故障。
+- N1 余项包括：动态变速/恢复、关闭候选后的重新发现、样本老化/跨连接测量、全承载防抖与转发回归、hop 看守使用固定10ms而选路使用统一相对门槛的一致性。首批 RTT 排序与单元通过不代表这些已完成。N2-N5全部保留。
