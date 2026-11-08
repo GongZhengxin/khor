@@ -130,12 +130,14 @@ impl PathMeasurement {
         Self { rtt, at, samples }
     }
 
-    /// The recent sample median used by the selector.
+    /// The recent sample median used by the selector, or the last known quality
+    /// when the quality window is empty. Check age and samples for freshness.
     pub fn rtt(&self) -> Duration {
         self.rtt
     }
 
-    /// Time since the selector observed a new ACK sample on the representative copy.
+    /// Time since the sample's ACK was processed on the representative copy.
+    /// Reading the cache does not refresh this age; it is not a kernel receive timestamp.
     pub fn age(&self) -> Duration {
         Instant::now().saturating_duration_since(self.at)
     }

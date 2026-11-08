@@ -222,6 +222,10 @@ pub struct PathStats {
     /// smoothing, and its monotonic sample count. Congestion is unchanged.
     pub latest_rtt: Duration,
     pub rtt_samples: u64,
+    /// khor: when the sampled packet was sent and its ACK was processed.
+    /// Both are absent before an ACK-based sample; querying stats never refreshes them.
+    pub latest_rtt_sent: Option<Instant>,
+    pub latest_rtt_received: Option<Instant>,
     /// Statistics about datagrams and bytes sent on this path.
     pub udp_tx: UdpStats,
     /// Statistics about datagrams and bytes received on this path.
@@ -323,6 +327,8 @@ impl std::ops::Add<PathStats> for ConnectionStats {
             rtt: _,
             latest_rtt: _,
             rtt_samples: _,
+            latest_rtt_sent: _,
+            latest_rtt_received: _,
             udp_tx,
             udp_rx,
             frame_tx,
@@ -362,6 +368,8 @@ impl std::ops::AddAssign<PathStats> for ConnectionStats {
             rtt: _,
             latest_rtt: _,
             rtt_samples: _,
+            latest_rtt_sent: _,
+            latest_rtt_received: _,
             udp_tx: path_udp_tx,
             udp_rx: path_udp_rx,
             frame_tx: path_frame_tx,

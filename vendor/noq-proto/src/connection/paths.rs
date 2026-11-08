@@ -769,6 +769,8 @@ pub struct RttEstimator {
     latest: Duration,
     /// khor: the same sample after the ACK-delay correction used by smoothing.
     latest_sample: Duration,
+    /// khor: send/ACK processing instants for that sample, never the stats read time.
+    sample_times: Option<(Instant, Instant)>,
     /// The smoothed RTT of the connection, computed as described in RFC6298
     smoothed: Option<Duration>,
     /// The RTT variance, computed as described in RFC6298
@@ -783,6 +785,7 @@ impl RttEstimator {
             samples: 0,
             latest: initial_rtt,
             latest_sample: initial_rtt,
+            sample_times: None,
             smoothed: None,
             var: initial_rtt / 2,
             min: initial_rtt,
@@ -823,6 +826,15 @@ impl RttEstimator {
         self.samples
     }
 
+    pub(crate) fn sample_times(&self) -> Option<(Instant, Instant)> {
+        self.sample_times
+    }
+
+    pub(crate) fn update_at(&mut self, ack_delay: Duration, sent: Instant, received: Instant) {
+        self.update(ack_delay, received.saturating_duration_since(sent));
+        self.sample_times = Some((sent, received));
+    }
+
     /// Conservative estimate of RTT
     ///
     /// Takes the maximum of smoothed and latest RTT, as recommended
@@ -844,6 +856,7 @@ impl RttEstimator {
     /// Records an RTT sample.
     pub(crate) fn update(&mut self, ack_delay: Duration, rtt: Duration) {
         self.samples = self.samples.saturating_add(1);
+        self.sample_times = None;
         self.latest = rtt;
         self.latest_sample = rtt;
         // https://www.rfc-editor.org/rfc/rfc9002.html#section-5.2-3:
@@ -1241,6 +1254,25 @@ mod tests {
         assert_eq!(rtt.conservative(), ms(21), "recovery retains its raw latest RTT");
         rtt.update(ms(50), ms(30));
         assert_eq!(rtt.latest_sample(), ms(30), "ACK delay cannot push a sample below min RTT");
+    }
+
+    #[test]
+    fn khor_sample_times_belong_to_the_ack_not_a_later_stats_read() {
+        let ms = Duration::from_millis;
+        let sent = Instant::now();
+        let mut timed = RttEstimator::new(ms(100));
+        let mut reference = timed.clone();
+        assert_eq!(timed.sample_times(), None);
+        for (delay, rtt) in [(0, 1), (20, 21), (0, 10)] {
+            timed.update_at(ms(delay), sent, sent + ms(rtt));
+            reference.update(ms(delay), ms(rtt));
+            assert_eq!(timed.sample_times(), Some((sent, sent + ms(rtt))));
+            assert_eq!(timed.get(), reference.get());
+            assert_eq!(timed.conservative(), reference.conservative());
+            assert_eq!(timed.pto_base(), reference.pto_base());
+            assert_eq!(timed.latest_sample(), reference.latest_sample());
+            assert_eq!(timed.sample_count(), reference.sample_count());
+        }
     }
 
     #[test]

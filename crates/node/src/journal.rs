@@ -1915,7 +1915,8 @@ mod tests {
     /// net-e: a carried path names what carries it — 「改为通过 turing」,
     #[test]
     fn path_measurements_keep_old_journals_readable_and_preserve_the_evidence() {
-        let old = r#"{"e":"path","change":"selected","road":"relay","addr":"r.example","rtt_ms":300}"#;
+        let old =
+            r#"{"e":"path","change":"selected","road":"relay","addr":"r.example","rtt_ms":300}"#;
         let mut event: What = serde_json::from_str(old).unwrap();
         let What::Path { measurements, .. } = &mut event else {
             panic!("path event")

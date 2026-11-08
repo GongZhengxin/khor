@@ -11,6 +11,17 @@
 
 以下按本地补丁编号记录。
 
+### 10. RTT样本携带发送与ACK处理时刻（2026-11-09，feat/net）
+
+读取stats的actor可能晚于ACK处理，不能让读取时刻变成新的测量证据，也不能让故障前发出的包确认故障后的往返。
+`RttEstimator::update_at`使用原来的包发送/ACK处理时刻，调用原`update`执行相同RTT/ACK-delay/PTO/拥塞数学，
+另外保存`sample_times`，由PathStats发布`latest_rtt_sent`/`latest_rtt_received`；初始估计没有时刻，重复读取不刷新。
+这里的received是协议处理ACK的时刻，不是内核接收时间，不能据此声称消除全部CPU影响。
+
+Noq元数据/传输数学一致性回归在42518379039为434全绿；同run的iroh三项新鲜性回归22pass/3fail，
+证明读取延迟、初始估计变化和旧包ACK仍被旧Reading误算新证据。iroh补丁31修复后42519038936为434Noq/26iroh全绿；实际网络仍需对应源码回归。
+本地未提上游，本轮未检查最新上游实现；上游提供等价采样时刻后，以这些回归及p1/p2/p3/p7/f4复验退出，不能只看字段同名。
+
 ### 9. 同速但不应答的Backup也释放在飞数据（2026-11-09，feat/net）
 
 黑洞路径不再取ACK样本，历史RTT仍可能是20ms。原补丁7只对“明显更慢”的Backup重排，

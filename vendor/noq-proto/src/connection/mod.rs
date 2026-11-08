@@ -2730,6 +2730,9 @@ impl Connection {
         stats.rtt = path.data.rtt.get();
         stats.latest_rtt = path.data.rtt.latest_sample();
         stats.rtt_samples = path.data.rtt.sample_count();
+        let times = path.data.rtt.sample_times();
+        stats.latest_rtt_sent = times.map(|(sent, _)| sent);
+        stats.latest_rtt_received = times.map(|(_, received)| received);
         stats.cwnd = path.data.congestion.window();
         stats.current_mtu = path.data.mtud.current_mtu();
         // khor patch 3: the path's run of probe timeouts.
@@ -3112,16 +3115,12 @@ impl Connection {
                     Duration::from_micros(ack.delay << self.peer_params.ack_delay_exponent.0),
                 )
             };
-            let rtt = now.saturating_duration_since(
-                self.spaces[space]
-                    .for_path(path)
-                    .largest_acked_packet_send_time,
-            );
+            let sent = self.spaces[space].for_path(path).largest_acked_packet_send_time;
 
             let next_pn = self.spaces[space].for_path(path).next_packet_number;
             let path_data = self.path_data_mut(path);
             // TODO(@divma): should be a method of path, should be contained in a single place
-            path_data.rtt.update(ack_delay, rtt);
+            path_data.rtt.update_at(ack_delay, sent, now);
             if path_data.first_packet_after_rtt_sample.is_none() {
                 path_data.first_packet_after_rtt_sample = Some((space.kind(), next_pn));
             }

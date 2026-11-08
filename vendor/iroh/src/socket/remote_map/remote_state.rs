@@ -1231,7 +1231,7 @@ impl RemoteStateActor {
             }
         }
         measured.rtts.retain(|key, r| {
-            while r.changed.front().is_some_and(|at| now >= *at + CONFIRM_FOR) {
+            while r.changed.front().is_some_and(|(_, at)| now >= *at + CONFIRM_FOR) {
                 r.changed.pop_front();
             }
             r.recent.retain(|(at, _)| now.saturating_duration_since(*at) < CONFIRM_FOR);
@@ -2459,10 +2459,12 @@ struct Reading {
     samples: u64,
     quality: Duration,
     recent: VecDeque<(Instant, Duration)>,
-    /// Ticks within the last [`CONFIRM_FOR`] with a new ACK-based sample, oldest first.
-    /// This counts observation ticks rather than every ACK received between ticks.
-    changed: VecDeque<Instant>,
-    /// When a new ACK-based sample was last observed.
+    /// Sampled packet send and ACK processing instants for fresh observation ticks.
+    /// This counts ticks rather than every ACK received between ticks.
+    changed: VecDeque<(Instant, Instant)>,
+    /// Send time of the latest sampled packet; absent for an initial estimate.
+    sent: Option<Instant>,
+    /// When the latest sample's ACK was processed, not when stats were read.
     at: Instant,
 }
 
@@ -2471,47 +2473,56 @@ impl Reading {
         let mut reading = Self {
             road,
             rtt: stats.rtt,
-            samples: stats.rtt_samples,
+            samples: 0,
             quality: stats.rtt,
             recent: VecDeque::new(),
-            changed: if stats.rtt_samples > 0 {
-                VecDeque::from([now])
-            } else {
-                VecDeque::new()
-            },
+            changed: VecDeque::new(),
+            sent: None,
             at: now,
         };
-        if stats.rtt_samples > 0 {
-            reading.record(stats.latest_rtt, now);
-        }
+        reading.observe(stats, now);
         reading
     }
 
-    fn record(&mut self, sample: Duration, now: Instant) {
+    fn record(&mut self, sample: Duration, received: Instant, now: Instant) {
         self.recent.retain(|(at, _)| now.saturating_duration_since(*at) < CONFIRM_FOR);
-        self.recent.push_back((now, sample));
+        if now.saturating_duration_since(received) < CONFIRM_FOR {
+            self.recent.push_back((received, sample));
+        }
         while self.recent.len() > 8 {
             self.recent.pop_front();
         }
         let mut samples: Vec<_> = self.recent.iter().map(|(_, rtt)| *rtt).collect();
         samples.sort_unstable();
-        self.quality = samples[samples.len() / 2];
+        self.quality = samples.get(samples.len() / 2).copied().unwrap_or(sample);
     }
 
     fn observe(&mut self, stats: &PathStats, now: Instant) -> bool {
-        if self.samples == stats.rtt_samples && self.rtt == stats.rtt {
-            return false;
-        }
+        let new_sample = self.samples != stats.rtt_samples;
         self.rtt = stats.rtt;
         self.samples = stats.rtt_samples;
-        self.at = now;
-        self.changed.push_back(now);
-        if stats.rtt_samples > 0 {
-            self.record(stats.latest_rtt, now);
-        } else {
+        if stats.rtt_samples == 0 {
             self.quality = stats.rtt;
+            return false;
         }
-        true
+        if !new_sample {
+            return false;
+        }
+        let Some((sent, received)) = stats.latest_rtt_sent.zip(stats.latest_rtt_received)
+            .filter(|(sent, received)| sent <= received)
+            .map(|(sent, received)| (Instant::from_std(sent), Instant::from_std(received)))
+            .filter(|(_, received)| *received <= now)
+        else {
+            return false;
+        };
+        self.sent = Some(sent);
+        self.at = received;
+        self.record(stats.latest_rtt, received, now);
+        let fresh = now.saturating_duration_since(received) < CONFIRM_FOR;
+        if fresh {
+            self.changed.push_back((sent, received));
+        }
+        fresh
     }
 }
 
@@ -2553,7 +2564,9 @@ impl Measured {
                 continue;
             }
             if silence.answered.is_none()
-                && self.rtts.values().any(|r| r.road == *tuple && r.at > silence.judged)
+                && self.rtts.values().any(|r| {
+                    r.road == *tuple && r.sent.is_some_and(|sent| sent > silence.judged)
+                })
             {
                 silence.answered = Some(now);
             }
@@ -2604,18 +2617,18 @@ impl Measured {
 
     fn observation(&self, road: &transports::FourTuple) -> Option<PathMeasurement> {
         let speaks = self.representative(road)?;
-        (speaks.samples > 0).then(|| {
+        (speaks.samples > 0 && speaks.sent.is_some()).then(|| {
             PathMeasurement::new(speaks.quality, speaks.at, speaks.recent.len())
         })
     }
 
     /// A numerical EWMA change is not a sample counter. Require two
-    /// separate observation ticks after the move began; confirmation's
-    /// pings supply them even on an otherwise idle candidate.
+    /// separate observation ticks of packets sent after the move began;
+    /// a backlogged ACK must not confirm a post-stall round trip.
     fn samples_after(&self, road: &transports::FourTuple, after: Instant) -> usize {
         self.rtts.values()
             .filter(|r| r.road == *road)
-            .map(|r| r.changed.iter().filter(|at| **at > after).count())
+            .map(|r| r.changed.iter().filter(|(sent, _)| *sent > after).count())
             .max()
             .unwrap_or_default()
     }
@@ -3162,21 +3175,83 @@ mod tests {
     }
 
     #[test]
+    fn an_initial_estimate_change_is_not_a_fresh_ack() {
+        let t = Instant::now();
+        let mut stats = PathStats::default();
+        stats.rtt = MS(300);
+        let mut reading = Reading::new(addr(1), &stats, t);
+        stats.rtt = MS(1);
+        assert!(!reading.observe(&stats, t + MS(250)));
+        assert_eq!(reading.quality, MS(1), "an initial estimate may still guide exploration");
+        assert!(reading.changed.is_empty(), "PATH_RESPONSE is not new ACK evidence");
+    }
+
+    #[test]
+    fn a_delayed_stats_read_does_not_make_an_old_ack_new() {
+        let t = Instant::now();
+        let mut stats = PathStats::default();
+        stats.rtt = MS(5);
+        stats.latest_rtt = MS(5);
+        stats.rtt_samples = 1;
+        stats.latest_rtt_sent = Some(t.into_std());
+        stats.latest_rtt_received = Some((t + MS(5)).into_std());
+        let road = addr(1);
+        let reading = Reading::new(road.clone(), &stats, t + MS(3000));
+        assert_eq!(reading.at, t + MS(5), "age begins when the ACK was processed");
+        let mut measured = Measured::default();
+        measured.rtts.insert((ConnId(0), PathId::ZERO), reading);
+        assert_eq!(measured.samples_after(&road, t + MS(2000)), 0);
+        assert_eq!(measured.observation(&road).unwrap().samples(), 0);
+    }
+
+    #[test]
+    fn a_backlogged_ack_cannot_confirm_a_post_stall_round_trip() {
+        let t = Instant::now();
+        let after = t + MS(1000);
+        let road = addr(1);
+        let mut stats = PathStats::default();
+        stats.rtt = MS(5);
+        stats.latest_rtt = MS(5);
+        stats.rtt_samples = 1;
+        stats.latest_rtt_sent = Some(t.into_std());
+        stats.latest_rtt_received = Some((after + MS(100)).into_std());
+        let mut reading = Reading::new(road.clone(), &stats, after + MS(100));
+        stats.rtt_samples = 2;
+        stats.latest_rtt_sent = Some((t + MS(500)).into_std());
+        stats.latest_rtt_received = Some((after + MS(350)).into_std());
+        reading.observe(&stats, after + MS(350));
+        let mut measured = Measured::default();
+        measured.rtts.insert((ConnId(0), PathId::ZERO), reading);
+        assert_eq!(measured.samples_after(&road, after), 0, "both packets were sent before the stall");
+        for (count, sent) in [(3, 600), (4, 850)] {
+            stats.rtt_samples = count;
+            stats.latest_rtt_sent = Some((after + MS(sent)).into_std());
+            stats.latest_rtt_received = Some((after + MS(sent + 5)).into_std());
+            measured.rtts.get_mut(&(ConnId(0), PathId::ZERO)).unwrap()
+                .observe(&stats, after + MS(sent + 50));
+            assert_eq!(measured.samples_after(&road, after), (count - 2) as usize);
+        }
+    }
+
+    #[test]
     fn equal_rtt_samples_are_fresh_and_recovery_does_not_use_the_old_average() {
         let now = Instant::now();
         let mut stats = PathStats::default();
         stats.rtt = MS(300);
         stats.latest_rtt = MS(300);
         stats.rtt_samples = 1;
+        sample_time(&mut stats, now);
         let mut r = Reading::new(addr(1), &stats, now);
         let recovered = now + Duration::from_secs(3);
         stats.rtt = MS(260);
         stats.latest_rtt = MS(1);
         stats.rtt_samples = 2;
+        sample_time(&mut stats, recovered);
         assert!(r.observe(&stats, recovered));
         assert_eq!(r.quality, MS(1));
         assert_eq!(r.rtt, MS(260), "transport smoothing remains separate");
         stats.rtt_samples = 3;
+        sample_time(&mut stats, recovered + MS(250));
         assert!(r.observe(&stats, recovered + MS(250)), "equal values still give fresh evidence");
         assert_eq!(r.at, recovered + MS(250));
         assert!(!r.observe(&stats, recovered + MS(500)), "a repeated read is not a new sample");
@@ -3209,14 +3284,18 @@ mod tests {
         stats.rtt = MS(50);
         stats.latest_rtt = MS(5);
         stats.rtt_samples = 1;
+        sample_time(&mut stats, now - MS(1000));
         let mut busy = Reading::new(road.clone(), &stats, now - MS(1000));
         stats.rtt_samples = 2;
+        sample_time(&mut stats, now - MS(750));
         busy.observe(&stats, now - MS(750));
         stats.rtt_samples = 3;
+        sample_time(&mut stats, now - MS(500));
         busy.observe(&stats, now - MS(500));
         stats.rtt = MS(20);
         stats.latest_rtt = MS(20);
         stats.rtt_samples = 1;
+        sample_time(&mut stats, now);
         let quiet = Reading::new(road.clone(), &stats, now);
         let mut measured = Measured::default();
         measured.rtts.insert((ConnId(0), PathId::ZERO), busy);
@@ -3231,6 +3310,11 @@ mod tests {
         assert!(measured.observation(&other).is_none(), "an initial estimate is not observed quality");
     }
 
+    fn sample_time(stats: &mut PathStats, received: Instant) {
+        stats.latest_rtt_sent = Some((received - stats.latest_rtt).into_std());
+        stats.latest_rtt_received = Some(received.into_std());
+    }
+
     fn reading(road: &transports::FourTuple, at: Instant) -> Reading {
         Reading {
             road: road.clone(),
@@ -3238,9 +3322,28 @@ mod tests {
             samples: 0,
             quality: MS(1),
             recent: VecDeque::new(),
-            changed: VecDeque::from([at]),
+            changed: VecDeque::from([(at, at)]),
+            sent: Some(at),
             at,
         }
+    }
+
+    #[test]
+    fn an_old_packet_acked_after_a_stall_does_not_end_the_silence() {
+        let road = addr(1);
+        let t = Instant::now();
+        let open = |_: &transports::FourTuple| true;
+        let quick = |_: &transports::FourTuple, _: &Measured| true;
+        let mut m = Measured::default();
+        m.mark_silent(t, &[(road.clone(), t - MS(300))], open, quick);
+        let mut old = reading(&road, t + MS(250));
+        old.sent = Some(t - MS(500));
+        m.rtts.insert((ConnId(0), PathId::ZERO), old);
+        m.mark_silent(t + MS(250), &[], open, quick);
+        assert!(m.silent.contains_key(&road), "the ACK's packet predates the last silence judgment");
+        m.rtts.insert((ConnId(0), PathId::ZERO), reading(&road, t + MS(500)));
+        m.mark_silent(t + MS(500), &[], open, quick);
+        assert!(!m.silent.contains_key(&road), "a new round trip can end the silence");
     }
 
     /// A silent road answers again only after a round trip and [`SILENT_HOLD`] of answering;
