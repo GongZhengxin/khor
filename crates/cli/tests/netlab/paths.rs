@@ -642,7 +642,7 @@ async fn p6_reference_with_only_the_fast_direct_road_usable() {
 /// Its old smoothed RTT must not keep the connection on the relay for
 /// minutes. Activity permits a bounded, faster refresh; idle recovery
 /// uses the existing spare keepalive budget.
-async fn recovers(s: &str, active: bool) {
+async fn recovers(s: &str, active: bool, phase_s: u64) {
     let pair = speed_pair(s, 300).await;
     for (a, b) in [(&pair.a, &pair.b), (&pair.b, &pair.a)] {
         assert!(
@@ -652,7 +652,13 @@ async fn recovers(s: &str, active: bool) {
             "the faster relay carries before the direct road recovers"
         );
     }
-    tokio::time::sleep(Duration::from_secs(10)).await;
+    tokio::time::sleep(Duration::from_secs(10 + phase_s)).await;
+    for (a, b) in [(&pair.a, &pair.b), (&pair.b, &pair.a)] {
+        assert!(
+            a.link(b).await.is_some_and(|l| l.hop == Hop::Relay),
+            "preparation: both ends still use the relay before recovery at phase {phase_s}"
+        );
+    }
     let since = now_ms();
     delay(&pair.a.dev, "eth1", 0, LinkDirection::Both).await;
     let began = Instant::now();
@@ -680,7 +686,7 @@ async fn recovers(s: &str, active: bool) {
         s,
         ok,
         format!(
-            "active {active}; direct 300 -> 0ms, relay edge 40ms (~80ms end-to-end); back {back:?}, limit {limit:?}; errors {errors:?}; a {:?}, b {:?}",
+            "active {active}, phase {phase_s}s; direct 300 -> 0ms, relay edge 40ms (~80ms end-to-end); back {back:?}, limit {limit:?}; errors {errors:?}; a {:?}, b {:?}",
             moves(&pair.a, &pair.b, since),
             moves(&pair.b, &pair.a, since)
         ),
@@ -693,12 +699,37 @@ async fn recovers(s: &str, active: bool) {
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn p7_a_recovered_direct_road_is_taken_while_typing() {
-    recovers("p7a", true).await;
+    recovers("p7a", true, 0).await;
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn p7_a_recovered_direct_road_is_taken_while_idle() {
-    recovers("p7i", false).await;
+    recovers("p7i", false, 0).await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn p7_a_recovered_direct_road_while_typing_at_phase_2() {
+    recovers("p7a-phase2", true, 2).await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn p7_a_recovered_direct_road_while_typing_at_phase_4() {
+    recovers("p7a-phase4", true, 4).await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn p7_a_recovered_direct_road_while_idle_at_phase_5() {
+    recovers("p7i-phase5", false, 5).await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn p7_a_recovered_direct_road_while_idle_at_phase_10() {
+    recovers("p7i-phase10", false, 10).await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn p7_a_recovered_direct_road_while_idle_at_phase_14() {
+    recovers("p7i-phase14", false, 14).await;
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]

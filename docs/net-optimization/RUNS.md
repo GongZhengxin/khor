@@ -103,9 +103,25 @@ p2纠错协议在86ce3330/680dee60、任何v2实跑前冻结：原Relay未加延
 
 | Run | 生产代码 / source tree | snapshot | 状态 |
 | --- | --- | --- | --- |
-| 42516040900 | baseline6485cb83 / 02851ae57ad3df1c0a4e67db171f8148152fd82e | 6fc450c403b4d4022172a19f5ff0ed695f63781c | 在途 |
-| 42516056972 | candidate680dee60 / e0f8ac95368e27248abe9db96296f949f1d85cbd | 1c86ed462d76d423c63e640e9ac1913de48f213d | 在途 |
+| 42516040900 | baseline6485cb83 / 02851ae57ad3df1c0a4e67db171f8148152fd82e | 6fc450c403b4d4022172a19f5ff0ed695f63781c | FAILURE，三轮4/2、4/2、3/3；证据speed-v2-baseline-42516040900 |
+| 42516056972 | candidate680dee60 / e0f8ac95368e27248abe9db96296f949f1d85cbd | 1c86ed462d76d423c63e640e9ac1913de48f213d | SUCCESS，三轮6/0、18项全绿；证据speed-v2-candidate-42516056972 |
 
-两版paths.rs相同；baseline生产代码保持648不动。候选包含新增f4失败输出但compare不运行f4。恢复先查询，不因轮询超时再提交。
+两版paths.rs相同；baseline生产代码保持648不动。候选包含新增f4失败输出但compare不运行f4。候选p2 1.3/2.9/2.9秒、n35/41/41、p95 38.6–47.4ms/max62.4–90.1ms；p3最坏431.1/539.7/463.8ms，全部零错/退役。旧p2 3.1/3.1/26.6秒，末轮超限；p6r三轮慢Direct红，p95 330.4–333.0ms，新版113.4–128.9ms三绿。旧固定Relay参照p95 110.9–113.9ms但三轮期末held路径断言红，不能称整项绿；详细各项见REPORT。
 
-源码持久化：37个实验快照已建本地不可变`refs/khor/net-evidence/<run>`，清单证据根source-refs.json。每个ref的`:source`子树校验匹配source_tree，避免七天artifact和未引用git对象过期后丢失脏树实验源。未推外部、未覆盖任何工作树；新run终态后仍须补环境/模式/结果证据。
+源码持久化：43个实验快照已建本地不可变`refs/khor/net-evidence/<run>`，清单证据根source-refs.json。每个ref的`:source`子树校验匹配source_tree，避免七天artifact和未引用git对象过期后丢失脏树实验源。未推外部、未覆盖任何工作树；新run终态后仍须补环境/模式/结果证据。
+
+## 诊断与真实样本时刻
+
+- **42517477095** net-unit，tree50bb9361/snapshot55ffa0e6/controlc6a20c5，仅p2 fixture格式失败，未执行单元；patch已应用。证据speed-v2-unit-42517477095。
+- **42517864599** net-node，clean221b98fc/tree87f4555d/snapshot50775a6e/control781a907，仅新journal兼容测试字符串格式失败，未执行单元；patch已应用。证据path-measurement-node-42517864599。
+- **42518102550** net-vendor，treed62cbf30/snapshota9a761f4/control781a907，同一journal格式失败，未执行Noq/iroh单元，不能记预期新鲜性产品红；证据ack-time-format-42518102550。
+
+221b98fc在既有path事件附缓存质量/age/count，不新增timer、不改UI显示句。control781a907将journal单元加入net-node，新增netlab-hop以原fixture单场景顺序三轮。
+
+| Run | 任务 / source tree | snapshot | 状态 |
+| --- | --- | --- | --- |
+| 42517915206 | netlab-hop / 87f4555d149816be3fbc74801aac98a7357c74de | fd10c974e5e2c032f5cef62627675e747b1bb26b | 在途，f4/f4s/f4i三轮 |
+| 42517959505 | full netlab / 87f4555d149816be3fbc74801aac98a7357c74de | 6c42bd86d9193953f9fde0821346e343e55067b6 | 在途，35项8并行 |
+| 42518379039 | net-vendor / 915fec4f91a79525b6d2fac33ee728048004be93 | d24a4cc9f51c7cb580b170bf2e2171c2801fbb80 | 在途，格式修正后验证真实样本时刻预期红 |
+
+后两类源不同：前两run生产代码仍为ACK校正+Backup修复、Reading用actor观测时刻。42518379039只向Noq暴露采样包发送/ACK处理时刻，保持原RTT/PTO/拥塞数学，新增Noq元数据一致性与iroh三项回归（无ACK初始估计变化、延迟读stats、积压旧包不能确认新往返）；尚未修改Reading消费逻辑。全部control781a907。恢复先取真实红，不能把格式错误或静态判断当作回归已经复现。
