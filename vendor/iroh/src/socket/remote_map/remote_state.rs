@@ -1231,10 +1231,7 @@ impl RemoteStateActor {
             }
         }
         measured.rtts.retain(|key, r| {
-            while r.changed.front().is_some_and(|(_, at)| now >= *at + CONFIRM_FOR) {
-                r.changed.pop_front();
-            }
-            r.recent.retain(|(at, _)| now.saturating_duration_since(*at) < CONFIRM_FOR);
+            r.expire(now);
             present.contains(key) || !r.changed.is_empty()
         });
         for conn in self.connections.values() {
@@ -2492,9 +2489,28 @@ impl Reading {
         while self.recent.len() > 8 {
             self.recent.pop_front();
         }
+        self.quality = sample;
+        self.recalculate();
+    }
+
+    fn recalculate(&mut self) {
+        if self.recent.is_empty() {
+            return;
+        }
         let mut samples: Vec<_> = self.recent.iter().map(|(_, rtt)| *rtt).collect();
         samples.sort_unstable();
-        self.quality = samples.get(samples.len() / 2).copied().unwrap_or(sample);
+        self.quality = samples[samples.len() / 2];
+    }
+
+    fn expire(&mut self, now: Instant) {
+        while self.changed.front().is_some_and(|(_, at)| now >= *at + CONFIRM_FOR) {
+            self.changed.pop_front();
+        }
+        let before = self.recent.len();
+        self.recent.retain(|(at, _)| now.saturating_duration_since(*at) < CONFIRM_FOR);
+        if self.recent.len() != before {
+            self.recalculate();
+        }
     }
 
     fn observe(&mut self, stats: &PathStats, now: Instant) -> bool {
@@ -3257,6 +3273,31 @@ mod tests {
         assert!(!r.observe(&stats, recovered + MS(500)), "a repeated read is not a new sample");
         assert_eq!(r.quality, MS(1));
         assert!(r.recent.len() <= 8);
+    }
+
+    #[test]
+    fn expiring_an_old_sample_updates_quality_without_creating_an_ack() {
+        let t = Instant::now();
+        let road = addr(1);
+        let mut stats = PathStats::default();
+        stats.rtt = MS(300);
+        stats.latest_rtt = MS(300);
+        stats.rtt_samples = 1;
+        sample_time(&mut stats, t);
+        let mut reading = Reading::new(road.clone(), &stats, t);
+        stats.latest_rtt = MS(1);
+        stats.rtt_samples = 2;
+        sample_time(&mut stats, t + MS(1500));
+        reading.observe(&stats, t + MS(1500));
+        assert_eq!(reading.quality, MS(300), "the upper median still includes the slow sample");
+        reading.expire(t + MS(2250));
+        let mut measured = Measured::default();
+        measured.rtts.insert((ConnId(0), PathId::ZERO), reading);
+        let observation = measured.observation(&road).unwrap();
+        assert_eq!(observation.samples(), 1);
+        assert_eq!(observation.rtt(), MS(1), "only the fast sample remains in this same window");
+        assert_eq!(measured.road(&road), Some((MS(1), t + MS(1500))));
+        assert_eq!(measured.samples_after(&road, t + MS(2000)), 0, "expiry is not a new ACK");
     }
 
     #[test]
