@@ -9,7 +9,15 @@
 
 ## 补丁
 
-七处。
+八处。
+
+### 8. 路径RTT公开最新ACK样本与计数（2026-11-09，feat/net）
+
+`RttEstimator` 对每个合法RTT更新递增计数（相同数值也递增）；初始化估计不算样本。
+`PathStats` 新增 `latest_rtt` / `rtt_samples`，iroh可以区分新测量和旧平均值，避免备用恢复后仍被旧慢值困住。
+平滑RTT、PTO、拥塞数学与线上协议不变；最新样本含接收ACK所需时间，与既有 `latest` 同义。
+回归 `khor_equal_rtt_samples_are_fresh_and_latest_is_not_the_smoothed_value`，全noq单元与iroh p7动态场景。
+新候选未验证；上游未提交。上游具备同等观测接口后，在原恢复/防抖场景复验并移除字段补丁。
 
 ### 7. `src/connection/mod.rs`：离开慢得多的路时，它上面在飞的东西在新路上重发（2026-10-23，carry）
 

@@ -539,7 +539,14 @@ async fn echo(a: &LabNode) -> (Duration, Option<String>) {
 /// relay, or the reverse. NAT on each default uplink keeps the shared
 /// second network as the only usable direct road; relay traffic avoids
 /// that interface entirely.
-async fn speed_first(s: &str, direct_ms: u32, want: Hop) {
+struct SpeedPair {
+    _lab: Lab,
+    _relay: crate::lab::Relay,
+    a: LabNode,
+    b: LabNode,
+}
+
+async fn speed_pair(s: &str, direct_ms: u32) -> SpeedPair {
     let lab = Lab::new().await.unwrap();
     let r = relay(&lab, s, "relay", Some(Duration::from_millis(40))).await;
     let left = crate::nat::router(&lab, "left", crate::nat::Net::Strict).await;
@@ -557,6 +564,17 @@ async fn speed_first(s: &str, direct_ms: u32, want: Hop) {
     b.with(|n| async move { n.ls_of("alpha", "/tmp").await.map(|_| ()) })
         .await
         .expect("beta can query alpha before measurement");
+    SpeedPair {
+        _lab: lab,
+        _relay: r,
+        a,
+        b,
+    }
+}
+
+async fn speed_first(s: &str, direct_ms: u32, want: Hop) {
+    let pair = speed_pair(s, direct_ms).await;
+    let (a, b) = (&pair.a, &pair.b);
     tokio::time::sleep(Duration::from_secs(10)).await;
     let reached = a
         .until(&b, Duration::from_secs(15), |l| l.hop == want)
@@ -582,7 +600,7 @@ async fn speed_first(s: &str, direct_ms: u32, want: Hop) {
         s,
         ok,
         format!(
-            "direct {direct_ms}ms, relay 40ms, want {want:?}; reached {reached}, held {held}; n=30 p50 {:?} p95 {p95:?} max {:?}; errors {errors:?}; roads {roads:?}",
+            "direct {direct_ms}ms, relay edge 40ms (~80ms end-to-end), want {want:?}; reached {reached}, held {held}; n=30 p50 {:?} p95 {p95:?} max {:?}; errors {errors:?}; roads {roads:?}",
             samples[14], samples[29]
         ),
     );
@@ -597,6 +615,69 @@ async fn p6_a_fast_relay_beats_a_live_slow_direct_road() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn p6_a_fast_direct_road_beats_a_slow_relay() {
     speed_first("p6d", 0, Hop::Direct).await;
+}
+
+/// A slow direct candidate becomes fast while the relay is carrying.
+/// Its old smoothed RTT must not keep the connection on the relay for
+/// minutes. Activity permits a bounded, faster refresh; idle recovery
+/// uses the existing spare keepalive budget.
+async fn recovers(s: &str, active: bool) {
+    let pair = speed_pair(s, 300).await;
+    for (a, b) in [(&pair.a, &pair.b), (&pair.b, &pair.a)] {
+        assert!(
+            a.until(b, Duration::from_secs(25), |l| l.hop == Hop::Relay)
+                .await
+                .is_some(),
+            "the faster relay carries before the direct road recovers"
+        );
+    }
+    tokio::time::sleep(Duration::from_secs(10)).await;
+    let since = now_ms();
+    delay(&pair.a.dev, "eth1", 0, LinkDirection::Both).await;
+    let began = Instant::now();
+    let mut back = None;
+    let mut errors = Vec::new();
+    while began.elapsed() < Duration::from_secs(45) {
+        let roads = (pair.a.link(&pair.b).await, pair.b.link(&pair.a).await);
+        if roads.0.is_some_and(|l| l.hop == Hop::Direct)
+            && roads.1.is_some_and(|l| l.hop == Hop::Direct)
+        {
+            back = Some(began.elapsed());
+            break;
+        }
+        if active {
+            let (_, error) = echo(&pair.a).await;
+            if let Some(error) = error {
+                errors.push(error);
+            }
+        }
+        tokio::time::sleep(Duration::from_millis(200)).await;
+    }
+    let limit = Duration::from_secs(if active { 10 } else { 20 });
+    let ok = back.is_some_and(|t| t <= limit) && errors.is_empty();
+    result(
+        s,
+        ok,
+        format!(
+            "active {active}; direct 300 -> 0ms, relay edge 40ms (~80ms end-to-end); back {back:?}, limit {limit:?}; errors {errors:?}; a {:?}, b {:?}",
+            moves(&pair.a, &pair.b, since),
+            moves(&pair.b, &pair.a, since)
+        ),
+    );
+    assert!(
+        ok,
+        "a recovered fast road is rediscovered within its budget"
+    );
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn p7_a_recovered_direct_road_is_taken_while_typing() {
+    recovers("p7a", true).await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn p7_a_recovered_direct_road_is_taken_while_idle() {
+    recovers("p7i", false).await;
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]

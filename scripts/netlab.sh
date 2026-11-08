@@ -44,6 +44,10 @@ if [ "$(uname -s)" != Linux ]; then
     exec ssh "$HOST" "$remote"
 fi
 
+THREADS=${NETLAB_TEST_THREADS:-8}
+case "$THREADS" in
+    ''|0|*[!0-9]*) echo 'netlab: NETLAB_TEST_THREADS must be positive' >&2; exit 2 ;;
+esac
 SRC=$(cd "$(dirname "$0")/.." && pwd)
 TOOLS=${NETLAB_TOOLS:-$HOME/khor-netlab/tools}
 export PATH="$TOOLS/bin:$HOME/.cargo/bin:$PATH"
@@ -96,7 +100,7 @@ echo "netlab: running (log $LOG)"
 # Scenarios run side by side: each lab is namespaces of its own.
 # --nocapture: a green scenario's numbers are the point too.
 status=0
-nice -n 10 cargo test --locked -p khor-cli --test netlab -- --test-threads 8 --nocapture "$@" >"$LOG" 2>&1 || status=$?
+nice -n 10 cargo test --locked -p khor-cli --test netlab -- --test-threads "$THREADS" --nocapture "$@" >"$LOG" 2>&1 || status=$?
 
 echo
 echo "| scenario | today | measured |"

@@ -2728,6 +2728,8 @@ impl Connection {
         let path = self.paths.get(&path_id)?;
         let mut stats = self.path_stats.get(path_id).unwrap_or_default();
         stats.rtt = path.data.rtt.get();
+        stats.latest_rtt = path.data.rtt.latest();
+        stats.rtt_samples = path.data.rtt.sample_count();
         stats.cwnd = path.data.congestion.window();
         stats.current_mtu = path.data.mtud.current_mtu();
         // khor patch 3: the path's run of probe timeouts.

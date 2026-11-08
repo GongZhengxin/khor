@@ -763,6 +763,8 @@ impl RecoveryMetrics {
 /// RTT estimation for a particular network path
 #[derive(Copy, Clone, Debug)]
 pub struct RttEstimator {
+    /// khor: ACK-based samples, including samples equal to the previous one.
+    samples: u64,
     /// The most recent RTT measurement made when receiving an ack for a previously unacked packet
     latest: Duration,
     /// The smoothed RTT of the connection, computed as described in RFC6298
@@ -776,6 +778,7 @@ pub struct RttEstimator {
 impl RttEstimator {
     pub(crate) fn new(initial_rtt: Duration) -> Self {
         Self {
+            samples: 0,
             latest: initial_rtt,
             smoothed: None,
             var: initial_rtt / 2,
@@ -808,6 +811,14 @@ impl RttEstimator {
         self.smoothed.unwrap_or(self.latest)
     }
 
+    pub(crate) fn latest(&self) -> Duration {
+        self.latest
+    }
+
+    pub(crate) fn sample_count(&self) -> u64 {
+        self.samples
+    }
+
     /// Conservative estimate of RTT
     ///
     /// Takes the maximum of smoothed and latest RTT, as recommended
@@ -828,6 +839,7 @@ impl RttEstimator {
 
     /// Records an RTT sample.
     pub(crate) fn update(&mut self, ack_delay: Duration, rtt: Duration) {
+        self.samples = self.samples.saturating_add(1);
         self.latest = rtt;
         // https://www.rfc-editor.org/rfc/rfc9002.html#section-5.2-3:
         // min_rtt does not adjust for ack_delay to avoid underestimating.
@@ -1195,6 +1207,22 @@ impl std::ops::BitOrAssign for PathRetransmits {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn khor_equal_rtt_samples_are_fresh_and_latest_is_not_the_smoothed_value() {
+        let mut rtt = RttEstimator::new(Duration::from_millis(20));
+        assert_eq!(rtt.sample_count(), 0);
+        rtt.reset_initial_rtt(Duration::from_millis(10));
+        assert_eq!(rtt.sample_count(), 0, "an initial estimate is not an ACK sample");
+        rtt.update(Duration::ZERO, Duration::from_millis(10));
+        rtt.update(Duration::ZERO, Duration::from_millis(10));
+        assert_eq!(rtt.sample_count(), 2);
+        assert_eq!(rtt.get(), Duration::from_millis(10));
+        rtt.update(Duration::ZERO, Duration::from_millis(1));
+        assert_eq!(rtt.sample_count(), 3);
+        assert_eq!(rtt.latest(), Duration::from_millis(1));
+        assert!(rtt.get() > rtt.latest(), "congestion keeps its smoothed estimator");
+    }
 
     #[test]
     fn test_path_id_saturating_add() {

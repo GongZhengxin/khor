@@ -12,6 +12,19 @@
 
 ## 补丁
 
+### 29. ACK样本新鲜度、近期质量与有界备用刷新（2026-11-09，feat/net）
+
+`RemoteStateActor::Measured` 使用noq-proto补丁8的最新RTT/样本计数，而非从平滑值变化推断新样本。
+选路质量为近2秒、最多8个观测tick的中位数；同值新样本仍更新时间，反复读同一份stats不会。
+正常迁移确认需要两次新观测，故障离开只需一次新应答；原传输RTT估计、拥塞控制和线上协议不变。
+STREAM活跃期跨连接去重、轮转刷新已有备用，每对端最多5秒一个PING；PING/ACK不延长活跃期，闲置无新增timer。
+选中Relay/Custom也监测退化，沿用现有探测/打洞节流。
+
+回归：noq最新样本计数测试、iroh `equal_rtt_samples_are_fresh_and_recovery_does_not_use_the_old_average`、
+`active_refresh_is_bounded_rotates_and_does_not_sustain_itself`，动态netlab `paths::p7_`；完整p1/p1j/p1s/p2/p3/f4检查噪声/恢复。
+旧版p7两场景45秒未回快Direct；新候选尚待验证，不以本条记录宣告通过。上游未提交；上游提供可区分真实新样本的路径测量与
+有界探测后，按上述场景复验并退出补丁。独立iroh单元使用本包lock和本地noq-proto patch（lock只改来源、版本不变），不能误测registry副本。
+
 ### 28. 速度优先时所有路径都确认新鲜测量（2026-11-09，feat/net）
 
 `RemoteStateActor::confirm_move` 不再无条件放行“从中继/转连到直连”。Khor 的

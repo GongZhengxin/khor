@@ -411,13 +411,6 @@ pub fn switch_margin(rtt: Duration, settling: bool) -> Duration {
     floor.max(rtt / 4)
 }
 
-/// **Between a carried road and the relay, the margin the faster must
-/// beat the one in use by** (NET-DIRECT step 4, the owner 2026-10-09:
-/// 「可以，一定要把iroh用好呀」 on Tailscale's peer-relay rule): the
-/// lowest round trip carries the connection, and noise of a few ms moves
-/// nothing.
-pub const SWITCH_MARGIN: Duration = Duration::from_millis(10);
-
 /// **Whether a second direct path is kept open beside the one in use**
 /// (vendor/iroh/KHOR.md patch 18), as a spare to move to the moment the
 /// one in use stops answering. Without one, a direct path that fails falls
@@ -618,6 +611,13 @@ pub fn spare(
     }
 }
 
+/// Whether a candidate improves on the current path enough to switch.
+/// Discovery, selection and carried-road cleanup share this rule so a
+/// watcher cannot remove a path the selector would use.
+pub fn improves(candidate: Duration, current: Duration, settling: bool) -> bool {
+    candidate.saturating_add(switch_margin(current, settling)) <= current
+}
+
 /// The rule, apart from iroh's types: which candidate to move to, or
 /// `None` to stay. `current` is the path in use with its round trip, or
 /// `None` when nothing is selected or the selected path broke (it is no
@@ -642,7 +642,7 @@ pub fn choose_settling(
     let Some((_, rtt)) = current else {
         return Some(best);
     };
-    (best_rtt.saturating_add(switch_margin(rtt, settling)) <= rtt).then_some(best)
+    improves(best_rtt, rtt, settling).then_some(best)
 }
 
 #[cfg(test)]

@@ -333,6 +333,8 @@ struct State {
     moving: Moving,
     /// khor patch 17: what the measurement ticks read.
     measured: Measured,
+    /// A bounded refresh of existing alternatives while STREAM traffic is active.
+    refresh: ActiveRefresh,
     /// khor patch 20: the candidates last given to the connections.  A change of the direct
     /// addresses' sources alone (an address both on an interface and learnt by QAD) is no new
     /// candidate and starts no round.
@@ -394,6 +396,7 @@ impl RemoteStateActor {
                 watch: Watch::default(),
                 moving: Moving::default(),
                 measured: Default::default(),
+                refresh: Default::default(),
                 last_local_candidates: None,
                 scheduled_holepunch: None,
                 scheduled_open_path: None,
@@ -1070,13 +1073,15 @@ impl RemoteStateActor {
         let now = Instant::now();
         let measured = &self.state.measured;
         let sampled = |road: &transports::FourTuple, after: Instant| {
-            measured.road(road).is_some_and(|(_, at)| at > after)
+            measured.samples_after(road, after) >= 2
         };
         let step = match silence {
             Some(silence) => self
                 .state
                 .moving
-                .leave(to, now, silence.began, |after| sampled(to, after)),
+                .leave(to, now, silence.began, |after| {
+                    measured.samples_after(to, after) >= 1
+                }),
             // feat/net: every transport compares fresh measured readings. A direct
             // candidate gets neither an unconditional upgrade nor a different gain rule.
             None => self.state.moving.step(
@@ -1105,13 +1110,48 @@ impl RemoteStateActor {
         false
     }
 
-    /// khor patch 17: one measurement tick.  Watches the selected direct path for going
+    /// khor patch 17: one measurement tick. Watches the selected path for going
     /// silent or slowing down, then runs the selector on the paths' stats as they are now.
     fn reselect(&mut self) {
         let (sample, waiting) = self.read_paths();
         self.watch_selected(sample);
         self.probe_others(waiting);
+        self.refresh_candidates();
         self.select_path_on(true);
+    }
+
+    /// STREAM traffic makes discovery responsive. At most one existing
+    /// alternative is pinged per five seconds per remote, across all
+    /// connections; the probes' ACKs cannot extend the activity window.
+    fn refresh_candidates(&mut self) {
+        let now = Instant::now();
+        let frames = self.connections.values().filter_map(|c| c.handle.upgrade())
+            .map(|c| {
+                let s = c.stats();
+                s.frame_tx.stream.saturating_add(s.frame_rx.stream)
+            })
+            .fold(0u64, |n, frames| n.saturating_add(frames));
+        self.state.refresh.observe(frames, now);
+        if !self.state.refresh.ready(now) {
+            return;
+        }
+        let mut alternatives: Vec<(transports::FourTuple, noq::Path)> = Vec::new();
+        for c in self.connections.values() {
+            let Some(conn) = c.handle.upgrade() else { continue };
+            for (id, tuple) in &c.paths {
+                if Some(tuple) == self.state.selected_path.as_ref()
+                    || alternatives.iter().any(|(seen, _)| seen == tuple)
+                {
+                    continue;
+                }
+                if let Some(path) = conn.path(*id) {
+                    alternatives.push((tuple.clone(), path));
+                }
+            }
+        }
+        if let Some(index) = self.state.refresh.take(alternatives.len(), now) {
+            let _ = alternatives[index].1.ping();
+        }
     }
 
     /// khor patch 17 (10-21): the selected road has kept a packet waiting `waiting` (after a
@@ -1202,25 +1242,13 @@ impl RemoteStateActor {
                     waiting = Some(waiting.map_or(waited, |w: Duration| w.max(waited)));
                 }
                 match measured.rtts.get_mut(&key) {
-                    Some(r) if r.rtt == stats.rtt => {}
                     Some(r) => {
-                        if Some(tuple) == selected && stats.rtt > r.rtt {
-                            sample = sample.max(r.rtt + (stats.rtt - r.rtt) * 8);
+                        if r.observe(&stats, now) && Some(tuple) == selected {
+                            sample = sample.max(stats.latest_rtt);
                         }
-                        r.rtt = stats.rtt;
-                        r.at = now;
-                        r.changed.push_back(now);
                     }
                     None => {
-                        measured.rtts.insert(
-                            key,
-                            Reading {
-                                road: tuple.clone(),
-                                rtt: stats.rtt,
-                                changed: VecDeque::from([now]),
-                                at: now,
-                            },
-                        );
+                        measured.rtts.insert(key, Reading::new(tuple.clone(), &stats, now));
                     }
                 }
             }
@@ -1229,6 +1257,7 @@ impl RemoteStateActor {
             while r.changed.front().is_some_and(|at| now >= *at + CONFIRM_FOR) {
                 r.changed.pop_front();
             }
+            r.recent.retain(|(at, _)| now.saturating_duration_since(*at) < CONFIRM_FOR);
             present.contains(key) || !r.changed.is_empty()
         });
         // carry (10-23): a road far faster than the one in use comes back at its first round
@@ -1296,7 +1325,7 @@ impl RemoteStateActor {
         }
     }
 
-    /// khor patch 19: a selected direct path that stopped answering, or whose round trip
+    /// khor patch 19: a selected path that stopped answering, or whose round trip
     /// rose well past the lowest it read since it was selected, starts a hole-punching round
     /// now: the other direct roads may have been closed (only one direct path is kept per
     /// connection without a backup) and only a round opens them again.  Upstream checks every
@@ -1304,10 +1333,9 @@ impl RemoteStateActor {
     /// round per episode; the round's own spacing ([`HOLEPUNCH_ATTEMPTS_INTERVAL`]) holds.
     ///
     /// A path that is idle but for its keepalive has one RTT sample every 5 s, and the
-    /// smoothed RTT moves an eighth of the way per sample.  So one sample well over the floor
-    /// (read off the smoothed RTT's step: RFC 6298 moved it by an eighth of the sample's
-    /// distance) has the path pinged every tick for [`PROBE_FOR`], once per episode: the
-    /// smoothed RTT then says within two seconds whether the path slowed or that was noise.
+    /// transport estimator moves an eighth of the way per sample. One raw ACK sample well
+    /// over the floor has the path pinged every tick for [`PROBE_FOR`], once per episode:
+    /// the recent sample median then distinguishes sustained slowing from a single spike.
     ///
     /// A road that stopped answering starts a round only once it kept the connection waiting
     /// [`PUNCH_SILENT_AFTER`] (a shorter stall the selector rides out on the road, or leaves
@@ -1319,9 +1347,6 @@ impl RemoteStateActor {
         let Some(selected) = self.state.selected_path.clone() else {
             return;
         };
-        if !selected.is_ip() {
-            return;
-        }
         let Some((rtt, _)) = self.state.measured.road(&selected) else {
             return;
         };
@@ -2375,6 +2400,41 @@ impl Moving {
     }
 }
 
+/// Activity is evidence of STREAM frames, not PING/ACK traffic. This
+/// budget controls exploration only; failure recovery retains its own
+/// bounded probes. No new timer is installed on an idle connection.
+#[derive(Debug, Default)]
+struct ActiveRefresh {
+    frames: u64,
+    active_until: Option<Instant>,
+    next: Option<Instant>,
+    cursor: usize,
+}
+
+impl ActiveRefresh {
+    fn observe(&mut self, frames: u64, now: Instant) {
+        if frames > self.frames {
+            self.active_until = Some(now + Duration::from_secs(5));
+        }
+        self.frames = frames;
+    }
+
+    fn ready(&self, now: Instant) -> bool {
+        self.active_until.is_some_and(|until| now < until)
+            && self.next.is_none_or(|at| now >= at)
+    }
+
+    fn take(&mut self, alternatives: usize, now: Instant) -> Option<usize> {
+        if alternatives == 0 || !self.ready(now) {
+            return None;
+        }
+        let index = self.cursor % alternatives;
+        self.cursor = index + 1;
+        self.next = Some(now + Duration::from_secs(5));
+        Some(index)
+    }
+}
+
 /// khor patch 17: what the actor's measurement ticks read ([`RemoteStateActor::read_paths`]).
 #[derive(Debug, Default)]
 struct Measured {
@@ -2414,11 +2474,63 @@ impl Silence {
 struct Reading {
     road: transports::FourTuple,
     rtt: Duration,
-    /// The ticks within the last [`CONFIRM_FOR`] on which its RTT changed, the last one last:
+    samples: u64,
+    quality: Duration,
+    recent: VecDeque<(Instant, Duration)>,
+    /// The ticks within the last [`CONFIRM_FOR`] with a new ACK-based sample, the last one last:
     /// about how many samples it took.
     changed: VecDeque<Instant>,
-    /// When its RTT last changed.
+    /// When a new ACK-based sample was last observed.
     at: Instant,
+}
+
+impl Reading {
+    fn new(road: transports::FourTuple, stats: &PathStats, now: Instant) -> Self {
+        let mut reading = Self {
+            road,
+            rtt: stats.rtt,
+            samples: stats.rtt_samples,
+            quality: stats.rtt,
+            recent: VecDeque::new(),
+            changed: if stats.rtt_samples > 0 {
+                VecDeque::from([now])
+            } else {
+                VecDeque::new()
+            },
+            at: now,
+        };
+        if stats.rtt_samples > 0 {
+            reading.record(stats.latest_rtt, now);
+        }
+        reading
+    }
+
+    fn record(&mut self, sample: Duration, now: Instant) {
+        self.recent.retain(|(at, _)| now.saturating_duration_since(*at) < CONFIRM_FOR);
+        self.recent.push_back((now, sample));
+        while self.recent.len() > 8 {
+            self.recent.pop_front();
+        }
+        let mut samples: Vec<_> = self.recent.iter().map(|(_, rtt)| *rtt).collect();
+        samples.sort_unstable();
+        self.quality = samples[samples.len() / 2];
+    }
+
+    fn observe(&mut self, stats: &PathStats, now: Instant) -> bool {
+        if self.samples == stats.rtt_samples && self.rtt == stats.rtt {
+            return false;
+        }
+        self.rtt = stats.rtt;
+        self.samples = stats.rtt_samples;
+        self.at = now;
+        self.changed.push_back(now);
+        if stats.rtt_samples > 0 {
+            self.record(stats.latest_rtt, now);
+        } else {
+            self.quality = stats.rtt;
+        }
+        true
+    }
 }
 
 impl Measured {
@@ -2502,7 +2614,18 @@ impl Measured {
         let copies = self.rtts.values().filter(|r| r.road == *road);
         let latest = copies.clone().map(|r| r.at).max()?;
         let speaks = copies.max_by_key(|r| (r.changed.len(), r.at))?;
-        Some((speaks.rtt, latest))
+        Some((speaks.quality, latest))
+    }
+
+    /// A numerical EWMA change is not a sample counter. Require two
+    /// separate observation ticks after the move began; confirmation's
+    /// pings supply them even on an otherwise idle candidate.
+    fn samples_after(&self, road: &transports::FourTuple, after: Instant) -> usize {
+        self.rtts.values()
+            .filter(|r| r.road == *road)
+            .map(|r| r.changed.iter().filter(|at| **at > after).count())
+            .max()
+            .unwrap_or_default()
     }
 }
 
@@ -2729,11 +2852,10 @@ impl<'a> PathSelectionData<'a> {
         }
     }
 
-    /// khor patch 17: the road's round trip: the smoothed RTT of whichever connection's copy
-    /// of this path took the most samples lately (`Measured::road`), else this copy's.  `None`
-    /// when its stats can't be read.  The same road is a path on each connection to the
-    /// remote, and a copy that carries nothing keeps the RTT of its last keepalive, up to 5 s
-    /// old.
+    /// khor patch 17/29: the road's recent ACK-sample median from the copy taking the most
+    /// samples lately (`Measured::road`), else this copy's transport estimate. `None` when
+    /// its stats can't be read. Migration separately requires new evidence on both paths;
+    /// repeatedly reading the same estimate does not make it fresh.
     pub fn rtt(&self) -> Option<Duration> {
         let stats = self.stats()?;
         Some(self.fresh_rtt.unwrap_or(stats.rtt))
@@ -2906,6 +3028,7 @@ mod tests {
             watch: Watch::default(),
             moving: Moving::default(),
             measured: Default::default(),
+            refresh: Default::default(),
             last_local_candidates: None,
             scheduled_holepunch: None,
             scheduled_open_path: None,
@@ -3046,10 +3169,53 @@ mod tests {
         assert_eq!(unanswered_for(&never_heard, now), Some(MS(400)));
     }
 
+    #[test]
+    fn equal_rtt_samples_are_fresh_and_recovery_does_not_use_the_old_average() {
+        let now = Instant::now();
+        let mut stats = PathStats::default();
+        stats.rtt = MS(300);
+        stats.latest_rtt = MS(300);
+        stats.rtt_samples = 1;
+        let mut r = Reading::new(addr(1), &stats, now);
+        let recovered = now + Duration::from_secs(3);
+        stats.rtt = MS(260);
+        stats.latest_rtt = MS(1);
+        stats.rtt_samples = 2;
+        assert!(r.observe(&stats, recovered));
+        assert_eq!(r.quality, MS(1));
+        assert_eq!(r.rtt, MS(260), "transport smoothing remains separate");
+        stats.rtt_samples = 3;
+        assert!(r.observe(&stats, recovered + MS(250)), "equal values still give fresh evidence");
+        assert_eq!(r.at, recovered + MS(250));
+        assert!(!r.observe(&stats, recovered + MS(500)), "a repeated read is not a new sample");
+        assert_eq!(r.quality, MS(1));
+        assert!(r.recent.len() <= 8);
+    }
+
+    #[test]
+    fn active_refresh_is_bounded_rotates_and_does_not_sustain_itself() {
+        let t = Instant::now();
+        let mut refresh = ActiveRefresh::default();
+        assert_eq!(refresh.take(2, t), None);
+        refresh.observe(1, t);
+        assert_eq!(refresh.take(2, t), Some(0));
+        refresh.observe(2, t + MS(4000));
+        assert_eq!(refresh.take(2, t + MS(4000)), None);
+        assert_eq!(refresh.take(2, t + MS(5000)), Some(1));
+        refresh.observe(2, t + MS(8000));
+        assert_eq!(refresh.take(2, t + MS(10000)), None, "PINGs are not STREAM activity");
+        refresh.observe(3, t + MS(20000));
+        assert_eq!(refresh.take(0, t + MS(20000)), None);
+        assert_eq!(refresh.take(2, t + MS(20000)), Some(0));
+    }
+
     fn reading(road: &transports::FourTuple, at: Instant) -> Reading {
         Reading {
             road: road.clone(),
             rtt: MS(1),
+            samples: 0,
+            quality: MS(1),
+            recent: VecDeque::new(),
             changed: VecDeque::from([at]),
             at,
         }

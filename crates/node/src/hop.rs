@@ -192,10 +192,13 @@ fn asking(me: &str, to: &str) -> bool {
 }
 
 /// Whether a hop of `hop_ms` (its legs added) is worth opening against a
-/// relay measured at `relay_ms`: faster by [`khor_net::carry::SWITCH_MARGIN`].
+/// relay measured at `relay_ms`, using the selector's steady-state gain.
 pub(crate) fn beats(hop_ms: u32, relay_ms: u32) -> bool {
-    let margin = u32::try_from(khor_net::carry::SWITCH_MARGIN.as_millis()).unwrap_or(10);
-    hop_ms.saturating_add(margin) <= relay_ms
+    khor_net::carry::improves(
+        Duration::from_millis(u64::from(hop_ms)),
+        Duration::from_millis(u64::from(relay_ms)),
+        false,
+    )
 }
 
 /// A tunnel stream's first words, when they ask for a hop.
@@ -519,8 +522,8 @@ impl Node {
                     }
                     () = tokio::time::sleep(LOOK_EVERY) => {}
                 }
-                // Direct took over, or the relay kept it (the hop is no
-                // faster), for two looks: the middle is let go, so it
+                // The selected direct or relay road beats the hop on
+                // measurement for two looks: the middle is let go, so it
                 // carries nothing it need not. **The relay keeps it only on
                 // measurement** (carry, 2026-10-23): one taken while the
                 // carried road stalls is not the hop losing. The phone's leg
@@ -530,8 +533,9 @@ impl Node {
                 // good (netlab f4).
                 let road = wires.link(&id).road;
                 let losing = match road {
-                    Some(khor_net::path::PathKind::Direct) => true,
-                    Some(khor_net::path::PathKind::Relay) => wires.relay_beats_carried(&id),
+                    Some(khor_net::path::PathKind::Direct | khor_net::path::PathKind::Relay) => {
+                        wires.selected_beats_carried(&id)
+                    }
                     _ => false,
                 };
                 held = if losing { held + 1 } else { 0 };
@@ -548,11 +552,11 @@ impl Node {
 
     /// **The road choice by measured legs** (NET-DIRECT step 4), every
     /// [`COMPARE_EVERY`] from the resident's beat: for each machine whose
-    /// live wire is on the relay, the best middle's two legs added
+    /// live wire uses a direct or relay path, the best middle's two legs added
     /// ([`middles_with_cost`]: this machine's live round trip to the
     /// middle, the middle's written one onward) against the relay's
-    /// measured round trip. A hop at least [`khor_net::carry::SWITCH_MARGIN`]
-    /// faster is opened; iroh then measures it end to end and the selector
+    /// measured round trip. A hop that meets the selector's gain margin
+    /// is opened; iroh then measures it end to end and the selector
     /// keeps whichever is faster, and a hop that loses is let go
     /// ([`Node::open_hop`]) and not tried through that middle again for
     /// [`LOST_FOR`]. Direct needs nothing here: iroh's punching runs under
@@ -593,7 +597,11 @@ impl Node {
                 continue;
             }
             let r = self.wires.link(&y.id);
-            let (Some(khor_net::path::PathKind::Relay), Some(rtt)) = (r.road, r.rtt) else {
+            let (
+                Some(khor_net::path::PathKind::Direct | khor_net::path::PathKind::Relay),
+                Some(rtt),
+            ) = (r.road, r.rtt)
+            else {
                 continue;
             };
             let relay_ms = u32::try_from(rtt.as_millis()).unwrap_or(u32::MAX);
@@ -809,7 +817,7 @@ mod tests {
     /// to the iPhone at 26 ms — the hop costs 29 ms and is opened; at a
     /// relay of 35 ms it would save under 10 ms and is not.
     #[test]
-    fn a_hop_is_worth_opening_when_its_legs_beat_the_relay_by_ten_ms() {
+    fn a_hop_is_worth_opening_when_the_selector_would_use_it() {
         let rows: Vec<(String, bool, bool)> = ["maclab", "iphone", "turing", "hinton"]
             .iter()
             .map(|s| (s.to_string(), false, false))
@@ -845,6 +853,8 @@ mod tests {
         assert!(beats(29, 58));
         assert!(!beats(29, 35), "6 ms is not worth a middle");
         assert!(beats(29, 39));
+        assert!(beats(22, 30), "8 ms on 30 ms wins selection");
+        assert!(!beats(450, 500), "50 ms on 500 ms cannot win selection");
     }
 
     /// **lecun's day of 10-20** (C7): its relays never answered; it
