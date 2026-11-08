@@ -551,6 +551,12 @@ async fn speed_first(s: &str, direct_ms: u32, want: Hop) {
     let a = node(s, da, "alpha", &[&r], &[]).await;
     let b = node(s, db, "beta", &[&r], &[]).await;
     mesh(&[&a, &b]).await;
+    // Pairing does not require the answering resident to dial back.
+    // Establish both outgoing wires before measuring both residents;
+    // the quiet background pump may otherwise wait thirty seconds.
+    b.with(|n| async move { n.ls_of("alpha", "/tmp").await.map(|_| ()) })
+        .await
+        .expect("beta can query alpha before measurement");
     tokio::time::sleep(Duration::from_secs(10)).await;
     let reached = a
         .until(&b, Duration::from_secs(15), |l| l.hop == want)

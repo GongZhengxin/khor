@@ -156,13 +156,13 @@
 ## 8. 开发与证据规范
 
 - 遵守 [REMOTE-DEVELOPMENT.md](../REMOTE-DEVELOPMENT.md)、[LOCAL-CHECKS.md](../LOCAL-CHECKS.md) 及中央 STATE 最新环境约束。本机 source-only，不安装 Node/Rust/Xcode 依赖或执行重型编译测试。
-- 私库控制入口：`colehank/khor-build`；Mac runner：`khor-mac-mini-m4`；现有任务 `fast`、`native`、`lab`。具体可用任务与 runner 状态执行前再查。
+- 私库控制入口：`colehank/khor-build`；Mac runner：`khor-mac-mini-m4`；原有任务包括 `fast`、`native`、`lab`；本分支新增网络任务的实际入口见 [ACCEPTANCE.md](ACCEPTANCE.md)。具体可用任务与 runner 状态执行前再查。
 - `--task lab` 是原生 KhorLab 构建，不是 Linux netlab。源码快照不自动包含未跟踪/忽略文件，新增源码需先暂存。回执必须匹配被验证的源码 tree。
 - Mac 重型任务共享一个槽并经过 `run-build` 资源门；SSH 断线不影响已调度任务。被取消的 pending 不算已检查，不盲目重复提交。
 - Linux netlab 的候选是私库独立的 GitHub 托管 Linux job；先验证 user namespace、tc、nft/conntrack 等条件。不满足时提出独立 Linux worker 方案，不将集群 SSH 私钥复制到 Mac runner。
 - 当前中央约定：租机产物不在本机执行；真实 App 验收沿届时获准的现有 Lab/可信构建路径进行。macserver 不持有签名、个人 token、模型或集群凭据。
 - 合并需对应提交的可信 GitHub Quality；正式发行由可信 runner 从源码/锁文件重建，不使用租机可执行文件或编译缓存。
-- 外部证据预留：`/Volumes/disk0/Khor/evidence/net/`，本轮尚未创建测试产物。原始日志按 run ID 分类，不将机器敏感信息和凭据放进计划。
+- 外部证据：`/Volumes/disk0/Khor/evidence/net/`，各实际 run 的收据与结果见 STATE。原始日志按 run ID 分类，不将机器敏感信息和凭据放进计划。
 
 每份验证收据至少包含：源码基线、candidate commit/tree/dirty 状态、运行 ID/链接、执行器/系统/工具版本、场景和配置/随机种子、负载、样本量/重复次数、原始结果与失败原因、对照版本、结论及未覆盖范围。GitHub artifact 会过期，重要对照数据需及时保存到规范证据目录。
 
