@@ -29,6 +29,7 @@ python3 scripts/dev.py check --task net-unit --builder-ref feat/net
 python3 scripts/dev.py check --task netlab-smoke --builder-ref feat/net
 python3 scripts/dev.py check --task netlab-compare --builder-ref feat/net
 python3 scripts/dev.py check --task netlab-dynamic --builder-ref feat/net
+python3 scripts/dev.py check --task netlab-hop --builder-ref feat/net
 python3 scripts/dev.py check --task net-node --builder-ref feat/net
 python3 scripts/dev.py check --task net-vendor --builder-ref feat/net
 python3 scripts/dev.py check --task netlab --builder-ref feat/net
@@ -37,6 +38,8 @@ python3 scripts/dev.py check --task netlab --builder-ref feat/net
 `net-unit` 验证格式与 khor-net 单元；`netlab-smoke` 的初版覆盖 p2/p3/p6，control d7d1af1 起加入 f4/f4s/f4i，显式2个场景并行用于功能回归；正式性能对照仍用单场景compare。`netlab` 完整矩阵保持原8并行。Linux 上先实测 user namespace、netem、nft 的能力再编译。源码使用原有 parentless snapshot + tree 校验，结果下载沿用 `dev.py result`，control commit 也写入回执。控制分支未经检查不得冒充已落地的默认入口。
 
 `netlab-compare` 将 p2/p3/p6（含两个固定好路径参照）以单场景并行度1顺序重复3次，全部结果保留，即使baseline某轮产品红也继续其余重复。固定参照在同样双路拓扑完成准备后阻断竞争路径，再进行同样10秒预热和30次请求；Relay参照阻断唯一共享直连腿，Direct参照阻断中继数据面。参照是稳态可达到值，不计为首次拨号或故障切换性能。两版使用同一fixture，生产源码仍分别为旧/新策略。
+
+control781a907增加`netlab-hop`，同一f4/f4s/f4i fixture按单场景并行度1顺序三轮，保留每轮失败；不改其网络/门槛。`net-node`补跑journal单元，验证path事件诊断字段可读旧journal且不改变显示句。221b98fc起path事件附缓存的传输RTT与选路quality/age/count，只在已有事件读取，不新增timer或探测；这是事件处理时的连接缓存快照，不冒充选择器内部决策时刻。
 
 ## 动态恢复目标（p7，修改采样实现前冻结）
 
@@ -59,3 +62,9 @@ v2首次执行前补充审计：Link.rtt_ms是各连接的旧平滑RTT，缺样�
 前台p2持续200ms间隔请求，包含收敛过程并在第一次达到快路径后继续至少30次请求；零错误，最坏请求<1秒（沿p3体验上限），全部样本p95<200ms（沿p6），结束两端仍在快路径。超时/错误保留进样本与结果，报告路径、收敛时间、样本量/p50/p95/max，不只报接口名。新增延迟要求比旧p2更完整，不放宽10秒/零错误/零退役。
 
 p2i仍是原闲置观察项，记录相同快路径收敛与退役，无额外业务请求，不把观察red自动转成测试pass证明。两版正式对照需复制完全相同v2 fixture后重跑；旧LAN-only结果不替代新协议证据。
+
+## p7相位扩展（新增fixture前冻结）
+
+为覆盖闲置恢复19秒附近的裕量，在原10秒预热后增加故障注入相位偏移：交互0/2/4秒，闲置0/5/10/14秒。每个相位新建相同Lab，不改变路径、请求间隔、45秒观测上限或交互10秒/闲置20秒门。变化前再次确认两端确在Relay，否则记准备失败；不把未打中的变化算成功。
+
+七个独立Rust case均由p7_前缀纳入netlab-dynamic：每轮单场景顺序、三轮共21个p7观察；另有原p2/p3，各轮保留失败。结果写明相位，不能将同一VM的21个案例称为21台独立机器。扩展后的完整矩阵是40项，扩展前35项结果仍按原源码解释。此扩展只增加覆盖，不推断探测开销已达标，也不由老phase0数据回填其余相位通过。
