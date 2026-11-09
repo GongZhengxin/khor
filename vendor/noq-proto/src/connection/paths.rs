@@ -880,7 +880,15 @@ impl RttEstimator {
             } else {
                 self.latest
             };
-            self.latest_sample = adjusted_rtt;
+            // khor patch 12: path quality excludes valid peer ACK delay even
+            // when small network jitter would put the result below min RTT.
+            // Clamp selection to that observed floor; retain the RFC sample
+            // below for transport smoothing, variance and congestion/recovery.
+            self.latest_sample = if ack_delay < self.latest {
+                self.latest.saturating_sub(ack_delay).max(self.min)
+            } else {
+                self.latest
+            };
             let var_sample = smoothed.abs_diff(adjusted_rtt);
             self.var = (3 * self.var + var_sample) / 4;
             self.smoothed = Some((7 * smoothed + adjusted_rtt) / 8);

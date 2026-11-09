@@ -101,3 +101,8 @@ Noq4另补真实虚拟连接专项a_backup_probe_is_acked_when_the_responders_da
 ## 新增38：被动迁移tuple同步（候选，未闭合）
 
 247真实NAT-only端口重绑、Noq实际tuple与iroh缓存69次不一致，124/124可达但warm remote新路选择0/30；整个fixture与严格数据合同/哈希已冻结在ACCEPTANCE和nat-tuple-red-green.json。候选在既有reselect前按实际路径身份重登记/清变更Reading/重apply，不改其他策略。待同整fixture转绿、vendor/便携与完整移动/转发/成本矩阵；上游等价事件/同步API及调用者行为未验证，不声称上游必然有缺陷，也不自动批准升级。原48项覆盖/退出缺口继续保留。
+
+
+## 新增Noq补丁12候选（2026-11-09）
+
+当前总数50（Iroh38+Noq12），原48仍全部在审计范围内。Noq12是近RTT下界ACK-delay选路偏差的独立修正，不改传输RFC数学/收益门。原42722555246单元438绿1红，264/265实物理准备失败及纳秒数值关联留证；whole paths tests模块hash与后续绿必须相等，真实vendor/peer relay/稳定性证据尚待。准确理由/退出条件见vendor/noq-proto/KHOR.md，不能把候选记作已验收。

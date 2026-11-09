@@ -8,7 +8,8 @@
 
 ## 先核当前句柄，禁止盲重发
 
-- **264 Turing实际四端快照重复在途**：turing-20261109T233244Z-444c1ea7，PID1279341，复用260完整source/tree/snapshot/control be11104，原fixture/诊断模式/门不变；WAN原group空且锁已释放后才启动，不与其计时争用。下一按句柄核终态/真实group/collection，不能盲重发。
+- **265已终态准备失败/266实际Noq单元红**：265 210.546s/rc101/原group空，仍只有2 setup ok，尚未移动；四端outer Direct，两次hop的8个Custom质量值全按纳秒唯一对应此前同resident ACK-floor样本，raw-delay正且略低于min、sample原raw（详ack-floor-quality-correlation.json，数值关联不是逐包ID绑定）。266 Mac42722555246 fmt通过、438绿/1红（109ms≠85ms），source/control/11 control blobs身份核。新增Noq12候选只将独立selection sample夹到已测floor，transport adjusted/SRTT/variance/PTO/拥塞/25%门不变，whole paths tests模块SHA已冻结，vendor/物理绿待核；当前50补丁（Iroh38+Noq12）。Turing当前无重型，下一实际句柄按ledger。
+- **264已终态，移动前准备失败**：194.445s/rc101/原group空，只有2个setup logical requests ok，150秒未保持reported Carried，尚未移动；不是移动可用性红。实际四个outer端在两次建hop观察均Direct约41–42ms；X/Y inner Custom quality约109ms、Relay约131ms，两look因25%门不足而Outperformed回收。preparation-outer-timeline.json留证。不能放宽准备门或称外层未直连。下一265完整samples核ACK-delay floor可能偏差，尚未唯一根因闭合。
 - **263 Mac42721024415 ↔ Turing真WAN首轮60/60全部ok**：coordinator e0b0b491f8336536，control ebf7f0d；原ff608e91/tree7d0c7467/snapshotb13e4398，两端fresh身份互相精确匹配、同完整source。Mac→Linux n30 p50/p95/max=61004/65659/84881us；Linux→Mac=59729/61452/71335us。两端links实际为公共Relay 101.200.80.77:3340，不冒称Direct/peer relay/最优。两端resident joined/worker rc0/owned空、Linux原group空/锁释放、成功后fresh身份及复制binary已清，临时Actions secret在pair后删除；Mac artifact11 files/11 control blobs/source/transport/hashes已核。wan-first-paired-proof.json留全部原结果hash。仅paired-warm目录list（marker名/类型/大小），不是冷建连/文件正文/移动/手机/能耗或p99；只有一轮。
 
 - **263及此前全部已终态采证，264为唯一Turing重型在途。** 所有refs已逐条pin，最新批量审计仍待刷新。旧句柄段逐字归档在[HISTORY-20261109-wan-lifetime-handles.md](HISTORY-20261109-wan-lifetime-handles.md)。
@@ -71,7 +72,7 @@
 | N2 | IPC剩余预算/取消贯通、长多阶段/两middle合计3秒、输者与晚候选、近期地址/重启/jitter合并/quiet epoch/close-vs-offer；写不重放/正常half-close不取消 |
 | N3 | 真实Node32席位/content32、Custom1024帧/256KiB外层队列、SSH/hop混合公平/共享vs分连接、1/3/5设备CPU/字节/唤醒/手机能耗；Noq FIFO_v2低层704请求不能替代 |
 | N4 | U12完整移动矩阵、Mac↔Turing↔iPhone真跨网、冷暖/双端不对称、登记/出口/整机故障域、布局容量运维；不是采购部署 |
-| N5 | 原48＋新增38候选，共49 vendor补丁（Iroh38+Noq11）逐项覆盖/上游等价/退出、Noq1/5缺口、准确最终源可信Quality、Mac原生App/代理/多机/手机/能耗；证据前不升级/删补丁 |
+| N5 | 原48＋新增38候选，共50 vendor补丁（Iroh38+Noq12候选）逐项覆盖/上游等价/退出、Noq1/5缺口、准确最终源可信Quality、Mac原生App/代理/多机/手机/能耗；证据前不升级/删补丁 |
 
 ## 执行与证据规矩
 
