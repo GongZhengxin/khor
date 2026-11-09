@@ -225,3 +225,8 @@ Turing candidate原hop128th已终态 **FAILURE8/9**（2/3、3/3、3/3），完�
 独立同源reducer已原样抽取到Turing用固定Rust1.95运行（无Cargo/产品/全netlab，单槽无其他计时）：evidence/hop-timeline-original-audit，134th ref，compile0、4tests中2pass2fail。实际两红：漏掉新started carried的恢复、漏算新started relay的占用；opened候选不算胜出、真实10.9s后回退仍失败两控制通过。未改原20秒/1.5秒/30秒门。最小修复只将started纳入占用状态，selected move计数/独立f4i不变，日志新增wire starts；待绿审计与同fixture两角色复验，不能据纯函数即收hop。
 
 Mac133th 42589161986仍仅formatter门失败（一处链式排版），没有行为测试。已从Turing同Rust1.95/rustfmt1.9配置取得两份格式化副本并逐SHA核旧源后应用，本机未执行Rust。wire.rs长abandon/ACK阳性覆盖仍待实际runtime绿；生产未改。
+
+
+134→135独立reducer实际2红→4绿已完成，固定Rust1.95、源码片段/控制SHA/四测试日志均在hop-timeline-original-audit与hop-timeline-fixed-audit，format副本也有逐源hash。修复只纳入started作为占用状态，opened不算胜出、真实后续fallback仍红、20秒长占用仍红，move计数/独立f4i未改。尚未称全hop绿。两份远端格式化副本按源SHA核后应用，本机没跑Rust。
+
+旧candidate hop128th终态8/9、report/classification留存。旧baseline hop129th只staged未launch，因已知计量缺陷标superseded_not_launched；保留其ref/job/receipt且不运行无效指标。马上新建两角色修正fixture hop任务，原20s/1.5s/30s、拓扑/注入/重复次数不变；已核baseline仍仅原六fixture变化且五实际fixture与candidate逐字相同，生产6485原样。旧stalls130/131未launch且不使用此reducer，保留串行计划，最终准确源矩阵还需复验。wire.rs两新覆盖runtime仍待Mac，133仍fmt-only红，135纯reducer不替代它。

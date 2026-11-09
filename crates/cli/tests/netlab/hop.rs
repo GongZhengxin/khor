@@ -666,7 +666,9 @@ async fn f4_stall(s: &str, st: Stall) {
                 .iter()
                 .map(|(at, _, r)| format!("{r}@{}", secs(*at)))
                 .collect::<Vec<_>>(),
-            events.iter().filter(|(_, change, _)| change == "started")
+            events
+                .iter()
+                .filter(|(_, change, _)| change == "started")
                 .map(|(at, _, road)| format!("{road}@{}", secs(*at)))
                 .collect::<Vec<_>>(),
             now.as_ref().map_or("nothing".into(), word),
