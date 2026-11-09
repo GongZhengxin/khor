@@ -572,7 +572,11 @@ impl Node {
                     }
                     _ => CarrierComparison::Needed,
                 };
-                held = if comparison != CarrierComparison::Needed { held + 1 } else { 0 };
+                held = if comparison != CarrierComparison::Needed {
+                    held + 1
+                } else {
+                    0
+                };
                 if held >= 2 {
                     release_hop(&links, &id, peer, via, attachment, road, held, comparison);
                 }
@@ -803,7 +807,16 @@ mod tests {
             let current = links.attach(peer, Carrier::Hop { via }, r, w);
             let serial = current.serial();
             assert!(links.has(&peer));
-            release_hop(&links, &peer.to_string(), peer, via, serial, Some(road), 2, CarrierComparison::Outperformed);
+            release_hop(
+                &links,
+                &peer.to_string(),
+                peer,
+                via,
+                serial,
+                Some(road),
+                2,
+                CarrierComparison::Outperformed,
+            );
             assert!(!links.has(&peer), "the current owner releases its own link");
             assert_eq!(
                 was_lost(&peer.to_string(), &via.to_string()),
@@ -876,15 +889,25 @@ mod tests {
         let serial = current.serial();
         assert!(links.has(&peer));
         release_hop(
-            &links, &peer.to_string(), peer, via, serial,
-            Some(PathKind::Relay), 2, CarrierComparison::Unused,
+            &links,
+            &peer.to_string(),
+            peer,
+            via,
+            serial,
+            Some(PathKind::Relay),
+            2,
+            CarrierComparison::Unused,
         );
         let suppressed = was_lost(&peer.to_string(), &via.to_string());
         assert!(!links.has(&peer), "an unused carrier is actually reclaimed");
-        tokio::time::timeout(Duration::from_secs(1), current.ended()).await
+        tokio::time::timeout(Duration::from_secs(1), current.ended())
+            .await
             .expect("the reclaimed owned stream ends");
         eprintln!("[hop-unused-contract] serial={serial} released=true suppressed={suppressed}");
-        assert!(!suppressed, "no carried path comparison is no evidence that its middle lost");
+        assert!(
+            !suppressed,
+            "no carried path comparison is no evidence that its middle lost"
+        );
     }
 
     fn middles(

@@ -719,7 +719,10 @@ impl Wires {
         });
         let comparison = if !losing {
             CarrierComparison::Needed
-        } else if facts.iter().any(|(_, paths)| paths.iter().any(|p| p.carried)) {
+        } else if facts
+            .iter()
+            .any(|(_, paths)| paths.iter().any(|p| p.carried))
+        {
             CarrierComparison::Outperformed
         } else {
             CarrierComparison::Unused
@@ -1818,7 +1821,8 @@ mod tests {
         let id = bid.to_string();
         wires.adopt(&id, Proto::Main, outgoing.clone());
         assert_eq!(
-            wires.compare_carrier(&id), CarrierComparison::Unused,
+            wires.compare_carrier(&id),
+            CarrierComparison::Unused,
             "the sole direct wire needs no carrier"
         );
         wires.serving(&incoming);
@@ -1833,9 +1837,14 @@ mod tests {
         direct.close().await;
         carried.close().await;
 
-        assert_eq!(release_closed, CarrierComparison::Unused, "a closed incoming wire holds no carrier");
         assert_eq!(
-            release_live, CarrierComparison::Needed,
+            release_closed,
+            CarrierComparison::Unused,
+            "a closed incoming wire holds no carrier"
+        );
+        assert_eq!(
+            release_live,
+            CarrierComparison::Needed,
             "a live incoming wire still uses the peer's carrier: outgoing={direct_facts:?}, incoming={carried_facts:?}"
         );
     }

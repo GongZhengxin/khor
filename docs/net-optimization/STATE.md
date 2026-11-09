@@ -4,6 +4,9 @@
 
 ## 当前源码与已收齐证据
 
+- **231仅根format前置失败，Unused合同未执行**：`turing-20261109T211319Z-3e206189`，base9333af64/tree20b1c7fa/snapshot8efac588/controle4c58dc；43.73s、原group空。4278字节远端format.patch已原样应用，原退避行为仍保留；下一准确源取真实红，不把格式失败记成行为红。
+
+
 - **230 NAT物理前置失败并正确阻止Node**：`turing-20261109T211033Z-83dbb115`，baseffcf7a53/tree2c23700c/snapshot6b05809a/controle4c58dc，31.68s、rc101、原group空。root format/编译过，r0第一条nft table内链closing brace缺换行，0.45s明确syntax error；r1业务未执行，完整采证。只修owned规则header换行；不计网络/Node行为红。下一先N1新unused回归旧行为实际红，之后继续物理校准。
 
 - **下一N1 unused-release新合同已写，旧抑制行为保留取红**：Wires同快照返回Needed/Unused/Outperformed，原bool语义折回仍相同；hop release增加证据参数但暂不改变旧Relay→lost实现。新增真实Links当前owner回收后不得压制middle的合同，原测量失败/Direct/旧owner正反控保留；尚未远端format/编译/红。只有准确源验证后再改退避条件，不能把接口分类存在记成修复完成。
