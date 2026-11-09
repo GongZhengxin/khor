@@ -216,3 +216,6 @@ controlbedd896，source tree2b5bfce2/snapshot6a046588，固定工具/镜像已�
 不要仅把Drop判死阈值加一秒来追当前测试，也不能一律禁止长静默退役。共享wire的活性应有单一证据所有者：接收计数变化清除当前怀疑；quiet达到原Patience后发一次全路径probe，按该probe的grace判断；旧连接/旧probe不能退役替换后的新wire。取消本调用只STOP其流，不能跳过probe宽限判共享wire死。
 
 可沿Wires已有Arc/Slot与resident1秒tick承载，但必须覆盖直接Node调用没有resident tick的情况；若用独立有界确认任务，应每wire合并、只持Weak、不继承已结束前台deadline，且replacement/新收包/Node退出时取消和释放，不能一请求一套无界任务或重复PING。正常exchange和取消路径应共享同一proof，裸未持有wire的配对连接保留本地边界。原F7长静默测试需要验证完成确认后的快速退役，不把“无probe证明的Drop必须同步关闭”当不可改实现细节；修改观察协议须明确记录并同时保留真黑洞和F8阳性控制。此为待F8实际结果后收敛的设计，尚未实现/预记通过。
+
+
+F8现已在Turing143rd取得真正行为红（2401ms到达、4101ms过期、零回包、两请求、unanswered1、共享wire None），上述修复约束开始实施，尚未改生产。既有Wires为Arc、resident tick1秒；直接Node调用无resident tick也须完成有界确认，不能只依赖tick。建议将当前wire的probe proof/count/grace与有界任务所有权放到Slot，正常exchange和RetireUnheard委托它；任务仅持Weak<Wires>/WeakConnection，按stable_id防替换误伤，收到新包/替换/退出则清除和取消。实现时检查在自身完成路径移除JoinHandle的行为、锁顺序和无runtime的Drop，验证无额外每请求PING/无无界后台任务。

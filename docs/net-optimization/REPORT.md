@@ -177,3 +177,12 @@ Turing141th turing-20261109T095017Z-93c2c1a2，base9eafba74/treef93c32b1/snapsho
 | 合计 | 8/9 | 7/9 |
 
 baseline f4s首轮Link已恢复、稍后约35.6秒Relay/37.4秒Forwarded，原after-leg门失败；第二轮carried后26.2秒再选Relay、约0.7秒后再carried，原30秒无回退门失败。两源均有约8–10秒按键卡顿，candidate f4i一次回carried91.4秒。结果只证明该批观测，不能按总通过数认定体验完成或单patch原因；多连接事件缺身份，进一步诊断候选已加wire字段、尚待验证。所有tuple/round/host load在turing-corrected-hop-comparison.json，原红不覆盖。
+
+
+## F8：操作到期过早退役共享连接的真实反例
+
+Turing143rd（tree42050b56/snapshoted287397/controlb998），root fmt/编译及旧16合同绿，新F8真实红。新私有user/netns、原生UDP握手后lo每向2400ms；两个真实Sessions请求在2401ms到达并被server回复。首调用4101ms正常CallerExpired，此时heard16→16、回包仍需经过固定延迟，原全路径grace尚未到；wire已被Drop退役（unanswered1），控制请求也失败。所有隔离/时序/两请求前置都先通过，才在共享wire保留断言失败，不能归fixture红。
+
+根因边界：RetireUnheard::drop仅凭4秒ACK floor与计数不变关闭wire，而exchange_inner会先probe所有路径并等grace；取消不应跳过该证据。尚未修复；保留F7真正长静默控制，不采用一律禁用退役或简单凑新阈值。
+
+Mac146th（treebbed6503/snapshotc8035ce2/controlb998）另取得17便携/29journal全绿，包括真实update_dial200ms早操作by、30秒操作下10秒自身cap，以及wire身份字段旧日志兼容/roundtrip/人类句子不变。其17排除Linux F7/F8，与Turing143rd17并非同一集合，不可替代真实F8红；30.57秒为单元子集用时，不作产品SLO。

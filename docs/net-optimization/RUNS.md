@@ -576,3 +576,8 @@ Mac139th42594133373仅format门失败；baseef90/tree3f3c4c52/snapshot800a54f8/c
 137th turing-20261109T091325Z-2c64555c corrected baseline hop终态**FAILURE7/9**（2/3、2/3、3/3），准确tree97040f31/snapshot90126283/control59dc223，执行1510.22秒。f4/f4i3/3，f4s1/3；两红分别晚回退后的after-leg门、恢复26.2秒后再选Relay的原30秒无回退门。完整report/身份/字节/hash/原PGID已采核，与candidate8/9 whole-source观测对照存turing-corrected-hop-comparison.json；不能断言单补丁因果或稳定性已解决。
 
 143rd turing-20261109T100821Z-08748d90 net-node已launch PID236331，准确tree42050b56/snapshoted287397/controlb998，Linux17（原16+F8）待实际红/绿。Mac142/144/145均只有formatter门红，原patch应用、未冒称行为红；146th42600205050已dispatch/锚ref，treebbed6503/snapshotc8035ce2/controlb998，29journal与17便携（15旧+2update）待结果，Linux F7/F8排除。
+
+
+143rd turing-20261109T100821Z-08748d90终态**FAILURE16pass1fail**；准确base5aa96708/tree42050b56/snapshoted287397/controlb998，root fmt/编译/既有子集绿，F7绿。F8前置均过：对端2401ms收到并回复两请求，调用4101ms过期，heard16→16；共享wire已退役None、retired_unanswered1、控制请求失败，目标“probe grace前不判共享wire死”断言实际红。完整report/原group/source/control/bytes/SHA已采核；不归fixture红。下一个生产修复需新准确源，不能重发此run/放宽反例。
+
+146th Mac42600205050终态**SUCCESS**：base83d620d2/treebbed6503/snapshotc8035ce2/controlb998，root fmt/编译/net66+1ignored/hop9/wires10/journal29/dial_budget17全绿（30.57s）。真实update_dial两合同及wire身份旧日志/roundtrip/人类句子兼容通过；Mac17=15旧便携+2update，Linux-only F7/F8排除，不覆盖143rd红。全部raw/source/env/transport/hash核留，146refs=144终态+2staged，当前无在途，先修F8再CPU。
