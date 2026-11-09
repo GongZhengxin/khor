@@ -256,7 +256,8 @@ async fn abandoning_a_long_silent_exchange_still_retires_the_dead_wire() {
     use std::io::Write;
     use std::process::{Command, Stdio};
 
-    if !isolated_network_namespace("abandoning_a_long_silent_exchange_still_retires_the_dead_wire") {
+    if !isolated_network_namespace("abandoning_a_long_silent_exchange_still_retires_the_dead_wire")
+    {
         return;
     }
 
@@ -419,7 +420,10 @@ async fn expiry_before_path_probe_grace_preserves_a_slow_live_wire() {
     let expired_at = tokio::time::Instant::now();
     let heard_at_expiry = wires::heard_count(&f.local);
     let live_at_expiry = f.node.wires.live(&f.peer.id, wires::Proto::Main);
-    let received_at = tokio::time::timeout_at(by, reception).await.unwrap().unwrap();
+    let received_at = tokio::time::timeout_at(by, reception)
+        .await
+        .unwrap()
+        .unwrap();
     let control = observed_by(&mut control, start + Duration::from_secs(12)).await;
     let heard_after = wires::heard_count(&f.local);
     let live_after = f.node.wires.live(&f.peer.id, wires::Proto::Main);
@@ -459,8 +463,7 @@ async fn expiry_before_path_probe_grace_preserves_a_slow_live_wire() {
     assert!(received_at >= start + Duration::from_millis(2200));
     assert!(received_at + Duration::from_millis(2400) > expired_at);
     assert_eq!(
-        heard_at_expiry,
-        heard_before,
+        heard_at_expiry, heard_before,
         "no packet arrived before the caller expired"
     );
     assert_eq!(

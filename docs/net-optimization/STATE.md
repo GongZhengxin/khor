@@ -2,7 +2,7 @@
 
 更新：2026-11-09 09:56 UTC；root串行，无子智能体。活动目标“完成计划”仍active。
 
-**唯一在途：corrected baseline hop turing-20261109T091325Z-2c64555c，PID161772。** 同candidate五实际fixture与control逐字一致，原三场景单线程三轮；需实核/proc同句柄，不重启。最新Linux net-node141th已实际SUCCESS，含真正namespace/nft静默F7，16预算/取消/探针合同全绿；完整report已采。corrected candidate hop136th仍8/9，f4i首轮回退红未定因，91.4秒慢路滞留及约10秒按键卡顿仍是体验缺口。141 refs=138终态+1在途+2 staged（两个stalls）。完整N0–N5未完成。
+**唯一在途：corrected baseline hop turing-20261109T091325Z-2c64555c，PID161772。** 同candidate五实际fixture与control逐字一致，原三场景单线程三轮；需实核/proc同句柄，不重启。最新Linux net-node141th已实际SUCCESS，含真正namespace/nft静默F7，16预算/取消/探针合同全绿；完整report已采。corrected candidate hop136th仍8/9，f4i首轮回退红未定因，91.4秒慢路滞留及约10秒按键卡顿仍是体验缺口。142 refs=139终态+1在途+2 staged（两个stalls）。完整N0–N5未完成。
 完整范围：[PLAN](PLAN.md)；约束：[REQUIREMENTS](REQUIREMENTS.md)；运行记录：[RUNS](RUNS.md)；原始结果：[REPORT](REPORT.md)。
 此前STATE原样归档[Accepted轮历史](HISTORY-20261109-before-accepted-green.md)与[本轮历史](HISTORY-20261109-before-probe-green.md)及[Turing141前历史](HISTORY-20261109-before-turing-141.md)；历史在途/候选文字仅代表当时状态，恢复以本页和实际工作区为准。
 
@@ -17,7 +17,7 @@
 | 产品 | `/Volumes/disk0/Khor/worktrees/current/khor-net`，`feat/net`；最新已验证生产d4a2e115b898fc337f5091b51fa71e45740c667f；随后有文档和scripts/dev.py VZ专用调度；生产网络未改，恢复核HEAD/diff |
 | 控制 | `/Volumes/disk0/Khor/worktrees/current/khor-build-net`，`feat/net`，b9984797f412f352f3c76f99c47ade3ee10f68e9已push；新增net-node SSH任务白名单，profile未改；当前hop/stalls仍control59dc223，不能回写历史控制版本 |
 | 基线 | `/Volumes/disk0/Khor/worktrees/current/khor-net-baseline`，detached6485cb83d3b1f0bb93d4633825dc956623d78af9；仅paths/hop/lab/nat.rs、dev.py/netlab.sh六fixture，生产原样 |
-| 证据 | `/Volumes/disk0/Khor/evidence/net/`；source-refs.json141条不可变refs；138终态，baseline hop在途，其余2 staged。每次源变化前锚ref；SSH不是GitHub run |
+| 证据 | `/Volumes/disk0/Khor/evidence/net/`；source-refs.json142条不可变refs；139终态，baseline hop在途，其余2 staged。每次源变化前锚ref；SSH不是GitHub run |
 
 ## N2本轮：普通wire覆盖与配对探针三红→绿
 
@@ -87,7 +87,7 @@ N0部分、N1仍红、N2部分、N3部分、N4未完成、N5部分；完整PLAN�
 
 ## 证据与恢复规则
 
-先核worktree/branch/HEAD/diff、当前run与准确回执；以本页顶端当前任务为准，历史在途文字仅在归档中保留。141refs=138终态+1 launched+2 staged；恢复按run/path/PID实核，SSH观察失败须重查同句柄，不重启。
+先核worktree/branch/HEAD/diff、当前run与准确回执；以本页顶端当前任务为准，历史在途文字仅在归档中保留。142refs=139终态+1 launched+2 staged；恢复按run/path/PID实核，SSH观察失败须重查同句柄，不重启。
 `git rev-parse refs/khor/net-evidence/<run>:source`必须等于回执tree；只git show读容器，不checkout覆盖/push本地证据refs。失败明确分format/compile/fixture/行为/执行器；tests_executed只按实际子集，历史红不删除。
 Mac source/bundle分支只在终态、证据留存且所有权/SHA匹配后清理；复用源的请求不拥有原源分支。原attempt不覆盖。
 外盘缺失只读`git show feat/net:docs/net-optimization/STATE.md`与PLAN；原外盘未提交内容不能按摘要覆盖。其他治理沿中央STATE/RESUME，不混授权。
@@ -113,3 +113,8 @@ Mac source/bundle分支只在终态、证据留存且所有权/SHA匹配后清�
 
 
 N2下一反例F8已写入wire.rs并冻结ACCEPTANCE：新私有netns的lo netem单向2400ms，两个真实同wire请求；首个4.1秒到期、另一个12秒预算等待约4.8秒UDP往返。核server收到严格两请求/响应时序/到期前零回包后才判共享wire保留。仅新增测试与提取原F7隔离helper；生产仍d4a，F8尚未实际编译/运行或取得行为红。当前baseline hop PID161772 live，不能与新Linux编译/测试并跑；先由独立Mac通道检格式/15便携合同，再排Turing单槽。
+
+
+142nd Mac42598044232（base2a3b7030/treed6f74af1/snapshotef91edf8/controlb998）已终态并采证，仅format门红，未编译或测试；准确source/control/transport已核。原format.patch已原样应用，F8仍无实际行为红。下一Linux net-node安排当前baseline hop终态后、两个stalls之前；这是短正确性反例，仍保持Turing单槽不与计时并跑。
+
+基线137th首轮2/3：f4/f4i绿，f4s红；Link在腿恢复后约9.5秒已Forwarded，约35.6秒又Relay、37.4秒再Forwarded，原after-leg门失败。完整首轮待独立原始事件核对，保留原断言红，不宣称与candidate136th独立f4i红同因。第二轮继续、PID161772实核live，不能重启。
