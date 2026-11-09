@@ -1,8 +1,12 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-09 21:39 UTC（本地2026-11-10）。root串行，无子智能体。完整目标仍是“完成计划”N0–N5，未完成；用户明确“继续”并补充U11–U13，当前工作已恢复。用户再次指出不应停止；goal服务的paused只是后台调度状态，不构成本轮停止依据。必须持续推进完整计划，不能在阶段通过后自行停下，也不得伪造complete/blocked或另建目标。速度/体验优先、个人可信设备网；没有合main、发布、中继采购/生产部署授权。
+更新：2026-11-09 21:46 UTC（本地2026-11-10）。root串行，无子智能体。完整目标仍是“完成计划”N0–N5，未完成；用户明确“继续”并补充U11–U13，当前工作已恢复。用户再次指出不应停止；goal服务的paused只是后台调度状态，不构成本轮停止依据。必须持续推进完整计划，不能在阶段通过后自行停下，也不得伪造complete/blocked或另建目标。速度/体验优先、个人可信设备网；没有合main、发布、中继采购/生产部署授权。
 
 ## 当前源码与已收齐证据
+
+- **239 Mac同整blocked-owner合同全绿**：[42704634733](https://github.com/colehank/khor-build/actions/runs/42704634733)，base2654cbdf/tree34c8e822/snapshot8c3205d4/controle4c58dc。fmt/net67+1ignored/hop12/wires11/journal30/budget20（49.93s）绿；完整source/transport/9 control blobs/hash核。整个carry tests模块与237真实红逐字相同，blocked-carrier-owner-red-green.json已记Mac绿，240 Linux同源待核。不是N1最优恢复已通过。
+- **241新诊断与NAT结果标记Mac预检**：[42705246391](https://github.com/colehank/khor-build/actions/runs/42705246391)，requestcc1d544275f64e54814634a87c643184，basef2c40777/tree6c6cd566/snapshot28f49ee6/controle4c58dc，实际状态/结果按句柄核，禁止盲重发。
+- **238物理校准独立数据审计已核**：nat-rebind-calibration.json对准确输入、refs、bundle/control/report哈希、原group空、旧新端口同WAN、固定local tuple/conntrack、两族kernel逐项核；business_executed=false明确保留。下一源只补netlab-result成功行，shell guard保持。
 
 - **N1下一轮外层承载关联诊断**：hop_outer_bound记录initiator/receiver、attachment与实际Proto::Tunnel stable wire；middle记录incoming/onward wire与splice开始/结束。不持有额外Connection、不增加probe、不改选路/计时/回收策略，全部详细值仍在KHOR_NET_DIAGNOSTICS开关内构造。235中的Outperformed与228中的Unused不同：235 Y在换网后约5.6/10.6秒用到Carried质量约263ms（samples0、age约4秒）与Relay约131ms，经两looks释放；实际外层对应关系尚缺，不能断言一律是Unused或阻塞I/O。下一真实移动按新准确源关联，原peer_relay_replug_v1业务/hold/预算不改。
 
