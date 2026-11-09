@@ -593,3 +593,13 @@ Mac139th42594133373仅format门失败；baseef90/tree3f3c4c52/snapshot800a54f8/c
 152nd turing-20261109T110456Z-dee800e0 candidate stalls终态**SUCCESS2/2**，准确source同150/151（base25d0c803/tree6805b7b7/snapshote0a42573/controlb998），1193.92秒、场景1135.16秒。原p1s 600秒/20×300ms，alpha/beta0/0切路、零退役；最慢按键3.8秒、12打洞、3449包/1335065B，旧p1s不对这些体验/开销值设门，不能宣称完整体验绿。p5 150/300/600ms各4次，三档零选relay/零打洞、最慢279.9/518.6/992.0ms。全部report/source/environment/driver/bundle/原group/hash采核，classification保留缺口。host load before4.90/6.36/7.33，after5.58/8.26/8.90。
 
 153rd baseline turing-20261109T110456Z-42e6ec16随后串行launch **PID327881/child327922**，已实核/proc与network-driver，仍用tree97040f31/snapshot90126283/controlb998原门。154th candidate hop turing-20261109T112647Z-c5e5e53d复用150准确snapshot，仅stage未launch；原单线程三轮/原hop occupancy v2，待153终态采证后再启动。154refs=152终态+baseline153在途+hop154 staged，不重发。
+
+
+F9/F10 fixture：155th Mac42611015315（basefdaf20f8/treee58c548b/snapshot8f52df34/controlb998）只format红、无编译/行为测试；完整source/env/transport/control blob/hash已核，原format.patch应用后156th Mac42611507471（basedf6188c5/tree0552f630/snapshote20f36dd/controlb998）**SUCCESS**，net66+1ignored/hop9/wires10/journal29/dial_budget19全绿（32.25s）。新namespace F9/F10没有在Mac编译或执行；健康Accepted两原控制保留，生产仍25d0c803。
+
+157th turing-20261109T114555Z-10025913仅stage，与156完整snapshot/tree相同，bundle SHA也同ef1b74f9bf0d92f4f6d6c4be096c3b1316e392afdf0f670c6830e2f6ab9b3fe1；controlb998。原net-node单线程21+新2待真实结果。stage时本地无Mac临时bundle blob，未转移/启动；沿同已锚snapshot重建bundle后SHA逐字相同，staging-note保留，非产品红。为先定共享活性风险，baseline153终态采证后先157，再hop154，当前均未重发。157refs=154终态+baseline153在途+两staged。
+
+
+153rd baseline stalls终态**SUCCESS2/2**，tree97040f31/snapshot90126283/controlb998，1190.62秒。p1s alpha1/beta0移动、零退役、最慢732.4ms、5打洞/2905包/1215130B；p5三档零relay/打洞，最慢310.1/499.8/976.0ms。全部report/group/source/driver/bundle/hash采核。与152候选的单对顺序观测已存turing-shared-probe-stalls-comparison.json，不宣称整体或单补丁加速。原p1s门是每端最多1次移动/零退役，非0移动或长尾/开销门；原busy_beside忽略taskset状态且不保证2busy进程都启动，负载有效性后续先校验，不能据打印“one busy CPU”推定已强制。
+
+随后157th net-node已launch **PID365030/child365065**，source同Mac156，实际/proc与network-driver已核。F9/F10+原Linux21待结果；154th hop仍stage，先取得活性合同结果再决定修复/准确源复验。157refs=155终态+157在途+154 staged。

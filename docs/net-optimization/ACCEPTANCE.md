@@ -288,3 +288,6 @@ F7保留原私有namespace、真UDP双向丢弃、计数/远端未关闭/恰一�
 F9复用F7真实独立user/netns、原生UDP端口双向nft drop、首次poll后不再poll应用future，保持原ACK+grace等待与外部thread Drop；另在等待开始标记真实network_changed，取消发起slot确认后立即调用真实Wires::tick。网络变化3秒低RTT期限已过，但新确认grace尚未过；tick须不抢先退役，wire仍同stable_id，随后在owner原grace+500ms内恰一次Unanswered、零Network/Silent/Closed/readretry/dialfailed/answer_late。确认期间仍无收到包、真实包命中drop、远端未关闭；前置不满足单列fixture红。原F7不加network change，F8函数不变。
 
 F10先用原真实resumption fixture到Accepted/adopt/响应pending，健康Accepted两控制保留。新增黑洞读取用原30秒预算且准许early的FetchPath（warmup仍Sessions），避免Sessions原15秒工作上限先到；不改产品budget。新增Linux私有namespace场景先通过oneshot显式暂停外层ask_early future的poll（内部响应task与transport仍运行），收到暂停确认后才对该server UDP端口双向drop，稳定300ms后记录heard_count，等待该连接原Patience.silent+100ms，证明长期零新包、任务仍pending、远端仍open且请求严格warmup+早期各一次。然后取消并join调用；立即仍保持wire，随后owner全路grace+500ms内恰一次Unanswered，无resident tick或其他request帮助，零Network/Silent/Closed/readretry/dialfailed/answer_late。测试不把整个操作取消本身当peer失败，也不额外重发该读取；结束前采事实，再关闭端点/abort join服务任务。150/300/500ms等均是观察容差，不改产品期限。未实际跑出行为红前，不把静态风险写成已复现。
+
+
+F9第一次157th目标失败，但旧共享helper将confirmed断言放在事后unheard/drop/remote-open断言之前；因此157th F9暂只记目标红，下一源将这三项原前置断言前移到目标之前，所有网络/等待/阈值不变，不据尚未检查的局部变量预记完整行为红。F10在同157th已通过所有前置后confirmed断言实际失败，行为红成立。

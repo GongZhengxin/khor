@@ -517,10 +517,6 @@ async fn observe_abandoned_wire(changed: bool) {
     let counts = f.node.wires.counts.snapshot();
     f.close().await;
 
-    assert!(
-        confirmed,
-        "the wire owner must finish its all-path confirmation"
-    );
     assert!(unheard, "fixture leaked UDP despite namespace rules");
     assert!(
         dropped > 0,
@@ -529,6 +525,10 @@ async fn observe_abandoned_wire(changed: bool) {
     assert!(
         remote_open,
         "fixture must not substitute a connection close for silence"
+    );
+    assert!(
+        confirmed,
+        "the wire owner must finish its all-path confirmation"
     );
     assert!(
         live.is_none(),

@@ -231,3 +231,10 @@ F8现已在Turing143rd取得真正行为红（2401ms到达、4101ms过期、零�
 准确生产源25d0c803中，Wires::tick对held slot仍直接依据quiet/silent或network change门close，未先检查/加入Slot::probe；独立确认的grace可长达30秒，而network change低RTT门可为3秒，因此必须以真实连接/网络场景验证两者不会抢先判死。这是静态风险，尚未取得行为红，也未改生产。served入站弱连接也有独立静默close，不能只检查held路径。
 
 ask_early的Accepted分支在adopt后继续持有Aborts并等待原by，已有短取消/到期证明STOP本流和保留健康wire。该分支尚未建立RetireUnheard/Slot确认，内部spawn只以req.budget等read_to_end；长时间无收包后取消的死wire保护不能由普通exchange F7推定。下一独立回归应先到真实Accepted/adopt/响应pending，再私有netns按该UDP端口双向drop，确认heard不变/真实包命中/drop前远端open，取消后观察owner全路grace内恰一次退役，同时保留现有健康Accepted控制。不要把局部静态发现记作已重现故障或修改已在途CPU/hop快照。
+
+
+### 2026-11-09 CPU对照的负载证据缺口
+
+原p1s实际为持续CPU争用加20×300ms道路延迟尖峰，不能写成20次CPU暂停；门是每端最多一次selected move、零retired，未约束最慢按键或punch数。152/153都2/2但候选3.8秒/12punch、原版732.4ms/5punch，尚无整体加速证据。原busy_beside以pid % available_parallelism得到CPU编号（不一定是有效allowed CPU ID），忽略每次taskset status，并filter_map忽略busy contender启动失败。因此当前report只证明该fixture观测结果，没有强制亲和/2busy进程有效负载的证据。保留原运行，不改其门或回写为通过新负载合同。
+
+最终性能复验前需新测量revision：从真实allowed CPU集合选ID；断言每个resident全部现有thread的taskset成功与实际亲和、两个busy contender存活且同CPU；观测前后留PID/亲和/状态与CPU时间证据。不得只增加打印、改变竞争总量或改道路/时长/原门；同一新fixture逐字应用原版/候选并各自锚源。先短校准实际强制成功及非法/失败配置不继续计时，再独占串行新对照。此为待实施的实验有效性修复，当前产品归因保持未证。
