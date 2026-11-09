@@ -50,7 +50,7 @@ use khor_core::Hop;
 use patchbay::{Device, IpSupport, Lab, LinkCondition, LinkDirection, Nat, Router, RouterPreset};
 
 use crate::lab::{LabNode, mesh, node, qad_relays_dual, relay, result, sample_diagnostics};
-use crate::scratch::Reaped;
+mod cpu;
 
 fn now_ms() -> u64 {
     SystemTime::now()
@@ -316,14 +316,22 @@ async fn one_speed_stalling(s: &str, one_way: u32, jitter: u32, stalls: bool) {
     eprintln!("[netlab] stability bootstrap v2: relay edge 100ms cleared before settling");
     // Settled: the first minute is the dial's.
     tokio::time::sleep(Duration::from_secs(30)).await;
+    let mut busy = if stalls {
+        Some(cpu::BusyCpu::start(&[
+            u32::try_from(p.a.pid()).expect("positive resident pid"),
+            u32::try_from(p.b.pid()).expect("positive resident pid"),
+        ]).await.expect("valid one-CPU contention before measurement"))
+    } else {
+        None
+    };
     let since = now_ms();
     let (rounds0, traffic0) = (punch_rounds(&p.a).await, wire_traffic(&p.a.dev));
     let (mut spikes, mut slowest) = (0, Duration::ZERO);
     if stalls {
-        let _busy = busy_beside(&[&p.a, &p.b]);
         let began = Instant::now();
         while began.elapsed() < long() {
             tokio::time::sleep(Duration::from_secs(30)).await;
+            busy.as_mut().unwrap().verify("spike").expect("CPU contention remains valid");
             let cond = LinkCondition::new()
                 .latency_ms(one_way + 300)
                 .jitter_ms(jitter);
@@ -355,6 +363,10 @@ async fn one_speed_stalling(s: &str, one_way: u32, jitter: u32, stalls: bool) {
     } else {
         tokio::time::sleep(long()).await;
     }
+    if let Some(busy) = &mut busy {
+        busy.verify("end").expect("CPU contention covered the complete window");
+    }
+    drop(busy);
     let (ma, mb) = (moves(&p.a, &p.b, since), moves(&p.b, &p.a, since));
     let rounds = punch_rounds(&p.a).await - rounds0;
     let traffic = wire_traffic(&p.a.dev);
@@ -419,29 +431,6 @@ async fn p1j_two_jittery_roads_of_one_speed_hold_still() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn p1s_two_roads_of_one_speed_hold_still_through_stalls() {
     one_speed_stalling("p1s", 1, 0, true).await;
-}
-
-/// Pins `nodes`' residents to one CPU and runs two busy loops on it, until
-/// dropped: a machine short of CPU (p1s). The CPU is picked by this
-/// process's pid, so scenarios side by side pick different ones.
-fn busy_beside(nodes: &[&LabNode]) -> Vec<Reaped> {
-    let cpus = std::thread::available_parallelism().map_or(1, |n| n.get());
-    let cpu = (std::process::id() as usize % cpus).to_string();
-    for n in nodes {
-        let _ = Command::new("taskset")
-            .args(["-a", "-p", "-c", &cpu, &n.pid().to_string()])
-            .stdout(Stdio::null())
-            .status();
-    }
-    (0..2)
-        .filter_map(|_| {
-            Command::new("taskset")
-                .args(["-c", &cpu, "sh", "-c", "while :; do :; done"])
-                .spawn()
-                .ok()
-                .map(Reaped)
-        })
-        .collect()
 }
 
 /// p5 (net-flap, 2026-10-21): one direct road and a relay 500 ms away;

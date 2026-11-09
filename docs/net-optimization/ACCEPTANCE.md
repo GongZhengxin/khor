@@ -294,3 +294,10 @@ F9第一次157th目标失败，但旧共享helper将confirmed断言放在事后u
 
 
 F10修复候选另补portable长健康Accepted阳性：原30秒FetchPath预算、真实Accepted/adopt后等16秒，传输保持健康；取消须STOP本流，独立控制请求之前先等原all-path grace+500ms，仍同wire且零Unanswered/Network/Silent/Closed，随后Sessions成功、请求总数仍3。避免长取消清理死wire的修复误伤有正常ACK的长工作；原短取消/到期和原Linux F7/F8/F9/F10门不变。
+
+
+## N0 CPU负载有效性（checked_affinity_v3，实施前冻结）
+
+p1s原门/600秒/每30秒一轮300ms道路延迟尖峰不变，仍为两个resident和两个busy loop共用一个CPU，不增加竞争总量或并发。新revision从实际thread-self允许的CPU ID集合选择，必须核每个resident全部现有thread绑核成功；两个contender必须已exec既定busy shell、存活、全部thread同CPU，且各自CPU ticks真实增加后才进入计时。开始/每尖峰前/结束记录结构化schema/revision/phase/CPU/allowed集合、PID/starttime/thread亲和及CPU ticks；PID变化/退出/亲和漂移/竞争进程不再运行均按fixture失效停止，不记为产品性能红。CPU计时窗口从admission成功之后开始，旧报告不回写成新负载通过。
+
+短校准单独入口，不缩短p1s：以两个自己spawn的idle子进程代替resident，只验证绑核与真实双busy竞争/CPU计数增加/Drop后子进程reap；另验证稀疏CPU ID解析、缺失/非法集合拒绝、一个实际非零pin命令和不允许CPU都拒绝admission且不改变已有子进程的亲和。校准运行不得与计时netlab并发。两版后续对照使用相同新fixture逐字源码/原profile门，并保存完整source/control/report。
