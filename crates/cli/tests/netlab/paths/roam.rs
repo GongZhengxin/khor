@@ -79,7 +79,10 @@ fn router_state(router: &Router, s: &str, phase: &str) {
             "text_code": text.status.code(),
         })
     );
-    assert!(output.status.success(), "read the actual JSON ruleset output");
+    assert!(
+        output.status.success(),
+        "read the actual JSON ruleset output"
+    );
     assert!(text.status.success(), "read the actual textual ruleset");
 }
 

@@ -4,6 +4,8 @@
 
 ## 当前源码与已收齐证据
 
+- **222仅根格式前置失败，N1合同尚未执行**：`turing-20261109T203228Z-a8e2de42`，base1487b061/treeae6defe1/snapshotb4f87a6e/control05c8d7c；43.75s、原group空。只是roam诊断新增assert需换行，远端format.patch已原样应用；不计候选排序行为红，下一同整N1fixture执行。
+
 - **221终态采证：dual再次124/124绿、另两例nft JSON仍不合法**：`turing-20261109T202849Z-513b3d42`，101.96s、rc101、原group空；base21457c7e/treece58c098/snapshot336600b5/control05c8d7c。dual首B→A900943us/后A→B19109us，物理与完整raw核。先前把问题理解为纯空stdout不充分：增加空值判断后，另两例仍在非空JSON解析失败，原输出在unwrap前未保留，不能确定它是空规则。现改为先保留raw JSON stdout/stderr/解析错误，并独立保存/核成功的text ruleset；业务/物理协议不改。接下来先N1冷排序真实红，再按准确源继续三病例。
 - **下一N1冷候选排序反例已加入、未运行**：原本已经合格的Relay2ms+SSH3ms与Direct100ms+SSH20ms/未知Direct；Measured正控后Dial必须按两腿5/120/65536ms排序。旧生产排序保留用于取得实际红，资格/两middle合计3s/收益门不动。该合同只是尝试顺序，不称完整最优连接完成。
 
