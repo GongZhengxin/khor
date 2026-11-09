@@ -12,10 +12,10 @@
 
 | 用途 | 位置 / 分支 |
 | --- | --- |
-| 产品 | `/Volumes/disk0/Khor/worktrees/current/khor-net`，`feat/net`；恢复核实际HEAD/diff，本轮只新增API bundle入口/测试/文档，37等生产代码仍为72b1d891 |
-| 控制 | `/Volumes/disk0/Khor/worktrees/current/khor-build-net`，`feat/net`；dd57be6c57090a811726983e700d0b39a40fd1e8已push；历史run绑定各自control |
+| 产品 | `/Volumes/disk0/Khor/worktrees/current/khor-net`，`feat/net`；恢复核实际HEAD/diff，本轮API入口已验证；37仍为72b1d891，N2锁等待候选随后提交，恢复核实际diff |
+| 控制 | `/Volumes/disk0/Khor/worktrees/current/khor-build-net`，`feat/net`；2e70c39fe6a70bbbd09b7434f90e6c2d62e84b16已push；历史run绑定各自control |
 | 基线 | `/Volumes/disk0/Khor/worktrees/current/khor-net-baseline`，detached6485cb83d3b1f0bb93d4633825dc956623d78af9；只允许paths/hop/lab/nat.rs、dev.py/netlab.sh六fixture；生产基线原样 |
-| 证据 | `/Volumes/disk0/Khor/evidence/net/`；source-refs.json现99条不可变source refs；仅42556768499在途 |
+| 证据 | `/Volumes/disk0/Khor/evidence/net/`；source-refs.json现99条不可变source refs；均已终态 |
 
 ## 执行通道现状
 
@@ -61,7 +61,7 @@ f4s中继2.5秒双向注入在断腿恢复1.5秒后清除，不能把后续整�
 
 N0部分、**N1仍红**、N2–N4未完成、N5部分。不能以单元绿或执行通道建立完成整计划。
 
-1. Mac vendor当前已根格式/438/36/9绿；N2新增真实Node/Endpoint持dial锁的调用deadline回归，仅测试，预期红尚未执行。控制2e70c39把link::dial_budget加入net-node；下一次准确源Mac net-node先取红。
+1. Mac vendor根格式/438/36/9绿。N2锁期限回归42556768499已实际红；现最小CallerExpired/有界锁等待候选待远端net-node取绿。
 2. 恢复Linux能力后，原p3三轮<1秒、CPU0/0、hop不回退，再准确源完整矩阵；不能放宽门。host-capabilities实际：VZ支持1、16GiB/10CPU、可用约76.2GB，仅brew已装，Lima/QEMU/Docker/Podman/Colima均无；未启动VM/安装/改空间策略，Linux VM尚为提议。
 3. 独立定因f4s回退，必要时保存默认关闭诊断三端trace，保持原断腿与1500ms门。
 4. N2七类预算/取消/0-RTT/写协议已冻结ACCEPTANCE，真实源码设计见NEXT-DESIGN。锁/hop/首拨尚未贯通by、早数据回答取消所有权缺口仍未实施。按Op原30/300/3600档传deadline，不能把长操作压成28秒；hop3秒为两个中间设备合计，取消不计peer故障，真实RetireUnheard仍要保留。
@@ -77,12 +77,13 @@ source-refs.json现99条；425527传输失败与托管账单拒绝均tests_execu
 Mac源/bundle分支仅在终态、证据保留、所有权和SHA匹配后清理；复用源的请求不拥有原源分支。重试不改旧源/control/attempt证据。
 外盘缺失只读git show feat/net:docs/net-optimization/STATE.md和PLAN；原外盘未提交内容不能按摘要覆盖。治理另沿中央code-quality STATE/RESUME，不与本任务混合。
 
-N2新测试a_call_deadline_bounds_waiting_for_another_dial_without_blaming_the_peer：scratch/hosts=false Node与Minimal无relay/discovery Endpoint，绑定在计时前；持同peer/proto真实dial锁，40ms调用期限、500ms外层防挂；要求按期返回错误且不改owner结果/peer down/backoff/失败计数。仅覆盖等待边界，尚未执行，不声称无取消/0-RTT/跳路其余缺口。
+## N2锁期限实际红与当前候选
 
-## N2首次锁期限回归调度
+42556474188第一轮仅新assert根格式失败，未编译/测试；远端format.patch原样应用，本机未运行格式器。
+**42556768499实际预期红**：base2018ff956744f5dc33f5aa8b16a5caa93a36dad8 clean、treec60e145a72b88dd311fd90c9ff6a193983644210、snapshot654d409551e512462901a237e8bd47c7bc2c42da、control2e70c39fe6a70bbbd09b7434f90e6c2d62e84b16。
+根格式、net66pass/1ignored、hop9、wires10、journal28全绿；dial_budget旧用例pass、新用例fail：真实line_to_by持同peer/proto锁，40ms调用期限不返回、外层500ms防挂触发。scratch hosts=false Node、Minimal无relay/discovery Endpoint，绑定在计时前，失败后关ep清理；不碰个人会话。
+mac-dial-budget-formatted-42556768499已核source/control、保存原log及classification；99 refs均终态。
 
-**42556474188 net-node executor=mac终态格式门失败**：base5d117debe832e974daab00d6ebde3348b9cda772 clean、tree4f5179e59e64576fd6696b17f23fcc1c50fbc14b、snapshot44930072797913fbefd2a3d1f6e9269965cd0a5d、control2e70c39fe6a70bbbd09b7434f90e6c2d62e84b16。仅新增测试、生产N2未改，目标为实际锁到期红；未预认定编译或结果。mac-dial-budget-red-42556474188已保存提交回执/raw run；本地ref已create-only锚定，98 refs，恢复只查询该run。
-
-42556474188已校验准确source/control，未进入编译或单元；仅新assert的远端rustfmt patch，现已原样应用。本机未运行formatter，生产N2仍原样，不记实际期限红。98 refs均终态；下一步格式修正源重跑net-node。
-
-**42556768499 Mac net-node格式修正源在途**：base2018ff956744f5dc33f5aa8b16a5caa93a36dad8 clean、treec60e145a72b88dd311fd90c9ff6a193983644210、snapshot654d409551e512462901a237e8bd47c7bc2c42da、control2e70c39fe6a70bbbd09b7434f90e6c2d62e84b16。N2生产仍原样、仅测试取红；mac-dial-budget-formatted-42556768499与99th ref已保存，恢复查该ID。
+当前最小生产候选：line_to_inner到期入门拒绝；有by时timeout_at等待锁，到期/锁同时ready再核时钟；无by仍原锁等待。CallerExpired独立于peer TimedOut，不写共享失败结果/peer down/backoff；各错误消费点有显式处理。
+原测试加强验证CallerExpired及释放锁后已过期调用也不拨号（后者为额外绿覆盖，不宣称已有旧源红）。尚未远端编译/执行候选。
+**此批只处理normal line锁等待。** ask_early锁、hop准备、拨号自身裁剪与CallerExpired分类、operation总期限和普通交换/一次读重试、Accepted回答取消、长操作30/300/3600档仍须后续实施/实测，N2不能收口。

@@ -120,3 +120,16 @@ Mac便携入口已经实际执行回归，标准Linux托管lane仍因GitHub账�
 [Lima VZ官方说明](https://lima-vm.io/docs/config/vmtype/vz/)支持基于Virtualization.framework的同架构Linux guest；仍须核实际宿主能力和资源。
 若具备条件，先在共享build guard与现有空间门内做隔离Linux namespace/netem/nft能力探针，再考虑矩阵。VM状态/缓存归khor-builder独立目录，源/driver只读挂载、报告目录单独写，不挂个人home或传个人密钥/令牌，不改宿主网络/空间策略、不采购新机器。
 基线与候选必须在同一后端/资源/协议重跑，不跨GHA Linux、Mac loopback和VM混算性能。如果无可用Linux后端，则该验收仍需外部执行条件恢复；不通过猜阈值完成计划。
+
+
+## 2026-11-09执行器恢复设计候选（尚未安装/启动）
+
+Mac实际host-capabilities见42555870179：VZ=1，16GiB、10CPU、约76.2GB空闲，未安装Lima/QEMU/容器工具。可在既有共享guard内用项目专属Lima VZ Linux，避免依赖被账单拒绝的托管prepare。此节为具体设计候选，不是已运行证据。
+
+- 锁定Lima v2.3.0官方Darwin-arm64资产717479690，50317981字节，SHA256 b7af444bd8f91d3c307477e562f2cf3bd7595d62b9429185e4fa841563578cfc；官方release元数据发布日期2026-11-06。工具仅装khor-builder/netlab项目子目录，不用brew全局安装/不改launchd。
+- Ubuntu24.04 arm64固定release-20261017官方cloud image，SHA256 50e24e1fb79e89116e939d90aa7738f7af48c442fa1bc2510131e0b39c50348e；不退回无digest的latest。2vCPU/6GiB/30GiB磁盘为候选上限，现有35/20GiB空间门和单槽不改。先证明namespace/veth/netem/nft/conntrack能力，再编译。
+- 显式无host home挂载/无个人公钥载入/无agent或X11转发/无任意端口自动转发；只拷本run已校验source.git、可信driver与返回报告，guest只用项目生成控制key，不携GitHub token/个人SSH key。guest Cargo/registry缓存独立于Mac和可信发行。
+- VM生命周期必须由guard持有。官方v2.3.0 start.go及pkg/instance/start.go确认--foreground会以前台SysProcAttr执行hostagent；不能用脱离guard的后台默认start。实现前核foreground/信号关闭链路，trap正常退出/取消停止该实例，最终报告确认不残留；不影响他人VM/worker。
+- 首次先工具/镜像checksum+启动/停止+能力探针，不称产品通过；候选与6485基线使用同一VM配置/后端重新测，不能把旧x86托管结果与新arm64差值当策略收益。
+
+依据：[Lima安装](https://lima-vm.io/docs/installation/)、[VZ](https://lima-vm.io/docs/config/vmtype/vz/)、[默认home挂载及禁用](https://lima-vm.io/docs/usage/)、[固定2.3.0 Ubuntu24.04模板](https://github.com/lima-vm/lima/blob/v2.3.0/templates/_images/ubuntu-24.04.yaml)、[前台hostagent实现](https://github.com/lima-vm/lima/blob/v2.3.0/pkg/instance/start.go)。

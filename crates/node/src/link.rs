@@ -3419,6 +3419,9 @@ impl Node {
         by: Option<std::time::Instant>,
         may_hop: bool,
     ) -> Result<Line, DialFailure> {
+        if by.is_some_and(|by| std::time::Instant::now() >= by) {
+            return Err(DialFailure::CallerExpired);
+        }
         if crate::pause::peer_on(self.root(), &d.id) {
             self.wires.retire_peer(&d.id, wires::Retired::Paused);
             return Err(DialFailure::Refused(msg::peer_paused_refusal().to_owned()));
@@ -3452,7 +3455,18 @@ impl Node {
         }
         let waited = std::time::Instant::now();
         let lock = self.wires.dial_lock(&d.id, proto);
-        let mut one = lock.lock().await;
+        let mut one = match by {
+            Some(by) => tokio::time::timeout_at(by.into(), lock.lock())
+                .await
+                .map_err(|_| DialFailure::CallerExpired)?,
+            None => lock.lock().await,
+        };
+        // A ready lock must not win after the caller's clock has run out.
+        // Expiring a waiter neither changes the owner's result nor says
+        // anything about the peer's reachability.
+        if by.is_some_and(|by| std::time::Instant::now() >= by) {
+            return Err(DialFailure::CallerExpired);
+        }
         if let Some(conn) = self.wires.live(&d.id, proto) {
             return Ok(line(conn));
         }
@@ -3482,21 +3496,23 @@ impl Node {
                 Ok(line(conn))
             }
             Err(e) => {
+                let failure = match &e {
+                    DialFailure::CallerExpired => return Err(e),
+                    DialFailure::Asleep(_) => None,
+                    DialFailure::TimedOut => Some(msg::machine_unreachable_timeout(&d.name)),
+                    DialFailure::Refused(why) => Some(msg::cant_reach_named(&d.name, why)),
+                };
                 *one = Some((std::time::Instant::now(), e.clone()));
                 // A middle's dial for another machine is that machine's
                 // miss, not this one's (net-dial B3, `journal::By::Onward`).
                 // A machine that refused is resting, not down: left alone
                 // until it dials back (net-dial B4).
-                if let DialFailure::Asleep(_) = &e {
+                if let Some(words) = failure {
+                    if crate::journal::by_now() != crate::journal::By::Onward {
+                        self.wires.failed(&d.id, proto, words);
+                    }
+                } else {
                     self.wires.asleep(&d.id);
-                } else if crate::journal::by_now() != crate::journal::By::Onward {
-                    let words = match &e {
-                        DialFailure::TimedOut | DialFailure::Asleep(_) => {
-                            msg::machine_unreachable_timeout(&d.name)
-                        }
-                        DialFailure::Refused(why) => msg::cant_reach_named(&d.name, why),
-                    };
-                    self.wires.failed(&d.id, proto, words);
                 }
                 Err(e)
             }
@@ -3793,19 +3809,17 @@ impl Node {
                 }
             }
             Ok(Err(e)) => {
+                let failure = match &e {
+                    DialFailure::CallerExpired => return Early::Failed(e),
+                    DialFailure::Asleep(_) => None,
+                    DialFailure::Refused(why) => Some(msg::cant_reach_named(&d.name, why)),
+                    DialFailure::TimedOut => Some(msg::cant_reach_named(&d.name, "")),
+                };
                 *one = Some((std::time::Instant::now(), e.clone()));
-                match &e {
-                    DialFailure::Asleep(_) => self.wires.asleep(&d.id),
-                    DialFailure::Refused(why) => self.wires.failed(
-                        &d.id,
-                        wires::Proto::Main,
-                        msg::cant_reach_named(&d.name, why),
-                    ),
-                    DialFailure::TimedOut => self.wires.failed(
-                        &d.id,
-                        wires::Proto::Main,
-                        msg::cant_reach_named(&d.name, ""),
-                    ),
+                if let Some(words) = failure {
+                    self.wires.failed(&d.id, wires::Proto::Main, words);
+                } else {
+                    self.wires.asleep(&d.id);
                 }
                 Early::Failed(e)
             }
@@ -10439,6 +10453,7 @@ impl Node {
                 for (is_origin, d) in sources {
                     if !here && let Err(e) = self.line_to(ep, &d, wires::Proto::Main).await {
                         tried.push(match (is_origin, e) {
+                            (_, DialFailure::CallerExpired) => msg::dial_timed_out().to_string(),
                             (true, DialFailure::TimedOut) => msg::take_sender_down(&d.name),
                             (false, DialFailure::TimedOut) => msg::take_holder_down(&d.name),
                             (true, DialFailure::Refused(why) | DialFailure::Asleep(why)) => {
@@ -10912,6 +10927,10 @@ impl Node {
                 } else {
                     msg::no_relay_reached().to_string()
                 });
+            }
+            Err(DialFailure::CallerExpired) => {
+                probe.abort();
+                return Err(msg::dial_timed_out().to_string());
             }
             Err(DialFailure::Refused(why) | DialFailure::Asleep(why)) => {
                 probe.abort();
@@ -11572,7 +11591,7 @@ impl Node {
 
     async fn sync_device(&self, ep: &iroh::Endpoint, d: &DeviceInfo) -> Result<String, String> {
         let unreached = |e| match e {
-            DialFailure::TimedOut => msg::dial_timed_out().to_string(),
+            DialFailure::TimedOut | DialFailure::CallerExpired => msg::dial_timed_out().to_string(),
             DialFailure::Refused(why) | DialFailure::Asleep(why) => msg::cant_reach_plain(why),
         };
         // **The round's opening question rides a redial's handshake**
@@ -12771,6 +12790,7 @@ async fn wait_for(job: &crate::road::Job) -> Result<(u64, Vec<String>), String> 
 /// A dial's failure as the sentence a person reads.
 pub(crate) fn unreached_words(name: &str, e: DialFailure) -> String {
     match e {
+        DialFailure::CallerExpired => msg::dial_timed_out().to_string(),
         DialFailure::TimedOut => msg::machine_unreachable_timeout(name),
         DialFailure::Refused(why) | DialFailure::Asleep(why) => msg::cant_reach_named(name, why),
     }
@@ -13044,6 +13064,9 @@ impl<T> Drop for Aborts<T> {
 
 #[derive(Clone)]
 pub(crate) enum DialFailure {
+    /// This caller stopped waiting, before learning the peer's outcome.
+    /// Never a shared failed dial, peer-down observation or backoff event.
+    CallerExpired,
     TimedOut,
     Refused(String),
     /// The far machine refused the connection: it is paused or in the
@@ -13321,7 +13344,10 @@ mod dial_budget {
             answer.is_ok(),
             "waiting for the dial lock outlived the caller"
         );
-        assert!(answer.unwrap().is_err(), "an expired waiter has no wire");
+        assert!(
+            matches!(answer.unwrap(), Err(DialFailure::CallerExpired)),
+            "caller expiry is distinct from a failed peer dial"
+        );
         assert!(
             held.is_none(),
             "the active dial's shared result is untouched"
@@ -13329,6 +13355,13 @@ mod dial_budget {
         assert_eq!(node.wires.counts.snapshot().dial_failed, 0);
         assert_eq!(node.wires.link(&peer.id).down, None);
         assert_eq!(node.wires.backing_off(&peer.id), None);
+        drop(held);
+        let expired = node
+            .line_to_by(&ep, &peer, wires::Proto::Main, Some(by))
+            .await;
+        assert!(matches!(expired, Err(DialFailure::CallerExpired)));
+        assert_eq!(node.wires.counts.snapshot().dialed, 0);
+        assert_eq!(node.wires.counts.snapshot().dial_failed, 0);
     }
 
     /// **A dial never outlasts QUIC's own idle timeout** (net-dial B5): a

@@ -412,3 +412,6 @@ Mac便携分流control6b1616c8b816bdb72a8a031d0ff28cc46a3fb4c7在feat/net，沿�
 
 
 **42556768499 Mac net-node在途**：clean2018ff95、treec60e145a72b88dd311fd90c9ff6a193983644210、snapshot654d409551e512462901a237e8bd47c7bc2c42da、control2e70c39fe6a70bbbd09b7434f90e6c2d62e84b16，原样应用远端格式patch后的N2测试源、生产未改。mac-dial-budget-formatted-42556768499/99th ref已锚定，未预记行为红。
+
+
+42556768499终态 **实际N2预期红**：根格式、net66pass/1ignored、hop9/wires10/journal28绿；dial_budget1pass1fail仅真实持锁40ms调用期限仍等待到500ms防挂。source/tree/control已核并下载raw/log/classification，99 refs终态。随后最小CallerExpired+normal line有界锁候选，不记绿；过期空锁不拨号为新增覆盖，ask_early/hop/总期限等仍缺。
