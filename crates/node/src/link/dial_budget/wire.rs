@@ -209,6 +209,66 @@ async fn observe_ordinary_expiry(within: Duration) {
     assert_eq!(backoff, None);
 }
 
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn update_dial_uses_the_earlier_operations_deadline() {
+    observe_update_dial_limit(Duration::from_millis(200), Duration::from_millis(200)).await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn update_dial_keeps_ten_second_cap_inside_a_long_operation() {
+    observe_update_dial_limit(Duration::from_secs(30), Duration::from_secs(10)).await;
+}
+
+async fn observe_update_dial_limit(operation: Duration, expected: Duration) {
+    let socket = tokio::net::UdpSocket::bind("127.0.0.1:0").await.unwrap();
+    let (_root, node, mut peer, ep) = fixture().await;
+    peer.addrs = vec![socket.local_addr().unwrap().to_string()];
+    let packets = Arc::new(AtomicUsize::new(0));
+    let (first, first_seen) = tokio::sync::oneshot::channel();
+    let mut sink = Aborts(Some(tokio::spawn({
+        let packets = packets.clone();
+        async move {
+            let mut first = Some(first);
+            let mut buffer = [0u8; 2048];
+            loop {
+                socket.recv_from(&mut buffer).await.unwrap();
+                packets.fetch_add(1, Ordering::SeqCst);
+                if let Some(first) = first.take() {
+                    let _ = first.send(tokio::time::Instant::now());
+                }
+            }
+        }
+    })));
+    let start = tokio::time::Instant::now();
+    let observed = tokio::time::timeout_at(
+        start + expected + Duration::from_millis(500),
+        crate::deadline::scope(start + operation, node.dial_update(&ep, &peer)),
+    )
+    .await;
+    let elapsed = start.elapsed();
+    let first = tokio::time::timeout(Duration::from_millis(100), first_seen).await;
+    let counts = node.wires.counts.snapshot();
+    let down = node.wires.link(&peer.id).down;
+    let backoff = node.wires.backing_off(&peer.id);
+    ep.close().await;
+    sink.0.as_ref().unwrap().abort();
+    let _ = sink.0.as_mut().unwrap().await;
+
+    assert!(matches!(first, Ok(Ok(at)) if at < start + expected));
+    assert!(packets.load(Ordering::SeqCst) > 0, "the real update dial sent UDP");
+    assert!(
+        matches!(observed, Ok(Err(_))),
+        "dial_update itself must stop, before the fixture's outer timeout"
+    );
+    assert!(elapsed >= expected - Duration::from_millis(20));
+    assert!(elapsed <= expected + Duration::from_millis(500));
+    assert_eq!(counts.dial_failed, 0);
+    assert_eq!(counts.retired_unanswered, 0);
+    assert_eq!(counts.answers_late, 0);
+    assert_eq!(down, None);
+    assert_eq!(backoff, None);
+}
+
 #[cfg(target_os = "linux")]
 fn isolated_network_namespace(test: &str) -> bool {
     use std::process::Command;

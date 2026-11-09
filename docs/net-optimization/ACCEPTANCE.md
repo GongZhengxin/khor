@@ -262,3 +262,8 @@ Linux-only真实fixture，先启动新unshare -Urn子harness，核network namesp
 前置必须证明两请求恰各一次到达server、其发送响应时刻>=2.2秒，响应再经过固定2.4秒路程晚于首调用到期，首调用正常CallerExpired且到期观察在by+400ms内、到期前heard_count未增加。前置失败独立归fixture；未取得实际运行红前，不把静态风险写成行为红。
 
 目标：首调用到期时wire仍live，控制请求收到真实延迟回答、heard_count随后增加，同stable_id继续保留；零retired_unanswered/closed/readretry/dialfailed/answer_late/down/backoff。12秒与400ms为测试防挂/调度观察，不改产品budget或体验门。场景结束捕获全部事实后才删该namespace的qdisc/关闭端点，异步任务均Aborts持有并abort/join。原真实长静默F7和长ACK阳性必须保持；不能一律禁用取消退役来让F8过。
+
+
+## N2更新连接独立10秒上限（新增运行覆盖）
+
+两个portable回归调用真实Node::dial_update（UPDATE_ALPN），scratch Node/Minimal endpoint、only_mine原测试配置和临时loopback UDP黑洞；sink实际收到UDP才满足前置，未触碰更新包、现装App或生产store。200ms操作scope时须由dial_update自己正常返回错误，30秒scope时仍在原10秒自身上限返回；外层expected+500ms仅防挂，触发外层timeout不算通过。实际elapsed下界expected-20ms，上界expected+500ms，sink首包早于expected；零共享wire未答退役/peer down/backoff/answer_late/dial_failed。此为现有合同新增实测覆盖，未声称旧源行为红，也不改变10秒/200ms/长操作档语义。
