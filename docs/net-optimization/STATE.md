@@ -111,3 +111,6 @@ Mac source/bundle分支只在终态、证据留存且所有权/SHA匹配后清�
 
 
 42570381896终态仅**格式门失败**：probe fixture const/timeout布局与assert，远端patch原样应用；source/control/ref已核，119 refs终态，未编译/运行。probe生产仍原样，三行为红尚未取得；下一源继续。
+
+
+**42570772550 Mac net-node探针回归格式修正源在途**：baseffbbcaac13a6d9f54591afdac1bebeeb5dbe415e clean、tree0a26b34f68b867d72eb047f9c6ec8234b68e5d59、snapshotcc5b77828bb5a5addb0db6ed8739824700c9697e、control0cff9671fb2f80945423132e0df46995f6ff3198；120th ref/mac-probe-owner-formatted-42570772550已锚，probe生产未改，旧11控制与新3红待实际结果。
