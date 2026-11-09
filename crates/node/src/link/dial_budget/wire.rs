@@ -47,7 +47,8 @@ impl Fixture {
         .await
         .unwrap();
         let (local, remote) = (local.unwrap(), remote.unwrap());
-        node.wires.adopt(&peer.id, wires::Proto::Main, local.clone());
+        node.wires
+            .adopt(&peer.id, wires::Proto::Main, local.clone());
         Self {
             _root: root,
             node: Arc::new(node),
@@ -115,9 +116,9 @@ async fn ordinary_expiry_stops_its_stream_and_preserves_a_concurrent_request() {
                     let (mut send, mut recv) = conn.accept_bi().await.unwrap();
                     let bytes = recv.read_to_end(MAX_FRAME).await.unwrap();
                     assert!(matches!(
-                proto::question(&bytes).unwrap(),
-                Request::Sessions
-            ));
+                        proto::question(&bytes).unwrap(),
+                        Request::Sessions
+                    ));
                     requests.fetch_add(1, Ordering::SeqCst);
                     control_entered.send(()).unwrap();
                     // This second request is in flight at expiry, and answers
