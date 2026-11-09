@@ -465,3 +465,10 @@ N1后续outer副本快照只持WeakConnectionHandle，沿actual initiator incomi
 
 
 Mac-only net-wan-lifetime可通过既有GH installed guard通道执行上面三种真实Node退出合同，避免把独立iroh-ssh认证前超时当产品失败。只发送ready/stop、EOF或受控kill bridge，绝不mint/pair票。guardian新增为bootstrap准确control blob，FD与PGID由原guard继承，所有private RPC由进程pipe/Unix socket承载；公开报告只有source/binary hash、run-id、join与owned process证明。正向通过后仅删本次已核owner且进程空的home/tmux/binary；失败保留private诊断状态并停止后续case。binary manifest执行标记依据runtime结果更新，不能仍称“未运行”。这不是Mac↔Turing业务验收；后续临时能力仍只能经可信私有通道传递，不能为了测试进artifact/日志。
+
+
+## 严格NAT选路合同的持续执行
+
+`warm_remote_requests_select_the_rebound_tuple_v1`原247真实红/249真实绿保留。`scripts/netlab-nat-selection.py`只分析原始物理/完整请求/实际开流快照；重放两份已核数据与原冻结合同逐个requests/problems相等（红0/30+69 mismatch，绿30/30+0），不改原独立checker字节。整个物理fixture SHA仍ac97726906429a5dd63dd91b5c9ed99624c273d9a253f7facb916ffcf47e8a9b，变化需冻结新合同。
+
+新control将lifecycle NAT profile在可达绿后执行此门；普通无诊断profile不变。检查same WAN port50001→50002、两族kernel未变、r0 conntrack正负校准、完整124 outcomes、30个实际remote warm streams均选新Direct、零cached/actual mismatch及journal确认。没有新增延迟阈值，也不代表全部U12或p99。retained source/control/transport/executor身份继续由独立receipt审计；脚本的行为绿不能代替这些身份核对。

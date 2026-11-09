@@ -8,11 +8,14 @@
 
 ## 先核当前句柄，禁止盲重发
 
-- **截至262全部已终态采证，Turing当前无重型任务。** 所有262 source refs已逐条pin，最新批量审计仍待刷新。旧句柄段逐字归档在[HISTORY-20261109-wan-lifetime-handles.md](HISTORY-20261109-wan-lifetime-handles.md)。
+- **264 Turing实际四端快照重复在途**：turing-20261109T233244Z-444c1ea7，PID1279341，复用260完整source/tree/snapshot/control be11104，原fixture/诊断模式/门不变；WAN原group空且锁已释放后才启动，不与其计时争用。下一按句柄核终态/真实group/collection，不能盲重发。
+- **263 Mac42721024415 ↔ Turing真WAN首轮60/60全部ok**：coordinator e0b0b491f8336536，control ebf7f0d；原ff608e91/tree7d0c7467/snapshotb13e4398，两端fresh身份互相精确匹配、同完整source。Mac→Linux n30 p50/p95/max=61004/65659/84881us；Linux→Mac=59729/61452/71335us。两端links实际为公共Relay 101.200.80.77:3340，不冒称Direct/peer relay/最优。两端resident joined/worker rc0/owned空、Linux原group空/锁释放、成功后fresh身份及复制binary已清，临时Actions secret在pair后删除；Mac artifact11 files/11 control blobs/source/transport/hashes已核。wan-first-paired-proof.json留全部原结果hash。仅paired-warm目录list（marker名/类型/大小），不是冷建连/文件正文/移动/手机/能耗或p99；只有一轮。
+
+- **263及此前全部已终态采证，264为唯一Turing重型在途。** 所有refs已逐条pin，最新批量审计仍待刷新。旧句柄段逐字归档在[HISTORY-20261109-wan-lifetime-handles.md](HISTORY-20261109-wan-lifetime-handles.md)。
 - **Linux真实生命周期3/3绿**：9d6744346bfdb955(stop)、a5912e892695a08d(EOF)、f351939e640ec31a(kill)，control69e7346；各resident_joined/worker rc0/原guard group/owned空/lease socket无/锁已释放。wan-leases/linux-lifetime-three-modes.json汇总原hash。source与Mac262相同。只有退出合同，不是跨网业务。
 - **真WAN fallback已实现待首跑**：net-wan-peer独立guard步骤，构建步骤不接触临时票据；短期Actions repo secret仅fresh Linux ticket/公共ID/fixture/source，不传个人凭据，实验后删除。Mac可信controller持临时能力/status token，guardian/bridge/Node只继承最小环境和原guard FD；public commit status仅Mac ID/完成位，普通artifact仅结果/公开path facts；两端新私有home/身份，600秒worker/660秒guardian资源界限。先准确同源双向30个paired-warm目录请求，不当冷建连/文件内容/移动/能耗证明。Python私有pipe/凭据隔离/全部计划outcomes控制检查已绿。
 - **262 Mac42718502406真实Node生命周期3/3绿**：stop/EOF/SIGKILL bridge均worker rc0、resident_joined=true、worker/bridge继承guard PGID、最终owned processes空、无forced cleanup；准确source ff608e91/tree7d0c7467/snapshotb13e4398、control7ed29ab。14 artifact hashes和10 control blobs已核。不是配对/WAN业务证明。Mac cache binary SHA仍2ce96e9f，更新manifest executed=true，只限生命周期。
-- **260 Turing turing-20261109T230112Z-9c86057f已终态**：226.606s/rc0/原group空，124/124可达、reported Carried恢复hold绿；实际四个outer端+约3.4s均selected Direct，质量41–51ms/age<0.4s/samples8，+8/+13秒持续。单轮诊断绿，不能关闭253不稳定问题，也不当普通性能改进。source2aa73679/tree26251e70/snapshot73ba9741/controlbe11104。
+- **260 Turing turing-20261109T230112Z-9c86057f已终态**：226.606s/rc0/原group空，124/124可达、reported Carried恢复hold绿；实际四个outer端在replug后约3.6秒和8.6秒快照均selected Direct，quality约41–42ms、age32–923ms、samples1–7；完整outer-copy-timeline.json逐端留证。单轮诊断绿，不能关闭253不稳定问题，也不当普通性能改进。source2aa73679/tree26251e70/snapshot73ba9741/controlbe11104。
 - **261 Mac42717041225便携全绿**：准确同260代码tree、不同snapshot ee6a81b3、controld16ed04，fmt/net67+1ignored/hop12/wires11/journal30/budget20；9 control blobs/hash已核。
 - **Mac SSH新重试仍banner阶段超时**，没有上传/启动WAN进程，不推Khor故障。继续正常GH guard通道，同时Linux稳定SSH推进实际生命周期；测试短期能力仅私有可信通道，禁止普通artifact/日志。
 - **control guardian Python3.8兼容修正**：Turing实际3.8.10，不支持Path.is_relative_to，改等价relative_to前置校验；本机只有Python控制合同，真实Linux合同待新commit后执行。
