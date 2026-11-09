@@ -4,6 +4,8 @@
 
 ## 当前源码与已收齐证据
 
+- **236 Mac新blocked-owner合同仅format前置失败**：[42702996220](https://github.com/colehank/khor-build/actions/runs/42702996220)，request5b88b67935934432834ad6f669e69aa5，baseb35df58e/tree59d96993/snapshotfcfa00e6/controle4c58dc。完整source/transport/9 control blobs/hash核，尚未编译/执行；远端format.patch已原样应用，继续同原行为取实际红。Turing235仍是233准确源，不混N2测试。
+
 - **233 Linux/234 Mac Unused误退避红绿闭合**：Turing `turing-20261109T212044Z-2cc026f8` 206.42s/原group空；Mac [42701979487](https://github.com/colehank/khor-build/actions/runs/42701979487)，requesta16ca0476b294d2a97f900250ec61af6。base58cb6475/treea11a73fa/snapshot22997314/controle4c58dc准确源相同，双方fmt/net66+1ignored/hop12/wires11/journal30、Linux预算24（91.96s）/Mac20（49.94s）绿；234完整source/transport/9 control blobs/hash核。整个hop tests模块SHA5f2cecfd427d3397c5a7147f1946248f99068e9317a263736b9510a96ff07ccc与232逐字相同，proof unused-hop-release-red-green.json。仅Unused不再lost，Measured原margin/十分钟、两looks/owner guards保留。
 - **235 Peer relay真实移动复验在途（只含Unused修复）**：`turing-20261109T212616Z-b48bf385`，与233/234完整source/control相同，PID1143345；后续本地N2测试/修复不会混入，按同句柄核终态与全部outcomes/最好路独立字段。
 - **下一N2 blocked-owner合同已写，未远端format/编译**：真实1字节duplex阻塞writer、观察detach/replacement旧Attached在远端尚未关闭前是否结束；两分支都记录、失败也显式清理，替换新owner必须仍在。先保持原I/O实现取红。拟由Mac net-unit先跑，Turing只运行235，不污染计时。

@@ -977,12 +977,18 @@ mod tests {
             let (r, w) = tokio::io::split(here);
             let old = links.attach(peer, carrier, r, w);
             let serial = old.serial();
-            links.lock().get(&peer).unwrap().out.try_send(
-                Bytes::from_static(b"blocked carrier frame"),
-            ).unwrap();
+            links
+                .lock()
+                .get(&peer)
+                .unwrap()
+                .out
+                .try_send(Bytes::from_static(b"blocked carrier frame"))
+                .unwrap();
             let mut byte = [0u8; 1];
             tokio::time::timeout(Duration::from_secs(1), remote.read_exact(&mut byte))
-                .await.expect("the real writer reached the one-byte pipe").unwrap();
+                .await
+                .expect("the real writer reached the one-byte pipe")
+                .unwrap();
             assert_eq!(byte, [b'b']);
             let replacement = if replace {
                 let (next, next_remote) = tokio::io::duplex(64);
@@ -997,28 +1003,39 @@ mod tests {
             let ended = old.ended();
             tokio::pin!(ended);
             let stopped = tokio::time::timeout(Duration::from_secs(1), &mut ended)
-                .await.is_ok();
+                .await
+                .is_ok();
             // Clean up the baseline's blocked task before asserting the
             // failure; closing this peer must not be what makes it pass.
             drop(remote);
             if !stopped {
-                tokio::time::timeout(Duration::from_secs(1), &mut ended).await
+                tokio::time::timeout(Duration::from_secs(1), &mut ended)
+                    .await
                     .expect("baseline I/O ends after its blocked peer closes");
             }
             if let Some((attached, next_remote)) = replacement {
                 assert_eq!(links.carrier(&peer), Some(carrier));
-                assert!(links.has(&peer), "old completion cannot remove the replacement");
+                assert!(
+                    links.has(&peer),
+                    "old completion cannot remove the replacement"
+                );
                 drop(next_remote);
-                tokio::time::timeout(Duration::from_secs(1), attached.ended()).await
+                tokio::time::timeout(Duration::from_secs(1), attached.ended())
+                    .await
                     .expect("the healthy replacement has its own lifetime");
             } else {
                 assert!(!links.has(&peer));
             }
-            eprintln!("[carrier-blocked-owner-contract] replace={replace} old_serial={serial} blocked_write_seen=true stopped_before_remote_closed={stopped}");
+            eprintln!(
+                "[carrier-blocked-owner-contract] replace={replace} old_serial={serial} blocked_write_seen=true stopped_before_remote_closed={stopped}"
+            );
             stopped_before_remote_closed.push(stopped);
         }
-        assert_eq!(stopped_before_remote_closed, vec![true, true],
-            "both detach and replacement stop the blocked old owner without the peer's help");
+        assert_eq!(
+            stopped_before_remote_closed,
+            vec![true, true],
+            "both detach and replacement stop the blocked old owner without the peer's help"
+        );
     }
 
     /// A hop whose link ended still reads as the hop until iroh leaves the
