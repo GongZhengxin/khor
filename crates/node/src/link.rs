@@ -13467,23 +13467,22 @@ mod dial_budget {
         // observation allowance, rather than auto-advancing to its full budget.
         let observed = tokio::time::timeout(Duration::from_millis(5), &mut ask).await;
         let finished = observed.is_ok();
+        let returned_error = matches!(observed, Ok(Ok(Err(_))));
         if !finished {
             ask.abort();
             let _ = ask.await;
         }
         tokio::time::resume();
         ep.close().await;
+        assert!(!finished || returned_error);
         assert!(held.is_none());
         (finished, node.wires.counts.snapshot().dial_failed)
     }
 
     #[tokio::test]
     async fn a_scoped_operation_deadline_reaches_the_actual_ask() {
-        let (finished, failed) = observe_scoped_ask(
-            Duration::from_millis(40),
-            Duration::from_millis(50),
-        )
-        .await;
+        let (finished, failed) =
+            observe_scoped_ask(Duration::from_millis(40), Duration::from_millis(50)).await;
         assert!(finished, "ask_on ignored the operation's remaining budget");
         assert_eq!(failed, 0);
     }

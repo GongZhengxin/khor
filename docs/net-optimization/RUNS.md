@@ -461,3 +461,6 @@ N3道路双向因果校准测试已按先前协议写下，模型未改；contro
 
 
 **42562380977 Mac net-node操作scope预算回归在途**：clean4b777300、treed3cc715bcac2173cdaa5905ad173ce295f931906、snapshot2daaec31a984488b7cfbf6f5ef8549448d1546c7、control0cff9671fb2f80945423132e0df46995f6ff3198。新增不可变deadline载体、未接入生产消费者/Op；真实ask持锁的40ms与300秒两个虚拟时钟回归待红，107th ref与mac-operation-budget-red-42562380977已保存。
+
+
+42562380977终态仅**根格式门失败**，准确source/control已核；新测试调用排版patch已原样应用，无编译/测试，不记scope行为红。107 refs终态，生产消费者仍未接入。
