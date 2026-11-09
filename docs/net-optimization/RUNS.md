@@ -632,3 +632,6 @@ control7534d6e已push，仅增加SSH-only cpu-check与hop-lifecycle；驱动Pyth
 
 
 172nd turing-20261109T135004Z-7a6fa08a（base7da5608e/tree62657b3b/snapshot56ce281d/control7534）CPU短校准3绿1红，101.22秒含编译、四case40.47秒。新真实Node case定位读取/proc/550613/task/551658/status返回ENOENT，原sleep/负例/解析三个保持绿；完整source/control/bundle/group/hash采核。173rd Mac42629466427同完整source，只有CPU新case assert布局format红，无编译/行为；原patch已应用。当前fixture修正为退出感知的完整存活线程快照＋前后process identity，100ms无完整快照失败；压力和原门保持，尚未预记绿。
+
+
+174th turing-20261109T140109Z-0973b7c9（base86bb24cd/treecfcde850/snapshotad2fee6e/control7534）CPU短校准**4/4绿**，101.18秒含编译、case41.38秒。真实两个Node561853/562203的274/275存活线程均CPU89，真实请求过；492ms内两个contender分别增加9/10ticks，identity/进展/负例保持。sleep控制也通过。完整source/control/bundle/group/hash已采核。175th Mac42631155176同准确完整source仅format红（两个CPU helper hunk），无Node编译/行为测试，原patch已应用。后续完整A/B以allowed CPU集合固定中间ID替代按harness PID选核，日志标allowed_midpoint_v1，压力及门保持；未执行的新选择不能当作174观测事实。

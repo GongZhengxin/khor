@@ -121,7 +121,9 @@ fn thread_masks(pid: u32) -> Result<Vec<(u32, Vec<usize>)>, String> {
         // a vanished status still present in the listing require a fresh
         // complete scan; sustained churn fails closed within 100 ms.
         if began.elapsed() >= Duration::from_millis(100) {
-            return Err(format!("no complete live-thread snapshot for resident {pid}"));
+            return Err(format!(
+                "no complete live-thread snapshot for resident {pid}"
+            ));
         }
         std::thread::sleep(Duration::from_millis(1));
     }
@@ -133,7 +135,9 @@ impl Process {
         let threads = thread_masks(pid)?;
         let (after, ticks) = process_times(pid)?;
         if after != start {
-            return Err(format!("resident {pid} changed identity during observation"));
+            return Err(format!(
+                "resident {pid} changed identity during observation"
+            ));
         }
         Ok(Self {
             pid,
@@ -191,7 +195,9 @@ pub(super) struct BusyCpu {
 impl BusyCpu {
     pub(super) async fn start(residents: &[u32]) -> Result<Self, String> {
         let allowed = current_allowed()?;
-        let cpu = allowed[std::process::id() as usize % allowed.len()];
+        // Paired sequential runs use the same observed allowed CPU ID,
+        // rather than a different core chosen by each harness PID.
+        let cpu = allowed[allowed.len() / 2];
         Self::start_on(residents, cpu).await
     }
 
@@ -300,7 +306,7 @@ impl BusyCpu {
             "[netlab-cpu] {}",
             json!({
                 "schema": 1, "measurement_revision": REVISION, "phase": phase,
-                "cpu": self.cpu, "allowed_ids": self.allowed,
+                "cpu": self.cpu, "allowed_ids": self.allowed, "cpu_selection": "allowed_midpoint_v1",
             "elapsed_ms": self.began.elapsed().as_millis(), "ticks_per_second": ticks_per_second,
                 "residents": self.residents.iter().map(Process::record).collect::<Vec<_>>(),
                 "contenders": self.previous.iter().map(Process::record).collect::<Vec<_>>(),

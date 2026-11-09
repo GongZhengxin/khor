@@ -229,3 +229,6 @@ CPU169未进入测量：真实Node CPU admission返回无路径ENOENT，不能�
 
 
 172真实Node短准入红把169类失败定位到枚举与读取之间的线程退出（具体task status ENOENT）；先修fixture快照，不改产品或压力条件。修正仍必须覆盖每个存活thread、PID identity与真实CPU ticks。173仅format红，无多连接行为结论；共享载路清理假设仍待可重复合同。
+
+
+174实Node短准入4/4绿，所有549个存活线程实核CPU89，真实echo与两busy CPU进展通过；172线程退出竞态修复取得真实短case绿，未覆盖600秒p1s。完整A/B将明确同一allowed CPU中间ID，原门和压力不改。175仍仅formatter红，N1多连接合同尚无行为结果；生产清理判断不提前改。

@@ -1,8 +1,12 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-09 14:00 UTC；root串行，无子智能体。活动目标“完成计划”仍active，完整N0–N5未完成。
+更新：2026-11-09 14:09 UTC；root串行，无子智能体。活动目标“完成计划”仍active，完整N0–N5未完成。
 
-**172th真实Node短准入已定位线程退出竞态；173th Mac仍仅format红。** 172`turing-20261109T135004Z-7a6fa08a`原三个校准绿、新实际Node短case红：两resident550244/550613仍在测试生命周期内，读取枚举过的`/proc/550613/task/551658/status`时该task已消失。source base7da5608e/tree62657b3b/snapshot56ce281d/control7534，101.22秒；完整采证。当前只修CPU fixture快照：只容忍确已消失的task，随后重新枚举并要求每个仍存活thread均有真实mask，新增线程触发整轮重取，100ms无完整快照即失败；前后再核PID start identity。所有存活thread绑核、两个真实contender CPU进展、负例、原600秒/20尖峰/原门保持；日志另标exit_aware_v1，不改旧v3结果。修正尚未远端验证。
+**174th真实Node短CPU准入4/4绿；175th Mac仍仅format红，标准patch已应用。** 174`turing-20261109T140109Z-0973b7c9`，base86bb24cd/treecfcde850/snapshotad2fee6e/control7534，101.18秒含编译、四case41.38秒，完整source/control/group/bundle/hash采证。CPU89上真实Node561853/562203分别274/275存活threads，全mask=[89]，真实echo回答；492ms内两contender分别增加9/10ticks（100Hz），PID/start稳定。sleep-child与负例/解析控制保持。172线程退出导致的读/proc task status ENOENT由exit-aware完整实时线程快照修正；原短case除formatter布局外断言/负载不改。此绿不覆盖600秒完整p1s或整体体验。
+
+175 Mac42631155176与174完整source相同，只有两个新CPU helper的format hunk，未编译/执行共享载路合同。原format.patch已应用。接下来的完整A/B另把CPU选择从harness PID取余改成真实allowed ID集合的固定中间项，并标allowed_midpoint_v1，保证同host/同allowed集合时同一核；实际admission仍核所有线程和CPU进展，原600秒/两busy/尖峰/门不改。新选择尚待真实完整对照，不回写174的CPU89为CPU64。
+
+共享载路合同已格式化，生产清理策略保持；下一准确源Mac net-node先取得可重复实际红，再决定修复，不能把162根因预先归定。
 
 173 Mac42629466427与172完整source相同，只有CPU新case的assert布局format红；无编译/多连接行为执行。原format.patch已应用。N1共享载路合同仍待实际红，生产清理策略保持；不能把格式红说成产品红。
 
@@ -14,7 +18,7 @@
 
 162nd原三轮hop已终态**8/9**，3/3、2/3、3/3，1688.88秒；只有第二轮f4i红。X同一wire从carried切relay，间隔7347ms，载路从候选列表消失；Y的两条聚合事件属于不同wire。原因尚未被生命周期事件直接证明，不能归为显示抖动或直接宣布排名算法错误。f4s三轮虽原门绿，最慢按键均9.9秒；极致体验仍未达标。
 
-166th `netlab-cpu-check` **3/3校准绿**：两个owned sleep子进程模拟resident、两个真实busy loop在CPU14；两contender在305ms分别增加15ticks，100ticks/s，实际亲和/存活/负例/清理通过。**不是600秒p1s或真实Node负载验收。** 167th Mac`42622111828`同完整snapshot根格式与net66+1ignored绿；没有跑Node20或App。当前173个run refs均已终态/明确未启动；另有基线准备ref，snapshot/tree双引用全批核。
+166th `netlab-cpu-check` **3/3校准绿**：两个owned sleep子进程模拟resident、两个真实busy loop在CPU14；两contender在305ms分别增加15ticks，100ticks/s，实际亲和/存活/负例/清理通过。**不是600秒p1s或真实Node负载验收。** 167th Mac`42622111828`同完整snapshot根格式与net66+1ignored绿；没有跑Node20或App。当前175个run refs均已终态/明确未启动；另有基线准备ref。173条时双引用全批核，后新增174/175各已核。
 
 完整范围：[PLAN](PLAN.md)、[REQUIREMENTS](REQUIREMENTS.md)、[ACCEPTANCE](ACCEPTANCE.md)。运行与原始结论：[RUNS](RUNS.md)、[REPORT](REPORT.md)。此前STATE逐字保存在[本轮前历史](HISTORY-20261109-before-cpu-calibration.md)和更早HISTORY文件；历史在途文字只代表当时，恢复以本页顶端及实际进程为准。
 
@@ -29,7 +33,7 @@
 | 产品 | `/Volumes/disk0/Khor/worktrees/current/khor-net`，`feat/net`；本批代码886b084c为CPU fixture校验＋opt-in载路生命周期事实，清理/选路政策未变；恢复核实际HEAD/diff |
 | 控制 | `/Volumes/disk0/Khor/worktrees/current/khor-build-net`，`feat/net`；7534d6e已push，新增SSH-only cpu-check与hop-lifecycle两个profile；Python驱动2＋runner4 checks绿；原timed profiles未改 |
 | 原基线 | `/Volumes/disk0/Khor/worktrees/current/khor-net-baseline`，detached6485cb83；原六fixture WIP未改，旧source90126283/tree97040f31已锚；不得按摘要覆盖 |
-| 证据 | `/Volumes/disk0/Khor/evidence/net/`；source-refs.json173条不可变run ref，均终态或明确未启动；SSH run不是GitHub run |
+| 证据 | `/Volumes/disk0/Khor/evidence/net/`；source-refs.json175条不可变run ref，均终态或明确未启动；SSH run不是GitHub run |
 
 Turing根`/tmp/khor-netlab-feat-net-1110`，每run在`runs/<id>`。只操作此任务owned资源，flock单重型槽，计时/诊断场景运行时不并跑编译或其他负载。无sudo/主机网络改动；user/netns隔离。50GiB准入/40GiB停止/90分钟预算；原工具pin/hash/可信source bundle不变。
 
@@ -76,7 +80,7 @@ CPU旧152/153原两门均2/2：候选0/0移动、最慢3.8秒、12打洞；基�
 
 先核worktree/branch/HEAD/diff、receipt/source/ref与实际进程，不以摘要覆盖WIP。所有`refs/khor/net-evidence/<run>`必须同时等于账本snapshot，`:source`等于tree。最近全量审计`source-refs-audit-20261109-real-resident-admission.json`（173条）。不checkout/push这些本地证据refs。
 
-辅助编排`evidence/net/ops/submit-turing.py`仅本地Git/Python/SSH；stage可--source复用完整回执，--control显式选新profile的7534（默认仍b998），launch必须给已采证前驱并重核原group/flock。helper历史及SHA保留。观察超时重查同句柄，不重发。169终态、170 superseded未启动，当前无Turing重型任务。helper新增--role在stage之前准确记录baseline/candidate/diagnostic；原guard未改，旧helper/SHA归档。
+辅助编排`evidence/net/ops/submit-turing.py`仅本地Git/Python/SSH；stage可--source复用完整回执，--control显式选新profile的7534（默认仍b998），launch必须给已采证前驱并重核原group/flock。helper历史及SHA保留。观察超时重查同句柄，不重发。169终态、170 superseded未启动，当前无Turing重型任务。174短校准已结束，175仅format红；接下来完整基线CPU与Mac合同检查按新回执恢复。helper新增--role在stage之前准确记录baseline/candidate/diagnostic；原guard未改，旧helper/SHA归档。
 
 Mac source/bundle分支只在终态、完整留证和所有权/SHA匹配后清理；不删复用者不拥有的原源分支。外盘缺失只从Git只读恢复，原WIP不可按摘要覆盖。其他代码治理任务沿中央STATE/RESUME，不接管其树。
 
