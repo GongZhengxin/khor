@@ -1268,6 +1268,22 @@ mod tests {
     }
 
     #[test]
+    fn khor_selection_near_the_rtt_floor_does_not_charge_peer_ack_delay() {
+        let ms = Duration::from_millis;
+        let mut rtt = RttEstimator::new(ms(85));
+        rtt.update(Duration::ZERO, ms(85));
+        rtt.update(ms(25), ms(109));
+        // A one millisecond variation must not add all 25 ms of ACK delay
+        // to path quality. Selection may clamp to the observed raw floor;
+        // congestion/recovery retain their existing estimator and raw RTT.
+        assert_eq!(rtt.latest_sample(), ms(85));
+        assert_eq!(rtt.get(), ms(88));
+        assert_eq!(rtt.conservative(), ms(109));
+        assert_eq!(rtt.min(), ms(85));
+        assert_eq!(rtt.sample_count(), 2);
+    }
+
+    #[test]
     fn khor_sample_times_belong_to_the_ack_not_a_later_stats_read() {
         let ms = Duration::from_millis;
         let sent = Instant::now();

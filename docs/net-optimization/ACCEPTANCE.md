@@ -472,3 +472,10 @@ Mac-only net-wan-lifetime可通过既有GH installed guard通道执行上面三�
 `warm_remote_requests_select_the_rebound_tuple_v1`原247真实红/249真实绿保留。`scripts/netlab-nat-selection.py`只分析原始物理/完整请求/实际开流快照；重放两份已核数据与原冻结合同逐个requests/problems相等（红0/30+69 mismatch，绿30/30+0），不改原独立checker字节。整个物理fixture SHA仍ac97726906429a5dd63dd91b5c9ed99624c273d9a253f7facb916ffcf47e8a9b，变化需冻结新合同。
 
 新control将lifecycle NAT profile在可达绿后执行此门；普通无诊断profile不变。检查same WAN port50001→50002、两族kernel未变、r0 conntrack正负校准、完整124 outcomes、30个实际remote warm streams均选新Direct、零cached/actual mismatch及journal确认。没有新增延迟阈值，也不代表全部U12或p99。retained source/control/transport/executor身份继续由独立receipt审计；脚本的行为绿不能代替这些身份核对。
+
+
+## ACK delay接近RTT下界的选路合同（实现前冻结）
+
+264实际准备失败：四个outer端均Direct约41–42ms，inner quality约109ms/public Relay约131ms，未过既有25%收益门而两look后回收，150秒未完成Carried准备。尚未发生移动，不称换网行为红。253完整samples中已找到36个原始样本：raw-delay为正、仅略低于已观察min RTT，传输RFC估计器保留raw，使选路也把整段ACK delay计入网络；例如raw108.729887ms/delay25ms/min85.358693ms/sample108.729887ms。这些样本尚无准确conn/path绑定，下一265沿264整source开full samples核对，不先归为唯一根因。
+
+新增Noq真实单元合同：先实测85ms，再raw109ms/ack_delay25ms；选路质量应保守取85ms下界，原传输get仍88ms、conservative仍109ms、min85ms、计数2。仅存在既往真实sample、且0<raw-delay<min时允许选路样本夹到min；初始无样本和delay>=raw维持原保守语义。既有过量ACK-delay测试不改。原SRTT/方差/PTO/拥塞/线上协议/25%收益门均不得因此改变，新增单元先远端取红，再考虑候选；物理peer relay及原稳定性/黑洞门仍要另外验证。
