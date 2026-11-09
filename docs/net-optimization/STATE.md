@@ -1,8 +1,8 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-09 08:19 UTC；root串行，无子智能体。活动目标“完成计划”仍active。
+更新：2026-11-09 09:41 UTC；root串行，无子智能体。活动目标“完成计划”仍active。
 
-**唯一在途：candidate hop turing-20261109T082539Z-a6f5aaf4，PID4163640。** recovery已收齐并采证：candidate6/6，baseline5/6（第三轮p2 p95=247.204ms>原200ms）；两源p3三轮均<1秒。baseline后半段host load升至46，保留观测红，不把前后差异当代码因果证明。131 refs=127终态+candidate hop在途+3 staged。U9 Turing主通道；完整N0–N5仍未完成。
+**唯一在途：修正fixture candidate hop turing-20261109T091323Z-60e73cac，PID62854。** 已核真实/proc命令；前两轮2/3、3/3，第三轮继续。第一轮f4s通过；独立f4i出现carried→relay→carried，原零回退断言红，尚未定因，不能归为已修复的selected-only reducer误计。旧candidate hop8/9与所有原始红保留。recovery candidate6/6、baseline5/6，但host load变化，不宣称代码因果加速。139 refs=135终态+1在途+3 staged。Mac139th 42594133373仅格式红，未编译/运行测试；远端format.patch原样应用。下一步Turing单槽完成当前hop后，先跑Linux net-node真正F7，再corrected baseline hop及两个stalls；Linux net-node尚未stage。U9 Turing主通道；完整N0–N5未完成。
 完整范围：[PLAN](PLAN.md)；约束：[REQUIREMENTS](REQUIREMENTS.md)；运行记录：[RUNS](RUNS.md)；原始结果：[REPORT](REPORT.md)。
 此前STATE原样归档[Accepted轮历史](HISTORY-20261109-before-accepted-green.md)与[本轮历史](HISTORY-20261109-before-probe-green.md)；历史在途/候选文字仅代表当时状态，恢复以本页和实际工作区为准。
 
@@ -15,9 +15,9 @@
 | 用途 | 位置 / 当前基准 |
 | --- | --- |
 | 产品 | `/Volumes/disk0/Khor/worktrees/current/khor-net`，`feat/net`；最新已验证生产d4a2e115b898fc337f5091b51fa71e45740c667f；随后有文档和scripts/dev.py VZ专用调度；生产网络未改，恢复核HEAD/diff |
-| 控制 | `/Volumes/disk0/Khor/worktrees/current/khor-build-net`，`feat/net`，576c12769beef5f7ca08340f1df18ee87b019d8f已push，现场clean；仅新增collector/2测试；当前两Turing运行仍control59dc223，runner4测试/VZ9测试历史证据保留 |
+| 控制 | `/Volumes/disk0/Khor/worktrees/current/khor-build-net`，`feat/net`，b9984797f412f352f3c76f99c47ade3ee10f68e9已push；新增net-node SSH任务白名单，profile未改；当前hop/stalls仍control59dc223，不能回写历史控制版本 |
 | 基线 | `/Volumes/disk0/Khor/worktrees/current/khor-net-baseline`，detached6485cb83d3b1f0bb93d4633825dc956623d78af9；仅paths/hop/lab/nat.rs、dev.py/netlab.sh六fixture，生产原样 |
-| 证据 | `/Volumes/disk0/Khor/evidence/net/`；source-refs.json131条不可变refs，逐一REF:source核一致；127终态，candidate hop在途，其余3 staged。两个recovery完整report已采/核；SSH不是GitHub run |
+| 证据 | `/Volumes/disk0/Khor/evidence/net/`；source-refs.json139条不可变refs；135终态，corrected candidate hop在途，其余3 staged。每次源变化前锚ref；SSH不是GitHub run |
 
 ## N2本轮：普通wire覆盖与配对探针三红→绿
 
@@ -37,7 +37,7 @@ resident入口一次建立原Op档5/30/300/3600秒减.5秒的不可变Tokio by�
 Accepted交接保留Aborts，adopt后按原by等答；取消/到期停止本流、保留共享健康conn。Rejected和未adopt新conn清理、读写/0RTT准入/frame/IPC半关闭未改。
 新普通wire控制包含真正同时等待的第二请求，首流STOP后才回答；零读重试/answer_late/peer failure/down/backoff/未答退役。真实retry仅一次closed退役，第二条仍live。Mkdir为代表写请求覆盖，未宣称穷尽所有动作的幂等专项。
 probe内部JoinSet按完成取首成功并取消输者，pair_with用Aborts闭合外层；dial成功先drop probe再pair_over，所有早返也清理。原并发量/2.6秒单HTTP/proxy/空与全失败false/诊断fallback不变。图谱还确认ears_heard直接await该函数，返回值映射未改，不能据此声称其完整故障/回声场景通过。
-RetireUnheard仍要求armed、heard_count不变、elapsed>=Patience.ack；短取消不退役，真正长黑洞保护不能移除，其真实故障覆盖仍缺。
+RetireUnheard仍要求armed、heard_count不变、elapsed>=Patience.ack；短取消不退役，真正长黑洞保护不能移除，Mac138长ACK阳性已通过，UDP代理黑洞前置失败；新Linux独立namespace/nft黑洞覆盖尚未运行，不以Mac或纯函数绿替代。
 
 Accepted测试证明应用的真实Accepted后等待路径；Noq is_0rtt只是应用accept时握手状态的观察，不是包级重放证明。旧前置42566727617失败与格式/编译红均独立分类，不能混算。117th run42569493787、119th run42570381896仅格式门，patch原样应用后继续；本机未运行Rust工具。
 
@@ -69,13 +69,13 @@ root fmt/编译/校准1pass、三轮各2pass（167.64/167.09/167.29秒）；704�
 托管Linux prepare因GitHub账单/额度拒绝（42545673450两attempt、42545712302，无步骤/产品测试/source artifact）；已异步询问额度或已有Linux通道，未有回复，不改账单/采购。直接SSH macserver原iroh-ssh路由banner超时，未改路由/信任。
 Mac自托管worker已实际跑产品，现API Git bundle通道多次验证：私库无父source/bundle快照、64MiB上限；worker按精确GITHUB_SHA取可信bootstrap/driver，校blob/SHA256/snapshot/tree后仅本地Git clone。临时repo-read token不继承Git/prepare/构建。
 沿development.yml、mac-mini-worker单槽，仅net-unit/net-node/net-vendor/net-congestion，Rust1.95/jobs2；原安装guard/内存/空间/缓存策略未改，无个人key/token/签名/模型凭据或生产store。标准executor旧checkout/default inputs保持兼容。
-host实际VZ=1、16GiB/10CPU，installed guard实际50/40GiB、Mac target100GiB（42573745492采集）；未改policy。项目目录中固定Lima2.3.0/Ubuntu24.04已下载校验并在42579282147实际完成native raw转换、Linux启动与正常lease停机，无helper残留。VM为2CPU/6GiB/30GiB、空host mounts、无个人key/agent/proxy/自动应用端口。42579909366已实际验证guest namespace/veth/netem/nft/conntrack及正常/父死清理（同guard PGID/继承lock fd、Killed controller=-9、双次不同当前boot IID、最终Stopped/无helper）。还没接产品Rust/netlab，因此产品矩阵未恢复；下一步按下方入口推进。
+host实际VZ=1、16GiB/10CPU，installed guard实际50/40GiB、Mac target100GiB（42573745492采集）；未改policy。项目目录中固定Lima2.3.0/Ubuntu24.04已下载校验并在42579282147实际完成native raw转换、Linux启动与正常lease停机，无helper残留。VM为2CPU/6GiB/30GiB、空host mounts、无个人key/agent/proxy/自动应用端口。42579909366已实际验证guest namespace/veth/netem/nft/conntrack及正常/父死清理（同guard PGID/继承lock fd、Killed controller=-9、双次不同当前boot IID、最终Stopped/无helper）。VZ能力绿保留备用；U9已切Turing并实际完成源码编译和recovery，产品矩阵正在恢复，不再开发VZ产品入口。
 
 ## 完整未完成范围与下一步
 
 N0部分、N1仍红、N2部分、N3部分、N4未完成、N5部分；完整PLAN范围保留，不以本批单元绿结束目标。
 
-1. **紧接N1 Turing产品运行**：U9已授权Turing且Linux能力实际通过。先收当前candidate recovery结果，再launch已staged baseline同配置/driver/原门串行对照；有编译/执行器红则独立解决后重跑。之后CPU/hop/full矩阵并定因f4s，不再开发VZ产品入口。VZ能力/清理绿保留备用。
+1. **当前Turing串行队列**：收corrected candidate hop完整三轮/采证；随后Linux net-node验证新F7，再corrected baseline hop（2c64555c）→candidate stalls（c56d74b3）→baseline stalls（f8a5a7e2）。Linux net-node须新receipt/ref/control b998，尚未stage；其余三项已stage不得重复创建。f4i当前真实回退红待定因，原门不变。随后dynamic/full准确源矩阵；VZ只备用。
 2. **N2剩余合同**：原F7真实长黑洞、长工作/更新10秒运行覆盖；hop两middle合计3秒、dial输者及延迟候选的资源/过期验证；前台多阶段及独立后台整体预算。pair/doctor探针两层已实际修复，不重复排成未修。代理listener/传输job/Visit/nudge有意独立，不能继承已结束前台by。普通wire四项与Accepted覆盖不能证明完整N2。
 3. **IPC边界**：client Op外层与serve接收后deadline起点不同，尚未跨进程传递剩余预算或取消。正常exchange本来就shutdown发送半边，服务端EOF不是取消；不得为贯通而重放已发送写请求。具体原源码hash见deadline-continuation-20261109。
 4. **N1**：恢复Linux，独立定位f4s回退、原门复验及准确源完整矩阵。Mac单元不能替代namespace/netem/nft实测。
@@ -87,7 +87,7 @@ N0部分、N1仍红、N2部分、N3部分、N4未完成、N5部分；完整PLAN�
 
 ## 证据与恢复规则
 
-先核worktree/branch/HEAD/diff、当前run与准确回执；当前Turing candidate hop在途；两个recovery已终态且已采证。131refs=127终态+1 launched+3 staged；恢复按上方run/path/PID实核，SSH观察失败须重查同句柄，不重启。
+先核worktree/branch/HEAD/diff、当前run与准确回执；以本页顶端当前任务为准，以下带时间追加为历史。139refs=135终态+1 launched+3 staged；恢复按run/path/PID实核，SSH观察失败须重查同句柄，不重启。
 `git rev-parse refs/khor/net-evidence/<run>:source`必须等于回执tree；只git show读容器，不checkout覆盖/push本地证据refs。失败明确分format/compile/fixture/行为/执行器；tests_executed只按实际子集，历史红不删除。
 Mac source/bundle分支只在终态、证据留存且所有权/SHA匹配后清理；复用源的请求不拥有原源分支。原attempt不覆盖。
 外盘缺失只读`git show feat/net:docs/net-optimization/STATE.md`与PLAN；原外盘未提交内容不能按摘要覆盖。其他治理沿中央STATE/RESUME，不混授权。
@@ -246,3 +246,11 @@ Mac133th 42589161986仍仅formatter门失败（一处链式排版），没有行
 Mac138th 42591501822终态：root fmt/编译/net66+1ignored/hop9/wires10/journal28绿，dial_budget15pass1fail（14.56s）。新长ACK阳性通过；唯一黑洞测试在静默前置就失败（heard_count12→15，不能当真实黑洞），仅fixture红，不是产品退役行为红，原因尚未区分尾包/绕行。当前15过含旧14合同，新F7未验证。
 
 已移除UDP proxy fixture，恢复原native loopback Fixture；真正长静默改为Linux-only子测试，unshare -Urn在启动子harness前建私有user/netns，核网络namespace与parent不同且uid_map单映射后才up lo/写nft，精确drop两端server UDP端口并核计数/全程heard不变。主机网络不动，Mac不运行该Linux测试，但长ACK阳性/旧合同仍继续。Linux test必须排到Turing单槽后实际运行，不能以Mac15绿代替F7。新增server task白名单net-node以复用原可信profile；未改profile/资源门/生产协议。
+
+
+**Mac 42594133373 net-node在途/139ref已锚**：baseef90f8bf02e024bcb8d51c1a223822e05b307ec2/tree3f3c4c52e0e8857448a921b567b5469ca7c70b74/snapshot800a54f8e5ad6d67fc33db6ed15228ccef86de65、controlb998479（仅Turing增加net-node allowlist，既有profile不改）。true F7为Linux-only新namespace，不在Mac假报通过；Mac验证其余15合同与格式。下一真正Linux net-node需Turing单槽排队并准确source，不得与hop计时并跑。当前corrected candidate hop首轮f4s绿、独立f4i红（未被此次reducer改变），第二轮继续；新红待原始断言/事件定因，不能据f4s计量修正把所有hop收绿。
+
+
+Mac139th 42594133373已终态并采证，准确source/tree/snapshot/control及bundle-transport核一致，headSha=b9984797；仅根format门失败，没有编译或行为运行。format.patch原样应用，未在本机执行formatter。Linux-only F7需下一Turing net-node实际证明；Mac排除它，不能报全16绿。
+
+corrected candidate hop第一轮f4i原始事件已取回：X selected carried@96.8→relay@98.5→carried@104.3；断言to_relay=1而原门0，Y first started relay@88.1满足首路径条件。回退时X measurements只剩Relay，先前两路径存在；日志无connection stable_id，不能仅凭这些行区分旧retired watcher与实际持有wire，仍保留行为观测红并等待基线/进一步诊断。未放宽f4i、未修改生产。第二轮3/3，第三轮继续。

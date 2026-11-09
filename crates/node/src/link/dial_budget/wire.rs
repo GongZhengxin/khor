@@ -245,7 +245,13 @@ async fn abandoning_a_long_silent_exchange_still_retires_the_dead_wire() {
     assert_eq!(mapping.len(), 3);
     assert_eq!(mapping[0], "0");
     assert_eq!(mapping[2], "1", "a fresh unprivileged user namespace");
-    assert!(Command::new("ip").args(["link", "set", "lo", "up"]).status().unwrap().success());
+    assert!(
+        Command::new("ip")
+            .args(["link", "set", "lo", "up"])
+            .status()
+            .unwrap()
+            .success()
+    );
 
     let f = Fixture::new().await;
     assert_eq!(f.peer.addrs.len(), 1);
@@ -254,16 +260,30 @@ async fn abandoning_a_long_silent_exchange_still_retires_the_dead_wire() {
     tokio::time::sleep(Duration::from_secs(1)).await;
     let rules = format!(
         "table inet khor_f7 {{ chain output {{ type filter hook output priority 0; policy accept; udp sport {} counter drop; udp dport {} counter drop; }} }}",
-        server.port(), server.port()
+        server.port(),
+        server.port()
     );
-    let mut firewall = Command::new("nft").args(["-f", "-"]).stdin(Stdio::piped()).spawn().unwrap();
-    firewall.stdin.take().unwrap().write_all(rules.as_bytes()).unwrap();
+    let mut firewall = Command::new("nft")
+        .args(["-f", "-"])
+        .stdin(Stdio::piped())
+        .spawn()
+        .unwrap();
+    firewall
+        .stdin
+        .take()
+        .unwrap()
+        .write_all(rules.as_bytes())
+        .unwrap();
     assert!(firewall.wait().unwrap().success());
     // Only this new network namespace is filtered, on every native server path.
     tokio::time::sleep(Duration::from_millis(200)).await;
     let heard_before = wires::heard_count(&f.local);
     tokio::time::sleep(Duration::from_millis(100)).await;
-    assert_eq!(wires::heard_count(&f.local), heard_before, "firewall fixture must be quiet");
+    assert_eq!(
+        wires::heard_count(&f.local),
+        heard_before,
+        "firewall fixture must be quiet"
+    );
     let patience = wires::Patience::of(&f.local).ack;
     assert_eq!(patience, Duration::from_secs(4));
     let grace = wires::ask_every_path(&f.local);
@@ -292,21 +312,24 @@ async fn abandoning_a_long_silent_exchange_still_retires_the_dead_wire() {
     );
     drop(asking);
     let unheard = wires::heard_count(&f.local) == heard_before;
-    let rules = Command::new("nft").args(["list", "table", "inet", "khor_f7"]).output().unwrap();
+    let rules = Command::new("nft")
+        .args(["list", "table", "inet", "khor_f7"])
+        .output()
+        .unwrap();
     assert!(rules.status.success());
     let rules = String::from_utf8(rules.stdout).unwrap();
     let words: Vec<_> = rules.split_whitespace().collect();
-    let dropped: u64 = words.windows(2).filter(|pair| pair[0] == "packets")
-        .map(|pair| pair[1].parse::<u64>().unwrap()).sum();
+    let dropped: u64 = words
+        .windows(2)
+        .filter(|pair| pair[0] == "packets")
+        .map(|pair| pair[1].parse::<u64>().unwrap())
+        .sum();
     let remote_open = f.remote.close_reason().is_none();
     let live = f.node.wires.live(&f.peer.id, wires::Proto::Main);
     let counts = f.node.wires.counts.snapshot();
     f.close().await;
 
-    assert!(
-        unheard,
-        "fixture leaked UDP despite namespace rules"
-    );
+    assert!(unheard, "fixture leaked UDP despite namespace rules");
     assert!(
         dropped > 0,
         "the real request/probes must hit namespace drop rules"
