@@ -55,7 +55,7 @@ mod attempts;
 #[path = "paths/cpu.rs"]
 mod cpu;
 #[path = "paths/mobile.rs"]
-mod mobile;
+pub(crate) mod mobile;
 #[path = "paths/mobility.rs"]
 mod mobility;
 #[path = "paths/roam.rs"]

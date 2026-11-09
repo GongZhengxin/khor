@@ -62,13 +62,13 @@ fn state(n: &LabNode, phase: &str, revision: &str) -> (serde_json::Value, serde_
     (v4, v6)
 }
 
-pub(super) fn fixture(n: &LabNode) {
+pub(crate) fn fixture(n: &LabNode) {
     let dir = n.home.0.join("mobile-fixture");
     std::fs::create_dir(&dir).unwrap();
     std::fs::write(dir.join(format!("peer-{}", n.id)), CONTENT).unwrap();
 }
 
-pub(super) async fn reads(
+pub(crate) async fn reads(
     case: &str,
     from: &LabNode,
     to: &LabNode,
@@ -114,11 +114,11 @@ pub(super) async fn reads(
     (durations, errors)
 }
 
-pub(super) fn complete(result: &(Vec<Duration>, Vec<String>), count: usize) -> bool {
+pub(crate) fn complete(result: &(Vec<Duration>, Vec<String>), count: usize) -> bool {
     result.0.len() == count && result.1.is_empty()
 }
 
-pub(super) fn summary(result: &(Vec<Duration>, Vec<String>)) -> serde_json::Value {
+pub(crate) fn summary(result: &(Vec<Duration>, Vec<String>)) -> serde_json::Value {
     let mut values: Vec<_> = result.0.iter().map(|v| v.as_micros()).collect();
     values.sort();
     if values.is_empty() {
@@ -131,7 +131,7 @@ pub(super) fn summary(result: &(Vec<Duration>, Vec<String>)) -> serde_json::Valu
     })
 }
 
-pub(super) fn diagnostics(n: &LabNode, peer: &LabNode) {
+pub(crate) fn diagnostics(s: &str, n: &LabNode, peer: &LabNode) {
     for (scope, events) in [("peer", n.journal(Some(peer))), ("here", n.journal(None))] {
         for event in events
             .into_iter()
@@ -144,7 +144,7 @@ pub(super) fn diagnostics(n: &LabNode, peer: &LabNode) {
             eprintln!("[netlab-mobile-journal] {} {scope} {event}", n.name);
         }
     }
-    sample_diagnostics("mobile-v6", n);
+    sample_diagnostics(s, n);
 }
 
 async fn session(
@@ -345,8 +345,8 @@ async fn run(s: &str, first: FirstBusiness) {
     fixture(&b);
     crate::attempts::phase(s, "session_started", now_ms());
     let checked = tokio::time::timeout(Duration::from_secs(240), session(s, &a, &b, first)).await;
-    diagnostics(&a, &b);
-    diagnostics(&b, &a);
+    diagnostics(s, &a, &b);
+    diagnostics(s, &b, &a);
     let ok = matches!(&checked, Ok(Ok(_)));
     result(s, ok, format!("{} {checked:?}", first.revision()));
     assert!(

@@ -26,6 +26,8 @@ use patchbay::Lab;
 use crate::lab::{mesh, node, relay, result, sample_diagnostics, slow, word};
 use crate::nat::{Net, router};
 
+#[path = "hop/mobility.rs"]
+mod mobility;
 #[path = "hop/reference.rs"]
 mod reference;
 

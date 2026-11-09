@@ -407,3 +407,12 @@ mesh后真实双向setup请求，reported双向可用/rtt连续10s（不要求Di
 ### N1冷peer-relay候选排序合同（运行前冻结）
 
 对生产middles_with_cost，以原本已经符合资格的三条非recursive候选、固定完整两腿RTT比较：Relay2ms＋SSH3ms，Direct100ms＋SSH20ms，Direct未知＋SSH1ms。Measured正控应按5/120/65536ms排序，Dial同样必须先5ms；未知不得因Direct越过已测快路。原资格、最多两个middle、合计3s、trust/paused/only_mine/SSH优先承载、选择收益/确认不改。本合同只证明冷候选尝试顺序不被Direct硬优先覆盖，不证明各路roadbook新鲜、额外候选资格、并发拨号/首响应/吞吐最优。先跑旧生产实际红，再最小排序修正，同整fixture复验。
+
+
+### U11/U12 Peer relay自己换网：peer_relay_replug_v1（新增，运行前冻结）
+
+复用f4_topology(false)已校准的X/Y Strict IPv4 NAT、M Public IPv4、同一公共Relay与每端20ms原链路几何。所有身份/居民/IPC新建，X/Y唯一目录marker；真实双向setup、reported双向Forwarded且via=M连续10s（准备150s资源界），双向各n30/200ms/30s caller预算，然后在注入前再连续10s确认（45s资源界）。已有nft/Relay资格不人为改变，不能把cached Link独立当每请求实际路径证明；保留全wire path/carrier lifecycle以对照。
+
+M的eth0真实replug到另一Public IPv4 Router，新接口恢复原20ms链路；开始/完成phase记录。完成后立即并发X→Y、Y→X首目录业务，不先做ping/诊断，再双向各n30。X/Y自己的接口不移动，公共Relay保持可用。最后记录M实际kernel前后地址，并用最多60s诊断窗口观察双向carried是否再连续10s；这不是新增选路SLO，未观察到必须明确记录，不能以可达绿冒称最好路恢复。居民ready后本病例360s总资源门、所有30s请求outcomes/error/timeout/cancel，case前置失败/实验资源到期/业务失败分开分类。
+
+只校准移动middle的IPv4网络几何、业务可用和记录；原f4恢复1500ms/30s稳定门不动，当前合同不代替它。未覆盖middle IPv6/端口单变、多middle选择、静默端、长流、手机能耗。lifecycle模式明确samples off，禁止与无诊断的性能分布混为策略收益。移动请求前后的完整所有权serial、退役/拨号/路径与目录结果保留；禁止旧owner撤新carrier，若出现反例按N2独立修复。

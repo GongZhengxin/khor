@@ -263,8 +263,8 @@ async fn run(movement: Move) {
         business(&a, &b, &cell, reflector, movement),
     )
     .await;
-    diagnostics(&a, &b);
-    diagnostics(&b, &a);
+    diagnostics(s, &a, &b);
+    diagnostics(s, &b, &a);
     router_state(&wifi, s, "after");
     router_state(&cell, s, "after");
     let ok = matches!(&checked, Ok(Ok(_)));
