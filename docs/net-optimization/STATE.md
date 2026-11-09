@@ -1,8 +1,10 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-09 20:23 UTC（本地2026-11-10）。root串行，无子智能体。完整目标仍是“完成计划”N0–N5，未完成；用户明确“继续”并补充U11–U13，当前工作已恢复。用户再次指出不应停止；goal服务的paused只是后台调度状态，不构成本轮停止依据。必须持续推进完整计划，不能在阶段通过后自行停下，也不得伪造complete/blocked或另建目标。速度/体验优先、个人可信设备网；没有合main、发布、中继采购/生产部署授权。
+更新：2026-11-09 20:40 UTC（本地2026-11-10）。root串行，无子智能体。完整目标仍是“完成计划”N0–N5，未完成；用户明确“继续”并补充U11–U13，当前工作已恢复。用户再次指出不应停止；goal服务的paused只是后台调度状态，不构成本轮停止依据。必须持续推进完整计划，不能在阶段通过后自行停下，也不得伪造complete/blocked或另建目标。速度/体验优先、个人可信设备网；没有合main、发布、中继采购/生产部署授权。
 
 ## 当前源码与已收齐证据
+
+- **223冷候选排序真实红，最小排序候选待验证**：`turing-20261109T203435Z-b255a0a8`，baseff7ed42c/treec637e03b/snapshote468c3a6/control05c8d7c；112.13s、rc101、原group空。root fmt/net66+1ignored绿；hop10绿1红，Measured正控过，Dial实际120/65536/5ms，原合同要求5/120/65536。只把排序tuple从(type,cost,id)改为(cost,type,id)，Direct仅同成本tie-break；原资格/预算/收益/回收不动。整fixture字节不变SHA见cold-hop-cost-red-green.json；尚未green，完整N1仍未完成。
 
 - **222仅根格式前置失败，N1合同尚未执行**：`turing-20261109T203228Z-a8e2de42`，base1487b061/treeae6defe1/snapshotb4f87a6e/control05c8d7c；43.75s、原group空。只是roam诊断新增assert需换行，远端format.patch已原样应用；不计候选排序行为红，下一同整N1fixture执行。
 

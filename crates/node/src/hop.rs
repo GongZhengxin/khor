@@ -281,8 +281,9 @@ pub(crate) enum Legs {
 
 /// Eligible intermediates and their total two-leg round trips, in milliseconds.
 /// Neither endpoint, satellites, paused machines, nor recursive hops qualify.
-/// The leg policy controls relay eligibility; measured routes sort by cost,
-/// while other policies prefer a direct first leg. An unmeasured leg costs
+/// The leg policy controls relay eligibility; every policy sorts by cost.
+/// A direct first leg only breaks equal-cost ties outside measured comparisons.
+/// An unmeasured leg costs
 /// `u16::MAX` for comparison by [`worth_a_hop`].
 pub(crate) fn middles_with_cost(
     me: &str,
@@ -292,7 +293,7 @@ pub(crate) fn middles_with_cost(
     theirs: impl Fn(&str) -> Option<Road>,
     legs: Legs,
 ) -> Vec<(String, u32)> {
-    let mut found: Vec<(bool, u32, String)> = rows
+    let mut found: Vec<(u32, bool, String)> = rows
         .iter()
         .filter(|(id, sat, paused)| id != me && id != to && !sat && !paused)
         .filter_map(|(b, _, _)| {
@@ -312,15 +313,15 @@ pub(crate) fn middles_with_cost(
                 u32::from(first.ms.unwrap_or(u16::MAX)) + u32::from(second.ms.unwrap_or(u16::MAX));
             usable.then(|| {
                 (
-                    legs != Legs::Measured && first.road != RoadKind::Direct,
                     ms,
+                    legs != Legs::Measured && first.road != RoadKind::Direct,
                     b.clone(),
                 )
             })
         })
         .collect();
     found.sort();
-    found.into_iter().map(|(_, ms, b)| (b, ms)).collect()
+    found.into_iter().map(|(ms, _, b)| (b, ms)).collect()
 }
 
 /// **The middles worth a hop to `to` against its relay, measured at
@@ -945,8 +946,8 @@ mod tests {
         assert_eq!(Ask::of("hop nonsense"), None);
     }
 
-    /// The roadbook rules: both legs known, neither a hop; direct first
-    /// leg first; the relay as a first leg only to a middle that carries
+    /// The roadbook rules: both legs known, neither a hop; lower total
+    /// measured cost first; the relay as a first leg only to a middle that carries
     /// the far end over ssh.
     /// NET-DIRECT step 4, MacLab's night of 10-09: the iPhone on the relay
     /// at 58 ms, turing reached directly at 3 ms and writing a direct road
