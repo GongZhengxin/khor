@@ -378,7 +378,7 @@ async fn road_directions_do_not_wait_for_each_others_future_packets() {
         .expect("the first serialized packet arrives")
         .unwrap();
     assert_eq!(n, 500);
-    server.send_to(b'e', reply_to).await.unwrap();
+    server.send_to(b"e", reply_to).await.unwrap();
     // The reverse lane needs 11ms, while the second forward packet has
     // about 500ms left. This calibrates independent directions, not a SLO.
     let echoed = tokio::time::timeout(Duration::from_millis(250), client.recv_from(&mut bytes))
