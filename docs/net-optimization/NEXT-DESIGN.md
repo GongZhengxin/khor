@@ -151,3 +151,10 @@ RetireUnheard已经同时要求armed、heard_count自请求开始不变、elapse
 
 
 N3模型校准与v2首批三轮已由42560015454实际通过：704全量请求0失败/超时，摘要与raw逐项一致。当前固定Noq模型的priority效果不一致，先以REPORT基线定位真实Node32席位/content预算和外层流排队；不直接上产品CC/分连接或新权重。N2接续继续遵守上文半关闭/取消/RetireUnheard合同。
+
+
+## N2本轮实现选择：操作期限载体与真实ask回归
+
+为避免在百余操作分支重复生成duration，resident入口用任务局部只承载一次建立的不可变Tokio Instant；网络阶段仍显式传递绝对by，并与自身上限取早。它不是Node全局可变状态；并发操作互不覆盖。跨spawn不自动继承：属于同一前台操作的子任务须显式带by，独立后台工作另立预算，不能继承已结束的前台上下文。IPC半关闭与外层Op档不变，不声称跨进程序列化Instant。
+
+先仅添加deadline载体（current/scope，嵌套不延长父期限）和真实Node/Endpoint持锁的ask_on回归；网络消费者/Op入口暂不接入，原28秒行为原样，以取得实际红。测试绑定后才暂停Tokio时间：40ms操作/推进50ms必须完成，300秒操作/推进29秒必须仍可等锁；用5ms观察窗口驱动ready任务后清理。Tokio test-util仅dev feature，无新crate/本机构建。测试覆盖载体到真实ask边界，不把载体存在等于全链路完成。红后再接入口和各阶段，长工作预算与七类合同保留。

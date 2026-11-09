@@ -37,6 +37,7 @@ pub mod commands;
 pub mod config;
 pub mod cwd;
 pub mod day;
+mod deadline;
 pub mod delegation;
 mod doc_transfer_state;
 pub mod doctor;

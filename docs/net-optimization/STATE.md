@@ -89,3 +89,7 @@ Mac源/bundle分支只在终态、证据已留、所有权/SHA匹配后清理；
 42560015454的v2 Noq样本仅此固定300ms/2%/20Mbit/200ms、三轮同seed，非产品SLO。合并bulk-echo p95：Cubic普通890.3ms/优先389.9ms，BBR3普通449.6ms/优先612.4ms；不能据此宣称优先级总能改善或修改产品CC。吞吐范围及样本量见REPORT；每CC screen仅9样本，不报p99/置信尾部。
 当前link.rs Git blob与42558820303相同，两个vendor目录tree与42555870179相同，applicability.json保存适用范围；没有把这些局部绿当最终完整Quality。
 下一步先按NEXT-DESIGN/ACCEPTANCE推进N2真实Op截止点贯通：保持IPC正常半关闭和长档位，覆盖hop准备/拨号截断分类、普通交换/一次读重试、Accepted回答取消与其他并发请求独立。并行的逻辑设计可继续N3真实Node/SSH/hop排队；Linux/VZ仍未实施、N1原红须恢复后复验、N4/N5仍未完成。goal保持active，不标complete或因额度问题整体blocked。
+
+## 新接续：N2操作总预算回归待执行
+
+新增deadline任务局部载体仅传不可变截止点，尚未被Op入口或网络消费者使用，生产28秒行为原样。新增两个真实ask_on/持锁回归（40ms必须结束、300秒不能被28秒截断），预期红尚未执行；暂停时钟仅dev test-util，绑定在计时前，本机只检查TOML/diff。下一准确源Mac net-node先取红，再贯通。前106 refs全终态，不复跑旧已绿Noq测量。

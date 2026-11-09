@@ -140,6 +140,7 @@ objc2-ui-kit = { version = "0.3", default-features = false, features = ["std", "
 dispatch2 = "0.3"
 
 [dev-dependencies]
+tokio = { workspace = true, features = ["test-util"] }
 tiny_http = "0.12"
 # Independent official HTTP server for native-agent interoperability tests.
 # Apache-2.0; axum is MIT.

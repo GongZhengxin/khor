@@ -13446,6 +13446,58 @@ mod dial_budget {
             "inside the caller's deadline"
         );
     }
+
+    async fn observe_scoped_ask(budget: Duration, advance: Duration) -> (bool, u64) {
+        let (_root, node, peer, ep) = fixture().await;
+        let node = std::sync::Arc::new(node);
+        let lock = node.wires.dial_lock(&peer.id, wires::Proto::Main);
+        let held = lock.lock().await;
+        tokio::time::pause();
+        let by = tokio::time::Instant::now() + budget;
+        let (entered, ready) = tokio::sync::oneshot::channel();
+        let requester = node.clone();
+        let endpoint = ep.clone();
+        let mut ask = tokio::spawn(crate::deadline::scope(by, async move {
+            let _ = entered.send(());
+            requester.ask_on(&endpoint, &peer, &Request::Sessions).await
+        }));
+        ready.await.unwrap();
+        tokio::time::advance(advance).await;
+        // Let a ready caller finish; otherwise advance only this small
+        // observation allowance, rather than auto-advancing to its full budget.
+        let observed = tokio::time::timeout(Duration::from_millis(5), &mut ask).await;
+        let finished = observed.is_ok();
+        if !finished {
+            ask.abort();
+            let _ = ask.await;
+        }
+        tokio::time::resume();
+        ep.close().await;
+        assert!(held.is_none());
+        (finished, node.wires.counts.snapshot().dial_failed)
+    }
+
+    #[tokio::test]
+    async fn a_scoped_operation_deadline_reaches_the_actual_ask() {
+        let (finished, failed) = observe_scoped_ask(
+            Duration::from_millis(40),
+            Duration::from_millis(50),
+        )
+        .await;
+        assert!(finished, "ask_on ignored the operation's remaining budget");
+        assert_eq!(failed, 0);
+    }
+
+    #[tokio::test]
+    async fn a_long_scoped_operation_keeps_its_budget_past_twenty_eight_seconds() {
+        let (finished, failed) =
+            observe_scoped_ask(Duration::from_secs(300), Duration::from_secs(29)).await;
+        assert!(
+            !finished,
+            "ask_on replaced the long operation's budget with a fresh 28 seconds"
+        );
+        assert_eq!(failed, 0);
+    }
 }
 
 #[cfg(test)]
