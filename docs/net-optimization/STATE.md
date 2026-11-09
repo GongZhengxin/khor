@@ -119,3 +119,6 @@ Mac source/bundle分支只在终态、证据留存且所有权/SHA匹配后清�
 42570772550终态**探针三项实际行为红**：fmt/编译/net66+1ignored/hop9/wires10/journal28绿，dial_budget11pass3fail（12.06秒）；只直接取消HTTP未停止、配对取消仍残留probe、成功second URL被slow first挡住。所有HTTP/配对pending/fast已响应且早于2.6s前置通过，无env proxy；不是fixture红。准确tree0a26b34f/snapshotcc5b7782/control0cff967已核，120 refs终态；下一修复用JoinSet收首成功并drop输者，pair_with用Aborts持有外层probe，保持原HTTP预算/proxy/诊断语义。
 
 当前probe候选：doctor改JoinSet按完成顺序取首个true，成功/取消均drop并abort余下HTTP任务；pair_with用Aborts持有该外层任务，所有早返自动取消，dial成功后先drop probe再pair_over。原URL并发量/单HTTP2.6秒/proxy、空/全部失败false、超时诊断fallback不变。候选待旧11+新3实际绿；还不能收N2全包。
+
+
+**42571393016 Mac net-node配对probe双层所有权修复候选在途**：based4a2e115b898fc337f5091b51fa71e45740c667f clean、treef278b9330f51268182b142729db2c86687f4af4b、snapshot3459894c81cb994310a97bfcba4ca39ae97e569b、control0cff9671fb2f80945423132e0df46995f6ff3198；121st ref/mac-probe-owner-candidate-42571393016已锚。doctor JoinSet首成功+取消输者，pair Aborts闭合外层取消；待十四专项/既有子集，不预记绿。
