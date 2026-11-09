@@ -12872,10 +12872,12 @@ impl<'a> RetireUnheard<'a> {
 
 impl Drop for RetireUnheard<'_> {
     fn drop(&mut self) {
+        if !self.armed {
+            return;
+        }
         let elapsed = self.at.elapsed();
         let patience = wires::Patience::of(&self.line.conn);
-        if self.armed
-            && elapsed >= patience.ack
+        if elapsed >= patience.ack
             && (wires::heard_count(&self.line.conn) == self.count || elapsed >= patience.silent)
         {
             // With no progress, ACK patience justifies a probe. A longer
@@ -13730,7 +13732,9 @@ mod dial_budget {
         if let Some(grace) = grace {
             tokio::time::sleep(grace + Duration::from_millis(500)).await;
             assert_eq!(
-                node.wires.live(&peer.id, wires::Proto::Main).map(|c| c.stable_id()),
+                node.wires
+                    .live(&peer.id, wires::Proto::Main)
+                    .map(|c| c.stable_id()),
                 Some(shared.stable_id())
             );
             let counts = node.wires.counts.snapshot();
