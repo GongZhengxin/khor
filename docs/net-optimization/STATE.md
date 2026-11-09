@@ -143,3 +143,8 @@ N2下一反例F8已写入wire.rs并冻结ACCEPTANCE：新私有netns的lo netem�
 143rd turing-20261109T100821Z-08748d90已终态FAILURE，完整report已采/source/control/bundle/group/SHA已核。root fmt/编译/net66+1ignored/hop9/wires10/journal28绿，dial_budget16pass1fail，F7保持绿；F8实际行为红。子harness前置均通过，received_after_ms2401/expired_after_ms4101/heard_before16/heard_at_expiry16/requests2；目标断言live_at_expiry None而应Some同stable_id，control_ok=false，retired_unanswered=1。RetireUnheard Drop只按ACK floor判死，与正常exchange全路probe宽限不一致已实证；修复前不launch CPU，下一按NEXT-DESIGN所有权约束实现。
 
 146th Mac42600205050 SUCCESS已完整采证核source/control/bundle transport/hash：base83d620d2/treebbed6503/snapshotc8035ce2/controlb998。fmt/编译/net66+1ignored/hop9/wires10/journal29/dial_budget17绿（30.57s为子集运行时间）。两个真实update_dial均收到UDP后由本方法返回（200ms早by、30秒scope下10秒cap），journal兼容/roundtrip/显示句子控制绿。此Mac17不含Linux F7/F8，绝不能覆盖143rd F8真实红或证明真实多连接路径关联已验。
+
+
+F8共享确认候选已实施、待验证：Slot最多一份QuietProbe（count/by/owned JoinHandle），任务只持Weak Wires/Conn；normal exchange与RetireUnheard共用，取消不越过全路grace。新包/替换/drop清除并abort；捕获runtime支持在外部thread Drop；adopt发布新wire后才清down，Unanswered失败在slot锁内提交，避免旧确认晚写peer down。裸未持有wire的exchange保留原本地probe合同。
+
+F8函数与143rd红源逐字相同，已存SHA；F7观察升级f7_owned_confirmation_v2，保留同真实黑洞，仅改为外部thread取消后等待wire owner自身确认（grace+500ms），立即不能关闭。新增真实replacement和Weak owner两portable用例。仍未取绿，下一Turing net-node先校格式/编译/21 Linux合同，再Mac19便携；不能把候选记成已修复。

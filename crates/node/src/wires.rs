@@ -312,6 +312,9 @@ pub(crate) fn resting_close(e: &iroh::endpoint::ConnectionError) -> bool {
 #[derive(Default)]
 struct Slot {
     conn: Option<Connection>,
+    /// One all-path confirmation for this wire, shared by active requests
+    /// and callers that stopped waiting. Dropping the slot cancels it.
+    probe: Option<QuietProbe>,
     /// Datagrams received on `conn` as last counted.
     rx: u64,
     /// When the far side was last heard on any wire this slot held.
@@ -349,6 +352,20 @@ struct Slot {
     /// When the wire held now was adopted, for the journal's account of
     /// how long it lived.
     since: Option<Instant>,
+}
+
+/// The slot owns the task; the task holds only weak wire/owner handles.
+/// No caller deadline can skip its probe grace or leave an unowned task.
+struct QuietProbe {
+    count: u64,
+    by: tokio::time::Instant,
+    task: tokio::task::JoinHandle<()>,
+}
+
+impl Drop for QuietProbe {
+    fn drop(&mut self) {
+        self.task.abort();
+    }
 }
 
 /// UDP bytes a wire has sent and received, as QUIC counts them —
@@ -679,10 +696,10 @@ impl Wires {
 
     /// A freshly dialled wire becomes the one this key holds.
     pub(crate) fn adopt(&self, id: &str, proto: Proto, conn: Connection) {
-        self.back(id);
         let now = Instant::now();
         let mut slots = self.slots.lock().unwrap_or_else(|p| p.into_inner());
         let slot = slots.entry((id.to_owned(), proto)).or_default();
+        slot.probe = None;
         if let Some(old) = slot.conn.take()
             && old.stable_id() != conn.stable_id()
         {
@@ -702,6 +719,8 @@ impl Wires {
         slot.since = Some(now);
         slot.conn = Some(conn);
         self.counts.dialed.fetch_add(1, Relaxed);
+        drop(slots);
+        self.back(id);
     }
 
     /// A dial for this key failed: the pump waits before the next one.
@@ -780,11 +799,109 @@ impl Wires {
                 .as_ref()
                 .is_some_and(|c| c.stable_id() == conn.stable_id())
         {
+            slot.probe = None;
             slot.rx = heard_count(conn);
             slot.heard = Some(Instant::now());
         }
         drop(slots);
         self.back(id);
+    }
+
+    /// Start or join one confirmation of a quiet held wire. Only its own
+    /// datagrams and this probe's grace decide retirement, never a caller's
+    /// deadline. Returns false for a connection this table does not hold.
+    pub(crate) fn probe_unheard(
+        self: &Arc<Self>,
+        id: &str,
+        proto: Proto,
+        conn: &Connection,
+        runtime: &tokio::runtime::Handle,
+    ) -> bool {
+        let mut slots = self.slots.lock().unwrap_or_else(|p| p.into_inner());
+        let Some(slot) = slots.get_mut(&(id.to_owned(), proto)) else {
+            return false;
+        };
+        if slot.conn.as_ref().is_none_or(|held| held.stable_id() != conn.stable_id())
+            || conn.close_reason().is_some()
+        {
+            return false;
+        }
+        let count = heard_count(conn);
+        if slot.probe.as_ref().is_some_and(|probe| probe.count == count && !probe.task.is_finished()) {
+            return true;
+        }
+        slot.probe = None;
+        let by = tokio::time::Instant::now() + ask_every_path(conn);
+        let owner = Arc::downgrade(self);
+        let connection = conn.weak_handle();
+        let id = id.to_owned();
+        let task = runtime.spawn(async move {
+            tokio::time::sleep_until(by).await;
+            // Let already-ready transport work run before judging its count.
+            tokio::task::yield_now().await;
+            if let (Some(owner), Some(conn)) = (owner.upgrade(), connection.upgrade()) {
+                owner.finish_probe(&id, proto, &conn, count, by);
+            }
+        });
+        slot.probe = Some(QuietProbe { count, by, task });
+        true
+    }
+
+    fn finish_probe(
+        &self,
+        id: &str,
+        proto: Proto,
+        conn: &Connection,
+        count: u64,
+        by: tokio::time::Instant,
+    ) {
+        let mut slots = self.slots.lock().unwrap_or_else(|p| p.into_inner());
+        let Some(slot) = slots.get_mut(&(id.to_owned(), proto)) else { return };
+        if slot.conn.as_ref().is_none_or(|held| held.stable_id() != conn.stable_id())
+            || !slot.probe.as_ref().is_some_and(|probe| probe.count == count && probe.by == by)
+        {
+            return;
+        }
+        if conn.close_reason().is_some() {
+            slot.probe = None;
+            return;
+        }
+        let seen = heard_count(conn);
+        if seen != count {
+            slot.probe = None;
+            slot.rx = seen;
+            slot.heard = Some(Instant::now());
+            drop(slots);
+            self.back(id);
+            return;
+        }
+        self.retire_slot(id, proto, slot, Retired::Unanswered);
+        drop(slots);
+        self.after_retirement(id, Retired::Unanswered);
+    }
+
+    fn retire_slot(&self, id: &str, proto: Proto, slot: &mut Slot, why: Retired) {
+        self.drop_noted(id, proto, slot, why);
+        if why == Retired::Unanswered {
+            slot.unanswered_total += 1;
+            slot.last_failure = Some((
+                khor_catalog::msg::wire_unanswered().to_owned(),
+                Instant::now(),
+            ));
+            // Commit failure before releasing the slot. A replacement
+            // adopted next clears it after publishing its own connection.
+            self.went_down(id);
+        }
+        self.counts.retired(why);
+    }
+
+    fn after_retirement(&self, id: &str, why: Retired) {
+        if why == Retired::Asleep {
+            self.asleep(id);
+        }
+        if matches!(why, Retired::Unanswered | Retired::Silent) {
+            self.let_go_served_by(id, why);
+        }
     }
 
     /// Retires `conn` if it is still the wire this key holds: closed,
@@ -801,25 +918,9 @@ impl Wires {
         {
             return false;
         }
-        self.drop_noted(id, proto, slot, why);
-        if why == Retired::Unanswered {
-            slot.unanswered_total += 1;
-            slot.last_failure = Some((
-                khor_catalog::msg::wire_unanswered().to_owned(),
-                Instant::now(),
-            ));
-        }
-        self.counts.retired(why);
+        self.retire_slot(id, proto, slot, why);
         drop(slots);
-        if why == Retired::Unanswered {
-            self.went_down(id);
-        }
-        if why == Retired::Asleep {
-            self.asleep(id);
-        }
-        if matches!(why, Retired::Unanswered | Retired::Silent) {
-            self.let_go_served_by(id, why);
-        }
+        self.after_retirement(id, why);
         true
     }
 
@@ -1253,6 +1354,7 @@ impl Wires {
             }
             let rx = heard_count(&conn);
             if rx != slot.rx {
+                slot.probe = None;
                 slot.rx = rx;
                 slot.heard = Some(now);
                 heard.push(id.clone());
@@ -1461,6 +1563,7 @@ fn heard_lately(heard: Option<Instant>, rtt: Duration, now: Instant) -> bool {
 }
 
 fn drop_wire(slot: &mut Slot, why: Retired) {
+    slot.probe = None;
     if let Some(conn) = slot.conn.take() {
         let (tx, rx) = bytes_of(&conn);
         slot.bytes_past.0 += tx;

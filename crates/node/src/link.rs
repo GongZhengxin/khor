@@ -3581,7 +3581,7 @@ impl Node {
         let budget = wires::budget_for(req.budget(), &line.conn);
         let out = crate::deadline::wait(
             by,
-            exchange_inner(&line.conn, &line.name, req, budget, attempt),
+            exchange_inner(&line.conn, &line.name, req, budget, attempt, Some(&guard)),
         )
         .await
         .map_err(|_| Miss::CallerExpired)?;
@@ -12719,7 +12719,7 @@ async fn exchange(
 ) -> Result<Response, Miss> {
     crate::deadline::wait(
         crate::deadline::current(),
-        exchange_inner(conn, who, req, budget, None),
+        exchange_inner(conn, who, req, budget, None, None),
     )
     .await
     .map_err(|_| Miss::CallerExpired)?
@@ -12731,6 +12731,7 @@ async fn exchange_inner(
     req: &Request,
     budget: Duration,
     mut attempt: Option<&mut DocAttempt>,
+    owner: Option<&RetireUnheard<'_>>,
 ) -> Result<Response, Miss> {
     let frame = proto::encode_request(req).map_err(Miss::Garbled)?;
     if let Some(attempt) = attempt.as_deref_mut() {
@@ -12784,6 +12785,9 @@ async fn exchange_inner(
                     count = seen;
                     heard = Some(now);
                     asked = None;
+                    if let Some(owner) = owner {
+                        owner.wires.heard(&owner.line.id, owner.line.proto, conn);
+                    }
                 }
                 // The road's own patience, read each beat: QUIC refines its
                 // round trip as the answers come (`wires::Patience`).
@@ -12795,7 +12799,7 @@ async fn exchange_inner(
                 // **Silent on every path, not just the one in use**: each
                 // path is asked first, and only if none answers within its
                 // grace is the wire dead.
-                if quiet {
+                if quiet && !owner.is_some_and(|owner| owner.probe()) {
                     match asked {
                         None => asked = Some((now, wires::ask_every_path(conn))),
                         Some((at, grace)) if now.duration_since(at) < grace => {}
@@ -12822,29 +12826,34 @@ async fn request(
         .map_err(Miss::words)
 }
 
-/// Retires a wire whose request was abandoned before an answer — an ipc
-/// deadline cancelling the op, a face going away — **if nothing at all
-/// was heard on it since the request went out** and that silence has
-/// already lasted [`wires::ACK_WITHIN`]. Shorter than that is no
-/// evidence either way, and the resident's tick catches a wire that
-/// stays silent.
+/// A cancelled request ends only its own stream. Long unanswered waits
+/// start or join the wire owner's all-path confirmation, whose grace and
+/// receive count are independent of the caller's deadline (F7/F8).
 struct RetireUnheard<'a> {
-    wires: &'a wires::Wires,
+    wires: &'a Arc<wires::Wires>,
     line: &'a Line,
     count: u64,
     at: std::time::Instant,
+    runtime: Option<tokio::runtime::Handle>,
     armed: bool,
 }
 
 impl<'a> RetireUnheard<'a> {
-    fn new(wires: &'a wires::Wires, line: &'a Line) -> Self {
+    fn new(wires: &'a Arc<wires::Wires>, line: &'a Line) -> Self {
         Self {
             wires,
             line,
             count: wires::heard_count(&line.conn),
             at: std::time::Instant::now(),
+            runtime: tokio::runtime::Handle::try_current().ok(),
             armed: true,
         }
+    }
+
+    fn probe(&self) -> bool {
+        self.runtime.as_ref().is_some_and(|runtime| {
+            self.wires.probe_unheard(&self.line.id, self.line.proto, &self.line.conn, runtime)
+        })
     }
 
     fn disarm(&mut self) {
@@ -12858,12 +12867,7 @@ impl Drop for RetireUnheard<'_> {
             && wires::heard_count(&self.line.conn) == self.count
             && self.at.elapsed() >= wires::Patience::of(&self.line.conn).ack
         {
-            self.wires.retire(
-                &self.line.id,
-                self.line.proto,
-                &self.line.conn,
-                wires::Retired::Unanswered,
-            );
+            self.probe();
         }
     }
 }

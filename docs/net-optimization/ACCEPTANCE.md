@@ -272,3 +272,12 @@ Linux-only真实fixture，先启动新unshare -Urn子harness，核network namesp
 ## N1路径与退役关联的诊断身份
 
 后续f4i诊断保留现有journal，Path和Retired可选wire编号取同一进程内Connection::stable_id，跨节点/进程不比较编号；缺字段的老日志仍可读，显示句子不带实现字段。只补身份、不改路径选择或现有peer/change去重。以实际路径事件wire与retired wire关联区分新旧连接，再与主wire/Link采样对照；不能仅凭同peer的平面事件假定都是同一连接。字段兼容回归通过也不构成真实切路/无回退的证明。
+
+
+## F8共享确认修复候选的验证合同（f7_owned_confirmation_v2）
+
+F8实际红143rd的函数保持逐字不变（SHA见evidence/net/f8-red-to-candidate-fixture-identity.json），仍为4.8秒原生UDP往返/4.1秒首调用期限、同wire另请求必须成功。修复将每wire的probe/count/grace和有界任务交Wires::Slot拥有，正常exchange和取消共用；不同调用不重置相同计数的确认，收到新包、adopt替换或清理wire会取消旧任务。任务只持Weak owner/connection，guard捕获原runtime，Drop即使不在entered runtime也能发起确认。
+
+F7保留原私有namespace、真UDP双向丢弃、计数/远端未关闭/恰一次unanswered及零其他故障条件；修改的仅是取消后的观察：从std::thread scoped thread丢弃已poll过且长静默的future，立即仍须持有wire，随后在自身全路grace+500ms内完成确认并退役，无resident tick或应用future继续poll。旧“Drop同步关闭”不具备probe证明，不能作为必须保留的实现细节；真正长期交出死wire的故障仍受原黑洞验证约束。
+
+另两portable真实连接回归：pending确认不得保留Node/Wires强引用；确认期间adopt一条不同stable_id新conn，等超过loopback确认窗口后，新的真实Sessions仍成功、无unanswered/closed退役或out_of_reach。不是只测计时辅助函数，也不以连接被测试server主动关闭制造通过。当前仅候选，尚未格式/编译/运行。
