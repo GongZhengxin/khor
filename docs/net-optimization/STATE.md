@@ -1,8 +1,8 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-09 10:29 UTC；root串行，无子智能体。活动目标“完成计划”仍active。
+更新：2026-11-09 10:46 UTC；root串行，无子智能体。活动目标“完成计划”仍active。
 
-**当前无在途运行，下一动作是修复已实证F8，暂不launch CPU任务。** Turing143rd已采证16pass1fail：F8所有前置通过，实际2401ms到达对端、4101ms调用到期、heard16→16、两请求均已收到；共享wire却已None、unanswered退役1、控制请求失败。不是fixture红。Mac146th42600205050 SUCCESS，29journal/17便携合同（含两个真实update_dial覆盖、不含Linux F7/F8）绿。corrected hop：candidate8/9、baseline7/9，原红和长卡顿仍保留。146 refs=144终态+2 staged（两个stalls）。完整N0–N5未完成。
+**共享活性确认修复候选已提交45465a6a，正在准备新源runtime验证，尚未取绿。** Slot最多一份probe任务/count/grace，normal exchange与取消共用，只有全路确认可退役；接收/替换/清理取消旧任务，任务只持Weak。F8函数保持143rd实红源逐字相同；F7保留真黑洞并验证外部thread取消后的独立确认。另补替换新wire和不保留owner两真实回归。147th Turing仅format门红、未编译/测试；完整report已采，远端patch原样应用。147 refs=145终态+2 staged（旧stalls），当前无运行。完整N0–N5未完成。
 完整范围：[PLAN](PLAN.md)；约束：[REQUIREMENTS](REQUIREMENTS.md)；运行记录：[RUNS](RUNS.md)；原始结果：[REPORT](REPORT.md)。
 此前STATE原样归档[Accepted轮历史](HISTORY-20261109-before-accepted-green.md)与[本轮历史](HISTORY-20261109-before-probe-green.md)及[Turing141前历史](HISTORY-20261109-before-turing-141.md)；历史在途/候选文字仅代表当时状态，恢复以本页和实际工作区为准。
 
@@ -17,7 +17,7 @@
 | 产品 | `/Volumes/disk0/Khor/worktrees/current/khor-net`，`feat/net`；最新已验证生产d4a2e115b898fc337f5091b51fa71e45740c667f；后续有fixture/调度与journal wire编号（Mac146便携子集已验）；选路/预算逻辑仍d4a，恢复核HEAD/diff |
 | 控制 | `/Volumes/disk0/Khor/worktrees/current/khor-build-net`，`feat/net`，b9984797f412f352f3c76f99c47ade3ee10f68e9已push；新增net-node SSH任务白名单，profile未改；当前hop/stalls仍control59dc223，不能回写历史控制版本 |
 | 基线 | `/Volumes/disk0/Khor/worktrees/current/khor-net-baseline`，detached6485cb83d3b1f0bb93d4633825dc956623d78af9；仅paths/hop/lab/nat.rs、dev.py/netlab.sh六fixture，生产原样 |
-| 证据 | `/Volumes/disk0/Khor/evidence/net/`；source-refs.json146条不可变refs；144终态，其余2 staged；当前无运行。每次源变化前锚ref；SSH不是GitHub run |
+| 证据 | `/Volumes/disk0/Khor/evidence/net/`；source-refs.json147条不可变refs；145终态，其余2 staged；当前无运行。每次源变化前锚ref；SSH不是GitHub run |
 
 ## N2本轮：普通wire覆盖与配对探针三红→绿
 
@@ -87,7 +87,7 @@ N0部分、N1仍红、N2部分、N3部分、N4未完成、N5部分；完整PLAN�
 
 ## 证据与恢复规则
 
-先核worktree/branch/HEAD/diff、当前run与准确回执；以本页顶端当前任务为准，历史在途文字仅在归档中保留。146refs=144终态+2 staged；恢复按run/path/PID实核，SSH观察失败须重查同句柄，不重启。
+先核worktree/branch/HEAD/diff、当前run与准确回执；以本页顶端当前任务为准，历史在途文字仅在归档中保留。147refs=145终态+2 staged；恢复按run/path/PID实核，SSH观察失败须重查同句柄，不重启。
 `git rev-parse refs/khor/net-evidence/<run>:source`必须等于回执tree；只git show读容器，不checkout覆盖/push本地证据refs。失败明确分format/compile/fixture/行为/执行器；tests_executed只按实际子集，历史红不删除。
 Mac source/bundle分支只在终态、证据留存且所有权/SHA匹配后清理；复用源的请求不拥有原源分支。原attempt不覆盖。
 外盘缺失只读`git show feat/net:docs/net-optimization/STATE.md`与PLAN；原外盘未提交内容不能按摘要覆盖。其他治理沿中央STATE/RESUME，不混授权。
@@ -148,3 +148,6 @@ N2下一反例F8已写入wire.rs并冻结ACCEPTANCE：新私有netns的lo netem�
 F8共享确认候选已实施、待验证：Slot最多一份QuietProbe（count/by/owned JoinHandle），任务只持Weak Wires/Conn；normal exchange与RetireUnheard共用，取消不越过全路grace。新包/替换/drop清除并abort；捕获runtime支持在外部thread Drop；adopt发布新wire后才清down，Unanswered失败在slot锁内提交，避免旧确认晚写peer down。裸未持有wire的exchange保留原本地probe合同。
 
 F8函数与143rd红源逐字相同，已存SHA；F7观察升级f7_owned_confirmation_v2，保留同真实黑洞，仅改为外部thread取消后等待wire owner自身确认（grace+500ms），立即不能关闭。新增真实replacement和Weak owner两portable用例。仍未取绿，下一Turing net-node先校格式/编译/21 Linux合同，再Mac19便携；不能把候选记成已修复。
+
+
+147th turing-20261109T104331Z-90266679已终态，仅FORMAT红：base45465a6adc5b9d341c9e8d820642033d7c2196a5/tree434de4e4189c4ef02c9e557063d57fd1793cc25e/snapshot366fb9ec00860c6db3203455e1958b76522a6ddf/controlb998479。44.81秒，未编译/执行；完整report已采/身份/group/hash核。原format.patch覆盖三个Rust文件，原样应用；下一同准确源码分别Turing21 Linux与Mac19便携（含two resource tests），不能预记通过。

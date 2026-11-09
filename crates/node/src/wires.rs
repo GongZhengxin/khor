@@ -821,13 +821,20 @@ impl Wires {
         let Some(slot) = slots.get_mut(&(id.to_owned(), proto)) else {
             return false;
         };
-        if slot.conn.as_ref().is_none_or(|held| held.stable_id() != conn.stable_id())
+        if slot
+            .conn
+            .as_ref()
+            .is_none_or(|held| held.stable_id() != conn.stable_id())
             || conn.close_reason().is_some()
         {
             return false;
         }
         let count = heard_count(conn);
-        if slot.probe.as_ref().is_some_and(|probe| probe.count == count && !probe.task.is_finished()) {
+        if slot
+            .probe
+            .as_ref()
+            .is_some_and(|probe| probe.count == count && !probe.task.is_finished())
+        {
             return true;
         }
         slot.probe = None;
@@ -856,9 +863,17 @@ impl Wires {
         by: tokio::time::Instant,
     ) {
         let mut slots = self.slots.lock().unwrap_or_else(|p| p.into_inner());
-        let Some(slot) = slots.get_mut(&(id.to_owned(), proto)) else { return };
-        if slot.conn.as_ref().is_none_or(|held| held.stable_id() != conn.stable_id())
-            || !slot.probe.as_ref().is_some_and(|probe| probe.count == count && probe.by == by)
+        let Some(slot) = slots.get_mut(&(id.to_owned(), proto)) else {
+            return;
+        };
+        if slot
+            .conn
+            .as_ref()
+            .is_none_or(|held| held.stable_id() != conn.stable_id())
+            || !slot
+                .probe
+                .as_ref()
+                .is_some_and(|probe| probe.count == count && probe.by == by)
         {
             return;
         }

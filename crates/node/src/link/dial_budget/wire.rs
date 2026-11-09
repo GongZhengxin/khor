@@ -288,7 +288,10 @@ async fn a_pending_wire_confirmation_does_not_keep_its_owner_alive() {
     let released = owner.upgrade().is_none();
     ep.close().await;
     server.close().await;
-    assert!(released, "a pending confirmation must not retain its node/wires");
+    assert!(
+        released,
+        "a pending confirmation must not retain its node/wires"
+    );
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -309,20 +312,28 @@ async fn an_old_confirmation_cannot_retire_a_replacement_wire() {
         &f.local,
         &tokio::runtime::Handle::current(),
     ));
-    f.node.wires.adopt(&f.peer.id, wires::Proto::Main, next.clone());
+    f.node
+        .wires
+        .adopt(&f.peer.id, wires::Proto::Main, next.clone());
     assert!(f.local.close_reason().is_some());
     tokio::time::sleep(Duration::from_millis(1500)).await;
     let unreachable = f.node.wires.out_of_reach(&f.peer.id);
     let mut serving = Aborts(Some(tokio::spawn(async move {
         let (mut send, mut recv) = remote.accept_bi().await.unwrap();
         let bytes = recv.read_to_end(MAX_FRAME).await.unwrap();
-        assert!(matches!(proto::question(&bytes).unwrap(), Request::Sessions));
+        assert!(matches!(
+            proto::question(&bytes).unwrap(),
+            Request::Sessions
+        ));
         let answer = proto::encode(&Response::SessionRows { rows: vec![] }).unwrap();
         send.write_all(&answer).await.unwrap();
         send.finish().unwrap();
         remote.closed().await;
     })));
-    let line = Line { conn: next.clone(), ..f.line() };
+    let line = Line {
+        conn: next.clone(),
+        ..f.line()
+    };
     let answer = tokio::time::timeout(
         Duration::from_secs(3),
         f.node.exchange_on(&line, &Request::Sessions),
@@ -335,7 +346,10 @@ async fn an_old_confirmation_cannot_retire_a_replacement_wire() {
     let _ = serving.0.as_mut().unwrap().await;
     assert!(matches!(answer, Ok(Ok(Response::SessionRows { .. }))));
     assert_eq!(live.map(|conn| conn.stable_id()), Some(next.stable_id()));
-    assert!(!unreachable, "the old proof must not mark the replacement unreachable");
+    assert!(
+        !unreachable,
+        "the old proof must not mark the replacement unreachable"
+    );
     assert_eq!(counts.retired_unanswered, 0);
     assert_eq!(counts.retired_closed, 0);
 }
@@ -483,7 +497,10 @@ async fn abandoning_a_long_silent_exchange_still_retires_the_dead_wire() {
     let counts = f.node.wires.counts.snapshot();
     f.close().await;
 
-    assert!(confirmed, "the wire owner must finish its all-path confirmation");
+    assert!(
+        confirmed,
+        "the wire owner must finish its all-path confirmation"
+    );
     assert!(unheard, "fixture leaked UDP despite namespace rules");
     assert!(
         dropped > 0,

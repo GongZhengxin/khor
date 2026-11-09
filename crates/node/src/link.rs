@@ -12852,7 +12852,8 @@ impl<'a> RetireUnheard<'a> {
 
     fn probe(&self) -> bool {
         self.runtime.as_ref().is_some_and(|runtime| {
-            self.wires.probe_unheard(&self.line.id, self.line.proto, &self.line.conn, runtime)
+            self.wires
+                .probe_unheard(&self.line.id, self.line.proto, &self.line.conn, runtime)
         })
     }
 
