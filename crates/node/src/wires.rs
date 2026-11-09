@@ -58,6 +58,17 @@ use std::time::{Duration, Instant};
 use iroh::endpoint::Connection;
 use khor_net::path::PathKind;
 
+/// Why all live connections can, or cannot, release their shared carrier.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum CarrierComparison {
+    /// A live consumer still needs it, or its path facts are unknown.
+    Needed,
+    /// No live connection has a carried path to compare.
+    Unused,
+    /// Live carried paths were compared against their selected alternatives.
+    Outperformed,
+}
+
 /// **How long to wait for a wire, measured from its own round trip.**
 ///
 /// ⚠️ 墓碑 (round NET-2): these were constants — 4 s for a request's
@@ -680,7 +691,7 @@ impl Wires {
     /// carried-only road another still uses. Connections without a custom
     /// path need no carrier; unknown snapshots keep it. Where both roads
     /// exist, use the selector's measured gain. No live wires: unused.
-    pub(crate) fn selected_beats_carried(&self, id: &str) -> bool {
+    pub(crate) fn compare_carrier(&self, id: &str) -> CarrierComparison {
         let mut conns: Vec<_> = [Proto::Main, Proto::Tunnel]
             .into_iter()
             .filter_map(|proto| self.live(id, proto))
@@ -706,15 +717,23 @@ impl Wires {
                 && (paths.iter().all(|p| !p.carried)
                     || khor_net::path::selected_beats_carried(paths))
         });
+        let comparison = if !losing {
+            CarrierComparison::Needed
+        } else if facts.iter().any(|(_, paths)| paths.iter().any(|p| p.carried)) {
+            CarrierComparison::Outperformed
+        } else {
+            CarrierComparison::Unused
+        };
         khor_net::carry::observe_lifecycle(id, "shared_comparison", || {
             serde_json::json!({
                 "scope": "all_live_connections_v1", "release": losing,
+                "comparison": format!("{comparison:?}"),
                 "connections": facts.iter().map(|(wire, paths)| serde_json::json!({
                     "wire": wire, "measurements": paths,
                 })).collect::<Vec<_>>(),
             })
         });
-        losing
+        comparison
     }
 
     /// The lock that makes a key's dials one at a time.
@@ -1798,15 +1817,15 @@ mod tests {
         let wires = Wires::default();
         let id = bid.to_string();
         wires.adopt(&id, Proto::Main, outgoing.clone());
-        assert!(
-            wires.selected_beats_carried(&id),
+        assert_eq!(
+            wires.compare_carrier(&id), CarrierComparison::Unused,
             "the sole direct wire needs no carrier"
         );
         wires.serving(&incoming);
-        let release_live = wires.selected_beats_carried(&id);
+        let release_live = wires.compare_carrier(&id);
         incoming.close(0u32.into(), b"test done");
         assert!(incoming.close_reason().is_some());
-        let release_closed = wires.selected_beats_carried(&id);
+        let release_closed = wires.compare_carrier(&id);
         outgoing.close(0u32.into(), b"test done");
         carried_outgoing.close(0u32.into(), b"test done");
         direct_incoming.close(0u32.into(), b"test done");
@@ -1814,9 +1833,9 @@ mod tests {
         direct.close().await;
         carried.close().await;
 
-        assert!(release_closed, "a closed incoming wire holds no carrier");
-        assert!(
-            !release_live,
+        assert_eq!(release_closed, CarrierComparison::Unused, "a closed incoming wire holds no carrier");
+        assert_eq!(
+            release_live, CarrierComparison::Needed,
             "a live incoming wire still uses the peer's carrier: outgoing={direct_facts:?}, incoming={carried_facts:?}"
         );
     }

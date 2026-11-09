@@ -4,6 +4,10 @@
 
 ## 当前源码与已收齐证据
 
+- **230 NAT物理前置失败并正确阻止Node**：`turing-20261109T211033Z-83dbb115`，baseffcf7a53/tree2c23700c/snapshot6b05809a/controle4c58dc，31.68s、rc101、原group空。root format/编译过，r0第一条nft table内链closing brace缺换行，0.45s明确syntax error；r1业务未执行，完整采证。只修owned规则header换行；不计网络/Node行为红。下一先N1新unused回归旧行为实际红，之后继续物理校准。
+
+- **下一N1 unused-release新合同已写，旧抑制行为保留取红**：Wires同快照返回Needed/Unused/Outperformed，原bool语义折回仍相同；hop release增加证据参数但暂不改变旧Relay→lost实现。新增真实Links当前owner回收后不得压制middle的合同，原测量失败/Direct/旧owner正反控保留；尚未远端format/编译/红。只有准确源验证后再改退避条件，不能把接口分类存在记成修复完成。
+
 - **229仅根format前置失败，NAT校准/业务均未执行**：`turing-20261109T210331Z-bba623f2`，base54e48129/treec4982e18/snapshotfd93cc4e/controle4c58dc，43.74s、原group空。远端rebind fixture format.patch已原样应用，下一准确源执行r0再r1。
 - **228原始慢路追踪新增事实**：X/Y在M换网后都先退Relay；M多份外层Direct约1秒恢复，但inner carried样本开始持续变旧，后来custom paths消失。X+约26秒两次shared_comparison=true时所有live wire都已无Custom，仍调用hop_measured_release并按Relay记lost十分钟。没有新owner替换，不是189的stale-owner反例。先拆分Unused（无Custom消费者的回收）与Outperformed（实测不足收益），不能把前者计成middle输路；底层为何先不再刷新inner path仍待因果核查，不能以拆分类别宣称已定全因。
 

@@ -24,7 +24,7 @@ impl Network {
 
     fn mapping(&self, s: &str, port: u16, initial: bool) {
         let header = if initial {
-            "table ip rebind_v4 { chain mapped { type nat hook postrouting priority 90; policy accept; } }\n"
+            "table ip rebind_v4 {\n chain mapped { type nat hook postrouting priority 90; policy accept;\n }\n}\n"
         } else {
             "flush chain ip rebind_v4 mapped\n"
         };

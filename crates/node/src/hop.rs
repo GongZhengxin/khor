@@ -44,7 +44,7 @@ use khor_net::carry::Carrier;
 
 use crate::Node;
 use crate::tunnel::{NO_ROUTE, OK, REFUSED};
-use crate::wires::Proto;
+use crate::wires::{CarrierComparison, Proto};
 
 /// X to B: splice me to this machine.
 const ASK: &str = "hop ";
@@ -146,7 +146,7 @@ fn was_lost(to: &str, via: &str) -> bool {
 }
 
 /// The watcher's measured release, after its two losing looks.
-fn release_measured_hop(
+fn release_hop(
     links: &khor_net::carry::Links,
     id: &str,
     peer: EndpointId,
@@ -154,6 +154,7 @@ fn release_measured_hop(
     attachment: u64,
     road: Option<khor_net::path::PathKind>,
     looks: u8,
+    _comparison: CarrierComparison,
 ) {
     if !links.detach_attached(&peer, Carrier::Hop { via }, attachment) {
         khor_net::carry::observe_lifecycle(
@@ -565,15 +566,15 @@ impl Node {
                 // and the connection, back on the hop, fell to the relay for
                 // good (netlab f4).
                 let road = wires.link(&id).road;
-                let losing = match road {
+                let comparison = match road {
                     Some(khor_net::path::PathKind::Direct | khor_net::path::PathKind::Relay) => {
-                        wires.selected_beats_carried(&id)
+                        wires.compare_carrier(&id)
                     }
-                    _ => false,
+                    _ => CarrierComparison::Needed,
                 };
-                held = if losing { held + 1 } else { 0 };
+                held = if comparison != CarrierComparison::Needed { held + 1 } else { 0 };
                 if held >= 2 {
-                    release_measured_hop(&links, &id, peer, via, attachment, road, held);
+                    release_hop(&links, &id, peer, via, attachment, road, held, comparison);
                 }
             }
         });
@@ -802,7 +803,7 @@ mod tests {
             let current = links.attach(peer, Carrier::Hop { via }, r, w);
             let serial = current.serial();
             assert!(links.has(&peer));
-            release_measured_hop(&links, &peer.to_string(), peer, via, serial, Some(road), 2);
+            release_hop(&links, &peer.to_string(), peer, via, serial, Some(road), 2, CarrierComparison::Outperformed);
             assert!(!links.has(&peer), "the current owner releases its own link");
             assert_eq!(
                 was_lost(&peer.to_string(), &via.to_string()),
@@ -837,7 +838,7 @@ mod tests {
         assert_eq!(links.carrier(&peer), Some(Carrier::Hop { via }));
         assert!(!was_lost(&peer.to_string(), &via.to_string()));
 
-        release_measured_hop(
+        release_hop(
             &links,
             &peer.to_string(),
             peer,
@@ -845,6 +846,7 @@ mod tests {
             stale,
             Some(PathKind::Relay),
             2,
+            CarrierComparison::Outperformed,
         );
         let still_live = links.has(&peer);
         let wrongly_lost = was_lost(&peer.to_string(), &via.to_string());
@@ -855,6 +857,34 @@ mod tests {
             still_live && !wrongly_lost,
             "a stale watcher cannot release or suppress its replacement"
         );
+    }
+
+    /// A carrier can be unused after its paths disappear during a network
+    /// move. Reclaim the owned stream, without calling that a measured loss.
+    #[tokio::test]
+    async fn an_unused_hop_is_released_without_suppressing_its_middle() {
+        use khor_net::carry::Links;
+        use khor_net::path::PathKind;
+
+        let me = iroh::SecretKey::generate().public();
+        let peer = iroh::SecretKey::generate().public();
+        let via = iroh::SecretKey::generate().public();
+        let links = Links::new(me);
+        let (stream, _remote) = tokio::io::duplex(64);
+        let (r, w) = tokio::io::split(stream);
+        let current = links.attach(peer, Carrier::Hop { via }, r, w);
+        let serial = current.serial();
+        assert!(links.has(&peer));
+        release_hop(
+            &links, &peer.to_string(), peer, via, serial,
+            Some(PathKind::Relay), 2, CarrierComparison::Unused,
+        );
+        let suppressed = was_lost(&peer.to_string(), &via.to_string());
+        assert!(!links.has(&peer), "an unused carrier is actually reclaimed");
+        tokio::time::timeout(Duration::from_secs(1), current.ended()).await
+            .expect("the reclaimed owned stream ends");
+        eprintln!("[hop-unused-contract] serial={serial} released=true suppressed={suppressed}");
+        assert!(!suppressed, "no carried path comparison is no evidence that its middle lost");
     }
 
     fn middles(

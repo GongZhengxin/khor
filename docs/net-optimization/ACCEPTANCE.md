@@ -423,3 +423,10 @@ M的eth0真实replug到另一Public IPv4 Router，新接口恢复原20ms链路�
 先nat_port_rebind_calibration_v1（r0）：fresh Strict IPv4 NAT与Public IPv4 peer，router独有table rebind_v4/postrouting priority90只匹配该A→B UDP，将映射固定至同一WAN IP:50001；固定本地UDP tuple的独立reflector证实old映射。原设备/两族kernel地址保存后，原子替换规则至:50002，并仅在这个owned router netns删除orig-src=A private、orig-dst=B public的UDP conntrack。新probe必须观察到相同外部IP/新端口，设备两族地址JSON完全相同；保留规则/conntrack前-删-后原文与退出码。只操作fresh用户netns，禁止宿主conntrack/网络变化。r0失败或未实跑，控制脚本不得启动Node病例。
 
 随后node_nat_port_rebind_v1（r1）另起fresh环境、真实居民/身份/唯一marker，同一物理规则；mesh/setup、双向reported Direct连续10s、before各n30/200ms/原30s caller预算，注入前再连续10s且远端journal确见:50001实际QUIC path。准备120s、第二hold45s、scenario240s仅作资源门。设备接口/IP/端口不改，仅router外映射/conntrack改变；完成后立即只发B→A首业务，finished后才A→B及双向各n30。禁止先probe/诊断帮助恢复，后台keepalive仍保留。最后实际probe验证:50002，kernel前后完全一致，保留所有outcomes及新外部QUIC path是否selected的独立字段。全部124请求完成且无失败才业务可用绿；未选回新快路不得冒称最优/连续原wire，首样本不是新SLO或p99。公共Relay一直可用，之后再分别测无备用/仅public-IP变化/更长映射缺口。
+
+
+### N1无消费者回收不得压制middle（Unused vs Outperformed，运行前冻结）
+
+228实际trace显示：M换网后outer Direct已恢复，inner Custom约15s后消失，X两次比较时所有live Main/Tunnel/served wire均无Custom；现回收仍按Relay记lost十分钟。以同一次、同一组去重live path快照区分Needed（尚被使用/未知）、Unused（所有live wire无Custom，或无live wire）、Outperformed（存在可比较Custom，所有消费者均不再需要）。不要另读两次事实拼成失真的分类。首批只暴露分类并传到release_hop，保留旧退避实现用于取红。
+
+新增真实Links/current attachment合同：传Unused/Relay/两次look，必须确实detach并等到owned stream结束，且不得was_lost。原正控保留：当前Outperformed/Relay仍lost，Outperformed/Direct不lost；旧serial不能撤新owner/写lost，真实共享incoming carried consumer仍Needed。先实际红后最小改release退避条件、同整合同转绿；不改LOST十分钟的已有测量失败门、收益/确认/资源预算、信任或递归规则。两次look的证据类型混合、陈旧/稀疏质量确认仍需独立收敛，不以本项闭合201/208或228全部根因。
