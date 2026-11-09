@@ -1927,7 +1927,10 @@ mod tests {
         let old =
             r#"{"e":"path","change":"selected","road":"relay","addr":"r.example","rtt_ms":300}"#;
         let mut event: What = serde_json::from_str(old).unwrap();
-        let What::Path { wire, measurements, .. } = &mut event else {
+        let What::Path {
+            wire, measurements, ..
+        } = &mut event
+        else {
             panic!("path event")
         };
         assert_eq!(*wire, None);
@@ -1969,7 +1972,8 @@ mod tests {
 
     #[test]
     fn retired_wire_identity_keeps_old_entries_readable() {
-        let old = r#"{"e":"retired","why":"unanswered","tunnel":false,"quiet_ms":5000,"age_ms":10000}"#;
+        let old =
+            r#"{"e":"retired","why":"unanswered","tunnel":false,"quiet_ms":5000,"age_ms":10000}"#;
         let previous: What = serde_json::from_str(old).unwrap();
         let mut current = previous.clone();
         let What::Retired { wire, .. } = &mut current else {
