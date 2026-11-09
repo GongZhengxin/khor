@@ -2,7 +2,7 @@
 
 更新：2026-11-09 08:19 UTC；root串行，无子智能体。活动目标“完成计划”仍active。
 
-**唯一在途：基线 turing-20261109T075906Z-5464f2db，PID4135341，recovery三轮。** 已实核/proc cmdline live，固定Rust1.95，复用本地cache后基线编译55.57秒通过并开始实际场景。候选turing-20261109T075531Z-b6277f48已终态6/6绿并完整采证：p3最慢518.5/597.9/706.9ms，各<原1秒。127 refs=126终态+baseline live。U9 Turing主通道、VZ仅备用；完整N0–N5未完成。
+**唯一在途：candidate hop turing-20261109T082539Z-a6f5aaf4，PID4163640。** recovery已收齐并采证：candidate6/6，baseline5/6（第三轮p2 p95=247.204ms>原200ms）；两源p3三轮均<1秒。baseline后半段host load升至46，保留观测红，不把前后差异当代码因果证明。131 refs=127终态+candidate hop在途+3 staged。U9 Turing主通道；完整N0–N5仍未完成。
 完整范围：[PLAN](PLAN.md)；约束：[REQUIREMENTS](REQUIREMENTS.md)；运行记录：[RUNS](RUNS.md)；原始结果：[REPORT](REPORT.md)。
 此前STATE原样归档[Accepted轮历史](HISTORY-20261109-before-accepted-green.md)与[本轮历史](HISTORY-20261109-before-probe-green.md)；历史在途/候选文字仅代表当时状态，恢复以本页和实际工作区为准。
 
@@ -17,7 +17,7 @@
 | 产品 | `/Volumes/disk0/Khor/worktrees/current/khor-net`，`feat/net`；最新已验证生产d4a2e115b898fc337f5091b51fa71e45740c667f；随后有文档和scripts/dev.py VZ专用调度；生产网络未改，恢复核HEAD/diff |
 | 控制 | `/Volumes/disk0/Khor/worktrees/current/khor-build-net`，`feat/net`，576c12769beef5f7ca08340f1df18ee87b019d8f已push，现场clean；仅新增collector/2测试；当前两Turing运行仍control59dc223，runner4测试/VZ9测试历史证据保留 |
 | 基线 | `/Volumes/disk0/Khor/worktrees/current/khor-net-baseline`，detached6485cb83d3b1f0bb93d4633825dc956623d78af9；仅paths/hop/lab/nat.rs、dev.py/netlab.sh六fixture，生产原样 |
-| 证据 | `/Volumes/disk0/Khor/evidence/net/`；source-refs.json127条不可变refs；126终态，baseline Turing live；candidate完整report已采/核。SSH receipt位于对应evidence/run/receipt.json，不是GitHub run |
+| 证据 | `/Volumes/disk0/Khor/evidence/net/`；source-refs.json131条不可变refs，逐一REF:source核一致；127终态，candidate hop在途，其余3 staged。两个recovery完整report已采/核；SSH不是GitHub run |
 
 ## N2本轮：普通wire覆盖与配对探针三红→绿
 
@@ -87,7 +87,7 @@ N0部分、N1仍红、N2部分、N3部分、N4未完成、N5部分；完整PLAN�
 
 ## 证据与恢复规则
 
-先核worktree/branch/HEAD/diff、当前run与准确回执；当前Turing baseline真实live，candidate已终态并下载核验；按上方run/path/PID复核，SSH观察失败须重查同句柄，不重启。source-refs.json127条，126终态+baseline pending。
+先核worktree/branch/HEAD/diff、当前run与准确回执；当前Turing candidate hop在途；两个recovery已终态且已采证。131refs=127终态+1 launched+3 staged；恢复按上方run/path/PID实核，SSH观察失败须重查同句柄，不重启。
 `git rev-parse refs/khor/net-evidence/<run>:source`必须等于回执tree；只git show读容器，不checkout覆盖/push本地证据refs。失败明确分format/compile/fixture/行为/执行器；tests_executed只按实际子集，历史红不删除。
 Mac source/bundle分支只在终态、证据留存且所有权/SHA匹配后清理；复用源的请求不拥有原源分支。原attempt不覆盖。
 外盘缺失只读`git show feat/net:docs/net-optimization/STATE.md`与PLAN；原外盘未提交内容不能按摘要覆盖。其他治理沿中央STATE/RESUME，不混授权。
@@ -192,3 +192,19 @@ Turing首次产品编译实际通过（6m19s，Noq/Iroh均项目vendor准确路�
 采证命令（终态后）：在control worktree运行 `PYTHONDONTWRITEBYTECODE=1 python3 scripts/collect-network-ssh.py /Volumes/disk0/Khor/evidence/net/turing-20261109T075906Z-5464f2db/receipt.json`。它先核terminal和原group无活进程，取tar不跟链接，核source三元组/任务/control driver实际字节/bundle/environment，保留每文件SHA。失败报告仍保留；原断言红与executor/compile红分开。collector source576c127不改变两个job执行control59dc223。
 
 之后按原门Turing同机串行跑candidate与baseline的hop（f4/f4s/f4i三轮）、stalls（600秒/20×300ms CPU的0/0移动等），再dynamic/full准确源矩阵；f4s回退未定因。需要新任务时复用immutable源码可省上传，但每run新receipt/ref/job目录/任务，不能把老run改task重跑。旧托管机器与Turing的差值不算产品加速；本机编译与Rust依赖仍禁。手机/两电脑OS细节未答不阻断独立N1–N5工作。
+
+
+下一批四任务只stage，**均未launch**；仍等待正在跑的baseline recovery终态/采证。按candidate hop→baseline hop→candidate stalls→baseline stalls串行，准确队列在evidence/net/turing-next-matrix.json：
+- turing-20261109T082539Z-a6f5aaf4 candidate netlab-hop
+- turing-20261109T082540Z-58971383 baseline netlab-hop
+- turing-20261109T082540Z-c56d74b3 candidate netlab-stalls
+- turing-20261109T082541Z-f8a5a7e2 baseline netlab-stalls
+同control59dc223原profile，复用各role准确source bundle；每run独立job/receipt/immutable ref，131refs=126终态+当前baseline live+4 staged。不修改旧run任务、不并行计时。
+
+
+Baseline recovery turing-20261109T075906Z-5464f2db终态FAILURE5/6：p3三轮[787.0, 787.1, 704.3]ms均过1秒门，p2第三轮p95247.204224ms超过原200ms门、其余route/保持/零错/零退役条件过；原始断言失败已核、完整report已采/source/control/字节/hash/group已核。主机load从candidate结束9.12升至baseline结束46.12，资源条件变动；保留此观测红，不据顺序前后直接称源代码加速或patch37定因。对照JSON保存在turing-recovery-comparison.json；同机配置相同不等于背景资源完全相同，仍需CPU受控/复验。127ref终态。
+
+**Candidate hop turing-20261109T082539Z-a6f5aaf4已launch，PID4163640**，control59dc223、source同candidate c55/treeef392bb7/snapshot8ff966db；原f4/f4s/f4i单线程各3轮，没放宽门。当前131refs=127终态+candidate hop live+其余3 staged。后续按队列baseline hop→candidate stalls→baseline stalls严格串行；不得重启当前任务。
+
+
+本轮progress：完整采证baseline recovery 5/6并核原200ms断言、三轮p3值与host负载变化；候选6/6没有被扩大为因果/全矩阵胜出。四后续任务准确stage且remote JSON/control字节已核，没有运行staged jobs。candidate hop已实际启动，剩baseline hop/candidate stalls/baseline stalls见turing-next-matrix.json；131个immutable REF:source逐项已核。下一步先收candidate hop；如果f4s红，保留原profile结果后走诊断，不改门或重跑覆盖旧红。继续完整N0–N5，goal active。

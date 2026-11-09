@@ -560,3 +560,6 @@ VZ能力三run（源码一致baseb56576ce/tree2b5bfce2/snapshot6a046588）：425
 
 
 **Turing candidate turing-20261109T075531Z-b6277f48 SUCCESS**（非GitHub run）：basec55d74ddaf697f7a389c2bc377d1e0016c47adcf clean、treeef392bb746c998a10c0b6cf8b14f40ffcfe2a2aa、snapshot8ff966dbf71bb0c027bbeac2277ccce6e315dbcf、control59dc223ad263056bc0fa5c073c69a9c5d66b592a；126th ref。Rust1.95 x86_64/kernel5.15/128CPU，jobs16、原recovery单线程三轮；源码/driver/bundle/环境/原job进程组已核、完整report与SHA清单已下载。首编译6m19s；3轮各2pass，p3最慢518.5/597.9/706.9ms、各零失败/退役、p2三绿。只收recovery；未跑root fmt/CPU/hop/full，不能跨旧机器算收益。baseline turing-20261109T075906Z-5464f2db（base6485/tree52a44260/snapshot9e64c63c/control59dc223，127th ref）随后串行launch，PID4135341，编译55.57秒，仍在途。两源五实际fixture逐字同，baseline生产原样。完整目标active。
+
+
+**Turing baseline turing-20261109T075906Z-5464f2db FAILURE5/6**，准确base6485/tree52a44260/snapshot9e64c63c/control59dc223，127th ref。三轮p3最慢787.0/787.1/704.3ms均过原1s；p2 p95=73.691917/71.255568/247.204224ms，第三轮超过原200ms、其余route/保持/零错/零退役条件过，源码878行原assert实际失败。完整report采证/tuple/driver/bundle/environment/group/SHA已核。candidate同机6/6，但host load从candidate后9.12到baseline后46.12，未隔离的背景变化禁止宣称源代码或patch37的因果加速；不把原性能红改算executor红，也不删除。对照turing-recovery-comparison.json。随后4任务stage（128–131 refs），candidate hop128th turing-20261109T082539Z-a6f5aaf4已launch PID4163640，其他3未launch；同source角色tuple/原profile/control59dc223，当前131 refs逐一核、127终态+1在途+3 staged。

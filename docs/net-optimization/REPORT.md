@@ -133,3 +133,13 @@ controlc6a20c5，单场景顺序三轮，准确tree/snapshot见RUNS。baseline42
 用户授权Turing作为Linux主通道后，candidate turing-20261109T075531Z-b6277f48准确treeef392bb7/snapshot8ff966db/control59dc223，3轮recovery全部6/6绿，原p3最坏<1s保持，实际518.5/597.9/706.9ms、均零失败/退役；p2改变慢路后分别3.1s/6.1s/930.4ms达原断言、typing errors空。每轮样本/原始scenario日志在对应evidence/report/netlab/，非跨host改进结论。首编译6m19s，后续repeat0.58/0.53秒；基线同Turing同工具链/同driver原门正串行运行，首次编译55.57秒。
 
 源码全量tuple、原字节SHA、toolchain、namespace、host资源、执行状态、三轮全部结果、原job group检查均留存；采证collector576c127独立于执行control59dc223。只证明此source在Turing recovery profile绿，N1 CPU/hop/full、N2–N5和真实设备未结。历史托管Linux42542984111两个p3红不删除、不据换硬件称已定因。
+
+
+Turing recovery同机对照已完整采证：
+
+| 角色 | p2 p95三轮(ms) | p3最慢三轮(ms) | 结果 |
+| --- | --- | --- | --- |
+| candidate(c55/treeef392bb7) | 70.704 / 71.865 / 70.794 | 518.5 / 597.9 / 706.9 | 6/6 |
+| original baseline(6485/tree52a44260) | 73.692 / 71.256 / 247.204 | 787.0 / 787.1 / 704.3 | 5/6，p2第三轮p95超原200ms |
+
+两源同Turing/固定Rust1.95/原fixture/control59dc223，串行candidate→baseline；两源p3均满足原1s。基线第三轮host负载变动（candidate end load1=9.12，baseline end=46.12）与时序未隔离，不能把尾延迟差异直接算源代码或某patch收益。保留基线原失败、全部样本/断言/环境；数据不是稳定性统计证明或完整N1收口。下一为两源hop/stalls与CPU受控/必要复验、dynamic/full；N2–N5仍未结。对照JSON含两边load before/after与全部tuple路径。
