@@ -205,3 +205,5 @@ Mac便携网络入口（control6b1616c，已实际执行）通过--executor mac�
 取消并join真实ask_early调用后，500ms观察server发送流收到STOP_SENDING（Ok(Some(code))）；连接关闭/EOF不能替代该证据。随后普通ask_on Sessions必须在5s防挂内成功，Main连接stable_id保持相同、peer dial_failed为0、总请求严格3次（warmup/被取消读/独立读），最后关闭端点并停止fixture任务。
 500ms是取消观察容差而非产品SLO。server延迟回答、不关闭共享wire；原生产Accepted裸JoinHandle代码保留，先执行取实际红，再修所有权。已有scope40ms/300s和两锁回归仍同批运行，不扩展0RTT/重放白名单。
 STOP_SENDING观察按[Noq 1.3 SendStream::stopped](https://docs.rs/noq/1.3.0/noq/struct.SendStream.html#method.stopped)；本地只读源码、未运行Rust formatter/编译/测试。
+
+Accepted前置42566727617未成立，不能算取消行为红。为让本地调度下真正发出early数据，server接到第二次Incoming后延迟100ms才accept/发首TLS握手包，仍以is_0rtt检查为准；该fixture延迟不参与产品性能判断。新增同fixture的deadline变体：warmup后为ask_early传1秒绝对by，必须先adopt且仍在by之前；在by+500ms防挂内必须正常返回CallerExpired，并仍停止回答流、同wire独立请求成功/计数3/零peer失败。旧裸回答所有权保持待红。

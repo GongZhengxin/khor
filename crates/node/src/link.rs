@@ -13454,6 +13454,15 @@ mod dial_budget {
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn cancelling_an_accepted_early_answer_stops_only_its_stream() {
+        observe_accepted_answer_stop(None).await;
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn an_accepted_early_answer_keeps_the_callers_deadline() {
+        observe_accepted_answer_stop(Some(Duration::from_secs(1))).await;
+    }
+
+    async fn observe_accepted_answer_stop(budget: Option<Duration>) {
         use std::sync::{
             Arc,
             atomic::{AtomicUsize, Ordering},
@@ -13508,13 +13517,12 @@ mod dial_budget {
                 send.finish().unwrap();
                 warm.closed().await;
 
-                let resumed = endpoint
-                    .accept()
-                    .await
-                    .unwrap()
-                    .accept()
-                    .unwrap()
-                    .into_0rtt();
+                let incoming = endpoint.accept().await.unwrap();
+                // Keep the server's first handshake flight behind the
+                // client's early stream, even on a fast loopback scheduler.
+                // The is_0rtt precondition below must still prove it happened.
+                tokio::time::sleep(Duration::from_millis(100)).await;
+                let resumed = incoming.accept().unwrap().into_0rtt();
                 let (delayed, mut recv) = resumed.accept_bi().await.unwrap();
                 let was_early = recv.is_0rtt();
                 let bytes = recv.read_to_end(MAX_FRAME).await.unwrap();
@@ -13565,12 +13573,13 @@ mod dial_budget {
         ));
         warm.close(0u32.into(), b"resumption cache primed");
 
+        let by = budget.map(|budget| std::time::Instant::now() + budget);
         let mut asking = Aborts(Some(tokio::spawn({
             let node = node.clone();
             let endpoint = ep.clone();
             let peer = peer.clone();
             async move {
-                node.ask_early(&endpoint, &peer, &Request::Sessions, None)
+                node.ask_early(&endpoint, &peer, &Request::Sessions, by)
                     .await
             }
         })));
@@ -13594,9 +13603,31 @@ mod dial_budget {
         .await
         .unwrap();
         assert!(!asking.0.as_ref().unwrap().is_finished());
-        let task = asking.0.take().unwrap();
-        task.abort();
-        assert!(matches!(task.await, Err(error) if error.is_cancelled()));
+        assert!(by.is_none_or(|by| std::time::Instant::now() < by));
+        let mut task = asking.0.take().unwrap();
+        let ended = match by {
+            Some(by) => {
+                let observed = tokio::time::timeout_at(
+                    tokio::time::Instant::from_std(by) + Duration::from_millis(500),
+                    &mut task,
+                )
+                .await;
+                let ended = matches!(
+                    &observed,
+                    Ok(Ok(Early::Failed(DialFailure::CallerExpired)))
+                );
+                if observed.is_err() {
+                    task.abort();
+                    let _ = task.await;
+                }
+                ended
+            }
+            None => {
+                task.abort();
+                assert!(matches!(task.await, Err(error) if error.is_cancelled()));
+                true
+            }
+        };
         let stream_stopped = matches!(
             tokio::time::timeout(Duration::from_millis(500), stop_seen).await,
             Ok(Ok(true))
@@ -13627,6 +13658,7 @@ mod dial_budget {
             "warmup, cancelled read and independent control only"
         );
         assert_eq!(node.wires.counts.snapshot().dial_failed, 0);
+        assert!(ended, "accepted early answer ignored the caller's deadline");
         assert!(
             stream_stopped,
             "accepted early answer outlived its cancelled caller"

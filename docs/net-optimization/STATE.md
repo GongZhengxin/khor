@@ -132,3 +132,6 @@ Accepted后原裸JoinHandle await本批尚未修正；握手到期若刚得到�
 
 
 **42566727617 Mac net-node Accepted回归格式修正源在途**：basef1ef9049559cbb26b93eee361f293929842e53c3 clean、treec21e025c0cbd66cdb4aca4a5ab523d3be1be7434、snapshot9ca1c0fab8980b93903aee579ee14bf01f6b7f33、control0cff9671fb2f80945423132e0df46995f6ff3198；113th ref/mac-accepted-answer-formatted-42566727617已锚。六测试仍待真实编译/执行，生产回答所有权不变。
+
+
+42566727617终态**fixture前置失败**：根格式/编译/net66+1ignored/hop9/wires10/journal28绿；dial_budget5pass1fail。两个scope40ms/300s实际红由42562932053转绿，原三预算回归均绿。取消测试因server recv.is_0rtt=false停在前置，尚未取消，不算所有权行为红。准确treec21e025c/snapshot9ca1c0fa/control0cff967已核，113 refs终态。下一fixture将server第二次accept后首TLS响应延迟100ms，仍必须is_0rtt真实前置；不删除该门、不修改生产准入。另复用fixture新增Accepted后1秒绝对by必须结束的第二回归，预期红尚未执行。
