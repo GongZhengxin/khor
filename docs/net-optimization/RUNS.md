@@ -458,3 +458,6 @@ N3道路双向因果校准测试已按先前协议写下，模型未改；contro
 
 
 42560015454终态 **SUCCESS**：root fmt/congestion编译、UDP校准1pass、三轮各2pass（167.64/167.09/167.29秒）。模型从42559476637旧FIFO实际红转independent_fifo_v2绿；15bulk/51摘要/704samples，0失败/0超时；每轮235/234/235，raw samples与摘要计数/索引/分位数逐项一致，sample-audit.json保存日志hash和合并方法。tree33d5ef6d/snapshot9a6f9717/control0cff967已核、raw/source/environment下载。仅Noq模拟，产品CC未改，不是N3整包或Linux/真机SLO。106 refs全部REF:source复核、无pending。当前Node link和vendor内容与各自已验证run对象相同，applicability.json明确局部范围，不当最终Quality。
+
+
+**42562380977 Mac net-node操作scope预算回归在途**：clean4b777300、treed3cc715bcac2173cdaa5905ad173ce295f931906、snapshot2daaec31a984488b7cfbf6f5ef8549448d1546c7、control0cff9671fb2f80945423132e0df46995f6ff3198。新增不可变deadline载体、未接入生产消费者/Op；真实ask持锁的40ms与300秒两个虚拟时钟回归待红，107th ref与mac-operation-budget-red-42562380977已保存。

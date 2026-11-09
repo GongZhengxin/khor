@@ -15,7 +15,7 @@
 | 产品 | `/Volumes/disk0/Khor/worktrees/current/khor-net`，`feat/net`；恢复核实际HEAD/diff，N3模型实现1478bf97，N2生产802e13a8+远端格式修正；随后HEAD为证据文档提交 |
 | 控制 | `/Volumes/disk0/Khor/worktrees/current/khor-build-net`，`feat/net`；0cff9671fb2f80945423132e0df46995f6ff3198已push；历史run各绑定原control |
 | 基线 | `/Volumes/disk0/Khor/worktrees/current/khor-net-baseline`，detached6485cb83d3b1f0bb93d4633825dc956623d78af9；仅paths/hop/lab/nat.rs、dev.py/netlab.sh六fixture；生产原样，现场已复核 |
-| 证据 | `/Volumes/disk0/Khor/evidence/net/`；source-refs.json现106条不可变refs，全部已终态；没有在途任务 |
+| 证据 | `/Volumes/disk0/Khor/evidence/net/`；source-refs.json现107条不可变refs；仅42562380977待分类/在途 |
 
 ## 当前工作：N3校准与三轮完成，下一步贯通N2总预算
 
@@ -79,7 +79,7 @@ N0部分、N1仍红、N2部分、N3部分、N4未完成、N5部分。不能用�
 
 ## 证据与恢复
 
-先核worktree/branch/HEAD/diff、当前run与准确回执，不按摘要覆盖未提交内容，不重发活动run。source-refs.json现106项全部终态，全部REF:source逐一复核等于回执tree；没有活动任务。
+先核worktree/branch/HEAD/diff、当前run与准确回执，不按摘要覆盖未提交内容，不重发活动run。source-refs.json现107项，42562380977为新候选待分类；前106项终态且ref/tree已核。
 git rev-parse refs/khor/net-evidence/<run>:source必须等于回执tree；只git show读容器，不checkout覆盖或push本地证据refs。账单/checkout失败均tests_executed=false，校验成功但format/compile失败与真实行为红分开。
 Mac源/bundle分支只在终态、证据已留、所有权/SHA匹配后清理；复用源的请求不拥有原源分支。原attempt记录不覆盖。
 外盘缺失只读git show feat/net:docs/net-optimization/STATE.md和PLAN；原外盘未提交内容不能按摘要覆盖。其他治理继续中央STATE/RESUME，不混授权。
@@ -93,3 +93,5 @@ Mac源/bundle分支只在终态、证据已留、所有权/SHA匹配后清理；
 ## 新接续：N2操作总预算回归待执行
 
 新增deadline任务局部载体仅传不可变截止点，尚未被Op入口或网络消费者使用，生产28秒行为原样。新增两个真实ask_on/持锁回归（40ms必须结束、300秒不能被28秒截断），预期红尚未执行；暂停时钟仅dev test-util，绑定在计时前，本机只检查TOML/diff。下一准确源Mac net-node先取红，再贯通。前106 refs全终态，不复跑旧已绿Noq测量。
+
+**42562380977 Mac net-node操作期限载体回归在途**：base4b7773007e2d3a4fd61960ce6f82b305167ac111 clean、treed3cc715bcac2173cdaa5905ad173ce295f931906、snapshot2daaec31a984488b7cfbf6f5ef8549448d1546c7、control0cff9671fb2f80945423132e0df46995f6ff3198。载体未被生产消费，真实ask_on两个scope测试预期红未实际取得；mac-operation-budget-red-42562380977/107th ref已锚，恢复只查此ID。
