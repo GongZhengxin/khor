@@ -255,7 +255,10 @@ async fn observe_update_dial_limit(operation: Duration, expected: Duration) {
     let _ = sink.0.as_mut().unwrap().await;
 
     assert!(matches!(first, Ok(Ok(at)) if at < start + expected));
-    assert!(packets.load(Ordering::SeqCst) > 0, "the real update dial sent UDP");
+    assert!(
+        packets.load(Ordering::SeqCst) > 0,
+        "the real update dial sent UDP"
+    );
     assert!(
         matches!(observed, Ok(Err(_))),
         "dial_update itself must stop, before the fixture's outer timeout"

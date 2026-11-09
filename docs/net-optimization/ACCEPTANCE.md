@@ -267,3 +267,8 @@ Linux-only真实fixture，先启动新unshare -Urn子harness，核network namesp
 ## N2更新连接独立10秒上限（新增运行覆盖）
 
 两个portable回归调用真实Node::dial_update（UPDATE_ALPN），scratch Node/Minimal endpoint、only_mine原测试配置和临时loopback UDP黑洞；sink实际收到UDP才满足前置，未触碰更新包、现装App或生产store。200ms操作scope时须由dial_update自己正常返回错误，30秒scope时仍在原10秒自身上限返回；外层expected+500ms仅防挂，触发外层timeout不算通过。实际elapsed下界expected-20ms，上界expected+500ms，sink首包早于expected；零共享wire未答退役/peer down/backoff/answer_late/dial_failed。此为现有合同新增实测覆盖，未声称旧源行为红，也不改变10秒/200ms/长操作档语义。
+
+
+## N1路径与退役关联的诊断身份
+
+后续f4i诊断保留现有journal，Path和Retired可选wire编号取同一进程内Connection::stable_id，跨节点/进程不比较编号；缺字段的老日志仍可读，显示句子不带实现字段。只补身份、不改路径选择或现有peer/change去重。以实际路径事件wire与retired wire关联区分新旧连接，再与主wire/Link采样对照；不能仅凭同peer的平面事件假定都是同一连接。字段兼容回归通过也不构成真实切路/无回退的证明。

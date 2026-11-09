@@ -629,7 +629,7 @@ impl Wires {
     /// [`drop_wire`], written in the journal: why, how long the wire had
     /// been quiet, how long it lived.
     fn drop_noted(&self, id: &str, proto: Proto, slot: &mut Slot, why: Retired) {
-        if slot.conn.is_some() {
+        if let Some(conn) = &slot.conn {
             let now = Instant::now();
             let since = |t: Option<Instant>| {
                 t.map_or(0, |t| crate::journal::ms(now.saturating_duration_since(t)))
@@ -637,6 +637,7 @@ impl Wires {
             self.note(
                 Some(id),
                 crate::journal::What::Retired {
+                    wire: u64::try_from(conn.stable_id()).ok(),
                     why: why.key().to_owned(),
                     tunnel: proto == Proto::Tunnel,
                     quiet_ms: since(slot.heard),

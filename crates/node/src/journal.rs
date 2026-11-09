@@ -162,6 +162,10 @@ pub enum What {
     /// had been heard on it — for a dead wire, how long its death took
     /// to notice.
     Retired {
+        /// Process-local connection identity, shared by path and retirement
+        /// facts. Older entries predate it; it is not a peer identity.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        wire: Option<u64>,
         why: String,
         tunnel: bool,
         quiet_ms: u64,
@@ -246,6 +250,10 @@ pub enum What {
     /// `started`, the path a new connection began on; `selected`, the
     /// path now carrying it.
     Path {
+        /// Process-local connection identity, shared by path and retirement
+        /// facts. Older entries predate it; it is not a peer identity.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        wire: Option<u64>,
         change: String,
         road: String,
         addr: String,
@@ -1621,6 +1629,7 @@ mod tests {
                 7,
                 Some("turing"),
                 What::Path {
+                    wire: None,
                     change: "selected".into(),
                     road: "direct".into(),
                     addr: "172.16.185.103:35156".into(),
@@ -1918,9 +1927,11 @@ mod tests {
         let old =
             r#"{"e":"path","change":"selected","road":"relay","addr":"r.example","rtt_ms":300}"#;
         let mut event: What = serde_json::from_str(old).unwrap();
-        let What::Path { measurements, .. } = &mut event else {
+        let What::Path { wire, measurements, .. } = &mut event else {
             panic!("path event")
         };
+        assert_eq!(*wire, None);
+        *wire = Some(17);
         assert!(measurements.is_empty());
         measurements.push(khor_net::path::PathFact {
             relay: true,
@@ -1956,6 +1967,30 @@ mod tests {
         );
     }
 
+    #[test]
+    fn retired_wire_identity_keeps_old_entries_readable() {
+        let old = r#"{"e":"retired","why":"unanswered","tunnel":false,"quiet_ms":5000,"age_ms":10000}"#;
+        let previous: What = serde_json::from_str(old).unwrap();
+        let mut current = previous.clone();
+        let What::Retired { wire, .. } = &mut current else {
+            panic!("retirement event")
+        };
+        assert_eq!(*wire, None);
+        *wire = Some(17);
+        let encoded = serde_json::to_string(&current).unwrap();
+        assert_eq!(serde_json::from_str::<What>(&encoded).unwrap(), current);
+        let entry = |what| Entry {
+            at: 0,
+            peer: Some("y".into()),
+            what,
+        };
+        assert_eq!(
+            words(&entry(current), &str::to_owned),
+            words(&entry(previous), &str::to_owned),
+            "connection identity does not change the displayed retirement sentence"
+        );
+    }
+
     /// 「改为经 SSH 转连」 — where it said 「改走转连：，往返 0 ms」.
     #[test]
     fn a_carried_path_says_what_carries_it() {
@@ -1970,6 +2005,7 @@ mod tests {
             at: 0,
             peer: Some("y".into()),
             what: What::Path {
+                wire: None,
                 change: "selected".into(),
                 road: "carried".into(),
                 addr: addr.into(),
@@ -2007,6 +2043,7 @@ mod tests {
             at: 0,
             peer: Some("y".into()),
             what: What::Path {
+                wire: None,
                 change: "started".into(),
                 road: road.into(),
                 addr: addr.into(),

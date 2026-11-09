@@ -245,6 +245,9 @@ fn follow(
     carry: khor_net::carry::Links,
 ) {
     let id = id.to_owned();
+    let wire = weak
+        .upgrade()
+        .and_then(|conn| u64::try_from(conn.stable_id()).ok());
     tokio::spawn(async move {
         use iroh::endpoint::PathEvent;
         use n0_future::StreamExt;
@@ -357,6 +360,7 @@ fn follow(
             journal.note(
                 Some(&id),
                 crate::journal::What::Path {
+                    wire,
                     change: change.to_owned(),
                     road: road.to_owned(),
                     addr,
