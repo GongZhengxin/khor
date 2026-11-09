@@ -241,3 +241,10 @@ CPU169未进入测量：真实Node CPU admission返回无路径ENOENT，不能�
 
 
 176原版/181候选同固定CPU64、相同fixture/control的单对顺序观察：两者旧稳定性门均2/2，候选18punch对照3、最大请求耗时728.3ms对537.2ms，流量亦更高；单对不是因果/总体改善证明，探测成本需追。182首轮f4新红但f4i过，整个N1不能收口。N0 v4量测源码新增完整caller outcomes/故障时标及真实五请求独立校准，尚未远端证实；旧无记录日志不能推零失败。
+
+
+## 2026-11-09继续：移动通知反例与构建复用
+
+用户U11/U12要求把peer relay和移动IPv4/IPv6变化作为完整最优连接验收，U13要求利用Turing加速。补充要求已入PLAN/REQUIREMENTS/ACCEPTANCE，均不以单middle/IPv4-only实验替代。210在原生产Interfaces/interface_addrs上实际29旧合同绿、新1红：接口集稳定时，QAD-only候选更新仍把原1秒通知期限往后移。功能10ae1ca0仅让相同seen集合不重置timer；211 Linux/212 Mac同准确source原整fixture转绿（journal30、预算24/20）。原1秒和空网/同址恢复/来源翻转合同保持；物理移动与手机仍待。
+
+Turing稳定源码缓存首/复用同快照206/207均fmt/net66+1ignored绿，build17.05→0.41秒，总51.52→35.84秒；jobs16和网络门不动，一组对照不外推普遍加速。Peer relay201参考9/9与205/208诊断各3/3虽全请求成功，仍见慢轮/双向不对称和208当前owner在稀疏质量下释放再重建；当前公式不要求selected反向显著更快，置信/候选试用/成本回收须继续设计验证。完整N0–N5未完成，证据与限制见STATE及原始报告。

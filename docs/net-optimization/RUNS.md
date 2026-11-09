@@ -733,3 +733,6 @@ Turing `turing-20261109T175508Z-912bcc0c`，base9c2e73488723fc550d335883e96eba78
 208已终态3/3、192/192全ok、435.58s、原group空，9诊断文件/phase/summary/raw核；third current serial1两次比较后被释放并关闭，later serial2重建，trace留measured-release-trace.json。不是stale-owner，不直接认定201因果；质量/age/samples的原值必须带着分析，不能只据结果行green算最优。
 
 210实际Rust合同红：fmt/net66+1ignored/hop10/wires11过，journal29过1红；118.09秒、原group空，source/control/bundle/ref/report identity核。全fixture SHA d66be0e62f349d2298d666c8470e09403f4bee6b53832d9e2fbf9f839315a822。新测试首次IPv6变化iteration失败，IPv4变化iteration未到；是实际生产Interfaces/interface_addrs状态机反例，非物理地址重编号。当前候选仅相同seen集合不重置timer，原1秒与整fixture不动；等待Linux/Mac原合同转绿。
+
+
+211/212准确功能10ae1ca0已同源全绿：tree00ca0b6f31322d551402610b7b38d5dd8a7e48da/snapshotaa259f3d1376aa9a2e96a0cb257d336eb20a57e6/control9135b6d4311ce74ee3a90dac188f4b094f780e35。211 Turing206.47秒、原group空，fmt/net66+1ignored/hop10/wires11/journal30/Linux24（91.86s）；212 Mac42679667230 fmt/net66+1ignored/hop10/wires11/journal30/Mac20（50.06s），完整source/transport/9 control blobs/hash核。210整个新fixture逐字不变，整生产journal文件仅四行guard，proof stable-interface-red210-green211-212.json；green两地址族iteration均执行，red首次IPv6 iteration失败。不是实际重编号/真跨网/能耗证明。全部212 refs batch核、无pending，queue空。
