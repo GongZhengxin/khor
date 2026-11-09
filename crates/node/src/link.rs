@@ -3980,6 +3980,7 @@ impl Node {
             // here, per stream, so a pause bites on a tunnel already up.
             let paired =
                 !crate::pause::peer_on(self.root(), &remote) && self.admit(&remote).is_ok();
+            let incoming_wire = conn.stable_id();
             let (node, ep, remote) = (self.clone(), ep.clone(), remote.clone());
             tokio::spawn(async move {
                 let Ok(target) = crate::tunnel::read_target(&mut recv).await else {
@@ -3987,7 +3988,7 @@ impl Node {
                 };
                 // A hop's ask rides the exit's stream (round ROAD-3).
                 match crate::hop::Ask::of(&target) {
-                    Some(ask) => node.serve_hop(ep, &remote, ask, send, recv, paired).await,
+                    Some(ask) => node.serve_hop(ep, &remote, incoming_wire, ask, send, recv, paired).await,
                     None => {
                         let _ = crate::tunnel::serve_target(send, recv, &target, paired).await;
                     }

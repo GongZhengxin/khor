@@ -4,6 +4,8 @@
 
 ## 当前源码与已收齐证据
 
+- **N1下一轮外层承载关联诊断**：hop_outer_bound记录initiator/receiver、attachment与实际Proto::Tunnel stable wire；middle记录incoming/onward wire与splice开始/结束。不持有额外Connection、不增加probe、不改选路/计时/回收策略，全部详细值仍在KHOR_NET_DIAGNOSTICS开关内构造。235中的Outperformed与228中的Unused不同：235 Y在换网后约5.6/10.6秒用到Carried质量约263ms（samples0、age约4秒）与Relay约131ms，经两looks释放；实际外层对应关系尚缺，不能断言一律是Unused或阻塞I/O。下一真实移动按新准确源关联，原peer_relay_replug_v1业务/hold/预算不改。
+
 - **238 NAT端口物理校准实际1/1绿，业务未执行**：turing-20261109T213804Z-e0f84b61，31.77s/rc2/原group空；完整source/control/bundle/report哈希采证。固定同一local UDP端口，外部198.18.0.10:50001→:50002、定向conntrack删1条/新1条，设备两族kernel完全相同。r0 Rust成功但没有netlab.sh必需的netlab-result标记，driver正确拒绝无scenario结果并停止；不是产品失败。只补成功assert后的标准结果行，不放宽shell guard/物理协议；继续r0→r1。
 - **239 Mac与240 Turing验证阻塞旧owner修复**：Mac42704634733/requestae61d279a8544af686af7193fdeaf7c0与Turing turing-20261109T214055Z-1eb59ad7，完整source相同base2654cbdf/tree34c8e822/snapshot8c3205d4/controle4c58dc。net-node含原整个carry/hop/wires/journal/budget合同；实际终态待核。当前只有240为Turing重型槽，后续fixture/诊断不混入。
 

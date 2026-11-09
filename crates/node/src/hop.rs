@@ -500,13 +500,13 @@ impl Node {
                 if let Ok((send, recv)) =
                     crate::tunnel::dial(&line.conn, &Ask::To(peer).words()).await
                 {
-                    return Some((via, send, recv));
+                    return Some((via, line.conn.stable_id(), send, recv));
                 }
             }
             None
         };
         let tried = u32::try_from(picked.len().min(TRIES)).unwrap_or(u32::MAX);
-        let Ok(Some((via, send, recv))) = tokio::time::timeout(HOP_WITHIN, tries).await else {
+        let Ok(Some((via, outer_wire, send, recv))) = tokio::time::timeout(HOP_WITHIN, tries).await else {
             if tried > 0 {
                 self.wires
                     .note(Some(&y.id), crate::journal::What::Hop { via: None, tried });
@@ -532,6 +532,12 @@ impl Node {
         );
         let attached = self.carry.attach(peer, Carrier::Hop { via }, recv, send);
         let attachment = attached.serial();
+        khor_net::carry::observe_lifecycle(&y.id, "hop_outer_bound", || {
+            serde_json::json!({
+                "role": "initiator", "attachment": attachment,
+                "via": via.to_string(), "outer_wire": outer_wire,
+            })
+        });
         if let Some(addr) = self.carried_addr(&y.id) {
             ep.offer_addrs(iroh::EndpointAddr::from_parts(peer, [addr]))
                 .await;
@@ -673,6 +679,7 @@ impl Node {
         self: Arc<Self>,
         ep: Arc<iroh::Endpoint>,
         from: &str,
+        incoming_wire: usize,
         ask: Ask,
         mut send: SendStream,
         recv: RecvStream,
@@ -728,18 +735,30 @@ impl Node {
                         Box::pin(self.line_to_inner(&ep, &d, Proto::Tunnel, Some(by), false))
                             .await
                             .ok()?;
+                    let wire = line.conn.stable_id();
                     crate::tunnel::dial(&line.conn, &Ask::From(from_id).words())
                         .await
                         .ok()
+                        .map(|(send, recv)| (wire, send, recv))
                 });
-                let Ok(Some((ys, yr))) = tokio::time::timeout(MIDDLE_WITHIN, onward).await else {
+                let Ok(Some((onward_wire, ys, yr))) = tokio::time::timeout(MIDDLE_WITHIN, onward).await else {
                     return refuse(send, NO_ROUTE).await;
                 };
                 if send.write_all(&[OK]).await.is_err() {
                     return;
                 }
+                khor_net::carry::observe_lifecycle(from, "hop_splice_bound", || {
+                    serde_json::json!({
+                        "to": y, "incoming_wire": incoming_wire, "onward_wire": onward_wire,
+                    })
+                });
                 let _riding = (self.wires.hop_held(from), self.wires.hop_held(&y));
                 splice((send, recv), (ys, yr)).await;
+                khor_net::carry::observe_lifecycle(from, "hop_splice_ended", || {
+                    serde_json::json!({
+                        "to": y, "incoming_wire": incoming_wire, "onward_wire": onward_wire,
+                    })
+                });
             }
             // Y: this stream is the link to `from`'s asker (X), via B.
             Ask::From(x) => {
@@ -758,6 +777,12 @@ impl Node {
                 let attached = self
                     .carry
                     .attach(x, Carrier::Hop { via: from_id }, recv, send);
+                khor_net::carry::observe_lifecycle(&asker, "hop_outer_bound", || {
+                    serde_json::json!({
+                        "role": "receiver", "attachment": attached.serial(),
+                        "via": from, "outer_wire": incoming_wire,
+                    })
+                });
                 if let Some(addr) = self.carried_addr(&asker) {
                     ep.offer_addrs(iroh::EndpointAddr::from_parts(x, [addr]))
                         .await;
