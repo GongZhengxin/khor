@@ -13299,8 +13299,7 @@ impl Node {
 mod dial_budget {
     use super::*;
 
-    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-    async fn a_call_deadline_bounds_waiting_for_another_dial_without_blaming_the_peer() {
+    async fn fixture() -> (tempfile::TempDir, Node, DeviceInfo, iroh::Endpoint) {
         let root = tempfile::tempdir().unwrap();
         std::fs::create_dir_all(root.path().join(".khor")).unwrap();
         std::fs::write(
@@ -13330,6 +13329,12 @@ mod dial_budget {
             .bind()
             .await
             .unwrap();
+        (root, node, peer, ep)
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn a_call_deadline_bounds_waiting_for_another_dial_without_blaming_the_peer() {
+        let (_root, node, peer, ep) = fixture().await;
         let lock = node.wires.dial_lock(&peer.id, wires::Proto::Main);
         let held = lock.lock().await;
         let by = std::time::Instant::now() + Duration::from_millis(40);
@@ -13362,6 +13367,33 @@ mod dial_budget {
         assert!(matches!(expired, Err(DialFailure::CallerExpired)));
         assert_eq!(node.wires.counts.snapshot().dialed, 0);
         assert_eq!(node.wires.counts.snapshot().dial_failed, 0);
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn an_early_call_deadline_bounds_waiting_for_another_dial() {
+        let (_root, node, peer, ep) = fixture().await;
+        let lock = node.wires.dial_lock(&peer.id, wires::Proto::Main);
+        let held = lock.lock().await;
+        let by = std::time::Instant::now() + Duration::from_millis(40);
+        let answer = tokio::time::timeout(
+            Duration::from_millis(500),
+            node.ask_early(&ep, &peer, &Request::Sessions, Some(by)),
+        )
+        .await;
+        ep.close().await;
+
+        assert!(
+            answer.is_ok(),
+            "early-data lock admission outlived the caller"
+        );
+        assert!(matches!(
+            answer.unwrap(),
+            Early::Failed(DialFailure::CallerExpired)
+        ));
+        assert!(held.is_none());
+        assert_eq!(node.wires.counts.snapshot().dial_failed, 0);
+        assert_eq!(node.wires.link(&peer.id).down, None);
+        assert_eq!(node.wires.backing_off(&peer.id), None);
     }
 
     /// **A dial never outlasts QUIC's own idle timeout** (net-dial B5): a

@@ -418,3 +418,6 @@ Mac便携分流control6b1616c8b816bdb72a8a031d0ff28cc46a3fb4c7在feat/net，沿�
 
 
 **42557583517 Mac net-node在途**：clean19f0e190、tree2fd3cf7ea6ba50276be1bb7e9243c784c50830d8、snapshotd76915fc0c91ffde65ceb63d5fde560fb5506162、control2e70c39fe6a70bbbd09b7434f90e6c2d62e84b16，normal line CallerExpired/有界锁最小修复候选；100th ref和mac-dial-lock-candidate-42557583517已锚定，结果未出。
+
+
+42557583517终态 **SUCCESS**：根格式、net66pass/1ignored、hop9/wires10/journal28/dial_budget2全绿；tree2fd3cf7e/snapshotd76915fc/control2e70c39已核，mac-dial-lock-candidate-42557583517保存source/environment/raw/log/classification。normal持锁期限由42556768499红转绿，过期空锁不拨号为新增绿覆盖；没有完成early/hop/总期限等N2。100 refs终态。新增独立early入口持锁用例，early生产未改，预期红尚未执行。
