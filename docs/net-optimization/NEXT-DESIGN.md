@@ -197,3 +197,10 @@ Linux VZ [CreateDisk](https://github.com/lima-vm/lima/blob/v2.3.0/pkg/driver/vz/
 
 已只读取得run-build（115B，SHA83c9aa2c98dd60d9eaab670d0fbcd1ae4e20460320a963f1db7d480f4d36b7ce）和build_guard.py（2138B，SHA998f5723eb447a1634411397c18a524e5ed0d50bd6dbd81001a16626219f64eb）。实际空间门50/40GiB、Mac target100GiB；原35/20设计文字撤回，不修改实际policy。guard以新session启动命令并传递build.lock FD；中断/低空间时TERM整组，10秒后KILL。若leader已退出，stop直接返回，因此只有foreground+finally还不足以防控制器SIGKILL后的VM残留。
 固定Lima非WindowsForegroundSysProcAttr为空、start_unix.go使用syscall.Exec替换为hostagent，故foreground可继承guard组。实现将用同组lease supervisor持有从guard继承的lock FD：控制器关闭lease或死亡EOF即停止自有VM，正常退出也停止并wait；所有hostagent继续同组，不启动后台默认start。实际探针需证明正常清理及受控杀死子控制器后lease清理，最终Stopped/hostagent退出；这还不是已实现或已运行证明。首capability guest不挂载任何宿主目录，不进入产品编译/个人网络；保持2CPU/6GiB/30GiB候选上限和实际50/40门，磁盘增长仍由原guard监测。
+
+
+## VZ能力与生命周期已实际证明（42579909366）
+
+controlbedd896，source tree2b5bfce2/snapshot6a046588，固定工具/镜像已实际校验。短实例名修复macOS临时socket限制；按本次IID与/run/lima-boot-done相等验完整初始化。Linux aarch64 6.8.0-147、namespace/veth/netem/nft/conntrack实际成功；正常停机与子controller真实SIGKILL后lease EOF→stop rc0→Stopped均成功、同guard PGID、无本次helper。空host mounts与无个人key/agent/proxy/自动应用端口保留，未改installed guard/策略。前两执行器红在RUNS保留。
+
+下一具体实现为把原scripts/network.sh放入该隔离guest，沿同源码/可信control回执，固定Rust1.95四component校验和，先实际构建/冒烟；随后新后端基线和候选同条件原门。首构建不预设额外全局缓存或资源扩张，计实际磁盘/时间后再决定项目专属缓存。当前能力任务product_tests_executed=false，N1原p3/hop红和N2–N5剩余范围均未结案。

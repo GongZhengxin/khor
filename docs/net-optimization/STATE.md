@@ -1,6 +1,8 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-09 06:19 UTC；root串行，无子智能体。活动目标“完成计划”仍active。
+更新：2026-11-09 07:38 UTC；root串行，无子智能体。活动目标“完成计划”仍active。
+
+**当前无在途run；125 refs全部终态。42579909366隔离Linux能力/正常停机/父死清理实际绿。** 下一步将既有netlab可信driver接入该guest，先验证Rust1.95编译与冒烟，再在同aarch64 VZ后端串行重跑基线/候选原门。能力绿没有执行产品测试，N0–N5整体仍未完成。完整证据见末尾接续。
 完整范围：[PLAN](PLAN.md)；约束：[REQUIREMENTS](REQUIREMENTS.md)；运行记录：[RUNS](RUNS.md)；原始结果：[REPORT](REPORT.md)。
 此前STATE原样归档[Accepted轮历史](HISTORY-20261109-before-accepted-green.md)与[本轮历史](HISTORY-20261109-before-probe-green.md)；历史在途/候选文字仅代表当时状态，恢复以本页和实际工作区为准。
 
@@ -12,10 +14,10 @@
 
 | 用途 | 位置 / 当前基准 |
 | --- | --- |
-| 产品 | `/Volumes/disk0/Khor/worktrees/current/khor-net`，`feat/net`；最新已验证生产d4a2e115b898fc337f5091b51fa71e45740c667f；随后只有证据/计划文档提交，恢复核HEAD/diff |
-| 控制 | `/Volumes/disk0/Khor/worktrees/current/khor-build-net`，`feat/net`，0cff9671fb2f80945423132e0df46995f6ff3198已push，现场clean |
+| 产品 | `/Volumes/disk0/Khor/worktrees/current/khor-net`，`feat/net`；最新已验证生产d4a2e115b898fc337f5091b51fa71e45740c667f；随后有文档和scripts/dev.py VZ专用调度；生产网络未改，恢复核HEAD/diff |
+| 控制 | `/Volumes/disk0/Khor/worktrees/current/khor-build-net`，`feat/net`，bedd8960d8a11ebb3263eda0f24bec9e5d9a774d已push，现场clean；9个controller stdlib测试绿 |
 | 基线 | `/Volumes/disk0/Khor/worktrees/current/khor-net-baseline`，detached6485cb83d3b1f0bb93d4633825dc956623d78af9；仅paths/hop/lab/nat.rs、dev.py/netlab.sh六fixture，生产原样 |
-| 证据 | `/Volumes/disk0/Khor/evidence/net/`；source-refs.json现121条不可变refs，全部终态；本轮121个REF:source逐项复核一致，无活动run |
+| 证据 | `/Volumes/disk0/Khor/evidence/net/`；source-refs.json现125条不可变refs，已逐一核REF:source且全部终态；123–125复用6a046588源码，不重复拥有原源/bundle分支 |
 
 ## N2本轮：普通wire覆盖与配对探针三红→绿
 
@@ -67,7 +69,7 @@ root fmt/编译/校准1pass、三轮各2pass（167.64/167.09/167.29秒）；704�
 托管Linux prepare因GitHub账单/额度拒绝（42545673450两attempt、42545712302，无步骤/产品测试/source artifact）；已异步询问额度或已有Linux通道，未有回复，不改账单/采购。直接SSH macserver原iroh-ssh路由banner超时，未改路由/信任。
 Mac自托管worker已实际跑产品，现API Git bundle通道多次验证：私库无父source/bundle快照、64MiB上限；worker按精确GITHUB_SHA取可信bootstrap/driver，校blob/SHA256/snapshot/tree后仅本地Git clone。临时repo-read token不继承Git/prepare/构建。
 沿development.yml、mac-mini-worker单槽，仅net-unit/net-node/net-vendor/net-congestion，Rust1.95/jobs2；原安装guard/内存/空间/缓存策略未改，无个人key/token/签名/模型凭据或生产store。标准executor旧checkout/default inputs保持兼容。
-host实际VZ=1、16GiB/10CPU、约76GB空闲，只有brew，无Lima/QEMU/容器；VM仍是NEXT-DESIGN的候选（固定Lima2.3.0/Ubuntu24.04 checksum，2CPU/6GiB/30GiB、无home/key/agent挂载、前台hostagent归guard）。固定Lima2.3.0原生镜像转换的源码调用链已核，缺qemu-img并非硬依赖；未安装或启动VM，不能说Linux恢复。仍须验证foreground/guard退出清理、资源/隔离配置和实际guest能力探针，且新后端同条件重跑基线/候选。
+host实际VZ=1、16GiB/10CPU，installed guard实际50/40GiB、Mac target100GiB（42573745492采集）；未改policy。项目目录中固定Lima2.3.0/Ubuntu24.04已下载校验并在42579282147实际完成native raw转换、Linux启动与正常lease停机，无helper残留。VM为2CPU/6GiB/30GiB、空host mounts、无个人key/agent/proxy/自动应用端口。42579909366已实际验证guest namespace/veth/netem/nft/conntrack及正常/父死清理（同guard PGID/继承lock fd、Killed controller=-9、双次不同当前boot IID、最终Stopped/无helper）。还没接产品Rust/netlab，因此产品矩阵未恢复；下一步按下方入口推进。
 
 ## 完整未完成范围与下一步
 
@@ -85,7 +87,7 @@ N0部分、N1仍红、N2部分、N3部分、N4未完成、N5部分；完整PLAN�
 
 ## 证据与恢复规则
 
-先核worktree/branch/HEAD/diff、当前run与准确回执；本轮无活动run，继续上述Linux能力探针准备及N2剩余范围，不重发已终态旧run。121 refs已逐项核，source-refs.json全部pending=false。
+先核worktree/branch/HEAD/diff、当前run与准确回执；当前无在途run，不重发旧探针。source-refs.json125条全部终态；每条immutable ref已按实际receipt验证。
 `git rev-parse refs/khor/net-evidence/<run>:source`必须等于回执tree；只git show读容器，不checkout覆盖/push本地证据refs。失败明确分format/compile/fixture/行为/执行器；tests_executed只按实际子集，历史红不删除。
 Mac source/bundle分支只在终态、证据留存且所有权/SHA匹配后清理；复用源的请求不拥有原源分支。原attempt不覆盖。
 外盘缺失只读`git show feat/net:docs/net-optimization/STATE.md`与PLAN；原外盘未提交内容不能按摘要覆盖。其他治理沿中央STATE/RESUME，不混授权。
@@ -123,3 +125,30 @@ control 97334be 添加单独 netlab-vz-probe，沿既有 Mac worker/admission/to
 
 
 42578713267终态 FAILURE，已核准确 source/control/bundle。仅执行器路径红：Lima 的 ssh.sock.1234567890123456 路径107字节，要求<104，未启动VM/未执行产品测试。固定两资产实际下载校验通过，limactl2.3.0，foreground 与 guard 同 PGID；无本次残留且临时状态已清理，owner 下载缓存保留。接续缩短确定性实例名并冻结完整临时socket长度检查；不放宽Linux/产品门。123 refs现全部终态。
+
+
+**42579282147 短实例名重跑在途**：复用42578713267准确 source（baseb56576ce/tree2b5bfce2/snapshot6a046588），control8d3908095aab7484ebfee8b0510edbb22ed5362e；124th ref已锚。完整临时socket路径轻量回归绿，controller8项；不拥有原请求的源码/bundle分支，终态前不得清理共享源。
+
+
+42579282147终态 FAILURE，准确 source/control已核。实际VZ/Linux启动与SSH uname前置成功，native qcow2→raw无QEMU成功；正常 lease EOF→force stop，Stopped、无本次helper残留、临时状态清理通过。guest能力命令非零但stdout/stderr空且旧驱动未留具体退出码，原因尚未确定；hostagent当时仍初始化step2，不能只凭SSH可用判完整就绪。未跑父死场景/产品。接续按固定Lima boot.sh的当前IID与/run/lima-boot-done一致才就绪，增加输出marker/退出码/trace；controller9项轻量绿。124refs终态，下一run继续复用同准确源，不算产品红绿。
+
+
+**42579909366 当前boot就绪修正探针在途**：复用source6a046588/tree2b5bfce2/baseb56576ce，controlbedd8960d8a11ebb3263eda0f24bec9e5d9a774d，第125个ref已锚；不拥有共享源分支，结果待实际能力/父死清理。
+
+
+## 42579909366 实际能力/清理绿与下一步
+
+source baseb56576ce52c56b4d8c31d84e6618abec662d0cd9、tree2b5bfce2e95c0ef4169a6cb3bd719ba9914d414b、snapshot6a0465886f46b8058eb8cb149d3f4a54584a7c93，controlbedd8960d8a11ebb3263eda0f24bec9e5d9a774d；mac-vz-ready-42579909366保存原始日志/source/config/lifecycle/readiness/command及分类和逐文件SHA256。Linux aarch64 6.8.0-147-generic，非root UID501；unshare -Urn内veth双端UP、netem1ms、nft建表/list、conntrack-L均实际成功。2CPU/6GiB/30GiB，空host mounts，无个人key/agent/proxy/自动应用端口。
+
+正常和parent-death两次当前IID分别iid-1794209554 / iid-1794209580；controller真实SIGKILL=-9，supervisor读lease EOF后stop返回0、foreground同原guard PGID26538、两个实例状态均Stopped，无error/stop_error/cleanup_error。最终无本次helper，清理临时state/tools，固定镜像/工具owner下载缓存保留。installed guard/policy未改；这证明已实测生命周期，不仅是静态flag。**product_tests_executed=false**，不能因此收N1/N2/完整Quality。此前空输出红原因没有单独A/B定因；就绪修正后成功也不把原红改称产品问题。
+
+具体接续（尚未实现，不重复cap探针）：
+1. 沿已验证Mac API bundle/单槽/原guard，显式允许所需netlab task进入VZ，portable task保留原入口。guest复用可信scripts/network.sh的原filter/repeat/gate，不重写产品阈值。source.json/tree/build_commit/control/host与guest环境均留证。
+2. 首次Rust1.95 Linux aarch64构建用固定四个官方component与SHA256；清单已静态取得并核channel manifest，evidence/net/linux-vm-source-audit/linux-rust195-components.json（manifest SHA821ff14e4c4a1cbe1e8915f35aff0a3fbbdf8d293ad48ab8f31e3b0440c581f9、2026-04-16）。尚未下载/执行Linux工具。本机继续source-only。
+3. 源码与可信driver经本次专用输入包传guest，不转个人凭据；产物只取本次report。首构建/冒烟先不设计全局缓存或改installed资源策略；从真实磁盘/耗时证据决定项目专属缓存。保留2CPU/6GiB/30GiB和50/40GiB原guard。
+4. 同新后端基线6485（原六个fixture以外生产不改）与候选严格串行、同配置重跑p3三轮<1秒/CPU0移动/hop无回退原门；旧x86托管Linux结果不能与aarch64 VZ直接算速度收益。f4s回退仍独立定因。然后最终准确源完整矩阵与N2–N5剩余范围，真机组合已确认，OS/型号待回复。
+
+当前control clean bedd896，产品仅此轮证据/计划文档WIP待提交，生产网络仍d4a2e115。125 refs全终态并逐一核对。无活动VM/远端run；继续实际Linux产品通道，完整goal active。
+
+
+本轮为progress：新取得真实隔离Linux网络能力与正常/父死清理证据；未收完整目标、未设blocked。三次cap run全部终态/下载核验/immutable refs保留后，原owner以精确force-with-lease原子退役共享source/bundle两远端临时分支，ls-remote复核为空；复用请求未单独删除它们。记录vz-probe-source-retirement.json。下一步无需重新索取设备组合或重复能力探针，继续上述产品Linux通道。

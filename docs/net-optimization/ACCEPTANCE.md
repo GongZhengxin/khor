@@ -186,7 +186,7 @@ python3 scripts/dev.py check --task net-congestion --builder-ref feat/net
 
 
 Mac便携网络入口（control6b1616c，已实际执行）通过--executor mac选择同一development.yml，不走托管prepare/retire。
-只允net-unit/net-node/net-vendor/net-congestion，CLI在上传前拒绝netlab/native等；默认standard不新增dispatch input以兼容旧控制main。
+原Mac入口仅允net-unit/net-node/net-vendor/net-congestion；现另加netlab-vz-probe（见末尾实际验证），产品netlab/native仍拒绝；默认standard不新增dispatch input以兼容旧控制main。
 42551075037已实际完成根格式/437Noq，Iroh新故障边界35pass1fail为预期产品红。Mac平台不替代p3<1秒、转发/CPU及全Linux矩阵。
 
 
@@ -235,3 +235,12 @@ Accepted前置42566727617未成立，不能算取消行为红。为让本地调�
 
 2026-11-09用户确认iPhone＋两台处于不同网络的电脑，记为P/A/B；型号/iOS/两电脑OS已异步询问，具体网络和访问条件尚未采集。按P↔A、P↔B、A↔B的双向组合准备跨网冷/暖连接、交互与批量共存、支持的换网/休眠恢复及手机后台开销；这只是设备矩阵确认，不代表已执行或通过。
 实际验收仍绑定准确源码/可信Lab构建，记录三端OS/硬件、网络条件、路径、工作负载、失败/取消/超时和原始数据。采用隔离测试身份/数据，沿既有可信Lab路径，不能以Mac loopback/Noq模型/netlab替代真机或把两电脑OS猜成Linux。原1/3/5规模测试须标明物理设备、独立Node进程和模拟拓扑，不能把用户确认的三台物理设备写成五台。
+
+
+## 隔离Linux能力入口（42579909366）
+
+`python3 scripts/dev.py check --task netlab-vz-probe --executor mac --builder-ref feat/net`：control bedd896，Mac原单槽/guard下启动项目专属Lima2.3.0 VZ，Ubuntu24.04固定镜像，2CPU/6GiB/30GiB，空host mounts/无个人凭据或自动应用端口。先固定完整临时socket<104、当前boot IID就绪、guest实测userns/veth/netem/nft/conntrack、正常和控制器SIGKILL后lease清理、同PGID/lock fd/最终Stopped无helper，才允许后续产品任务接入。
+
+42578713267：socket107字节，VM前失败；42579282147：实际Linux启动/正常清理绿但guest探针空输出非零、完整就绪未证，未验父死；42579909366：所有上述能力/生命周期绿。三run准确tree2b5bfce2/snapshot6a046588，同源不同可信control97334be/8d39080/bedd896；前两红仍保留，不算产品红。最后一次两不同boot IID、真实controller=-9、两个stop rc0、双Stopped、无残留，原始证据在mac-vz-ready-42579909366。
+
+此任务不运行产品编译或测试。Linux aarch64 VZ上的netlab接入、编译及原基线/候选门仍待执行；旧托管Linux硬件/架构不可直接比较。源码/结果回执和正常/失败清理不得因接产品而略过；默认standard仍沿原执行器。用户iPhone/两台异网电脑验收独立保留。
