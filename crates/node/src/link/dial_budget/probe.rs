@@ -3,7 +3,8 @@
 use super::*;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
-const NOT_PROBE: &[u8] = b"HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n";
+const NOT_PROBE: &[u8] =
+    b"HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n";
 const ANSWER: &[u8] = b"HTTP/1.1 204 No Content\r\nConnection: close\r\n\r\n";
 
 struct Probe {
@@ -34,11 +35,9 @@ impl Probe {
         let serving = Aborts(Some(tokio::spawn(async move {
             loop {
                 let (mut stream, _) = listener.accept().await.unwrap();
-                let headers = tokio::time::timeout(
-                    Duration::from_millis(500),
-                    read_headers(&mut stream),
-                )
-                .await;
+                let headers =
+                    tokio::time::timeout(Duration::from_millis(500), read_headers(&mut stream))
+                        .await;
                 let Ok(Some(headers)) = headers else {
                     continue;
                 };
@@ -122,7 +121,10 @@ async fn cancelling_all_relay_probes_closes_their_http_requests() {
     assert!(matches!(asking.0.as_mut().unwrap().await, Err(error) if error.is_cancelled()));
     let closed = slow.closed().await;
     slow.stop().await;
-    assert!(closed, "cancelled relay probe left its HTTP request running");
+    assert!(
+        closed,
+        "cancelled relay probe left its HTTP request running"
+    );
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -157,7 +159,10 @@ async fn cancelling_pairing_also_cancels_its_relay_probe() {
     ep.close().await;
     slow.stop().await;
     assert_eq!(node.wires.counts.snapshot().dial_failed, 0);
-    assert!(closed, "cancelled pairing left its diagnostic probe running");
+    assert!(
+        closed,
+        "cancelled pairing left its diagnostic probe running"
+    );
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -192,5 +197,8 @@ async fn the_first_successful_relay_probe_cancels_slower_requests() {
         Some(true),
         "a stalled first URL must not delay a successful second URL"
     );
-    assert!(closed, "a winning relay probe left a slower HTTP request running");
+    assert!(
+        closed,
+        "a winning relay probe left a slower HTTP request running"
+    );
 }

@@ -108,3 +108,6 @@ Mac source/bundle分支只在终态、证据留存且所有权/SHA匹配后清�
 
 
 **42570381896 Mac net-node探针所有权/首成功三回归在途**：basea2cf865cf1c0f3eb5073ffac5612a8ab8b7a6ae1 clean、treef7d1528532848f0fccbe4b8eb674cc66183982e0、snapshot70ec29da02a513fed7c04e6a8b8810756783bbf6、control0cff9671fb2f80945423132e0df46995f6ff3198；119th ref/mac-probe-owner-red-42570381896已锚。生产pair/doctor原样，旧11+新3待格式/编译/实际前置与红，不能预记行为红。
+
+
+42570381896终态仅**格式门失败**：probe fixture const/timeout布局与assert，远端patch原样应用；source/control/ref已核，119 refs终态，未编译/运行。probe生产仍原样，三行为红尚未取得；下一源继续。
