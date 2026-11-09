@@ -5,7 +5,9 @@
 ## 当前源码与已收齐证据
 
 - **224 Linux/225 Mac同源全绿，冷排序实际红绿闭合**：Turing `turing-20261109T203955Z-d097aa02` 208.58s/原group空；Mac [42695350029](https://github.com/colehank/khor-build/actions/runs/42695350029)。baseb05b5e81b2eafaacbe6d1bcd6f8dbb543973830d/tree8308907bcc420ddd520f34cf441055537e4e0ce8/snapshota6d24403ae447b04b8b4ec08389d55455a56ac9e/control05c8d7c0b792ebc9921f8e6bb907a7b11f0fc8fd。双方fmt/net66+1ignored/hop11/wires11/journal30、Linux预算24（91.94s）/Mac20（49.93s）绿。225完整source/transport/9 control blobs/artifact hashes核；whole新增fixture SHA a0a106ebe2fac9795aa49e4ff1cab49c5b7bbd43bc822d14b3d68a295252bfa2从223逐字未改，proof cold-hop-cost-red-green.json。排序只是N1一项，额外资格/新鲜度/真正全路竞速与实测完整矩阵未完成。
-- **226换网三病例同224准确源在途**：`turing-20261109T204430Z-f7a1f53c`，PID1099027/child1099249；control05c8d7c，已format/编译49.25s后进入真实cases。同source已有根格式与原合同绿，继续校准nft原文/文本与剩余换网业务，不重发。
+- **226换网三病例3/3绿、完整372/372ok**：`turing-20261109T204430Z-f7a1f53c`，同224/225准确source/control，234.69s、rc0、原group空。v4 NAT首B→A675704us，dual874294us，v4-only→v6-only827742us；之后本端23143/24386/22084us。raw/summary/kernel/12个router前后规则/映射与所有输入身份已核，node-roam-calibration.json。实际Khor远端path地址记录v4 NAT 198.18.0.11:50422→…12:11704，dual IPv6前缀变且v4 path…11:41625→…12:29219，family新selected IPv6 …:2::2:60768；不能单靠不同wire id断言重拨或同wire连续。旧nft 0.9.3在Home fullcone map前向stdout输出“warning: stmt ops map have no json callback”，不是空规则；raw/解析错误与独立成功文本均保留，SNAT/fullcone/APDF及Strict masquerade random已核。首样本不是p99/新SLO，NAT-only端口重绑（本机IP不变）仍需独立测试。
+- **227只在根format前置失败，未执行Peer relay病例**：`turing-20261109T205046Z-57cb39ad`，base0cc6ae51/tree8eb26cf3/snapshot8d6a9c3d/controlf4fa74c；43.76s、原group空。5675字节远端format.patch已原样应用，下一准确源继续编译/执行，不算业务红。
+
 - **下一Peer relay移动病例已实现，尚未远端format/编译**：peer_relay_replug_v1，复用f4完整几何/原20ms腿；X/Y经M reported carried连续10s、双向真实marker reads各30、注入前重新连续10s，再M真实换Public IPv4网络，立即双向首业务与各30。最后诊断最多60s是否carried再次连续10s，单独记录，不造新SLO；原1500ms/30s门未改。所有outcomes/kernel/carrier serial/lifecycle留证，profile单病例单线程、360s资源界。共享reads/marker helpers只改测试可见性，诊断传实际case标签防止未来输出混名；旧body/协议不变。
 
 - **Mac控制通道事实**：再次只读SSH握手探针仍banner timeout，macserver别名实际ProxyCommand为/usr/local/bin/iroh-ssh（不是Khor命令），只有该Mac别名；GH guard通道正常，225正在执行。已异步询问可用常规SSH入口/别名，等待期间继续独立网络工作；不是再次等两台设备。
@@ -88,7 +90,7 @@ U13：利用Turing128逻辑CPU、约504GiB RAM加速开发，先减少重复工�
 
 ## 工作区与执行规矩
 
-- 产品：`/Volumes/disk0/Khor/worktrees/current/khor-net`，feat/net；control：`…/khor-build-net`，feat/net，05c8d7c已push。先核实际HEAD/diff；docs提交不改变上面的211/212准确源适用性。
+- 产品：`/Volumes/disk0/Khor/worktrees/current/khor-net`，feat/net；control：`…/khor-build-net`，feat/net，f4fa74c已push。先核实际HEAD/diff；docs提交不改变上面的211/212准确源适用性。
 - 旧baseline `khor-net-baseline` detached6485六fixture WIP、CPU baseline `khor-net-baseline-cpu-v3` detached6485七staged fixture/helper均未触动，原refs/ledger保留。
 - 本机source-only，禁Cargo/Rust/Node/Xcode编译、产品测试、formatter、下载可执行物。只用Git/Python stdlib、脚本stub与数据核；不得改installed policy、ensure-budget、已装App/生产store/其他worktree。
 - Turing root `/tmp/khor-netlab-feat-net-1110`，owned单flock重型槽，Rust1.95/jobs16/nice10，50GiB准入/40GiB stop/90min，计时不并跑编译/其他重负载，无sudo/宿主网络改动，仅user/netns；SSH BatchMode/ForwardAgent=no/StrictHostKeyChecking=yes，不传个人密钥/token/agent/签名/模型凭据。
