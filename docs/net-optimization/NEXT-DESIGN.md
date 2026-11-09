@@ -148,3 +148,6 @@ N3模型校准42559476637已实际取红（类型笔误轮42559155803仅编译�
 客户端call_refreshing现以Op::deadline包住连接/刷新/交换，serve run_handoff_within在请求完整解码后重新取该档位-.5s。只有拒绝TCP连接可刷新重试，连接后一律不因失答/写失败重放。后续贯通需明确caller/serve各自起点和剩余预算，而不是在每层重新开始同一duration；长档仍保留。
 
 RetireUnheard已经同时要求armed、heard_count自请求开始不变、elapsed>=Patience::of(conn).ack，短取消不构成退役证据；不是“所有取消都退役”。后续普通交换的deadline/取消测试应同时证明短取消保留wire/其他并发请求、真实足够久全无收包仍退役。不要以caller到期不是peer失败为由移除F7保护。此核查仅静态，无新端到端运行或期限总链路绿。
+
+
+N3模型校准与v2首批三轮已由42560015454实际通过：704全量请求0失败/超时，摘要与raw逐项一致。当前固定Noq模型的priority效果不一致，先以REPORT基线定位真实Node32席位/content预算和外层流排队；不直接上产品CC/分连接或新权重。N2接续继续遵守上文半关闭/取消/RetireUnheard合同。

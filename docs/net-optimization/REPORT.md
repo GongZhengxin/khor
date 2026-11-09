@@ -88,3 +88,22 @@ controlc6a20c5，单场景顺序三轮，准确tree/snapshot见RUNS。baseline42
 
 
 42555870179 Mac根格式、438Noq/36路径/9选家全绿，准确tree4a9c4d89/snapshotb6a4e924/controldd57be6。37无接收copy快速离开用例从42551075037实际红转绿；有提示/旧包/兜底覆盖保留，Noq2始终启用reporting恢复实际通过。API bundle远端还原源码与可信控制后复用原guard，旧Git HTTPS两attempt执行器失败不记产品红。Linux真实p3与f4s红尚未复验，不代表N1或整计划完成；N3测量记录器只有格式证据。
+
+
+## 2026-11-09：已校准Noq层首批基线
+
+42560015454（tree33d5ef6d47cde04620db1baa470bd7fefdf0c99d、snapshot9a6f9717470e0a741aedbdd9dd1ecf0a32d18fc8、control0cff9671fb2f80945423132e0df46995f6ff3198）在Mac26.6.2 arm64/Rust1.95、2构建任务/测试单线程，根格式/校准1pass、三轮各2pass全绿。
+校准先取得42559476637共享FIFO模型实际红，再只修独立方向派发；模型independent_fifo_v2，记录schema v2。原几何300ms RTT、每向2%损失/20Mbit、200ms队列、20秒bulk、两固定seed保留。没有跨模型计算产品收益，未改产品CC。
+
+704原始请求（每轮235/234/235）、51摘要、15bulk case全部保留，零失败/超时；对每组索引/计数/成功与全尝试分位数从原样本逐项复核。原日志SHA256、合并分位数方法及详细数据在mac-duplex-congestion-42560015454/sample-audit.json。下表合并三轮bulk-echo；吞吐按实际bulk秒数计算范围。
+
+| CC / 优先级 | echo样本 | p95 ms | max ms | bulk Mbit/s范围 |
+| --- | ---: | ---: | ---: | ---: |
+| bbr3 / off | 78 | 449.6 | 710.5 | 9.307–10.742 |
+| bbr3 / on | 75 | 612.4 | 821.1 | 9.310–11.841 |
+| cubic / off | 70 | 890.3 | 1081.8 | 0.322–0.344 |
+| cubic / on | 77 | 389.9 | 808.2 | 0.334–0.338 |
+| newreno / off | 66 | 973.2 | 1108.7 | 0.211–0.245 |
+
+该固定模型下优先级没有呈现一致改善：Cubic尾部下降，BBR3本轮p95反而更高；这是后续定位线索，不是因果置信结论或产品策略选择。各CC固定顺序、同一丢包seed且仅三轮，不能泛化到真实路径。typing各CC159/161样本，screen仅9样本/CC，原样保留但不报p99或尾部SLO。
+下一阶段必须测真实Node准入/排队、SSH/hop外层流、共享/分连接资源公平和后台能耗；N1 Linux原p3/回退红、N2其余边界、N4/N5不由本结果收口。

@@ -15,18 +15,18 @@
 | 产品 | `/Volumes/disk0/Khor/worktrees/current/khor-net`，`feat/net`；恢复核实际HEAD/diff，本轮最后提交将含N3独立方向候选；N2生产为802e13a8+远端格式修正 |
 | 控制 | `/Volumes/disk0/Khor/worktrees/current/khor-build-net`，`feat/net`；0cff9671fb2f80945423132e0df46995f6ff3198已push；历史run各绑定原control |
 | 基线 | `/Volumes/disk0/Khor/worktrees/current/khor-net-baseline`，detached6485cb83d3b1f0bb93d4633825dc956623d78af9；仅paths/hop/lab/nat.rs、dev.py/netlab.sh六fixture；生产原样，现场已复核 |
-| 证据 | `/Volumes/disk0/Khor/evidence/net/`；source-refs.json现106条不可变refs；仅42560015454在途 |
+| 证据 | `/Volumes/disk0/Khor/evidence/net/`；source-refs.json现106条不可变refs，全部已终态；没有在途任务 |
 
-## 当前工作：N3模型校准候选42560015454在途
+## 当前工作：N3校准与三轮完成，下一步贯通N2总预算
 
 **42559476637实际模型红**：base6880d251edd38218007da99c9d070df2dd1957a5 clean、tree751e95115a7fb3a17faca1a5a44129e00a27655c、snapshote851d256586088d589971c2c1cb60f1461233a0c、controle7258e57155da1618f0f3b00fd1e395f481b5f19。
 根格式与congestion目标编译通过，真实UDP校准0pass/1fail：双向各1000B/s、RTT20ms、0损失、队列1秒，正向两个500B，第一包到后反向1B被队头未来包挡住，超过250ms容差。两ignored过滤，零计时轮；完整v2记录器已编译但尚未测量。证据mac-road-model-typed-42559476637已核source/control并下载。
 前42559155803仅新fixture误用u8编译失败，修b"e"后才实际取红，不能混算。
 
 ACCEPTANCE在修改模型前冻结校准协议。当前候选仅改测试道路：每方向一个FIFO派发器，保留每lane序列化/损失/队列/seed，移除跨方向未来due阻塞；标识`independent_fifo_v2`。记录schema仍v2，case/summary/sample均标road_model。
-产品CC/优先级没有调整。control同步该model字段；先要求唯一校准1pass/0fail，再跑三轮ignored完整采样。driver本机桩检查通过：校准红即止，首计时轮红仍保留三轮及最终exit8；不是Rust实测。
-**42560015454 Mac net-congestion在途**：base1478bf9712ad50c00b502c78613cd932f20586b3 clean、tree33d5ef6d47cde04620db1baa470bd7fefdf0c99d、snapshot9a6f9717470e0a741aedbdd9dd1ecf0a32d18fc8、control0cff9671fb2f80945423132e0df46995f6ff3198。
-mac-duplex-congestion-42560015454及106th ref已锚，API请求e7e4871ed8c5478ebcc9022972cb3a0c；先根格式/编译/校准，再三轮计时，结果仍待。恢复只查询该ID，不重复调度。 若format/compile红先按真实类型处理，不冒充模型红。旧shared_fifo_v1结果不能与新模型差值算产品改进。
+**当前独立方向模型已实际校准绿**（旧源42559476637红→本源绿）。产品CC/优先级没有调整。control同步该model字段；先要求唯一校准1pass/0fail，再跑三轮ignored完整采样。driver本机桩检查通过：校准红即止，首计时轮红仍保留三轮及最终exit8；不是Rust实测。
+**42560015454 Mac net-congestion SUCCESS**：base1478bf9712ad50c00b502c78613cd932f20586b3 clean、tree33d5ef6d47cde04620db1baa470bd7fefdf0c99d、snapshot9a6f9717470e0a741aedbdd9dd1ecf0a32d18fc8、control0cff9671fb2f80945423132e0df46995f6ff3198。
+mac-duplex-congestion-42560015454及106th ref已锚，API请求e7e4871ed8c5478ebcc9022972cb3a0c；根格式/编译/校准1pass、三轮各2pass完成（167.64/167.09/167.29秒）；704原始请求/51摘要/15bulk case逐项核计数、索引和分位数，零失败/超时，sample-audit.json已保存。此任务已终态，不重跑。 若format/compile红先按真实类型处理，不冒充模型红。旧shared_fifo_v1结果不能与新模型差值算产品改进。
 
 ## 已取得的本轮真实回归证据
 
@@ -70,7 +70,7 @@ host-capabilities42555870179实际：VZ=1、16GiB/10CPU、约76.2GB空闲，仅b
 
 N0部分、N1仍红、N2部分、N3部分、N4未完成、N5部分。不能用本轮单元或测量器修复结束目标。
 
-1. 先收当前N3独立方向候选校准/完整三轮；失败/超时保留，成功与全尝试结束分布分开、空分布null，不用少量screen样本报p99；它只是Noq模拟层。
+1. N3独立方向模型与三轮已绿，现需用Noq基线定位真实应用排队；后续失败/超时仍须保留，成功与全尝试结束分布分开、空分布null，不用少量screen样本报p99；它只是Noq模拟层。
 2. N2接续另核IPC正常半关闭不等于取消；RetireUnheard已有完全无收包+Patience.ack门，具体hash/摘录见deadline-continuation-20261109与NEXT-DESIGN，未新增运行。N2除已绿normal/early锁准入外：hop准备、拨号自身裁剪/CallerExpired分类、普通交换/一次读重试总期限、Accepted后Aborts回答取消、长操作档位和并发/输者释放仍缺。按Op原30/300/3600真实deadline贯通，不能把长CodeServe/transfer压成28秒。hop3秒为两个middle合计；取消不计peer故障，真实RetireUnheard仍保留。七类合同在ACCEPTANCE，具体调用链NEXT-DESIGN。
 3. N1先恢复Linux能力，独立定因f4s再原门复验与最终完整矩阵。Linux新VM尚是设计，不跳过能力预检/基线。
 4. N3真实Node32席位/content独立32预算、Custom1024帧/256KiB外层队列、SSH/hop排队/公平、共享vs分连接、1/3/5设备后台与手机能耗仍缺。不能把增加总资源当调度胜出或Noq模拟当Node SLO。
@@ -79,7 +79,13 @@ N0部分、N1仍红、N2部分、N3部分、N4未完成、N5部分。不能用�
 
 ## 证据与恢复
 
-先核worktree/branch/HEAD/diff、当前run与准确回执，不按摘要覆盖未提交内容，不重发活动run。source-refs.json现106项，42560015454 pending；其余终态。
+先核worktree/branch/HEAD/diff、当前run与准确回执，不按摘要覆盖未提交内容，不重发活动run。source-refs.json现106项全部终态，全部REF:source逐一复核等于回执tree；没有活动任务。
 git rev-parse refs/khor/net-evidence/<run>:source必须等于回执tree；只git show读容器，不checkout覆盖或push本地证据refs。账单/checkout失败均tests_executed=false，校验成功但format/compile失败与真实行为红分开。
 Mac源/bundle分支只在终态、证据已留、所有权/SHA匹配后清理；复用源的请求不拥有原源分支。原attempt记录不覆盖。
 外盘缺失只读git show feat/net:docs/net-optimization/STATE.md和PLAN；原外盘未提交内容不能按摘要覆盖。其他治理继续中央STATE/RESUME，不混授权。
+
+## 本轮收尾与下次具体入口
+
+42560015454的v2 Noq样本仅此固定300ms/2%/20Mbit/200ms、三轮同seed，非产品SLO。合并bulk-echo p95：Cubic普通890.3ms/优先389.9ms，BBR3普通449.6ms/优先612.4ms；不能据此宣称优先级总能改善或修改产品CC。吞吐范围及样本量见REPORT；每CC screen仅9样本，不报p99/置信尾部。
+当前link.rs Git blob与42558820303相同，两个vendor目录tree与42555870179相同，applicability.json保存适用范围；没有把这些局部绿当最终完整Quality。
+下一步先按NEXT-DESIGN/ACCEPTANCE推进N2真实Op截止点贯通：保持IPC正常半关闭和长档位，覆盖hop准备/拨号截断分类、普通交换/一次读重试、Accepted回答取消与其他并发请求独立。并行的逻辑设计可继续N3真实Node/SSH/hop排队；Linux/VZ仍未实施、N1原红须恢复后复验、N4/N5仍未完成。goal保持active，不标complete或因额度问题整体blocked。
