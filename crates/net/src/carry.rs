@@ -962,6 +962,65 @@ mod tests {
         assert_eq!(id_of(&CustomAddr::from((CARRY, &[1u8, 2][..]))), None);
     }
 
+    /// Detaching or replacing a link must stop its owned I/O even when
+    /// the peer does not drain an already-blocked write. The replacement
+    /// remains usable when the old task completes.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn a_blocked_carrier_stops_on_detach_or_replacement() {
+        let mut stopped_before_remote_closed = Vec::new();
+        for replace in [false, true] {
+            let links = Links::new(iroh::SecretKey::generate().public());
+            let peer = iroh::SecretKey::generate().public();
+            let via = iroh::SecretKey::generate().public();
+            let carrier = Carrier::Hop { via };
+            let (here, mut remote) = tokio::io::duplex(1);
+            let (r, w) = tokio::io::split(here);
+            let old = links.attach(peer, carrier, r, w);
+            let serial = old.serial();
+            links.lock().get(&peer).unwrap().out.try_send(
+                Bytes::from_static(b"blocked carrier frame"),
+            ).unwrap();
+            let mut byte = [0u8; 1];
+            tokio::time::timeout(Duration::from_secs(1), remote.read_exact(&mut byte))
+                .await.expect("the real writer reached the one-byte pipe").unwrap();
+            assert_eq!(byte, [b'b']);
+            let replacement = if replace {
+                let (next, next_remote) = tokio::io::duplex(64);
+                let (r, w) = tokio::io::split(next);
+                let attached = links.attach(peer, carrier, r, w);
+                assert_ne!(serial, attached.serial());
+                Some((attached, next_remote))
+            } else {
+                assert!(links.detach_attached(&peer, carrier, serial));
+                None
+            };
+            let ended = old.ended();
+            tokio::pin!(ended);
+            let stopped = tokio::time::timeout(Duration::from_secs(1), &mut ended)
+                .await.is_ok();
+            // Clean up the baseline's blocked task before asserting the
+            // failure; closing this peer must not be what makes it pass.
+            drop(remote);
+            if !stopped {
+                tokio::time::timeout(Duration::from_secs(1), &mut ended).await
+                    .expect("baseline I/O ends after its blocked peer closes");
+            }
+            if let Some((attached, next_remote)) = replacement {
+                assert_eq!(links.carrier(&peer), Some(carrier));
+                assert!(links.has(&peer), "old completion cannot remove the replacement");
+                drop(next_remote);
+                tokio::time::timeout(Duration::from_secs(1), attached.ended()).await
+                    .expect("the healthy replacement has its own lifetime");
+            } else {
+                assert!(!links.has(&peer));
+            }
+            eprintln!("[carrier-blocked-owner-contract] replace={replace} old_serial={serial} blocked_write_seen=true stopped_before_remote_closed={stopped}");
+            stopped_before_remote_closed.push(stopped);
+        }
+        assert_eq!(stopped_before_remote_closed, vec![true, true],
+            "both detach and replacement stop the blocked old owner without the peer's help");
+    }
+
     /// A hop whose link ended still reads as the hop until iroh leaves the
     /// carried path, never as ssh (net-e: the three-node test read 「Ssh」
     /// for two seconds after the middle stopped).

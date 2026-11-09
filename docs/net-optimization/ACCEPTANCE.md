@@ -430,3 +430,10 @@ M的eth0真实replug到另一Public IPv4 Router，新接口恢复原20ms链路�
 228实际trace显示：M换网后outer Direct已恢复，inner Custom约15s后消失，X两次比较时所有live Main/Tunnel/served wire均无Custom；现回收仍按Relay记lost十分钟。以同一次、同一组去重live path快照区分Needed（尚被使用/未知）、Unused（所有live wire无Custom，或无live wire）、Outperformed（存在可比较Custom，所有消费者均不再需要）。不要另读两次事实拼成失真的分类。首批只暴露分类并传到release_hop，保留旧退避实现用于取红。
 
 新增真实Links/current attachment合同：传Unused/Relay/两次look，必须确实detach并等到owned stream结束，且不得was_lost。原正控保留：当前Outperformed/Relay仍lost，Outperformed/Direct不lost；旧serial不能撤新owner/写lost，真实共享incoming carried consumer仍Needed。先实际红后最小改release退避条件、同整合同转绿；不改LOST十分钟的已有测量失败门、收益/确认/资源预算、信任或递归规则。两次look的证据类型混合、陈旧/稀疏质量确认仍需独立收敛，不以本项闭合201/208或228全部根因。
+
+
+### N2已阻塞的承载I/O必须随owner回收（运行前冻结）
+
+调用真实Links::attach与write_frames：一字节duplex容量，实际队列写入多字节frame，远端只读一个字节，证明writer已进入、仍不能排空。分别detach当前serial、以同peer/carrier新serial替换；旧Attached::ended必须在远端仍保持不读/不关闭时完成（1s只是合同资源观察界）。先记录是否在关闭远端前完成，再关闭远端并清理旧task；旧源失败时也不能泄漏fixture。替换分支同时证明新serial/新stream仍在、旧task结束不删新owner，最后单独关闭新远端并等待新stream结束。
+
+两分支均运行后再断言，保留mode/serial/blocked-write-seen/stopped-before-peer-close逐条事实。先原实现实际红，再仅加owner专属的停止信号，保证detach/replacement取消该旧读写任务；不改变队列/256KiB容量、QUIC加密/重试/正常半关闭及共享健康连接。不是新的网络延迟SLO；与232/233 unused退避修复分开pin源，实际peer移动仍先测233准确源避免混因果。Mac先跑便携合同以并行利用独立执行器，Turing计时不并跑编译/其他重负载。

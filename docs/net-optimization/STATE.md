@@ -4,6 +4,11 @@
 
 ## 当前源码与已收齐证据
 
+- **233 Linux/234 Mac Unused误退避红绿闭合**：Turing `turing-20261109T212044Z-2cc026f8` 206.42s/原group空；Mac [42701979487](https://github.com/colehank/khor-build/actions/runs/42701979487)，requesta16ca0476b294d2a97f900250ec61af6。base58cb6475/treea11a73fa/snapshot22997314/controle4c58dc准确源相同，双方fmt/net66+1ignored/hop12/wires11/journal30、Linux预算24（91.96s）/Mac20（49.94s）绿；234完整source/transport/9 control blobs/hash核。整个hop tests模块SHA5f2cecfd427d3397c5a7147f1946248f99068e9317a263736b9510a96ff07ccc与232逐字相同，proof unused-hop-release-red-green.json。仅Unused不再lost，Measured原margin/十分钟、两looks/owner guards保留。
+- **235 Peer relay真实移动复验在途（只含Unused修复）**：`turing-20261109T212616Z-b48bf385`，与233/234完整source/control相同，PID1143345；后续本地N2测试/修复不会混入，按同句柄核终态与全部outcomes/最好路独立字段。
+- **下一N2 blocked-owner合同已写，未远端format/编译**：真实1字节duplex阻塞writer、观察detach/replacement旧Attached在远端尚未关闭前是否结束；两分支都记录、失败也显式清理，替换新owner必须仍在。先保持原I/O实现取红。拟由Mac net-unit先跑，Turing只运行235，不污染计时。
+
+
 - **232真实行为红→最小条件修正待验证**：`turing-20261109T211634Z-78586410`，base8a886552/tree11788251/snapshot4b8bc522/controle4c58dc，112.05s、rc101、原group空。fmt/net66+1ignored过；hop11绿1红，真实Links/current owner回收完成而suppressed=true。旧测量Relay/Direct、旧owner与冷排序正反控均绿。候选只在comparison=Outperformed且road=Relay时lost，Unused仍回收但记hop_unused_release；原LOST时长/收益/两look/owner guard不变。整个hop测试模块字节未改，proof unused-hop-release-red-green.json；完整实际移动仍待复验。
 
 
