@@ -108,3 +108,12 @@ Lima v2.3.0树800a96b14e96b5d2ceb20ab2602147c1e79224ea的9份源码逐blob校验
 
 
 42573745492终态 **SUCCESS**：root fmt/net66+1ignored绿，guard两文件大小/SHA256已核，准确tree919008b6/snapshot2d69c1a1/control60821acc已核，122 refs终态。实际installed guard SHA998f5723eb447a1634411397c18a524e5ed0d50bd6dbd81001a16626219f64eb：准入50GiB、运行中止40GiB、Mac target100GiB，非此前文档35/20；当前free72254976000B，VZ=1/16GiB/10CPU。guard对子命令start_new_session/pass lock fd，TERM后10秒KILL整个PGID，但leader已退出则不杀；据此VM需foreground同组及lease supervisor闭合父死清理，不能只依赖正常finally。未启动VM或Node/完整测试。
+
+
+## 隔离 VZ 能力候选（实际启动前）
+
+control 97334be 添加单独 netlab-vz-probe，沿既有 Mac worker/admission/token 剥离通道；本机只做 Python stdlib 7 生命周期/隔离测试、bootstrap 3、client 14 和 Bash/YAML/Python 语法检查。固定 Lima 2.3.0 / Ubuntu 24.04 20261017 校验和，2 CPU / 6 GiB / 30 GiB；项目 owner/run 目录、空 mounts、关闭个人 key/agent/proxy/containerd/全部自动应用端口转发，保留仅 VM 管理 SSH。本地镜像下载由 owner 缓存校验，未用不受支持的 LIMA_CACHE_HOME；Lima 固定版本本地镜像分支不写全局下载缓存。工具只在远端运行。
+
+验收先固定为：准确 source/control；installed guard SHA/fd；foreground 同 PGID；guest 实际 Linux/userns/veth/netem/nft/conntrack；正常停机；杀死测试 controller 后 pipe EOF 触发 supervisor 停机；无本次 helper 残留才清理本次临时状态。supervisor 持 admission fd，避免 controller 先死释放单槽；不改 installed guard/空间策略，不调用 ensure-budget。不挂载宿主目录、不编译产品，product_tests_executed=false。能力或生命周期红独立归执行环境，不计产品红/绿。通过后仍须同新后端重跑基线和候选，原门不改。
+
+产品 scripts/dev.py 只增加该 task 的 Mac 专用调度与回执检查；生产网络仍 d4a2e115 的已验证实现。待推控制后提交此次客户端/计划，再 dispatch；恢复以实际 run/receipt 为准，不重复提交。

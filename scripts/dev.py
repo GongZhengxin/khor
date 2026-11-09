@@ -150,8 +150,10 @@ def _upload_source_bundle(info):
 
 def submit(args):
     executor = getattr(args, "executor", "standard")
-    if executor == "mac" and args.task not in {"net-unit", "net-node", "net-vendor", "net-congestion"}:
-        raise ValueError("The Mac network executor supports portable network tasks, not Linux netlab or native tasks")
+    if executor == "mac" and args.task not in {"net-unit", "net-node", "net-vendor", "net-congestion", "netlab-vz-probe"}:
+        raise ValueError("The Mac network executor supports portable network tasks and the VZ capability probe, not native tasks")
+    if args.task == "netlab-vz-probe" and executor != "mac":
+        raise ValueError("The VZ capability probe requires --executor mac")
     repository = args.builder_repo
     if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repository):
         raise ValueError("Expected owner/repository")
@@ -246,9 +248,9 @@ def main():
     config.add_argument("--restore", action="store_true")
     config.add_argument("--install-command", action="store_true", help="Also install ~/.local/bin/khor-dev")
     check = sub.add_parser("check", help="Submit a tracked WIP snapshot asynchronously")
-    check.add_argument("--task", choices=["fast", "native", "lab", "resolve", "updates", "ios-lab-prepare", "ios-lab", "ios-keyboard", "net-unit", "net-node", "net-vendor", "net-congestion", "netlab-smoke", "netlab-dynamic", "netlab-compare", "netlab-hop", "netlab-recovery", "netlab-stability", "netlab-stalls", "netlab-diagnostic", "netlab-hop-diagnostic", "netlab"], default="fast")
+    check.add_argument("--task", choices=["fast", "native", "lab", "resolve", "updates", "ios-lab-prepare", "ios-lab", "ios-keyboard", "net-unit", "net-node", "net-vendor", "net-congestion", "netlab-vz-probe", "netlab-smoke", "netlab-dynamic", "netlab-compare", "netlab-hop", "netlab-recovery", "netlab-stability", "netlab-stalls", "netlab-diagnostic", "netlab-hop-diagnostic", "netlab"], default="fast")
     check.add_argument("--executor", choices=["standard", "mac"], default="standard",
-                       help="Use the existing Mac worker for portable network checks")
+                       help="Use the existing Mac worker for portable checks or the isolated VZ capability probe")
     check.add_argument("--builder-ref", default="main", help="Control workflow branch; use feat/net for network task development")
     for action in [check, sub.add_parser("status"), sub.add_parser("result")]:
         action.add_argument("--builder-repo", default="colehank/khor-build")

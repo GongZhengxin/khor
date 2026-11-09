@@ -175,8 +175,14 @@ class RemoteDevelopmentTest(unittest.TestCase):
         self.assertNotIn("executor=mac", dispatch)
 
     def test_mac_dispatch_keeps_the_source_receipt_and_selects_the_existing_worker(self):
+        self.assert_mac_dispatch("net-vendor")
+
+    def test_mac_vz_probe_keeps_the_exact_source_and_api_bundle_receipt(self):
+        self.assert_mac_dispatch("netlab-vz-probe")
+
+    def assert_mac_dispatch(self, task):
         request_id = "e" * 32
-        run = dict(databaseId=456, displayTitle="dev net-vendor " + request_id,
+        run = dict(databaseId=456, displayTitle="dev " + task + " " + request_id,
                    url="https://example.invalid/mac-run")
         def command(*args):
             if args[:2] == ("gh", "api"):
@@ -187,7 +193,7 @@ class RemoteDevelopmentTest(unittest.TestCase):
         info = dict(base_commit="b" * 40, tree="c" * 40, snapshot_commit="d" * 40,
                     excluded_untracked_count=0)
         args = SimpleNamespace(builder_repo="private/build", builder_ref="feat/net",
-                               task="net-vendor", executor="mac")
+                               task=task, executor="mac")
         bundle = dict(bundle_blob_sha="1" * 40, bundle_sha256="2" * 64,
                       bundle_ref="dev-bundles/" + request_id)
         with patch.object(dev, "command", side_effect=command) as calls, patch.object(dev, "snapshot", return_value=info), patch.object(dev, "upload_snapshot") as upload, patch.object(dev, "upload_source_bundle", return_value=bundle) as transport, patch.object(dev, "state_dir", return_value=Path("receipts")), patch.object(dev.uuid, "uuid4", return_value=SimpleNamespace(hex=request_id)), contextlib.redirect_stdout(io.StringIO()):
@@ -201,6 +207,7 @@ class RemoteDevelopmentTest(unittest.TestCase):
         self.assertIn("bundle_sha256=" + bundle["bundle_sha256"], dispatch)
         receipt = json.loads((Path("receipts/runs") / (request_id + ".json")).read_text())
         self.assertEqual(receipt["executor"], "mac")
+        self.assertEqual(receipt["task"], task)
         self.assertEqual(receipt["snapshot_commit"], "d" * 40)
         self.assertEqual(receipt["databaseId"], 456)
         self.assertEqual(receipt["bundle_ref"], bundle["bundle_ref"])
@@ -210,6 +217,13 @@ class RemoteDevelopmentTest(unittest.TestCase):
             for task in ["netlab", "netlab-recovery", "native", "lab", "fast"]:
                 with self.subTest(task=task), self.assertRaisesRegex(ValueError, "supports portable"):
                     dev.submit(SimpleNamespace(task=task, executor="mac"))
+        command.assert_not_called()
+        snapshot.assert_not_called()
+
+    def test_vz_probe_requires_mac_before_upload_or_dispatch(self):
+        with patch.object(dev, "command") as command, patch.object(dev, "snapshot") as snapshot:
+            with self.assertRaisesRegex(ValueError, "requires --executor mac"):
+                dev.submit(SimpleNamespace(task="netlab-vz-probe", executor="standard"))
         command.assert_not_called()
         snapshot.assert_not_called()
 
