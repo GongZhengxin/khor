@@ -12767,6 +12767,12 @@ async fn exchange_inner(
             .open_bi()
             .await
             .map_err(|e| Miss::Unreached(msg::cant_reach_named(who, msg::cant_open_stream(e))))?;
+        khor_net::carry::observe_lifecycle(conn.remote_id(), "request_stream_opened", || {
+            serde_json::json!({
+                "wire": conn.stable_id(), "stream": send.id().to_string(),
+                "reading": req.is_reading(), "measurements": khor_net::path::path_facts(conn),
+            })
+        });
         send.write_all(&frame)
             .await
             .map_err(|e| lost(msg::cant_send(e)))?;

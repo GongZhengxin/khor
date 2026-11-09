@@ -1,8 +1,12 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-09 21:46 UTC（本地2026-11-10）。root串行，无子智能体。完整目标仍是“完成计划”N0–N5，未完成；用户明确“继续”并补充U11–U13，当前工作已恢复。用户再次指出不应停止；goal服务的paused只是后台调度状态，不构成本轮停止依据。必须持续推进完整计划，不能在阶段通过后自行停下，也不得伪造complete/blocked或另建目标。速度/体验优先、个人可信设备网；没有合main、发布、中继采购/生产部署授权。
+更新：2026-11-09 21:52 UTC（本地2026-11-10）。root串行，无子智能体。完整目标仍是“完成计划”N0–N5，未完成；用户明确“继续”并补充U11–U13，当前工作已恢复。用户再次指出不应停止；goal服务的paused只是后台调度状态，不构成本轮停止依据。必须持续推进完整计划，不能在阶段通过后自行停下，也不得伪造complete/blocked或另建目标。速度/体验优先、个人可信设备网；没有合main、发布、中继采购/生产部署授权。
 
 ## 当前源码与已收齐证据
+
+- **242 NAT-only真实校准+业务2/2可达绿，最好路不绿**：turing-20261109T214614Z-f70be96f，base d1a7a401/tree0bb908a7/snapshot6833a423/controle4c58dc；138.23s/rc0/原group空。r0同local tuple/同WAN:50001→:50002、kernel两族不变实际1/1；r1全部124/124ok，mapping82ms、remote-first开始紧接+0ms、首BA616119us/其后AB121397us；after AB p50 18186us、BA121073us（before18573/18048us）。nat-rebind-calibration.json核准确source/control/refs/hash/raw/summary/物理；新Direct :50002在B journal +610ms确实opened，但未见selected，另一wire +1501ms仍selected旧:50001。字段new_quic_path_selected=false；不能把它写成完全未发现新端口，不能把业务绿当最优绿。
+- **244 Peer移动实际wire关联在途**：turing-20261109T215036Z-46419d95，与242/243完全同源，含2654 owner停止修复和新outer-wire绑定；PID1170834，按同句柄核终态。原peer_relay_replug_v1全部业务/hold/资源界不变；这轮改源多于Unused单项，不冒称单补丁因果对照。
+- **后续NAT诊断补真实请求wire**：exchange_inner在实际open_bi成功后仅以gated lifecycle记wire/stream ID、reading布尔与path facts，不含请求正文/个人路径/token，不额外probe/持有连接/改变期限重试。它关联使用的Connection，不冒充逐包最终路径。244已pin旧准确源，不混此新增观测。
 
 - **237→239/240 blocked-owner红绿闭合**：240 Turing turing-20261109T214055Z-1eb59ad7实际204.43s/rc0/原group空，与239 Mac完全同source。fmt/net67+1ignored/hop12/wires11/journal30/Linux预算24（91.94s）全部绿；原整个carry tests SHA f6a0e6324d3c2b27763cb80b8e1cb90533727f444dcc521c6742259e20534365与237红相同。blocked-carrier-owner-red-green.json保留准确身份/哈希/双平台结果；只证明blocked stream的owner回收，不替代最优选路验收。
 - **241只在新诊断格式前置失败**：42705246391，完整source/transport/9 control blobs/hash核；尚未编译/执行。远端format.patch原样应用，不计行为回归。接下来NAT r0→r1实际执行与Mac native同源预检可在不同主机并行，Turing仍单重型槽。
