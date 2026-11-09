@@ -25,7 +25,11 @@ fn addresses(dev: &Device, family: &str) -> serde_json::Value {
 fn entry(snapshot: &serde_json::Value, ip: Ipv6Addr) -> Option<(String, serde_json::Value)> {
     for iface in snapshot.as_array()? {
         for info in iface["addr_info"].as_array()? {
-            if info["local"].as_str().and_then(|s| s.parse::<Ipv6Addr>().ok()) == Some(ip) {
+            if info["local"]
+                .as_str()
+                .and_then(|s| s.parse::<Ipv6Addr>().ok())
+                == Some(ip)
+            {
                 return Some((iface["ifname"].as_str()?.to_owned(), info.clone()));
             }
         }
@@ -69,24 +73,34 @@ async fn ipv6_replacement_preserves_ipv4_and_changes_reachability() {
     let left = lab
         .add_router("left")
         .preset(RouterPreset::Public)
+        .ip_support(IpSupport::DualStack)
         .build()
         .await
         .unwrap();
     let right = lab
         .add_router("right")
         .preset(RouterPreset::Public)
+        .ip_support(IpSupport::DualStack)
         .build()
         .await
         .unwrap();
     let a = lab.add_device("a").uplink(left.id()).build().await.unwrap();
-    let b = lab.add_device("b").uplink(right.id()).build().await.unwrap();
+    let b = lab
+        .add_device("b")
+        .uplink(right.id())
+        .build()
+        .await
+        .unwrap();
     let old = a.ip6().expect("dual-stack calibration has IPv6");
     let peer = b.ip6().expect("dual-stack peer has IPv6");
     let v4_peer = b.ip().expect("dual-stack peer has IPv4");
     let (before_v4, before_v6) = snapshot(&a, "before");
     let (interface, info) = entry(&before_v6, old).expect("old address is on the device");
     let prefix = info["prefixlen"].as_u64().unwrap();
-    assert!(prefix <= 120, "room for a second address on the routed prefix");
+    assert!(
+        prefix <= 120,
+        "room for a second address on the routed prefix"
+    );
     let mut octets = old.octets();
     octets[15] ^= 64;
     let new = Ipv6Addr::from(octets);
@@ -99,7 +113,15 @@ async fn ipv6_replacement_preserves_ipv4_and_changes_reachability() {
     let replacement = format!("{new}/{prefix}");
     let output = command(
         &a,
-        &["ip", "-6", "address", "add", &replacement, "dev", &interface],
+        &[
+            "ip",
+            "-6",
+            "address",
+            "add",
+            &replacement,
+            "dev",
+            &interface,
+        ],
     );
     assert!(output.status.success(), "add the owned namespace address");
     let until = Instant::now() + Duration::from_secs(10);
@@ -122,7 +144,10 @@ async fn ipv6_replacement_preserves_ipv4_and_changes_reachability() {
         &a,
         &["ip", "-6", "address", "del", &previous, "dev", &interface],
     );
-    assert!(output.status.success(), "remove only the old namespace address");
+    assert!(
+        output.status.success(),
+        "remove only the old namespace address"
+    );
     let (after_v4, after_v6) = snapshot(&a, "removed");
     assert_eq!(after_v4, before_v4);
     assert!(entry(&after_v6, old).is_none() && entry(&after_v6, new).is_some());
@@ -133,6 +158,8 @@ async fn ipv6_replacement_preserves_ipv4_and_changes_reachability() {
     result(
         s,
         true,
-        format!("{REVISION}: IPv6 {old} -> {new}, IPv4 unchanged; 7 positive, 1 negative packet checks"),
+        format!(
+            "{REVISION}: IPv6 {old} -> {new}, IPv4 unchanged; 7 positive, 1 negative packet checks"
+        ),
     );
 }

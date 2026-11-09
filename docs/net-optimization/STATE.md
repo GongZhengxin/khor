@@ -4,10 +4,12 @@
 
 ## 当前源码与已收齐证据
 
+- **213物理IPv6前置校准的Mac格式预检仅format红，已终态采证**：Mac42681901453/net-unit，base34679e65/treea4bf836c/snapshot3aec9348/control ea97dd4a1d7d10b92b8201c4b49adba518ad9d66。新ignored mobility.rs排版而非编译/物理校准失败；完整source/transport/9 control blobs/hash核，原format.patch已应用。两Router另显式DualStack以满足冻结几何。尚无Linux运行，不预记物理成功；接下来新准确source先Mac format/net-unit，再同源Turing netlab-mobility-calibrate。新profile只fresh namespace内地址加/DAD/删，三阶段kernel JSON+8packet检查（7正1负），不当Node/手机迁移验收。control8 Python stub/Git数据检查绿，jobs/原profiles/产品策略不改。响应U12先补N0注入前置，完整N1不缩。
+
 - **最新功能10ae1ca0：稳定接口通知不被无关候选更新推迟**。Interfaces::saw在filtered set等于seen时直接返回，仅真正新集合重置原1秒settle。生产文件只增加四行guard，210整个fixture逐字不变；空网/同址恢复、回到已通知集合、Local↔QAD来源翻转原合同保留。
 - **210真实红→211 Linux/212 Mac同完整source绿**：210 `turing-20261109T185254Z-88fdeca5`，base16a0bafc/treee6aebe0c/snapshotcbbbac6f，fmt/net66+1ignored/hop10/wires11过，journal29过1红、118.09s、原group空；first IPv6变化/IPv4保持iteration失败，reverse未到。211 `turing-20261109T190201Z-d70459fa` 与212 Mac42679667230完整source相同：base10ae1ca0b0935f8b72e78aab89a65c1932a6333b/tree00ca0b6f31322d551402610b7b38d5dd8a7e48da/snapshotaa259f3d1376aa9a2e96a0cb257d336eb20a57e6，control9135b6d4311ce74ee3a90dac188f4b094f780e35。
 - 211 root fmt/net66+1ignored/hop10/wires11/**journal30/Linux24**（91.86s）全过，206.47s、原group空；212同源root fmt/net66+1ignored/hop10/wires11/**journal30/Mac20**（50.06s）全过，完整source/transport/9 control blobs/artifact hashes核。整fixture SHA `d66be0e62f349d2298d666c8470e09403f4bee6b53832d9e2fbf9f839315a822`；整生产文件除四行guard外逐字不变，proof `stable-interface-red210-green211-212.json`。green两族iteration均到；不是物理重编号、真跨网或手机能耗证明。
-- **当前没有在途任务**：211/212终态完整采证，queue空；`source-refs-audit-20261109-interface-green-212.json`已逐run核全部212 snapshot/tree refs。任何后续恢复先查实际句柄/branch/diff，不按摘要重发。
+- **211/212均已收齐**（213新任务见首条）：211/212终态完整采证，queue空；`source-refs-audit-20261109-interface-green-212.json`已逐run核全部212 snapshot/tree refs。任何后续恢复先查实际句柄/branch/diff，不按摘要重发。
 
 ## Peer relay与速度仍待收口
 

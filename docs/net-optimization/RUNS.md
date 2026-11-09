@@ -736,3 +736,6 @@ Turing `turing-20261109T175508Z-912bcc0c`，base9c2e73488723fc550d335883e96eba78
 
 
 211/212准确功能10ae1ca0已同源全绿：tree00ca0b6f31322d551402610b7b38d5dd8a7e48da/snapshotaa259f3d1376aa9a2e96a0cb257d336eb20a57e6/control9135b6d4311ce74ee3a90dac188f4b094f780e35。211 Turing206.47秒、原group空，fmt/net66+1ignored/hop10/wires11/journal30/Linux24（91.86s）；212 Mac42679667230 fmt/net66+1ignored/hop10/wires11/journal30/Mac20（50.06s），完整source/transport/9 control blobs/hash核。210整个新fixture逐字不变，整生产journal文件仅四行guard，proof stable-interface-red210-green211-212.json；green两地址族iteration均执行，red首次IPv6 iteration失败。不是实际重编号/真跨网/能耗证明。全部212 refs batch核、无pending，queue空。
+
+
+213 Mac42681901453，base34679e65/treea4bf836c/snapshot3aec9348/control ea97dd4a：新IPv6物理校准fixture只有format红，无编译/物理执行；完整source/transport/9 control blobs/hash核，原patch应用。两Public router显式DualStack后新准确source再先Mac预检；原source ref/input保留，不计产品缺陷或物理失败。
