@@ -248,3 +248,6 @@ CPU169未进入测量：真实Node CPU admission返回无路径ENOENT，不能�
 用户U11/U12要求把peer relay和移动IPv4/IPv6变化作为完整最优连接验收，U13要求利用Turing加速。补充要求已入PLAN/REQUIREMENTS/ACCEPTANCE，均不以单middle/IPv4-only实验替代。210在原生产Interfaces/interface_addrs上实际29旧合同绿、新1红：接口集稳定时，QAD-only候选更新仍把原1秒通知期限往后移。功能10ae1ca0仅让相同seen集合不重置timer；211 Linux/212 Mac同准确source原整fixture转绿（journal30、预算24/20）。原1秒和空网/同址恢复/来源翻转合同保持；物理移动与手机仍待。
 
 Turing稳定源码缓存首/复用同快照206/207均fmt/net66+1ignored绿，build17.05→0.41秒，总51.52→35.84秒；jobs16和网络门不动，一组对照不外推普遍加速。Peer relay201参考9/9与205/208诊断各3/3虽全请求成功，仍见慢轮/双向不对称和208当前owner在稀疏质量下释放再重建；当前公式不要求selected反向显著更快，置信/候选试用/成本回收须继续设计验证。完整N0–N5未完成，证据与限制见STATE及原始报告。
+
+
+215进一步取得物理前置：fresh双栈namespace真实IPv6同/64换址，三阶段内核记录确认旧址退出、新址存在且可达，IPv4地址及连通性保持；8packet正反控制全过。该校准为后续Node迁移实验建立注入几何，不冒充业务恢复或手机体验；IPv4/NAT映射、IPv6前缀变化、peer-relay移动、实际macserver↔Turing与iPhone仍未完成。执行器format错误路径也经小Git/stub合同红→绿，避免formatter污染稳定源码缓存；后续新mobility Linux任务自行先格式检查，减少不必要跨机往返。

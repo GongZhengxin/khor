@@ -739,3 +739,8 @@ Turing `turing-20261109T175508Z-912bcc0c`，base9c2e73488723fc550d335883e96eba78
 
 
 213 Mac42681901453，base34679e65/treea4bf836c/snapshot3aec9348/control ea97dd4a：新IPv6物理校准fixture只有format红，无编译/物理执行；完整source/transport/9 control blobs/hash核，原patch应用。两Public router显式DualStack后新准确source再先Mac预检；原source ref/input保留，不计产品缺陷或物理失败。
+
+
+214 Mac42682546955：base89725161/treeb1ed82c5/snapshotba0e5d7f/control ea97dd4a，root fmt/net66+1ignored绿，完整source/transport/9 control blobs/hash核，无CLI物理执行。215 `turing-20261109T192606Z-22c24322`同完整source/control f5838d7d5398da99786108face83bd8f204d8c35，75.90秒、原group空，fmt/CLI编译/物理校准1/1。实际IPv6 `2001:db8:1:1::2`→`…::42`同/64，三kernel snapshot与8packet（7正1预期不可达）逐项核，IPv4 JSON相同且仍通；cache事后tracked clean。proof ipv6-renumber-calibration.json。地址ready不独立证明DAD流程；不是Node/QUIC/前缀变化/IPv4 NAT/手机/能耗证据。215 refs snapshot/tree全批核、pending空。
+
+控制f5838d7补format失败路径缓存保护：本机实际小Git＋Python compiler/formatter stubs先见cached源码被format改动红，保持原整fixture后改为一次性副本出patch，bytes/mtime保持并原8控制检查绿；无本机Rust/产品执行。新mobility profile在Linux编译前格式预检，旧timed profiles不加新工作。

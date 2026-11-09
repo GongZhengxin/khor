@@ -295,7 +295,7 @@ journal::watch_ears把完整DirectAddr集合经过interface_addrs过滤，Local�
 
 现有p4只证明地址来源Local↔QAD时不该误报变化，静态观察稳定不等于移动重编号验收。完整IPv4映射、IPv6地址/前缀、独立/同时变化、peer-relay移动与iPhone切网的物理注入/首个业务/最好路/成本矩阵保持未完成。计划中的epoch用于隔离旧结果，不能把健康共享连接跟随任意候选变化全部清掉。roadbook::note_roads记录的是道路类型/RTT成本，不是endpoint拨号地址发布；移动地址的发布/发现链仍须独立跟踪，不将这个方法当覆盖证明。
 
-N4真跨网可优先用公开Node::serve在隔离测试进程内启动resident，Node::open_as观察client复用其IPC，再用Node::invite/pair、devices核public身份、ls_of核指定fixture内容；Node::link::stop_serving在同进程有按home的shutdown door。这样有机会避免CLI keeper子进程的额外收尾，但角色同步、临时ticket私有传递、lease EOF/绝对期限、真正join和owned-root清理仍须合同验证。此处仅API审计/接续建议，没有实现或真跨网运行，不能将首次配对后的读取称为冷网络建连。
+N4真跨网可优先用公开Node::serve在隔离测试进程内启动resident，Node::open_as观察client复用其IPC，再用Node::invite/pair、devices核public身份、ls_of核指定fixture内容；khor_node::link::stop_serving在同进程有按home的shutdown door。这样有机会避免CLI keeper子进程的额外收尾，但角色同步、临时ticket私有传递、lease EOF/绝对期限、真正join和owned-root清理仍须合同验证。此处仅API审计/接续建议，没有实现或真跨网运行，不能将首次配对后的读取称为冷网络建连。
 
 
 ## 208当前owner释放的设计边界（原始数据已留，尚不改策略）
