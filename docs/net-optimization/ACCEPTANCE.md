@@ -168,3 +168,18 @@ hop现有3秒覆盖两个middle合计。is_reading含既有按token去重操作�
 初次复验顺序执行3轮，相同参数、源tree/control/seed均入回执；然后再定义多seed和实际Node负载对照。
 这是baseline记录协议，没有批准新的p95/p99、吞吐/能耗阈值，也不通过改记录、改控制器或增加并发来制造改善。
 样本少只报n/p50/p95/max，不报p99；失败/取消/超时保留在结果里。可信SLO与真机验收仍按PLAN另做。
+
+
+v2测量候选f17b8a31已实现，未编译/运行。cc-sample-v2保存逐次结果，cc-summary-v2区分成功与全部尝试分布，空集合null；
+cc-case-v2保存几何/seed及bulk字节、读取/总case时长和结束原因。每组完整输出后，有错误、零样本、bulk提前结束或零字节使工具失败退出。
+工具绿也只证明该次基本完成，不等于吞吐/交互SLO。失败之后其余controller和重复轮仍尽量继续保留。
+
+control 6447289f4f9260df4f5887adc7c1e2f2270bbcce已push feat/net，新增入口：
+
+```sh
+python3 scripts/dev.py check --task net-congestion --builder-ref feat/net
+```
+
+这是底层Noq loopback UDP模拟，顺序3轮，每轮--ignored --nocapture --test-threads=1，固定默认几何并清除继承CC_ONLY，
+保存congestion-N.log和measurement-mode。它不走namespace前置，不代表netlab或实际Node/SSH/hop已通过。
+本机仅用Python桩验证driver，未运行真实Cargo/Rust、格式器或测量。远端恢复后须先格式/编译，再核原始记录，不能直接收口N3。

@@ -73,7 +73,7 @@ f4s回退先在现有三端诊断中关联回退时Silence/Reading/副本/实际
 | Node::handle每连接32个处理席位，accept_bi后先acquire再读请求 | 长请求占满席位时，短控制/目录请求在哪一段等待 | 先分清准入排队与网络排队；仅加QUIC stream priority不能解决席位等待 |
 | content Window/Record另有32个响应预算，并会提前放掉普通seat | 单独测内容读取及其他bulk，记录permit拒绝/持有时长与内存 | 不假定所有bulk都共享一种席位；不盲目再加同用途Semaphore |
 | Custom承载1024帧队列、256KiB BufWriter，满则丢；write_frames尽量排空后flush | SSH/hop外层慢读时的队列深度、丢包、flush间隔与交互尾部 | 测外层按序阻塞与内部流优先级的边界，不能把1024帧当固定字节上限 |
-| 现congestion测量有固定丢包seed、bulk+250ms echo、priority与idle→burst | 先按当前精确源复跑，再加真实Node/SSH/hop端到端请求 | 该ignored测量目前不在network profiles，历史BBR结果不是当前N3通过证据 |
+| 现congestion测量有固定丢包seed、bulk+250ms echo、priority与idle→burst | 先按当前精确源复跑，再加真实Node/SSH/hop端到端请求 | 已接入net-congestion三轮profile和v2完整记录候选，尚未编译/执行，不是N3通过证据 |
 
 第一轮比较固定相同路径/带宽/队列/损失、相同工作量：无bulk、原共享连接、共享连接调度/背压候选、有限分连接。
 每组记录首份内容、echo所有样本/失败/取消、批量字节与完成时间、队列/permit/重传/总开销；报告p50/p95/max和样本量，样本不足不报p99。

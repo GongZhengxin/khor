@@ -374,3 +374,9 @@ N2–N4只读复核已记NEXT-DESIGN，八文件blob收据design-source-audit-20
 
 42545673450同源attempt2重新验证执行通道，prepare128936767186再次账单/额度拒绝（runner_id=0、零steps），network skipped；无编译/测试，不含本轮新增Noq2回归。完整attempt2原始状态/annotation和分类已存current-copy-hint-red-42545673450/attempt-2，原attempt1证据不覆盖。没有新source ref或在途任务。
 N3底层congestion采样v2在改记录前冻结到ACCEPTANCE：保留每个echo/typing/screen的结果，成功/失败/超时与成功分布分开，默认几何/seed/工作量不变，实际Node/能耗与SLO仍独立。未改benchmark实现或运行该测量。
+
+
+N3记录候选f17b8a31在f0be88d4协议冻结后实现；完整记录echo/typing/screen与bulk结果，失败/超时不筛走、空分布null。
+control 6447289f4f9260df4f5887adc7c1e2f2270bbcce已push并核远端SHA一致，net-congestion三轮Noq模拟，未调度。
+本机driver桩测试1项证明首轮失败后另两轮继续/保留且最终exit8；prepare1项、产品remote_development9项及bash-n/diff-check通过。
+没有执行Cargo/Rust，格式/编译、Noq2新回归及真实拥塞数字仍缺；没有source run ref或SLO通过。baseline同步dev.py选项后仍只有六fixture修改，生产原样。

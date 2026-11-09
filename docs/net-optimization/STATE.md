@@ -13,8 +13,8 @@ Linux重型用私库khor-build GitHub network job；Mac沿既有macserver lane�
 
 | 用途 | 位置 / 分支 |
 | --- | --- |
-| 产品 | `/Volumes/disk0/Khor/worktrees/current/khor-net`，`feat/net`；源码检查点33202c22（之后文档更新，实际HEAD恢复时核对） |
-| 控制 | `/Volumes/disk0/Khor/worktrees/current/khor-build-net`，`feat/net`；c68b644fdd9494fec001132c40961ab634c423a2已push |
+| 产品 | `/Volumes/disk0/Khor/worktrees/current/khor-net`，`feat/net`；源码检查点f17b8a31（之后文档更新，实际HEAD恢复时核对） |
+| 控制 | `/Volumes/disk0/Khor/worktrees/current/khor-build-net`，`feat/net`；6447289f4f9260df4f5887adc7c1e2f2270bbcce已push（历史run仍绑定c68b644） |
 | 基线 | `/Volumes/disk0/Khor/worktrees/current/khor-net-baseline`，detached6485cb83d3b1f0bb93d4633825dc956623d78af9；只有paths/hop/lab/nat.rs、dev.py/netlab.sh六文件fixture修改；生产原样 |
 | 证据 | `/Volumes/disk0/Khor/evidence/net/` |
 
@@ -95,8 +95,20 @@ N0部分、**N1仍红**、N2–N4未完成、N5部分。不能用一批单元或
 N5继续核完Noq1/2/5的固定1.4.0相关调用链，包checksum复验通过，逐文件hash/行号摘录另存noq-1-2-5-call-chains，详细结论见UPSTREAM。
 新增Noq2始终启用地址报告的0-RTT握手测试；它补原accepted在恢复时禁用报告的盲区，仅测试、未编译/执行，不记438通过或旧源红。
 现有Noq437绿仍绑定旧快照，新增用例不在其中。37条件分支仍未改；下一次vendor任务需先分别确认Noq新增覆盖与Iroh预期红。
-另外N3既有ignored congestion工具只保留成功echo，失败被丢且成功数标签叫asked；ACCEPTANCE已在改记录前冻结v2完整采样协议，下一轮修测量，不能用它当前摘要证明无错误/长尾。
+另外N3既有ignored congestion工具只保留成功echo，失败被丢且成功数标签叫asked；ACCEPTANCE已在改记录前冻结v2完整采样协议，本turn随后完成v2候选，见下文；旧摘要不能证明无错误/长尾。
 
 
 为验证当前可执行性，42545673450于本turn同源重试attempt2：prepare job128936767186再次因账单/额度拒绝，runner_id=0/steps为空；network skipped，无编译/测试。不是新source，也不含本轮Noq2测试。原始run/jobs/annotation和未执行分类保存在原证据目录attempt-2，原attempt1证据保留；没有在途任务。
 执行器阻碍已连续出现两目标turn，但本turn有N5调用链证据/新增协议回归/N3采样协议等实质进展，目标继续active。下轮可先修N3测量记录，禁止仅重复状态/无意义重试；如果之后无可推进工作且同阻碍达阈值，再按规则blocked。
+
+
+## N3记录候选f17b8a31（未远端编译/执行）
+
+在f0be88d4冻结v2协议后，更新congestion.rs：每个echo/typing/screen保留elapsed+ok/timeout/错误阶段，
+成功延迟与全部尝试结束时间分开，空成功分布null；bulk有字节/真实时长/结束原因。记录在计时阶段后输出，保留默认工作量/seed。
+所有controller/轮输出后，对请求错误或不完整bulk失败退出；没有性能数字或新性能门槛。只改测量与脚本，未改生产选路/预算或37分支。
+control 6447289f4f9260df4f5887adc7c1e2f2270bbcce的net-congestion已push并核远端SHA一致：Noq模拟、1线程3轮、默认几何、独立log、slo=false。
+本机driver桩测试1项通过，证明首轮失败仍执行后两轮并保留最终exit8；prepare1项、产品remote_development9项及bash-n/diff-check通过。
+这些是脚本检查；Rust格式/编译、Noq2新用例与真实congestion都未运行。没有新run，不增加94 refs或已通过数字。
+产品dev.py新选项已同步baseline，仍仅原六fixture，生产6485原样；baca306旧快照不改写。N3与N5新增代码仍待远端验证。
+下一步仍先取得37实际红；之后Noq2/N3格式/编译、原recovery/stalls/hop和最终矩阵，N2–N5全范围保留。
