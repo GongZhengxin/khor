@@ -4,6 +4,8 @@
 
 ## 当前源码与已收齐证据
 
+- **219换网三病例首次仅格式前置失败**：`turing-20261109T202300Z-a9fe0a06`，43.85s、rc1、原group空；准确base38f92150/tree304d4a06/snapshot3750cf89/control05c8d7c0b792ebc9921f8e6bb907a7b11f0fc8fd完整采证，未编译或执行病例。8670字节远端format.patch已原样应用；下一准确源继续执行，旧case门未放宽。
+
 - **218 Node双向/Remote-first两病例2/2绿**：`turing-20261109T201549Z-d2c3d29c`，140.30s、rc0、原group空；basecb1a9089/tree9cc2dfd5/snapshot4e577020/control7277b8ee27df630090deeb497c02a5b813cb77fe准确身份、refs/hash核。248/248全ok，raw与summary/物理IPv6/IPv4不变/nft/最后ping正负控均核。Both首AB584118us/BA1404254us；Remote-first B→A1435327us，A→B21459us且其start确在B finished后（删旧+1638ms，含reads原200ms间隔）。proof node-mobility-calibration.json；不冒称静默网络/新SLO/最优体验。
 - **下一换网三病例已冻结并实现，尚未远端format/编译**：node_replug_triad_v1复用原eth0.replug，IPv4 NAT→另一NAT、双栈同时换prefix/IPv4、IPv4-only→IPv6-only。before/after完整双向n30+remote-first，实际kernel/NAT rules和独立UDP映射正控；不先用probe帮助首业务恢复。原IPv6 pair协议保留。
 
