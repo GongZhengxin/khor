@@ -26,6 +26,9 @@ use patchbay::Lab;
 use crate::lab::{mesh, node, relay, result, sample_diagnostics, slow, word};
 use crate::nat::{Net, router};
 
+#[path = "hop/reference.rs"]
+mod reference;
+
 /// Each machine's own link: 10 ms each way, so the legs are measurable.
 const LEG: Duration = Duration::from_millis(20);
 
@@ -292,11 +295,10 @@ fn hop_diagnostics(x: &crate::lab::LabNode, y: &crate::lab::LabNode, m: &crate::
 /// relay; the phone's carried road through turing is about 20 ms).
 const F4_RELAY_ONE_WAY: u32 = 22;
 
-/// Three machines for f4: X (the phone) and Y (MacLab) behind strict NATs,
-/// M (turing) public; the relay 22 ms each way. Returns once Y rides the
-/// carried road through M to X and held it for 10 s.
-async fn f4_lab(
+/// Shared geometry for f4 and its isolated steady-state references.
+async fn f4_topology(
     s: &str,
+    relay_only: bool,
 ) -> (
     Lab,
     crate::lab::Relay,
@@ -327,8 +329,32 @@ async fn f4_lab(
     let x = node(s, dx, "x", &[&r], &[]).await;
     let y = node(s, dy, "y", &[&r], &[]).await;
     let m = node(s, dm, "m", &[&r], &[]).await;
+    if relay_only {
+        // Before pairing, neither endpoint can ask for or accept a hop.
+        // The public middle stays alive, with the same synchronization work.
+        for n in [&x, &y] {
+            khor_node::config::set(&n.home.0, "peer-hop", "off").unwrap();
+            assert!(!khor_node::config::on(&n.home.0, "peer-hop"));
+            eprintln!("[netlab-isolation] {} peer-hop=off before mesh", n.name);
+        }
+    }
     tokio::time::sleep(Duration::from_secs(5)).await;
     mesh(&[&m, &x, &y]).await;
+    (lab, r, rx, x, y, m)
+}
+
+/// Returns once both reported carried roads have held continuously for 10 s.
+async fn f4_lab(
+    s: &str,
+) -> (
+    Lab,
+    crate::lab::Relay,
+    patchbay::Router,
+    crate::lab::LabNode,
+    crate::lab::LabNode,
+    crate::lab::LabNode,
+) {
+    let (lab, r, rx, x, y, m) = f4_topology(s, false).await;
     let hopped = y
         .until(&x, Duration::from_secs(180), |l| l.hop == Hop::Forwarded)
         .await;

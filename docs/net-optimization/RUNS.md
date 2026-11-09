@@ -690,3 +690,8 @@ N0 v4源码开始记录paths/hop逐次logical_request和f4故障窗口，ignored
 
 
 195th turing-20261109T165750Z-d0af45b2已在193采证后launch **PID808786**，actual /proc/driver核live；准确base467336c2/treecd986018/snapshot503781bc/control39633806，held_precondition_v2独立三轮诊断，非SLO。196th Mac42660197395与195完整source相同，**root fmt/net66+1ignored绿**（0.40s），完整身份/transport/9 control blobs/hash已核。196 refs snapshot/tree全批核，唯一在途195；新CLI准备助手实际结果待，不重发同run。
+
+
+195th held_precondition_v2终态**3/3绿**，491.06s，准确源/control同196。真实连续hold10444/10460/10455ms后注入，原恢复/稳定门实际过；73/73请求均ok（23/25/25），最大4.043195/3.390784/3.332251秒。完整source/control/bundle/group/九三角色诊断/hash采核；只证明正向准备校准，负向reset/timeout未跑，不是N1或整体SLO完成。
+
+之后新fixture hop_reference_v1与control614c266仅准备同三节点几何的automatic/relay-only/carried-only ignored稳态参照，数字/配置/两方向负载已先冻结ACCEPTANCE；controller6 Python tests为stub绿，尚未远端编译/跑。普通f4几何/hold/故障体纯提取复用，不改政策；正式A/B仍需同fixture重建baseline。

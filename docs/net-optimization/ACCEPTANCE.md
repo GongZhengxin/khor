@@ -334,3 +334,12 @@ paths echo与hop typing每个被实际poll的逻辑目录请求留唯一(pid,att
 190第三轮在观察t0前81.4/54.8秒已由当前owner释放两端载路，旧f4_lab仍因忽略until结果而返回Relay起点；第二轮则根本未进入故障窗口。这些不能当作有效“当前carried发生停顿”的SLO样本。新revision要求初次Y达到carried后，双方reported Forwarded连续10秒，任一丢失重置；原两次60秒等待采用合计120秒绝对期限，包含状态查询。到期标准备失败并保留三方journal/诊断，不注入故障。phase记录hold起止与失败；原故障时长、1500ms恢复、30秒无回退、30秒请求期限保持。
 
 这是准备有效性修正，非放宽恢复门，也不证明reported状态等同独立物理快路；固定好路径参照仍需补。记录held_precondition_v2，未来baseline/candidate须同fixture重跑，旧v3/v4结果保留其当时含义。首次远端运行前，不预记该修正通过。
+
+
+### N0 hop稳态参照 hop_reference_v1（首跑前冻结）
+
+新增独立ignored实验，复用f4的严格IPv4 NAT X/Y、公开M、各设备20ms RTT与同一22ms单向中继几何；原f4故障/断言不变。三组使用同一构建器和负载：automatic（全部候选）、relay-only（配对前在两端scratch设置既有peer-hop=off，M保持在线，保留相同三节点/同步背景）、carried-only（配对完成后在X/Y各自namespace双向阻断唯一relay IP，保留M直连腿）。不冻结中间设备，避免把中间设备宕机恢复成本混入Relay稳态参照；不改产品默认配置/selector/CC。严格NAT无IPv6/共享直连网；每组留隔离配置/实际nft表及双端journal，物理前置不成立独立记校准失败。
+
+三组都先真实建立两个方向的目录请求，再在120秒绝对准备期限内等双端有效路径连续稳定10秒；fixed组必须为所选承载，automatic可为任一实际可用Direct/Relay/Forwarded。准备请求同样记录outcomes、单独setup case；不能将其作为稳态样本。之后Y→X与X→Y各30个原30秒预算目录请求，间隔200ms，按方向保留全部耗时/错误并报告n/p50/p95/max与起止路径；样本少不报p99。首个错误后可停止该方向以控制坏路任务总时长，必须记录已尝试数、失败以及覆盖不足，n不足不能算通过。两方向都尝试，case失败不阻止同run其他reference/repeat。
+
+此实验仅要求准备/隔离有效、完整30×2请求零错误及fixed组末尾仍在目标路径，不新增p95阈值来调参。它提供可达到的稳态操作参照，不是首次拨号、f4故障恢复或能耗验收。控制SSH-only netlab-hop-reference按一线程三轮，sampling diagnostics关闭、非SLO；仍用attempt_outcomes_v4完整性consumer。未来baseline/candidate须同fixture/工具链/负载串行，先看真实数据再决定gain/confidence/清理策略。
