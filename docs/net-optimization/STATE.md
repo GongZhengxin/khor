@@ -4,6 +4,9 @@
 
 ## 当前源码与已收齐证据
 
+- **238 NAT端口物理校准实际1/1绿，业务未执行**：turing-20261109T213804Z-e0f84b61，31.77s/rc2/原group空；完整source/control/bundle/report哈希采证。固定同一local UDP端口，外部198.18.0.10:50001→:50002、定向conntrack删1条/新1条，设备两族kernel完全相同。r0 Rust成功但没有netlab.sh必需的netlab-result标记，driver正确拒绝无scenario结果并停止；不是产品失败。只补成功assert后的标准结果行，不放宽shell guard/物理协议；继续r0→r1。
+- **239 Mac与240 Turing验证阻塞旧owner修复**：Mac42704634733/requestae61d279a8544af686af7193fdeaf7c0与Turing turing-20261109T214055Z-1eb59ad7，完整source相同base2654cbdf/tree34c8e822/snapshot8c3205d4/controle4c58dc。net-node含原整个carry/hop/wires/journal/budget合同；实际终态待核。当前只有240为Turing重型槽，后续fixture/诊断不混入。
+
 - **237 Mac blocked-owner实际双分支红**：[42703661504](https://github.com/colehank/khor-build/actions/runs/42703661504)，base5b8f2964/tree5350c4f2/snapshot68c9b768/controle4c58dc。root fmt通过、net66绿1红1ignored；真实writer阻塞后，detach/replacement均未在远端关闭前结束（false/false）。完整source/transport/9 control blobs/hash核。候选只给每个Link加入owner独有oneshot，移除/替换自动drop并停止读写；serial guard保留，整个carry tests SHA f6a0e6324d3c2b27763cb80b8e1cb90533727f444dcc521c6742259e20534365逐字不动。尚待同fixture远端绿，不能把它当235慢路根因已定。
 - **235真实Peer relay换网复验：可达绿，最优仍红**：turing-20261109T212616Z-b48bf385，310.96s/rc0/原group空；与233/234完整source/control一致。124/124ok、注入前两次hold10405/10397ms、实际IPv4换网232ms；首AB699996us/BA687733us，before p50 107689/107823us，after154840/154175us，60秒carried_observed_again=false。peer-mobility-calibration.json准确身份/全outcomes/13条非重复lifecycle核；Unused修复尚未解决底层Carried丢失和慢路滞留，继续逐真实外层wire追踪。
 - **238 NAT-only物理校准与业务提交**：turing-20261109T213804Z-e0f84b61，复用235/233准确源，不混本地N2修复；controle4c58dc。沿原r0先物理成功才r1协议，单owned重型槽。实际启动/终态按receipt和进程核。

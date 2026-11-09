@@ -197,6 +197,9 @@ async fn r0_fixed_local_udp_tuple_gets_a_new_external_port() {
     );
     assert_eq!(new, net.mapped(50002));
     assert_eq!(before, after, "neither family nor interface changed");
+    println!(
+        "[netlab-result] {s} | green | nat_port_rebind_calibration_v1 old={old} new={new} addresses_unchanged=true"
+    );
 }
 
 async fn business(
