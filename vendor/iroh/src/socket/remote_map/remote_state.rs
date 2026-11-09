@@ -1218,6 +1218,7 @@ impl RemoteStateActor {
     /// probe timeout ([`Self::probe_others`]).
     fn read_paths(&mut self) -> (Duration, Option<Duration>) {
         let now = Instant::now();
+        let diagnose_tuples = std::env::var_os("KHOR_NET_DIAGNOSTICS").is_some();
         let selected = self.state.selected_path.as_ref();
         let measured = &mut self.state.measured;
         let mut sample = Duration::ZERO;
@@ -1236,6 +1237,17 @@ impl RemoteStateActor {
                 let Some(stats) = conn.path_stats(*path_id) else {
                     continue;
                 };
+                if diagnose_tuples
+                    && let Some(actual) = conn.path(*path_id)
+                        .and_then(|path| path.network_path().ok())
+                        .and_then(|path| self.state.mapped_addrs.to_transport_tuple(&path))
+                    && actual != *tuple
+                {
+                    eprintln!(
+                        "[khor-path-tuple-mismatch] peer={} conn={} path={} cached={:?} actual={:?}",
+                        self.state.endpoint_id, conn_id, path_id, tuple, actual,
+                    );
+                }
                 let key = (*conn_id, *path_id);
                 present.push(key);
                 if let Some(waited) = unanswered_for(&stats, now.into_std()) {

@@ -444,3 +444,6 @@ M的eth0真实replug到另一Public IPv4 Router，新接口恢复原20ms链路�
 peer_relay_replug_v1新增hop_outer_bound把发起端/接收端的attachment serial对应到实际Proto::Tunnel stable wire；middle以incoming/onward wire和splice起止对应两腿。只记ID，不额外持有连接、发probe或改回收/选路。后续request_stream_opened在真实open_bi成功后记录wire/stream ID、reading布尔和当时完整path facts；不记请求正文/token/个人路径。它证明哪条连接被使用及开流时的选路快照，不能冒称逐包最终路径、回复路径或同wire迁移。
 
 NAT另设netlab-nat-rebind-lifecycle诊断profile，沿原r0先物理成功才r1的完整node_nat_port_rebind_v1；所有地址几何、hold/样本/预算/remote-first顺序不变，只在mode显式diagnostic=lifecycle、samples off并保存两个resident日志。原无诊断netlab-nat-rebind保留，诊断数据不可与原正常分布当成同条件性能比较。失败/无新快路仍须分别保留，不能以有日志或可达绿闭合最优路径要求。
+
+
+246真实业务wire中，慢方向已有新:50002路径但所有PathFact.selected=false，另一wire仍selected旧:50001。下一诊断仅在read_paths读取已有stats时、KHOR_NET_DIAGNOSTICS开启时比对Noq path.network_path映射的真实FourTuple与iroh缓存tuple；不一致则记peer/conn/path/cached/actual，不改缓存/测量/选择/发包，不增加timer/probe。用于验证“同一PathId被动迁移后，旧地址缓存和质量仍被使用”的假设；未取得真实不一致前不得据静态怀疑直接修策略。诊断profile非普通性能对照；默认不开日志。
