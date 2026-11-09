@@ -150,10 +150,16 @@ def _upload_source_bundle(info):
 
 def submit(args):
     executor = getattr(args, "executor", "standard")
-    if executor == "mac" and args.task not in {"net-unit", "net-node", "net-vendor", "net-wan-build", "net-wan-lifetime", "net-congestion", "netlab-vz-probe"}:
+    if executor == "mac" and args.task not in {"net-unit", "net-node", "net-vendor", "net-wan-build", "net-wan-lifetime", "net-wan-peer", "net-congestion", "netlab-vz-probe"}:
         raise ValueError("The Mac network executor supports portable network tasks and the VZ capability probe, not native tasks")
     if args.task == "netlab-vz-probe" and executor != "mac":
         raise ValueError("The VZ capability probe requires --executor mac")
+    wan_run_id = getattr(args, "wan_run_id", None)
+    if args.task == "net-wan-peer":
+        if executor != "mac" or not re.fullmatch(r"[0-9a-f]{16}", wan_run_id or ""):
+            raise ValueError("WAN peer requires --executor mac and an owned --wan-run-id")
+    elif wan_run_id:
+        raise ValueError("--wan-run-id is only supported for net-wan-peer")
     repository = args.builder_repo
     if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repository):
         raise ValueError("Expected owner/repository")
@@ -180,6 +186,8 @@ def submit(args):
     if executor == "mac":
         dispatch.extend(["-f", "executor=mac", "-f", "bundle_blob_sha=" + info["bundle_blob_sha"],
                          "-f", "bundle_sha256=" + info["bundle_sha256"]])
+    if wan_run_id:
+        dispatch.extend(["-f", "wan_run_id=" + wan_run_id])
     command(*dispatch)
     for _ in range(20):
         runs = json.loads(command("gh", "run", "list", "--repo", repository, "--workflow", "development.yml",
@@ -248,9 +256,10 @@ def main():
     config.add_argument("--restore", action="store_true")
     config.add_argument("--install-command", action="store_true", help="Also install ~/.local/bin/khor-dev")
     check = sub.add_parser("check", help="Submit a tracked WIP snapshot asynchronously")
-    check.add_argument("--task", choices=["fast", "native", "lab", "resolve", "updates", "ios-lab-prepare", "ios-lab", "ios-keyboard", "net-unit", "net-node", "net-vendor", "net-wan-build", "net-wan-lifetime", "net-congestion", "netlab-vz-probe", "netlab-smoke", "netlab-dynamic", "netlab-compare", "netlab-hop", "netlab-recovery", "netlab-stability", "netlab-stalls", "netlab-diagnostic", "netlab-hop-diagnostic", "netlab"], default="fast")
+    check.add_argument("--task", choices=["fast", "native", "lab", "resolve", "updates", "ios-lab-prepare", "ios-lab", "ios-keyboard", "net-unit", "net-node", "net-vendor", "net-wan-build", "net-wan-lifetime", "net-wan-peer", "net-congestion", "netlab-vz-probe", "netlab-smoke", "netlab-dynamic", "netlab-compare", "netlab-hop", "netlab-recovery", "netlab-stability", "netlab-stalls", "netlab-diagnostic", "netlab-hop-diagnostic", "netlab"], default="fast")
     check.add_argument("--executor", choices=["standard", "mac"], default="standard",
                        help="Use the existing Mac worker for portable checks or the isolated VZ capability probe")
+    check.add_argument("--wan-run-id", help="Owned 16-hex experiment ID for the private WAN peer channel")
     check.add_argument("--builder-ref", default="main", help="Control workflow branch; use feat/net for network task development")
     for action in [check, sub.add_parser("status"), sub.add_parser("result")]:
         action.add_argument("--builder-repo", default="colehank/khor-build")
