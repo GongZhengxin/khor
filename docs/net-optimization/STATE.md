@@ -1,8 +1,13 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-09 18:56 UTC（本地2026-11-10）。root串行，无子智能体。完整目标仍为“完成计划”；用户曾暂停，现明确“继续”并已恢复本轮工作（goal服务18:07仍返回paused，自动跨轮续跑由用户面板控制）；完整N0–N5未完成。速度/体验优先，个人可信设备网；没有合main、发布、中继采购或生产部署授权。
+更新：2026-11-09 19:01 UTC（本地2026-11-10）。root串行，无子智能体。完整目标仍为“完成计划”；用户曾暂停，现明确“继续”并已恢复本轮工作（goal服务18:07仍返回paused，自动跨轮续跑由用户面板控制）；完整N0–N5未完成。速度/体验优先，个人可信设备网；没有合main、发布、中继采购或生产部署授权。
 
 ## 当前执行与下一步
+
+- **210真实生产通知合同红，已完整采证**：`turing-20261109T185254Z-88fdeca5`，118.09s、原group清空；准确base16a0bafc/treee6aebe0c/snapshotcbbbac6f/control9135b6d。fmt/net66+1ignored/hop10/wires11过；journal原29过、新1红，首次IPv6变化/IPv4保持的iteration在原1秒应到时仍不可通知；反向iteration未到。不是编译/format红，dial24未到。整fixture SHA d66be0e62f349d2298d666c8470e09403f4bee6b53832d9e2fbf9f839315a822、所有原日志/身份/hash/group留证。
+- **当前修复候选尚未远端验证**：Interfaces::saw若filtered set等于self.seen直接返回；只有真正新集合才重设原1秒timer。完整210 fixture逐字不变，旧Local/QAD来源翻转、回到已通知集合/空网/同址恢复仍靠原合同回归；不宣称真实移动网/手机验收已做。下一步同准确source Linux net-node＋Mac portable。
+- **208已终态3/3完整采证**：435.58s、192/192全ok、原group空。前/第三轮测量起点仍有双向Carried/Relay不对称；第三轮捕获当前serial1被两次shared_comparison后释放（非189旧owner），测量前31秒，随后重新attach serial2。两次质量的Carried约110.69/109.43ms、Relay132.75/130.88ms，samples分别1/0，age约2/4秒；保留measured-release-trace.json，不据此改gain或冒称201因果已定。N1仍需置信/确认与冷/暖完整候选设计。
+
 
 - **208追加三轮automatic lifecycle诊断运行**：`turing-20261109T184729Z-59b8eed7`，PID969908；同205完整source（d90bf666/9a7bd3d0/1a501da8），control9135b6d4311ce74ee3a90dac188f4b094f780e35；仅执行器稳定源码缓存变化，原负载/窗口不变，不能预记结果。
 - **209 Mac42677483225已终态全绿采证**：net-node，同205完整source/control9135b6d；requestb2262c13fdbe45ff988cb0cf71c92597；root fmt/net66+1ignored/hop10/wires11/journal29/portable20（49.93s）全绿，完整source/transport/9 control blobs/hash已核。不是对202第三次rerun，新准确source补原生合同，原两次Internal server error保留。

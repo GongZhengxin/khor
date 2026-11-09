@@ -728,3 +728,8 @@ Turing `turing-20261109T175508Z-912bcc0c`，base9c2e73488723fc550d335883e96eba78
 
 
 209 Mac42677483225已终态全绿且完整身份核：fmt/net66+1ignored/hop10/wires11/journal29/portable20（49.93s），同204/205完整source；不覆盖新210通知合同。210已stage未启动：`turing-20261109T185254Z-88fdeca5`，base16a0bafc/treee6aebe0c/snapshotcbbbac6f/control9135b6d。完整210 refs snapshot/tree已逐run核，唯一在途208/未启动210，后续以实际句柄为准。
+
+
+208已终态3/3、192/192全ok、435.58s、原group空，9诊断文件/phase/summary/raw核；third current serial1两次比较后被释放并关闭，later serial2重建，trace留measured-release-trace.json。不是stale-owner，不直接认定201因果；质量/age/samples的原值必须带着分析，不能只据结果行green算最优。
+
+210实际Rust合同红：fmt/net66+1ignored/hop10/wires11过，journal29过1红；118.09秒、原group空，source/control/bundle/ref/report identity核。全fixture SHA d66be0e62f349d2298d666c8470e09403f4bee6b53832d9e2fbf9f839315a822。新测试首次IPv6变化iteration失败，IPv4变化iteration未到；是实际生产Interfaces/interface_addrs状态机反例，非物理地址重编号。当前候选仅相同seen集合不重置timer，原1秒与整fixture不动；等待Linux/Mac原合同转绿。

@@ -1214,6 +1214,10 @@ impl Interfaces {
     /// iroh's set, at `at`: each new set starts the wait again, and one
     /// back to what was told ends it.
     fn saw(&mut self, set: Vec<std::net::SocketAddr>, at: std::time::Instant) {
+        // Other candidates can change while the filtered interfaces stay put.
+        if set == self.seen {
+            return;
+        }
         self.due = (set != self.told).then_some(at + ADDRS_SETTLE);
         self.seen = set;
     }
