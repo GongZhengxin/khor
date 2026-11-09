@@ -368,3 +368,8 @@ Peer relay就是可信设备承载的carried候选，必须与Direct IPv4、Dire
 ### U12前置通知合同：稳定接口不能被无关候选更新饿死
 
 在任何修复前冻结：复用生产journal::interface_addrs/Interfaces，分别保持IPv4不变替换IPv6、保持IPv6不变替换IPv4。新接口集合第一次出现后保持相同，期间完整DirectAddr集合中的QAD-only候选每次变化；它们不属于接口集合。接口通知仍需在原ADDRS_SETTLE=1秒到期后可投递且只投递一次，不能每次无关更新从头等；真实接口集合再变仍重新稳定，回到已通知集合则撤销，空集合/同址恢复与Local↔QAD来源翻转保持既有合同。先跑原实现取得实际Rust红，再最小修复。此合同只校准生产通知状态机，不替代真实IPv4/IPv6重编号、NAT映射、发现/发布、业务恢复或手机验收。
+
+
+### U12物理前置校准：ipv6_renumber_v1（未执行，先冻结）
+
+为响应U12先补N0/U12物理校准，暂先于N1下一轮策略修改；不放弃完整N1。全新patchbay双栈Public router/device namespace，原IPv6、IPv4双向ping可用后，在一个device自身接口同prefix加新的IPv6地址，等待实际DAD完成并验证从另一device可达，再移除旧IPv6。实际kernel JSON分别保存地址前/加后/删后；IPv4地址集合保持且IPv4仍可达，新IPv6双向成功、旧IPv6不可达。每次ping只1packet、2秒命令等待，所有stdout/stderr/status/elapsed都留；共6个IPv6检查（5正1负）和2个IPv4正控，属于fixture数据，不是业务成功率/SLO/分位数。只在新建用户namespace内ip addr变更，宿主网络不改。单独SSH-only ignored profile，一轮/单线程；任何工具/前置失败分类为校准失败，不冒称产品回归。这次只证明注入几何成立，Node/QUIC/地址发布发现/peer relay/移动设备/IPv6前缀变化仍需后续矩阵。
