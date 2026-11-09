@@ -83,3 +83,8 @@ Mac临时source/bundle分支只在终态、完整留证、所有权/SHA一致后
 新ignored reference子模块复用f4几何构建器（默认f4传relay_only=false，hold与故障体不改）：automatic、两端scratch既有peer-hop关闭的relay-only、配对后在两端namespace双向阻断唯一relay的carried-only。三节点均在线、不冻结M；候选可用性改变也会改变后台探测，不把它当纯公式的因果对照。准备120s总期限、稳定10s，Y→X/X→Y各30个原30s预算请求与200ms间隔、完整outcomes/n/p50/p95/max，首错保留且可终止该方向、n不足不通过。只提供稳态操作参照，非故障/能耗/SLO。数字与验证边界已先写ACCEPTANCE。
 
 control614c266已push，仅新增SSH-only netlab-hop-reference，三case单线程三轮ignored，普通采样日志关闭、末尾必须解析attempts，任一轮失败仍继续其余轮；原profiles不改。本机driver2/runner4共6 Python test（含新profile两个子例）为stub验证绿，没有本机Rust执行。新的profile/fixture尚未远端编译、校准或运行。
+
+
+197 Mac42663152585（basebb7504c7/tree139a305a/snapshot72e1aeb2/control614c266）只有新reference.rs排版format红，无编译/行为测试。source/transport/9 control blobs/hash已核；原patch应用后新准确源再验。原195 f4几何体（剔除仅reference启用的if分支）与完整hold/失败/返回体逐字同，proof hop-reference-default-fixture-extraction.json；源码提取不当运行等价证明。
+
+N4只读preflight：macserver alias映射z13，严格known host/不转发agent；一次SSH banner握手timeout（real-network/macserver-preflight-20261109T172201Z.json），而GH Mac197正常完成，不能记主机离线。后续实际跨网可让Mac在guard任务中主动配对Turing新scratch节点，配对能力仅限临时网络、经私库请求传入，不复制个人token/密钥或生产store；无需Mac SSH作为前置。具体控制/身份/清理协议仍待实现验证，不冒称跨网已跑。

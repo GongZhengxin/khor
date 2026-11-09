@@ -7,21 +7,38 @@ fn relay_isolation(n: &LabNode, ip: std::net::Ipv4Addr) {
     let mut command = std::process::Command::new("nft");
     command.args(["-j", "list", "table", "inet", "reference_relay"]);
     command.stdout(std::process::Stdio::piped());
-    let output = n.dev.spawn_command_sync(command).unwrap().wait_with_output().unwrap();
-    assert!(output.status.success(), "read the installed isolation table");
+    let output = n
+        .dev
+        .spawn_command_sync(command)
+        .unwrap()
+        .wait_with_output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "read the installed isolation table"
+    );
     let table: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
     eprintln!("[netlab-isolation] {} {table}", n.name);
 }
 
-async fn requests(s: &str, from: &LabNode, to: &LabNode, count: usize) -> (Vec<Duration>, Vec<String>) {
+async fn requests(
+    s: &str,
+    from: &LabNode,
+    to: &LabNode,
+    count: usize,
+) -> (Vec<Duration>, Vec<String>) {
     let mut samples = Vec::new();
     let mut errors = Vec::new();
     for _ in 0..count {
         let name = to.name.clone();
         let (took, error) = crate::attempts::measure(
-            s, &from.id, &to.name, Duration::from_secs(30),
+            s,
+            &from.id,
+            &to.name,
+            Duration::from_secs(30),
             from.with(move |node| async move { node.ls_of(&name, "/tmp").await.map(|_| ()) }),
-        ).await;
+        )
+        .await;
         samples.push(took);
         if let Some(error) = error {
             errors.push(error);
@@ -64,12 +81,15 @@ async fn reference(s: &str, want: Option<Hop>) {
         loop {
             let a = x.link(&y).await;
             let b = y.link(&x).await;
-            let roads = a.zip(b).filter(|(a, b)| {
-                [a.hop, b.hop].into_iter().all(|road| {
-                    matches!(road, Hop::Direct | Hop::Relay | Hop::Forwarded)
-                        && want.is_none_or(|target| road == target)
+            let roads = a
+                .zip(b)
+                .filter(|(a, b)| {
+                    [a.hop, b.hop].into_iter().all(|road| {
+                        matches!(road, Hop::Direct | Hop::Relay | Hop::Forwarded)
+                            && want.is_none_or(|target| road == target)
+                    })
                 })
-            }).map(|(a, b)| (a.hop, b.hop));
+                .map(|(a, b)| (a.hop, b.hop));
             let now = std::time::Instant::now();
             match roads {
                 Some(roads) => {
@@ -77,7 +97,9 @@ async fn reference(s: &str, want: Option<Hop>) {
                         held = Some((now, roads));
                         crate::attempts::phase(s, "reference_hold_started", super::now_ms());
                     }
-                    if held.as_ref().is_some_and(|(since, _)| now.duration_since(*since) >= Duration::from_secs(10)) {
+                    if held.as_ref().is_some_and(|(since, _)| {
+                        now.duration_since(*since) >= Duration::from_secs(10)
+                    }) {
                         break;
                     }
                 }
@@ -86,10 +108,15 @@ async fn reference(s: &str, want: Option<Hop>) {
             tokio::time::sleep(Duration::from_millis(500)).await;
         }
         Ok(())
-    }).await;
+    })
+    .await;
     if !matches!(prepared, Ok(Ok(()))) {
         super::hop_diagnostics(&x, &y, &m);
-        result(s, false, format!("reference preparation failed: {prepared:?}"));
+        result(
+            s,
+            false,
+            format!("reference preparation failed: {prepared:?}"),
+        );
         panic!("{s}: reference preparation failed");
     }
     crate::attempts::phase(s, "reference_measurement_started", super::now_ms());
@@ -98,18 +125,31 @@ async fn reference(s: &str, want: Option<Hop>) {
     let (xy, xy_errors) = requests(&format!("{s}-xy"), &x, &y, 30).await;
     let after = (x.link(&y).await, y.link(&x).await);
     crate::attempts::phase(s, "reference_measurement_finished", super::now_ms());
-    let ends_on_target = after.0.as_ref().zip(after.1.as_ref()).is_some_and(|(a, b)| {
-        [a.hop, b.hop].into_iter().all(|road| {
-            matches!(road, Hop::Direct | Hop::Relay | Hop::Forwarded)
-                && want.is_none_or(|target| road == target)
-        })
-    });
-    let ok = yx.len() == 30 && xy.len() == 30 && yx_errors.is_empty() && xy_errors.is_empty() && ends_on_target;
+    let ends_on_target = after
+        .0
+        .as_ref()
+        .zip(after.1.as_ref())
+        .is_some_and(|(a, b)| {
+            [a.hop, b.hop].into_iter().all(|road| {
+                matches!(road, Hop::Direct | Hop::Relay | Hop::Forwarded)
+                    && want.is_none_or(|target| road == target)
+            })
+        });
+    let ok = yx.len() == 30
+        && xy.len() == 30
+        && yx_errors.is_empty()
+        && xy_errors.is_empty()
+        && ends_on_target;
     super::hop_diagnostics(&x, &y, &m);
-    result(s, ok, format!(
-        "hop_reference_v1 want {want:?}; yx {} errors {yx_errors:?}; xy {} errors {xy_errors:?}; before {before:?}; after {after:?}",
-        distribution(&yx), distribution(&xy),
-    ));
+    result(
+        s,
+        ok,
+        format!(
+            "hop_reference_v1 want {want:?}; yx {} errors {yx_errors:?}; xy {} errors {xy_errors:?}; before {before:?}; after {after:?}",
+            distribution(&yx),
+            distribution(&xy),
+        ),
+    );
     assert!(ok, "complete bidirectional reference on the eligible road");
 }
 

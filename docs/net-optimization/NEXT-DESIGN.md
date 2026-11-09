@@ -273,3 +273,10 @@ N1下一步先核新版准备有效性，再做同fixture的baseline/candidate/�
 N2另有源码支持但未复现的close-vs-offer窗口：let_path_go先Links.has，再await Endpoint.close_carried；后者直接向remote actor队列发送CloseCustom，可能在新attach＋offer之后才入队。当前四个生产attach入口（SSH入站、SSH主动、hop主动、hop入站）与三个close调用点应统一审查；仅加serial保护detach不能证明该窗口消失。候选设计是同peer的attach＋offer与check-unused＋enqueue-close序列化；close方法目前等待入队而非actor处理完成，需验证队列/resolve消息顺序，不随意套全局锁或声称返回即远端完成。先做能控制这个合法交错的真实合同，再改；无实际反例前仅记待证风险，不归因182/162。
 
 N3 CPU181多punch仅单pair信号。vendor remote_state已有三类低量debug触发事实：left a silent direct path、selected path degraded、connections not good enough；高频khor_net_samples是另一target。可优先研究仅启用已有decision模块日志定位18 vs3来源，避免先加新的vendor策略或把本机CPU卡顿一律视为网络退化。任何诊断额外日志均另标非SLO；仍需同core/affinity/原负载、独立基线与全部outcomes。
+
+
+## N4真实服务器接续：Mac主动配对，不依赖SSH回连
+
+用户已确认A=macserver、B=Turing异网。20261109T172201只读Mac SSH在banner超时，GH构建通道仍正常；这是一次访问通道观测，非Mac离线结论。可复用GH受guard构建/运行Mac主动客户端，与Turing临时resident配对，避免等待Mac SSH或新公网控制端口。Turing先在owned目录建立fresh identity/store与短期配对能力，私库workflow只将该临时能力交给可信controller/测试客户端，个人PAT/SSH key/模型/签名/生产store均不转移；能力不进普通日志、源码/通用artifact，回执只记hash和public ID。双方都核实际snapshot/control/binary/fixture身份。
+
+两端完成编译后再开始测量：使用真实Node复用client及自身IPC、独立测试目录；Mac主动pair后，Turing从新scratch roster识别唯一Mac测试peer，双向读取双方fixture。先测冷/暖请求与选路，再逐步增加断线/不对称/背景流。Mac测试resident须在guard生命周期内保持到Turing结束，异常、期限/取消后只清本次资源；不能后台脱离guard或把本机已安装Khor当测试产物。具体短期能力传输/私有输入字段、角色同步/终态资源证明需先做合同并查实际API，再实施；这是接续设计，尚未实现或运行。

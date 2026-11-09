@@ -695,3 +695,6 @@ N0 v4源码开始记录paths/hop逐次logical_request和f4故障窗口，ignored
 195th held_precondition_v2终态**3/3绿**，491.06s，准确源/control同196。真实连续hold10444/10460/10455ms后注入，原恢复/稳定门实际过；73/73请求均ok（23/25/25），最大4.043195/3.390784/3.332251秒。完整source/control/bundle/group/九三角色诊断/hash采核；只证明正向准备校准，负向reset/timeout未跑，不是N1或整体SLO完成。
 
 之后新fixture hop_reference_v1与control614c266仅准备同三节点几何的automatic/relay-only/carried-only ignored稳态参照，数字/配置/两方向负载已先冻结ACCEPTANCE；controller6 Python tests为stub绿，尚未远端编译/跑。普通f4几何/hold/故障体纯提取复用，不改政策；正式A/B仍需同fixture重建baseline。
+
+
+197th Mac42663152585仅新reference.rs **format红**，无编译/测试；完整source/control/transport/hash已核，原patch应用。原195几何/hold体提取身份已留hop-reference-default-fixture-extraction.json，运行仍待。N4第一次macserver只读SSH握手timeout留证，GH通道正常；不将访问通道问题等于主机/设备缺失，计划沿Mac主动配对隔离Turing节点通道继续。
