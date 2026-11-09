@@ -1,6 +1,6 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-09 23:22 UTC（本地2026-11-10）。root串行，无子智能体。
+更新：2026-11-09 23:47 UTC（本地2026-11-10）。root串行，无子智能体。
 
 完整目标仍是完成[PLAN](PLAN.md)的N0–N5，尚未完成。用户已授权实施/远端验证并多次要求继续；U14明确不能因goal服务paused或阶段通过自行停止。后台调度状态不是本轮停止/授权门，不另建目标，不伪造complete/blocked。速度和体验优先，个人可信设备网络；无合main、发布、中继采购/生产部署授权。
 
@@ -8,19 +8,16 @@
 
 ## 先核当前句柄，禁止盲重发
 
-- **265已终态准备失败/266实际Noq单元红**：265 210.546s/rc101/原group空，仍只有2 setup ok，尚未移动；四端outer Direct，两次hop的8个Custom质量值全按纳秒唯一对应此前同resident ACK-floor样本，raw-delay正且略低于min、sample原raw（详ack-floor-quality-correlation.json，数值关联不是逐包ID绑定）。266 Mac42722555246 fmt通过、438绿/1红（109ms≠85ms），source/control/11 control blobs身份核。新增Noq12候选只将独立selection sample夹到已测floor，transport adjusted/SRTT/variance/PTO/拥塞/25%门不变，whole paths tests模块SHA已冻结，vendor/物理绿待核；当前50补丁（Iroh38+Noq12）。Turing当前无重型，下一实际句柄按ledger。
-- **264已终态，移动前准备失败**：194.445s/rc101/原group空，只有2个setup logical requests ok，150秒未保持reported Carried，尚未移动；不是移动可用性红。实际四个outer端在两次建hop观察均Direct约41–42ms；X/Y inner Custom quality约109ms、Relay约131ms，两look因25%门不足而Outperformed回收。preparation-outer-timeline.json留证。不能放宽准备门或称外层未直连。下一265完整samples核ACK-delay floor可能偏差，尚未唯一根因闭合。
-- **263 Mac42721024415 ↔ Turing真WAN首轮60/60全部ok**：coordinator e0b0b491f8336536，control ebf7f0d；原ff608e91/tree7d0c7467/snapshotb13e4398，两端fresh身份互相精确匹配、同完整source。Mac→Linux n30 p50/p95/max=61004/65659/84881us；Linux→Mac=59729/61452/71335us。两端links实际为公共Relay 101.200.80.77:3340，不冒称Direct/peer relay/最优。两端resident joined/worker rc0/owned空、Linux原group空/锁释放、成功后fresh身份及复制binary已清，临时Actions secret在pair后删除；Mac artifact11 files/11 control blobs/source/transport/hashes已核。wan-first-paired-proof.json留全部原结果hash。仅paired-warm目录list（marker名/类型/大小），不是冷建连/文件正文/移动/手机/能耗或p99；只有一轮。
-
-- **263及此前全部已终态采证，264为唯一Turing重型在途。** 所有refs已逐条pin，最新批量审计仍待刷新。旧句柄段逐字归档在[HISTORY-20261109-wan-lifetime-handles.md](HISTORY-20261109-wan-lifetime-handles.md)。
-- **Linux真实生命周期3/3绿**：9d6744346bfdb955(stop)、a5912e892695a08d(EOF)、f351939e640ec31a(kill)，control69e7346；各resident_joined/worker rc0/原guard group/owned空/lease socket无/锁已释放。wan-leases/linux-lifetime-three-modes.json汇总原hash。source与Mac262相同。只有退出合同，不是跨网业务。
-- **真WAN fallback已实现待首跑**：net-wan-peer独立guard步骤，构建步骤不接触临时票据；短期Actions repo secret仅fresh Linux ticket/公共ID/fixture/source，不传个人凭据，实验后删除。Mac可信controller持临时能力/status token，guardian/bridge/Node只继承最小环境和原guard FD；public commit status仅Mac ID/完成位，普通artifact仅结果/公开path facts；两端新私有home/身份，600秒worker/660秒guardian资源界限。先准确同源双向30个paired-warm目录请求，不当冷建连/文件内容/移动/能耗证明。Python私有pipe/凭据隔离/全部计划outcomes控制检查已绿。
-- **262 Mac42718502406真实Node生命周期3/3绿**：stop/EOF/SIGKILL bridge均worker rc0、resident_joined=true、worker/bridge继承guard PGID、最终owned processes空、无forced cleanup；准确source ff608e91/tree7d0c7467/snapshotb13e4398、control7ed29ab。14 artifact hashes和10 control blobs已核。不是配对/WAN业务证明。Mac cache binary SHA仍2ce96e9f，更新manifest executed=true，只限生命周期。
-- **260 Turing turing-20261109T230112Z-9c86057f已终态**：226.606s/rc0/原group空，124/124可达、reported Carried恢复hold绿；实际四个outer端在replug后约3.6秒和8.6秒快照均selected Direct，quality约41–42ms、age32–923ms、samples1–7；完整outer-copy-timeline.json逐端留证。单轮诊断绿，不能关闭253不稳定问题，也不当普通性能改进。source2aa73679/tree26251e70/snapshot73ba9741/controlbe11104。
-- **261 Mac42717041225便携全绿**：准确同260代码tree、不同snapshot ee6a81b3、controld16ed04，fmt/net67+1ignored/hop12/wires11/journal30/budget20；9 control blobs/hash已核。
-- **Mac SSH新重试仍banner阶段超时**，没有上传/启动WAN进程，不推Khor故障。继续正常GH guard通道，同时Linux稳定SSH推进实际生命周期；测试短期能力仅私有可信通道，禁止普通artifact/日志。
-- **control guardian Python3.8兼容修正**：Turing实际3.8.10，不支持Path.is_relative_to，改等价relative_to前置校验；本机只有Python控制合同，真实Linux合同待新commit后执行。
-- 当前产品HEAD/控制HEAD以Git和receipt核；最新功能仍4a0c359b被动路径tuple reconcile，之后主要WAN验收工具/观测。没有main合并/发布。
+- **267 Turing唯一重型候选在途**：turing-20261109T234540Z-3661a3e2，PID1298280，netlab-peer-mobility-samples；base3afd69c1/tree3386599f472cfd9f58f3166d7b23f268fc0179d2/snapshot62dda02e9ef539a29baa7bbd8eaa5a5889634510/control ef0b1ab。仅Noq12质量修正，原完整physical fixture/负载/断言/诊断模式与265不变。真实终态/原group空/collection后才可再用槽；不盲重发。
+- **Mac同267完整source vendor候选提交中**：本机exec session48617，提交回执/实际GH head完成后写入ledger。canonical source文件evidence/net/ack-floor-candidate-source.json；不能把后续docs HEAD混作候选准确源码。
+- **266单元实际红**：Mac42722555246，fmt通过，Noq438绿/1红（109ms≠85ms），source660483fb/treeefa289e0/snapshotdf0d095c/control4eeeea9，11control blobs/source/transport/hash核。whole paths tests模块SHA1d8da16d59f86c11595f10952b40139510f89b35344058db47a5c6a2c4ff7363红→候选不变。Noq12只将独立selection sample夹到已测floor；transport adjusted/SRTT/variance/PTO/拥塞/25%门不变。尚待候选真实绿。
+- **264/265均移动前准备失败，不是移动可用性红**：分别194.445/210.546s，rc101/原group空，只有2 setup logical requests ok，150秒未维持Carried，尚未移动。实际四个outer端在两次hop观察均Direct约41–42ms；inner Custom quality约109ms、Relay约131ms，两look因既有25%门不足Outperformed回收。265八个Custom比较值按纳秒唯一对应此前同resident ACK-floor样本，raw-delay正且略低于min而sample原raw。preparation-outer-timeline.json及ack-floor-quality-correlation.json留证，数值关联不是逐包ID绑定，不冒称唯一移动根因。
+- **263真实Mac↔Turing首轮双向60/60ok**：Mac42721024415/coordinator e0b0b491f8336536/controlebf7f0d，ff608e91/tree7d0c7467/snapshotb13e4398完整source。Mac→Linux n30 p50/p95/max61004/65659/84881us；反向59729/61452/71335us。实际两端公共Relay101.200.80.77:3340，不称Direct/peer relay/最优。fresh身份逐ID相符、两端resident joined/owned空、Linux原group空/锁释放，成功后自有fresh身份/复制binary清理；临时Actions secret pair后删除。Mac11files/11control blobs/hash核。wan-first-paired-proof.json。仅paired-warm目录list（marker名/类型/大小），非冷建连/正文/移动/手机/能耗/p99，只有一轮。
+- **两平台真实生命周期各3/3绿**：Mac262(42718502406/control7ed29ab)及Linux69e7346下stop9d6744346bfdb955/eofa5912e892695a08d/killf351939e640ec31a，均worker rc0/resident joined/owned空/lease socket无/锁释放；同ff608完整source。Mac10control blobs已核。Linux旧三个fresh homes/copy尚留私有owned roots，待267终态后同guard下核owner/原group空再清（不得清target/cache/他人内容）。
+- **260/261旧诊断绿边界**：260 226.606s/rc0/原group空、124/124可达、reported Carried恢复hold；实际四端replug后约3.6/8.6秒Direct、quality41–42ms/age32–923ms/samples1–7，outer-copy-timeline.json。不是完整重复SLO。261 Mac42717041225同代码tree不同snapshot便携全绿67/12/11/30/20。其单轮绿没有抹掉264/265红。
+- **严格NAT可持续门已实现**：scripts/netlab-nat-selection.py复放247/249真实数据，与冻结checker每个requests/problems相同，仍0/30+69 mismatch红→30/30+0绿。control4eeeea9仅lifecycle NAT可达绿后执行此门，Python控制合同含选择门失败退出绿；第一次远端实际新门仍待。原fixtureSHA ac97726906429a5dd63dd91b5c9ed99624c273d9a253f7facb916ffcf47e8a9b未改，无新延迟阈值，独立source/transport身份审计继续。
+- **证据与执行器**：source-refs-audit-20261109-266.json逐核266refs/source trees/control commits及23ops脚本hash；后续逐条pin，终态后刷新。Mac SSH新试仍banner timeout，既有GH guard通道正常且已做实际WAN，不再当数据面阻塞/不推Khor故障。当前总50vendor（Iroh38+Noq12候选），原48仍全审。
+- 更早句柄逐字内容见[HISTORY-20261109-ack-floor-candidate.md](HISTORY-20261109-ack-floor-candidate.md)及其归档链。产品/控制HEAD以Git、候选以receipt为准；无main合并/发布。
 
 ## 最新实证与未闭合问题
 
