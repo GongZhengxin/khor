@@ -646,3 +646,8 @@ control7534d6e已push，仅增加SSH-only cpu-check与hop-lifecycle；驱动Pyth
 176th原版stalls终态**2/2**，1189.88秒，base6485/tree49211b55/snapshot31db523a/control7534。22个CPU记录覆盖610846ms，CPU64、两resident275–280thread全mask64、identity稳定，两busy每期ticks前进。p1s1/0移动、0retired、最慢537.2ms、3punch/2801包1211229B；p5三档零relay/punch，最慢273.8/501.0ms/约1.1s。完整采证及178refs双引用批核。原p1s丢弃echo error值，原门仅稳定性，不能宣称完整失败分布/延迟SLO。
 
 178th Mac42634473431（baseb9e7d4a3/treef7a24347/snapshot0872b5bb/control7534）**真实policy红**：fmt/net66+1ignored/hop9保持、wires10过1红。v2真实双echo、outgoing选IP、incoming仅Custom且selected=false、client确选Custom、wire不同、sole-direct与closed-incoming两控制全部先过，最终live-carrier消费者不得释放目标红。完整source/control/transport/hash采核；整fixture SHA3a03d41a...已留。当前只改释放判断聚合Main/Tunnel/served live并去重，路径gain与2×5秒门保持，新增shared_comparison诊断；fixture/5 CLI timed files逐字不改，尚未复验。不把这一独立缺陷当作162原因已定。
+
+
+179th turing-20261109T144404Z-49c374ac与180th Mac42637760137完全同source（base3948872d/tree3ffbc0f7/snapshotab6cbce2/control7534）**双端绿**：fmt/net66+1ignored/hop9/wires11/journal29保持、Linux24（91.99秒）/Mac20。178整v2 fixture SHA逐字不变红→绿，hop.rs/netpath不变；五CLI fixture与netlab.sh逐字同176。完整report/source/control/bundle/transport/原group/hash留核，180refs已批审。只证明Node合同，不代替完整hop/CPU/WAN/手机。
+
+181th turing-20261109T145440Z-735ffd55 exact same source candidate stalls已launch PID624261/child624303，实际/proc/driver核live，已CPU64准入/all masks/两busy进展；182th turing-20261109T145455Z-205ad096同source原hop三轮只stage，181终态采证后串行launch。182refs双引用全批核，队列/evidence同步；两长任务结果未出，不预记绿。

@@ -235,3 +235,6 @@ CPU169未进入测量：真实Node CPU admission返回无路径ENOENT，不能�
 
 
 共享资源判断在178取得真实反例：peer共同selected tuple在outgoing上选IP，但incoming仅Custom仍实际收发、其watcher selected为空。只比较Main即允许释放peer carrier，违反现存消费者合同。候选改为检查所有live Main/Tunnel/incoming；非空且无Custom不占carrier，未知快照保留，含Custom按原gain判断。178整fixture字节冻结待红→绿，原162因果与完整hop仍须复验。176固定核原版2/2与22期实际CPU证明已留；p1s未留echo error的旧缺口明确，不能推零失败或延迟SLO。
+
+
+178真实共享载路policy红→179 Linux24/wires11及180同完整source Mac20/wires11绿，整fixture/两清理控制/所有物理前置逐字不改；质量gain/2×5秒及vendor不变。只是一个已证实判断缺陷的合同修复，162原f4i因果与完整体验仍待。181以与176逐字同CLI fixture/netlab.sh及CPU64做候选原门压力对照，182同源原三轮Hop随后串行；结果尚未出。
