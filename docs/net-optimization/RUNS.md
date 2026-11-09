@@ -396,3 +396,6 @@ Mac便携分流control6b1616c8b816bdb72a8a031d0ff28cc46a3fb4c7在feat/net，沿�
 
 42552723913两attempt最终均**执行器源码传输失败**：attempt1 source checkout、attempt2 control checkout，Mac→github.com:443连接超时，未校验源/格式/编译/测试，无source artifact。两attempt raw/log/classification分开保存mac-fault-candidate-checkout-42552723913/及attempt-2；96 refs全部终态。原72b1/treef6d0/snapshotbafed/controlb9b271不改，不记产品红。
 控制dd57be6c57090a811726983e700d0b39a40fd1e8已push：可选API Git bundle传输、准确GITHUB_SHA可信脚本、现prepare/guard，未远端验证。本机产品12项、bootstrap3项、prepare1项、driver1项以及YAML/16shell语法通过，无Rust/Node本机构建。STATE重写为当前状态，旧页原样归档HISTORY-20261109-before-api-transport.md；N0–N5范围不缩。
+
+
+**42555870179 Mac net-vendor在途**：clean d2849d4732c7e9b6dd2e953616ce583f0e520391、tree4a9c4d89cc01e33a480375d50cc9f77b6d2d7a83、snapshotb6a4e9240786b1b178aee1e11284e6164aecc377、controldd57be6c57090a811726983e700d0b39a40fd1e8。API bundle17935476字节，blob91937c9b7d1330f2b1d8352dbe6d309c278e38b5，SHA256284904bec454a22f964fbb5c4f5e0307e3f76342815d95d641dd9f18c261cf0b。API bootstrap实际success、两Git checkout skipped、进入原build guard；测试结果未出。97 refs，本run唯一pending；mac-api-vendor-42555870179已存本机准确回执和raw run。

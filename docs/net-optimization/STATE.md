@@ -15,7 +15,7 @@
 | 产品 | `/Volumes/disk0/Khor/worktrees/current/khor-net`，`feat/net`；恢复核实际HEAD/diff，本轮只新增API bundle入口/测试/文档，37等生产代码仍为72b1d891 |
 | 控制 | `/Volumes/disk0/Khor/worktrees/current/khor-build-net`，`feat/net`；dd57be6c57090a811726983e700d0b39a40fd1e8已push；历史run绑定各自control |
 | 基线 | `/Volumes/disk0/Khor/worktrees/current/khor-net-baseline`，detached6485cb83d3b1f0bb93d4633825dc956623d78af9；只允许paths/hop/lab/nat.rs、dev.py/netlab.sh六fixture；生产基线原样 |
-| 证据 | `/Volumes/disk0/Khor/evidence/net/`；source-refs.json现96条不可变source refs，均已终态 |
+| 证据 | `/Volumes/disk0/Khor/evidence/net/`；source-refs.json现97条不可变source refs；仅42555870179在途 |
 
 ## 执行通道现状
 
@@ -28,11 +28,13 @@ Mac自托管runner可执行：worker-smoke42549824680 SUCCESS仅工具链/guard�
 attempt1源checkout、attempt2控制checkout连续github.com:443超时；未到源码校验/格式/编译/测试/host-capabilities；无source artifact。
 两attempt日志、raw run/jobs与未执行分类分开保存在mac-fault-candidate-checkout-42552723913/及attempt-2/。不得再把该run记pending或438/36/9绿。
 
-**API Git bundle候选已完成脚本检查，尚未远端验证。** 控制dd57be6沿GitHub API取准确bundle、在GITHUB_SHA取可信控制文件；校验Git blob/SHA-256、快照与parentless/tree后，复用原prepare和build guard。Git只读本地bundle。
+**API Git bundle已实际远端传输成功，产品检查尚在途。** 控制dd57be6沿GitHub API取准确bundle、在GITHUB_SHA取可信控制文件；校验Git blob/SHA-256、快照与parentless/tree后，复用原prepare和build guard。Git只读本地bundle。
 本机客户端额外上传私库dev-bundles/<request_id>，仅含无父快照的Git对象；64MiB上限，无开发历史/未跟踪文件。原source分支保留。
 短期只读job token只在可信bootstrap步骤；Git/prepare和构建步骤不继承。默认standard不发送新inputs，保留旧main兼容；省略bundle双输入可走旧checkout。
 本机remote_development12项、bootstrap3项（准确还原/错误checksum/错误snapshot）、prepare1项、network-driver1项通过；Ruby YAML及16个bash语法块、diff-check通过。没有本机Rust/Node构建。
-下一步以此控制版本提交新的Mac net-vendor准确快照并立即锚定；旧run已终态，无重复活动任务。
+**42555870179 net-vendor在途**：base d2849d4732c7e9b6dd2e953616ce583f0e520391 clean、tree4a9c4d89cc01e33a480375d50cc9f77b6d2d7a83、snapshotb6a4e9240786b1b178aee1e11284e6164aecc377、control dd57be6c57090a811726983e700d0b39a40fd1e8。
+API bootstrap步骤实际success、两checkout均跳过，已进入现有共享guard；单元结果未出，不预认通过。bundle17935476字节，SHA-256 284904bec454a22f964fbb5c4f5e0307e3f76342815d95d641dd9f18c261cf0b，blob91937c9b7d1330f2b1d8352dbe6d309c278e38b5。
+refs/khor/net-evidence/42555870179已create-only锚定，回执及raw run在mac-api-vendor-42555870179；恢复只查该ID，不重发。
 
 ## N1当前候选与真实红
 
@@ -71,6 +73,6 @@ N0部分、**N1仍红**、N2–N4未完成、N5部分。不能以单元绿或执
 
 恢复先核绝对worktree/branch/HEAD/diff、当前run终态和回执，不从摘要覆盖未提交内容，不重复调度活动run。
 每run锚refs/khor/net-evidence/<run>；git rev-parse REF:source必须等于回执tree；只用git show读容器，不checkout覆盖、不push本地证据refs。
-source-refs.json现96条；425527传输失败与托管账单拒绝均tests_executed=false、remote_source_verified=false。旧Mac实际红已验证source/control。重要artifact下载到规范证据目录。
+source-refs.json现97条；425527传输失败与托管账单拒绝均tests_executed=false、remote_source_verified=false。旧Mac实际红已验证source/control。重要artifact下载到规范证据目录。
 Mac源/bundle分支仅在终态、证据保留、所有权和SHA匹配后清理；复用源的请求不拥有原源分支。重试不改旧源/control/attempt证据。
 外盘缺失只读git show feat/net:docs/net-optimization/STATE.md和PLAN；原外盘未提交内容不能按摘要覆盖。治理另沿中央code-quality STATE/RESUME，不与本任务混合。
