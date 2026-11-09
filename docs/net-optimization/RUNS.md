@@ -485,3 +485,6 @@ N3道路双向因果校准测试已按先前协议写下，模型未改；contro
 
 
 **42565998212 Mac net-node更新拨号上限修正候选在途**：baseeb4f8c1b70d118394b596ff21bd31a280ad4a412 clean、treeab8e723fbb02aecb43f7c86b0577563f6c32052b、snapshot8964af950889ceec388af1af9eabf900db9206eb、control0cff9671fb2f80945423132e0df46995f6ff3198；111th ref和mac-operation-budget-limits-42565998212已锚。更新保留原10秒自身上限；独立ask外层由既有阶段预算合成。待格式/编译/五预算回归，不预记绿。
+
+
+42565998212终态仅**格式门失败**：提取RTT_BUDGET_MOST后budget_for链式表达缩为一行，远端patch原样应用；未编译/测试，不记行为红。source/control/ref已核，111 refs终态。新增真实0RTT Accepted→调用取消回归正在编写，生产回答所有权尚未改。
