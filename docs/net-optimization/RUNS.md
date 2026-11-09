@@ -515,3 +515,6 @@ N3道路双向因果校准测试已按先前协议写下，模型未改；contro
 
 
 **42567946141 Mac net-node Accepted回答所有权修复候选在途**：base2fc650b30a3ab16792adb7babe566b8cec1bfeb5 clean、tree314894b33ed72a5ff2aeed47504d6c9e7f575bd9、snapshot78c6fb8eabf86ff755800188d9f92e64f8d4e3cf、control0cff9671fb2f80945423132e0df46995f6ff3198；116th ref/mac-accepted-owner-candidate-42567946141已锚。等待七预算/取消回归与既有子集，不预记绿。
+
+
+42567946141终态 **SUCCESS**：根格式/net66pass+1ignored/hop9/wires10/journal28/dial_budget7全绿（预算1.67秒）；准确base2fc650b3/tree314894b3/snapshot78c6fb8e/control0cff967已核，mac-accepted-owner-candidate-42567946141保留source/env/raw/classification。scope两红42562932053与Accepted取消/期限双红42567527752均转绿；同wire独立请求、strict3/零peer失败控制均通过。仅Mac便携子集，不是N2全包/完整Quality/Linux或真机SLO；116 refs全部终态且本轮逐项复核。STATE已汇总重写，旧页原样归档HISTORY-20261109-before-accepted-green.md。

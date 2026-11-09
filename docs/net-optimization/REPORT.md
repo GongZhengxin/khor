@@ -107,3 +107,12 @@ controlc6a20c5，单场景顺序三轮，准确tree/snapshot见RUNS。baseline42
 
 该固定模型下优先级没有呈现一致改善：Cubic尾部下降，BBR3本轮p95反而更高；这是后续定位线索，不是因果置信结论或产品策略选择。各CC固定顺序、同一丢包seed且仅三轮，不能泛化到真实路径。typing各CC159/161样本，screen仅9样本/CC，原样保留但不报p99或尾部SLO。
 下一阶段必须测真实Node准入/排队、SSH/hop外层流、共享/分连接资源公平和后台能耗；N1 Linux原p3/回退红、N2其余边界、N4/N5不由本结果收口。
+
+
+## N2操作期限与Accepted回答所有权：Mac红绿
+
+42562932053的真实ask/持锁回归两红（40ms未传达、300s被28s截断），由42566727617首次转绿。42567527752随后在实际Accepted回答路径取得取消/期限两行为红，五预算控制绿；两fixture均先通过同wire独立Sessions/相同stable_id/严格三请求/零dial_failed后才在目标断言失败。旧is_0rtt前置失败42566727617不当所有权行为红。
+
+42567946141修复源2fc650b30a3ab16792adb7babe566b8cec1bfeb5 clean、tree314894b33ed72a5ff2aeed47504d6c9e7f575bd9、snapshot78c6fb8eabf86ff755800188d9f92e64f8d4e3cf、control0cff9671fb2f80945423132e0df46995f6ff3198：根格式/net66+1ignored/hop9/wires10/journal28/dial_budget7全绿。Mac26.6.2 arm64/Rust1.95/jobs2；预算子集1.67秒为测试运行时，不是性能SLO。Accepted交接保留Aborts owner，回答等待沿原绝对by；取消/到期停止本流并保留共享健康wire。
+
+这批证明已测的锁、scope与Accepted回答合同，尚未覆盖普通交换/真实死wire/一次读重试/写入失答/跨IPC剩余预算/完整后台及并发释放。未执行Linux最终矩阵、全Quality或真机/能耗，不宣称N2或全计划完成。原始证据在mac-accepted-owner-candidate-42567946141，失败与fixture修订原因保留RUNS/ACCEPTANCE。
