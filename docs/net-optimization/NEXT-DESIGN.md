@@ -4,7 +4,10 @@
 
 上一批六项均已终态；后续诊断run和当前任务只查STATE。Watch版42532849927动态27/27，p3三轮最坏508–656ms；42532770351的p5原短停顿门绿，但p1s仍3/1移动；42532877270转发8/9，f4s中轮1513ms超1500ms。ff版与baseline同准备v2的p1/p1j均0/0，p1s均7/0，候选额外打洞更多，不能称候选全面胜出。完整数字见STATE/RUNS，下面各“在途”为上一检查点历史。
 
-当前动作：先做默认关闭的net-diagnostics构建，记录ACK raw/delay/corrected和迁移初始/Go的实际Reading/Silence、恢复hold起止，再用原p1s/f4s完整时长定因。selected事件缓存不等于决策输入。诊断模式不作为SLO，原10分钟/20次停顿/1.5秒门不改；定因前不调gain/迟滞。
+当前动作：默认关闭的诊断已实际运行。p1s两次Go均failed=true；f4s一端新应答后quality不能通过quick，多等1秒。
+42539860644已436Noq绿/iroh33pass1fail，候选35将首次恢复可用性与quality/type分开，REHOLD内重复故障仍等原1秒。
+copy-waking暂保留旧off_direct规则，另一次observer v1完整p1s诊断待结果。selected缓存不是决策输入；诊断非SLO，原10分钟/20次停顿/1500ms门不变。
+NAT helper失败后补两端path事件输出，仍保留原75秒/10秒与Direct断言，先取实际opened证据再审计，未回填绿。
 
 ## 已证实，不重复实施
 

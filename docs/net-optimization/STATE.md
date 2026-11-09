@@ -22,16 +22,19 @@
 
 ## 最近诊断终态与下一轮
 
-**当前在途：42538759858、42539860644**；42538717126、42538808023、42539256792已成功。38717126/38759858和38808023同treebe7b5abef3cc3c1ef81744075f4436efdf668fd0、
+**当前仅42540582927 netlab-stalls在途**，首次恢复可用性修正35的普通模式p1s/p5。
+tree44fda196d1a9800c7e87e6f9175c3484661d5e51、snapshotfd0c22ffcd844d33271d337ca879961a02e2387b、basec43370ff dirty、controlc68b644。
+同源单元42540515220已SUCCESS 436Noq/34路径/9选家与根格式，snapshot1f1cc72dcf35b79f43f96dceb34770455153b967。
+下表其余均已终态，38717126/38759858和38808023同treebe7b5abef3cc3c1ef81744075f4436efdf668fd0、
 base82e0d3b5 dirty、controlc68b644；先查询，不重复调度。observer v1只改实验客户端/诊断，选路策略未改。
 
 | Run | 任务 | snapshot |
 | --- | --- | --- |
 | 42538717126 | SUCCESS 1/1，原f4s诊断；observer-hop-diagnostics-42538717126已下载 | ce0af01606b4368ff6c3a190d59afbb14a58ecba |
-| 42538759858 | netlab-diagnostic，原f4s/p1s各一次1线程 | 5bd8418703baccc5a71979a984e19b861447c6f8 |
+| 42538759858 | FAILURE 1pass/1fail，原f4s/p1s诊断；observer-full-diagnostics-42538759858已下载 | 5bd8418703baccc5a71979a984e19b861447c6f8 |
 | 42538808023 | SUCCESS，根格式与66核心/1ignored；observer-client-unit-42538808023 | e62f6126eb1c9dbb2e17a3c43a33b71dedc64fa3 |
 | 42539256792 | SUCCESS 436Noq/33路径/9选家，新增Backup独立ACK用例；treec0d5c1b516b5c6272f17f83e9bb6bbe597813bcd、baseff5b4d36 dirty，controlc68b644 | 09de7c0a3f15e534ccd06b298702290bf3ffcb19 |
-| 42539860644 | net-vendor，新首次恢复可用性与质量门解耦回归取红；tree06a93054b7a08919537f8ad8dd7e5a5907d59fc6、base1a084e79 dirty，controlc68b644 | 48ff937b1c7521fa2db4f71f1078bca0001223a7 |
+| 42539860644 | FAILURE 436Noq绿/33路径pass1fail，仅新增首次恢复quality回归红；tree06a93054b7a08919537f8ad8dd7e5a5907d59fc6、base1a084e79 dirty，controlc68b644 | 48ff937b1c7521fa2db4f71f1078bca0001223a7 |
 
 | Run | 任务与准确源 | 最后观察 |
 | --- | --- | --- |
@@ -54,6 +57,17 @@ Y回carried@8.7秒、X@9.7秒，无回退；末一腿Link heard标记14.9秒，�
 X的Custom在monotonic324.7560有决定后应答，却quick=false等到325.7569才解除hold，随后Go；Y同路应答时quick=true立即恢复。
 说明可达性仍被当前质量/类型策略门住；尚未证明它是所有f4红的唯一原因。新确定性回归42539860644要求首次新往返恢复可用性独立于quality，
 重复故障仍保留原1秒/REHOLD防抖；仅先加测试，生产未改。原hold测试改为先标一次近期恢复，明确验证重复故障。
+
+35已修并取得42540515220单元绿：首次决定后新往返恢复可用性，重复故障hold/旧包保护/闭路规则保留；
+移除quick回调和两份临时向量，无额外timer/PING，copy-waking未改。提交前核策略/fixture与绿快照无diff。
+NAT helper仅在失败后打印两端path诊断，原75秒PUNCH/10秒STUCK/Direct断言保持。
+
+observer v1完整诊断42538759858：1pass/1fail、808.44秒；f4s Y@9.6秒回carried（腿heard8.7秒、差0.9），X@15.1秒，最慢8.6秒、无回退。
+p1s原20次300ms/忙CPU，alpha5次移动、beta0，零退役/4轮打洞，最慢703.8ms，3619包521832字节；诊断非SLO。
+实际5个Go中4个failed=true、1个普通质量回迁。4个故障Go时，同一路的另一副本last_received均晚于故障副本最老未确认包，
+3次selected Direct且wake_allowed=false，1次selected Relay已允许wake仍在同tick立即Go。
+因此只去掉Direct wake门不足：候选可能用决定前样本直接离开，Hold又不探测当前路。下一步先加决定后备用应答/当前故障副本探测回归取红，
+再最小改Moving.leave与探测副本选择；不把quality/ACK校正阈值当作这组切换定因。
 
 ## 当前阶段判断
 
@@ -118,10 +132,10 @@ N2七类预算/取消/写入行为已在ACCEPTANCE实现前冻结；静态发现
 
 ## 源码证据与恢复规范
 
-现83个本地immutable `refs/khor/net-evidence/<run>`，清单`evidence/net/source-refs.json`。
+现85个本地immutable `refs/khor/net-evidence/<run>`，清单`evidence/net/source-refs.json`。
 重要快照不依赖七天artifact保留；`git rev-parse REF:source`须等于收据tree。
 快照是parentless容器，读取用`git show REF:source/<path>`，不得直接覆盖工作区，也不push这些本地ref。
-收据终态及时刷新pending；当前是observer v1完整诊断与新可用性回归取红在途。
+收据终态及时刷新pending；当前只有35的普通netlab-stalls在途。
 
 恢复先核本目录、branch/HEAD/diff与已有run，保留未提交内容。两main及产品feature未合并发布。
 外盘缺失时，从共同仓只读`git show feat/net:docs/net-optimization/STATE.md`与PLAN恢复已提交文档；不覆盖原外盘未提交内容。

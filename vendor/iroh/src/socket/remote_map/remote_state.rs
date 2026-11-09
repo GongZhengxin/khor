@@ -1261,32 +1261,19 @@ impl RemoteStateActor {
                 measured.observation(road).map(|observation| (*id, observation))
             }));
         }
-        // carry (10-23): a road far faster than the one in use comes back at its first round
-        // trip, and so does the one in use ([`SILENT_HOLD`]).  Only while the one in use is the
-        // relay or a carried road, as in [`Moving::step`]: between direct roads the hold, and
-        // the waking, stay as they were.
+        // Reachability is independent of quality and transport type. A first
+        // post-judgment round trip restores it; repeated faults retain the hold.
+        // The historical copy-waking policy is separate and unchanged here.
         let off_direct = selected.is_some_and(|s| !s.is_ip());
         if !silent_now.is_empty() {
             debug!(target: "khor_net_samples", ?now, ?selected, ?backed_off, ?heard,
                 wake_allowed = off_direct, "road recovery inputs");
         }
-        let in_use = selected
-            .filter(|_| off_direct)
-            .and_then(|s| measured.road(s))
-            .map(|(rtt, _)| rtt);
-        let quick = |tuple: &transports::FourTuple, measured: &Measured| {
-            off_direct
-                && (Some(tuple) == selected
-                    || in_use.is_some_and(|from| {
-                        measured.road(tuple).is_some_and(|(to, _)| far_faster(to, from))
-                    }))
-        };
         let connections = &self.connections;
         measured.mark_silent(
             now,
             &silent_now,
             |tuple| connections.values().any(|c| c.paths.values().any(|t| t == tuple)),
-            quick,
         );
         if off_direct {
             self.wake(&backed_off, &heard);
@@ -2480,8 +2467,8 @@ struct Measured {
     back: FxHashMap<transports::FourTuple, Instant>,
 }
 
-/// khor patch 17: a road that stopped answering ([`unanswered_for`]), until it answered again
-/// for [`SILENT_HOLD`].
+/// khor patch 17/35: a road that stopped answering ([`unanswered_for`]), until a new round
+/// trip; a repeated fault additionally waits [`SILENT_HOLD`].
 #[derive(Debug, Clone, Copy)]
 struct Silence {
     /// When the packet it left unanswered went out: the stall began then.
@@ -2601,21 +2588,15 @@ impl Measured {
     /// khor patch 17: one tick's silences: `silent_now` the roads a copy of which does not
     /// answer, each with when the packet it left waiting went out; `open` whether a road is
     /// still a path on some connection.  A road no connection has any more is forgotten; one
-    /// a copy of which took a round trip since it went silent, and none of which is silent
-    /// now, answers again once it kept answering for [`SILENT_HOLD`].
-    ///
-    /// carry (10-23): or at once, when `quick` says so of it (the road in use, or one far
-    /// faster than it) and it was not back within [`REHOLD`] before this silence began.  The
-    /// hold is there for a road that answers off and on, and one that does goes silent again
-    /// soon after it is back; a road back from one stall waited out the hold on a relay 1.7 s
-    /// late (netlab f4), and the phone left its carried road for that relay a second after it
-    /// had answered again.
+    /// a copy of which took a round trip after the latest silence judgment, and none of
+    /// which is silent now, is available again. Quality is evaluated by selection/Moving,
+    /// not by this reachability gate. A fault within [`REHOLD`] of a previous recovery
+    /// still requires [`SILENT_HOLD`] of answering so an intermittent road cannot flap.
     fn mark_silent(
         &mut self,
         now: Instant,
         silent_now: &[(transports::FourTuple, Instant)],
         open: impl Fn(&transports::FourTuple) -> bool,
-        quick: impl Fn(&transports::FourTuple, &Measured) -> bool,
     ) {
         self.back.retain(|_, at| now < *at + REHOLD);
         for (tuple, began) in silent_now {
@@ -2629,7 +2610,6 @@ impl Measured {
             silence.judged = now;
             silence.answered = None;
         }
-        let mut answered = Vec::new();
         for (tuple, silence) in self.silent.iter_mut() {
             if silent_now.iter().any(|(t, _)| t == tuple) || !open(tuple) {
                 continue;
@@ -2642,15 +2622,7 @@ impl Measured {
                 silence.answered = Some(now);
                 debug!(target: "khor_net_samples", ?tuple, ?now, ?silence, "road answered after judgment");
             }
-            if silence.answered.is_some() {
-                answered.push((tuple.clone(), silence.rehold));
-            }
         }
-        let quick: Vec<transports::FourTuple> = answered
-            .into_iter()
-            .filter(|(tuple, rehold)| !rehold && quick(tuple, self))
-            .map(|(tuple, _)| tuple)
-            .collect();
         let back = &mut self.back;
         self.silent.retain(|tuple, silence| {
             if silent_now.iter().any(|(t, _)| t == tuple) {
@@ -2661,9 +2633,9 @@ impl Measured {
             }
             let held = silence
                 .answered
-                .is_none_or(|at| now < at + SILENT_HOLD && !quick.contains(tuple));
+                .is_none_or(|at| silence.rehold && now < at + SILENT_HOLD);
             if !held {
-                debug!(target: "khor_net_samples", ?tuple, ?now, ?silence, quick = quick.contains(tuple), "road recovery hold ended");
+                debug!(target: "khor_net_samples", ?tuple, ?now, ?silence, immediate = !silence.rehold, "road recovery hold ended");
                 back.insert(tuple.clone(), now);
             }
             held
@@ -3431,16 +3403,15 @@ mod tests {
         let road = addr(1);
         let t = Instant::now();
         let open = |_: &transports::FourTuple| true;
-        let quick = |_: &transports::FourTuple, _: &Measured| true;
         let mut m = Measured::default();
-        m.mark_silent(t, &[(road.clone(), t - MS(300))], open, quick);
+        m.mark_silent(t, &[(road.clone(), t - MS(300))], open);
         let mut old = reading(&road, t + MS(250));
         old.sent = Some(t - MS(500));
         m.rtts.insert((ConnId(0), PathId::ZERO), old);
-        m.mark_silent(t + MS(250), &[], open, quick);
+        m.mark_silent(t + MS(250), &[], open);
         assert!(m.silent.contains_key(&road), "the ACK's packet predates the last silence judgment");
         m.rtts.insert((ConnId(0), PathId::ZERO), reading(&road, t + MS(500)));
-        m.mark_silent(t + MS(500), &[], open, quick);
+        m.mark_silent(t + MS(500), &[], open);
         assert!(!m.silent.contains_key(&road), "a new round trip can end the silence");
     }
 
@@ -3450,30 +3421,29 @@ mod tests {
     fn a_repeatedly_silent_road_answers_again_after_the_hold() {
         let road = addr(1);
         let open = |_: &transports::FourTuple| true;
-        let slow = |_: &transports::FourTuple, _: &Measured| false;
         let mut m = Measured::default();
         let t0 = Instant::now();
         m.back.insert(road.clone(), t0 - MS(100));
-        m.mark_silent(t0, &[(road.clone(), t0 - MS(300))], open, slow);
+        m.mark_silent(t0, &[(road.clone(), t0 - MS(300))], open);
         assert_eq!(m.silent[&road].stall(t0 + MS(100)), MS(400), "the stall counts from the packet");
-        m.mark_silent(t0 + MS(250), &[], open, slow);
+        m.mark_silent(t0 + MS(250), &[], open);
         assert!(m.silent[&road].answered.is_none(), "no round trip yet");
         m.rtts.insert((ConnId(0), PathId::ZERO), reading(&road, t0 + MS(400)));
-        m.mark_silent(t0 + MS(500), &[], open, slow);
+        m.mark_silent(t0 + MS(500), &[], open);
         assert_eq!(m.silent[&road].answered, Some(t0 + MS(500)));
         assert_eq!(m.silent[&road].stall(t0 + MS(900)), MS(800), "the stall ends when it answered");
-        m.mark_silent(t0 + MS(1200), &[], open, slow);
+        m.mark_silent(t0 + MS(1200), &[], open);
         assert!(m.silent.contains_key(&road), "held for a second");
-        m.mark_silent(t0 + MS(1300), &[(road.clone(), t0 + MS(1000))], open, slow);
+        m.mark_silent(t0 + MS(1300), &[(road.clone(), t0 + MS(1000))], open);
         assert!(m.silent[&road].answered.is_none(), "silent again: the hold starts over");
         m.rtts.insert((ConnId(0), PathId::ZERO), reading(&road, t0 + MS(1400)));
-        m.mark_silent(t0 + MS(1500), &[], open, slow);
-        m.mark_silent(t0 + MS(2400), &[], open, slow);
+        m.mark_silent(t0 + MS(1500), &[], open);
+        m.mark_silent(t0 + MS(2400), &[], open);
         assert!(m.silent.contains_key(&road));
-        m.mark_silent(t0 + MS(2500), &[], open, slow);
+        m.mark_silent(t0 + MS(2500), &[], open);
         assert!(!m.silent.contains_key(&road), "a second of answering");
-        m.mark_silent(t0 + MS(2600), &[(road.clone(), t0 + MS(2300))], open, slow);
-        m.mark_silent(t0 + MS(2700), &[], |_| false, slow);
+        m.mark_silent(t0 + MS(2600), &[(road.clone(), t0 + MS(2300))], open);
+        m.mark_silent(t0 + MS(2700), &[], |_| false);
         assert!(m.silent.is_empty(), "a road no connection has is forgotten");
     }
 
@@ -3482,60 +3452,54 @@ mod tests {
         let road = addr(1);
         let t0 = Instant::now();
         let open = |_: &transports::FourTuple| true;
-        let not_fast = |_: &transports::FourTuple, _: &Measured| false;
         let mut measured = Measured::default();
-        measured.mark_silent(t0, &[(road.clone(), t0 - MS(300))], open, not_fast);
+        measured.mark_silent(t0, &[(road.clone(), t0 - MS(300))], open);
         let mut recovered = reading(&road, t0 + MS(400));
         // The old outage may still dominate quality. A new round trip
         // restores reachability; Moving separately decides whether to use it.
         recovered.quality = MS(5000);
         measured.rtts.insert((ConnId(0), PathId::ZERO), recovered);
-        measured.mark_silent(t0 + MS(500), &[], open, not_fast);
+        measured.mark_silent(t0 + MS(500), &[], open);
         assert!(!measured.silent.contains_key(&road),
             "one first fault cannot impose a second quality-dependent recovery hold");
     }
 
-    /// carry (10-23): a road back from a stall that is the one in use, or far faster than it,
-    /// is a candidate at its first round trip; one that goes silent again within [`REHOLD`] of
-    /// being back waits out [`SILENT_HOLD`] however fast it reads, and after `REHOLD` it is
-    /// quick again.  netlab f4: the carried road through m answered 174 ms against a relay of
-    /// 856 ms, and waited out the hold on the relay.
+    /// A first recovery is independent of quality. Repeated faults within [`REHOLD`]
+    /// wait out [`SILENT_HOLD`]; once that history expires, one new round trip suffices.
     #[test]
-    fn a_road_far_faster_than_the_one_in_use_is_back_at_its_first_round_trip() {
+    fn a_one_off_fault_returns_at_its_first_round_trip_and_repeated_faults_hold() {
         let road = addr(1);
         let open = |_: &transports::FourTuple| true;
-        let fast = |_: &transports::FourTuple, _: &Measured| true;
         let mut m = Measured::default();
         let t0 = Instant::now();
-        m.mark_silent(t0, &[(road.clone(), t0 - MS(300))], open, fast);
-        m.mark_silent(t0 + MS(250), &[], open, fast);
+        m.mark_silent(t0, &[(road.clone(), t0 - MS(300))], open);
+        m.mark_silent(t0 + MS(250), &[], open);
         assert!(m.silent.contains_key(&road), "no round trip yet: still silent");
         m.rtts.insert((ConnId(0), PathId::ZERO), reading(&road, t0 + MS(400)));
-        m.mark_silent(t0 + MS(500), &[], open, fast);
+        m.mark_silent(t0 + MS(500), &[], open);
         assert!(!m.silent.contains_key(&road), "back at its first round trip");
         // Silent again five seconds on: off and on, so held.
         let t1 = t0 + MS(5500);
-        m.mark_silent(t1, &[(road.clone(), t1 - MS(300))], open, fast);
+        m.mark_silent(t1, &[(road.clone(), t1 - MS(300))], open);
         m.rtts.insert((ConnId(0), PathId::ZERO), reading(&road, t1 + MS(400)));
-        m.mark_silent(t1 + MS(500), &[], open, fast);
+        m.mark_silent(t1 + MS(500), &[], open);
         assert!(m.silent.contains_key(&road), "silent again within REHOLD: held");
-        m.mark_silent(t1 + MS(1400), &[], open, fast);
+        m.mark_silent(t1 + MS(1400), &[], open);
         assert!(m.silent.contains_key(&road), "held for a second");
-        m.mark_silent(t1 + MS(1500), &[], open, fast);
+        m.mark_silent(t1 + MS(1500), &[], open);
         assert!(!m.silent.contains_key(&road), "a second of answering");
         // Long after it was last back, a stall is one stall again.
         let t2 = t1 + MS(1500) + REHOLD;
-        m.mark_silent(t2, &[(road.clone(), t2 - MS(300))], open, fast);
+        m.mark_silent(t2, &[(road.clone(), t2 - MS(300))], open);
         m.rtts.insert((ConnId(0), PathId::ZERO), reading(&road, t2 + MS(400)));
-        m.mark_silent(t2 + MS(500), &[], open, fast);
+        m.mark_silent(t2 + MS(500), &[], open);
         assert!(!m.silent.contains_key(&road), "quick again after REHOLD");
-        // And a road that is neither in use nor far faster keeps the hold.
+        // Quality does not gate availability for a different first-time fault either.
         let other = addr(2);
-        let slow = |_: &transports::FourTuple, _: &Measured| false;
-        m.mark_silent(t2 + MS(600), &[(other.clone(), t2 + MS(300))], open, slow);
+        m.mark_silent(t2 + MS(600), &[(other.clone(), t2 + MS(300))], open);
         m.rtts.insert((ConnId(1), PathId::ZERO), reading(&other, t2 + MS(700)));
-        m.mark_silent(t2 + MS(800), &[], open, slow);
-        assert!(m.silent.contains_key(&other), "not quick: held");
+        m.mark_silent(t2 + MS(800), &[], open);
+        assert!(!m.silent.contains_key(&other), "a first-time response restores availability");
     }
 
     /// carry (10-23): a copy in a probe timeout's backoff is woken when its road heard anything

@@ -317,3 +317,14 @@ observer v1实际调度同treebe7b5abef3cc3c1ef81744075f4436efdf668fd0、base82e
 实际恢复输入：X Custom在monotonic324.7560记answered，quick=false等到325.7569解除hold再Go；Y Custom在324.7526记answered，quick=true立即解除、324.7530 Go。首次可用性仍依赖旧quality/类型的quick判据，造成一层额外1秒等待；不能单凭此断言所有f4红唯一根因。
 
 新增确定性行为回归取红 **42539860644 net-vendor**：base1a084e79 dirty、tree06a93054b7a08919537f8ad8dd7e5a5907d59fc6、snapshot48ff937b1c7521fa2db4f71f1078bca0001223a7、controlc68b644。新用例首次决定后往返恢复可用性不能依赖quality；原hold测试先插近期恢复标记，仍验证重复故障1秒/REHOLD。只改测试，生产策略未改。目标验证436Noq绿/iroh33pass1fail，未出结果不预认定。83 refs。
+
+42539860644终态预期产品红：**436Noq绿/iroh33pass1fail**，仅a_first_post_judgment_round_trip_restores_availability_without_a_quality_gate失败；availability-proof-red-42539860644。没有编译/格式错误，后续home过滤器未运行，不记为新红或新绿。
+
+observer v1完整诊断 **42538759858 FAILURE 1pass/1fail、808.44秒**，observer-full-diagnostics-42538759858。f4s Y@9.6秒回carried，腿Link heard8.7秒、差0.9秒；X@15.1秒，最慢8.6秒、无回退。p1s alpha5次（Relay@31s、Second@93s、Relay@397s、Second@488s、Relay@610s），beta0；零退役、4轮打洞、最慢703.8ms、3619包521832字节。原20次停顿/名义600秒参数不变，末条610秒含原循环调度漂移；不以日志模式与普通模式计算性能改善。
+
+p1s五个Go有4次failed=true。每次故障Go时，聚合heard在同一路上的另一副本都晚于坏副本最老unacked：454.9018>454.4014、820.8316>820.4875、912.0995>911.7594、1033.9612>1033.6502（monotonic秒）。前三/末次Direct门停wake，Relay一次允许wake仍在同tick Go；第一故障Hold只探测候选，另三故障用决定前备用样本直接Go。由此下一回归应验证故障确认的决定后样本与当前故障copy探测，而非盲调quality。原日志每副本PTO/last_received/unacked和heard完整保存。
+
+35候选 **42540515220 SUCCESS 436Noq/34路径/9选家、根格式**，availability-proof-green-42540515220；同源普通模式 **42540582927 netlab-stalls在途**。
+两者basec43370ff dirty、tree44fda196d1a9800c7e87e6f9175c3484661d5e51、controlc68b644；snapshot分别1f1cc72dcf35b79f43f96dceb34770455153b967与fd0c22ffcd844d33271d337ca879961a02e2387b。
+代码只让首次新往返恢复可用性独立于quality/type，重复故障1秒/REHOLD、旧包和closed保护保留，删quick回调/两临时Vec、无额外探测/timer；copy-waking未变。
+NAT helper仅失败后输出两端既有path诊断，门和注入不变。提交前策略/fixture与绿快照逐文件无diff。85 refs，当前只有stalls pending。
