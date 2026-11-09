@@ -1,6 +1,6 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-09 22:32 UTC（本地2026-11-10）。root串行，无子智能体。
+更新：2026-11-09 22:47 UTC（本地2026-11-10）。root串行，无子智能体。
 
 完整目标仍是完成[PLAN](PLAN.md)的N0–N5，尚未完成。用户已授权实施/远端验证并多次要求继续；U14明确不能因goal服务paused或阶段通过自行停止。后台调度状态不是本轮停止/授权门，不另建目标，不伪造complete/blocked。速度和体验优先，个人可信设备网络；无合main、发布、中继采购/生产部署授权。
 
@@ -8,11 +8,14 @@
 
 ## 先核当前句柄，禁止盲重发
 
+- **256 Mac/257 Turing同整source WAN build-only已绿**：Mac42713674809，Linux turing-20261109T224020Z-47ce1ea3（69.89s/rc0/原group空）；source baseff608e91/tree7d0c74673460a512ab4f271802372e6fb7f31550/snapshotb13e4398491b7d6d85568b3e5900ac850bbf2203/controlbe11104。wan-binary-manifests.json留实际两架构hash/path/bytes/source；普通artifact无二进制，executed=false，尚未启动Node。runtime必须guard下重核hash/copy至fresh owner/run root，不直接信mutable cache。Mac binary约182MB，Linux207MB，只在各自服务器。
+- **258 Mac outer-copy诊断仅format前置失败**：42714069877，requestbb2ae40d681e429182f51c82745020a4，basef377d166/tree77ea6fc1/snapshotadc15826/controlbe11104，身份/9control blobs/hash核，未编译/执行；远端format.patch原样应用。下一Turing新outer诊断与Mac便携同源编译按新receipt，旧WAN binary源不混入。
+- **N4 lease守护控制合同已过**：13个Python stub/小Git控制检查（其中lease用真实Python pipe/socket/子进程测normal stop、EOF、SIGKILL bridge、worker crash、40GiB reserve拒绝），无本机Rust/产品执行。Guardian+bridge+Rust worker同PGID、继承原guard FD；bridge死后guardian保持guard直至Rust exit/join与本次process空，私有RPC字节不写日志。真实Node三种退出合同尚待分别在服务器实跑；不是N4真跨网绿。
 - **256 Mac42713674809**，request3b53b13bb8f043f29014d9067666c360，baseff608e91/tree7d0c7467/snapshotb13e4398/controlbe11104。只验证WAN worker构建，未运行居民。Turing下一build-only将复用此完整source，在253终态后才启动，避免污染计时；以新receipt核实际状态。
 - **下一N1实际outer各副本快照诊断**：只保留WeakConnectionHandle，不延长实际Connection生命；initiator用原5秒look，middle/receiver仅在诊断开启时每5秒读actual path facts，不加probe。默认splice/ended直接await，无新增timer；新增诊断醒来不能作普通性能对照。目的是在253这种“inner Custom消失”前核实际四个outer端，而非设备汇总/另一健康副本。尚待format/编译/真实诊断，不改选路/回收策略。
 - **253样本诊断已终态**：turing-20261109T222815Z-b033159a，246.74s/rc0/原group空；准确原source、samples模式1，124/124可达但60秒未reported双向再hold10s。inner只见+约0.58s Custom→Relay故障Go，未见20秒内回Custom确认；X+21.5/+26.5s已无Custom→Unused回收，+56.4s重新attach serial3。不是单纯固定确认门7.5s可概括；实际outer carrier副本需要单独快照。不把详细日志当普通SLO对照。
 - **255首次WAN仅编译失败**：42712837277/requestb8c661be41984a3a920027748ca7e76e，basecba63d7b/tree48a934a9/snapshotcd8f0d29/controlbe11104。root fmt通过、Rust example因DeviceInfo没有Serialize而失败，没有启动Node或产出成功manifest。只将devices控制回复显式映射id/name，避免序列化无关设备字段；继续build-only验。lease supervisor/真实清理合同尚未实现，不称跨网已通。
-- **当前唯一Turing重型任务253**：turing-20261109T222815Z-b033159a，netlab-peer-mobility-samples，PID1217909/child以execution核；复用251/249完整source c01c72de/tree4d493502/snapshote3be1244，control ef0b1ab021802a17710a6748e373ea12b87bf52d。只是额外samples debug诊断，不混普通性能/放宽门。后续本地WAN代码不混入。
+- **253已终态**：turing-20261109T222815Z-b033159a，netlab-peer-mobility-samples，PID1217909/child以execution核；复用251/249完整source c01c72de/tree4d493502/snapshote3be1244，control ef0b1ab021802a17710a6748e373ea12b87bf52d。只是额外samples debug诊断，不混普通性能/放宽门。后续本地WAN代码不混入。
 - **254 Mac42712203779仅WAN草稿format前置失败**，requesta04744c77223427b86f4d945de8448b0，base73cd2166/tree2d2b4be3/snapshot05532efd/controlef0b1ab。尚未编译/执行；远端format.patch原样应用。源码/transport/9control blobs/hash按verification核，不把格式失败记成资源/业务反例。
 - **build-only控制be11104f0149637c918456bbfba5329578aea096已push**：net-wan-build在原guard内仅cargo build khor-node example、核cache二进制是本UID正规非symlink可执行文件并写source/hash/path/size manifest，明确executed=false。普通artifact不含二进制；cache路径可变，真正runtime copy前必须在guard下重核hash。12个Python stub/小Git控制合同绿，含普通/缺文件/伪symlink与bootstrap输入校验；本机不运行Rust。下一Mac只编译，不启动居民；lease supervisor与真实EOF/kill/join合同及双host实测仍未完成。
 - **251/252已终态，当前无Turing重型在途**：251 turing-20261109T221609Z-bf323de3，168.30s/rc0/原group空，124/124ok、原hold10420/10406ms、replug298ms。实际outer Direct约+1.2s，inner selected carried约+7.4/+7.5s。after AB p50155031us、BA110693us，但两个方向顺序采样（AB较早），不能据差值称持续方向性故障；实际request wire在+7873ms也回Carried。3resident没有tuple mismatch/refresh，M移动不是247的被动NAT缓存反例；仍要收敛约6秒inner确认/恢复等待。252 Mac42710424112同249准确source/control，fmt/net67+1ignored/hop12/wires11/journal30/budget20（49.89s）全绿，完整source/transport/9control blobs/hash核。

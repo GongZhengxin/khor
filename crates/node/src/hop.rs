@@ -500,13 +500,20 @@ impl Node {
                 if let Ok((send, recv)) =
                     crate::tunnel::dial(&line.conn, &Ask::To(peer).words()).await
                 {
-                    return Some((via, line.conn.stable_id(), line.conn.downgrade(), send, recv));
+                    return Some((
+                        via,
+                        line.conn.stable_id(),
+                        line.conn.downgrade(),
+                        send,
+                        recv,
+                    ));
                 }
             }
             None
         };
         let tried = u32::try_from(picked.len().min(TRIES)).unwrap_or(u32::MAX);
-        let Ok(Some((via, outer_wire, outer, send, recv))) = tokio::time::timeout(HOP_WITHIN, tries).await
+        let Ok(Some((via, outer_wire, outer, send, recv))) =
+            tokio::time::timeout(HOP_WITHIN, tries).await
         else {
             if tried > 0 {
                 self.wires
@@ -579,9 +586,11 @@ impl Node {
                 // middle was let go as lost for ten minutes, its path closed,
                 // and the connection, back on the hop, fell to the relay for
                 // good (netlab f4).
-                khor_net::carry::observe_lifecycle(&id, "hop_outer_look", || {
-                    serde_json::json!({"role": "initiator", "attachment": attachment, "outer": outer_facts(&outer)})
-                });
+                khor_net::carry::observe_lifecycle(
+                    &id,
+                    "hop_outer_look",
+                    || serde_json::json!({"role": "initiator", "attachment": attachment, "outer": outer_facts(&outer)}),
+                );
                 let road = wires.link(&id).road;
                 let comparison = match road {
                     Some(khor_net::path::PathKind::Direct | khor_net::path::PathKind::Relay) => {
