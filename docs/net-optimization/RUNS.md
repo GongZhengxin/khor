@@ -687,3 +687,6 @@ N0 v4源码开始记录paths/hop逐次logical_request和f4故障窗口，ignored
 193rd turing-20261109T164452Z-f0c1a5db **SUCCESS**，219.72s，与194完全同source/control。root fmt/net66+1ignored/hop10/wires11/journal29/Linux24全绿（92.02s），完整source/control/bundle/group/hash采核。189整fixture SHA f620fc97...真实红→Linux/Mac同源绿，proof stale-owner-red189-green193-194-fixture-identity.json；194 refs snapshot/tree全批核、无在途。不替代当前owner质量策略、f4前置/恢复门、N1/WAN/iPhone/能耗。
 
 193/194后新工作副本仅修改f4准备helper为held_precondition_v2：双方reported carried连续10秒，掉路重置；原两60秒等待改同总120秒绝对准备期限，过期前置失败并不注故障。记录phase，故障/恢复/稳定门不变；尚未远端编译/格式/运行，不补写旧结果。
+
+
+195th turing-20261109T165750Z-d0af45b2已在193采证后launch **PID808786**，actual /proc/driver核live；准确base467336c2/treecd986018/snapshot503781bc/control39633806，held_precondition_v2独立三轮诊断，非SLO。196th Mac42660197395与195完整source相同，**root fmt/net66+1ignored绿**（0.40s），完整身份/transport/9 control blobs/hash已核。196 refs snapshot/tree全批核，唯一在途195；新CLI准备助手实际结果待，不重发同run。

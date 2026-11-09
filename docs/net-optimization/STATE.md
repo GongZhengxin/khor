@@ -1,17 +1,18 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-09 16:57 UTC（本地2026-11-10）。root串行，无子智能体。活动目标“完成计划”仍active；完整N0–N5未完成。速度/体验优先，个人可信设备网；没有合main、发布、中继采购或生产部署授权。
+更新：2026-11-09 17:02 UTC（本地2026-11-10）。root串行，无子智能体。活动目标“完成计划”仍active；完整N0–N5未完成。速度/体验优先，个人可信设备网；没有合main、发布、中继采购或生产部署授权。
 
 ## 当前执行与下一步
 
+- **195 held_precondition_v2三轮在Turing运行**：`turing-20261109T165750Z-d0af45b2`，PID808786，actual /proc/driver已核。准确base467336c2/treecd986018/snapshot503781bc/control39633806，任务netlab-hop-ownership，revision attempt_outcomes_v4_held_precondition_v2，非SLO。196 Mac42660197395同完整source已root fmt/net66+1ignored绿（0.40s），所有身份/transport/9 control blobs/hash已核；CLI准备助手须以195实际结果校准，不预记通过。
 - **190诊断已终态采证0/3**：`turing-20261109T163727Z-f72bdaf4`，663.76s、原group清空。准确base656e274e/tree70acbbc1/snapshota13dce7d/control39633806。三红分别：after-answer1558ms>1500ms；180s未达到carried前置、未进故障窗口；第三轮准备函数在双方当前owner已于t0前81.4/54.8s释放后仍返回，观察从Relay开始并停留。后者证明现有准备助手忽略until超时且没真正要求连续10秒hold，必须独立修正/记量测revision，不能假装有效的stalled-carried起点。40/40测量请求全ok，分轮21/0/19，第二轮零请求代表缺覆盖。九个三角色诊断文件完整；四次实际释放都匹配当前committed serial，不能归因189旧owner。full-round-timeline/current-owner-release-trace及全部报告已留，非SLO运行。
-- **193 Linux已同源全绿**：`turing-20261109T164452Z-f0c1a5db`，219.72s、原group清空。base d077d020/tree49b1aeb7/snapshotb4eef0cc/control39633806，root fmt/net66+1ignored/hop10/wires11/journal29/Linux24（92.02s）全过；189整fixture逐字不变。与194完整source相同，proof stale-owner-red189-green193-194-fixture-identity.json；194 run refs双引用全批核、当前两端无在途。
+- **193 Linux已同源全绿**：`turing-20261109T164452Z-f0c1a5db`，219.72s、原group清空。base d077d020/tree49b1aeb7/snapshotb4eef0cc/control39633806，root fmt/net66+1ignored/hop10/wires11/journal29/Linux24（92.02s）全过；189整fixture逐字不变。与194完整source相同，proof stale-owner-red189-green193-194-fixture-identity.json；194 run refs双引用全批核；后续195见首条。
 
 - **194 Mac42658228868同193完整source已成功**：root fmt/net66+1ignored/hop10/wires11/journal29/portable20全绿（49.93s），source/transport/全部9 control blobs/hash已核。189整fixture逐字一致真实红→绿，当前owner释放控制保留；CLI全部实际fixtures与netlab.sh、net/path.rs均逐字不变。Linux193也已绿；不冒称N1/WAN/手机/能耗完成。
 
 - 191为前版源仅stage、实际remote无execution/launcher，已superseded_not_launched；192同源Mac仅format红（observer一hunk），原patch应用得到当前193/194源。不得重发191或计产品失败。
 
-下一步依序：193/194已完成准确源/全部子集/fixture核对；N0修正f4准备助手的连续持有/失败传播，另记量测revision并以190第三轮前置丢失轨迹做验证，保留原故障时长/1500ms/30秒稳定门；N1继续查当前owner release的quality/gain/confidence，与旧182/162区分，再跑hop/recovery/dynamic/full。N2还有close-vs-offer竞态、IPC剩余预算/取消等独立缺口。不能因合同绿缩掉完整范围。
+下一步依序：193/194已完成准确源/全部子集/fixture核对；先采证195连续hold/失败传播的实际校准（注意完整所有轮与prepared/未进窗口的分别覆盖），保留原故障时长/1500ms/30秒稳定门；N1继续查当前owner release的quality/gain/confidence，与旧182/162区分，再跑hop/recovery/dynamic/full。N2还有close-vs-offer竞态、IPC剩余预算/取消等独立缺口。不能因合同绿缩掉完整范围。
 
 ## 本轮已确证的变化
 
@@ -44,11 +45,11 @@ U10已明确：P=iPhone，A=macserver（Mac），B=Turing（Linux），两服务
 | 控制 | /Volumes/disk0/Khor/worktrees/current/khor-build-net，feat/net，39633806已push；仅新增SSH-only netlab-hop-ownership，原timed profiles不改 |
 | 旧基线 | khor-net-baseline detached6485，原六fixture WIP未动；source90126283/tree97040f31保留 |
 | CPU基线 | khor-net-baseline-cpu-v3 detached6485，仅七fixture/helper变化，staged树49211b55/source31db523a用于176；前版186d/63043993也留ref |
-| 证据 | /Volumes/disk0/Khor/evidence/net，source-refs.json与turing-next-matrix.json核实际；194 refs全批snapshot/tree核 |
+| 证据 | /Volumes/disk0/Khor/evidence/net，source-refs.json与turing-next-matrix.json核实际；196 refs全批snapshot/tree核 |
 
 Turing root /tmp/khor-netlab-feat-net-1110，owned单flock重型槽；Rust1.95/jobs16/nice10；50GiB准入/40GiB停止/90min预算。计时不并跑编译/其他负载，无sudo/宿主网络改动，user/netns隔离。SSH BatchMode/ForwardAgent=no/StrictHostKeyChecking=yes。实际/proc cmdline＋terminal group核状态，观察超时不等于停止，不盲重发。
 
-控制39633806新增诊断是原f4单线程三轮、NETLAB_DIAGNOSTICS=lifecycle，native samples=off且初始化成功后header；link_attachment_committed在map锁内写入后输出serial/previous_serial，原link_attached仅代表意图。原1/full模式和所有timed gates保持。driver2/runner4共6 Python tests（含new profile/parser失败子例）是本机stub检查，非真实产品。
+控制39633806新增诊断使用f4 filter单线程三轮、NETLAB_DIAGNOSTICS=lifecycle，native samples=off且初始化成功后header；link_attachment_committed在map锁内写入后输出serial/previous_serial，原link_attached仅代表意图。原1/full模式和所有timed gates保持。driver2/runner4共6 Python tests（含new profile/parser失败子例）是本机stub检查，非真实产品。
 
 ## 完整未完成范围（保持N0–N5）
 
@@ -65,12 +66,12 @@ Turing root /tmp/khor-netlab-feat-net-1110，owned单flock重型槽；Rust1.95/j
 
 完整范围仍以PLAN/REQUIREMENTS/ACCEPTANCE为准；RUNS/REPORT留原始演进。本页重写前逐字状态见HISTORY-20261109-before-scoped-owner-verification.md，更早沿HISTORY链；历史在途仅代表当时，恢复必须核实际句柄。
 
-source-refs-audit-20261109-owner193-194-green.json已批核194 run refs，当前无在途。每refs/khor/net-evidence/<run>等于snapshot，:source等于tree，不能checkout/push这些本地refs。所有never-launched/superseded保留inputs/ref，不计通过/失败。
+source-refs-audit-20261109-held-v2-196.json已批核196 run refs；唯一在途195。每refs/khor/net-evidence/<run>等于snapshot，:source等于tree，不能checkout/push这些本地refs。所有never-launched/superseded保留inputs/ref，不计通过/失败。
 
 ops/submit-turing.py仅Git/Python/SSH：stage先锚ref，可--source复用pure metadata，--control显式39633806，--role先声明；默认control仍b998。launch前驱必须终态完整采证并再次核原group/flock/inputs。collector返回101也可能采证成功，看collection/report/group，不重复覆盖。ops/verify-mac-record.py仅GH/Git/retained artifact身份核验，不执行产品测试；分类仍须读实际日志。
 
 Mac临时source/bundle分支只在终态、完整留证、所有权/SHA一致后清理；复用者不删原请求分支。外盘缺失先读恢复入口，不按摘要覆盖WIP；其他治理工作不接管。完整goal仍active；对用户最近粗估3–5开发日，受回归、真机与能耗影响，不是完成承诺。
 
-## 当前新工作副本：f4准备修正，未远端验证
+## 当前最新源码：f4准备修正，远端验证中
 
-在193/194绿源之后，只改CLI netlab的f4_lab准备助手为held_precondition_v2：初次Y达到carried后，双方reported Forwarded需连续10秒；丢失即重置；原两次60秒等待改为合计120秒的绝对总准备期限（包含状态查询），过期明确报准备失败、保留全部journal/诊断，不注入故障。phase记录开始/持有/丢失/确证/失败。原故障窗口/请求30秒/恢复1500ms/30秒稳定断言不动。这是加强前置的量测revision，旧源结果不重写、不直接混入新版分布；reported path并非独立物理快路证明，仍需固定好路参照。尚未format/编译/运行这一批，下一步准确源远端检查与独立f4三轮。
+在193/194绿源之后，只改CLI netlab的f4_lab准备助手为held_precondition_v2：初次Y达到carried后，双方reported Forwarded需连续10秒；丢失即重置；原两次60秒等待改为合计120秒的绝对总准备期限（包含状态查询），过期明确报准备失败、保留全部journal/诊断，不注入故障。phase记录开始/持有/丢失/确证/失败。原故障窗口/请求30秒/恢复1500ms/30秒稳定断言不动。这是加强前置的量测revision，旧源结果不重写、不直接混入新版分布；reported path并非独立物理快路证明，仍需固定好路参照。196已证明root format/net66，195正在真实CLI编译/独立f4三轮；尚未取得该准备修正的实际结果。

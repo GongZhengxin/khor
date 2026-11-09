@@ -262,3 +262,14 @@ CPU新helper的首轮Mac163只因模块路径解析停在formatter，无编译/�
 ## 178共享carrier所有权反例与候选
 
 peer级质量/selected tuple共享，不代表每条connection都有共同selected路径。入站可能只剩Custom且watcher无selected，仍在传真实数据；178 v2已证明只看Main会错误允许释放。候选释放条件须对Main/Tunnel/served所有live消费者成立，并去重stable_id、排除closed/expired。非空无Custom集合无需carrier；空快照保守；有Custom仍用原测量gain。2×5秒节奏不动，诊断shared_comparison留全连接事实。实际红→绿、完整Hop、未知快照/多quiet epoch/资源成本与generation竞态仍须逐项验证；没有据此宣布162根因或N1/N2完成。
+
+
+## 193/194后的设计接续：已证、待证与实验顺序
+
+已证的旧generation错误189→193/194整fixture同源红转绿：实际release只能删除仍属该attachment serial的link，只有成功释放当前owner才记10分钟lost。它不解决190四次current-generation release。190第三轮双端释放在t0前81.4/54.8秒，旧准备helper仍返回Relay；新held_precondition_v2先加强连续reported hold与绝对准备期限，保留原故障/恢复/稳定门，并独立记revision。
+
+N1下一步先核新版准备有效性，再做同fixture的baseline/candidate/固定好路参照。190 current release的两次比较曾给出relay quality约131ms、carried约109ms，部分窗口samples0；现有quarter-RTT gain会把这对差距当作不足以换路。必须结合实际操作长尾、sample年龄/数量和固定路参照评估gain、置信与清理策略，不能见raw carried RTT较低就宣称违反已有公式，也不能把未知质量当作已证明无价值或仅放宽1500ms门。固定路参照可研究只在自有namespace控制候选可达性，保留真实Node/同负载；尚非批准或已执行的产品选路参数。
+
+N2另有源码支持但未复现的close-vs-offer窗口：let_path_go先Links.has，再await Endpoint.close_carried；后者直接向remote actor队列发送CloseCustom，可能在新attach＋offer之后才入队。当前四个生产attach入口（SSH入站、SSH主动、hop主动、hop入站）与三个close调用点应统一审查；仅加serial保护detach不能证明该窗口消失。候选设计是同peer的attach＋offer与check-unused＋enqueue-close序列化；close方法目前等待入队而非actor处理完成，需验证队列/resolve消息顺序，不随意套全局锁或声称返回即远端完成。先做能控制这个合法交错的真实合同，再改；无实际反例前仅记待证风险，不归因182/162。
+
+N3 CPU181多punch仅单pair信号。vendor remote_state已有三类低量debug触发事实：left a silent direct path、selected path degraded、connections not good enough；高频khor_net_samples是另一target。可优先研究仅启用已有decision模块日志定位18 vs3来源，避免先加新的vendor策略或把本机CPU卡顿一律视为网络退化。任何诊断额外日志均另标非SLO；仍需同core/affinity/原负载、独立基线与全部outcomes。
