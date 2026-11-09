@@ -8,6 +8,8 @@
 
 ## 先核当前句柄，禁止盲重发
 
+- **256 Mac42713674809**，request3b53b13bb8f043f29014d9067666c360，baseff608e91/tree7d0c7467/snapshotb13e4398/controlbe11104。只验证WAN worker构建，未运行居民。Turing下一build-only将复用此完整source，在253终态后才启动，避免污染计时；以新receipt核实际状态。
+- **下一N1实际outer各副本快照诊断**：只保留WeakConnectionHandle，不延长实际Connection生命；initiator用原5秒look，middle/receiver仅在诊断开启时每5秒读actual path facts，不加probe。默认splice/ended直接await，无新增timer；新增诊断醒来不能作普通性能对照。目的是在253这种“inner Custom消失”前核实际四个outer端，而非设备汇总/另一健康副本。尚待format/编译/真实诊断，不改选路/回收策略。
 - **253样本诊断已终态**：turing-20261109T222815Z-b033159a，246.74s/rc0/原group空；准确原source、samples模式1，124/124可达但60秒未reported双向再hold10s。inner只见+约0.58s Custom→Relay故障Go，未见20秒内回Custom确认；X+21.5/+26.5s已无Custom→Unused回收，+56.4s重新attach serial3。不是单纯固定确认门7.5s可概括；实际outer carrier副本需要单独快照。不把详细日志当普通SLO对照。
 - **255首次WAN仅编译失败**：42712837277/requestb8c661be41984a3a920027748ca7e76e，basecba63d7b/tree48a934a9/snapshotcd8f0d29/controlbe11104。root fmt通过、Rust example因DeviceInfo没有Serialize而失败，没有启动Node或产出成功manifest。只将devices控制回复显式映射id/name，避免序列化无关设备字段；继续build-only验。lease supervisor/真实清理合同尚未实现，不称跨网已通。
 - **当前唯一Turing重型任务253**：turing-20261109T222815Z-b033159a，netlab-peer-mobility-samples，PID1217909/child以execution核；复用251/249完整source c01c72de/tree4d493502/snapshote3be1244，control ef0b1ab021802a17710a6748e373ea12b87bf52d。只是额外samples debug诊断，不混普通性能/放宽门。后续本地WAN代码不混入。

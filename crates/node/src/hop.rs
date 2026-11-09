@@ -500,13 +500,13 @@ impl Node {
                 if let Ok((send, recv)) =
                     crate::tunnel::dial(&line.conn, &Ask::To(peer).words()).await
                 {
-                    return Some((via, line.conn.stable_id(), send, recv));
+                    return Some((via, line.conn.stable_id(), line.conn.downgrade(), send, recv));
                 }
             }
             None
         };
         let tried = u32::try_from(picked.len().min(TRIES)).unwrap_or(u32::MAX);
-        let Ok(Some((via, outer_wire, send, recv))) = tokio::time::timeout(HOP_WITHIN, tries).await
+        let Ok(Some((via, outer_wire, outer, send, recv))) = tokio::time::timeout(HOP_WITHIN, tries).await
         else {
             if tried > 0 {
                 self.wires
@@ -579,6 +579,9 @@ impl Node {
                 // middle was let go as lost for ten minutes, its path closed,
                 // and the connection, back on the hop, fell to the relay for
                 // good (netlab f4).
+                khor_net::carry::observe_lifecycle(&id, "hop_outer_look", || {
+                    serde_json::json!({"role": "initiator", "attachment": attachment, "outer": outer_facts(&outer)})
+                });
                 let road = wires.link(&id).road;
                 let comparison = match road {
                     Some(khor_net::path::PathKind::Direct | khor_net::path::PathKind::Relay) => {
@@ -680,12 +683,13 @@ impl Node {
         self: Arc<Self>,
         ep: Arc<iroh::Endpoint>,
         from: &str,
-        incoming_wire: usize,
+        incoming: iroh::endpoint::WeakConnectionHandle,
         ask: Ask,
         mut send: SendStream,
         recv: RecvStream,
         paired: bool,
     ) {
+        let incoming_wire = incoming.upgrade().map(|c| c.stable_id());
         let refuse = |mut send: SendStream, byte: u8| async move {
             let _ = send.write_all(&[byte]).await;
             let _ = send.finish();
@@ -740,9 +744,9 @@ impl Node {
                     crate::tunnel::dial(&line.conn, &Ask::From(from_id).words())
                         .await
                         .ok()
-                        .map(|(send, recv)| (wire, send, recv))
+                        .map(|(send, recv)| (wire, line.conn.downgrade(), send, recv))
                 });
-                let Ok(Some((onward_wire, ys, yr))) =
+                let Ok(Some((onward_wire, onward, ys, yr))) =
                     tokio::time::timeout(MIDDLE_WITHIN, onward).await
                 else {
                     return refuse(send, NO_ROUTE).await;
@@ -756,7 +760,24 @@ impl Node {
                     })
                 });
                 let _riding = (self.wires.hop_held(from), self.wires.hop_held(&y));
-                splice((send, recv), (ys, yr)).await;
+                let copying = splice((send, recv), (ys, yr));
+                if std::env::var_os("KHOR_NET_DIAGNOSTICS").is_some() {
+                    tokio::pin!(copying);
+                    let mut look = tokio::time::interval(LOOK_EVERY);
+                    loop {
+                        tokio::select! {
+                            () = &mut copying => break,
+                            _ = look.tick() => {
+                                khor_net::carry::observe_lifecycle(from, "hop_outer_look", || {
+                                    serde_json::json!({"role": "middle", "to": y,
+                                        "incoming": outer_facts(&incoming), "onward": outer_facts(&onward)})
+                                });
+                            }
+                        }
+                    }
+                } else {
+                    copying.await;
+                }
                 khor_net::carry::observe_lifecycle(from, "hop_splice_ended", || {
                     serde_json::json!({
                         "to": y, "incoming_wire": incoming_wire, "onward_wire": onward_wire,
@@ -792,10 +813,38 @@ impl Node {
                 }
                 self.wires.forgive(&asker);
                 let _riding = self.wires.hop_held(from);
-                attached.ended().await;
+                let ended = attached.ended();
+                if std::env::var_os("KHOR_NET_DIAGNOSTICS").is_some() {
+                    tokio::pin!(ended);
+                    let mut look = tokio::time::interval(LOOK_EVERY);
+                    loop {
+                        tokio::select! {
+                            () = &mut ended => break,
+                            _ = look.tick() => {
+                                khor_net::carry::observe_lifecycle(&asker, "hop_outer_look", || {
+                                    serde_json::json!({"role": "receiver", "outer": outer_facts(&incoming)})
+                                });
+                            }
+                        }
+                    }
+                } else {
+                    ended.await;
+                }
                 crate::carry::let_path_go(&self.weak(), &self.carry, x).await;
             }
         }
+    }
+}
+
+/// Read an actual carrier connection only inside an enabled diagnostic closure.
+/// A weak handle cannot keep an otherwise finished outer connection alive.
+fn outer_facts(outer: &iroh::endpoint::WeakConnectionHandle) -> serde_json::Value {
+    match outer.upgrade() {
+        Some(conn) => serde_json::json!({
+            "wire": conn.stable_id(), "closed": conn.close_reason().is_some(),
+            "measurements": khor_net::path::path_facts(&conn),
+        }),
+        None => serde_json::json!({"dropped": true}),
     }
 }
 

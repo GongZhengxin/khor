@@ -459,3 +459,6 @@ NAT另设netlab-nat-rebind-lifecycle诊断profile，沿原r0先物理成功才r1
 ### N4跨网worker构建与租约验收分阶段
 
 net-wan-build仅在原guard/Rust jobs限制内编译net_wan_probe，记录source与cache二进制路径/UID/正规非symlink/hash/size，executed=false；普通artifact不下载二进制到source-only本机。cache不被称为不可变产物，控制器真正运行前必须在guard下核源码/二进制hash并复制到本次owned root。构建成功不能当Node已启动或租约清理已通过。Rust worker只接私有Unix lease socket，严格fresh owner/run-id/role/0700 root/0600 owner、KHOR_NO_MDNS=1且无KHOR_NETLAB；与指定peer身份/名称绑定的fixture读。运行前必须在远端分别验证正常stop、controller EOF、受控kill controller后stop_serving/serve join与本次PGID空，异常资源期限/cleanup错误明确失败，不以state文件或EOF代替真正join。私有票只在可信控制器/lease内存中转交，既有15分钟/单次pair销毁不扩大，不进入stdout/源码/通用artifact。
+
+
+N1后续outer副本快照只持WeakConnectionHandle，沿actual initiator incoming/onward/receiver端读path_facts；initiator复用原LOOK_EVERY，middle与receiver的5秒interval只在诊断开启时存在、同一等待future select范围内回收，不派脱离owner的后台observer。默认原splice/ended await不增加timer/probe。其采样/wake开销属于额外诊断，禁止拿这种分布当普通性能收益。旧peer_relay_replug_v1物理/Rust测试fixture仍保持；未来先核实际承载四端/过期质量/所有权与日志时间，再改政策。
