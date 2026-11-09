@@ -144,3 +144,26 @@ N2源码复核补充（33202c22，尚未实施/执行）：Op::deadline含30/300
 共享的是调用方该次操作的实际截止点，保留原请求工作预算及外层档位；后台入口独立建立一次有界期限。
 hop现有3秒覆盖两个middle合计。is_reading含既有按token去重操作，rides_early是更窄集合；不合并或放宽。
 取消/到期不应清除别人的健康wire，但RetireUnheard对真正无应答坏wire的独立证据仍保留。具体下一批设计见NEXT-DESIGN。
+
+
+## N3底层congestion测量协议 v2（改记录前冻结，尚未执行）
+
+现有ignored `crates/net/tests/congestion.rs`只将成功echo加入answers，失败被丢，摘要却标“asked”；空成功列表还会报告零延迟。
+它不能证明无错误或完整尾部，也不是实际Node/SSH/hop验收。本协议纠正后续采样，不回填旧摘要或把修记录算生产性能改善。
+
+保留已有模拟几何：默认RTT300ms、每方向2%损失、20Mbit/s、200ms队列；环境覆盖仍明确记录。
+保留两方向各自固定seed，以及Cubic/NewReno/BBRv3与现有priority五组；CC_ONLY仍按旧约定只取所列控制器、priority关闭。
+每一组按原20秒bulk、3秒预热、结束前2秒不再发起echo、前一请求结束后等250ms再发下一请求；每个echo原10秒上限保留。
+报告实际运行时长，不把序列请求误称固定每秒四次或承诺恰好20秒完成。
+
+记录规则：
+
+- 每个已发起echo都保留实际elapsed和outcome（ok、timeout或open/write/finish/read阶段错误），不删失败、不把超时伪成一个成功延迟。
+- 汇总分别记录attempted/answered/failed/timed_out；成功响应的分布和全部尝试结束时间的分布分开标注，空集合为无数据，不显示0ms成功。
+- 原始逐次记录在该测量阶段结束后输出，避免在计时中的每次echo打印；保留controller、priority、index、elapsed和outcome。
+- idle→burst仍每组3轮、每轮先typing10秒再读80×80字节screen；typing的失败也要保留。screen整个open/write/finish/read采用明确10秒上限，原1MiB接收上限和完整6400字节校验保留。
+- 所有组/轮尽量保留记录后再汇报任何请求错误；编译/fixture失败与有效测量中的请求失败分开。不通过筛选成功者得到“无卡顿”。
+
+初次复验顺序执行3轮，相同参数、源tree/control/seed均入回执；然后再定义多seed和实际Node负载对照。
+这是baseline记录协议，没有批准新的p95/p99、吞吐/能耗阈值，也不通过改记录、改控制器或增加并发来制造改善。
+样本少只报n/p50/p95/max，不报p99；失败/取消/超时保留在结果里。可信SLO与真机验收仍按PLAN另做。

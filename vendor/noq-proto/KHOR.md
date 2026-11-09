@@ -101,7 +101,8 @@ netlab 里测到 7 次，全是这种：1 ms 的路上 4.67 秒、17.6 秒的样
 
 2026-11-09覆盖补齐候选：`a_backup_probe_is_acked_when_the_responders_data_road_is_blackholed`
 建立两路后将响应端备用路设Backup，黑洞其主数据路，独立PING备用；断言ACK从健康备用本路回来。
-这是此前path_acks只数总PATH_ACK没有覆盖的行为，尚待远端执行；不把新增用例当作已在旧源取红。
+这是此前path_acks只数总PATH_ACK没有覆盖的行为；42539256792已SUCCESS 436Noq/33路径/9选家。
+不把新增用例当作已在旧源取红。
 非对称单向故障、未验证/abandoned兜底及额外包数预算仍需另外覆盖。
 
 上游把所有 PATH_ACK 都放在「最适合发数据」的那条路径上（`may_send_data`，即本端标 `Available` 的那条），备用路径的 ACK
@@ -160,6 +161,11 @@ khor 从 f6d6d7fd 起双向打开地址观察（`endpoint::transport()`）。客
 
 改两处：写 OBSERVED_ADDR 的条件加 `!is_0rtt`；`can_send_1rtt` 在 0-RTT 时不把这一帧算作有东西可发，
 否则 debug 构建在「只写了 ACK」的断言上崩（测到过：常驻进程因此重启）。上游 1.3.0 同样如此，升级时要重新看。
+
+2026-11-09追加覆盖候选`address_discovery_reporting_waits_for_one_rtt_on_resumption`：双方地址报告始终both，
+恢复连接实际发早数据但暂不驱动服务端，要求OBSERVED_ADDR尚未发送；之后握手接受、流字节完整且1-RTT报告仍发送。
+原accepted测试在恢复时禁用客户端报告，不能替代该配置。新测试未编译/执行，无生产改动、无旧源红宣称；
+1.4缓存参数/发送/接收调用链差异见[UPSTREAM](../../docs/net-optimization/UPSTREAM.md)。
 
 ### 1. BBRv3 不知道连接闲下来了（2026-10-04，NET-5 轮）
 

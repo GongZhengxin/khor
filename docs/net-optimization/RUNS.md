@@ -366,3 +366,11 @@ NAT helper仅失败后输出两端既有path诊断，门和注入不变。提交
 N2–N4只读复核已记NEXT-DESIGN，八文件blob收据design-source-audit-20261109/inputs.json；无新网络/性能执行。
 94个source ref全部逐一验证REF:source等于tree；Noq6代码与42543928044绿快照一致，37边界源码与42545673450未执行快照一致，baseline/候选六fixture逐字一致。
 本机test_remote_development.py九项通过，diff-check通过；先前错误指定test_dev.py只得到0 tests，不能算验证，之后已使用真实入口。没有运行本机Rust/Node/Xcode。
+
+
+账单阻碍接续第2turn：复核42545673450/42545712302仍prepare前拒绝、无新任务，未重发。N5固定1.4.0 Noq1/2/5调用链审计与包checksum/源hash已保存upstream-20261109/noq-1-2-5-call-chains/；无上游执行或依赖升级。
+新增Noq2 address_discovery_reporting_waits_for_one_rtt_on_resumption，维持reporting启用，覆盖发0-RTT时零地址报告与后续1-RTT报告/字节交付。尚未远端编译/执行，不增已通过计数、不宣称旧源红；生产无改动。旧accepted的禁用角色配置仍原样保留。
+
+
+42545673450同源attempt2重新验证执行通道，prepare128936767186再次账单/额度拒绝（runner_id=0、零steps），network skipped；无编译/测试，不含本轮新增Noq2回归。完整attempt2原始状态/annotation和分类已存current-copy-hint-red-42545673450/attempt-2，原attempt1证据不覆盖。没有新source ref或在途任务。
+N3底层congestion采样v2在改记录前冻结到ACCEPTANCE：保留每个echo/typing/screen的结果，成功/失败/超时与成功分布分开，默认几何/seed/工作量不变，实际Node/能耗与SLO仍独立。未改benchmark实现或运行该测量。

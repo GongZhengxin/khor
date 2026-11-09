@@ -4088,6 +4088,58 @@ fn address_discovery() {
     assert!(s_events.next().is_none());
 }
 
+/// Keep reporting enabled on resumption: disabling it (as the configuration-change test below
+/// does) hides an OBSERVED_ADDR incorrectly sent before the client has 1-RTT keys.
+#[test]
+fn address_discovery_reporting_waits_for_one_rtt_on_resumption() {
+    let _guard = subscribe();
+    let server = ServerConfig {
+        transport: Arc::new(TransportConfig {
+            address_discovery_role: crate::address_discovery::Role::both(),
+            ..TransportConfig::default()
+        }),
+        ..server_config()
+    };
+    let mut pair = Pair::new(Default::default(), server);
+    let client_cfg = ClientConfig {
+        transport: Arc::new(TransportConfig {
+            address_discovery_role: crate::address_discovery::Role::both(),
+            ..TransportConfig::default()
+        }),
+        ..client_config()
+    };
+    let first = pair.begin_connect(client_cfg.clone());
+    pair.drive();
+    pair.server.assert_accept();
+    let now = pair.time;
+    pair.client_conn_mut(first)
+        .close(now, VarInt(0), Bytes::new());
+    pair.drive();
+
+    let client = pair.begin_connect(client_cfg);
+    assert!(pair.client_conn_mut(client).has_0rtt());
+    let stream = pair.client_streams(client).open(Dir::Uni).unwrap();
+    const MSG: &[u8] = b"reporting is still enabled";
+    pair.client_send(client, stream).write(MSG).unwrap();
+    // No server step has run for this connection, so these stream bytes
+    // must leave before any server handshake response can supply 1-RTT keys.
+    pair.drive_client();
+    let sent = pair.client_conn_mut(client).stats().frame_tx;
+    assert!(sent.stream > 0, "the resumed stream actually sent early data");
+    assert_eq!(sent.observed_addr, 0, "address reports cannot ride 0-RTT");
+
+    pair.drive();
+    assert!(pair.client_conn_mut(client).accepted_0rtt());
+    let server = pair.server.assert_accept();
+    let mut recv = pair.server_recv(server, stream);
+    let mut chunks = recv.read(false).unwrap();
+    assert_matches!(chunks.next(usize::MAX),
+        Ok(Some(chunk)) if chunk.offset == 0 && chunk.bytes == MSG);
+    let _ = chunks.finalize();
+    assert!(pair.server_conn_mut(server).stats().frame_rx.observed_addr > 0,
+        "reporting still works after the handshake");
+}
+
 /// Test that a different address discovery configuration on 0rtt used by the client is accepted by
 /// the server.
 /// NOTE: this test is the same as zero_rtt_happypath, changing client transport parameters on

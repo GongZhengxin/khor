@@ -2,7 +2,7 @@
 
 2026-11-09。本轮只读核查，不升级依赖、不把上游发布当作本项目验证通过。N0.1/N5.1仍部分完成；原45条盘点后新增iroh35/36修正，当前47条的上游等价核查仍未完成。
 
-逐项覆盖/退出账目见[VENDOR-AUDIT](VENDOR-AUDIT.md)：全部45项已做第一轮覆盖盘点，明确Noq 1/4/5/6的专属覆盖缺口，以及当前iroh33过滤器未执行net_report/socket的khor_测试。逐函数上游等价性和隔离候选行为复验尚未完成；泛化单元绿不替代缺失的专属回归。
+逐项覆盖/退出账目见[VENDOR-AUDIT](VENDOR-AUDIT.md)：全部45项已做第一轮覆盖盘点，明确Noq 1/4/5/6的专属覆盖缺口。随后Noq4独立ACK与Noq6保活计时、iroh选家/QAD/网桥9项已有对应源绿，具体边界查VENDOR-AUDIT/STATE。逐函数上游等价性和隔离候选行为复验尚未完成；泛化单元绿不替代缺失的专属回归。
 
 ## 固定来源与证据
 
@@ -41,8 +41,62 @@
 
 ## 升级与退出规则
 
-- 先列全iroh1–34、Noq1–11补丁的目标、当前回归、上游等价性和仍依赖的接口；本页只开始了补丁1和观测接口核对。
+- 先列全iroh1–36、Noq1–11补丁的目标、当前回归、上游等价性和仍依赖的接口；本页只开始了补丁1和观测接口核对。
 - 升级候选与本轮N1运行源隔离。iroh/noq/noq-proto/noq-udp的版本与锁文件需整体核对，不能只换proto造成两套类型或漏用本地patch。
 - 逐条确认等价后减补丁，保留原失败回归与新旧同fixture体验对照；升级或删补丁后需要相应Linux/Mac/真实设备验证。
 - 只有全部剩余行为都不再依赖本地vendor实现时，才移除整个vendor子树及Cargo patch；补丁1去重等价不构成整树删除条件。
 - 目前不声称1.4.1已解决本轮p1/p3/p7/f4问题，也不以仍需维护本地补丁为由拒绝评估上游升级。尚未改变本轮依赖或部署。
+
+
+## Noq 1/2/5：固定1.4.0调用链复核（2026-11-09）
+
+本节基于校验过SHA-256的同一1.4.0发布包；未执行该上游，也未升级依赖。
+逐文件SHA-256、准确行号摘录和来源在`evidence/net/upstream-20261109/noq-1-2-5-call-chains/`。
+这是具体链路的静态差异证明，不是上游问题已实际重现或补丁整体等价审计完成。
+
+### 1：BBR应用闲置通知的时序不同
+
+1.4的poll_transmit在connection/mod.rs:1444更新path.app_limited，Controller接口没有即时idle通知。
+内置BBR在on_end_acks(:1731)接收这个标志并同步自身inflight；on_packet_sent(:1622)先调用handle_restart_from_idle，
+其分支依赖自身inflight为零且自身app_limited非零，随后记录该包的is_app_limited。
+因此transport已经判为空闲、而下一批ACK尚未发生时，不能仅凭路径的app_limited字段证明BBR已收到该状态。
+本地补丁1在原发送轮询得出app_limited时立即调用Controller::on_app_limited，明确覆盖这段时序。
+
+loss链也不同：1.4连接层先remove_in_flight，再调用controller.on_packet_lost(:3523)；内置BBR该方法(:1800)累计lost并处理记录，
+没有本地在该事件中立即扣减C.inflight的一行，后者仍在on_end_acks同步。这个判断来自调用链和函数体，不是只搜不到方法名。
+静态不能给出吞吐倍数，也不能证明上游其他BBR改造没有缓解最终体验；仍需同源、同seed的idle→burst/丢包与Cubic对照。
+来源：[固定连接层](https://github.com/n0-computer/noq/blob/34f75c49f93de5e2ff943483cabc5b6d0c5df918/noq-proto/src/connection/mod.rs)、
+[固定BBR](https://github.com/n0-computer/noq/blob/34f75c49f93de5e2ff943483cabc5b6d0c5df918/noq-proto/src/congestion/bbr3/mod.rs)。
+
+### 2：缓存参数→pending→0-RTT封包链仍不同，旧测试漏了一个关键配置
+
+1.4 init_0rtt(:4021)恢复TLS ticket的transport parameters，显式清除项不包含address_discovery_role；
+set_peer_params(:6753)按双方角色设置pending.observed_address。space_can_send允许客户端有ZeroRtt密钥时发送Data，
+已排队的STREAM足以触发封包；populate_packet的OBSERVED_ADDR分支(:6339)没有!is_0rtt。
+接收端process_data对frame.is_1rtt检查，Frame::is_qad_frame将ObservedAddr归为1-RTT，不能以接收端宽容解释该差异。
+双方一直启用reporting、客户端在服务端握手响应前发送早数据的链路，静态上没有与本地两个门等价的保护；运行结论仍待上游候选。
+
+原address_discovery_zero_rtt_accepted在第二次拨号把客户端角色改成default/disabled，测试目标是配置变化被接受；
+它不能单独证明reporting保持开启时OBSERVED_ADDR不进入0-RTT。拒绝测试也不替代这个配置。
+本轮新增address_discovery_reporting_waits_for_one_rtt_on_resumption：双方保持both，
+先不驱动服务端，确认客户端已发STREAM却零OBSERVED_ADDR；再完成握手、确认早数据被接受且字节完整，并确认1-RTT仍发送地址报告。
+**只加测试，未改生产帧准入；未编译/执行，不能记为通过或旧源红。**
+来源：[固定封包与参数链](https://github.com/n0-computer/noq/blob/34f75c49f93de5e2ff943483cabc5b6d0c5df918/noq-proto/src/connection/mod.rs)、
+[固定帧准入](https://github.com/n0-computer/noq/blob/34f75c49f93de5e2ff943483cabc5b6d0c5df918/noq-proto/src/frame.rs)、
+[固定原测试](https://github.com/n0-computer/noq/blob/34f75c49f93de5e2ff943483cabc5b6d0c5df918/noq-proto/src/tests/mod.rs)。
+
+### 5：新最大号与最大号本次新确认不是同一条件
+
+1.4 inner_on_ack_received(:2972)在ACK抬高largest_acked_packet_pn时就得到new_largest_pn；
+只有sent_packets.get(ack.largest)成功才更新largest_acked_packet_send_time。
+随后newly_acked由还在记录里的范围求出，可能只有更低号的ack-eliciting包；:3056采样门只查new_largest_pn与ack_eliciting_acked，
+没有像本地largest_newly_acked那样要求最大号有有效本次记录。缺失最大号记录时，旧发送时间仍可能进入采样表达式。
+
+[RFC 9002 §5.1及附录A.7](https://www.rfc-editor.org/rfc/rfc9002.html#section-5.1)分别描述最大号本次新确认和至少一个新确认包需ACK的条件，
+并以该最大包的发送时间计算样本。本地保护对应的是这个差异；不能从“ACK抬高最大号”自动推出可安全读取旧时间。
+专属回归还应构造合法已发送但已不保留的最大号及仍在记录中的更低需ACK包，验证不产生假RTT；
+并用合法保留的最大号作正常采样对照。不能直接ACK未发/被刻意跳过的号，那只会测到PROTOCOL_VIOLATION。
+PacketNumberSpace::sent本身有非ACK-eliciting尾部记录回收，说明“丢失发送记录”不能一律解释成从未发送；
+实际最小序列/测试入口仍需准备与执行，当前没有该项行为红绿。
+来源：[固定ACK链](https://github.com/n0-computer/noq/blob/34f75c49f93de5e2ff943483cabc5b6d0c5df918/noq-proto/src/connection/mod.rs)、
+[固定包号空间](https://github.com/n0-computer/noq/blob/34f75c49f93de5e2ff943483cabc5b6d0c5df918/noq-proto/src/connection/spaces.rs)。

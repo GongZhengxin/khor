@@ -17,11 +17,11 @@ Noq4另补真实虚拟连接专项a_backup_probe_is_acked_when_the_responders_da
 
 | 编号 | 保留目标 | 当前覆盖及缺口 | 上游静态观察与退出条件 |
 | --- | --- | --- | --- |
-| 1 | BBRv3及时知道应用闲置，避免闲后输出慢 | KHOR记录旧congestion对照，但移植时没有带专属测试；435通用绿不能补这项缺口。需闲置→突发、loss/inflight一致性及与Cubic对照 | 1.4仍设置path.app_limited，Controller未见本地同名on_app_limited；BBR另有app_limited状态，不能只凭方法名认定无等价。隔离升级候选验证相同突发与丢包行为后逐条退出 |
-| 2 | OBSERVED_ADDR不能进入0-RTT，且可发送性判断一致 | 现有address_discovery_zero_rtt_accepted/rejection及第一方journal历史覆盖；还需最终源实际早数据/重连与帧准入检查 | populate_packet的OBSERVED_ADDR分支仍无显式!is_0rtt；须连同set_peer_params/外层可发送条件和上述回归确认，不能只凭一处分支宣布复现。两处条件都等价后退出 |
+| 1 | BBRv3及时知道应用闲置，避免闲后输出慢 | KHOR记录旧congestion对照，但移植时没有带专属测试；435通用绿不能补这项缺口。需闲置→突发、loss/inflight一致性及与Cubic对照 | 1.4完整链已复核：poll_transmit更新path标志，BBR在on_end_acks才接收；下一发送先读自身idle状态。loss路径也未即时扣自身inflight，见UPSTREAM。已证实事件时序差异，最终体验/等价仍须隔离同seed突发与丢包验证 |
+| 2 | OBSERVED_ADDR不能进入0-RTT，且可发送性判断一致 | 原accepted在恢复时禁用客户端reporting，未盖住始终both；新增reporting_waits_for_one_rtt真实握手测试，尚未编译/执行。原帧准入不变，最终源实际早数据仍待 | 1.4缓存角色→pending→可发0-RTT STREAM→populate分支及接收端1-RTT门已逐段确认，见UPSTREAM；缺少本地等价保护，但未执行上游。始终启用reporting的恢复覆盖及两处准入等价后退出 |
 | 3 | 发布不应答所需PTO、最近收到包、最早未确认包及无退避PTO | 黑洞Backup两用例实际读取这些stats，iroh有不应答判据覆盖；max_path_id_reached_lasts_until_a_path_is_abandoned只证明ID释放前提，不是stats专项测试 | 1.4公开PathStats未见本地4个字段；需要等价观测接口/调用者整体迁移。覆盖闲置、短暂停顿、ACK/PTO重置后退出 |
 | 4 | 可自行发包的多路径ACK沿自己的路返回，避免共享坏回程污染全部路径 | path_acks仅断言出现PATH_ACK，不验证走哪条路；历史p3/p4及现有黑洞场景有集成覆盖。需补非对称单向故障与ACK额外开销专项证据 | 1.4 populate_packet仍在may_send_data路上枚举各包号空间的pending ACK，未具本地按本路/兜底路分发。升级候选须验证备用路可独立收到ACK、未验证/abandoned仍有兜底，兼顾包数预算 |
-| 5 | 最大ACK号不是本次新确认时，不用旧发送时间取RTT | KHOR有7次旧网络异常采样证据；当前没有据此确认一条独立、构造该ACK序列的回归。泛化435绿不够退出 | 1.4最大号发送时间仍仅在sent_packets.get成功时更新，取RTT条件仍new_largest_pn与ack_eliciting_acked，未见本地largest_newly_acked条件。需专属ACK序列回归和合法ACK正常采样对照 |
+| 5 | 最大ACK号不是本次新确认时，不用旧发送时间取RTT | KHOR有7次旧网络异常采样证据；当前没有据此确认一条独立、构造该ACK序列的回归。泛化435绿不够退出 | 1.4完整ACK链已复核：最大号不在记录时仍抬new_largest，较低号新ACK非空可进入旧时间采样表达式。见UPSTREAM/RFC9002；需合法已发但回收记录的ACK序列及正常采样对照，尚未取得行为红绿 |
 | 6 | 路径已有自身保活时，不被连接级保活额外ping | 新增真实虚拟连接保活计时回归42543928044绿：连接5秒不抢路径15秒，路径自身与无路径计时器对照均仍保活；无生产改动/旧源红宣称。当前源空闲包/字节与手机预算仍缺 | 1.4 ConnTimer::KeepAlive调用ping，ping遍历所有包号空间置pending_ping；未见本地跳过规则。等价分层计时且实测成本达标后退出 |
 | 7 | 从显著慢Backup离开时及时重排在飞流字节 | what_is_in_flight_on_a_far_slower_backup_is_resent_on_the_new_path与健康同速不重排对照，435套件绿；实际f4/f4s仍有1.5秒超限，不声称整体验收完成 | 尚未完成1.4重排调用链等价核对；不能按函数名搜索为空就认定无实现。须原流完整交付、MTU排除、正常loss/CC记账及晚包去重后退出 |
 | 8 | 选路读最新ACK校正样本及计数，不用慢EWMA或把相同值当旧值 | khor_equal_rtt_samples_are_fresh_and_latest_is_not_the_smoothed_value、khor_selection_samples_do_not_count_peer_ack_delay_as_network_latency均在435绿；CPU调度偏差尚未闭合 | 1.4公开PathStats只有平滑rtt，未见latest_rtt/rtt_samples；qlog同名字段不等价。等值样本、ACK-delay可扣/不可扣、初始估计不计数及调用者覆盖后退出 |

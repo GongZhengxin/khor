@@ -87,3 +87,16 @@ N0部分、**N1仍红**、N2–N4未完成、N5部分。不能用一批单元或
 
 本轮N2补充：不能把28秒变为长操作的总上限；沿Op现有档位的真实截止点贯通，保留Request预算。N3发现普通每连接32席位/content另预算及Custom外层队列，需分层测量后设计调度。N4默认北京双URL同机、默认自家登记集中北京，尚无在线故障实证；新增机器/登记/双家仍是提议。
 本地9项remote_development Python检查通过，仅脚本；Rust/Node/Xcode未本机执行，不补记当前37回归绿。
+
+
+## 本轮接续（账单阻碍第2个连续目标turn）
+
+上一turn为进展：33202c22/32773d44已改变权威测试/设计/记录。本轮重新读取GitHub终态和原拒绝annotation，仍无在途run，随后仅对该已终态任务做一次同源attempt2重试，见下文。未达到blocked条件时不标blocked；后续只有无法继续实质推进且同阻碍达到阈值才使用该状态。
+N5继续核完Noq1/2/5的固定1.4.0相关调用链，包checksum复验通过，逐文件hash/行号摘录另存noq-1-2-5-call-chains，详细结论见UPSTREAM。
+新增Noq2始终启用地址报告的0-RTT握手测试；它补原accepted在恢复时禁用报告的盲区，仅测试、未编译/执行，不记438通过或旧源红。
+现有Noq437绿仍绑定旧快照，新增用例不在其中。37条件分支仍未改；下一次vendor任务需先分别确认Noq新增覆盖与Iroh预期红。
+另外N3既有ignored congestion工具只保留成功echo，失败被丢且成功数标签叫asked；ACCEPTANCE已在改记录前冻结v2完整采样协议，下一轮修测量，不能用它当前摘要证明无错误/长尾。
+
+
+为验证当前可执行性，42545673450于本turn同源重试attempt2：prepare job128936767186再次因账单/额度拒绝，runner_id=0/steps为空；network skipped，无编译/测试。不是新source，也不含本轮Noq2测试。原始run/jobs/annotation和未执行分类保存在原证据目录attempt-2，原attempt1证据保留；没有在途任务。
+执行器阻碍已连续出现两目标turn，但本turn有N5调用链证据/新增协议回归/N3采样协议等实质进展，目标继续active。下轮可先修N3测量记录，禁止仅重复状态/无意义重试；如果之后无可推进工作且同阻碍达阈值，再按规则blocked。
