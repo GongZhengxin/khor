@@ -70,7 +70,10 @@ async fn reference(s: &str, want: Option<Hop>) {
         for (from, to) in [(&y, &x), (&x, &y)] {
             let (_, errors) = requests(&format!("{s}-bootstrap"), from, to, 1).await;
             if !errors.is_empty() {
-                return Err(format!("bootstrap {} -> {}: {errors:?}", from.name, to.name));
+                return Err(format!(
+                    "bootstrap {} -> {}: {errors:?}",
+                    from.name, to.name
+                ));
             }
         }
         if want != Some(Hop::Relay) {

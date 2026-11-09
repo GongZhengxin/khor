@@ -93,3 +93,6 @@ N4只读preflight：macserver alias映射z13，严格known host/不转发agent�
 198`turing-20261109T172658Z-50f1621e` v1参照已完整采证**6/9**，587.30s、原group清空；准确basec85ed1b1/treefaee139c/snapshot2c321f78/control614c266。375请求完整配对：372ok＋3error，三次error均carried准备的首个请求，carried稳态0覆盖。Automatic/relay-only各3/3，两个方向每组每轮30个记录与原summary的n/p50/p95/max逐项一致；两端peer-hop=off和实际两张nft表已核。前两者都停在Relay，尚无candidate建立屏障，不能据此断定选择器最优/错误或聚合为产品成功率。reference-v1-calibration.json保留全部失败/分组；199 Mac42664955779同完整source root fmt/net66+1ignored绿，完整identity/control/hash核留。
 
 当前工作副本为hop_reference_v2（尚未远端format/编译/跑）：120s总准备期限内，先在未切断Relay时完成双向bootstrap；automatic/carried等原journal中对正确M的成功hop开路事件（发在attach前，只证明已开始，还要靠后续真实请求验证）；carried此时才阻断Relay。三组均从同一起点至少等60s，再双向真实请求、连续稳定10s后测量。产品选路/gain/时间门与测量负载不改，v1全保留、不混入v2分布。control7598180已push改metadata为v2，driver2/runner4共6 stub tests绿；原timed profiles不改。
+
+
+200 Mac42668241618（base6fa5b972/treef19337f9/snapshotbc6dc66d/control7598180）只bootstrap错误消息一hunk format红，无编译/行为；完整source/transport/9 control blobs/hash核留，原patch已应用。200 refs snapshot/tree双引用全批核，当前两端无在途。198 carried-bootstrap-journal.json已逐轮核：三次只见setup后约10020ms ask dial失败，没有成功hop开路事件，不能凭设备表等于载路已就绪；v2即针对这一前置缺口，不改产品策略。

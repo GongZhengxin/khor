@@ -701,3 +701,6 @@ N0 v4源码开始记录paths/hop逐次logical_request和f4故障窗口，ignored
 
 
 198th v1参照终态**6/9**，587.30s，准确source同199、control614c266。375started/375finished=372ok+3error，三次carried首准备请求错误且0稳态样本；auto/relay各3/3、两方向30个summary与raw逐项一致，隔离配置/实际nft表核留。完整身份/bytes/driver/group/hash采核。199th Mac42664955779同源fmt/net66+1ignored绿，不代替198实际校准。当前v2先保留bootstrap通道、等正确M的hop开路事件再隔离，三组至少60s发现期、总准备仍120s；控制7598180元数据显式v2，6 Python stub checks绿，尚未远端编译/执行。
+
+
+200th Mac42668241618仅bootstrap消息一hunk **format红**，root尚未编译/行为测试；完整source/control/transport/hash已核，原patch应用。198三次carried准备journal没有成功开路事件，只有约10秒ask拨号失败；设备表可见不能当作载路就绪，v2校准该前置。200 refs完整批核、当前无在途，待新准确source实际验证。
