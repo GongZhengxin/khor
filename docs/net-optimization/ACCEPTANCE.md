@@ -197,3 +197,11 @@ Mac便携网络入口（control6b1616c，已实际执行）通过--executor mac�
 先新增实际UDP因果回归：RTT20ms、每方向1000B/s、队列1000ms、0%损失；client连续发两个500B包，server收到第一包后立刻回1B。反向包应在后续正向序列化结束前独立送达。绑定/设置在计时前；给反向独立送达250ms调度容差（理论约11ms，相对下一正向约500ms间隔），仅为模型校准，不是产品SLO；外层防挂并清理测试runtime。
 
 旧共享FIFO先远端取红，再独立方向派发或按due排序并取绿。记录schema可沿v2，必须显式区分road_model版本；之前同源数据原样保留，不把旧模型与修正模型差值当成产品策略收益。完整采样/默认300ms/2%/20Mbit/200ms/20s/seed不因校准失败而放宽；实际Node/SSH/hop/能耗继续独立验收。
+
+## N2真实Accepted回答取消回归（执行前冻结）
+
+`link::dial_budget::cancelling_an_accepted_early_answer_stops_only_its_stream`使用scratch Node、Minimal且禁relay/discovery的端点，server只绑127.0.0.1；先完成一条真实Sessions请求与应答，为同一client/server身份建立resumption cache。
+第二条请求必须在server观察为0RTT、已被Node adopt且回答仍等待，才进入取消观察；未满足前置条件是fixture失败，不是所有权行为红。
+取消并join真实ask_early调用后，500ms观察server发送流收到STOP_SENDING（Ok(Some(code))）；连接关闭/EOF不能替代该证据。随后普通ask_on Sessions必须在5s防挂内成功，Main连接stable_id保持相同、peer dial_failed为0、总请求严格3次（warmup/被取消读/独立读），最后关闭端点并停止fixture任务。
+500ms是取消观察容差而非产品SLO。server延迟回答、不关闭共享wire；原生产Accepted裸JoinHandle代码保留，先执行取实际红，再修所有权。已有scope40ms/300s和两锁回归仍同批运行，不扩展0RTT/重放白名单。
+STOP_SENDING观察按[Noq 1.3 SendStream::stopped](https://docs.rs/noq/1.3.0/noq/struct.SendStream.html#method.stopped)；本地只读源码、未运行Rust formatter/编译/测试。

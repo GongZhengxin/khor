@@ -13417,6 +13417,10 @@ mod dial_budget {
     use super::*;
 
     async fn fixture() -> (tempfile::TempDir, Node, DeviceInfo, iroh::Endpoint) {
+        fixture_for(iroh::SecretKey::generate().public().to_string()).await
+    }
+
+    async fn fixture_for(peer_id: String) -> (tempfile::TempDir, Node, DeviceInfo, iroh::Endpoint) {
         let root = tempfile::tempdir().unwrap();
         std::fs::create_dir_all(root.path().join(".khor")).unwrap();
         std::fs::write(
@@ -13425,7 +13429,6 @@ mod dial_budget {
         )
         .unwrap();
         let node = Node::open_hosting(root.path().to_path_buf(), "budget", false).unwrap();
-        let peer_id = iroh::SecretKey::generate().public().to_string();
         {
             let loaded = node.devices_loaded().unwrap();
             loaded.doc.upsert(&peer_id, "peer", &[]).unwrap();
@@ -13447,6 +13450,169 @@ mod dial_budget {
             .await
             .unwrap();
         (root, node, peer, ep)
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn cancelling_an_accepted_early_answer_stops_only_its_stream() {
+        use std::sync::{
+            Arc,
+            atomic::{AtomicUsize, Ordering},
+        };
+
+        let server = iroh::Endpoint::builder(iroh::endpoint::presets::Minimal)
+            .relay_mode(iroh::RelayMode::Disabled)
+            .alpns(vec![ALPN.to_vec()])
+            .clear_ip_transports()
+            .bind_addr("127.0.0.1:0")
+            .unwrap()
+            .bind()
+            .await
+            .unwrap();
+        let (_root, node, mut peer, ep) = fixture_for(server.id().to_string()).await;
+        peer.addrs = server
+            .addr()
+            .addrs
+            .iter()
+            .filter_map(|addr| match addr {
+                iroh::TransportAddr::Ip(addr) => Some(addr.to_string()),
+                _ => None,
+            })
+            .collect();
+        assert!(!peer.addrs.is_empty());
+        let node = Arc::new(node);
+        let requests = Arc::new(AtomicUsize::new(0));
+        let (entered, ready) = tokio::sync::oneshot::channel();
+        let (stopped, stop_seen) = tokio::sync::oneshot::channel();
+        let mut serving = Aborts(Some(tokio::spawn({
+            let endpoint = server.clone();
+            let requests = requests.clone();
+            async move {
+                let answer = proto::encode(&Response::SessionRows { rows: vec![] }).unwrap();
+                // A real first handshake populates the client's resumption cache.
+                let warm = endpoint
+                    .accept()
+                    .await
+                    .unwrap()
+                    .accept()
+                    .unwrap()
+                    .await
+                    .unwrap();
+                let (mut send, mut recv) = warm.accept_bi().await.unwrap();
+                let bytes = recv.read_to_end(MAX_FRAME).await.unwrap();
+                assert!(matches!(proto::question(&bytes).unwrap(), Request::Sessions));
+                requests.fetch_add(1, Ordering::SeqCst);
+                send.write_all(&answer).await.unwrap();
+                send.finish().unwrap();
+                warm.closed().await;
+
+                let resumed = endpoint.accept().await.unwrap().accept().unwrap().into_0rtt();
+                let (delayed, mut recv) = resumed.accept_bi().await.unwrap();
+                let was_early = recv.is_0rtt();
+                let bytes = recv.read_to_end(MAX_FRAME).await.unwrap();
+                assert!(matches!(proto::question(&bytes).unwrap(), Request::Sessions));
+                requests.fetch_add(1, Ordering::SeqCst);
+                entered.send(was_early).unwrap();
+                tokio::join!(
+                    async {
+                        // STOP_SENDING is evidence of stream cancellation; a
+                        // closed connection cannot satisfy this observation.
+                        let _ = stopped.send(matches!(delayed.stopped().await, Ok(Some(_))));
+                    },
+                    async {
+                        let (mut send, mut recv) = resumed.accept_bi().await.unwrap();
+                        let bytes = recv.read_to_end(MAX_FRAME).await.unwrap();
+                        assert!(matches!(proto::question(&bytes).unwrap(), Request::Sessions));
+                        requests.fetch_add(1, Ordering::SeqCst);
+                        send.write_all(&answer).await.unwrap();
+                        send.finish().unwrap();
+                    }
+                );
+                // Keep the shared wire alive until the test has observed its reply.
+                resumed.closed().await;
+            }
+        })));
+        let warm = tokio::time::timeout(Duration::from_secs(5), ep.connect(server.addr(), ALPN))
+            .await
+            .unwrap()
+            .unwrap();
+        let (mut send, mut recv) = warm.open_bi().await.unwrap();
+        send.write_all(&proto::encode(&Request::Sessions).unwrap())
+            .await
+            .unwrap();
+        send.finish().unwrap();
+        let bytes = tokio::time::timeout(Duration::from_secs(5), recv.read_to_end(MAX_FRAME))
+            .await
+            .unwrap()
+            .unwrap();
+        assert!(matches!(
+            proto::answer(&bytes).unwrap(),
+            Response::SessionRows { .. }
+        ));
+        warm.close(0u32.into(), b"resumption cache primed");
+
+        let mut asking = Aborts(Some(tokio::spawn({
+            let node = node.clone();
+            let endpoint = ep.clone();
+            let peer = peer.clone();
+            async move { node.ask_early(&endpoint, &peer, &Request::Sessions, None).await }
+        })));
+        let was_early = tokio::time::timeout(Duration::from_secs(5), ready)
+            .await
+            .unwrap()
+            .unwrap();
+        assert!(was_early, "fixture must send a real resumed early request");
+        let shared = tokio::time::timeout(Duration::from_secs(5), async {
+            loop {
+                if let Some(conn) = node.wires.live(&peer.id, wires::Proto::Main) {
+                    break conn;
+                }
+                assert!(
+                    !asking.0.as_ref().unwrap().is_finished(),
+                    "early answer did not wait after adoption"
+                );
+                tokio::task::yield_now().await;
+            }
+        })
+        .await
+        .unwrap();
+        assert!(!asking.0.as_ref().unwrap().is_finished());
+        let task = asking.0.take().unwrap();
+        task.abort();
+        assert!(matches!(task.await, Err(error) if error.is_cancelled()));
+        let stream_stopped = matches!(
+            tokio::time::timeout(Duration::from_millis(500), stop_seen).await,
+            Ok(Ok(true))
+        );
+        let control = tokio::time::timeout(
+            Duration::from_secs(5),
+            node.ask_on(&ep, &peer, &Request::Sessions),
+        )
+        .await;
+        let held_id = node
+            .wires
+            .live(&peer.id, wires::Proto::Main)
+            .map(|conn| conn.stable_id());
+        ep.close().await;
+        server.close().await;
+        let task = serving.0.take().unwrap();
+        task.abort();
+        let _ = task.await;
+
+        assert!(
+            matches!(control, Ok(Ok(Response::SessionRows { .. }))),
+            "another request must still use the healthy wire"
+        );
+        assert_eq!(held_id, Some(shared.stable_id()));
+        assert_eq!(
+            requests.load(Ordering::SeqCst),
+            3,
+            "warmup, cancelled read and independent control only"
+        );
+        assert_eq!(node.wires.counts.snapshot().dial_failed, 0);
+        assert!(
+            stream_stopped,
+            "accepted early answer outlived its cancelled caller"
+        );
     }
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]

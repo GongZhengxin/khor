@@ -121,3 +121,5 @@ Accepted后原裸JoinHandle await本批尚未修正；握手到期若刚得到�
 
 
 42565998212终态仅**格式门失败**：提取RTT_BUDGET_MOST后budget_for链式表达缩为一行，远端patch原样应用；未编译/测试，不记行为红。source/control/ref已核，111 refs终态。新增真实0RTT Accepted→调用取消回归正在编写，生产回答所有权尚未改。
+
+已新增Accepted回答真实取消回归及fixture_for真实peer身份，生产Accepted裸JoinHandle未修。协议执行前写入ACCEPTANCE；前置要求真实0RTT与adopt后仍等待，随后取消500ms内只停止回答流、同一健康wire仍服务独立Sessions、严格三请求且无peer失败。下一Mac net-node先验证五预算回归并为该所有权问题取红；尚无该用例远端结果。
