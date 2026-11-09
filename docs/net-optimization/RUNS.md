@@ -725,3 +725,6 @@ Turing `turing-20261109T175508Z-912bcc0c`，base9c2e73488723fc550d335883e96eba78
 206/207同205完整source、control9135b6d4311ce74ee3a90dac188f4b094f780e35，稳定源码缓存首次/复用，两次fmt/net66+1ignored全绿。构建17.05→0.41秒，总51.5156→35.8381秒，实际net tests11.79/11.93秒，jobs16保持；pair proof turing-source-cache-pair-206-207.json。206输入短SHA原样保留，执行前已用canonical proof/ref核全SHA与所有control字节；207全SHA。源缓存仅Turing owned root原flock内使用，未知owner/脏tracked/软链拒绝保留，未改installed policy；Mac原隔离checkout路径保持。
 
 208 `turing-20261109T184729Z-59b8eed7`同source，追加原automatic lifecycle三轮（PID969908）；209 Mac42677483225/net-node同source、requestb2262c13…、实际control9135b6d，已in_progress。结果未预记，按原句柄继续采证。
+
+
+209 Mac42677483225已终态全绿且完整身份核：fmt/net66+1ignored/hop10/wires11/journal29/portable20（49.93s），同204/205完整source；不覆盖新210通知合同。210已stage未启动：`turing-20261109T185254Z-88fdeca5`，base16a0bafc/treee6aebe0c/snapshotcbbbac6f/control9135b6d。完整210 refs snapshot/tree已逐run核，唯一在途208/未启动210，后续以实际句柄为准。

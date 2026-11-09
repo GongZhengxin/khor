@@ -1,11 +1,11 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-09 18:52 UTC（本地2026-11-10）。root串行，无子智能体。完整目标仍为“完成计划”；用户曾暂停，现明确“继续”并已恢复本轮工作（goal服务18:07仍返回paused，自动跨轮续跑由用户面板控制）；完整N0–N5未完成。速度/体验优先，个人可信设备网；没有合main、发布、中继采购或生产部署授权。
+更新：2026-11-09 18:56 UTC（本地2026-11-10）。root串行，无子智能体。完整目标仍为“完成计划”；用户曾暂停，现明确“继续”并已恢复本轮工作（goal服务18:07仍返回paused，自动跨轮续跑由用户面板控制）；完整N0–N5未完成。速度/体验优先，个人可信设备网；没有合main、发布、中继采购或生产部署授权。
 
 ## 当前执行与下一步
 
 - **208追加三轮automatic lifecycle诊断运行**：`turing-20261109T184729Z-59b8eed7`，PID969908；同205完整source（d90bf666/9a7bd3d0/1a501da8），control9135b6d4311ce74ee3a90dac188f4b094f780e35；仅执行器稳定源码缓存变化，原负载/窗口不变，不能预记结果。
-- **209 Mac42677483225已进入in_progress**：net-node，同205完整source/control9135b6d；requestb2262c13fdbe45ff988cb0cf71c92597；local ref/实际GH headSHA已核。不是对202第三次rerun，新准确source补原生合同，原两次Internal server error保留。
+- **209 Mac42677483225已终态全绿采证**：net-node，同205完整source/control9135b6d；requestb2262c13fdbe45ff988cb0cf71c92597；root fmt/net66+1ignored/hop10/wires11/journal29/portable20（49.93s）全绿，完整source/transport/9 control blobs/hash已核。不是对202第三次rerun，新准确source补原生合同，原两次Internal server error保留。
 - **205已终态完整采证3/3**：416.55s、原group清空，192/192全ok；双向各n30/轮、p50/p95/max与raw逐项一致，九诊断文件均lifecycle samples=off，无measured release/close。三个automatic保持Carried，**未复现201第二轮**，不能冒称原因已修。
 - **206/207稳定源码缓存同源对照已全绿**：`turing-20261109T184220Z-81707871`与`…184314Z-9e2b17cb`，同205完整source，两次root fmt/net66+1ignored与group/hash核；build17.05→0.41秒、job51.52→35.84秒，net tests11.79/11.93秒。仅一组同快照初始/复用对照，不承诺普遍倍数；jobs16与所有网络观察门保持。cache/source在原flock下校验owner、非symlink、clean tracked与准确tree，不reset/clean/删除未知目录；web占位内容相同不重写mtime。control9135b6d已push，driver2/runner6共8 Python控制检查绿，含实际小Git fixture/保mtime/拒绝脏树/未知目录/symlink，没有本机产品编译。206原输入control为短SHA，完整SHA已在执行前用canonical-control-before-launch.json和control ref锚定、逐blob核；原输入不改，未来stage自动规范为40位。
 - **U12发现通知timer待验证边界**：Interfaces::saw每次filtered候选更新重设due，可能令已稳定接口集合在QAD-only地址变化下延后；尚未实际红，先加原1秒/双地址族合同再跑原实现，协议已入ACCEPTANCE。完整移动矩阵仍缺。
@@ -117,3 +117,6 @@ N4只读preflight：macserver alias映射z13，严格known host/不转发agent�
 ## 201后自动路径诊断准备
 
 新增SSH-only netlab-hop-reference-lifecycle，control32fa23c，automatic原case单线程三轮，lifecycle samples=off、完整attempts consumer，失败仍完成余轮。产品只给reference子模块补测量后/准备失败时的三角色sample_diagnostics收集，既有测量体和负载逐字不变，proof reference-v2-lifecycle-fixture-identity.json；产品选路/gain/期限/CC未改。driver2/runner4共6 Python stub tests绿（含新profile首轮失败/parser失败子例），没有本机Rust执行。先在Turing跑同准确source net-node的格式/既有24合同，再跑automatic诊断；尚未启动/未预记通过，后续以source-refs与实际句柄为准。
+
+
+210 `turing-20261109T185254Z-88fdeca5`已stage未launch，role diagnostic；base16a0bafc/treee6aebe0c/snapshotcbbbac6f/control9135b6d。只增加生产Interfaces/interface_addrs通知合同，方法原样、原1秒不变；等待208真正终态/group采证后串行net-node，先分清format/compile/真实合同红，不预记复现。209原生全绿不覆盖210新合同。source-refs-audit-20261109-cache-mobility-210.json已批核全部210 refs，pending仅208运行与210未启动。U11冷Legs::Dial仍有direct首腿优先等gap已入NEXT-DESIGN，Measured排序/单middle参照不替代冷候选统一验证。

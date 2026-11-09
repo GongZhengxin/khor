@@ -285,3 +285,14 @@ N3 CPU181多punch仅单pair信号。vendor remote_state已有三类低量debug�
 N4实际API接续核对（c85ed1b1，静态）：Node::invite是同步API，需endpoint文件，能力包含issuer id/name/live direct/relays与fresh token；发行端保存token hash与mint instant，15分钟、成功pair后烧毁，不能延长该窗。Node::pair在resident上执行且返回对端name，并非ID；成功后应另核fresh roster中的expected Turing public ID/双方唯一测试peer。Node::links只返回cached/aged Wires reading，不等于当前Links carrier map；不得拿它当原子attachment证明。
 
 物理测试不能设置KHOR_NETLAB：该env仅让198.18.0.0/15 lab地址绕过代理TUN过滤。应保持off-the-segment（KHOR_NO_MDNS=1）和每角色独立KHOR_HOME/TMUX_TMPDIR/socket，沿实际全网可达性、正常信任/0RTT规则；Node.scratch现有Reaped可按keeper PID TERM/等待/KILL，但现有scratch(tag)会删同PID目录，新物理controller应create-new owned root/owner marker，拒绝覆盖旧目录。冷/暖读只读双方新fixture，不碰既有store/session。要在测试本身/控制器证明lease EOF/截止/异常清理，不因进程state文件消失就推已清。
+
+
+## U11/U12继续审计：cold peer relay与移动地址（2026-11-09）
+
+当前hop::middles_with_cost已对Legs::Measured按两腿总ms排序，实际端到端由iroh再测；但Legs::Dial等冷起点仍将direct第一腿放在前面，并限制relay→middle→direct的冷候选。它是未测时减少尝试的旧启发式，不能据Measured排序或单middle201参照宣称整个peer-relay冷/暖都已速度优先。下一步需要两个middle不同速度、relay首腿更快、估计过期/未知、双向不对称等反例及有界竞速/背景预算；尊重非递归、可信设备、暂停/用户中继配置，不盲改TRIES/时间门。
+
+journal::watch_ears把完整DirectAddr集合经过interface_addrs过滤，Local及此前已通知同址才算接口；IPv4/IPv6都用SocketAddr比较。Interfaces原1秒settle负责合并接口变化。静态发现saw即使filtered集合不变也重设due，故QAD-only候选持续更新可能推迟真正已稳定的接口通知；210先加生产状态机合同，不修改策略，实际红/绿待远端。QAD-only新NAT映射被排除在“接口变了”之外是当前事实，不能据此断定映射迁移/发布失败，也不能把每个NAT hint都当整网故障触发全peer重连。需分别验证接口集合、外部映射/候选提示、整网/前台恢复这三类事件的更新/合并/预算与旧完成事件归属。
+
+现有p4只证明地址来源Local↔QAD时不该误报变化，静态观察稳定不等于移动重编号验收。完整IPv4映射、IPv6地址/前缀、独立/同时变化、peer-relay移动与iPhone切网的物理注入/首个业务/最好路/成本矩阵保持未完成。计划中的epoch用于隔离旧结果，不能把健康共享连接跟随任意候选变化全部清掉。roadbook::note_roads记录的是道路类型/RTT成本，不是endpoint拨号地址发布；移动地址的发布/发现链仍须独立跟踪，不将这个方法当覆盖证明。
+
+N4真跨网可优先用公开Node::serve在隔离测试进程内启动resident，Node::open_as观察client复用其IPC，再用Node::invite/pair、devices核public身份、ls_of核指定fixture内容；Node::link::stop_serving在同进程有按home的shutdown door。这样有机会避免CLI keeper子进程的额外收尾，但角色同步、临时ticket私有传递、lease EOF/绝对期限、真正join和owned-root清理仍须合同验证。此处仅API审计/接续建议，没有实现或真跨网运行，不能将首次配对后的读取称为冷网络建连。
