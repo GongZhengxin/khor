@@ -679,9 +679,17 @@ impl Wires {
     /// [`Self::link`] reads (requests first). No live wire: true, the relay
     /// as good as kept it.
     pub(crate) fn selected_beats_carried(&self, id: &str) -> bool {
-        self.live(id, Proto::Main)
-            .or_else(|| self.live(id, Proto::Tunnel))
-            .is_none_or(|c| khor_net::path::selected_beats_carried(&khor_net::path::path_facts(&c)))
+        let Some(conn) = self.live(id, Proto::Main).or_else(|| self.live(id, Proto::Tunnel)) else {
+            return true;
+        };
+        let facts = khor_net::path::path_facts(&conn);
+        let losing = khor_net::path::selected_beats_carried(&facts);
+        if losing {
+            khor_net::carry::observe_lifecycle(id, "outgoing_comparison", || serde_json::json!({
+                "wire": conn.stable_id(), "measurements": facts,
+            }));
+        }
+        losing
     }
 
     /// The lock that makes a key's dials one at a time.

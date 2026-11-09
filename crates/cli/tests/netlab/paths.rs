@@ -318,10 +318,14 @@ async fn one_speed_stalling(s: &str, one_way: u32, jitter: u32, stalls: bool) {
     // Settled: the first minute is the dial's.
     tokio::time::sleep(Duration::from_secs(30)).await;
     let mut busy = if stalls {
-        Some(cpu::BusyCpu::start(&[
-            u32::try_from(p.a.pid()).expect("positive resident pid"),
-            u32::try_from(p.b.pid()).expect("positive resident pid"),
-        ]).await.expect("valid one-CPU contention before measurement"))
+        Some(
+            cpu::BusyCpu::start(&[
+                u32::try_from(p.a.pid()).expect("positive resident pid"),
+                u32::try_from(p.b.pid()).expect("positive resident pid"),
+            ])
+            .await
+            .expect("valid one-CPU contention before measurement"),
+        )
     } else {
         None
     };
@@ -332,7 +336,10 @@ async fn one_speed_stalling(s: &str, one_way: u32, jitter: u32, stalls: bool) {
         let began = Instant::now();
         while began.elapsed() < long() {
             tokio::time::sleep(Duration::from_secs(30)).await;
-            busy.as_mut().unwrap().verify("spike").expect("CPU contention remains valid");
+            busy.as_mut()
+                .unwrap()
+                .verify("spike")
+                .expect("CPU contention remains valid");
             let cond = LinkCondition::new()
                 .latency_ms(one_way + 300)
                 .jitter_ms(jitter);
@@ -365,7 +372,8 @@ async fn one_speed_stalling(s: &str, one_way: u32, jitter: u32, stalls: bool) {
         tokio::time::sleep(long()).await;
     }
     if let Some(busy) = &mut busy {
-        busy.verify("end").expect("CPU contention covered the complete window");
+        busy.verify("end")
+            .expect("CPU contention covered the complete window");
     }
     drop(busy);
     let (ma, mb) = (moves(&p.a, &p.b, since), moves(&p.b, &p.a, since));

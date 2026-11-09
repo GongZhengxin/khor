@@ -494,6 +494,7 @@ impl Node {
             },
         );
         let attached = self.carry.attach(peer, Carrier::Hop { via }, recv, send);
+        let attachment = attached.serial();
         if let Some(addr) = self.carried_addr(&y.id) {
             ep.offer_addrs(iroh::EndpointAddr::from_parts(peer, [addr]))
                 .await;
@@ -515,6 +516,9 @@ impl Node {
             loop {
                 tokio::select! {
                     () = &mut ended => {
+                        khor_net::carry::observe_lifecycle(&id, "hop_attachment_ended", || serde_json::json!({
+                            "attachment": attachment, "via": via.to_string(),
+                        }));
                         // The road under the carried path is gone: iroh
                         // chooses again now, not when the path idles out.
                         crate::carry::let_path_go(&node, &links, peer).await;
@@ -540,6 +544,9 @@ impl Node {
                 };
                 held = if losing { held + 1 } else { 0 };
                 if held >= 2 {
+                    khor_net::carry::observe_lifecycle(&id, "hop_measured_release", || serde_json::json!({
+                        "attachment": attachment, "via": via.to_string(), "road": format!("{road:?}"), "looks": held,
+                    }));
                     if road == Some(khor_net::path::PathKind::Relay) {
                         lost(&id, &via.to_string());
                     }

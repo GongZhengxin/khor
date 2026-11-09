@@ -109,12 +109,40 @@ pub struct Links(Arc<Inner>);
 /// Ends when its link does: the far end hung up, the stream broke, or a
 /// newer link to the same machine took its place.
 #[derive(Debug)]
-pub struct Attached(oneshot::Receiver<()>);
+pub struct Attached {
+    serial: u64,
+    ended: oneshot::Receiver<()>,
+}
 
 impl Attached {
-    pub async fn ended(self) {
-        let _ = self.0.await;
+    /// Process-local attachment identity for lifecycle observations.
+    pub fn serial(&self) -> u64 {
+        self.serial
     }
+
+    pub async fn ended(self) {
+        let _ = self.ended.await;
+    }
+}
+
+/// Opt-in lifecycle facts for isolated network diagnosis. Values are built
+/// only when the same diagnostic switch as the native entry point is set.
+/// This does not change the connection journal or its human-facing words.
+pub fn observe_lifecycle(
+    peer: impl std::fmt::Display,
+    phase: &str,
+    details: impl FnOnce() -> serde_json::Value,
+) {
+    if std::env::var_os("KHOR_NET_DIAGNOSTICS").is_none() {
+        return;
+    }
+    let at = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(0, |d| d.as_millis() as u64);
+    eprintln!("[khor-carried-lifecycle] {}", serde_json::json!({
+        "schema": 1, "at": at, "pid": std::process::id(),
+        "peer": peer.to_string(), "phase": phase, "details": details(),
+    }));
 }
 
 impl Links {
@@ -175,6 +203,9 @@ impl Links {
     pub fn detach(&self, peer: &EndpointId, carrier: Carrier) {
         let mut map = self.lock();
         if map.get(peer).is_some_and(|l| l.carrier == carrier) {
+            observe_lifecycle(peer, "link_detached", || serde_json::json!({
+                "serial": map.get(peer).map(|l| l.serial), "carrier": format!("{carrier:?}"),
+            }));
             map.remove(peer);
         }
     }
@@ -197,6 +228,9 @@ impl Links {
     {
         let (out, out_rx) = mpsc::channel::<Bytes>(QUEUE);
         let serial = self.0.serial.fetch_add(1, Relaxed);
+        observe_lifecycle(peer, "link_attached", || serde_json::json!({
+            "serial": serial, "carrier": format!("{carrier:?}"),
+        }));
         self.lock().insert(
             peer,
             Link {
@@ -213,18 +247,22 @@ impl Links {
         let (done, gone) = oneshot::channel();
         let links = self.clone();
         tokio::spawn(async move {
-            tokio::select! {
-                () = write_frames(out_rx, w) => {}
-                () = links.read_frames(peer, r) => {}
-            }
+            let ended = tokio::select! {
+                () = write_frames(out_rx, w) => "writer_ended",
+                () = links.read_frames(peer, r) => "reader_ended",
+            };
             let mut map = links.lock();
+            observe_lifecycle(peer, "link_io_ended", || serde_json::json!({
+                "serial": serial, "current_serial": map.get(&peer).map(|l| l.serial),
+                "carrier": format!("{carrier:?}"), "side": ended,
+            }));
             if map.get(&peer).is_some_and(|l| l.serial == serial) {
                 map.remove(&peer);
             }
             drop(map);
             let _ = done.send(());
         });
-        Attached(gone)
+        Attached { serial, ended: gone }
     }
 
     async fn read_frames<R: AsyncRead + Unpin>(&self, peer: EndpointId, mut r: R) {

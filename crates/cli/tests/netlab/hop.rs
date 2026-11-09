@@ -841,6 +841,9 @@ async fn f4i_a_new_connection_does_not_write_its_first_road_as_a_move() {
             fmt(&yl),
         ),
     );
+    for n in [&x, &y, &m] {
+        sample_diagnostics(s, n);
+    }
     assert!(back.is_some(), "x is back through m");
     let (_, change, _) = first.expect("a road line for the new connection");
     assert_eq!(

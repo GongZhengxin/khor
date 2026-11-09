@@ -364,6 +364,7 @@ pub(crate) async fn let_path_go(
         return;
     }
     if let Some(ep) = node.upgrade().and_then(|n| n.current_ears()) {
+        khor_net::carry::observe_lifecycle(peer, "carried_close_requested", || serde_json::json!({}));
         ep.close_carried(peer).await;
     }
 }
