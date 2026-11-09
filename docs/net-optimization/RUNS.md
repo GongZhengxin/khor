@@ -434,3 +434,6 @@ Mac便携分流control6b1616c8b816bdb72a8a031d0ff28cc46a3fb4c7在feat/net，沿�
 
 42558490443终态**格式门失败**，source/tree/control已核；仅新增early过期空锁assert内await换行，远端patch已原样应用，无编译/测试，不算early行为红/绿。102 refs终态。
 N3道路双向因果校准测试已按先前协议写下，模型未改；control e7258e57155da1618f0f3b00fd1e395f481b5f19已push并在net-congestion计时前强制校准1pass/0fail。本机driver桩测试证明校准红即止、首计时轮红仍执行后两轮保留最终exit8；非Rust执行。下一准确源先net-node，再N3校准待红。
+
+
+**42558820303 Mac net-node在途**：clean783619dd、treef3b250de87c64b452ccf2dac6543eb63d677938a、snapshot27bfd24c3233e98ab8998f8056bbba3f8650e5c4、controle7258e57155da1618f0f3b00fd1e395f481b5f19。early格式patch及N3校准测试源码；Node profile不执行N3，结果未出，103th ref/mac-early-admission-formatted-42558820303已锚。

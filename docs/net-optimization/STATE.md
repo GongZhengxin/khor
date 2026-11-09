@@ -15,7 +15,7 @@
 | 产品 | `/Volumes/disk0/Khor/worktrees/current/khor-net`，`feat/net`；恢复核实际HEAD/diff，本轮API入口已验证；37仍为72b1d891，N2锁等待候选随后提交，恢复核实际diff |
 | 控制 | `/Volumes/disk0/Khor/worktrees/current/khor-build-net`，`feat/net`；2e70c39fe6a70bbbd09b7434f90e6c2d62e84b16已push；历史run绑定各自control |
 | 基线 | `/Volumes/disk0/Khor/worktrees/current/khor-net-baseline`，detached6485cb83d3b1f0bb93d4633825dc956623d78af9；只允许paths/hop/lab/nat.rs、dev.py/netlab.sh六fixture；生产基线原样 |
-| 证据 | `/Volumes/disk0/Khor/evidence/net/`；source-refs.json现102条不可变source refs；均已终态 |
+| 证据 | `/Volumes/disk0/Khor/evidence/net/`；source-refs.json现103条不可变source refs；仅42558820303在途 |
 
 ## 执行通道现状
 
@@ -73,7 +73,7 @@ N0部分、**N1仍红**、N2–N4未完成、N5部分。不能以单元绿或执
 
 恢复先核绝对worktree/branch/HEAD/diff、当前run终态和回执，不从摘要覆盖未提交内容，不重复调度活动run。
 每run锚refs/khor/net-evidence/<run>；git rev-parse REF:source必须等于回执tree；只用git show读容器，不checkout覆盖、不push本地证据refs。
-source-refs.json现102条；425527传输失败与托管账单拒绝均tests_executed=false、remote_source_verified=false。旧Mac实际红已验证source/control。重要artifact下载到规范证据目录。
+source-refs.json现103条；425527传输失败与托管账单拒绝均tests_executed=false、remote_source_verified=false。旧Mac实际红已验证source/control。重要artifact下载到规范证据目录。
 Mac源/bundle分支仅在终态、证据保留、所有权和SHA匹配后清理；复用源的请求不拥有原源分支。重试不改旧源/control/attempt证据。
 外盘缺失只读git show feat/net:docs/net-optimization/STATE.md和PLAN；原外盘未提交内容不能按摘要覆盖。治理另沿中央code-quality STATE/RESUME，不与本任务混合。
 
@@ -100,3 +100,5 @@ N3已发现旧共享FIFO延迟派发器可能跨方向阻塞，模型校准协�
 **42558490443 early锁期限候选Mac net-node终态格式门失败**：base802e13a86ba738d54a8b096445b95435ab6b7712 clean、treef2afc1c9a48599f6091675105bc66075c73fe830、snapshotbfb637abe9d3d8a56683a5d7c6b5fcefa0999273、control2e70c39fe6a70bbbd09b7434f90e6c2d62e84b16。mac-early-admission-candidate-42558490443保存准确source及format.patch；仅新增过期空锁assert内await换行，未编译/测试，现已原样应用。生产early候选待新源绿，不记行为红。
 
 N3因果校准用例已按ACCEPTANCE冻结协议写入congestion.rs，尚未编译/执行；模型本身仍旧单FIFO。control e7258e57155da1618f0f3b00fd1e395f481b5f19已push：net-congestion先运行唯一校准用例并要求1pass/0fail，再执行三轮ignored测量；失败时不产后续计时log。本机driver桩检查1项通过（校准红即止、计时首轮红仍三轮全留），无本机Cargo/Rust。下一准确源先Mac net-node检查early候选与新增源码格式，再N3校准预期红；不可在校准前据模拟结果选择CC。
+
+**42558820303 early格式修正源Mac net-node在途**：base783619dd2bf1d034828f717bfb90f1f2b635a6a7 clean、treef3b250de87c64b452ccf2dac6543eb63d677938a、snapshot27bfd24c3233e98ab8998f8056bbba3f8650e5c4、controle7258e57155da1618f0f3b00fd1e395f481b5f19。含early修复/格式patch及N3模型校准测试（本profile仅格式/Node，不执行N3测试）。mac-early-admission-formatted-42558820303与103th ref已保存，恢复查该ID。
