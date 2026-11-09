@@ -27,6 +27,7 @@
 | U6 | 先讨论清楚；新建 `feat/net` 并写下计划 | 已完成规划落盘 |
 | U7 | 活动目标“完成计划” | 授权按计划实施和验证，取代旧的仅规划状态 |
 | U8 | 真机验收可用“iPhone＋两台处于不同网络的电脑” | 已确认设备组合；型号、OS版本和具体网络条件在验收前采集 |
+| U9 | “可以在我的turing服务器跑的, 更快” | 用户明确授权并优先Turing执行Linux netlab；Mac VZ能力作为备用，Mac原生构建继续macserver |
 
 下列是计划中的设计提议，尚需测量或实验确定：评分/切换参数、探测频率、缓存有效期、交互与批量是否拆连接、是否双家、Linux 执行器部署方式、中继新增位置与数量。不能在交接中把它们写成用户已批准的具体参数或部署。
 
@@ -156,7 +157,7 @@
 
 ## 8. 开发与证据规范
 
-- 遵守 [REMOTE-DEVELOPMENT.md](../REMOTE-DEVELOPMENT.md)、[LOCAL-CHECKS.md](../LOCAL-CHECKS.md) 及中央 STATE 最新环境约束。本机 source-only，不安装 Node/Rust/Xcode 依赖或执行重型编译测试。
+- 遵守 [REMOTE-DEVELOPMENT.md](../REMOTE-DEVELOPMENT.md)、[LOCAL-CHECKS.md](../LOCAL-CHECKS.md) 及中央 STATE 最新环境约束。本机 source-only，不安装 Node/Rust/Xcode 依赖或执行重型编译测试。U9已授权Turing作为Linux netlab主通道，准确源码/可信driver与原门不变。
 - 私库控制入口：`colehank/khor-build`；Mac runner：`khor-mac-mini-m4`；原有任务包括 `fast`、`native`、`lab`；本分支新增网络任务的实际入口见 [ACCEPTANCE.md](ACCEPTANCE.md)。具体可用任务与 runner 状态执行前再查。
 - `--task lab` 是原生 KhorLab 构建，不是 Linux netlab。源码快照不自动包含未跟踪/忽略文件，新增源码需先暂存。回执必须匹配被验证的源码 tree。
 - Mac 重型任务共享一个槽并经过 `run-build` 资源门；SSH 断线不影响已调度任务。被取消的 pending 不算已检查，不盲目重复提交。

@@ -2,7 +2,7 @@
 
 更新：2026-11-09 07:38 UTC；root串行，无子智能体。活动目标“完成计划”仍active。
 
-**当前无在途run；125 refs全部终态。42579909366隔离Linux能力/正常停机/父死清理实际绿。** 下一步将既有netlab可信driver接入该guest，先验证Rust1.95编译与冒烟，再在同aarch64 VZ后端串行重跑基线/候选原门。能力绿没有执行产品测试，N0–N5整体仍未完成。完整证据见末尾接续。
+**U9最新：用户明确授权“可以在我的turing服务器跑的, 更快”，Linux主通道切到Turing。** 已连通/只读资源检查并实测userns/veth/netem/nft/conntrack。准备固定Rust1.95和准确source/可信原driver，先recovery串行三轮，再同主机基线/候选原门。Mac VZ能力绿保留作备用，未再运行；N0–N5整体未完成。125旧refs全终态。
 完整范围：[PLAN](PLAN.md)；约束：[REQUIREMENTS](REQUIREMENTS.md)；运行记录：[RUNS](RUNS.md)；原始结果：[REPORT](REPORT.md)。
 此前STATE原样归档[Accepted轮历史](HISTORY-20261109-before-accepted-green.md)与[本轮历史](HISTORY-20261109-before-probe-green.md)；历史在途/候选文字仅代表当时状态，恢复以本页和实际工作区为准。
 
@@ -152,3 +152,10 @@ source baseb56576ce52c56b4d8c31d84e6618abec662d0cd9、tree2b5bfce2e95c0ef4169a6c
 
 
 本轮为progress：新取得真实隔离Linux网络能力与正常/父死清理证据；未收完整目标、未设blocked。三次cap run全部终态/下载核验/immutable refs保留后，原owner以精确force-with-lease原子退役共享source/bundle两远端临时分支，ls-remote复核为空；复用请求未单独删除它们。记录vz-probe-source-retirement.json。下一步无需重新索取设备组合或重复能力探针，继续上述产品Linux通道。
+
+
+## U9：Turing为Linux主通道
+
+用户明确授权Turing，覆盖此前macserver-only的Linux执行器选择；本机仍source-only，Mac原生/可信发行边界不变。Turing SSH既有alias/known host，ForwardAgent=no；不转SSH/GH/token/签名/模型凭据。当前Linux5.15.0-139 x86_64，UID1110，128逻辑CPU，503GiB总/470GiB可用内存、约490GiB本地盘空闲，初始load2.63/5.82/8.44。userns/veth/netem/nft建表与conntrack-L均实际通过（只在新namespace，不改宿主网络）。已有nft0.9.3/conntrack1.4.5只读复用；默认Rust1.97.1不作为本计划工具链，将用官方固定1.95四component+x86 SHA。
+
+控制新增network-ssh-runner.py，使用/tmp/khor-netlab-feat-net-1110的owner/每run目录、单槽flock，本地盘专属CARGO_HOME/target/tools，不在NFS home写缓存/源码，不改默认Rust/系统包。编译jobs16/nice10，测试filter/线程/重复次数/门由原network.sh保持；比较时严格串行，单场景线程1。source用无父snapshot bundle/SHA256/tree核验，本地immutable ref/远端准确source/control/report；不是release attestation。prepare/compile/fixture/产品红分别归类。VZ未提交guest产品原型已保留到evidence/net/vz-product-prototype-before-turing，控制树不再接入该原型。下一步实际调度Turing，既有Linux原红和N2–N5未结。
