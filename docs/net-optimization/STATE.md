@@ -13,14 +13,31 @@ Linux重型用私库khor-build GitHub network job；Mac沿既有macserver lane�
 
 | 用途 | 位置 / 分支 |
 | --- | --- |
-| 产品 | `/Volumes/disk0/Khor/worktrees/current/khor-net`，`feat/net`；源码检查点f17b8a31（之后文档更新，实际HEAD恢复时核对） |
-| 控制 | `/Volumes/disk0/Khor/worktrees/current/khor-build-net`，`feat/net`；6447289f4f9260df4f5887adc7c1e2f2270bbcce已push（历史run仍绑定c68b644） |
+| 产品 | `/Volumes/disk0/Khor/worktrees/current/khor-net`，`feat/net`；源码检查点f17b8a31；37候选及Mac入口随后提交，实际HEAD恢复时核对 |
+| 控制 | `/Volumes/disk0/Khor/worktrees/current/khor-build-net`，`feat/net`；6b1616c8b816bdb72a8a031d0ff28cc46a3fb4c7已push（历史run各绑定原control） |
 | 基线 | `/Volumes/disk0/Khor/worktrees/current/khor-net-baseline`，detached6485cb83d3b1f0bb93d4633825dc956623d78af9；只有paths/hop/lab/nat.rs、dev.py/netlab.sh六文件fixture修改；生产原样 |
 | 证据 | `/Volumes/disk0/Khor/evidence/net/` |
 
+## 当前有效执行通道与37候选
+
+第3个接续turn已发现并实际验证Mac替代通道，因此整体目标不在执行器死锁，保持active；Linux托管lane的账单限制仍在。
+直接SSH macserver经既有iroh-ssh路由在banner超时，未改路由/信任或用户会话。既有worker-smoke **42549824680 SUCCESS**，已保存工具链/共享guard和C编译探针证据；它不是产品网络通过。
+控制6b1616c8b816bdb72a8a031d0ff28cc46a3fb4c7已push：注册development.yml新增executor=mac便携分流，跳过托管prepare/retire；
+同一Mac runner/队列/构建锁，先校验准确源码再运行。仅GitHub临时只读checkout权限、persist=false，无个人凭据/正式发行，现有准入/空间策略不改。
+本机CLI和预上传任务范围检查新增，11项Python通过；默认standard不传新input，保留旧控制main兼容。
+
+**42551075037 已终态预期产品红**，Mac正式执行同7b61b7edc12ed5ef384b7054240e7b5202f1638b、snapshota21c1a978549979a8956639d35fdbd722cc6c8df、basea087 dirty，control6b1616c。
+根格式/437Noq通过，Iroh35pass/1fail仅新无接收copy快速Go用例；实际Hold双PING、预期Go。home过滤器因路径红未执行。
+证据mac-current-copy-hint-red-42551075037已下载并核tree/control；Mac26.6.2 arm64、Rust1.95.0、jobs2。不是Linux性能证据。
+第一次dispatch因job env错误使用runner.temp返回HTTP422，未创建run；修正为step env后使用同一request创建本run，不算一次产品失败。
+
+37条件分支现已按实际红写候选：当前路有故障后/最近原tick接收提示时保留36的决定后备用应答与当前故障copy探测；
+没有提示时允许故障后已有备用应答快速Go。故障前旧样本仍不行、4秒兜底仍在；额外false旧包/兜底检查属于待验证绿覆盖，不宣称旧源已对它们取红。
+当前37生产候选、Noq2新用例、N3记录器均需下一次远端格式/编译/单元；不能以本次437绿替代新源。
+
 ## 当前执行器阻碍
 
-**没有在途任务。** 42545673450与42545712302在prepare启动前被GitHub账单/支出额度拒绝：steps为空、runner_id=0，network skipped。
+**当时没有在途任务。** 42545673450与42545712302在prepare启动前被GitHub账单/支出额度拒绝：steps为空、runner_id=0，network skipped。
 两项均无测试/远端源码artifact，不能算产品红、行为红或通过。GitHub原始run/jobs/annotation与本机提交回执已保存到对应证据目录。
 已向用户异步询问恢复额度或已有Linux执行器；不擅自改账单、采购或运行本机构建。
 既有Mac任务也依赖托管prepare，直接重复调度不能绕过此问题；不改变凭据/发行边界。
@@ -77,7 +94,7 @@ N0部分、**N1仍红**、N2–N4未完成、N5部分。不能用一批单元或
 
 ## 证据与恢复
 
-现**94**个不可变`refs/khor/net-evidence/<run>`；外部清单`/Volumes/disk0/Khor/evidence/net/source-refs.json`。
+现**95**个不可变`refs/khor/net-evidence/<run>`；外部清单`/Volumes/disk0/Khor/evidence/net/source-refs.json`。
 `git rev-parse REF:source`必须等于收据tree；parentless容器只用git show读取，不checkout覆盖、不push本地证据refs。
 两项账单拒绝快照标tests_executed=false/remote_source_verified=false，其余终态不再pending。
 33202c22已保存Noq6绿覆盖、未执行37边界用例及当轮证据；恢复仍先核branch/HEAD/diff，不假定工作区干净。所有历史红继续保留，两个main和产品feature未合并发布。
@@ -112,3 +129,9 @@ control 6447289f4f9260df4f5887adc7c1e2f2270bbcce的net-congestion已push并核�
 这些是脚本检查；Rust格式/编译、Noq2新用例与真实congestion都未运行。没有新run，不增加94 refs或已通过数字。
 产品dev.py新选项已同步baseline，仍仅原六fixture，生产6485原样；baca306旧快照不改写。N3与N5新增代码仍待远端验证。
 下一步仍先取得37实际红；之后Noq2/N3格式/编译、原recovery/stalls/hop和最终矩阵，N2–N5全范围保留。
+
+
+本turn补齐Noq接口/ACK/保活/备用恢复入口静态核查，源hash/摘录在upstream-20261109/noq-interface-and-recovery-call-chains；未执行上游，不删除补丁。37已取实际红；原“先等红/未改leave”段落为此前状态，以本页当前有效通道段为准。
+
+
+下一control b9b2711仅补Mac入口说明及只读host-capabilities.json（Hypervisor支持/CPU/内存/已装VM工具路径），不启动VM、安装软件或改空间策略。当前95源ref均终态，37候选下一次Mac检查尚待调度；调度后立即记录新ID与source/control，不能恢复时重复旧run。

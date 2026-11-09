@@ -380,3 +380,12 @@ N3记录候选f17b8a31在f0be88d4协议冻结后实现；完整记录echo/typing
 control 6447289f4f9260df4f5887adc7c1e2f2270bbcce已push并核远端SHA一致，net-congestion三轮Noq模拟，未调度。
 本机driver桩测试1项证明首轮失败后另两轮继续/保留且最终exit8；prepare1项、产品remote_development9项及bash-n/diff-check通过。
 没有执行Cargo/Rust，格式/编译、Noq2新回归及真实拥塞数字仍缺；没有source run ref或SLO通过。baseline同步dev.py选项后仍只有六fixture修改，生产原样。
+
+
+接续第3turn验证备用执行通道：SSH macserver经原iroh-ssh路由banner超时（exit255），未修改配置/信任/会话。既有自托管smoke42549824680 SUCCESS，控制6447289，Mac工具链/guard+C编译探针，非产品网络测试；mac-worker-smoke-42549824680已保存。
+Mac便携分流control6b1616c8b816bdb72a8a031d0ff28cc46a3fb4c7在feat/net，沿注册development.yml、短期只读checkout、源码校验/去认证materialization和已有build guard，无托管prepare/retire、无空间策略修改。
+初次dispatch0508ddc9f8834c6c9202b43452edfc1c被HTTP422工作流env上下文拒绝，无run；修正step env后同request创建 **42551075037 net-vendor**。
+复用原snapshot而非改源：basea087 dirty、tree7b61b7edc12ed5ef384b7054240e7b5202f1638b、snapshota21c1a978549979a8956639d35fdbd722cc6c8df；Mac26.6.2 arm64、Rust1.95、jobs2、control6b1616c。
+终态 **预期产品红：根格式/437Noq绿，Iroh35pass1fail**，仅a_fault_with_no_receiving_copy_can_use_a_backup_that_answered_after_the_fault实际Hold双PING、预期Go；home因失败未执行。mac-current-copy-hint-red-42551075037已核source/control并下载。
+95不可变source refs，该run与原账单拒绝run共享快照但平台/任务不同；smoke没有产品source ref。不能把Mac单元记为Linux黑洞SLO。
+37现已按红最小写候选，无接收提示用故障后已有备用ACK；有提示保持36规则。false旧包/4秒检查为新增待验证覆盖，Noq2/N3新源也仍待执行。11项Python开发入口测试通过。

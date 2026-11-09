@@ -2344,15 +2344,16 @@ enum Step {
 
 impl Moving {
     /// One tick of the selection wanting to leave a path that stopped answering at `began` for
-    /// `to`: [`Step::Go`] once `to` took a sample after this decision and `began`, or after
-    /// [`CONFIRM_MAX`] of wanting it whatever. Until then both roads are probed: an idle
-    /// copy's PTO must not move a healthy road before that copy gets a fresh opportunity.
+    /// `to`: a sample after `began` proves a backup answered during the fault. If another
+    /// current copy is still receiving, first probe the suspect copy and obtain a backup
+    /// sample after this decision, so an idle copy's PTO cannot immediately move a healthy
+    /// road. Either case retains [`CONFIRM_MAX`] as its upper bound.
     fn leave(
         &mut self,
         to: &transports::FourTuple,
         now: Instant,
         began: Instant,
-        _check_current: bool,
+        check_current: bool,
         to_sampled: impl Fn(Instant) -> bool,
     ) -> Step {
         let since = match &self.to {
@@ -2362,13 +2363,15 @@ impl Moving {
                 now
             }
         };
-        if to_sampled(since.max(began)) || now >= since + CONFIRM_MAX {
+        let proof_after = if check_current { since.max(began) } else { began };
+        if to_sampled(proof_after) || now >= since + CONFIRM_MAX {
             self.to = None;
             return Step::Go;
         }
-        let tick = now.checked_sub(RESELECT_INTERVAL).unwrap_or(now).max(since).max(began);
+        let tick = now.checked_sub(RESELECT_INTERVAL).unwrap_or(now).max(began);
+        let tick = if check_current { tick.max(since) } else { tick };
         Step::Hold {
-            from: true,
+            from: check_current,
             to: !to_sampled(tick),
         }
     }
@@ -3741,6 +3744,12 @@ mod tests {
         let backup_packet = now - MS(100);
         assert_eq!(moving.leave(&to, now, now - MS(500), false, |after| backup_packet > after),
             Step::Go, "without any current-copy receipt, retain fast failover to a post-fault backup");
+        let mut stale = Moving::default();
+        let before_fault = now - MS(600);
+        assert_eq!(stale.leave(&to, now, now - MS(500), false, |after| before_fault > after),
+            Step::Hold { from: false, to: true }, "a pre-fault sample still cannot prove the backup");
+        assert_eq!(stale.leave(&to, now + CONFIRM_MAX, now - MS(500), false, |_| false),
+            Step::Go, "the original upper bound still applies when no road answers");
     }
 
     #[test]

@@ -114,6 +114,9 @@ def _upload_snapshot(info):
 
 
 def submit(args):
+    executor = getattr(args, "executor", "standard")
+    if executor == "mac" and args.task not in {"net-unit", "net-node", "net-vendor", "net-congestion"}:
+        raise ValueError("The Mac network executor supports portable network tasks, not Linux netlab or native tasks")
     repository = args.builder_repo
     if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repository):
         raise ValueError("Expected owner/repository")
@@ -124,7 +127,7 @@ def submit(args):
     git("check-ref-format", "refs/heads/" + builder_ref)
     info = snapshot()
     identifier = uuid.uuid4().hex
-    info.update({"repository": repository, "builder_ref": builder_ref, "task": args.task, "request_id": identifier,
+    info.update({"repository": repository, "builder_ref": builder_ref, "task": args.task, "executor": executor, "request_id": identifier,
                  "snapshot_ref": "dev-snapshots/" + identifier})
     records = state_dir() / "runs"
     records.mkdir(parents=True, exist_ok=True)
@@ -132,8 +135,11 @@ def submit(args):
     record.write_text(json.dumps(info, indent=2) + "\n")
     print(f"Source tree {info['tree']}; base {info['base_commit']}; untracked files excluded: {info['excluded_untracked_count']}", flush=True)
     upload_snapshot(info)
-    command("gh", "workflow", "run", "development.yml", "--repo", repository, "--ref", builder_ref,
-            "-f", "snapshot_sha=" + info["snapshot_commit"], "-f", "task=" + args.task, "-f", "request_id=" + identifier)
+    dispatch = ["gh", "workflow", "run", "development.yml", "--repo", repository, "--ref", builder_ref,
+                "-f", "snapshot_sha=" + info["snapshot_commit"], "-f", "task=" + args.task, "-f", "request_id=" + identifier]
+    if executor == "mac":
+        dispatch.extend(["-f", "executor=mac"])
+    command(*dispatch)
     for _ in range(20):
         runs = json.loads(command("gh", "run", "list", "--repo", repository, "--workflow", "development.yml",
                                   "--limit", "30", "--json", "databaseId,displayTitle,url"))
@@ -202,6 +208,8 @@ def main():
     config.add_argument("--install-command", action="store_true", help="Also install ~/.local/bin/khor-dev")
     check = sub.add_parser("check", help="Submit a tracked WIP snapshot asynchronously")
     check.add_argument("--task", choices=["fast", "native", "lab", "resolve", "updates", "ios-lab-prepare", "ios-lab", "ios-keyboard", "net-unit", "net-node", "net-vendor", "net-congestion", "netlab-smoke", "netlab-dynamic", "netlab-compare", "netlab-hop", "netlab-recovery", "netlab-stability", "netlab-stalls", "netlab-diagnostic", "netlab-hop-diagnostic", "netlab"], default="fast")
+    check.add_argument("--executor", choices=["standard", "mac"], default="standard",
+                       help="Use the existing Mac worker for portable network checks")
     check.add_argument("--builder-ref", default="main", help="Control workflow branch; use feat/net for network task development")
     for action in [check, sub.add_parser("status"), sub.add_parser("result")]:
         action.add_argument("--builder-repo", default="colehank/khor-build")

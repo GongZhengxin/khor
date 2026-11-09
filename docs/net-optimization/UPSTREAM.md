@@ -1,6 +1,6 @@
 # 上游状态与补丁退出核查（进行中）
 
-2026-11-09。本轮只读核查，不升级依赖、不把上游发布当作本项目验证通过。N0.1/N5.1仍部分完成；原45条盘点后新增iroh35/36修正，当前47条的上游等价核查仍未完成。
+2026-11-09。本轮只读核查，不升级依赖、不把上游发布当作本项目验证通过。N0.1/N5.1仍部分完成；原45条盘点后新增iroh35/36/37修正，当前48条的上游等价核查仍未完成。
 
 逐项覆盖/退出账目见[VENDOR-AUDIT](VENDOR-AUDIT.md)：全部45项已做第一轮覆盖盘点，明确Noq 1/4/5/6的专属覆盖缺口。随后Noq4独立ACK与Noq6保活计时、iroh选家/QAD/网桥9项已有对应源绿，具体边界查VENDOR-AUDIT/STATE。逐函数上游等价性和隔离候选行为复验尚未完成；泛化单元绿不替代缺失的专属回归。
 
@@ -41,7 +41,7 @@
 
 ## 升级与退出规则
 
-- 先列全iroh1–36、Noq1–11补丁的目标、当前回归、上游等价性和仍依赖的接口；本页只开始了补丁1和观测接口核对。
+- 先列全iroh1–37、Noq1–11补丁的目标、当前回归、上游等价性和仍依赖的接口；本页只开始了补丁1和观测接口核对。
 - 升级候选与本轮N1运行源隔离。iroh/noq/noq-proto/noq-udp的版本与锁文件需整体核对，不能只换proto造成两套类型或漏用本地patch。
 - 逐条确认等价后减补丁，保留原失败回归与新旧同fixture体验对照；升级或删补丁后需要相应Linux/Mac/真实设备验证。
 - 只有全部剩余行为都不再依赖本地vendor实现时，才移除整个vendor子树及Cargo patch；补丁1去重等价不构成整树删除条件。
@@ -100,3 +100,23 @@ PacketNumberSpace::sent本身有非ACK-eliciting尾部记录回收，说明“�
 实际最小序列/测试入口仍需准备与执行，当前没有该项行为红绿。
 来源：[固定ACK链](https://github.com/n0-computer/noq/blob/34f75c49f93de5e2ff943483cabc5b6d0c5df918/noq-proto/src/connection/mod.rs)、
 [固定包号空间](https://github.com/n0-computer/noq/blob/34f75c49f93de5e2ff943483cabc5b6d0c5df918/noq-proto/src/connection/spaces.rs)。
+
+
+## Noq接口、ACK、保活与备用恢复事件补查
+
+同一固定1.4.0包checksum复验通过，源hash与行号摘录在`evidence/net/upstream-20261109/noq-interface-and-recovery-call-chains/`；未执行上游。
+
+- 补丁3/8/10：公开PathStats(:217)及path_stats(:2702)只有原传输RTT/统计/带宽等，没有本地PTO计数、最后收包、最老未确认包、无退避PTO或ACK计数/采样发送接收时刻。
+  paths.rs:RecoveryMetrics虽有latest_rtt和pto_count字段，但结构本身私有且受qlog feature控制，按变化保留；它不是iroh可读的逐路径采样API，也不能证明等值ACK被计数。
+  因此现有调用者不能通过直接升级就删除这些接口补丁；需要上游等价API或整体迁移后再跑对应证据，不能以日志字段同名替代。
+- 补丁4：may_send_data由握手/验证/路径status决定；存在可用Available时Backup不获该许可。populate_packet(:6149)只在may_send_data路枚举各包号空间pending ACK。
+  本地能独立发包的路径带自身ACK、不能时才兜底的规则在该链路中不同。源代码已证明路由决策差异，尚未用1.4候选复现单向故障/测ACK成本。
+- 补丁6：ConnTimer::KeepAlive(:2488)调用ping，ping(:2715)遍历所有路径包号空间置pending_ping；该链没有按路径已有keep_alive分开。
+  路径自己的PathKeepAlive另调ping_path；本地跳过规则与之不同。当前本地两计时器用例已437绿，上游同协议复验/设备成本仍未执行。
+- 补丁7/9/11：set_path_status(:832)记录local_update和待发status；LossDetection(:2570)进入原loss/PTO处理，后者安排丢失检测或两份尾探测。
+  普通handle_lost_packets重传和路径discard时释放仍存在，所以不能把“没有同名resend_off_backups”写成“上游没有恢复”。
+  所查状态改变/PTO入口没有本地“最早慢/不应答Backup在飞帧主动重排”的同一事件联动，但完整交付速度是否等价必须跑两种故障时序与健康同速/MTU/成本对照；当前结论仍是保留、待行为验证。
+
+来源：[固定连接入口与恢复](https://github.com/n0-computer/noq/blob/34f75c49f93de5e2ff943483cabc5b6d0c5df918/noq-proto/src/connection/mod.rs)、
+[公开PathStats](https://github.com/n0-computer/noq/blob/34f75c49f93de5e2ff943483cabc5b6d0c5df918/noq-proto/src/connection/stats.rs)、
+[内部qlog metrics](https://github.com/n0-computer/noq/blob/34f75c49f93de5e2ff943483cabc5b6d0c5df918/noq-proto/src/connection/paths.rs)。

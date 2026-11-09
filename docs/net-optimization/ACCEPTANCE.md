@@ -183,3 +183,8 @@ python3 scripts/dev.py check --task net-congestion --builder-ref feat/net
 这是底层Noq loopback UDP模拟，顺序3轮，每轮--ignored --nocapture --test-threads=1，固定默认几何并清除继承CC_ONLY，
 保存congestion-N.log和measurement-mode。它不走namespace前置，不代表netlab或实际Node/SSH/hop已通过。
 本机仅用Python桩验证driver，未运行真实Cargo/Rust、格式器或测量。远端恢复后须先格式/编译，再核原始记录，不能直接收口N3。
+
+
+Mac便携网络入口（control6b1616c，已实际执行）通过--executor mac选择同一development.yml，不走托管prepare/retire。
+只允net-unit/net-node/net-vendor/net-congestion，CLI在上传前拒绝netlab/native等；默认standard不新增dispatch input以兼容旧控制main。
+42551075037已实际完成根格式/437Noq，Iroh新故障边界35pass1fail为预期产品红。Mac平台不替代p3<1秒、转发/CPU及全Linux矩阵。

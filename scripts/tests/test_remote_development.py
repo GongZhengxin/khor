@@ -145,6 +145,41 @@ class RemoteDevelopmentTest(unittest.TestCase):
         receipt = json.loads((Path("receipts/runs") / (request_id + ".json")).read_text())
         self.assertEqual(receipt["builder_ref"], "feat/net")
         self.assertEqual(receipt["databaseId"], 123)
+        self.assertEqual(receipt["executor"], "standard")
+        self.assertNotIn("executor=mac", dispatch)
+
+    def test_mac_dispatch_keeps_the_source_receipt_and_selects_the_existing_worker(self):
+        request_id = "e" * 32
+        run = dict(databaseId=456, displayTitle="dev net-vendor " + request_id,
+                   url="https://example.invalid/mac-run")
+        def command(*args):
+            if args[:2] == ("gh", "api"):
+                return json.dumps({"private": True})
+            if args[:3] == ("gh", "run", "list"):
+                return json.dumps([run])
+            return ""
+        info = dict(base_commit="b" * 40, tree="c" * 40, snapshot_commit="d" * 40,
+                    excluded_untracked_count=0)
+        args = SimpleNamespace(builder_repo="private/build", builder_ref="feat/net",
+                               task="net-vendor", executor="mac")
+        with patch.object(dev, "command", side_effect=command) as calls, patch.object(dev, "snapshot", return_value=info), patch.object(dev, "upload_snapshot") as upload, patch.object(dev, "state_dir", return_value=Path("receipts")), patch.object(dev.uuid, "uuid4", return_value=SimpleNamespace(hex=request_id)), contextlib.redirect_stdout(io.StringIO()):
+            dev.submit(args)
+        dispatch = next(c.args for c in calls.call_args_list if c.args[:3] == ("gh", "workflow", "run"))
+        self.assertIn("executor=mac", dispatch)
+        self.assertIn("development.yml", dispatch)
+        self.assertEqual(upload.call_count, 1)
+        receipt = json.loads((Path("receipts/runs") / (request_id + ".json")).read_text())
+        self.assertEqual(receipt["executor"], "mac")
+        self.assertEqual(receipt["snapshot_commit"], "d" * 40)
+        self.assertEqual(receipt["databaseId"], 456)
+
+    def test_mac_rejects_linux_and_native_tasks_before_upload_or_dispatch(self):
+        with patch.object(dev, "command") as command, patch.object(dev, "snapshot") as snapshot:
+            for task in ["netlab", "netlab-recovery", "native", "lab", "fast"]:
+                with self.subTest(task=task), self.assertRaisesRegex(ValueError, "supports portable"):
+                    dev.submit(SimpleNamespace(task=task, executor="mac"))
+        command.assert_not_called()
+        snapshot.assert_not_called()
 
     def test_result_rejects_an_artifact_for_other_source(self):
         output = Path("download")
