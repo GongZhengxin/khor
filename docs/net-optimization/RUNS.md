@@ -539,3 +539,6 @@ N3道路双向因果校准测试已按先前协议写下，模型未改；contro
 
 
 **42570772550 Mac net-node探针回归格式修正源在途**：baseffbbcaac13a6d9f54591afdac1bebeeb5dbe415e clean、tree0a26b34f68b867d72eb047f9c6ec8234b68e5d59、snapshotcc5b77828bb5a5addb0db6ed8739824700c9697e、control0cff9671fb2f80945423132e0df46995f6ff3198；120th ref/mac-probe-owner-formatted-42570772550已锚，probe生产未改，旧11控制与新3红待实际结果。
+
+
+42570772550终态**探针三项实际行为红**：fmt/编译/net66+1ignored/hop9/wires10/journal28绿，dial_budget11pass3fail（12.06秒）；只直接取消HTTP未停止、配对取消仍残留probe、成功second URL被slow first挡住。所有HTTP/配对pending/fast已响应且早于2.6s前置通过，无env proxy；不是fixture红。准确tree0a26b34f/snapshotcc5b7782/control0cff967已核，120 refs终态；下一修复用JoinSet收首成功并drop输者，pair_with用Aborts持有外层probe，保持原HTTP预算/proxy/诊断语义。

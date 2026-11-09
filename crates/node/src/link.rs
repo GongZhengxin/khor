@@ -10982,7 +10982,9 @@ impl Node {
         // 「the machine that issued the ticket is not answering」, and the
         // two are checked in different places. Beside, so the answer is in
         // by the time the dial gives up rather than three seconds after.
-        let probe = tokio::spawn(crate::doctor::any_relay_answers(relays.clone()));
+        let mut probe = Aborts(Some(tokio::spawn(crate::doctor::any_relay_answers(
+            relays.clone(),
+        ))));
         let dialled = crate::journal::BY
             .scope(
                 crate::journal::By::Pair,
@@ -11000,26 +11002,25 @@ impl Node {
             )
             .await;
         let conn = match dialled {
-            Ok(conn) => {
-                probe.abort();
-                conn
-            }
+            Ok(conn) => conn,
             Err(DialFailure::TimedOut) => {
-                return Err(if probe.await.unwrap_or(true) {
+                let answer = probe.0.as_mut().expect("pairing probe is owned");
+                return Err(if answer.await.unwrap_or(true) {
                     msg::inviter_unreachable_timeout().to_string()
                 } else {
                     msg::no_relay_reached().to_string()
                 });
             }
             Err(DialFailure::CallerExpired) => {
-                probe.abort();
                 return Err(msg::dial_timed_out().to_string());
             }
             Err(DialFailure::Refused(why) | DialFailure::Asleep(why)) => {
-                probe.abort();
                 return Err(msg::inviter_unreachable(why));
             }
         };
+        // The dial has answered; no diagnostic task should outlive it while
+        // the pairing exchange uses the connection it established.
+        drop(probe);
         self.pair_over(&conn, &t, report_addrs).await
     }
 
