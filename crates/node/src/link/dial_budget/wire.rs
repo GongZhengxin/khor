@@ -3,8 +3,64 @@
 use super::*;
 use std::sync::{
     Arc,
-    atomic::{AtomicUsize, Ordering},
+    atomic::{AtomicBool, AtomicUsize, Ordering},
 };
+
+/// Both directions traverse these sockets; closing the gate drops real UDP
+/// packets without closing either QUIC endpoint or changing host firewall rules.
+struct Gate {
+    address: std::net::SocketAddr,
+    open: Arc<AtomicBool>,
+    dropped: Arc<AtomicUsize>,
+    pump: Aborts<()>,
+}
+
+impl Gate {
+    async fn new(server: std::net::SocketAddr) -> Self {
+        let front = tokio::net::UdpSocket::bind("127.0.0.1:0").await.unwrap();
+        let back = tokio::net::UdpSocket::bind("127.0.0.1:0").await.unwrap();
+        let address = front.local_addr().unwrap();
+        let open = Arc::new(AtomicBool::new(true));
+        let dropped = Arc::new(AtomicUsize::new(0));
+        let pump = Aborts(Some(tokio::spawn({
+            let (open, dropped) = (open.clone(), dropped.clone());
+            async move {
+                let (mut from_client, mut from_server) = ([0u8; 65536], [0u8; 65536]);
+                let mut client = None;
+                loop {
+                    tokio::select! {
+                        packet = front.recv_from(&mut from_client) => {
+                            let (n, source) = packet.unwrap();
+                            client = Some(source);
+                            if open.load(Ordering::SeqCst) {
+                                back.send_to(&from_client[..n], server).await.unwrap();
+                            } else {
+                                dropped.fetch_add(1, Ordering::SeqCst);
+                            }
+                        }
+                        packet = back.recv_from(&mut from_server) => {
+                            let (n, source) = packet.unwrap();
+                            assert_eq!(source, server);
+                            if open.load(Ordering::SeqCst) {
+                                if let Some(client) = client {
+                                    front.send_to(&from_server[..n], client).await.unwrap();
+                                }
+                            } else {
+                                dropped.fetch_add(1, Ordering::SeqCst);
+                            }
+                        }
+                    }
+                }
+            }
+        })));
+        Self { address, open, dropped, pump }
+    }
+
+    async fn close(&mut self) {
+        self.pump.0.as_ref().unwrap().abort();
+        let _ = self.pump.0.as_mut().unwrap().await;
+    }
+}
 
 struct Fixture {
     _root: tempfile::TempDir,
@@ -18,6 +74,10 @@ struct Fixture {
 
 impl Fixture {
     async fn new() -> Self {
+        Self::new_via(false).await.0
+    }
+
+    async fn new_via(gated: bool) -> (Self, Option<Gate>) {
         let server = iroh::Endpoint::builder(iroh::endpoint::presets::Minimal)
             .relay_mode(iroh::RelayMode::Disabled)
             .alpns(vec![ALPN.to_vec()])
@@ -38,9 +98,18 @@ impl Fixture {
             })
             .collect();
         assert!(!peer.addrs.is_empty());
+        let gate = if gated {
+            Some(Gate::new(peer.addrs[0].parse().unwrap()).await)
+        } else {
+            None
+        };
+        let mut address = server.addr();
+        if let Some(gate) = &gate {
+            address.addrs = std::iter::once(iroh::TransportAddr::Ip(gate.address)).collect();
+        }
         // Finish the handshake and adopt the wire before starting any deadline.
         let (local, remote) = tokio::time::timeout(Duration::from_secs(5), async {
-            tokio::join!(ep.connect(server.addr(), ALPN), async {
+            tokio::join!(ep.connect(address, ALPN), async {
                 server.accept().await.unwrap().accept().unwrap().await
             })
         })
@@ -49,7 +118,7 @@ impl Fixture {
         let (local, remote) = (local.unwrap(), remote.unwrap());
         node.wires
             .adopt(&peer.id, wires::Proto::Main, local.clone());
-        Self {
+        (Self {
             _root: root,
             node: Arc::new(node),
             peer,
@@ -57,7 +126,7 @@ impl Fixture {
             server,
             local,
             remote,
-        }
+        }, gate)
     }
 
     fn line(&self) -> Line {
@@ -89,7 +158,19 @@ pub(super) async fn observed_by<T>(task: &mut Aborts<T>, by: tokio::time::Instan
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn ordinary_expiry_stops_its_stream_and_preserves_a_concurrent_request() {
+    observe_ordinary_expiry(Duration::from_secs(1)).await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_long_wait_on_an_acknowledging_wire_keeps_its_concurrent_request() {
+    observe_ordinary_expiry(Duration::from_millis(4100)).await;
+}
+
+async fn observe_ordinary_expiry(within: Duration) {
     let f = Fixture::new().await;
+    let heard_before = wires::heard_count(&f.local);
+    let patience = wires::Patience::of(&f.local).ack;
+    assert_eq!(patience, Duration::from_secs(4));
     let (entered, ready) = tokio::sync::oneshot::channel();
     let (control_entered, control_ready) = tokio::sync::oneshot::channel();
     let (stopped, stop_seen) = tokio::sync::oneshot::channel();
@@ -132,7 +213,7 @@ async fn ordinary_expiry_stops_its_stream_and_preserves_a_concurrent_request() {
             conn.closed().await;
         }
     })));
-    let by = tokio::time::Instant::now() + Duration::from_secs(1);
+    let by = tokio::time::Instant::now() + within;
     let mut asking = Aborts(Some(tokio::spawn({
         let node = f.node.clone();
         let line = f.line();
@@ -164,6 +245,7 @@ async fn ordinary_expiry_stops_its_stream_and_preserves_a_concurrent_request() {
     .await;
     let live = f.node.wires.live(&f.peer.id, wires::Proto::Main);
     let counts = f.node.wires.counts.snapshot();
+    let heard_after = wires::heard_count(&f.local);
     let down = f.node.wires.link(&f.peer.id).down;
     let backoff = f.node.wires.backing_off(&f.peer.id);
     f.close().await;
@@ -182,8 +264,56 @@ async fn ordinary_expiry_stops_its_stream_and_preserves_a_concurrent_request() {
     assert_eq!(counts.dial_failed, 0);
     assert_eq!(counts.answers_late, 0);
     assert_eq!(counts.retired_unanswered, 0);
+    assert!(heard_after > heard_before, "the peer's transport actually acknowledged");
+    if within > patience {
+        assert!(tokio::time::Instant::now() >= by, "this control crosses the real ACK floor");
+    }
     assert_eq!(down, None);
     assert_eq!(backoff, None);
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn expiry_after_real_udp_silence_still_retires_the_dead_wire() {
+    let (f, gate) = Fixture::new_via(true).await;
+    let mut gate = gate.unwrap();
+    assert!(f.local.close_reason().is_none() && f.remote.close_reason().is_none());
+    gate.open.store(false, Ordering::SeqCst);
+    // Drain packets already in flight before the guard takes its own baseline.
+    tokio::time::sleep(Duration::from_millis(200)).await;
+    let heard_before = wires::heard_count(&f.local);
+    tokio::time::sleep(Duration::from_millis(100)).await;
+    assert_eq!(wires::heard_count(&f.local), heard_before, "gate fixture must first be quiet");
+    let patience = wires::Patience::of(&f.local).ack;
+    assert_eq!(patience, Duration::from_secs(4));
+    // Expire after the real ACK floor but before the next liveness beat can
+    // finish the all-path grace. The cancellation guard must do the retirement.
+    let by = tokio::time::Instant::now() + patience + Duration::from_millis(100);
+    let mut asking = Aborts(Some(tokio::spawn({
+        let node = f.node.clone();
+        let line = f.line();
+        crate::deadline::scope(by, async move {
+            node.exchange_on(&line, &Request::Sessions).await
+        })
+    })));
+    let answer = observed_by(&mut asking, by + Duration::from_secs(1)).await;
+    let unheard = wires::heard_count(&f.local) == heard_before;
+    let dropped = gate.dropped.load(Ordering::SeqCst);
+    let remote_open = f.remote.close_reason().is_none();
+    let live = f.node.wires.live(&f.peer.id, wires::Proto::Main);
+    let counts = f.node.wires.counts.snapshot();
+    f.close().await;
+    gate.close().await;
+
+    assert!(unheard, "fixture bypassed its UDP gate; this is not a blackhole");
+    assert!(dropped > 0, "the real request/probes must hit the closed gate");
+    assert!(remote_open, "fixture must not substitute a connection close for silence");
+    assert!(matches!(answer, Some(Err(Miss::CallerExpired))));
+    assert!(live.is_none(), "long real silence must not keep handing out a dead wire");
+    assert_eq!(counts.retired_unanswered, 1);
+    assert_eq!(counts.retired_closed, 0);
+    assert_eq!(counts.reads_retried, 0);
+    assert_eq!(counts.dial_failed, 0);
+    assert_eq!(counts.answers_late, 0);
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
