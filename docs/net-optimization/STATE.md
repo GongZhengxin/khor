@@ -15,7 +15,7 @@
 | 产品 | `/Volumes/disk0/Khor/worktrees/current/khor-net`，`feat/net`；恢复核实际HEAD/diff，本轮API入口已验证；37仍为72b1d891，N2锁等待候选随后提交，恢复核实际diff |
 | 控制 | `/Volumes/disk0/Khor/worktrees/current/khor-build-net`，`feat/net`；2e70c39fe6a70bbbd09b7434f90e6c2d62e84b16已push；历史run绑定各自control |
 | 基线 | `/Volumes/disk0/Khor/worktrees/current/khor-net-baseline`，detached6485cb83d3b1f0bb93d4633825dc956623d78af9；只允许paths/hop/lab/nat.rs、dev.py/netlab.sh六fixture；生产基线原样 |
-| 证据 | `/Volumes/disk0/Khor/evidence/net/`；source-refs.json现104条不可变source refs；均已终态 |
+| 证据 | `/Volumes/disk0/Khor/evidence/net/`；source-refs.json现105条不可变source refs；仅42559476637在途 |
 
 ## 执行通道现状
 
@@ -73,7 +73,7 @@ N0部分、**N1仍红**、N2–N4未完成、N5部分。不能以单元绿或执
 
 恢复先核绝对worktree/branch/HEAD/diff、当前run终态和回执，不从摘要覆盖未提交内容，不重复调度活动run。
 每run锚refs/khor/net-evidence/<run>；git rev-parse REF:source必须等于回执tree；只用git show读容器，不checkout覆盖、不push本地证据refs。
-source-refs.json现104条；425527传输失败与托管账单拒绝均tests_executed=false、remote_source_verified=false。旧Mac实际红已验证source/control。重要artifact下载到规范证据目录。
+source-refs.json现105条；425527传输失败与托管账单拒绝均tests_executed=false、remote_source_verified=false。旧Mac实际红已验证source/control。重要artifact下载到规范证据目录。
 Mac源/bundle分支仅在终态、证据保留、所有权和SHA匹配后清理；复用源的请求不拥有原源分支。重试不改旧源/control/attempt证据。
 外盘缺失只读git show feat/net:docs/net-optimization/STATE.md和PLAN；原外盘未提交内容不能按摘要覆盖。治理另沿中央code-quality STATE/RESUME，不与本任务混合。
 
@@ -108,3 +108,5 @@ N3因果校准用例已按ACCEPTANCE冻结协议写入congestion.rs，尚未编�
 **42559155803 N3模型校准Mac net-congestion测试fixture编译失败**：base599c57d0be6abee38488b7814daa9ca598370402 clean、treeb84a3bc4ea9a028fa8e2c147264623dfcb5fa971、snapshot54082af8662510e0548c5d4b584d06531724c8c0、controle7258e57155da1618f0f3b00fd1e395f481b5f19；模型仍shared_fifo_v1，校准先实际取红，不预记编译或测量绿。mac-road-model-red-42559155803及104th ref已锚，恢复只查该ID。
 
 42559155803准确source/control已核、根格式通过，校准fixture的send_to错误传u8而非字节切片，未执行测试；现已修b"e"，模型仍未改，不能记模型行为红或N3记录器已编译完成。104 refs终态，下一准确源重取原模型校准红。
+
+**42559476637 N3校准类型修正源Mac net-congestion在途**：base6880d251edd38218007da99c9d070df2dd1957a5 clean、tree751e95115a7fb3a17faca1a5a44129e00a27655c、snapshote851d256586088d589971c2c1cb60f1461233a0c、controle7258e57155da1618f0f3b00fd1e395f481b5f19。模型仍旧shared_fifo_v1，待实际行为红；mac-road-model-typed-42559476637和105th ref已锚，恢复查该ID。baseline实际仍仅原六fixture，生产未改。

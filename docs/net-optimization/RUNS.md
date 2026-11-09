@@ -446,3 +446,6 @@ N3道路双向因果校准测试已按先前协议写下，模型未改；contro
 
 
 42559155803终态**测试fixture编译失败**，根格式绿、source/control已核；send_to误传u8，未执行校准/测量，不算模型红。已改成b"e"字节切片，模型生产原样；104 refs终态，下一源再取红。原log/source/classification保留。
+
+
+**42559476637 Mac net-congestion校准在途**：clean6880d251、tree751e95115a7fb3a17faca1a5a44129e00a27655c、snapshote851d256586088d589971c2c1cb60f1461233a0c、controle7258e57155da1618f0f3b00fd1e395f481b5f19。仅修测试字节切片、模型原样，待实际红；105th ref/mac-road-model-typed-42559476637已保存，baseline六fixture合同现场复核仍保持。
