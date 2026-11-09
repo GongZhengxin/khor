@@ -2,8 +2,8 @@
 
 2026-11-09，进行中。当前编号为iroh 1–36、Noq 1–11；原45项盘点后新增35/36修正，合47项。
 覆盖盘点不等于行为验收或上游等价性验证，缺口保持未完成。
-本地行为源截至5f69db3f，诊断候选42536711138已绿（435Noq/33iroh、根格式）；
-可选CLI编译与原时长诊断42536677230仍在途。历史大套件通过只证明该套件，不自动证明每个补丁的专属回归齐全。
+本地行为源截至a087e1c5；最新42543928044已绿（437Noq/35iroh路径/9选家、根格式）。
+可选CLI已实际编译/诊断，但日志模式不作SLO；普通p3与f4s仍有红项，准确源见STATE/RUNS。历史大套件通过只证明该套件，不自动证明每个补丁的专属回归齐全。
 
 上游只读对照为已校验源码包noq-proto1.4.0、commit
 `34f75c49f93de5e2ff943483cabc5b6d0c5df918`；包/校验和/原版本源见[UPSTREAM](UPSTREAM.md)。
@@ -22,7 +22,7 @@ Noq4另补真实虚拟连接专项a_backup_probe_is_acked_when_the_responders_da
 | 3 | 发布不应答所需PTO、最近收到包、最早未确认包及无退避PTO | 黑洞Backup两用例实际读取这些stats，iroh有不应答判据覆盖；max_path_id_reached_lasts_until_a_path_is_abandoned只证明ID释放前提，不是stats专项测试 | 1.4公开PathStats未见本地4个字段；需要等价观测接口/调用者整体迁移。覆盖闲置、短暂停顿、ACK/PTO重置后退出 |
 | 4 | 可自行发包的多路径ACK沿自己的路返回，避免共享坏回程污染全部路径 | path_acks仅断言出现PATH_ACK，不验证走哪条路；历史p3/p4及现有黑洞场景有集成覆盖。需补非对称单向故障与ACK额外开销专项证据 | 1.4 populate_packet仍在may_send_data路上枚举各包号空间的pending ACK，未具本地按本路/兜底路分发。升级候选须验证备用路可独立收到ACK、未验证/abandoned仍有兜底，兼顾包数预算 |
 | 5 | 最大ACK号不是本次新确认时，不用旧发送时间取RTT | KHOR有7次旧网络异常采样证据；当前没有据此确认一条独立、构造该ACK序列的回归。泛化435绿不够退出 | 1.4最大号发送时间仍仅在sent_packets.get成功时更新，取RTT条件仍new_largest_pn与ack_eliciting_acked，未见本地largest_newly_acked条件。需专属ACK序列回归和合法ACK正常采样对照 |
-| 6 | 路径已有自身保活时，不被连接级保活额外ping | 旧p4包数对照是历史源；现p1/p1j已能测600秒，但不是专属两定时器同刻测试。需计时虚拟回归及当前源空闲包/字节预算 | 1.4 ConnTimer::KeepAlive调用ping，ping遍历所有包号空间置pending_ping；未见本地跳过规则。等价分层计时且实测成本达标后退出 |
+| 6 | 路径已有自身保活时，不被连接级保活额外ping | 新增真实虚拟连接保活计时回归42543928044绿：连接5秒不抢路径15秒，路径自身与无路径计时器对照均仍保活；无生产改动/旧源红宣称。当前源空闲包/字节与手机预算仍缺 | 1.4 ConnTimer::KeepAlive调用ping，ping遍历所有包号空间置pending_ping；未见本地跳过规则。等价分层计时且实测成本达标后退出 |
 | 7 | 从显著慢Backup离开时及时重排在飞流字节 | what_is_in_flight_on_a_far_slower_backup_is_resent_on_the_new_path与健康同速不重排对照，435套件绿；实际f4/f4s仍有1.5秒超限，不声称整体验收完成 | 尚未完成1.4重排调用链等价核对；不能按函数名搜索为空就认定无实现。须原流完整交付、MTU排除、正常loss/CC记账及晚包去重后退出 |
 | 8 | 选路读最新ACK校正样本及计数，不用慢EWMA或把相同值当旧值 | khor_equal_rtt_samples_are_fresh_and_latest_is_not_the_smoothed_value、khor_selection_samples_do_not_count_peer_ack_delay_as_network_latency均在435绿；CPU调度偏差尚未闭合 | 1.4公开PathStats只有平滑rtt，未见latest_rtt/rtt_samples；qlog同名字段不等价。等值样本、ACK-delay可扣/不可扣、初始估计不计数及调用者覆盖后退出 |
 | 9 | 历史同速但当前黑洞的Backup也释放在飞字节 | a_blackholed_backup_resends_in_flight_even_if_its_last_rtt_was_fast已432/1红→433绿；真实虚拟PTO与健康同速对照。不是应用请求重试 | 尚未证明1.4有等价策略；在相同两个可用路径/一条黑洞场景，正常CC/去重/短停顿保护和完整流交付均成立后退出 |
@@ -89,7 +89,7 @@ Noq4另补真实虚拟连接专项a_backup_probe_is_acked_when_the_responders_da
 ## 审计后的动作顺序
 
 1. N1先取得当前诊断证据并解决实际稳定性/恢复红；本页不自动批准升级。
-2. 补Noq 1/4/5/6明确缺失的行为覆盖，与现有实际网络成本/恢复对照一起保留；不是为凑测试数重写实现。
+2. 补Noq 1/4/5明确缺失的行为覆盖及Noq6实际空闲成本，与现有实际网络成本/恢复对照一起保留；不是为凑测试数重写实现。
 3. 对照iroh 1–34账目补当前源覆盖，继续逐函数核上游，再在隔离升级候选核对公共API、锁文件和行为。满足一条退一条。
 4. 所有补丁和调用者均不依赖本地实现、准确最终源验证齐全后，才可删整个vendor/patch行。当前N5仍部分完成。
 

@@ -340,3 +340,23 @@ NAT helper仅失败后输出两端既有path诊断，门和注入不变。提交
 同treea7f419472a9189c691a773535c70d223c2921ff9、base6c62a1bf dirty、controlc68b644两项在途：**42542123882 net-vendor**，snapshot2de64d8fa80f2fa067e82eddba2e2dfd7514ba76（目标436/35/9）；**42542228149 netlab-diagnostic**，snapshot44cde49b6afb8e561a5e8664253aa7ddc93d218e（原f4s/p1s完整时长、日志非SLO）。产品9项Python/diff检查通过。增加当前PING的代价与p3<1秒/稳定性/转发必须一起复验，不能靠单元完成N1。88源ref，另35普通stalls继续独立在途。
 
 42542123882终态 **SUCCESS 根格式、436Noq/35路径/9选家**，fault-confirmation-green-42542123882。新fault回归34/1红→35绿；另在同用例补normal move更早时的故障前样本保护，只记为额外绿覆盖。提交前36策略文件与绿快照无diff；实际普通p3/防抖/转发与日志诊断仍待，不能以单元称5次抖动或<1秒恢复已收口。
+
+35普通42540582927终态 **FAILURE 1pass/1fail、1119.21秒**，availability-stalls-42540582927。p1s alpha2（lan@213s、second@305s）、beta2（relay@316s、lan@418s）、零退役，最慢763.8ms，alpha零打洞、3027包380113字节；p5 150/300ms均零Relay切换/打洞，最慢231.7/450.2ms；600ms观察组打洞1/0、最慢1.1秒，原门不扩展。35只修首次availability，不能称解决故障确认；旧红保留。
+
+36诊断42542228149终态 **SUCCESS 2/2、812.64秒**，suspect-probe-diagnostics-42542228149。p1s原20次300ms/忙CPU，alpha/beta0/0移动、零退役/打洞，最慢600.2ms，2629包276760字节；alpha44、beta24次confirmation probe记录，实际当前PTO3副本ping结果Ok且无Go。f4s Relay@4.9、carried@8.6秒，腿heard8.3秒、差0.3秒，无回退，最慢9.9秒含8秒断腿。日志非SLO，一次0/0不删旧失败，也不与普通模式算因果改善。
+
+36已提交a087e1c5。以下普通三项同basea087e1c5 **clean**、treec807d328e78bdfda1dbebd7bdd4c14b0eaa8cd25、controlc68b644：42542824071 netlab-stalls / snapshot969f8e52fa52fe7b5043ff89f333bfc368c5724a；42542984111 netlab-dynamic / snapshot98d696e58102978d44fe15cfb1be0a439473fc30；42543254686 netlab-hop / snapshotbfd551912eebd65398b69d53467ca7366cf511f0。原时长/负载/门槛，日志关闭，均在途。
+
+补Noq6专项 **42543928044 net-vendor** 在途：basea087e1c5 dirty、tree87bd60cccdce5eeb412774b9409f9a256dd722fe、snapshote4be1454ca3338aab9abc723a0218a2fa6063ad5、controlc68b644。只加a_path_keepalive_is_not_shortened_by_the_connection_timer，虚拟时间验证连接5秒不抢路径15秒计时器、路径自身仍保活、没有路径计时器的对照仍保活；禁用MTUD排除探测PING。目标437/35/9，无生产修改，不预认定通过或旧源红。92 refs。
+
+
+36普通终态（同treec807d328、controlc68）：42542824071 **SUCCESS2/2**，p1s0/0移动、零退役/打洞，最慢865.4ms，3019包312293字节，p5原150/300门绿；suspect-probe-stalls-42542824071。
+42542984111 **FAILURE25/27**，p3三轮1.1秒/1.2秒/818.4ms、零错误/退役；p2 2.8/3.0/4.8秒，max60.6551/46.0140/44.5722ms；21相位绿，idle最慢19.60910888秒；suspect-probe-phases-42542984111。不放宽原1秒门。
+42543254686 **FAILURE8/9**，三轮2/1、3/0、3/0，用时479.01/483.09/461.18秒；f4s应答后0.7/0.4/0.6秒，但首轮回carried10.9秒后又退Relay，28.8秒才再回，最终Link仍Relay；其余无回退。f4三轮3.2/3.2/3.1秒最慢键击包含原3秒断腿，未离carried；f4i25.6/21.4/17.6秒绿。suspect-probe-hop-42543254686。物理恢复标记与选路标记不同，不以饱和0证明零恢复耗时。
+
+42543928044终态 **SUCCESS 根格式、437Noq/35路径/9选家**；path-keepalive-coverage-42543928044。Noq6计时专项实际ok，无生产改动、没有旧源红宣称、不能替代当前闲置/手机成本。
+
+新37边界用例提交 **42545673450 net-vendor**：basea087 dirty、tree7b61b7edc12ed5ef384b7054240e7b5202f1638b、snapshota21c1a978549979a8956639d35fdbd722cc6c8df；confirm_move传live当前copy收包提示，但leave明确忽略，保留36生产行为。新增无接收copy时接受故障后备用样本测试预期红，**未实际取红**。
+基线匹配observer v1六fixture提交 **42545712302 netlab-stalls**：base6485 dirty、treebaca3064752631153c35547440da2114a36ca855、snapshot4565266b2619de01b16cbd62f88240d0551bf65f；生产基线原样。两项均controlc68b644fdd9494fec001132c40961ab634c423a2。
+**两项在prepare开始前被GitHub账单/额度拒绝，steps为空、runner_id=0、network skipped，无测试或远端source artifact。** 不记产品失败、行为红或通过。本机回执、GitHub run/jobs/annotation、未执行分类分别保存在current-copy-hint-red-42545673450、baseline-observer-stalls-42545712302。
+源ref增至94，无pending；拒绝快照remote_source_verified=false。异步询问用户恢复额度或已有Linux通道，未改账单、未采购、未改凭据/发行边界，既有Mac仍依赖托管prepare。

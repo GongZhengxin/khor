@@ -128,6 +128,42 @@ fn a_backup_probe_is_acked_when_the_responders_data_road_is_blackholed() -> Test
 }
 
 #[test]
+fn a_path_keepalive_is_not_shortened_by_the_connection_timer() -> TestResult {
+    let _guard = subscribe();
+    for own in [None, Some(Duration::from_secs(15))] {
+        let mut builder = ConnPair::builder().enable_multipath().disable_mtud_discovery();
+        builder.client_transport_cfg
+            .keep_alive_interval(Some(Duration::from_secs(5)))
+            .max_idle_timeout(Some(Duration::from_secs(60).try_into()?))
+            .default_path_max_idle_timeout(Some(Duration::from_secs(60)));
+        builder.server_transport_cfg
+            .keep_alive_interval(None)
+            .max_idle_timeout(Some(Duration::from_secs(60).try_into()?))
+            .default_path_max_idle_timeout(Some(Duration::from_secs(60)));
+        let mut pair = builder.connect();
+        pair.set_path_keep_alive_interval(Client, PathId::ZERO, own)?;
+        // Start the path timer after changing its interval; then exclude
+        // this explicit probe from the idle packet measurement.
+        pair.ping_path(Client, PathId::ZERO)?;
+        pair.drive();
+        let before = pair.path_stats(Client, PathId::ZERO).unwrap().frame_tx.ping;
+        pair.time += Duration::from_secs(6);
+        pair.drive_client();
+        let early = pair.path_stats(Client, PathId::ZERO).unwrap().frame_tx.ping - before;
+        if own.is_some() {
+            assert_eq!(early, 0, "the connection's 5s timer must not ping a path with its own 15s timer");
+            pair.time += Duration::from_secs(10);
+            pair.drive_client();
+            assert!(pair.path_stats(Client, PathId::ZERO).unwrap().frame_tx.ping > before,
+                "the path's own timer still sends its keepalive");
+        } else {
+            assert!(early > 0, "the connection still keeps paths without their own timer alive");
+        }
+    }
+    Ok(())
+}
+
+#[test]
 fn path_status() -> TestResult {
     let _guard = subscribe();
     let mut pair = ConnPair::builder().enable_multipath().connect();

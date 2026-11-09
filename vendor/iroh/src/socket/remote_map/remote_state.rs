@@ -1057,13 +1057,23 @@ impl RemoteStateActor {
         let sampled = |road: &transports::FourTuple, after: Instant| {
             measured.samples_after(road, after) >= 2
         };
+        let mut current_copy_hint = None;
         let step = match silence {
-            Some(silence) => self
-                .state
-                .moving
-                .leave(to, now, silence.began, |after| {
+            Some(silence) => {
+                let check_current = self.connections.values().any(|c| {
+                    let Some(conn) = c.handle.upgrade() else { return false; };
+                    c.paths.iter().any(|(path_id, road)| {
+                        road == &from && conn.path_stats(*path_id)
+                            .and_then(|stats| stats.last_received)
+                            .is_some_and(|at| at > silence.began.into_std()
+                                && now.into_std().saturating_duration_since(at) < RESELECT_INTERVAL)
+                    })
+                });
+                current_copy_hint = Some(check_current);
+                self.state.moving.leave(to, now, silence.began, check_current, |after| {
                     measured.samples_after(to, after) >= 1
-                }),
+                })
+            }
             // feat/net: every transport compares fresh measured readings. A direct
             // candidate gets neither an unconditional upgrade nor a different gain rule.
             None => self.state.moving.step(
@@ -1083,6 +1093,7 @@ impl RemoteStateActor {
                 ?now,
                 ?since,
                 failed = silence.is_some(),
+                check_current = ?current_copy_hint,
                 ?step,
                 readings = ?measured.rtts,
                 silent = ?measured.silent,
@@ -2341,6 +2352,7 @@ impl Moving {
         to: &transports::FourTuple,
         now: Instant,
         began: Instant,
+        _check_current: bool,
         to_sampled: impl Fn(Instant) -> bool,
     ) -> Step {
         let since = match &self.to {
@@ -3686,12 +3698,12 @@ mod tests {
         let began = t0 - MS(300);
         let to = addr(2);
         let mut m = Moving::default();
-        assert_eq!(m.leave(&to, t0, began, |after| after < t0), Step::Hold { from: true, to: true }, "the spare's old answer predates the decision");
-        assert_eq!(m.leave(&to, t0, began, |_| false), Step::Hold { from: true, to: true }, "probe both roads while waiting");
-        assert_eq!(m.leave(&to, t0 + MS(250), began, |after| after < t0 + MS(100)), Step::Go, "now it did");
+        assert_eq!(m.leave(&to, t0, began, true, |after| after < t0), Step::Hold { from: true, to: true }, "the spare's old answer predates the decision");
+        assert_eq!(m.leave(&to, t0, began, true, |_| false), Step::Hold { from: true, to: true }, "probe both roads while waiting");
+        assert_eq!(m.leave(&to, t0 + MS(250), began, true, |after| after < t0 + MS(100)), Step::Go, "now it did");
         let mut m = Moving::default();
-        assert!(matches!(m.leave(&to, t0, began, |_| false), Step::Hold { .. }));
-        assert_eq!(m.leave(&to, t0 + CONFIRM_MAX, began, |_| false), Step::Go, "nothing answers: go all the same");
+        assert!(matches!(m.leave(&to, t0, began, true, |_| false), Step::Hold { .. }));
+        assert_eq!(m.leave(&to, t0 + CONFIRM_MAX, began, true, |_| false), Step::Go, "nothing answers: go all the same");
     }
 
     #[test]
@@ -3711,14 +3723,24 @@ mod tests {
         let to = addr(2);
         let mut moving = Moving::default();
         let old_backup_packet = now - MS(100);
-        let step = moving.leave(&to, now, now - MS(500), |after| old_backup_packet > after);
+        let step = moving.leave(&to, now, now - MS(500), true, |after| old_backup_packet > after);
         assert_eq!(step, Step::Hold { from: true, to: true },
             "probe the suspected current copy as well; a pre-decision backup ACK cannot end confirmation");
         let mut older_move = Moving::default();
         let _ = older_move.step(&to, now - MS(1000), MS(30), MS(20), |_| false, |_| false);
         let before_fault = now - MS(600);
-        assert_eq!(older_move.leave(&to, now, now - MS(500), |after| before_fault > after),
+        assert_eq!(older_move.leave(&to, now, now - MS(500), true, |after| before_fault > after),
             Step::Hold { from: true, to: true }, "an older move cannot reuse a pre-fault sample");
+    }
+
+    #[test]
+    fn a_fault_with_no_receiving_copy_can_use_a_backup_that_answered_after_the_fault() {
+        let now = Instant::now();
+        let to = addr(2);
+        let mut moving = Moving::default();
+        let backup_packet = now - MS(100);
+        assert_eq!(moving.leave(&to, now, now - MS(500), false, |after| backup_packet > after),
+            Step::Go, "without any current-copy receipt, retain fast failover to a post-fault backup");
     }
 
     #[test]

@@ -75,6 +75,11 @@ netlab f4 改前改后见 vendor/iroh/KHOR.md 补丁 17 的「10-23 修订（car
 
 ### 6. `src/connection/mod.rs`：连接级的保活只 ping 没有自己保活的路径（2026-10-17，path-fix 第三棒）
 
+2026-11-09新增覆盖候选`a_path_keepalive_is_not_shortened_by_the_connection_timer`：真实虚拟连接，
+连接5秒、路径15秒，6秒时不应多PING、16秒时路径自身仍保活；没有路径计时器的对照仍由连接5秒保活。
+禁用MTUD排除探测PING混入，无生产修改；42543928044已SUCCESS 437Noq/35iroh路径/9选家与根格式。
+未宣称旧源取红或证明整个人网空闲/手机能耗预算。
+
 上游连接级保活（`ConnTimer::KeepAlive`，iroh 设的 5 秒）一到时就 `ping()` **每一条**路径（源码里的 TODO 自己也说太粗）。
 iroh 给每条路径都设了路径级的保活（`default_path_keep_alive_interval`，备用直连、排在直连后面的中继是 15 秒，vendor/iroh
 补丁 18），可连接级和选中那条路径的 5 秒是同一刻复位的，谁先到看运气：先到的那次把备用、中继也一起 ping 了，它们自己的
