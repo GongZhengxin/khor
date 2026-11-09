@@ -840,7 +840,9 @@ mod tests {
         );
         let still_live = links.has(&peer);
         let wrongly_lost = was_lost(&peer.to_string(), &via.to_string());
-        eprintln!("[hop-owner-contract] old={stale} current={current} old_ended=true replacement_alive_before=true alive_after={still_live} lost_after={wrongly_lost}");
+        eprintln!(
+            "[hop-owner-contract] old={stale} current={current} old_ended=true replacement_alive_before=true alive_after={still_live} lost_after={wrongly_lost}"
+        );
         assert!(
             still_live && !wrongly_lost,
             "a stale watcher cannot release or suppress its replacement"

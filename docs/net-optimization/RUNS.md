@@ -666,3 +666,6 @@ N0 v4源码开始记录paths/hop逐次logical_request和f4故障窗口，ignored
 
 
 185th Mac42654241724，base2747e8d1/treeb461bc39/snapshotfa2cbdd7/control5c67b39，**root fmt/net66+1ignored绿**。184原patch仅assert重排，完整source/transport/9 control blobs/hash已核；不覆盖随后写的lifecycle诊断源码。39633806控制分支已push新增SSH-only netlab-hop-ownership，原f4三轮/所有原门不变、低量生命周期/非SLO；driver2/runner4共6 stub test（含新profile+parser失败子例）绿，无本机产品执行。
+
+
+187th Mac42655499657同186完整source，root fmt/net66+1ignored/hop9/wires11/journal29/portable20全绿，所有source/control/transport/hash核留。188th Mac42655862010，basef17f07e1/treea56bdd85/snapshotbefe92e5/control39633806，**仅format红**（eprintln一hunk），无行为测试；原patch应用。186前两轮原f4门绿但诊断助手错误要求splice-only M也有端点载路事件，导致采集校验红；不能算产品红。修正模式校验与先保存文件，尚未重验；三轮原任务继续，不重发同run。

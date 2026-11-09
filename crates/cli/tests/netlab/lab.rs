@@ -316,22 +316,20 @@ pub fn sample_diagnostics(scenario: &str, n: &LabNode) {
         return;
     }
     let text = std::fs::read_to_string(n.home.0.join("serve.log")).unwrap();
-    assert!(
-        if mode == "lifecycle" {
-            text.contains("[khor-net-diagnostics] mode=lifecycle samples=off")
-                && text.contains("[khor-carried-lifecycle]")
-        } else {
-            text.contains("khor_net_samples")
-        },
-        "{} has no requested diagnostics",
-        n.name
-    );
+    // A splice-only middle need not own a carried endpoint. Require its
+    // initialized mode, and retain even an empty lifecycle event stream.
+    let initialized = if mode == "lifecycle" {
+        text.contains("[khor-net-diagnostics] mode=lifecycle samples=off")
+    } else {
+        text.contains("khor_net_samples")
+    };
     let dir = std::env::var_os("NETLAB_DIAGNOSTICS_DIR").expect("diagnostic artifact directory");
     let dir = Path::new(&dir);
     std::fs::create_dir_all(dir).unwrap();
     let path = dir.join(format!("{scenario}-{}.log", n.name));
     std::fs::write(&path, text).unwrap();
     eprintln!("[netlab-diagnostic] {}: {}", n.name, path.display());
+    assert!(initialized, "{} has no requested diagnostics", n.name);
 }
 
 impl LabNode {

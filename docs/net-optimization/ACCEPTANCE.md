@@ -324,6 +324,6 @@ paths echo与hop typing每个被实际poll的逻辑目录请求留唯一(pid,att
 
 ### f4共享载路生命周期诊断（独立非SLO）
 
-`netlab-hop-ownership`在Turing仅跑原f4 filter、单线程三轮，保留原准备、故障、时长与所有断言。`NETLAB_DIAGNOSTICS=lifecycle`仍显式编译net-diagnostics，但native subscriber为off；初始化成功后写`mode=lifecycle samples=off`header，人工生命周期事件单独输出。lab必须实核header及实际事件并留原始serve日志，不用高频ACK/selector sample日志扰动该轮。原`NETLAB_DIAGNOSTICS=1`及普通timed profiles保持。
+`netlab-hop-ownership`在Turing仅跑原f4 filter、单线程三轮，保留原准备、故障、时长与所有断言。`NETLAB_DIAGNOSTICS=lifecycle`仍显式编译net-diagnostics，但native subscriber为off；初始化成功后写`mode=lifecycle samples=off`header，人工生命周期事件单独输出。lab必须实核header并留原始serve日志；端点事件在报告中单独核对，中间splice角色可无本地载路事件，不用高频ACK/selector sample日志扰动该轮。原`NETLAB_DIAGNOSTICS=1`及普通timed profiles保持。
 
-原`link_attached`在map写入前仅代表意图；新`link_attachment_committed`在map锁内、写入后输出serial/previous_serial，配合link_io_ended、link_detached、hop_measured_release、carried_close_requested定位当前世代。f4即使通过也留六个方向journal；准备失败也尝试保存各resident诊断。v4逐次请求与故障时间点保留；三轮有红继续后续轮，最后必须通过完整性consumer，不将缺失请求算零失败。诊断绿不等于修复或SLO绿。
+原`link_attached`在map写入前仅代表意图；新`link_attachment_committed`在map锁内、写入后输出serial/previous_serial，配合link_io_ended、link_detached、hop_measured_release、carried_close_requested定位当前世代。f4即使通过也留六个方向journal；准备失败也尝试保存各resident诊断；先写出原始文件，再核模式，保留校验失败证据。v4逐次请求与故障时间点保留；三轮有红继续后续轮，最后必须通过完整性consumer，不将缺失请求算零失败。诊断绿不等于修复或SLO绿。

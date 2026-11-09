@@ -74,3 +74,8 @@ control39633806已push新增SSH-only netlab-hop-ownership：原f4单线程三轮
 186 Turing`turing-20261109T162719Z-9c283711`低量f4诊断已launch PID753802/child753843，实际/proc/driver核live，56.30秒编译后第一轮。准确base3bc6ba59/tree3253636f/snapshotcc34bd29/control39633806。187 Mac42655499657与186完整source相同，net-node已dispatch，实际headSha39633806/in_progress，未预记结果。Mac首次手工import因缺scripts路径在upload前本机失败，note已留，未调度/不计产品红；加scripts到sys.path后才生成187实际run。
 
 后续工作副本正补N2旧watcher世代合同：只把原两次losing后的release块逐句抽成实际helper，原kind-based detach与lost顺序保持，策略/计时不改。新测试先证明当前Relay/Direct owner仍可释放，再用真实duplex挂接旧/同via新两代、等待旧actor ended与新actor确活，调用实际旧release尾部，要求新代不关闭且不错误抑制middle。尚未远端编译/跑，不能预记行为红或182因果。
+
+
+187已终态成功：准确186同源Mac root fmt/net66+1ignored/hop9/wires11/journal29/portable20（49.95秒）绿，完整source/transport/control/hash已核；不覆盖之后新合同或CLI模式。188 Mac42655862010（basef17f07e1/treea56bdd85/snapshotbefe92e5/control39633806）只有eprintln一hunk format红，无编译/测试；原patch已应用。
+
+186前两轮原f4恢复门绿，但诊断采集校验因M没有端点载路事件而失败；不可记整个任务绿或产品红。M是splice角色，无此事件本来合法。x/y已各核真实committed serial1、没有释放/结束；第3轮仍在跑。工作副本修正为所有resident需正确mode header，实际事件逐角色核对，先保存原始serve日志再assert。原故障/准备/恢复/时长/门不变，当前源待新准确运行。
