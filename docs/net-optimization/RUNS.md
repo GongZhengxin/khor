@@ -328,3 +328,7 @@ p1s五个Go有4次failed=true。每次故障Go时，聚合heard在同一路上�
 两者basec43370ff dirty、tree44fda196d1a9800c7e87e6f9175c3484661d5e51、controlc68b644；snapshot分别1f1cc72dcf35b79f43f96dceb34770455153b967与fd0c22ffcd844d33271d337ca879961a02e2387b。
 代码只让首次新往返恢复可用性独立于quality/type，重复故障1秒/REHOLD、旧包和closed保护保留，删quick回调/两临时Vec、无额外探测/timer；copy-waking未变。
 NAT helper仅失败后输出两端既有path诊断，门和注入不变。提交前策略/fixture与绿快照逐文件无diff。85 refs，当前只有stalls pending。
+
+35已提交66e37760。新增故障确认回归取红 **42541459177 net-vendor**：base66e37760 dirty、tree32f638229d81beea7cd0dc40ccd16d67cb35282a、snapshot00e5b0a17f4364e83ba3a0c42d6a5a3361db7a0c、controlc68b644。
+只新增a_fault_move_probes_the_current_road_and_requires_a_post_decision_backup_sample，备用包在故障后但决定前发出时，要求Hold并探测当前路/候选。
+生产35未改；预期436Noq绿/34路径pass1fail，未出结果不预认定。拟修leave的决定后证据与当前最高PTO副本探测，仍需p3<1秒/防抖/转发共同复验，不引入应用请求重放。86 refs。

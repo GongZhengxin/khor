@@ -34,7 +34,7 @@ Noq4另补真实虚拟连接专项a_backup_probe_is_acked_when_the_responders_da
 [1.4固定stats.rs](https://github.com/n0-computer/noq/blob/34f75c49f93de5e2ff943483cabc5b6d0c5df918/noq-proto/src/connection/stats.rs)、
 [1.4固定BBR](https://github.com/n0-computer/noq/blob/34f75c49f93de5e2ff943483cabc5b6d0c5df918/noq-proto/src/congestion/bbr3/mod.rs)。
 
-## iroh 1–34：第一轮覆盖盘点
+## iroh 1–35：第一轮覆盖盘点与新增修正
 
 目标来自[补丁账本](../../vendor/iroh/KHOR.md)，不把其中“上游没有”“尚待验证”等历史描述当作当前事实。
 42536711138的435/33中的33仅选中remote_state::tests，遗漏net_report/socket的khor_测试。

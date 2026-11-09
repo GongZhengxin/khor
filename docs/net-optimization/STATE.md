@@ -22,9 +22,13 @@
 
 ## 最近诊断终态与下一轮
 
-**当前仅42540582927 netlab-stalls在途**，首次恢复可用性修正35的普通模式p1s/p5。
+**当前在途：42540582927 netlab-stalls、42541459177 net-vendor回归取红**。
+前者首次恢复可用性修正35的普通模式p1s/p5。
 tree44fda196d1a9800c7e87e6f9175c3484661d5e51、snapshotfd0c22ffcd844d33271d337ca879961a02e2387b、basec43370ff dirty、controlc68b644。
 同源单元42540515220已SUCCESS 436Noq/34路径/9选家与根格式，snapshot1f1cc72dcf35b79f43f96dceb34770455153b967。
+后者base66e37760 dirty、tree32f638229d81beea7cd0dc40ccd16d67cb35282a、snapshot00e5b0a17f4364e83ba3a0c42d6a5a3361db7a0c、controlc68b644；
+只加a_fault_move_probes_the_current_road_and_requires_a_post_decision_backup_sample，生产仍35。
+预期436Noq绿/34路径pass1fail；未出结果不当产品红。下一候选拟让leave使用决定后备用应答并探测当前故障copy，优先最高PTO；尚未实现。
 下表其余均已终态，38717126/38759858和38808023同treebe7b5abef3cc3c1ef81744075f4436efdf668fd0、
 base82e0d3b5 dirty、controlc68b644；先查询，不重复调度。observer v1只改实验客户端/诊断，选路策略未改。
 
@@ -132,10 +136,10 @@ N2七类预算/取消/写入行为已在ACCEPTANCE实现前冻结；静态发现
 
 ## 源码证据与恢复规范
 
-现85个本地immutable `refs/khor/net-evidence/<run>`，清单`evidence/net/source-refs.json`。
+现86个本地immutable `refs/khor/net-evidence/<run>`，清单`evidence/net/source-refs.json`。
 重要快照不依赖七天artifact保留；`git rev-parse REF:source`须等于收据tree。
 快照是parentless容器，读取用`git show REF:source/<path>`，不得直接覆盖工作区，也不push这些本地ref。
-收据终态及时刷新pending；当前只有35的普通netlab-stalls在途。
+收据终态及时刷新pending；当前为35普通stalls与故障确认回归取红。
 
 恢复先核本目录、branch/HEAD/diff与已有run，保留未提交内容。两main及产品feature未合并发布。
 外盘缺失时，从共同仓只读`git show feat/net:docs/net-optimization/STATE.md`与PLAN恢复已提交文档；不覆盖原外盘未提交内容。

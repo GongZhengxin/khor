@@ -3693,6 +3693,17 @@ mod tests {
     }
 
     #[test]
+    fn a_fault_move_probes_the_current_road_and_requires_a_post_decision_backup_sample() {
+        let now = Instant::now();
+        let to = addr(2);
+        let mut moving = Moving::default();
+        let old_backup_packet = now - MS(100);
+        let step = moving.leave(&to, now, now - MS(500), |after| old_backup_packet > after);
+        assert_eq!(step, Step::Hold { from: true, to: true },
+            "probe the suspected current copy as well; a pre-decision backup ACK cannot end confirmation");
+    }
+
+    #[test]
     fn a_far_faster_move_probes_the_current_road_after_a_slow_sample() {
         let t0 = Instant::now();
         let to = addr(2);
