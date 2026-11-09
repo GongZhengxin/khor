@@ -219,3 +219,13 @@ Accepted前置42566727617未成立，不能算取消行为红。为让本地调�
 - 两项失答对照都由server接收并执行后立即关闭conn，不发送回答；server仍继续接收可能的重放（每轮800ms观察、最多4条），不以不服务第二连接隐藏重发。Mkdir只执行一次/零读重试；Sessions严格两次/一次读重试；调用正常错误、server完成，零dial_failed。
 
 所有绑定/初次握手在计时前；任务用Aborts归测试所有，超出观察会abort并join，最后关闭端点。短预算场景不替代真正黑洞持续超过Patience.ack后的F7退役验证，该项仍待Linux/可控故障通道。
+
+## N2配对诊断探针所有权（修复前冻结）
+
+新增`dial_budget::probe`三项真实HTTP回归；生产pair_with/doctor::any_relay_answers保持原样，先取得实际红再修。fixture仅loopback临时TCP listener，匹配doctor的GET /probe且排除relay upgrade；完整收到请求后不响应，用对端TCP EOF证明该请求已停止。若环境存在HTTP(S)_PROXY即fixture前置失败，不修改全局env，也不把前置失败算行为红。
+
+1. 直接取消正在等HTTP的any_relay_answers父任务并join后，800ms内其请求应EOF；server不提前关socket。
+2. 真实pair_with使用scratch身份/无实际秘密ticket、127.0.0.1:9不可达issuer和临时probe URL；收到GET且配对仍pending20ms后取消配对并join，800ms内probe须EOF且零dial_failed，最后才关闭endpoint/server。
+3. slow URL排第一，fast URL第二；两边均已收到GET才释放fast响应。要求fixture在任务启动1秒内发出fast 204，随后500ms内any_relay_answers正常true，800ms内slow请求EOF；这两个观察合计早于原2.6秒HTTP自身超时。不能等待自身超时假装赢家/取消释放，也不能用关闭测试server制造EOF。
+
+以上为功能/资源释放观察，不是产品RTT SLO。每任务有Aborts所有者、观察结束后abort/join fixture；不加并发数、不改原2.6秒单探针上限或proxy策略。空/全部失败的boolean语义需保留。

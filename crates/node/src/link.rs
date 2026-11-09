@@ -13421,6 +13421,7 @@ impl Node {
 mod dial_budget {
     use super::*;
 
+    mod probe;
     mod wire;
 
     async fn fixture() -> (tempfile::TempDir, Node, DeviceInfo, iroh::Endpoint) {

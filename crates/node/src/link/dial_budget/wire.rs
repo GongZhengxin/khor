@@ -75,7 +75,7 @@ impl Fixture {
     }
 }
 
-async fn observed_by<T>(task: &mut Aborts<T>, by: tokio::time::Instant) -> Option<T> {
+pub(super) async fn observed_by<T>(task: &mut Aborts<T>, by: tokio::time::Instant) -> Option<T> {
     match tokio::time::timeout_at(by, task.0.as_mut().unwrap()).await {
         Ok(Ok(answer)) => Some(answer),
         Ok(Err(_)) => None,

@@ -527,3 +527,6 @@ N3道路双向因果校准测试已按先前协议写下，模型未改；contro
 
 
 **42569954515 Mac net-node普通wire格式修正源在途**：basef42121b51e5ceb5252dd8594a8f6523553c33450 clean、treef198bbd5b488cf3f4e59f15b2ac1c77f6b11a1cd、snapshot40418eb1f61e2a436f583e846fc766f89e4bdfec、control0cff9671fb2f80945423132e0df46995f6ff3198；118th ref/mac-ordinary-wire-formatted-42569954515已锚。生产仍与2fc650b3相同，11预算测试待实际结果。
+
+
+42569954515终态 **SUCCESS**：根格式/编译/net66+1ignored/hop9/wires10/journal28/dial_budget11全绿（预算6.73秒），新增四普通wire覆盖均实际执行：scope到期STOP本流且并发控制成功/同stable_id、真实读重试沿原by、失答读最多一次、Mkdir失答不重放。准确basef42121b5/treef198bbd5/snapshot40418eb1/control0cff967已核并下载，118 refs终态。生产与2fc650b3相同；新增绿覆盖不宣称这些用例在旧源取红，F7真正长黑洞仍缺。下一探针取消/首成功回归生产保持原样待实际红。
