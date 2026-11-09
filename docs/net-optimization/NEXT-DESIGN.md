@@ -250,3 +250,10 @@ Accepted在adopt后持有与普通请求相同RetireUnheard，正常响应disarm
 
 
 CPU新helper的首轮Mac163只因模块路径解析停在formatter，无编译/运行。已增加显式path，路径相对声明文件目录，依据[Rust模块路径规则](https://doc.rust-lang.org/reference/items/modules.html#the-path-attribute)。三项短校准明确ignore，单独profile加--ignored执行全部，避免full netlab并行运行短校准的busy loop污染计时场景；这不是忽略产品失败，N0校准必须独立有证据后才开始新CPU对照。
+
+
+### 2026-11-09 162nd实测与168th待因果诊断
+
+162nd第二轮X同wire139750384102992的carried(quality85.61ms)在7347ms后消失，仅relay133ms，故这部分不是journal聚合假象。Y两事件wire不同，仍不能合成同连接回退。x/y open_hop后的两次5秒检查时间与两次撤路相近；源码Wires.selected_beats_carried只挑Main再Tunnel一条，而Link/close_carried按peer共享；未知/缺carried时目前返回true。这是待证的主动清理解释，不排除stream结束或旧attachment清理。
+
+当前只加opt-in生命周期事实：Attached.serial、Link attach/detach/IO side/current serial、outgoing comparison wire/facts、hop2look release与close request，默认不构建details、不改变政策或journal词。f4i诊断在断言前复制x/y/m serve.log，新增SSH-only profile三轮diagnostic，非SLO；168当前在跑。实际触发点/所属generation须先与Path/Retired wire对齐，再决定共享连接证据范围与cleanup所有权，不能仅把所有未知路径永久保留来骗过门。

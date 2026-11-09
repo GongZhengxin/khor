@@ -611,3 +611,13 @@ F9/F10 fixture：155th Mac42611015315（basefdaf20f8/treee58c548b/snapshot8f52df
 160th turing-20261109T120752Z-38c3c975 **SUCCESS Linux24**，basedf592ad7/tree3c8bc03a/snapshote30f6377/controlb998，总217.80秒、合同92.30秒；fmt/net66+1ignored/hop9/wires10/journal29保持。158两真实红F9/F10转绿，三个core helper/F8函数SHA逐字一致；新16秒健康Accepted也绿，原F7/F8/owner/replacement/期限/读写/探针/update21保持。161st Mac42614651338完全同source，**SUCCESS Mac20**（50.01秒），相同基础子集全绿，四Linux-only排除；两份完整报告/身份/control/transport/hash/原group采核。159th仅format红，原patch已应用并加disarmed guard早返，未编译/行为测试。
 
 旧154th hop已现场核远端无report/launcher，从未执行，superseded_not_launched、tests=false，refs/input全保留。162nd turing-20261109T121345Z-8ba7e561使用与160/161完全同source，原hop三轮，已launch **PID390824/child390871**、实际/proc与driver核live；五实际fixture对baseline137逐字一致、network.sh对59dc逐字同，证据turing-tick-accepted-hop-fixture-identity.json。162refs=161终态+162在途，全部snapshot/tree双引用批核；goal完整active。
+
+
+162nd exact-source hop终态**8/9**（3/3、2/3、3/3），source同160/161，controlb998，总1688.88秒。第二轮f4i回carried52.1秒后出现relay，X同wire139750384102992 carried→relay7347ms且carried候选消失；Y的两事件wire不同。f4s三轮旧门过但按键均9.9秒。完整report/原group/tuple/driver/bundle/hash采核，classification存run目录；观测快照也保留，原因待生命周期记录，不算显示假象或排名定因。
+
+163/164/165 Mac分别模块路径解析/format/format门失败，无编译/行为测试，完整source/control/transport/hash均已采核；source修正后166th turing-20261109T130143Z-4777e11d CPU短校准**3/3**，base886b084c/treeed97f217/snapshot349bd7ba/control7534，总61.07秒、Rust校准0.50秒，CPU14/100ticks每秒，两contender305ms各增加15ticks，actual thread affinity/负例/cleanup通过。calibration resident为owned sleep，非Node或p1s；旧CPU报告不回写。167th Mac42622111828完全同source/control，root fmt/net66+1ignored绿，仅net-unit，未跑Node20。
+
+control7534d6e已push，仅增加SSH-only cpu-check与hop-lifecycle；驱动Python stub2＋runner4 checks过，本机没执行Rust或真实netlab。新增diagnostic默认关闭，不改cleanup/排序/人类journal。168th turing-20261109T130858Z-465046e7同166/167完整snapshot/control，原f4i单线程三轮diagnostic非SLO，已launch PID486253/child486308。168refs=167终态+168在途，snapshot/tree全量批核，完整目标active。
+
+
+168th在途观察已落`observations/lifecycle-first-observation.json`：实际PID486253 cmdline匹配，前两轮f4i原门绿（回carried17.2/10.7秒），每轮三端日志共9生命周期事件，第三轮未完成；尚未重现162第二轮撤路，不能将诊断绿当稳定性通过或定因。下一继续同PID/原report，不重发。

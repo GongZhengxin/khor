@@ -211,3 +211,12 @@ base25d0c803/tree6805b7b7/snapshote0a42573/controlb998：Turing150th fmt/编译/
 160th Linux24全绿（合同92.30秒）；161st Mac20全绿（50.01秒），两者准确tree3c8bc03a/snapshote30f6377/controlb998。新增16秒健康Accepted取消，等全路grace后再发独立控制仍同wire、零退役；原短取消/期限/读写/探针/update及LinuxF7/F8保持。F9/F10core helper/F8相对红158逐字一致，身份文件f9-f10-f8-red158-candidate160-function-identity.json。全部source/env/control/transport/hash/原group已采核。
 
 这只收本批Node合同：无pending时tick/served静默、完整resident/跨进程期限、长预算/候选资源、N1切路与N3实际应用/能耗等仍未完成。CPU152/153原两门均绿，但3.8秒vs732.4ms及12vs5打洞不支持整体提速；绑核/busy有效负载仍未被旧fixture断言。新准确源hop162三轮在途，不能预记稳定性或最终体验通过。
+
+
+### 2026-11-09 同源三轮hop仍8/9，载路消失需定位
+
+162nd turing-20261109T121345Z-8ba7e561同Node160/Mac161准确源（df592ad7/tree3c8bc03a/snapshote30f6377/controlb998），三轮3/3、2/3、3/3。第二轮f4i：X wire139750384102992在1794227442646选carried（quality85.61ms、8samples、age141ms），1794227449993选relay133ms，只有relay留在measurements，间隔7347ms；这是同连接真实回退，不能由跨连接聚合解释。Y该两聚合事件wire不同，必须分开。open_hop后约10秒与2×5秒清理节奏吻合但非原因证明；下轮独立diagnostic记录attachment/IO/清理决定，不先调排名阈值。f4s三轮门过，最慢按键均9.9秒，不是体验绿。
+
+### 2026-11-09 CPU有效性校准3/3，不代替完整性能对照
+
+166th source886b084c/treeed97f217/snapshot349bd7ba/control7534，短校准3pass（0.50秒），Linux实际CPU14允许集合0–127，两个sleep模拟resident和两个busy contender全thread绑同CPU；305ms各增加15CPU ticks，clock100ticks/s，且负例/reap断言过。新机制支持测量前/尖峰/结束的实际证据，尚未跑真实Node600秒p1s或原版同fixture对照。167th Mac同完整source根格式/net66+1ignored绿，仅net-unit。所有report/环境/driver/transport/hash已采。168th同源f4i生命周期diagnostic三轮在途，明确非SLO，清理政策仍原样。
