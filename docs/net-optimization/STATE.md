@@ -230,3 +230,19 @@ Mac133th 42589161986仍仅formatter门失败（一处链式排版），没有行
 134→135独立reducer实际2红→4绿已完成，固定Rust1.95、源码片段/控制SHA/四测试日志均在hop-timeline-original-audit与hop-timeline-fixed-audit，format副本也有逐源hash。修复只纳入started作为占用状态，opened不算胜出、真实后续fallback仍红、20秒长占用仍红，move计数/独立f4i未改。尚未称全hop绿。两份远端格式化副本按源SHA核后应用，本机没跑Rust。
 
 旧candidate hop128th终态8/9、report/classification留存。旧baseline hop129th只staged未launch，因已知计量缺陷标superseded_not_launched；保留其ref/job/receipt且不运行无效指标。马上新建两角色修正fixture hop任务，原20s/1.5s/30s、拓扑/注入/重复次数不变；已核baseline仍仅原六fixture变化且五实际fixture与candidate逐字相同，生产6485原样。旧stalls130/131未launch且不使用此reducer，保留串行计划，最终准确源矩阵还需复验。wire.rs两新覆盖runtime仍待Mac，133仍fmt-only红，135纯reducer不替代它。
+
+
+修正reducer后两角色新任务均只stage、未launch：
+- turing-20261109T091323Z-60e73cac candidate
+- turing-20261109T091325Z-2c64555c baseline
+均control59dc223、hop_occupancy_started_v2，原f4/f4s/f4i三轮；新队列candidate hop→baseline hop→candidate stalls→baseline stalls在turing-next-matrix.json。旧129未launch已superseded，原candidate8/9保留。candidate复用Macro f45a5a...的同一snapshot a828463e/tree78d063d9，独立bundle；baseline新snapshot=9012628386be6fc6b9bdc5ca15f4558d79d2f16c tree=97040f31c547e90bf21703a396d14bda455c17c2（仅原六fixture变化，生产6485原样）。
+
+
+**修正fixture candidate hop turing-20261109T091323Z-60e73cac已launch，PID62854**，tree78d063d915f033d9bffa58516488b65de9f0f14b/snapshota828463e8bc10dc9038e38e3e4777acac21cb443/control59dc223，measurement_revision=hop_occupancy_started_v2。baseline修正hop turing-20261109T091325Z-2c64555c仅stage、未launch。后接两个旧stalls。
+
+**Mac 42591501822 net-node已dispatch/138ref锚**，同candidate hop source(tree78d063d9/snapshota828463e/basefd1f30ee clean)，执行controla6a00a5fea4ee4e5ec9a5be3f8f07b8e767386c4，格式化来源固定Turing1.95/rustfmt1.9。待16预算/流/探针专项和既有子集实际结果，不预报绿。两个独立机器可同时运行，Turing只有一个计时job。
+
+
+Mac138th 42591501822终态：root fmt/编译/net66+1ignored/hop9/wires10/journal28绿，dial_budget15pass1fail（14.56s）。新长ACK阳性通过；唯一黑洞测试在静默前置就失败（heard_count12→15，不能当真实黑洞），仅fixture红，不是产品退役行为红，原因尚未区分尾包/绕行。当前15过含旧14合同，新F7未验证。
+
+已移除UDP proxy fixture，恢复原native loopback Fixture；真正长静默改为Linux-only子测试，unshare -Urn在启动子harness前建私有user/netns，核网络namespace与parent不同且uid_map单映射后才up lo/写nft，精确drop两端server UDP端口并核计数/全程heard不变。主机网络不动，Mac不运行该Linux测试，但长ACK阳性/旧合同仍继续。Linux test必须排到Turing单槽后实际运行，不能以Mac15绿代替F7。新增server task白名单net-node以复用原可信profile；未改profile/资源门/生产协议。
