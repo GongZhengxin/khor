@@ -704,3 +704,15 @@ N0 v4源码开始记录paths/hop逐次logical_request和f4故障窗口，ignored
 
 
 200th Mac42668241618仅bootstrap消息一hunk **format红**，root尚未编译/行为测试；完整source/control/transport/hash已核，原patch应用。198三次carried准备journal没有成功开路事件，只有约10秒ask拨号失败；设备表可见不能当作载路就绪，v2校准该前置。200 refs完整批核、当前无在途，待新准确source实际验证。
+
+
+用户曾暂停后明确继续；18:07 actual/proc证实201仍live，暂停未让已launch远端任务停止。201准确base9c2e7348/treedcad2092/snapshotd862e1ae/control7598180，v2首轮3/3，第二轮automatic已完成；整体未终态。202 Mac42671621101同完整source已dispatch。原request06db4946 upload_source_bundle在HTTPS SSL timeout后、dispatch前退出；核source ref正确、bundle ref404、无workflow run后，沿同request补bundle并只dispatch一次，未重发一个在途workflow。202refs snapshot/tree双引用全批核。
+
+
+### 201｜2026-11-09 hop_reference_v2完整校准9/9
+
+Turing `turing-20261109T175508Z-912bcc0c`，base9c2e73488723fc550d335883e96eba78e08a8f7e / treedcad20923717cf99207f16a53c3aceed7b1b2b93 / snapshotd862e1ae80cedefedec79b8e57992385f85f46b3 / control7598180ab85a8253ecc634eabe66b8552e31d471，1228.41s、原group清空。9/9、576/576全ok；raw重算所有n30的p50/p95/max吻合，准备60秒+最后hold10秒、bootstrap先于阻断、两端真实nft隔离与peer-hop关闭均核；source/control/bundle/ref/report hashes核。证据reference-v2-calibration.json与ops/calibrate-hop-reference.py（数据检查，不执行产品）。第二轮automatic189.106/173.863ms，fixed-carried145.221/145.701、fixed-relay190.427/193.093；同wire carried短暂出现再失去Custom，需诊断定因。通过仅代表稳态可用性和固定路参照有效，非最优选择/完整N1/SLO/WAN/能耗。
+
+### 202｜Mac42671621101，两次GitHub内部错误，无job
+
+同201完整source/control，request06db4946b3854c5d8d300dc247958846。attempt1、一次同run rerun attempt2均completed/failure、jobs=[]/artifacts0；原生Chrome GitHub Summary明确Internal server error，correlation分别8f4c3a68-b894-489d-aa05-f583f2a54e85与10c5e6b4-5407-4563-b375-5da3017696d6。API元数据、UI注释转录与无产物记录在mac-hop-reference-v2-ready-42671621101。没有远端source执行/format/编译/测试证明，不计产品失败；不第三次重发，等服务恢复补验。上传SSL timeout的dispatch前恢复与同request回执另留201/mac-upload-timeout-note.json。

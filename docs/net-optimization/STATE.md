@@ -1,9 +1,12 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-09 17:12 UTC（本地2026-11-10）。root串行，无子智能体。活动目标“完成计划”仍active；完整N0–N5未完成。速度/体验优先，个人可信设备网；没有合main、发布、中继采购或生产部署授权。
+更新：2026-11-09 18:23 UTC（本地2026-11-10）。root串行，无子智能体。完整目标仍为“完成计划”；用户曾暂停，现明确“继续”并已恢复本轮工作（goal服务18:07仍返回paused，自动跨轮续跑由用户面板控制）；完整N0–N5未完成。速度/体验优先，个人可信设备网；没有合main、发布、中继采购或生产部署授权。
 
 ## 当前执行与下一步
 
+- **201 hop_reference_v2已终态完整采证9/9**：`turing-20261109T175508Z-912bcc0c`，1228.41s、原group清空。准确base9c2e7348/treedcad2092/snapshotd862e1ae/control7598180。576 started/finished全ok，其中测量540、bootstrap/setup36；三组各轮双方向n30、summary与raw的p50/p95/max逐项一致，两端实际nft input/output relay drop与peer-hop=off均核。reference-v2-calibration.json保留准备phase、9次真实10秒hold、全部结果与逐wire journal；不混入v1、不当SLO。
+- **N1速度目标尚未达成**：201 automatic第一/三轮p50约147/149ms，与固定carried约145/146ms接近；第二轮automatic yx/xy为189.106/173.863ms，同轮固定carried145.221/145.701、固定relay190.427/193.093。第二轮automatic从reported Relay开始；x→y同wire在测量开始后15.271s变carried，再7.889s后变relay且Custom消失；y→x无carried selected事件。缓存摘要与逐wire事实分开保留；还不能定位当前owner释放/offer竞态/建立延迟的因果，下一步仅诊断，不盲改gain门。
+- **202 Mac42671621101两次均GitHub内部错误、未启动任何job**：net-unit，同201完整source/control7598180。attempt1 annotation `Internal server error` correlation8f4c3a68-b894-489d-aa05-f583f2a54e85；保留元数据后仅沿同run/输入rerun一次，attempt2同错误correlation10c5e6b4-5407-4563-b375-5da3017696d6。两次jobs=[]/artifact0，无远端source执行证明；不计format/编译/产品失败，不发第三次。原request06db4946的bundle上传SSL timeout发生在dispatch前，原核查/恢复记录仍保留。待服务恢复再补同源Mac验收，独立Turing工作继续。
 - **195 held_precondition_v2已终态采证3/3**：`turing-20261109T165750Z-d0af45b2`，491.06s、原group清空。准确base467336c2/treecd986018/snapshot503781bc/control39633806。三轮实际连续hold10444/10460/10455ms后才注故障，原1500ms恢复/30秒稳定断言通过；73/73请求全ok，分轮23/25/25，最大4043195/3390784/3332251us。source/control/bundle/group/九诊断文件/hash核留。只校准正向hold，不冒称reset/timeout负例已跑；诊断非SLO，尚无同版本baseline/固定路参照。196 Mac同完整source root fmt/net66+1ignored保持。
 
 - **190诊断已终态采证0/3**：`turing-20261109T163727Z-f72bdaf4`，663.76s、原group清空。准确base656e274e/tree70acbbc1/snapshota13dce7d/control39633806。三红分别：after-answer1558ms>1500ms；180s未达到carried前置、未进故障窗口；第三轮准备函数在双方当前owner已于t0前81.4/54.8s释放后仍返回，观察从Relay开始并停留。后者证明现有准备助手忽略until超时且没真正要求连续10秒hold，必须独立修正/记量测revision，不能假装有效的stalled-carried起点。40/40测量请求全ok，分轮21/0/19，第二轮零请求代表缺覆盖。九个三角色诊断文件完整；四次实际释放都匹配当前committed serial，不能归因189旧owner。full-round-timeline/current-owner-release-trace及全部报告已留，非SLO运行。
@@ -13,7 +16,7 @@
 
 - 191为前版源仅stage、实际remote无execution/launcher，已superseded_not_launched；192同源Mac仅format红（observer一hunk），原patch应用得到当前193/194源。不得重发191或计产品失败。
 
-下一步依序：193/194已完成准确源/全部子集/fixture核对；195实际正向校准已完成，下一步补N0同拓扑的automatic/relay-only/carried-only稳态参照，再按结果完善负例/全矩阵，保留原故障时长/1500ms/30秒稳定门；N1继续查当前owner release的quality/gain/confidence，与旧182/162区分，再跑hop/recovery/dynamic/full。N2还有close-vs-offer竞态、IPC剩余预算/取消等独立缺口。不能因合同绿缩掉完整范围。
+下一步依序：针对201 automatic第二轮变慢，复用原fixture/负载只开lifecycle诊断，三轮automatic收齐当前owner/开路/关闭时序，不混入非诊断分布；再定因修复并跑原门。补202同源Mac需GitHub服务恢复。195正向恢复3/3与201固定路参照已留，仍缺负例/同版本baseline及完整矩阵，保留原故障时长/1500ms/30秒稳定门；之后hop/recovery/dynamic/full与N2–N5完整范围继续。真跨网Mac主动配对Turing协议尚待实现，不能因可用性合同绿缩掉完整范围。
 
 ## 本轮已确证的变化
 
@@ -43,10 +46,10 @@ U10已明确：P=iPhone，A=macserver（Mac），B=Turing（Linux），两服务
 | 用途 | 当前位置与身份 |
 | --- | --- |
 | 产品 | /Volumes/disk0/Khor/worktrees/current/khor-net，feat/net；实际HEAD/diff先核，最新功能62cf1cb3＋格式d077d020 |
-| 控制 | /Volumes/disk0/Khor/worktrees/current/khor-build-net，feat/net，39633806已push；仅新增SSH-only netlab-hop-ownership，原timed profiles不改 |
+| 控制 | /Volumes/disk0/Khor/worktrees/current/khor-build-net，feat/net，7598180已push；新增SSH-only hop-reference v2与ownership诊断，原timed profiles不改 |
 | 旧基线 | khor-net-baseline detached6485，原六fixture WIP未动；source90126283/tree97040f31保留 |
 | CPU基线 | khor-net-baseline-cpu-v3 detached6485，仅七fixture/helper变化，staged树49211b55/source31db523a用于176；前版186d/63043993也留ref |
-| 证据 | /Volumes/disk0/Khor/evidence/net，source-refs.json与turing-next-matrix.json核实际；196 refs全批snapshot/tree核 |
+| 证据 | /Volumes/disk0/Khor/evidence/net，source-refs.json与turing-next-matrix.json核实际；202 refs全批snapshot/tree核 |
 
 Turing root /tmp/khor-netlab-feat-net-1110，owned单flock重型槽；Rust1.95/jobs16/nice10；50GiB准入/40GiB停止/90min预算。计时不并跑编译/其他负载，无sudo/宿主网络改动，user/netns隔离。SSH BatchMode/ForwardAgent=no/StrictHostKeyChecking=yes。实际/proc cmdline＋terminal group核状态，观察超时不等于停止，不盲重发。
 
@@ -67,11 +70,11 @@ Turing root /tmp/khor-netlab-feat-net-1110，owned单flock重型槽；Rust1.95/j
 
 完整范围仍以PLAN/REQUIREMENTS/ACCEPTANCE为准；RUNS/REPORT留原始演进。本页重写前逐字状态见HISTORY-20261109-before-scoped-owner-verification.md，更早沿HISTORY链；历史在途仅代表当时，恢复必须核实际句柄。
 
-source-refs-audit-20261109-held-v2-196.json已批核196 run refs；195已终态，当前无在途。每refs/khor/net-evidence/<run>等于snapshot，:source等于tree，不能checkout/push这些本地refs。所有never-launched/superseded保留inputs/ref，不计通过/失败。
+source-refs-audit-20261109-resume-202.json已批核202 run refs；201已终态完整采证、202已终态但无job/无source执行证据。每refs/khor/net-evidence/<run>等于snapshot，:source等于tree，不能checkout/push这些本地refs。所有never-launched/superseded保留inputs/ref，不计通过/失败。
 
 ops/submit-turing.py仅Git/Python/SSH：stage先锚ref，可--source复用pure metadata，--control显式39633806，--role先声明；默认control仍b998。launch前驱必须终态完整采证并再次核原group/flock/inputs。collector返回101也可能采证成功，看collection/report/group，不重复覆盖。ops/verify-mac-record.py仅GH/Git/retained artifact身份核验，不执行产品测试；分类仍须读实际日志。
 
-Mac临时source/bundle分支只在终态、完整留证、所有权/SHA一致后清理；复用者不删原请求分支。外盘缺失先读恢复入口，不按摘要覆盖WIP；其他治理工作不接管。完整goal仍active；对用户最近粗估3–5开发日，受回归、真机与能耗影响，不是完成承诺。
+Mac临时source/bundle分支只在终态、完整留证、所有权/SHA一致后清理；复用者不删原请求分支。外盘缺失先读恢复入口，不按摘要覆盖WIP；其他治理工作不接管。用户已明确恢复完整任务意图；goal服务最近仍paused，不能由update_goal伪造resume；对用户最近粗估3–5开发日，受回归、真机与能耗影响，不是完成承诺。
 
 ## f4准备修正：正向校准已过
 
@@ -95,4 +98,4 @@ N4只读preflight：macserver alias映射z13，严格known host/不转发agent�
 当前工作副本为hop_reference_v2（尚未远端format/编译/跑）：120s总准备期限内，先在未切断Relay时完成双向bootstrap；automatic/carried等原journal中对正确M的成功hop开路事件（发在attach前，只证明已开始，还要靠后续真实请求验证）；carried此时才阻断Relay。三组均从同一起点至少等60s，再双向真实请求、连续稳定10s后测量。产品选路/gain/时间门与测量负载不改，v1全保留、不混入v2分布。control7598180已push改metadata为v2，driver2/runner4共6 stub tests绿；原timed profiles不改。
 
 
-200 Mac42668241618（base6fa5b972/treef19337f9/snapshotbc6dc66d/control7598180）只bootstrap错误消息一hunk format红，无编译/行为；完整source/transport/9 control blobs/hash核留，原patch已应用。200 refs snapshot/tree双引用全批核，当前两端无在途。198 carried-bootstrap-journal.json已逐轮核：三次只见setup后约10020ms ask dial失败，没有成功hop开路事件，不能凭设备表等于载路已就绪；v2即针对这一前置缺口，不改产品策略。
+200 Mac42668241618（base6fa5b972/treef19337f9/snapshotbc6dc66d/control7598180）只bootstrap错误消息一hunk format红，无编译/行为；完整source/transport/9 control blobs/hash核留，原patch已应用。200 refs snapshot/tree双引用全批核，当时无在途，当前201/202见首条。198 carried-bootstrap-journal.json已逐轮核：三次只见setup后约10020ms ask dial失败，没有成功hop开路事件，不能凭设备表等于载路已就绪；v2即针对这一前置缺口，不改产品策略。
