@@ -127,7 +127,7 @@ Mac便携入口已经实际执行回归，标准Linux托管lane仍因GitHub账�
 Mac实际host-capabilities见42555870179：VZ=1，16GiB、10CPU、约76.2GB空闲，未安装Lima/QEMU/容器工具。可在既有共享guard内用项目专属Lima VZ Linux，避免依赖被账单拒绝的托管prepare。此节为具体设计候选，不是已运行证据。
 
 - 锁定Lima v2.3.0官方Darwin-arm64资产717479690，50317981字节，SHA256 b7af444bd8f91d3c307477e562f2cf3bd7595d62b9429185e4fa841563578cfc；官方release元数据发布日期2026-11-06。工具仅装khor-builder/netlab项目子目录，不用brew全局安装/不改launchd。
-- Ubuntu24.04 arm64固定release-20261017官方cloud image，SHA256 50e24e1fb79e89116e939d90aa7738f7af48c442fa1bc2510131e0b39c50348e；不退回无digest的latest。2vCPU/6GiB/30GiB磁盘为候选上限，现有35/20GiB空间门和单槽不改。先证明namespace/veth/netem/nft/conntrack能力，再编译。
+- Ubuntu24.04 arm64固定release-20261017官方cloud image，SHA256 50e24e1fb79e89116e939d90aa7738f7af48c442fa1bc2510131e0b39c50348e；不退回无digest的latest。2vCPU/6GiB/30GiB磁盘为候选上限，以42573745492实际50/40GiB空间门和单槽为准，旧35/20不再适用且不改installed policy。先证明namespace/veth/netem/nft/conntrack能力，再编译。
 - 显式无host home挂载/无个人公钥载入/无agent或X11转发/无任意端口自动转发；只拷本run已校验source.git、可信driver与返回报告，guest只用项目生成控制key，不携GitHub token/个人SSH key。guest Cargo/registry缓存独立于Mac和可信发行。
 - VM生命周期必须由guard持有。官方v2.3.0 start.go及pkg/instance/start.go确认--foreground会以前台SysProcAttr执行hostagent；不能用脱离guard的后台默认start。实现前核foreground/信号关闭链路，trap正常退出/取消停止该实例，最终报告确认不残留；不影响他人VM/worker。
 - 首次先工具/镜像checksum+启动/停止+能力探针，不称产品通过；候选与6485基线使用同一VM配置/后端重新测，不能把旧x86托管结果与新arm64差值当策略收益。
@@ -191,3 +191,9 @@ Lima v2.3.0 Git树800a96b14e96b5d2ceb20ab2602147c1e79224ea，9份源码已与tre
 Linux VZ [CreateDisk](https://github.com/lima-vm/lima/blob/v2.3.0/pkg/driver/vz/vz_driver_darwin.go)调用[driverutil.EnsureDisk](https://github.com/lima-vm/lima/blob/v2.3.0/pkg/driverutil/disk.go)；raw转换经[proxyimgutil](https://github.com/lima-vm/lima/blob/v2.3.0/pkg/imgutil/proxyimgutil/proxyimgutil.go)在qemu-img缺失的ErrNotFound时回退[nativeimgutil](https://github.com/lima-vm/lima/blob/v2.3.0/pkg/imgutil/nativeimgutil/nativeimgutil.go)，native也支持创建/resize。不是仅用Mac guest的native分支推断Linux；不需要为该方案先全局brew装QEMU，其他转换错误仍正常失败。该静态链不是实际镜像可启动/磁盘预算证明。
 [默认配置](https://github.com/lima-vm/lima/blob/v2.3.0/templates/default.yaml)支持显式ssh.loadDotSSHPubKeys/forwardAgent/forwardX11=false及networkOpts.hostLoopback=false（限VZ默认用户网络，不能配共享user-v2）。后者只限制默认网关到宿主loopback，不阻断宿主其他LAN地址，不能误当完全网络隔离。仍需明确无个人home/key挂载、仅指定只读source/control与独立报告目录、关闭自动portForward/proxy传播、项目专属LIMA_HOME及原guard下资源/进程生命周期。
 `instance/start.go`确认foreground走ForegroundSysProcAttr，但真实guard对子孙进程、SIGTERM/SIGKILL、正常退出/失败清理仍需审查并探针验证；不将该flag本身当生命周期已证明。下一步先isolated guest能力探针，再同后端基线/候选与netlab原门；现未启动VM、不宣称恢复Linux。
+
+
+## 实际guard与VM生命周期约束（42573745492）
+
+已只读取得run-build（115B，SHA83c9aa2c98dd60d9eaab670d0fbcd1ae4e20460320a963f1db7d480f4d36b7ce）和build_guard.py（2138B，SHA998f5723eb447a1634411397c18a524e5ed0d50bd6dbd81001a16626219f64eb）。实际空间门50/40GiB、Mac target100GiB；原35/20设计文字撤回，不修改实际policy。guard以新session启动命令并传递build.lock FD；中断/低空间时TERM整组，10秒后KILL。若leader已退出，stop直接返回，因此只有foreground+finally还不足以防控制器SIGKILL后的VM残留。
+固定Lima非WindowsForegroundSysProcAttr为空、start_unix.go使用syscall.Exec替换为hostagent，故foreground可继承guard组。实现将用同组lease supervisor持有从guard继承的lock FD：控制器关闭lease或死亡EOF即停止自有VM，正常退出也停止并wait；所有hostagent继续同组，不启动后台默认start。实际探针需证明正常清理及受控杀死子控制器后lease清理，最终Stopped/hostagent退出；这还不是已实现或已运行证明。首capability guest不挂载任何宿主目录，不进入产品编译/个人网络；保持2CPU/6GiB/30GiB候选上限和实际50/40门，磁盘增长仍由原guard监测。

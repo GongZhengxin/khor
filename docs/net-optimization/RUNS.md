@@ -551,3 +551,6 @@ N3道路双向因果校准测试已按先前协议写下，模型未改；contro
 
 
 **42573745492 Mac net-unit只读guard采集在途**：base03df5a47f37d24a0473b9693320e48aed78b52bb clean、tree919008b695a05cd3dbbb0f90b0d5db94d193818e、snapshot2d69c1a1a9c5d13c95a70bbee90d4df83258682f、control60821accc131e837da476706cb6b3ad93812d30e；122nd ref/mac-guard-capture-42573745492已锚。产品生产未变，读取admission文本/hash及net-unit通道验证待结果；未执行VM。
+
+
+42573745492终态 **SUCCESS**：root fmt/net66+1ignored绿，guard两文件大小/SHA256已核，准确tree919008b6/snapshot2d69c1a1/control60821acc已核，122 refs终态。实际installed guard SHA998f5723eb447a1634411397c18a524e5ed0d50bd6dbd81001a16626219f64eb：准入50GiB、运行中止40GiB、Mac target100GiB，非此前文档35/20；当前free72254976000B，VZ=1/16GiB/10CPU。guard对子命令start_new_session/pass lock fd，TERM后10秒KILL整个PGID，但leader已退出则不杀；据此VM需foreground同组及lease supervisor闭合父死清理，不能只依赖正常finally。未启动VM或Node/完整测试。
