@@ -656,3 +656,10 @@ control7534d6e已push，仅增加SSH-only cpu-check与hop-lifecycle；驱动Pyth
 181st候选stalls终态原门**2/2**，1190.05秒，source同179/180。22个CPU64 records/全mask/identity/两busy进展保持，原p1s1/0 move、0retire，但18punch、4369包1641546B、最高728.3ms，176对照3punch/2801包1211229B/537.2ms；完整比较fixed-core-original176-candidate181-comparison.json。原p1s错误未留，不能宣称零失败或整体加速。182随后launch PID662914/child662947实核live，首轮f4红、f4i/f4s绿，窗口起即Relay且结束193ms，observations/first-f4-red-context.json保留；后续仍在跑，未定因。
 
 N0 v4源码开始记录paths/hop逐次logical_request和f4故障窗口，ignored五个真实请求校准＋schema consumer未远端跑。控制5c67b39新增SSH-only measure-check，Python driver2/runner4共6 stub checks绿；原timed case命令与门不改，当前182仍旧准确source/control。
+
+
+182nd turing-20261109T145455Z-205ad096原hop三轮终态**8/9红**，source同179/180/181、control7534，1590.25秒，原group清空。三轮2/3、3/3、3/3，第一f4已Relay且未恢复；y→x同wire carried→relay5936ms并缺Custom，旧fixture无准确t0、不能定发生在故障内或归因。f4i3/3、f4s3/3（最长8.4/8.5/9.9秒）不抹掉该红。完整报告/source/control/字节/hash已核，classification与全部失败journal留证。
+
+183rd turing-20261109T160336Z-88cf4c78 **N0真实Node v4校准1/1**，baseab2b939b/treef8336c08/snapshot4c56003b/control5c67b39，99.22秒。五请求10事件完整配对：ok2/error1/timeout1/cancelled1；SIGSTOP状态实核、200ms期限201053us、已poll后取消52273us、CONT后成功17367us。独立consumer远端valid，本机仅Python按实际原始事件11完整性/负例检查通过。非延迟/能耗/SLO通过，取消不代表远端执行停止。
+
+184th Mac42651079158同183完整source/control，只有assert一hunk的**format红**，未编译/行为测试。source/env/transport/全部9 control blobs/hash已核；原patch应用后新准确源再验。184 refs snapshot/tree全批核、当前两端无在途；不复发已终态任务。

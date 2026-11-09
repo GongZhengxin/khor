@@ -52,10 +52,7 @@ async fn real_request_outcomes_survive_errors_timeouts_and_cancellation() {
         if status.lines().any(|line| line.starts_with("State:\tT")) {
             break;
         }
-        assert!(
-            began.elapsed() < Duration::from_secs(1),
-            "peer is stopped"
-        );
+        assert!(began.elapsed() < Duration::from_secs(1), "peer is stopped");
         tokio::time::sleep(Duration::from_millis(10)).await;
     }
     let short = Duration::from_millis(200);
