@@ -322,7 +322,10 @@ async fn abandoning_a_long_silent_exchange_still_retires_the_dead_wire() {
     // both ACK patience and all-path grace; do not pin an early-retirement policy.
     tokio::time::sleep_until(by + Duration::from_millis(100)).await;
     assert_eq!(
-        f.node.wires.live(&f.peer.id, wires::Proto::Main).map(|c| c.stable_id()),
+        f.node
+            .wires
+            .live(&f.peer.id, wires::Proto::Main)
+            .map(|c| c.stable_id()),
         Some(f.local.stable_id())
     );
     drop(asking);

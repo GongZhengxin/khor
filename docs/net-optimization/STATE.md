@@ -218,3 +218,10 @@ Baseline recovery turing-20261109T075906Z-5464f2db终态FAILURE5/6：p3三轮[78
 42587980042终态仅FORMAT红（无新测试执行），原始format.patch/task/source已存，132ref终态。已基于远端patch手工排版；黑洞覆盖调整为实际request future先poll入response wait，等真实ACK+all-path grace后abandon，避免固定过早4.1秒retire政策，生产仍未改。
 
 **Mac 42589161986 net-node在途**：base9368c5372b99225c058360aa15e5ff323c74b882、dirty（STATE WIP）、tree877fb49295297ab7d19ac336eb56ab6119c234f2、snapshot9e04578396e61384ce5c4c0c0dfbf51dd8449225、control576c127；133ref已锚。测试尚未验证，后续勿把formatter门算行为红。Turingcandidate hop第二轮3/3绿，首轮f4s仍保留红且静态/原始事件支持selected-only误计新wire started carried，第三轮继续。
+
+
+Turing candidate原hop128th已终态 **FAILURE8/9**（2/3、3/3、3/3），完整report已取回。唯一第一轮f4s旧统计45.3s未回，事件明确Y→X retired unanswered→started carried新wire，第一轮link约8.9s回Forwarded；旧selected-only reducer漏掉started。原始红永久保留。
+
+独立同源reducer已原样抽取到Turing用固定Rust1.95运行（无Cargo/产品/全netlab，单槽无其他计时）：evidence/hop-timeline-original-audit，134th ref，compile0、4tests中2pass2fail。实际两红：漏掉新started carried的恢复、漏算新started relay的占用；opened候选不算胜出、真实10.9s后回退仍失败两控制通过。未改原20秒/1.5秒/30秒门。最小修复只将started纳入占用状态，selected move计数/独立f4i不变，日志新增wire starts；待绿审计与同fixture两角色复验，不能据纯函数即收hop。
+
+Mac133th 42589161986仍仅formatter门失败（一处链式排版），没有行为测试。已从Turing同Rust1.95/rustfmt1.9配置取得两份格式化副本并逐SHA核旧源后应用，本机未执行Rust。wire.rs长abandon/ACK阳性覆盖仍待实际runtime绿；生产未改。

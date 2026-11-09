@@ -404,11 +404,18 @@ struct Recovery {
     stayed: bool,
 }
 
+/// A new wire establishes occupancy; it is not counted as a selection move.
 fn recovery(events: &[(u64, String, String)], answers: u64, end: u64) -> Recovery {
-    let lines: Vec<_> = events.iter().filter(|(_, change, _)| change == "selected").collect();
+    let lines: Vec<_> = events
+        .iter()
+        .filter(|(_, change, _)| matches!(change.as_str(), "selected" | "started"))
+        .collect();
     let on_relay = lines.iter().find(|row| row.2 == "relay").map(|row| row.0);
     let back = on_relay.and_then(|left| {
-        lines.iter().find(|row| row.0 >= left && row.2 == "carried").map(|row| row.0)
+        lines
+            .iter()
+            .find(|row| row.0 >= left && row.2 == "carried")
+            .map(|row| row.0)
     });
     let mut longest = 0;
     let mut since = None;
@@ -428,10 +435,21 @@ fn recovery(events: &[(u64, String, String)], answers: u64, end: u64) -> Recover
     }
     let after_answer = back.map(|at| at.saturating_sub(answers));
     let fell = back.and_then(|back| {
-        lines.iter().find(|row| row.0 > back && row.2 == "relay").map(|row| row.0 - back)
+        lines
+            .iter()
+            .find(|row| row.0 > back && row.2 == "relay")
+            .map(|row| row.0 - back)
     });
-    let stayed = back.is_none_or(|at| fell.is_none_or(|after| after >= 30_000) && end >= at + 30_000);
-    Recovery { on_relay, back, longest, after_answer, fell, stayed }
+    let stayed =
+        back.is_none_or(|at| fell.is_none_or(|after| after >= 30_000) && end >= at + 30_000);
+    Recovery {
+        on_relay,
+        back,
+        longest,
+        after_answer,
+        fell,
+        stayed,
+    }
 }
 
 #[test]
@@ -603,9 +621,18 @@ async fn f4_stall(s: &str, st: Stall) {
 
     let events = path_lines(&y, &x, t);
     let end = now_ms();
-    let Recovery { on_relay, back, longest, after_answer, fell, stayed } =
-        recovery(&events, answers, end);
-    let lines: Vec<_> = events.iter().filter(|(_, change, _)| change == "selected").collect();
+    let Recovery {
+        on_relay,
+        back,
+        longest,
+        after_answer,
+        fell,
+        stayed,
+    } = recovery(&events, answers, end);
+    let lines: Vec<_> = events
+        .iter()
+        .filter(|(_, change, _)| change == "selected")
+        .collect();
     let now = y.link(&x).await;
     let x_lines: Vec<String> = path_lines(&x, &y, t)
         .into_iter()
@@ -624,7 +651,7 @@ async fn f4_stall(s: &str, st: Stall) {
         s,
         ok,
         format!(
-            "relay late {late} ms{}; y→x: relay at {}, back on the carried road at {} ({} after the leg x–m is heard again, at {}), fell back {}, longest on the relay {:.1}s; selections {:?}; links {seen:?}; slowest keystroke {slowest:.1?}; now {}; x's selections {x_lines:?}",
+            "relay late {late} ms{}; y→x: relay at {}, back on the carried road at {} ({} after the leg x–m is heard again, at {}), fell back {}, longest on the relay {:.1}s; selections {:?}; wire starts {:?}; links {seen:?}; slowest keystroke {slowest:.1?}; now {}; x's selections {x_lines:?}",
             if both { " both ways" } else { " to x" },
             on_relay.map_or("never".into(), secs),
             back.map_or("never".into(), secs),
@@ -638,6 +665,9 @@ async fn f4_stall(s: &str, st: Stall) {
             lines
                 .iter()
                 .map(|(at, _, r)| format!("{r}@{}", secs(*at)))
+                .collect::<Vec<_>>(),
+            events.iter().filter(|(_, change, _)| change == "started")
+                .map(|(at, _, road)| format!("{road}@{}", secs(*at)))
                 .collect::<Vec<_>>(),
             now.as_ref().map_or("nothing".into(), word),
         ),
