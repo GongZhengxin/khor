@@ -1,6 +1,6 @@
 # 下一批网络设计与证据计划
 
-2026-11-09 · 基于33202c22只读复核；没有执行N2–N4新实验或修改这些生产机制。
+2026-11-09 · 本文主体保留基于33202c22的历史设计与源码事实，不能当当前源码。N2期限/取消已部分实现验证、N3 Noq模型已执行；最新证据以STATE/REQUIREMENTS/REPORT为准。
 活动目标/执行器状态只查[STATE](STATE.md)，完整范围见[PLAN](PLAN.md)，验收协议见[ACCEPTANCE](ACCEPTANCE.md)。
 本次八个源文件blob收据在`evidence/net/design-source-audit-20261109/inputs.json`；下面区分源码事实、设计提议和待测项。
 
@@ -8,7 +8,7 @@
 
 36普通p1s已0/0移动，但p3两轮1.1/1.2秒超原1秒；f4s一轮回carried后又退Relay。
 它们是独立未解决项，不由单元或日志模式绿覆盖。
-37目前只传入未使用的当前copy收包提示和新增预期红回归；GitHub账单拒绝任务，尚未实际取红，未实施条件分支。
+37现已实施并取得Mac36路径/438Noq/9home绿；Turingrecovery6/6，corrected hop仍8/9，有独立f4i回退与91.4秒慢路滞留。下述提议已实现的部分见STATE，不能重复作为待开发项。
 
 下一修正的提议：当前路任一live copy在故障开始后且最近一个原观测tick内收到包，才启用36的双路探测与决定后备用ACK要求。
 没有这条提示时，故障后已获得的备用往返可用来快速离开。收包只触发验证，不能证明正向发送可达。
@@ -108,7 +108,7 @@ f4s回退先在现有三端诊断中关联回退时Silence/Reading/副本/实际
 
 ## 验收和交接
 
-执行器账单问题没有改变PLAN范围；N2–N4目前是设计/源码事实，不是已实施或已通过。
+U9已恢复Turing Linux主通道，账单不再阻断当前Linux验证；PLAN范围未变。本文历史N2源码事实需按STATE对照，已实施并部分验证；N3真实Node与N4仍待实测。
 恢复后仍先完成N1必要红绿与普通复验；可并行安排独立N3 baseline，但root不派子智能体，也不让性能测量与构建争用同一执行器。
 每批绑定产品tree/control/原始证据；适当短回归通过后再最终全矩阵、Mac/手机/多机与可信Quality。无合并/发布授权。
 
@@ -204,3 +204,8 @@ Linux VZ [CreateDisk](https://github.com/lima-vm/lima/blob/v2.3.0/pkg/driver/vz/
 controlbedd896，source tree2b5bfce2/snapshot6a046588，固定工具/镜像已实际校验。短实例名修复macOS临时socket限制；按本次IID与/run/lima-boot-done相等验完整初始化。Linux aarch64 6.8.0-147、namespace/veth/netem/nft/conntrack实际成功；正常停机与子controller真实SIGKILL后lease EOF→stop rc0→Stopped均成功、同guard PGID、无本次helper。空host mounts与无个人key/agent/proxy/自动应用端口保留，未改installed guard/策略。前两执行器红在RUNS保留。
 
 下一具体实现为把原scripts/network.sh放入该隔离guest，沿同源码/可信control回执，固定Rust1.95四component校验和，先实际构建/冒烟；随后新后端基线和候选同条件原门。首构建不预设额外全局缓存或资源扩张，计实际磁盘/时间后再决定项目专属缓存。当前能力任务product_tests_executed=false，N1原p3/hop红和N2–N5剩余范围均未结案。
+
+
+### 2026-11-09续：取消与全路径活性的未验证边界
+
+当前RetireUnheard::drop在无收包且超过ACK floor时退役；exchange_inner在同一floor之后先发全路径PING再等grace。下一反例应在Linux独立netns建立真实wire后，对loopback注入约4.8秒往返、让一个调用4.1秒到期且另一请求同wire仍等待；验证第一调用只STOP本流，活备用在grace内回包后第二请求成功。不是仅用ACK一直活跃的长等待替代该反例，也不能直接把4.1秒无ACK当全路死亡。具体实现需统一活性证据所有者，同时保留真正长黑洞取消后的退役，避免重现F7长期重复交出死wire；不增加每请求无谓探测或异步清理泄漏。此项尚未实现/运行，不冒称行为红。

@@ -143,3 +143,16 @@ Turing recovery同机对照已完整采证：
 | original baseline(6485/tree52a44260) | 73.692 / 71.256 / 247.204 | 787.0 / 787.1 / 704.3 | 5/6，p2第三轮p95超原200ms |
 
 两源同Turing/固定Rust1.95/原fixture/control59dc223，串行candidate→baseline；两源p3均满足原1s。基线第三轮host负载变动（candidate end load1=9.12，baseline end=46.12）与时序未隔离，不能把尾延迟差异直接算源代码或某patch收益。保留基线原失败、全部样本/断言/环境；数据不是稳定性统计证明或完整N1收口。下一为两源hop/stalls与CPU受控/必要复验、dynamic/full；N2–N5仍未结。对照JSON含两边load before/after与全部tuple路径。
+
+
+## Turing修正占用计量后的hop（136th）
+
+准确source tree78d063d915f033d9bffa58516488b65de9f0f14b/snapshota828463e/control59dc223，原三场景单线程三轮、hop_occupancy_started_v2，结果8/9，三轮2/3、3/3、3/3。新reducer此前独立实际2红→4绿仅证明started纳入占用，旧candidate8/9完整红仍保留。
+
+| 场景 | 三轮结果 | 限制 |
+| --- | --- | --- |
+| f4 | 3/3 | 场景最大按键3.5/3.3/3.5秒，原门通过不是交互极致 |
+| f4s | 3/3 | 回carried相对腿恢复0.2/0.0/0.0秒，无后续回退；最大按键8.6/10.2/10.1秒 |
+| f4i | 2/3 | 首轮恢复后X carried→relay→carried，to_relay=1而原门0；后两轮绿，第三次回carried91.4秒 |
+
+首轮f4i首行started relay条件通过，失败来自后续回退；精确X事件carried→relay1697ms、relay→carried5803ms。journal没有connection stable_id，不能只凭该报告区分连接或定因；未归咎reducer或改门。3轮完整log、source/driver/bundle/environment、原PGID无live与逐文件SHA已采；执行1652.41秒。尚无corrected baseline完成数据，不给因果加速/稳定性结论。新Linux net-node与基线hop/CPU对照仍待，完整计划未完成。

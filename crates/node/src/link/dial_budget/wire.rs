@@ -259,7 +259,7 @@ async fn abandoning_a_long_silent_exchange_still_retires_the_dead_wire() {
     assert!(server.ip().is_loopback());
     tokio::time::sleep(Duration::from_secs(1)).await;
     let rules = format!(
-        "table inet khor_f7 {{ chain output {{ type filter hook output priority 0; policy accept; udp sport {} counter drop; udp dport {} counter drop; }} }}",
+        "table inet khor_f7 {{\n    chain output {{\n        type filter hook output priority 0; policy accept;\n        udp sport {} counter drop;\n        udp dport {} counter drop;\n    }}\n}}\n",
         server.port(),
         server.port()
     );

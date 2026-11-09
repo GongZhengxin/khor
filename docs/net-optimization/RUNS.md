@@ -563,3 +563,8 @@ VZ能力三run（源码一致baseb56576ce/tree2b5bfce2/snapshot6a046588）：425
 
 
 **Turing baseline turing-20261109T075906Z-5464f2db FAILURE5/6**，准确base6485/tree52a44260/snapshot9e64c63c/control59dc223，127th ref。三轮p3最慢787.0/787.1/704.3ms均过原1s；p2 p95=73.691917/71.255568/247.204224ms，第三轮超过原200ms、其余route/保持/零错/零退役条件过，源码878行原assert实际失败。完整report采证/tuple/driver/bundle/environment/group/SHA已核。candidate同机6/6，但host load从candidate后9.12到baseline后46.12，未隔离的背景变化禁止宣称源代码或patch37的因果加速；不把原性能红改算executor红，也不删除。对照turing-recovery-comparison.json。随后4任务stage（128–131 refs），candidate hop128th turing-20261109T082539Z-a6f5aaf4已launch PID4163640，其他3未launch；同source角色tuple/原profile/control59dc223，当前131 refs逐一核、127终态+1在途+3 staged。
+
+
+**Turing corrected hop136th turing-20261109T091323Z-60e73cac FAILURE8/9**：basefd1f30ee8b3761940a60c98ff7c65559bd7d16e4/tree78d063d915f033d9bffa58516488b65de9f0f14b/snapshota828463e8bc10dc9038e38e3e4777acac21cb443/control59dc223，measurement_revision=hop_occupancy_started_v2。三轮2/3、3/3、3/3，完整report已采，执行1652.41秒。三轮f4/f4s绿；f4i首轮to_relay=1超原0，X carried96.8→relay98.5→carried104.3秒，首行started条件通过；后两轮f4i绿，但第三回carried91.4秒。原20s/1.5s/30s门未改；f4i未受reducer修正。f4s最大按键8.6/10.2/10.1秒，不能将这些旧场景绿扩大为体验全绿。baseline同fixture137th只stage未launch。
+
+Mac139th42594133373仅format门失败；baseef90/tree3f3c4c52/snapshot800a54f8/controlb998，headSha/transport/source核一致，未编译/测试；原format.patch应用后冻结新源。**Turing140th turing-20261109T094205Z-595cfb65 net-node已launch PID143315**：base6fff96a389d74aa0524257a4d4c250654bae5b90/tree6099df332c86ff7c4224cbcec0d22ec1fb4ba28f/snapshot679507082f2343b1ba4ab36d475c8ea7ee328b22/controlb9984797f412f352f3c76f99c47ade3ee10f68e9。真正Linux namespace F7待运行，不用Mac未执行的测试报绿。
