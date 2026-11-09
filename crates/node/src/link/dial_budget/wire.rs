@@ -397,12 +397,27 @@ fn isolated_network_namespace(test: &str) -> bool {
 #[cfg(target_os = "linux")]
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn abandoning_a_long_silent_exchange_still_retires_the_dead_wire() {
+    observe_abandoned_wire(false).await;
+}
+
+#[cfg(target_os = "linux")]
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_network_change_tick_respects_a_pending_wire_confirmation() {
+    observe_abandoned_wire(true).await;
+}
+
+#[cfg(target_os = "linux")]
+async fn observe_abandoned_wire(changed: bool) {
     use std::future::Future;
     use std::io::Write;
     use std::process::{Command, Stdio};
 
-    if !isolated_network_namespace("abandoning_a_long_silent_exchange_still_retires_the_dead_wire")
-    {
+    let test = if changed {
+        "a_network_change_tick_respects_a_pending_wire_confirmation"
+    } else {
+        "abandoning_a_long_silent_exchange_still_retires_the_dead_wire"
+    };
+    if !isolated_network_namespace(test) {
         return;
     }
 
@@ -451,6 +466,9 @@ async fn abandoning_a_long_silent_exchange_still_retires_the_dead_wire() {
     })
     .await;
     assert!(pending, "the real exchange must enter its response wait");
+    if changed {
+        f.node.wires.network_changed();
+    }
     // Keep the application future unpolled while transport I/O continues.
     // This models an operation abandoned after a scheduler delay and makes
     // Drop, rather than the inner liveness beat, own the retirement. Wait out
@@ -472,6 +490,8 @@ async fn abandoning_a_long_silent_exchange_still_retires_the_dead_wire() {
         f.node.wires.live(&f.peer.id, wires::Proto::Main).is_some(),
         "abandoning starts confirmation, it is not proof of death"
     );
+    let tick_retired = if changed { f.node.wires.tick() } else { 0 };
+    let live_after_tick = f.node.wires.live(&f.peer.id, wires::Proto::Main);
     let confirmed = tokio::time::timeout(grace + Duration::from_millis(500), async {
         while f.node.wires.live(&f.peer.id, wires::Proto::Main).is_some() {
             tokio::time::sleep(Duration::from_millis(10)).await;
@@ -514,7 +534,11 @@ async fn abandoning_a_long_silent_exchange_still_retires_the_dead_wire() {
         live.is_none(),
         "long real silence must not keep handing out a dead wire"
     );
+    assert_eq!(tick_retired, 0, "tick must not preempt a pending confirmation");
+    assert_eq!(live_after_tick.map(|c| c.stable_id()), Some(f.local.stable_id()));
     assert_eq!(counts.retired_unanswered, 1);
+    assert_eq!(counts.retired_network, 0);
+    assert_eq!(counts.retired_silent, 0);
     assert_eq!(counts.retired_closed, 0);
     assert_eq!(counts.reads_retried, 0);
     assert_eq!(counts.dial_failed, 0);
@@ -815,4 +839,79 @@ async fn lost_answers(reading: bool) {
     assert_eq!(counts.reads_retried, u64::from(reading));
     assert_eq!(counts.dial_failed, 0);
     assert_eq!(path.is_dir(), !reading);
+}
+
+#[cfg(target_os = "linux")]
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn cancelling_a_silent_accepted_answer_confirms_the_wire() {
+    if !isolated_network_namespace("cancelling_a_silent_accepted_answer_confirms_the_wire") {
+        return;
+    }
+    super::observe_accepted_answer_stop(None, true).await;
+}
+
+#[cfg(target_os = "linux")]
+pub(super) async fn observe_accepted_blackhole(
+    node: &Node,
+    peer: &DeviceInfo,
+    conn: &iroh::endpoint::Connection,
+    remote: &iroh::endpoint::Connection,
+    asking: &mut Aborts<Early>,
+    requests: &AtomicUsize,
+) {
+    use std::io::Write;
+    use std::process::{Command, Stdio};
+
+    assert_eq!(peer.addrs.len(), 1);
+    let server: std::net::SocketAddr = peer.addrs[0].parse().unwrap();
+    assert!(server.ip().is_loopback());
+    let rules = format!(
+        "table inet khor_f10 {{\n    chain output {{\n        type filter hook output priority 0; policy accept;\n        udp sport {} counter drop;\n        udp dport {} counter drop;\n    }}\n}}\n",
+        server.port(),
+        server.port()
+    );
+    let mut firewall = Command::new("nft")
+        .args(["-f", "-"])
+        .stdin(Stdio::piped())
+        .spawn()
+        .unwrap();
+    firewall.stdin.take().unwrap().write_all(rules.as_bytes()).unwrap();
+    assert!(firewall.wait().unwrap().success());
+    tokio::time::sleep(Duration::from_millis(300)).await;
+    let count = wires::heard_count(conn);
+    let silence = wires::Patience::of(conn).silent;
+    assert!(silence >= Duration::from_secs(15) && silence < Duration::from_secs(16));
+    let grace = wires::ask_every_path(conn);
+    tokio::time::sleep(silence + Duration::from_millis(100)).await;
+    assert_eq!(wires::heard_count(conn), count, "native UDP fixture must stay unheard");
+    assert!(remote.close_reason().is_none(), "remote must not substitute a close for silence");
+    assert!(!asking.0.as_ref().unwrap().is_finished(), "Accepted must still await its answer");
+    assert_eq!(requests.load(Ordering::SeqCst), 2, "warmup and early request only");
+    let task = asking.0.take().unwrap();
+    task.abort();
+    assert!(matches!(task.await, Err(error) if error.is_cancelled()));
+    let held_at_cancel = node.wires.live(&peer.id, wires::Proto::Main);
+    let confirmed = tokio::time::timeout(grace + Duration::from_millis(500), async {
+        while node.wires.live(&peer.id, wires::Proto::Main).is_some() {
+            tokio::time::sleep(Duration::from_millis(10)).await;
+        }
+    }).await.is_ok();
+    let out = Command::new("nft").args(["list", "table", "inet", "khor_f10"]).output().unwrap();
+    assert!(out.status.success());
+    let text = String::from_utf8(out.stdout).unwrap();
+    let words: Vec<_> = text.split_whitespace().collect();
+    let dropped: u64 = words.windows(2).filter(|pair| pair[0] == "packets").map(|pair| pair[1].parse::<u64>().unwrap()).sum();
+    let counts = node.wires.counts.snapshot();
+    assert!(dropped > 0, "real native UDP must hit drop rules");
+    assert_eq!(wires::heard_count(conn), count);
+    assert!(remote.close_reason().is_none());
+    assert_eq!(held_at_cancel.map(|c| c.stable_id()), Some(conn.stable_id()));
+    assert!(confirmed, "cancelled silent Accepted answer must leave a bounded wire confirmation");
+    assert_eq!(counts.retired_unanswered, 1);
+    assert_eq!(counts.retired_network, 0);
+    assert_eq!(counts.retired_silent, 0);
+    assert_eq!(counts.retired_closed, 0);
+    assert_eq!(counts.reads_retried, 0);
+    assert_eq!(counts.dial_failed, 0);
+    assert_eq!(counts.answers_late, 0);
 }

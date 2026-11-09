@@ -13468,15 +13468,17 @@ mod dial_budget {
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn cancelling_an_accepted_early_answer_stops_only_its_stream() {
-        observe_accepted_answer_stop(None).await;
+        observe_accepted_answer_stop(None, false).await;
     }
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn an_accepted_early_answer_keeps_the_callers_deadline() {
-        observe_accepted_answer_stop(Some(Duration::from_secs(1))).await;
+        observe_accepted_answer_stop(Some(Duration::from_secs(1)), false).await;
     }
 
-    async fn observe_accepted_answer_stop(budget: Option<Duration>) {
+    async fn observe_accepted_answer_stop(budget: Option<Duration>, blackhole: bool) {
+        #[cfg(not(target_os = "linux"))]
+        assert!(!blackhole);
         use std::sync::{
             Arc,
             atomic::{AtomicUsize, Ordering},
@@ -13537,11 +13539,12 @@ mod dial_budget {
                 let was_early = recv.is_0rtt();
                 let bytes = recv.read_to_end(MAX_FRAME).await.unwrap();
                 assert!(matches!(
-                    proto::question(&bytes).unwrap(),
-                    Request::Sessions
+                    (blackhole, proto::question(&bytes).unwrap()),
+                    (false, Request::Sessions) | (true, Request::FetchPath { offset: 0, .. })
                 ));
                 requests.fetch_add(1, Ordering::SeqCst);
-                entered.send(was_early).unwrap();
+                let remote = resumed.handshake_completed().await.unwrap();
+                entered.send((was_early, remote.weak_handle())).unwrap();
                 tokio::join!(
                     async {
                         // STOP_SENDING is evidence of stream cancellation; a
@@ -13584,16 +13587,32 @@ mod dial_budget {
         warm.close(0u32.into(), b"resumption cache primed");
 
         let by = budget.map(|budget| std::time::Instant::now() + budget);
+        let (freeze, freeze_requested) = tokio::sync::oneshot::channel::<()>();
+        let (frozen, freeze_seen) = tokio::sync::oneshot::channel::<()>();
         let mut asking = Aborts(Some(tokio::spawn({
             let node = node.clone();
             let endpoint = ep.clone();
             let peer = peer.clone();
             async move {
-                node.ask_early(&endpoint, &peer, &Request::Sessions, by)
-                    .await
+                let request = if blackhole {
+                    Request::FetchPath { path: "/fixture-read-only".to_owned(), offset: 0 }
+                } else {
+                    Request::Sessions
+                };
+                assert!(request.rides_early());
+                let asking = node.ask_early(&endpoint, &peer, &request, by);
+                tokio::pin!(asking);
+                tokio::select! {
+                    biased;
+                    _ = freeze_requested => {
+                        frozen.send(()).unwrap();
+                        std::future::pending::<Early>().await
+                    }
+                    out = &mut asking => out,
+                }
             }
         })));
-        let was_early = tokio::time::timeout(Duration::from_secs(5), ready)
+        let (was_early, remote) = tokio::time::timeout(Duration::from_secs(5), ready)
             .await
             .unwrap()
             .unwrap();
@@ -13625,6 +13644,22 @@ mod dial_budget {
             "fixture must reach Accepted with an outstanding answer"
         );
         assert!(by.is_none_or(|by| std::time::Instant::now() < by));
+        #[cfg(target_os = "linux")]
+        if blackhole {
+            freeze.send(()).unwrap();
+            tokio::time::timeout(Duration::from_secs(1), freeze_seen).await.unwrap().unwrap();
+            wire::observe_accepted_blackhole(
+                &node, &peer, &shared, &remote.upgrade().unwrap(), &mut asking, &requests,
+            ).await;
+            ep.close().await;
+            server.close().await;
+            let task = serving.0.take().unwrap();
+            task.abort();
+            let _ = task.await;
+            return;
+        }
+        #[cfg(not(target_os = "linux"))]
+        drop(remote);
         let mut task = asking.0.take().unwrap();
         let ended = match by {
             Some(by) => {
@@ -13676,6 +13711,7 @@ mod dial_budget {
             "warmup, cancelled read and independent control only"
         );
         assert_eq!(node.wires.counts.snapshot().dial_failed, 0);
+        drop((freeze, freeze_seen));
         assert!(ended, "accepted early answer ignored the caller's deadline");
         assert!(
             stream_stopped,

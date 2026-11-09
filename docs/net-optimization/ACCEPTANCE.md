@@ -281,3 +281,10 @@ F8实际红143rd的函数保持逐字不变（SHA见evidence/net/f8-red-to-candi
 F7保留原私有namespace、真UDP双向丢弃、计数/远端未关闭/恰一次unanswered及零其他故障条件；修改的仅是取消后的观察：从std::thread scoped thread丢弃已poll过且长静默的future，立即仍须持有wire，随后在自身全路grace+500ms内完成确认并退役，无resident tick或应用future继续poll。旧“Drop同步关闭”不具备probe证明，不能作为必须保留的实现细节；真正长期交出死wire的故障仍受原黑洞验证约束。
 
 另两portable真实连接回归：pending确认不得保留Node/Wires强引用；确认期间adopt一条不同stable_id新conn，等超过loopback确认窗口后，新的真实Sessions仍成功、无unanswered/closed退役或out_of_reach。不是只测计时辅助函数，也不以连接被测试server主动关闭制造通过。当前仅候选，尚未格式/编译/运行。
+
+
+## N2确认期间巡检与Accepted长静默取消（F9/F10，修复前冻结）
+
+F9复用F7真实独立user/netns、原生UDP端口双向nft drop、首次poll后不再poll应用future，保持原ACK+grace等待与外部thread Drop；另在等待开始标记真实network_changed，取消发起slot确认后立即调用真实Wires::tick。网络变化3秒低RTT期限已过，但新确认grace尚未过；tick须不抢先退役，wire仍同stable_id，随后在owner原grace+500ms内恰一次Unanswered、零Network/Silent/Closed/readretry/dialfailed/answer_late。确认期间仍无收到包、真实包命中drop、远端未关闭；前置不满足单列fixture红。原F7不加network change，F8函数不变。
+
+F10先用原真实resumption fixture到Accepted/adopt/响应pending，健康Accepted两控制保留。新增黑洞读取用原30秒预算且准许early的FetchPath（warmup仍Sessions），避免Sessions原15秒工作上限先到；不改产品budget。新增Linux私有namespace场景先通过oneshot显式暂停外层ask_early future的poll（内部响应task与transport仍运行），收到暂停确认后才对该server UDP端口双向drop，稳定300ms后记录heard_count，等待该连接原Patience.silent+100ms，证明长期零新包、任务仍pending、远端仍open且请求严格warmup+早期各一次。然后取消并join调用；立即仍保持wire，随后owner全路grace+500ms内恰一次Unanswered，无resident tick或其他request帮助，零Network/Silent/Closed/readretry/dialfailed/answer_late。测试不把整个操作取消本身当peer失败，也不额外重发该读取；结束前采事实，再关闭端点/abort join服务任务。150/300/500ms等均是观察容差，不改产品期限。未实际跑出行为红前，不把静态风险写成已复现。
