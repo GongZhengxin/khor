@@ -22,15 +22,16 @@
 
 ## 最近诊断终态与下一轮
 
-**当前在途：42538717126、42538759858、42539256792**；42538808023已成功。前两项和38808023同treebe7b5abef3cc3c1ef81744075f4436efdf668fd0、
+**当前在途：42538759858、42539860644**；42538717126、42538808023、42539256792已成功。38717126/38759858和38808023同treebe7b5abef3cc3c1ef81744075f4436efdf668fd0、
 base82e0d3b5 dirty、controlc68b644；先查询，不重复调度。observer v1只改实验客户端/诊断，选路策略未改。
 
 | Run | 任务 | snapshot |
 | --- | --- | --- |
-| 42538717126 | netlab-hop-diagnostic，原f4s一次1线程 | ce0af01606b4368ff6c3a190d59afbb14a58ecba |
+| 42538717126 | SUCCESS 1/1，原f4s诊断；observer-hop-diagnostics-42538717126已下载 | ce0af01606b4368ff6c3a190d59afbb14a58ecba |
 | 42538759858 | netlab-diagnostic，原f4s/p1s各一次1线程 | 5bd8418703baccc5a71979a984e19b861447c6f8 |
 | 42538808023 | SUCCESS，根格式与66核心/1ignored；observer-client-unit-42538808023 | e62f6126eb1c9dbb2e17a3c43a33b71dedc64fa3 |
-| 42539256792 | net-vendor，新增Backup独立ACK行为用例；treec0d5c1b516b5c6272f17f83e9bb6bbe597813bcd、baseff5b4d36 dirty，controlc68b644 | 09de7c0a3f15e534ccd06b298702290bf3ffcb19 |
+| 42539256792 | SUCCESS 436Noq/33路径/9选家，新增Backup独立ACK用例；treec0d5c1b516b5c6272f17f83e9bb6bbe597813bcd、baseff5b4d36 dirty，controlc68b644 | 09de7c0a3f15e534ccd06b298702290bf3ffcb19 |
+| 42539860644 | net-vendor，新首次恢复可用性与质量门解耦回归取红；tree06a93054b7a08919537f8ad8dd7e5a5907d59fc6、base1a084e79 dirty，controlc68b644 | 48ff937b1c7521fa2db4f71f1078bca0001223a7 |
 
 | Run | 任务与准确源 | 最后观察 |
 | --- | --- | --- |
@@ -47,6 +48,12 @@ base82e0d3b5 dirty、controlc68b644；先查询，不重复调度。observer v1�
 不能用先前缓存quality反转直接归因普通收益门。实际copy级PTO/last_received仍缺，下一轮追加这些诊断，不先调阈值。
 LabNode.with反复开Node争用元数据，现候选只改fixture为一次Arc观察客户端复用，并补静默copy/恢复输入日志；
 没有修改生产状态保护或选路策略。observer client v1先冻结，未来A/B须同步lab.rs，不能把其负载变化算策略改善。
+
+observer v1独立f4s现已实际启动/配对/测量成功（42538717126）：1/1、133.81秒、三份原trace696351字节。
+Y回carried@8.7秒、X@9.7秒，无回退；末一腿Link heard标记14.9秒，比选路晚，饱和0不是真实零耗时。
+X的Custom在monotonic324.7560有决定后应答，却quick=false等到325.7569才解除hold，随后Go；Y同路应答时quick=true立即恢复。
+说明可达性仍被当前质量/类型策略门住；尚未证明它是所有f4红的唯一原因。新确定性回归42539860644要求首次新往返恢复可用性独立于quality，
+重复故障仍保留原1秒/REHOLD防抖；仅先加测试，生产未改。原hold测试改为先标一次近期恢复，明确验证重复故障。
 
 ## 当前阶段判断
 
@@ -68,7 +75,7 @@ N0部分、N1仍红、N2–N4未完成、N5部分。完整范围和逐项缺口�
 不以最新三绿证明它们全部定因或最终源全矩阵达标。
 
 N5覆盖补齐：新测试a_backup_probe_is_acked_when_the_responders_data_road_is_blackholed使用真实虚拟连接，
-主数据路不可达时要求Backup PING的PATH_ACK走健康本路。42539256792待验证，目标436Noq/33路径/9选家；
+主数据路不可达时要求Backup PING的PATH_ACK走健康本路。42539256792已SUCCESS 436Noq/33路径/9选家；
 没有改传输生产代码，没有在旧源取红的宣称，单向故障/额外ACK成本仍是缺口。
 
 ## 已有修复与边界：不要重复造机制
@@ -111,10 +118,10 @@ N2七类预算/取消/写入行为已在ACCEPTANCE实现前冻结；静态发现
 
 ## 源码证据与恢复规范
 
-现82个本地immutable `refs/khor/net-evidence/<run>`，清单`evidence/net/source-refs.json`。
+现83个本地immutable `refs/khor/net-evidence/<run>`，清单`evidence/net/source-refs.json`。
 重要快照不依赖七天artifact保留；`git rev-parse REF:source`须等于收据tree。
 快照是parentless容器，读取用`git show REF:source/<path>`，不得直接覆盖工作区，也不push这些本地ref。
-收据终态及时刷新pending；当前是observer v1两项诊断与新增ACK覆盖vendor在途。
+收据终态及时刷新pending；当前是observer v1完整诊断与新可用性回归取红在途。
 
 恢复先核本目录、branch/HEAD/diff与已有run，保留未提交内容。两main及产品feature未合并发布。
 外盘缺失时，从共同仓只读`git show feat/net:docs/net-optimization/STATE.md`与PLAN恢复已提交文档；不覆盖原外盘未提交内容。

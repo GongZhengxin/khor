@@ -3447,12 +3447,13 @@ mod tests {
     /// A silent road answers again only after a round trip and [`SILENT_HOLD`] of answering;
     /// going silent in between starts the hold again.
     #[test]
-    fn a_silent_road_answers_again_after_the_hold() {
+    fn a_repeatedly_silent_road_answers_again_after_the_hold() {
         let road = addr(1);
         let open = |_: &transports::FourTuple| true;
         let slow = |_: &transports::FourTuple, _: &Measured| false;
         let mut m = Measured::default();
         let t0 = Instant::now();
+        m.back.insert(road.clone(), t0 - MS(100));
         m.mark_silent(t0, &[(road.clone(), t0 - MS(300))], open, slow);
         assert_eq!(m.silent[&road].stall(t0 + MS(100)), MS(400), "the stall counts from the packet");
         m.mark_silent(t0 + MS(250), &[], open, slow);
@@ -3474,6 +3475,24 @@ mod tests {
         m.mark_silent(t0 + MS(2600), &[(road.clone(), t0 + MS(2300))], open, slow);
         m.mark_silent(t0 + MS(2700), &[], |_| false, slow);
         assert!(m.silent.is_empty(), "a road no connection has is forgotten");
+    }
+
+    #[test]
+    fn a_first_post_judgment_round_trip_restores_availability_without_a_quality_gate() {
+        let road = addr(1);
+        let t0 = Instant::now();
+        let open = |_: &transports::FourTuple| true;
+        let not_fast = |_: &transports::FourTuple, _: &Measured| false;
+        let mut measured = Measured::default();
+        measured.mark_silent(t0, &[(road.clone(), t0 - MS(300))], open, not_fast);
+        let mut recovered = reading(&road, t0 + MS(400));
+        // The old outage may still dominate quality. A new round trip
+        // restores reachability; Moving separately decides whether to use it.
+        recovered.quality = MS(5000);
+        measured.rtts.insert((ConnId(0), PathId::ZERO), recovered);
+        measured.mark_silent(t0 + MS(500), &[], open, not_fast);
+        assert!(!measured.silent.contains_key(&road),
+            "one first fault cannot impose a second quality-dependent recovery hold");
     }
 
     /// carry (10-23): a road back from a stall that is the one in use, or far faster than it,

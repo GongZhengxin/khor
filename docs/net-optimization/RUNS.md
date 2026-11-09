@@ -309,3 +309,11 @@ observer v1实际调度同treebe7b5abef3cc3c1ef81744075f4436efdf668fd0、base82e
 42538808023终态 **SUCCESS 根格式、66pass/1ignored**，observer-client-unit-42538808023已下载。它不编译CLI netlab，Arc观察客户端实际启动仍待两诊断run，不用核心绿替代。
 
 补Noq4专项 **42539256792 net-vendor** 在途：baseff5b4d36 dirty、treec0d5c1b516b5c6272f17f83e9bb6bbe597813bcd、snapshot09de7c0a3f15e534ccd06b298702290bf3ffcb19、controlc68b644；目标436/33/9。只新增a_backup_probe_is_acked_when_the_responders_data_road_is_blackholed：已验证Backup仍能回PING ACK，即使响应方的主数据路不可达。未改生产传输逻辑，也未宣称已对旧源取红或完成单向故障/ACK预算。82源ref。
+
+42539256792终态 **SUCCESS 436Noq/33路径/9选家、根格式**，backup-ack-isolation-42539256792；新增备用ACK独立返回用例实际ok。其余Noq435及Iroh原覆盖均绿；没有旧源取红的宣称，单向故障/包数成本仍待覆盖。
+
+42538717126终态 **SUCCESS 1/1、133.81秒**，observer-hop-diagnostics-42538717126。observer v1已成功初始化/配对与完整f4s测量，三节点trace245896+273640+176815=696351字节。Y Relay@5.0、carried@8.7秒，X Relay@8.2、carried@9.7秒，无回退、最慢9.7秒；末一腿Link heard14.9秒晚于选择，饱和0不证明物理恢复零耗时。日志模式非SLO，不用一次绿删旧1513ms红。
+
+实际恢复输入：X Custom在monotonic324.7560记answered，quick=false等到325.7569解除hold再Go；Y Custom在324.7526记answered，quick=true立即解除、324.7530 Go。首次可用性仍依赖旧quality/类型的quick判据，造成一层额外1秒等待；不能单凭此断言所有f4红唯一根因。
+
+新增确定性行为回归取红 **42539860644 net-vendor**：base1a084e79 dirty、tree06a93054b7a08919537f8ad8dd7e5a5907d59fc6、snapshot48ff937b1c7521fa2db4f71f1078bca0001223a7、controlc68b644。新用例首次决定后往返恢复可用性不能依赖quality；原hold测试先插近期恢复标记，仍验证重复故障1秒/REHOLD。只改测试，生产策略未改。目标验证436Noq绿/iroh33pass1fail，未出结果不预认定。83 refs。
