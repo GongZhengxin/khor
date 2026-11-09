@@ -158,6 +158,7 @@ hop现有3秒覆盖两个middle合计。is_reading含既有按token去重操作�
 
 记录规则：
 
+- bulk保留收到字节、实际读取/总case时长及结束原因；EOF/读错误不能被静默当成跑满时长。
 - 每个已发起echo都保留实际elapsed和outcome（ok、timeout或open/write/finish/read阶段错误），不删失败、不把超时伪成一个成功延迟。
 - 汇总分别记录attempted/answered/failed/timed_out；成功响应的分布和全部尝试结束时间的分布分开标注，空集合为无数据，不显示0ms成功。
 - 原始逐次记录在该测量阶段结束后输出，避免在计时中的每次echo打印；保留controller、priority、index、elapsed和outcome。
