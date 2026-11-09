@@ -163,3 +163,17 @@ Turing recovery同机对照已完整采证：
 Turing141th turing-20261109T095017Z-93c2c1a2，base9eafba74/treef93c32b1/snapshot6708accb/controlb998479，固定Rust1.95，根格式/编译/net66+1ignored/hop9/wires10/journal28/预算取消探针16全绿，完整原始报告已采。新F7在单独unshare -Urn的user/netns核隔离后安装两向UDP端口丢包规则，真实request/probe命中drop计数、heard不再变；ACK+all-path grace后abandon真实Pending future恰一次unanswered退役，远端仍open、其余失败计数零。长ACK阳性同wire并发请求仍成功。
 
 前Mac UDP代理前置12→15收包以及140th nft语法错误均按fixture红保留，没有当产品退役红；新覆盖通过不声称旧源实际红。该结果只证明已测长静默合同，未证明grace之前取消的备用可达性、跨IPC期限/取消、完整N2或全Quality。21.24秒为子集运行时，不作性能SLO。当前基线hop137th已准确启动，仍待完整对照。
+
+
+## Turing corrected hop两源观测对照
+
+固定相同五fixture/control59dc223、hop_occupancy_started_v2、原三轮/门；candidate136th tree78d063d9，baseline137th tree97040f31（6485生产原样），完整报告均采核。
+
+| 场景 | candidate | baseline |
+| --- | --- | --- |
+| f4 | 3/3 | 3/3 |
+| f4s | 3/3 | 1/3；晚回退两红 |
+| f4i | 2/3；一次回退红 | 3/3 |
+| 合计 | 8/9 | 7/9 |
+
+baseline f4s首轮Link已恢复、稍后约35.6秒Relay/37.4秒Forwarded，原after-leg门失败；第二轮carried后26.2秒再选Relay、约0.7秒后再carried，原30秒无回退门失败。两源均有约8–10秒按键卡顿，candidate f4i一次回carried91.4秒。结果只证明该批观测，不能按总通过数认定体验完成或单patch原因；多连接事件缺身份，进一步诊断候选已加wire字段、尚待验证。所有tuple/round/host load在turing-corrected-hop-comparison.json，原红不覆盖。

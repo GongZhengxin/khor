@@ -209,3 +209,10 @@ controlbedd896，source tree2b5bfce2/snapshot6a046588，固定工具/镜像已�
 ### 2026-11-09续：取消与全路径活性的未验证边界
 
 当前RetireUnheard::drop在无收包且超过ACK floor时退役；exchange_inner在同一floor之后先发全路径PING再等grace。下一反例应在Linux独立netns建立真实wire后，对loopback注入约4.8秒往返、让一个调用4.1秒到期且另一请求同wire仍等待；验证第一调用只STOP本流，活备用在grace内回包后第二请求成功。不是仅用ACK一直活跃的长等待替代该反例，也不能直接把4.1秒无ACK当全路死亡。具体实现需统一活性证据所有者，同时保留真正长黑洞取消后的退役，避免重现F7长期重复交出死wire；不增加每请求无谓探测或异步清理泄漏。此项尚未实现/运行，不冒称行为红。
+
+
+### F8若取得真正行为红，修复的所有权约束
+
+不要仅把Drop判死阈值加一秒来追当前测试，也不能一律禁止长静默退役。共享wire的活性应有单一证据所有者：接收计数变化清除当前怀疑；quiet达到原Patience后发一次全路径probe，按该probe的grace判断；旧连接/旧probe不能退役替换后的新wire。取消本调用只STOP其流，不能跳过probe宽限判共享wire死。
+
+可沿Wires已有Arc/Slot与resident1秒tick承载，但必须覆盖直接Node调用没有resident tick的情况；若用独立有界确认任务，应每wire合并、只持Weak、不继承已结束前台deadline，且replacement/新收包/Node退出时取消和释放，不能一请求一套无界任务或重复PING。正常exchange和取消路径应共享同一proof，裸未持有wire的配对连接保留本地边界。原F7长静默测试需要验证完成确认后的快速退役，不把“无probe证明的Drop必须同步关闭”当不可改实现细节；修改观察协议须明确记录并同时保留真黑洞和F8阳性控制。此为待F8实际结果后收敛的设计，尚未实现/预记通过。

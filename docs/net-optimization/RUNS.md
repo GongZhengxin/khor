@@ -571,3 +571,8 @@ Mac139th42594133373仅format门失败；baseef90/tree3f3c4c52/snapshot800a54f8/c
 
 
 **Turing141th turing-20261109T095017Z-93c2c1a2 SUCCESS**：base9eafba741772138e9dfbe59ca9a010cb843b1ef5/treef93c32b1aa8ef9b7c36d9e3e2437c2beb26851b4/snapshot6708accbbb016be75c10befdbb0d14f1ce002875/controlb9984797f412f352f3c76f99c47ade3ee10f68e9。固定Rust1.95，fmt/编译/net66+1ignored/hop9/wires10/journal28/dial_budget16全绿（21.24s），真正新namespace/nft黑洞静默后abandon一次退役与长ACK共享wire阳性均过。前一140th只nft规则语法红，report保留；改多行后独立新namespace nft --check=0，新源runtime绿。不冒称旧源行为红，也不以16绿收N2或IPC/grace边界。完整report/source/control/bundle/group/hash已核；141refs=138终态+baseline hop在途+2staged。**baseline hop137th2c64555c已launch PID161772**，原tree97040f31/snapshot90126283/control59dc223和三轮门不变，禁止重发。
+
+
+137th turing-20261109T091325Z-2c64555c corrected baseline hop终态**FAILURE7/9**（2/3、2/3、3/3），准确tree97040f31/snapshot90126283/control59dc223，执行1510.22秒。f4/f4i3/3，f4s1/3；两红分别晚回退后的after-leg门、恢复26.2秒后再选Relay的原30秒无回退门。完整report/身份/字节/hash/原PGID已采核，与candidate8/9 whole-source观测对照存turing-corrected-hop-comparison.json；不能断言单补丁因果或稳定性已解决。
+
+143rd turing-20261109T100821Z-08748d90 net-node已launch PID236331，准确tree42050b56/snapshoted287397/controlb998，Linux17（原16+F8）待实际红/绿。Mac142/144/145均只有formatter门红，原patch应用、未冒称行为红；146th42600205050已dispatch/锚ref，treebbed6503/snapshotc8035ce2/controlb998，29journal与17便携（15旧+2update）待结果，Linux F7/F8排除。
