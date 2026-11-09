@@ -548,3 +548,6 @@ N3道路双向因果校准测试已按先前协议写下，模型未改；contro
 
 
 42571393016终态 **SUCCESS**：fmt/编译/net66+1ignored/hop9/wires10/journal28/dial_budget14全绿（9.93秒）。准确based4a2e115/treef278b933/snapshot3459894c/control0cff967已核并下载，121 refs全部逐项验证/终态。probe三实际红42570772550→绿，旧11保持；普通四项是42569954515首次取得的新增绿覆盖，不冒称旧源红。仅Mac子集，不是N2全包/完整Quality/Linux SLO。STATE已汇总，旧页归档HISTORY-20261109-before-probe-green.md。
+
+
+**42573745492 Mac net-unit只读guard采集在途**：base03df5a47f37d24a0473b9693320e48aed78b52bb clean、tree919008b695a05cd3dbbb0f90b0d5db94d193818e、snapshot2d69c1a1a9c5d13c95a70bbee90d4df83258682f、control60821accc131e837da476706cb6b3ad93812d30e；122nd ref/mac-guard-capture-42573745492已锚。产品生产未变，读取admission文本/hash及net-unit通道验证待结果；未执行VM。

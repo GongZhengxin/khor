@@ -102,3 +102,6 @@ Lima v2.3.0树800a96b14e96b5d2ceb20ab2602147c1e79224ea的9份源码逐blob校验
 ## 新接续：Mac只读guard采集
 
 上一goal轮为progress（普通wire四项新增绿、probe三红→绿、真机设备组合确认）。控制60821accc131e837da476706cb6b3ad93812d30e已push feat/net，只在既有network-mac hostcap增加固定两份admission脚本的有界只读文本/SHA256记录；不调用ensure-budget、不执行被读取脚本、不改installed guard/资源/缓存策略。YAML、16 Bash块和2内嵌Python语法已本机轻量检查通过；实际采集待新的Mac net-unit验证。产品生产仍d4a2e115，既有14绿的控制版本仍0cff967，不能覆盖历史回执。下一run先锚准确source/control再读artifact；VM尚未安装/启动。
+
+
+**42573745492 Mac net-unit只读guard采集在途**：base03df5a47f37d24a0473b9693320e48aed78b52bb clean、tree919008b695a05cd3dbbb0f90b0d5db94d193818e、snapshot2d69c1a1a9c5d13c95a70bbee90d4df83258682f、control60821accc131e837da476706cb6b3ad93812d30e；122nd ref/mac-guard-capture-42573745492已锚。产品生产未变，读取admission文本/hash及net-unit通道验证待结果；未执行VM。
