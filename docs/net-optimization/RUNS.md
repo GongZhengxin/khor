@@ -389,3 +389,6 @@ Mac便携分流control6b1616c8b816bdb72a8a031d0ff28cc46a3fb4c7在feat/net，沿�
 终态 **预期产品红：根格式/437Noq绿，Iroh35pass1fail**，仅a_fault_with_no_receiving_copy_can_use_a_backup_that_answered_after_the_fault实际Hold双PING、预期Go；home因失败未执行。mac-current-copy-hint-red-42551075037已核source/control并下载。
 95不可变source refs，该run与原账单拒绝run共享快照但平台/任务不同；smoke没有产品source ref。不能把Mac单元记为Linux黑洞SLO。
 37现已按红最小写候选，无接收提示用故障后已有备用ACK；有提示保持36规则。false旧包/4秒检查为新增待验证覆盖，Noq2/N3新源也仍待执行。11项Python开发入口测试通过。
+
+
+37与Mac CLI已提交72b1d891c879cab63aaed032e201aee7baf1734c。**42552723913 net-vendor，executor=mac**正式调度：clean、treef6d0e84996723b8e9ad4659b6a2be8b625cb74b5、snapshotbafedc8a33390550c2bd0b10de0103e305500d31、controlb9b27116ad286fb51edc1e211949127681c5aa27。源码包括Noq2和N3未验证候选，不预认通过；host-capabilities只读，不启动VM或改资源门。96 refs，当前该run pending。

@@ -111,3 +111,12 @@ f4s回退先在现有三端诊断中关联回退时Silence/Reading/副本/实际
 执行器账单问题没有改变PLAN范围；N2–N4目前是设计/源码事实，不是已实施或已通过。
 恢复后仍先完成N1必要红绿与普通复验；可并行安排独立N3 baseline，但root不派子智能体，也不让性能测量与构建争用同一执行器。
 每批绑定产品tree/control/原始证据；适当短回归通过后再最终全矩阵、Mac/手机/多机与可信Quality。无合并/发布授权。
+
+
+## 执行器接续
+
+Mac便携入口已经实际执行回归，标准Linux托管lane仍因GitHub账单被拒绝。37候选当前run只查STATE，不能用Mac单位结果替代命名空间SLO。
+同时只读采集Mac Hypervisor/已装工具/内存/空闲盘信息，评估在既有macserver内使用独立Linux开发VM；这是执行器候选，不是已部署或已证明可用。
+[Lima VZ官方说明](https://lima-vm.io/docs/config/vmtype/vz/)支持基于Virtualization.framework的同架构Linux guest；仍须核实际宿主能力和资源。
+若具备条件，先在共享build guard与现有空间门内做隔离Linux namespace/netem/nft能力探针，再考虑矩阵。VM状态/缓存归khor-builder独立目录，源/driver只读挂载、报告目录单独写，不挂个人home或传个人密钥/令牌，不改宿主网络/空间策略、不采购新机器。
+基线与候选必须在同一后端/资源/协议重跑，不跨GHA Linux、Mac loopback和VM混算性能。如果无可用Linux后端，则该验收仍需外部执行条件恢复；不通过猜阈值完成计划。

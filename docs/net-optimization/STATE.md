@@ -14,7 +14,7 @@ Linux重型用私库khor-build GitHub network job；Mac沿既有macserver lane�
 | 用途 | 位置 / 分支 |
 | --- | --- |
 | 产品 | `/Volumes/disk0/Khor/worktrees/current/khor-net`，`feat/net`；源码检查点f17b8a31；37候选及Mac入口随后提交，实际HEAD恢复时核对 |
-| 控制 | `/Volumes/disk0/Khor/worktrees/current/khor-build-net`，`feat/net`；6b1616c8b816bdb72a8a031d0ff28cc46a3fb4c7已push（历史run各绑定原control） |
+| 控制 | `/Volumes/disk0/Khor/worktrees/current/khor-build-net`，`feat/net`；b9b27116ad286fb51edc1e211949127681c5aa27已push（历史run各绑定原control） |
 | 基线 | `/Volumes/disk0/Khor/worktrees/current/khor-net-baseline`，detached6485cb83d3b1f0bb93d4633825dc956623d78af9；只有paths/hop/lab/nat.rs、dev.py/netlab.sh六文件fixture修改；生产原样 |
 | 证据 | `/Volumes/disk0/Khor/evidence/net/` |
 
@@ -94,7 +94,7 @@ N0部分、**N1仍红**、N2–N4未完成、N5部分。不能用一批单元或
 
 ## 证据与恢复
 
-现**95**个不可变`refs/khor/net-evidence/<run>`；外部清单`/Volumes/disk0/Khor/evidence/net/source-refs.json`。
+现**96**个不可变`refs/khor/net-evidence/<run>`；外部清单`/Volumes/disk0/Khor/evidence/net/source-refs.json`。
 `git rev-parse REF:source`必须等于收据tree；parentless容器只用git show读取，不checkout覆盖、不push本地证据refs。
 两项账单拒绝快照标tests_executed=false/remote_source_verified=false，其余终态不再pending。
 33202c22已保存Noq6绿覆盖、未执行37边界用例及当轮证据；恢复仍先核branch/HEAD/diff，不假定工作区干净。所有历史红继续保留，两个main和产品feature未合并发布。
@@ -135,3 +135,11 @@ control 6447289f4f9260df4f5887adc7c1e2f2270bbcce的net-congestion已push并核�
 
 
 下一control b9b2711仅补Mac入口说明及只读host-capabilities.json（Hypervisor支持/CPU/内存/已装VM工具路径），不启动VM、安装软件或改空间策略。当前95源ref均终态，37候选下一次Mac检查尚待调度；调度后立即记录新ID与source/control，不能恢复时重复旧run。
+
+
+## 37候选正式调度
+
+37及Mac CLI入口已提交72b1d891c879cab63aaed032e201aee7baf1734c，工作区当时clean。
+**42552723913 net-vendor --executor mac**：treef6d0e84996723b8e9ad4659b6a2be8b625cb74b5、snapshotbafedc8a33390550c2bd0b10de0103e305500d31、controlb9b27116ad286fb51edc1e211949127681c5aa27。
+新源含Noq2始终reporting测试与N3记录器；要先看根格式/编译，不预认438/36/9通过。额外只读host-capabilities.json用于判断Linux后端是否可行，尚未启动VM。
+96个source refs已锚定，以上run pending；恢复只查询该ID，不重发。Mac单元即便绿也仍不能收原Linux p3/CPU/hop门。
