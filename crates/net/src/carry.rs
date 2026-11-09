@@ -84,6 +84,8 @@ struct Link {
     out: mpsc::Sender<Bytes>,
     carrier: Carrier,
     serial: u64,
+    /// Dropping this attachment stops its I/O, including a blocked flush.
+    _stop: oneshot::Sender<()>,
 }
 
 #[derive(Debug)]
@@ -240,13 +242,14 @@ impl Links {
     }
 
     /// **Makes `r`/`w` the link to `peer`**, replacing any link to it. Runs
-    /// on its own task until either half ends.
+    /// on its own task until either half ends or this attachment is removed.
     pub fn attach<R, W>(&self, peer: EndpointId, carrier: Carrier, r: R, w: W) -> Attached
     where
         R: AsyncRead + Unpin + Send + 'static,
         W: AsyncWrite + Unpin + Send + 'static,
     {
         let (out, out_rx) = mpsc::channel::<Bytes>(QUEUE);
+        let (stop, stopped) = oneshot::channel();
         let serial = self.0.serial.fetch_add(1, Relaxed);
         observe_lifecycle(peer, "link_attached", || {
             serde_json::json!({
@@ -262,6 +265,7 @@ impl Links {
                     out,
                     carrier,
                     serial,
+                    _stop: stop,
                 },
             );
             observe_lifecycle(peer, "link_attachment_committed", || {
@@ -282,6 +286,7 @@ impl Links {
             let ended = tokio::select! {
                 () = write_frames(out_rx, w) => "writer_ended",
                 () = links.read_frames(peer, r) => "reader_ended",
+                _ = stopped => "attachment_removed",
             };
             let mut map = links.lock();
             observe_lifecycle(peer, "link_io_ended", || {
