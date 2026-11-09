@@ -581,3 +581,10 @@ Mac139th42594133373仅format门失败；baseef90/tree3f3c4c52/snapshot800a54f8/c
 143rd turing-20261109T100821Z-08748d90终态**FAILURE16pass1fail**；准确base5aa96708/tree42050b56/snapshoted287397/controlb998，root fmt/编译/既有子集绿，F7绿。F8前置均过：对端2401ms收到并回复两请求，调用4101ms过期，heard16→16；共享wire已退役None、retired_unanswered1、控制请求失败，目标“probe grace前不判共享wire死”断言实际红。完整report/原group/source/control/bytes/SHA已采核；不归fixture红。下一个生产修复需新准确源，不能重发此run/放宽反例。
 
 146th Mac42600205050终态**SUCCESS**：base83d620d2/treebbed6503/snapshotc8035ce2/controlb998，root fmt/编译/net66+1ignored/hop9/wires10/journal29/dial_budget17全绿（30.57s）。真实update_dial两合同及wire身份旧日志/roundtrip/人类句子兼容通过；Mac17=15旧便携+2update，Linux-only F7/F8排除，不覆盖143rd红。全部raw/source/env/transport/hash核留，146refs=144终态+2staged，当前无在途，先修F8再CPU。
+
+
+147th turing-20261109T104331Z-90266679仅FORMAT红；148th turing-20261109T104749Z-3c7d804a与149th Mac42604002430同snapshot ef83ab11/tree473e41ce/controlb998，仅Node两处未限定Arc编译红（net66+1ignored过、没执行Node合同）。原format.patch应用并仅补std::sync::Arc，原始report/身份均采核，不混行为红。
+
+150th turing-20261109T105401Z-df35bc80 **SUCCESS**：base25d0c803/tree6805b7b7/snapshote0a42573/controlb998；fmt/net66+1ignored/hop9/wires10/journal29/dial_budget21全绿（46.37s）。143rd真正F8红的函数逐字不变→绿；F7按f7_owned_confirmation_v2的真实黑洞、std thread Drop独立确认及Weak owner/replacement两回归均过。151st Mac42605391960与150准确source完全相同，**SUCCESS**，同基础/29journal/19便携全绿（32.31s），Linux F7/F8排除。两边全report/tuple/control/transport/group/hash采核；只证明Node子集，完整N2及SLO未收。
+
+旧stalls130/131未launch已superseded，保留ref/receipt且tests_executed=false。新152nd turing-20261109T110456Z-dee800e0 candidate stalls已launch PID288279，source同150；153rd turing-20261109T110456Z-42e6ec16 baseline仅stage、未launch，复用137th6485原生产+六fixture/source97040f31/snapshot90126283，两者controlb998、原p1s/p5/repeat1/test_threads1不变，五实际fixture逐字一致。152已实核live，编译55.96秒后进入p1s；终态采证后才launch153。153refs=151终态+1在途+1staged。

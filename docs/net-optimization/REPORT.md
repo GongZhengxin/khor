@@ -186,3 +186,12 @@ Turing143rd（tree42050b56/snapshoted287397/controlb998），root fmt/编译及�
 根因边界：RetireUnheard::drop仅凭4秒ACK floor与计数不变关闭wire，而exchange_inner会先probe所有路径并等grace；取消不应跳过该证据。尚未修复；保留F7真正长静默控制，不采用一律禁用退役或简单凑新阈值。
 
 Mac146th（treebbed6503/snapshotc8035ce2/controlb998）另取得17便携/29journal全绿，包括真实update_dial200ms早操作by、30秒操作下10秒自身cap，以及wire身份字段旧日志兼容/roundtrip/人类句子不变。其17排除Linux F7/F8，与Turing143rd17并非同一集合，不可替代真实F8红；30.57秒为单元子集用时，不作产品SLO。
+
+
+## F8共享确认修复：Linux21 / Mac19同源绿
+
+base25d0c803/tree6805b7b7/snapshote0a42573/controlb998：Turing150th fmt/编译/net66+1ignored/hop9/wires10/journal29/预算取消探针21全绿；Mac151st42605391960同一snapshot对应19便携全绿，Linux-only F7/F8排除。F8函数与143rd实际红逐字相同，接收计数/两请求/4.1秒到期前置保持，修复后同wire控制请求成功且零误退役；函数SHA与完整原始报告可追溯。
+
+正常exchange和取消共享Slot拥有的一份全路径probe/count/grace，调用过期不跳过宽限；fresh receive、replacement、wire清理中止旧确认，任务仅Weak持有，原runtime handle允许在std thread Drop发起确认。F7保留同真实黑洞及一次退役/远端open/零其他故障，仅观察改为owner自身确认后退役，已先记录v2协议；replacement后真实Sessions成功、pending不保留owner也通过。独立确认仍可在黑洞证据充分后记Unanswered，不能把CallerExpired本身当peer故障。
+
+150预算子集46.37秒、151子集32.31秒是测试耗时，不是体验SLO。只是这一边界红→绿，resident tick较长grace协调、Accepted长取消、其余N2与原hop回退/长卡顿、N3–N5仍待；新源CPU对照152→153正在推进，不提前给性能结论。

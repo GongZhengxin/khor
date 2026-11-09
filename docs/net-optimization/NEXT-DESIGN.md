@@ -219,3 +219,8 @@ controlbedd896，source tree2b5bfce2/snapshot6a046588，固定工具/镜像已�
 
 
 F8现已在Turing143rd取得真正行为红（2401ms到达、4101ms过期、零回包、两请求、unanswered1、共享wire None），上述修复约束开始实施，尚未改生产。既有Wires为Arc、resident tick1秒；直接Node调用无resident tick也须完成有界确认，不能只依赖tick。建议将当前wire的probe proof/count/grace与有界任务所有权放到Slot，正常exchange和RetireUnheard委托它；任务仅持Weak<Wires>/WeakConnection，按stable_id防替换误伤，收到新包/替换/退出则清除和取消。实现时检查在自身完成路径移除JoinHandle的行为、锁顺序和无runtime的Drop，验证无额外每请求PING/无无界后台任务。
+
+
+### 共享确认本批已实证，后续仍须保留的边界
+
+150/151同源Linux21/Mac19全绿，F8不改函数，F7 v2与Weak owner/replacement通过；实现与证据见STATE。只覆盖本批直接Node及其流/确认生命周期，不能把下列复核遗漏：resident tick仍有独立silence/network条件，当全路grace比其silence门更长时需验证协调；Accepted后长无应答的取消也需独立真实覆盖。Idle、正常运行中多次quiet epoch、替换和退出后的任务/流量成本在N3计量，不用字段数量替代实际成本。
