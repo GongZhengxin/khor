@@ -1,23 +1,23 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-09 07:38 UTC；root串行，无子智能体。活动目标“完成计划”仍active。
+更新：2026-11-09 08:00 UTC；root串行，无子智能体。活动目标“完成计划”仍active。
 
-**U9最新：用户明确授权“可以在我的turing服务器跑的, 更快”，Linux主通道切到Turing。** 已连通/只读资源检查并实测userns/veth/netem/nft/conntrack。准备固定Rust1.95和准确source/可信原driver，先recovery串行三轮，再同主机基线/候选原门。Mac VZ能力绿保留作备用，未再运行；N0–N5整体未完成。125旧refs全终态。
+**Turing唯一在途：turing-20261109T075531Z-b6277f48（PID4083030，recovery），已实核/proc cmdline仍live，正在固定Rust1.95安装。** 基线turing-20261109T075906Z-5464f2db仅staged未launch，必须等candidate终态后串行。用户U9已明确授权Turing；Mac VZ仅备用，不继续guest产品原型。127 refs：125旧终态+1 live+1 staged；完整N0–N5未完成。
 完整范围：[PLAN](PLAN.md)；约束：[REQUIREMENTS](REQUIREMENTS.md)；运行记录：[RUNS](RUNS.md)；原始结果：[REPORT](REPORT.md)。
 此前STATE原样归档[Accepted轮历史](HISTORY-20261109-before-accepted-green.md)与[本轮历史](HISTORY-20261109-before-probe-green.md)；历史在途/候选文字仅代表当时状态，恢复以本页和实际工作区为准。
 
 ## 授权与工作区
 
 速度/体验优先，个人可信设备网；活动目标授权N0–N5实施验证。没有合main、发布、中继采购/部署授权。
-本机source-only：不运行Cargo/Rust/Node/Xcode编译、测试、formatter或下载可执行物；Git/Python stdlib/脚本检查可用。重型沿macserver/GitHub，不碰现装App、生产store、个人会话或其他任务树。
+本机source-only：不运行Cargo/Rust/Node/Xcode编译、测试、formatter或下载可执行物；Git/Python stdlib/脚本检查可用。重型Linux沿U9授权Turing、Mac原生沿macserver/GitHub，不碰现装App、生产store、个人会话或其他任务树。
 图谱先用，覆盖不足才定向读；不新建CodeGraph索引。外盘布局/治理入口遵守AGENTS，本任务不接管代码治理。
 
 | 用途 | 位置 / 当前基准 |
 | --- | --- |
 | 产品 | `/Volumes/disk0/Khor/worktrees/current/khor-net`，`feat/net`；最新已验证生产d4a2e115b898fc337f5091b51fa71e45740c667f；随后有文档和scripts/dev.py VZ专用调度；生产网络未改，恢复核HEAD/diff |
-| 控制 | `/Volumes/disk0/Khor/worktrees/current/khor-build-net`，`feat/net`，bedd8960d8a11ebb3263eda0f24bec9e5d9a774d已push，现场clean；9个controller stdlib测试绿 |
+| 控制 | `/Volumes/disk0/Khor/worktrees/current/khor-build-net`，`feat/net`，59dc223ad263056bc0fa5c073c69a9c5d66b592a已push，现场clean；新Turing runner 4个stdlib测试绿，原VZ9个保持历史证据 |
 | 基线 | `/Volumes/disk0/Khor/worktrees/current/khor-net-baseline`，detached6485cb83d3b1f0bb93d4633825dc956623d78af9；仅paths/hop/lab/nat.rs、dev.py/netlab.sh六fixture，生产原样 |
-| 证据 | `/Volumes/disk0/Khor/evidence/net/`；source-refs.json现125条不可变refs，已逐一核REF:source且全部终态；123–125复用6a046588源码，不重复拥有原源/bundle分支 |
+| 证据 | `/Volumes/disk0/Khor/evidence/net/`；source-refs.json现127条不可变refs；125旧终态，candidate Turing live、baseline staged；SSH receipt位于对应evidence/run/receipt.json，不是GitHub run |
 
 ## N2本轮：普通wire覆盖与配对探针三红→绿
 
@@ -75,7 +75,7 @@ host实际VZ=1、16GiB/10CPU，installed guard实际50/40GiB、Mac target100GiB�
 
 N0部分、N1仍红、N2部分、N3部分、N4未完成、N5部分；完整PLAN范围保留，不以本批单元绿结束目标。
 
-1. **紧接N1 Linux能力探针**：本批普通wire/probe已绿，Linux原红仍阻断选路SLO，优先推进项目隔离的VZ开发guest。先核guard生命周期/磁盘与工具配置，再macserver实际boot/namespace/veth/netem/nft探针；不是直接跳完整矩阵或部署生产。固定版本与源码审查在NEXT-DESIGN及linux-vm-source-audit。新后端必须同配置重跑原基线和候选。
+1. **紧接N1 Turing产品运行**：U9已授权Turing且Linux能力实际通过。先收当前candidate recovery结果，再launch已staged baseline同配置/driver/原门串行对照；有编译/执行器红则独立解决后重跑。之后CPU/hop/full矩阵并定因f4s，不再开发VZ产品入口。VZ能力/清理绿保留备用。
 2. **N2剩余合同**：原F7真实长黑洞、长工作/更新10秒运行覆盖；hop两middle合计3秒、dial输者及延迟候选的资源/过期验证；前台多阶段及独立后台整体预算。pair/doctor探针两层已实际修复，不重复排成未修。代理listener/传输job/Visit/nudge有意独立，不能继承已结束前台by。普通wire四项与Accepted覆盖不能证明完整N2。
 3. **IPC边界**：client Op外层与serve接收后deadline起点不同，尚未跨进程传递剩余预算或取消。正常exchange本来就shutdown发送半边，服务端EOF不是取消；不得为贯通而重放已发送写请求。具体原源码hash见deadline-continuation-20261109。
 4. **N1**：恢复Linux，独立定位f4s回退、原门复验及准确源完整矩阵。Mac单元不能替代namespace/netem/nft实测。
@@ -87,7 +87,7 @@ N0部分、N1仍红、N2部分、N3部分、N4未完成、N5部分；完整PLAN�
 
 ## 证据与恢复规则
 
-先核worktree/branch/HEAD/diff、当前run与准确回执；当前无在途run，不重发旧探针。source-refs.json125条全部终态；每条immutable ref已按实际receipt验证。
+先核worktree/branch/HEAD/diff、当前run与准确回执；当前Turing candidate真实live，baseline仅staged；按上方run/path/PID复核，SSH观察失败须重查同句柄，不重启。source-refs.json127条，旧125终态+2 pending（live/staged分开）。
 `git rev-parse refs/khor/net-evidence/<run>:source`必须等于回执tree；只git show读容器，不checkout覆盖/push本地证据refs。失败明确分format/compile/fixture/行为/执行器；tests_executed只按实际子集，历史红不删除。
 Mac source/bundle分支只在终态、证据留存且所有权/SHA匹配后清理；复用源的请求不拥有原源分支。原attempt不覆盖。
 外盘缺失只读`git show feat/net:docs/net-optimization/STATE.md`与PLAN；原外盘未提交内容不能按摘要覆盖。其他治理沿中央STATE/RESUME，不混授权。
@@ -159,3 +159,18 @@ source baseb56576ce52c56b4d8c31d84e6618abec662d0cd9、tree2b5bfce2e95c0ef4169a6c
 用户明确授权Turing，覆盖此前macserver-only的Linux执行器选择；本机仍source-only，Mac原生/可信发行边界不变。Turing SSH既有alias/known host，ForwardAgent=no；不转SSH/GH/token/签名/模型凭据。当前Linux5.15.0-139 x86_64，UID1110，128逻辑CPU，503GiB总/470GiB可用内存、约490GiB本地盘空闲，初始load2.63/5.82/8.44。userns/veth/netem/nft建表与conntrack-L均实际通过（只在新namespace，不改宿主网络）。已有nft0.9.3/conntrack1.4.5只读复用；默认Rust1.97.1不作为本计划工具链，将用官方固定1.95四component+x86 SHA。
 
 控制新增network-ssh-runner.py，使用/tmp/khor-netlab-feat-net-1110的owner/每run目录、单槽flock，本地盘专属CARGO_HOME/target/tools，不在NFS home写缓存/源码，不改默认Rust/系统包。编译jobs16/nice10，测试filter/线程/重复次数/门由原network.sh保持；比较时严格串行，单场景线程1。source用无父snapshot bundle/SHA256/tree核验，本地immutable ref/远端准确source/control/report；不是release attestation。prepare/compile/fixture/产品红分别归类。VZ未提交guest产品原型已保留到evidence/net/vz-product-prototype-before-turing，控制树不再接入该原型。下一步实际调度Turing，既有Linux原红和N2–N5未结。
+
+
+**turing-20261109T075531Z-b6277f48 Turing netlab-recovery在途**：PID4083030，remote/tmp/khor-netlab-feat-net-1110/runs/turing-20261109T075531Z-b6277f48；basec55d74ddaf697f7a389c2bc377d1e0016c47adcf、treeef392bb746c998a10c0b6cf8b14f40ffcfe2a2aa、snapshot8ff966dbf71bb0c027bbeac2277ccce6e315dbcf、control59dc223ad263056bc0fa5c073c69a9c5d66b592a；第126个immutable ref已锚。源码/driver经SSH传准确bundle/hash，不走Mac或托管Linux。先固定工具链/编译，产品结果待实际log，禁止重复调度。receipt在/Volumes/disk0/Khor/evidence/net/turing-20261109T075531Z-b6277f48/receipt.json。
+
+
+基线turing-20261109T075906Z-5464f2db已stage但**未launch**，等待candidate turing-20261109T075531Z-b6277f48终态后串行启动。base6485cb83d3b1f0bb93d4633825dc956623d78af9、tree52a442603df49fb0f3e9821f5c9c9fb9ce4da7e5、snapshot9e64c63c8a81011e8aad1e09c0d6b2aeedb9516b、同control59dc223/同netlab-recovery三轮；127th ref已锚。baseline仅原六fixture变化，五个实际netlab fixture/script与candidate逐字一致；生产6485不改。receipt=/Volumes/disk0/Khor/evidence/net/turing-20261109T075906Z-5464f2db/receipt.json。
+
+
+### Turing恢复命令与启动顺序
+
+候选remote `/tmp/khor-netlab-feat-net-1110/runs/turing-20261109T075531Z-b6277f48`；基线remote同runs下`turing-20261109T075906Z-5464f2db`。本地分别`/Volumes/disk0/Khor/evidence/net/<run_id>/receipt.json`。只用既有SSH alias turing，`-o BatchMode=yes -o ForwardAgent=no -o StrictHostKeyChecking=yes -o ConnectTimeout=10`。恢复先读取remote `report/execution.json`并核`/proc/<pid>/cmdline`包含该run的input/network-ssh-runner.py；此处已实核PID4083030 live。只凭status文件不得认verified wait，SSH暂时失败也不重发。完成后保留report/launcher原日志及准确source/control。
+
+基线未启动。candidate终态并下载留证后，使用`/usr/bin/python3`通过subprocess.Popen启动该基线input/network-ssh-runner.py，stdin=DEVNULL、stdout/stderr=该run/launcher.log、start_new_session=True、最小HOME/USER/LOGNAME/LANG及系统PATH环境；记录真实PID到该baseline receipt。不要在锁忙时并行启动/把admission红算产品红。runner内部flock保持单槽，编译jobs16，原network.sh recovery是test_threads1/repeats3。
+
+对照必须承认两套机器不同：旧托管Linux与Turing x86_64相同ISA仍非同硬件，不能直接取历史差值；先Turing同配置baseline/candidate。五个paths/hop/lab/nat/netlab.sh已逐字一致，baseline第六改动仅dev.py；其余生产6485。最新candidate网络生产仍d4a2e115，后续仅工具/文档，无重定义SLO。
