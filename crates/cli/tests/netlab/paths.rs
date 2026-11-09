@@ -58,6 +58,8 @@ mod cpu;
 pub(crate) mod mobile;
 #[path = "paths/mobility.rs"]
 mod mobility;
+#[path = "paths/rebind.rs"]
+mod rebind;
 #[path = "paths/roam.rs"]
 mod roam;
 

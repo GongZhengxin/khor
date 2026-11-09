@@ -416,3 +416,10 @@ mesh后真实双向setup请求，reported双向可用/rtt连续10s（不要求Di
 M的eth0真实replug到另一Public IPv4 Router，新接口恢复原20ms链路；开始/完成phase记录。完成后立即并发X→Y、Y→X首目录业务，不先做ping/诊断，再双向各n30。X/Y自己的接口不移动，公共Relay保持可用。最后记录M实际kernel前后地址，并用最多60s诊断窗口观察双向carried是否再连续10s；这不是新增选路SLO，未观察到必须明确记录，不能以可达绿冒称最好路恢复。居民ready后本病例360s总资源门、所有30s请求outcomes/error/timeout/cancel，case前置失败/实验资源到期/业务失败分开分类。
 
 只校准移动middle的IPv4网络几何、业务可用和记录；原f4恢复1500ms/30s稳定门不动，当前合同不代替它。未覆盖middle IPv6/端口单变、多middle选择、静默端、长流、手机能耗。lifecycle模式明确samples off，禁止与无诊断的性能分布混为策略收益。移动请求前后的完整所有权serial、退役/拨号/路径与目录结果保留；禁止旧owner撤新carrier，若出现反例按N2独立修复。
+
+
+### U12本机接口不变的NAT端口重绑（新增，运行前冻结）
+
+先nat_port_rebind_calibration_v1（r0）：fresh Strict IPv4 NAT与Public IPv4 peer，router独有table rebind_v4/postrouting priority90只匹配该A→B UDP，将映射固定至同一WAN IP:50001；固定本地UDP tuple的独立reflector证实old映射。原设备/两族kernel地址保存后，原子替换规则至:50002，并仅在这个owned router netns删除orig-src=A private、orig-dst=B public的UDP conntrack。新probe必须观察到相同外部IP/新端口，设备两族地址JSON完全相同；保留规则/conntrack前-删-后原文与退出码。只操作fresh用户netns，禁止宿主conntrack/网络变化。r0失败或未实跑，控制脚本不得启动Node病例。
+
+随后node_nat_port_rebind_v1（r1）另起fresh环境、真实居民/身份/唯一marker，同一物理规则；mesh/setup、双向reported Direct连续10s、before各n30/200ms/原30s caller预算，注入前再连续10s且远端journal确见:50001实际QUIC path。准备120s、第二hold45s、scenario240s仅作资源门。设备接口/IP/端口不改，仅router外映射/conntrack改变；完成后立即只发B→A首业务，finished后才A→B及双向各n30。禁止先probe/诊断帮助恢复，后台keepalive仍保留。最后实际probe验证:50002，kernel前后完全一致，保留所有outcomes及新外部QUIC path是否selected的独立字段。全部124请求完成且无失败才业务可用绿；未选回新快路不得冒称最优/连续原wire，首样本不是新SLO或p99。公共Relay一直可用，之后再分别测无备用/仅public-IP变化/更长映射缺口。
