@@ -544,9 +544,11 @@ impl Node {
                 };
                 held = if losing { held + 1 } else { 0 };
                 if held >= 2 {
-                    khor_net::carry::observe_lifecycle(&id, "hop_measured_release", || serde_json::json!({
-                        "attachment": attachment, "via": via.to_string(), "road": format!("{road:?}"), "looks": held,
-                    }));
+                    khor_net::carry::observe_lifecycle(&id, "hop_measured_release", || {
+                        serde_json::json!({
+                            "attachment": attachment, "via": via.to_string(), "road": format!("{road:?}"), "looks": held,
+                        })
+                    });
                     if road == Some(khor_net::path::PathKind::Relay) {
                         lost(&id, &via.to_string());
                     }

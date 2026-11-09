@@ -679,15 +679,20 @@ impl Wires {
     /// [`Self::link`] reads (requests first). No live wire: true, the relay
     /// as good as kept it.
     pub(crate) fn selected_beats_carried(&self, id: &str) -> bool {
-        let Some(conn) = self.live(id, Proto::Main).or_else(|| self.live(id, Proto::Tunnel)) else {
+        let Some(conn) = self
+            .live(id, Proto::Main)
+            .or_else(|| self.live(id, Proto::Tunnel))
+        else {
             return true;
         };
         let facts = khor_net::path::path_facts(&conn);
         let losing = khor_net::path::selected_beats_carried(&facts);
         if losing {
-            khor_net::carry::observe_lifecycle(id, "outgoing_comparison", || serde_json::json!({
-                "wire": conn.stable_id(), "measurements": facts,
-            }));
+            khor_net::carry::observe_lifecycle(id, "outgoing_comparison", || {
+                serde_json::json!({
+                    "wire": conn.stable_id(), "measurements": facts,
+                })
+            });
         }
         losing
     }

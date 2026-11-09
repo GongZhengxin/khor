@@ -139,10 +139,13 @@ pub fn observe_lifecycle(
     let at = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map_or(0, |d| d.as_millis() as u64);
-    eprintln!("[khor-carried-lifecycle] {}", serde_json::json!({
-        "schema": 1, "at": at, "pid": std::process::id(),
-        "peer": peer.to_string(), "phase": phase, "details": details(),
-    }));
+    eprintln!(
+        "[khor-carried-lifecycle] {}",
+        serde_json::json!({
+            "schema": 1, "at": at, "pid": std::process::id(),
+            "peer": peer.to_string(), "phase": phase, "details": details(),
+        })
+    );
 }
 
 impl Links {
@@ -203,9 +206,11 @@ impl Links {
     pub fn detach(&self, peer: &EndpointId, carrier: Carrier) {
         let mut map = self.lock();
         if map.get(peer).is_some_and(|l| l.carrier == carrier) {
-            observe_lifecycle(peer, "link_detached", || serde_json::json!({
-                "serial": map.get(peer).map(|l| l.serial), "carrier": format!("{carrier:?}"),
-            }));
+            observe_lifecycle(peer, "link_detached", || {
+                serde_json::json!({
+                    "serial": map.get(peer).map(|l| l.serial), "carrier": format!("{carrier:?}"),
+                })
+            });
             map.remove(peer);
         }
     }
@@ -228,9 +233,11 @@ impl Links {
     {
         let (out, out_rx) = mpsc::channel::<Bytes>(QUEUE);
         let serial = self.0.serial.fetch_add(1, Relaxed);
-        observe_lifecycle(peer, "link_attached", || serde_json::json!({
-            "serial": serial, "carrier": format!("{carrier:?}"),
-        }));
+        observe_lifecycle(peer, "link_attached", || {
+            serde_json::json!({
+                "serial": serial, "carrier": format!("{carrier:?}"),
+            })
+        });
         self.lock().insert(
             peer,
             Link {
@@ -252,17 +259,22 @@ impl Links {
                 () = links.read_frames(peer, r) => "reader_ended",
             };
             let mut map = links.lock();
-            observe_lifecycle(peer, "link_io_ended", || serde_json::json!({
-                "serial": serial, "current_serial": map.get(&peer).map(|l| l.serial),
-                "carrier": format!("{carrier:?}"), "side": ended,
-            }));
+            observe_lifecycle(peer, "link_io_ended", || {
+                serde_json::json!({
+                    "serial": serial, "current_serial": map.get(&peer).map(|l| l.serial),
+                    "carrier": format!("{carrier:?}"), "side": ended,
+                })
+            });
             if map.get(&peer).is_some_and(|l| l.serial == serial) {
                 map.remove(&peer);
             }
             drop(map);
             let _ = done.send(());
         });
-        Attached { serial, ended: gone }
+        Attached {
+            serial,
+            ended: gone,
+        }
     }
 
     async fn read_frames<R: AsyncRead + Unpin>(&self, peer: EndpointId, mut r: R) {
