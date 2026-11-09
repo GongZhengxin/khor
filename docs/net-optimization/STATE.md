@@ -1,6 +1,6 @@
 # feat/net 当前状态与恢复入口
 
-2026-11-09 01:40 UTC · owner=root，串行，无子智能体。
+2026-11-09 01:42 UTC · owner=root，串行，无子智能体。
 完整范围只在[PLAN](PLAN.md)，要求见[REQUIREMENTS](REQUIREMENTS.md)，准确源和全部历史结果见[RUNS](RUNS.md)。
 本页只维护当前状态；旧页原样保存在[上个检查点](HISTORY-20261109-before-billing-stop.md)，其中“在途”均为历史。
 
@@ -13,7 +13,7 @@ Linux重型用私库khor-build GitHub network job；Mac沿既有macserver lane�
 
 | 用途 | 位置 / 分支 |
 | --- | --- |
-| 产品 | `/Volumes/disk0/Khor/worktrees/current/khor-net`，`feat/net`；HEAD a087e1c5 |
+| 产品 | `/Volumes/disk0/Khor/worktrees/current/khor-net`，`feat/net`；源码检查点33202c22（之后文档更新，实际HEAD恢复时核对） |
 | 控制 | `/Volumes/disk0/Khor/worktrees/current/khor-build-net`，`feat/net`；c68b644fdd9494fec001132c40961ab634c423a2已push |
 | 基线 | `/Volumes/disk0/Khor/worktrees/current/khor-net-baseline`，detached6485cb83d3b1f0bb93d4633825dc956623d78af9；只有paths/hop/lab/nat.rs、dev.py/netlab.sh六文件fixture修改；生产原样 |
 | 证据 | `/Volumes/disk0/Khor/evidence/net/` |
@@ -50,7 +50,7 @@ Linux重型用私库khor-build GitHub network job；Mac沿既有macserver lane�
 36对所有故障都要求决定后备用新ACK，解决闲副本PTO误切，但在真实黑洞两端多加观测tick。
 已有诊断的4个故障Go：同路另一copy在坏copy最老unacked之后仍收到包。这个事实只应触发“复测当前copy”，不能证明当前正向路健康。
 
-当前未提交remote_state改动：confirm_move从所有当前路live copy查询last_received；包必须晚于silence.began且距现在不到一个原250ms观测tick。
+33202c22中的remote_state改动：confirm_move从所有当前路live copy查询last_received；包必须晚于silence.began且距现在不到一个原250ms观测tick。
 该布尔值已传Moving.leave但命名_check_current且**仍被忽略**，因此leave保持36行为；新增false时允许故障后备用样本快速Go的测试预期红，42545673450没有执行。
 已有七个leave测试调用显式true，保留36防抖证据；Noq6新测试也在该快照中。
 
@@ -72,7 +72,7 @@ N0部分、**N1仍红**、N2–N4未完成、N5部分。不能用一批单元或
 1. 保存上述新结果/未执行分类，核worktree与未提交内容；不得从摘要覆盖代码。
 2. 执行器恢复后取得37回归红，最小改动并取绿；先普通recovery三轮，再stalls/hop，最后准确源完整矩阵。
 3. f4s普通回退需独立定因；必要时默认关闭的诊断完整保存三端trace，保持原断腿与1500ms门。
-4. 期间可推进不依赖执行器的N2–N4源码/设计审计。N2七类预算/取消/0-RTT/写入协议已在ACCEPTANCE冻结：锁/hop/首拨未贯通by、早数据回答失去Aborts仍未实施。
+4. 本轮已推进不依赖执行器的N2–N4源码/设计审计，见NEXT-DESIGN及八文件blob收据；尚未实施/实测。N2七类预算/取消/0-RTT/写入协议已在ACCEPTANCE冻结：锁/hop/首拨未贯通by、早数据回答失去Aborts仍未实施。
 5. N3交互与批量公平/成本，N4两端中继与登记故障域/容量设计，N5Mac/手机/多机和最终可信Quality，均继续按PLAN，不擅自缩范围。
 
 ## 证据与恢复
@@ -80,6 +80,10 @@ N0部分、**N1仍红**、N2–N4未完成、N5部分。不能用一批单元或
 现**94**个不可变`refs/khor/net-evidence/<run>`；外部清单`/Volumes/disk0/Khor/evidence/net/source-refs.json`。
 `git rev-parse REF:source`必须等于收据tree；parentless容器只用git show读取，不checkout覆盖、不push本地证据refs。
 两项账单拒绝快照标tests_executed=false/remote_source_verified=false，其余终态不再pending。
-产品工作区已有未提交测试/文档，恢复先核branch/HEAD/diff。所有历史红继续保留，两个main和产品feature未合并发布。
+33202c22已保存Noq6绿覆盖、未执行37边界用例及当轮证据；恢复仍先核branch/HEAD/diff，不假定工作区干净。所有历史红继续保留，两个main和产品feature未合并发布。
 外盘缺失时只读git show feat/net:docs/net-optimization/STATE.md和PLAN；不覆盖原外盘未提交内容。
 治理任务继续遵守中央code-quality STATE及外盘中断RESUME，本网络任务不代表治理授权。
+
+
+本轮N2补充：不能把28秒变为长操作的总上限；沿Op现有档位的真实截止点贯通，保留Request预算。N3发现普通每连接32席位/content另预算及Custom外层队列，需分层测量后设计调度。N4默认北京双URL同机、默认自家登记集中北京，尚无在线故障实证；新增机器/登记/双家仍是提议。
+本地9项remote_development Python检查通过，仅脚本；Rust/Node/Xcode未本机执行，不补记当前37回归绿。
