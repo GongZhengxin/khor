@@ -98,3 +98,7 @@ Lima v2.3.0树800a96b14e96b5d2ceb20ab2602147c1e79224ea的9份源码逐blob校验
 用户已回复确认真机组合为“iPhone＋两台处于不同网络的电脑”（PLAN U8）；已异步补问iPhone型号/iOS与两电脑OS，尚待版本细节。此前Linux额度/已有通道也无明确答复，不能仅由设备可用推定有Linux执行器。继续独立工作，整体goal active。
 
 下一步具体入口已进一步核实：控制仓库没有AGENTS.md，图谱对scripts/network.sh未覆盖后已定向只读；worker-storage.yml的inventory虽不改policy，却也依赖Ubuntu prepare，因此不能作为当前账单条件下的Mac直达采集。可在既有network-mac只读能力记录中增加有界guard文本/hash采集，核已安装run-build/build_guard.py的进程/信号清理；不得调用ensure-budget或改installed guard。此workflow补充尚未实现/调度，control仍0cff967 clean。读取的控制文件包括development.yml、network.sh、bootstrap-network.py、worker-storage.yml及inventory分支；当前hostcap没有guard逻辑正文。用户OS细节仍待答复，Linux能力工作不等该回复。
+
+## 新接续：Mac只读guard采集
+
+上一goal轮为progress（普通wire四项新增绿、probe三红→绿、真机设备组合确认）。控制60821accc131e837da476706cb6b3ad93812d30e已push feat/net，只在既有network-mac hostcap增加固定两份admission脚本的有界只读文本/SHA256记录；不调用ensure-budget、不执行被读取脚本、不改installed guard/资源/缓存策略。YAML、16 Bash块和2内嵌Python语法已本机轻量检查通过；实际采集待新的Mac net-unit验证。产品生产仍d4a2e115，既有14绿的控制版本仍0cff967，不能覆盖历史回执。下一run先锚准确source/control再读artifact；VM尚未安装/启动。
