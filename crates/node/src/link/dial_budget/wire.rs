@@ -853,7 +853,7 @@ async fn cancelling_a_silent_accepted_answer_confirms_the_wire() {
     if !isolated_network_namespace("cancelling_a_silent_accepted_answer_confirms_the_wire") {
         return;
     }
-    super::observe_accepted_answer_stop(None, true).await;
+    super::observe_accepted_answer_stop(None, true, false).await;
 }
 
 #[cfg(target_os = "linux")]

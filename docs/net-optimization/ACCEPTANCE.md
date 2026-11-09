@@ -291,3 +291,6 @@ F10先用原真实resumption fixture到Accepted/adopt/响应pending，健康Acce
 
 
 F9第一次157th目标失败，但旧共享helper将confirmed断言放在事后unheard/drop/remote-open断言之前；因此157th F9暂只记目标红，下一源将这三项原前置断言前移到目标之前，所有网络/等待/阈值不变，不据尚未检查的局部变量预记完整行为红。F10在同157th已通过所有前置后confirmed断言实际失败，行为红成立。
+
+
+F10修复候选另补portable长健康Accepted阳性：原30秒FetchPath预算、真实Accepted/adopt后等16秒，传输保持健康；取消须STOP本流，独立控制请求之前先等原all-path grace+500ms，仍同wire且零Unanswered/Network/Silent/Closed，随后Sessions成功、请求总数仍3。避免长取消清理死wire的修复误伤有正常ACK的长工作；原短取消/到期和原Linux F7/F8/F9/F10门不变。

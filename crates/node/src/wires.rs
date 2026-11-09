@@ -838,6 +838,9 @@ impl Wires {
             return true;
         }
         slot.probe = None;
+        // The confirmation starts at this receive count. A later tick must
+        // not mistake an older, previously unsampled ACK for its answer.
+        slot.rx = count;
         let by = tokio::time::Instant::now() + ask_every_path(conn);
         let owner = Arc::downgrade(self);
         let connection = conn.weak_handle();
@@ -1375,6 +1378,17 @@ impl Wires {
                 heard.push(id.clone());
             }
             slot.measured(rtt_of(&conn));
+            // An in-progress confirmation owns the current quiet epoch.
+            // Fresh reception above cancels it; otherwise its own grace,
+            // rather than a concurrent silence/change deadline, decides.
+            if slot
+                .probe
+                .as_ref()
+                .is_some_and(|probe| !probe.task.is_finished())
+            {
+                settle(slot, road_now(&conn));
+                continue;
+            }
             let quiet = slot
                 .heard
                 .map_or(Duration::MAX, |h| now.saturating_duration_since(h));

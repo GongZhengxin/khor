@@ -603,3 +603,6 @@ F9/F10 fixture：155th Mac42611015315（basefdaf20f8/treee58c548b/snapshot8f52df
 153rd baseline stalls终态**SUCCESS2/2**，tree97040f31/snapshot90126283/controlb998，1190.62秒。p1s alpha1/beta0移动、零退役、最慢732.4ms、5打洞/2905包/1215130B；p5三档零relay/打洞，最慢310.1/499.8/976.0ms。全部report/group/source/driver/bundle/hash采核。与152候选的单对顺序观测已存turing-shared-probe-stalls-comparison.json，不宣称整体或单补丁加速。原p1s门是每端最多1次移动/零退役，非0移动或长尾/开销门；原busy_beside忽略taskset状态且不保证2busy进程都启动，负载有效性后续先校验，不能据打印“one busy CPU”推定已强制。
 
 随后157th net-node已launch **PID365030/child365065**，source同Mac156，实际/proc与network-driver已核。F9/F10+原Linux21待结果；154th hop仍stage，先取得活性合同结果再决定修复/准确源复验。157refs=155终态+157在途+154 staged。
+
+
+158th turing-20261109T115934Z-20aa3073 **FAILURE21pass2fail**，base41c50ba7/treed0484c04/snapshot4767c09c/controlb998，199.74秒。只将F9原前置断言前移，网络/时长/门不变；F9与F10均通过完整真实namespace/零新包/drop>0/remote-open等前置后，在独立owner confirmation目标上实际红。原Linux21全绿，F8函数未改。完整source/driver/bundle/group/hash已采核；157旧F9暂定分类不改成已完成前置。当前候选对齐probe基线并使tick等待pending proof，Accepted加入guard，长取消触发当前计数独立验证；另外加16秒健康Accepted阳性。尚未运行新候选，不能预记绿。

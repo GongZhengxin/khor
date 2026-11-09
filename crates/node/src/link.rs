@@ -3858,9 +3858,16 @@ impl Node {
                 drop(one);
                 match asked {
                     Some(mut asked) => {
-                        // Keep the abort owner across adoption and the whole
-                        // response wait. Cancellation stops only this stream;
-                        // the shared healthy wire stays held by the node.
+                        // The response task and its stream remain owned after
+                        // adoption. A long abandoned wait also joins the wire's
+                        // independent confirmation, just like an ordinary ask.
+                        let line = Line {
+                            id: d.id.clone(),
+                            name: d.name.clone(),
+                            proto: wires::Proto::Main,
+                            conn: conn.clone(),
+                        };
+                        let mut guard = RetireUnheard::new(&self.wires, &line);
                         let answer = crate::deadline::wait(
                             by,
                             asked.0.as_mut().expect("accepted answer is owned"),
@@ -3868,6 +3875,7 @@ impl Node {
                         .await;
                         match answer {
                             Ok(Ok(Some(resp))) => {
+                                guard.disarm();
                                 self.wires.heard(&d.id, wires::Proto::Main, &conn);
                                 Early::Answered(resp)
                             }
@@ -12864,10 +12872,16 @@ impl<'a> RetireUnheard<'a> {
 
 impl Drop for RetireUnheard<'_> {
     fn drop(&mut self) {
+        let elapsed = self.at.elapsed();
+        let patience = wires::Patience::of(&self.line.conn);
         if self.armed
-            && wires::heard_count(&self.line.conn) == self.count
-            && self.at.elapsed() >= wires::Patience::of(&self.line.conn).ack
+            && elapsed >= patience.ack
+            && (wires::heard_count(&self.line.conn) == self.count || elapsed >= patience.silent)
         {
+            // With no progress, ACK patience justifies a probe. A longer
+            // abandoned wait can have old handshake ACKs, too: validate its
+            // current count rather than treating those as indefinite health.
+            // Only the wire owner's subsequent all-path proof can retire it.
             self.probe();
         }
     }
@@ -13468,15 +13482,24 @@ mod dial_budget {
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn cancelling_an_accepted_early_answer_stops_only_its_stream() {
-        observe_accepted_answer_stop(None, false).await;
+        observe_accepted_answer_stop(None, false, false).await;
     }
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn an_accepted_early_answer_keeps_the_callers_deadline() {
-        observe_accepted_answer_stop(Some(Duration::from_secs(1)), false).await;
+        observe_accepted_answer_stop(Some(Duration::from_secs(1)), false, false).await;
     }
 
-    async fn observe_accepted_answer_stop(budget: Option<Duration>, blackhole: bool) {
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn cancelling_a_long_healthy_accepted_answer_keeps_its_wire() {
+        observe_accepted_answer_stop(None, false, true).await;
+    }
+
+    async fn observe_accepted_answer_stop(
+        budget: Option<Duration>,
+        blackhole: bool,
+        long_wait: bool,
+    ) {
         #[cfg(not(target_os = "linux"))]
         assert!(!blackhole);
         use std::sync::{
@@ -13484,6 +13507,7 @@ mod dial_budget {
             atomic::{AtomicUsize, Ordering},
         };
 
+        let long_read = blackhole || long_wait;
         let server = iroh::Endpoint::builder(iroh::endpoint::presets::Minimal)
             .relay_mode(iroh::RelayMode::Disabled)
             .alpns(vec![ALPN.to_vec()])
@@ -13539,7 +13563,7 @@ mod dial_budget {
                 let was_early = recv.is_0rtt();
                 let bytes = recv.read_to_end(MAX_FRAME).await.unwrap();
                 assert!(matches!(
-                    (blackhole, proto::question(&bytes).unwrap()),
+                    (long_read, proto::question(&bytes).unwrap()),
                     (false, Request::Sessions) | (true, Request::FetchPath { offset: 0, .. })
                 ));
                 requests.fetch_add(1, Ordering::SeqCst);
@@ -13594,7 +13618,7 @@ mod dial_budget {
             let endpoint = ep.clone();
             let peer = peer.clone();
             async move {
-                let request = if blackhole {
+                let request = if long_read {
                     Request::FetchPath {
                         path: "/fixture-read-only".to_owned(),
                         offset: 0,
@@ -13672,6 +13696,12 @@ mod dial_budget {
         }
         #[cfg(not(target_os = "linux"))]
         drop(remote);
+        if long_wait {
+            tokio::time::sleep(Duration::from_secs(16)).await;
+            assert!(!asking.0.as_ref().unwrap().is_finished());
+            assert_eq!(requests.load(Ordering::SeqCst), 2);
+        }
+        let grace = long_wait.then(|| wires::ask_every_path(&shared));
         let mut task = asking.0.take().unwrap();
         let ended = match by {
             Some(by) => {
@@ -13697,6 +13727,18 @@ mod dial_budget {
             tokio::time::timeout(Duration::from_millis(500), stop_seen).await,
             Ok(Ok(true))
         );
+        if let Some(grace) = grace {
+            tokio::time::sleep(grace + Duration::from_millis(500)).await;
+            assert_eq!(
+                node.wires.live(&peer.id, wires::Proto::Main).map(|c| c.stable_id()),
+                Some(shared.stable_id())
+            );
+            let counts = node.wires.counts.snapshot();
+            assert_eq!(counts.retired_unanswered, 0);
+            assert_eq!(counts.retired_network, 0);
+            assert_eq!(counts.retired_silent, 0);
+            assert_eq!(counts.retired_closed, 0);
+        }
         let control = tokio::time::timeout(
             Duration::from_secs(5),
             node.ask_on(&ep, &peer, &Request::Sessions),

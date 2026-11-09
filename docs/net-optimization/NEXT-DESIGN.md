@@ -238,3 +238,12 @@ ask_early的Accepted分支在adopt后继续持有Aborts并等待原by，已有�
 原p1s实际为持续CPU争用加20×300ms道路延迟尖峰，不能写成20次CPU暂停；门是每端最多一次selected move、零retired，未约束最慢按键或punch数。152/153都2/2但候选3.8秒/12punch、原版732.4ms/5punch，尚无整体加速证据。原busy_beside以pid % available_parallelism得到CPU编号（不一定是有效allowed CPU ID），忽略每次taskset status，并filter_map忽略busy contender启动失败。因此当前report只证明该fixture观测结果，没有强制亲和/2busy进程有效负载的证据。保留原运行，不改其门或回写为通过新负载合同。
 
 最终性能复验前需新测量revision：从真实allowed CPU集合选ID；断言每个resident全部现有thread的taskset成功与实际亲和、两个busy contender存活且同CPU；观测前后留PID/亲和/状态与CPU时间证据。不得只增加打印、改变竞争总量或改道路/时长/原门；同一新fixture逐字应用原版/候选并各自锚源。先短校准实际强制成功及非法/失败配置不继续计时，再独占串行新对照。此为待实施的实验有效性修复，当前产品归因保持未证。
+
+
+### 2026-11-09 F9/F10实际红后的候选
+
+158th两项前置先过后实际红。源码显示，启动probe时slot.rx仍可能是旧采样，下一tick会将probe开始前的ACK当新回答并清task；这是控制流解释，未直接打印私有rx，不冒充运行字段观测。候选在proof开始同步slot.rx到count，不伪造heard时间；tick读到真正新count仍清proof/mark heard，否则有未完成proof时不由独立silence/change期限抢先关闭。
+
+Accepted在adopt后持有与普通请求相同RetireUnheard，正常响应disarm；取消只触发/加入owner确认，不直接判dead。长等待期间可能收到过早期握手ACK，不能将一次历史count变化当永久健康：原ACK时间无进展或整个等待达到原silent时间后，允许用当前count做全路验证，是否退役仍由之后原grace内有无新包决定。此条件可能为仍健康的长取消增加一次验证，按wire合并有界；新增16秒健康Accepted阳性并等待grace后才发独立控制，N3实际探测开销仍需计量。
+
+这不等于所有tick/served静默策略已统一：无pending确认时现有silence/network条件、入站served的独立close、长期后台与跨进程期限等剩余合同继续保留，不能用本批绿结束完整N2。
