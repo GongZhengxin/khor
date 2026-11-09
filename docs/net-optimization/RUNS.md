@@ -638,3 +638,6 @@ control7534d6e已push，仅增加SSH-only cpu-check与hop-lifecycle；驱动Pyth
 
 
 176th turing-20261109T141037Z-b813a5b3原版fixed-core exit-aware v3 stalls已launch PID570285/child570324，实际/proc/driver核live。base6485/tree49211b55/snapshot31db523a/control7534，生产除七fixture/helper文件全同原6485；五actual fixture同candidate c716/tree5ba04b34/snapshota1981daa逐字一致，proof cpu-v3-fixed-core-paired-fixture-identity.json。Mac后者准确source net-node提交中，exec82832、request b2822fb7885c4d358e3647cead841604，仅source/bundle上传已知，待真实run ID不能重发。
+
+
+177th Mac42632331558（basec716c916/tree5ba04b34/snapshota1981daa/control7534）root fmt/net66+1ignored/hop9过，wires10过1前置红。新fixture两条连接都已echo真实字节，但incoming selected-carried断言失败，ownership目标未到，journal/dial-budget未跑；完整身份/transport/control/hash采核。vendor源码表明shared peer selected tuple不一定在每条conn的open paths中，watcher可无selected marker；v1没有输出具体facts，不能认定实际None或Direct。v2改为双方carrier-only物理路径＋client选择＋原outgoing IP选择、2秒有界snapshot等待和三方rawfacts，目标/清理控制不改，未预记产品红。176 baseline仍计时，CPU64准入/首2spike实核所有thread mask/两busy进展。

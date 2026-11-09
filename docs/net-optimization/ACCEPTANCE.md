@@ -304,3 +304,10 @@ F10修复候选另补portable长健康Accepted阳性：原30秒FetchPath预算�
 p1s原门/600秒/每30秒一轮300ms道路延迟尖峰不变，仍为两个resident和两个busy loop共用一个CPU，不增加竞争总量或并发。新revision从实际thread-self允许的CPU ID集合选择，必须核每个resident全部现有thread绑核成功；两个contender必须已exec既定busy shell、存活、全部thread同CPU，且各自CPU ticks真实增加后才进入计时。开始/每尖峰前/结束记录结构化schema/revision/phase/CPU/allowed集合、PID/starttime/thread亲和及CPU ticks；PID变化/退出/亲和漂移/竞争进程不再运行均按fixture失效停止，不记为产品性能红。CPU计时窗口从admission成功之后开始，旧报告不回写成新负载通过。
 
 短校准单独入口，不缩短p1s：以两个自己spawn的idle子进程代替resident，只验证绑核与真实双busy竞争/CPU计数增加/Drop后子进程reap；另验证稀疏CPU ID解析、缺失/非法集合拒绝、一个实际非零pin命令和不允许CPU都拒绝admission且不改变已有子进程的亲和。校准运行不得与计时netlab并发。两版后续对照使用相同新fixture逐字源码/原profile门，并保存完整source/control/report。
+
+
+## 共享carried所有权合同（real_connections_v2）
+
+Peer共享底层carrier；iroh共享selected FourTuple，但每条connection的open paths可能不同。`PathList::is_selected`是该tuple是否存在于connection watcher，不能单凭入站无selected marker推断数据没走carrier。校准场景在同一个本地endpoint同时保持一条IP outgoing和同remote key的carried-only incoming；远端分别为loopback-only与carried-only隔离endpoint，两条连接都须实际echo字节。两秒内验证outgoing确选IP、incoming非空且仅Custom、carried-only client确选Custom且无其他路径，保留三方facts和不同wire IDs；未满足前置不算清理逻辑红。
+
+目标是仍有这条真实carried消费者时，不能因另一条IP wire胜出而释放peer共享carrier；只剩IP消费者和carried incoming关闭后都应可释放。177只证明v1前置不成立，目标未执行；v2校准理由来自vendor apply_selected_path/record_selected，原ownership目标和两个清理控制保持。此合同不替代162原f4i故障因果与完整hop矩阵。

@@ -1732,13 +1732,48 @@ mod tests {
         }
         echo(&outgoing, &direct_incoming).await;
         echo(&carried_outgoing, &incoming).await;
-        let direct_facts = khor_net::path::path_facts(&outgoing);
-        let carried_facts = khor_net::path::path_facts(&incoming);
+        // The peer has a common selected tuple, but each connection has
+        // its own open paths. record_selected leaves no selected marker
+        // on an incoming connection that lacks the common tuple. Prove
+        // the actual carried-only road at both ends, including the
+        // client's selection, rather than requiring that server marker.
+        let facts = tokio::time::timeout(Duration::from_secs(2), async {
+            loop {
+                let direct = khor_net::path::path_facts(&outgoing);
+                let server = khor_net::path::path_facts(&incoming);
+                let client = khor_net::path::path_facts(&carried_outgoing);
+                if direct.iter().any(|p| p.selected && !p.carried)
+                    && !server.is_empty()
+                    && server.iter().all(|p| p.carried)
+                    && client.iter().any(|p| p.selected && p.carried)
+                    && client.iter().all(|p| p.carried)
+                {
+                    return (direct, server, client);
+                }
+                tokio::time::sleep(Duration::from_millis(10)).await;
+            }
+        })
+        .await
+        .unwrap_or_else(|_| {
+            panic!(
+                "real path prerequisites: outgoing={:?}, incoming={:?}, carried client={:?}",
+                khor_net::path::path_facts(&outgoing),
+                khor_net::path::path_facts(&incoming),
+                khor_net::path::path_facts(&carried_outgoing),
+            )
+        });
+        let (direct_facts, carried_facts, client_facts) = facts;
+        eprintln!(
+            "[shared-carrier-fixture] {}",
+            serde_json::json!({
+                "revision": "real_connections_v2", "wire": outgoing.stable_id(),
+                "incoming_wire": incoming.stable_id(), "direct": &direct_facts,
+                "incoming": &carried_facts, "carried_client": &client_facts,
+            })
+        );
         assert!(outgoing.close_reason().is_none() && incoming.close_reason().is_none());
         assert_eq!(outgoing.remote_id(), incoming.remote_id());
         assert_ne!(outgoing.stable_id(), incoming.stable_id());
-        assert!(direct_facts.iter().any(|p| p.selected && !p.carried));
-        assert!(carried_facts.iter().any(|p| p.selected && p.carried));
 
         let wires = Wires::default();
         let id = bid.to_string();
