@@ -512,3 +512,6 @@ N3道路双向因果校准测试已按先前协议写下，模型未改；contro
 
 
 42567527752终态**Accepted回答所有权双实际红**：根格式/编译/net66+1ignored/hop9/wires10/journal28绿；dial_budget5pass2fail，只1秒by被回答忽略、调用取消后回答流未STOP。两fixture均经过第二请求/adopt/pending20ms实际Accepted前置，且最后独立Sessions成功、stable_id相同、请求数3/零dial_failed均已过，随后才在目标断言失败；不是前置失败或靠关闭conn的伪红。准确tree54b47ae5/snapshot6c7e6358/control0cff967已核，115 refs终态。下一最小修复把Aborts随Accepted回答交接，等待显式沿原by；不改白名单/请求frame/共享wire。
+
+
+**42567946141 Mac net-node Accepted回答所有权修复候选在途**：base2fc650b30a3ab16792adb7babe566b8cec1bfeb5 clean、tree314894b33ed72a5ff2aeed47504d6c9e7f575bd9、snapshot78c6fb8eabf86ff755800188d9f92e64f8d4e3cf、control0cff9671fb2f80945423132e0df46995f6ff3198；116th ref/mac-accepted-owner-candidate-42567946141已锚。等待七预算/取消回归与既有子集，不预记绿。

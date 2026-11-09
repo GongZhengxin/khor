@@ -149,3 +149,6 @@ Accepted后原裸JoinHandle await本批尚未修正；握手到期若刚得到�
 42567527752终态**Accepted回答所有权双实际红**：根格式/编译/net66+1ignored/hop9/wires10/journal28绿；dial_budget5pass2fail，只1秒by被回答忽略、调用取消后回答流未STOP。两fixture均经过第二请求/adopt/pending20ms实际Accepted前置，且最后独立Sessions成功、stable_id相同、请求数3/零dial_failed均已过，随后才在目标断言失败；不是前置失败或靠关闭conn的伪红。准确tree54b47ae5/snapshot6c7e6358/control0cff967已核，115 refs终态。下一最小修复把Aborts随Accepted回答交接，等待显式沿原by；不改白名单/请求frame/共享wire。
 
 当前最小候选已改：Accepted交出的是Aborts所有者而非裸JoinHandle；adopt后借用owner内的handle，用deadline::wait(by, …)等待。调用取消/到期会drop owner并abort回答任务，只停止回答流；已adopt健康wire仍留Node。到期为CallerExpired，不转NotTaken重试或记peer失败；Rejected与未adopt连接的清理仍保留。该候选未验证，下一准确源Mac net-node需七测试全绿。
+
+
+**42567946141 Mac net-node Accepted回答所有权修复候选在途**：base2fc650b30a3ab16792adb7babe566b8cec1bfeb5 clean、tree314894b33ed72a5ff2aeed47504d6c9e7f575bd9、snapshot78c6fb8eabf86ff755800188d9f92e64f8d4e3cf、control0cff9671fb2f80945423132e0df46995f6ff3198；116th ref/mac-accepted-owner-candidate-42567946141已锚。等待七预算/取消回归与既有子集，不预记绿。
