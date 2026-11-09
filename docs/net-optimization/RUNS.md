@@ -621,3 +621,8 @@ control7534d6e已push，仅增加SSH-only cpu-check与hop-lifecycle；驱动Pyth
 
 
 168th在途观察已落`observations/lifecycle-first-observation.json`：实际PID486253 cmdline匹配，前两轮f4i原门绿（回carried17.2/10.7秒），每轮三端日志共9生命周期事件，第三轮未完成；尚未重现162第二轮撤路，不能将诊断绿当稳定性通过或定因。下一继续同PID/原report，不重发。
+
+
+168th turing-20261109T130858Z-465046e7终态诊断**3/3绿**，base886b084c/treeed97f217/snapshot349bd7ba/control7534，691.75秒。三轮回carried17.2/10.7/23.2秒，原有意离线后的serial1 IO结束均位于返回前，serial2返回后未结束；9日志共27事件、无hop_measured_release/link_detached。完整source/control/driver/bundle/原group/hash采核。原162同wire撤路未重现，非修复或SLO通过，保留红结论。
+
+169th turing-20261109T133049Z-d4827d09与168完全同source/control，原netlab-stalls单线程1轮，checked_affinity_v3真实Node压力，launch PID522226/child522272实际/proc/driver核live。170th turing-20261109T133425Z-7a9c0dfa原版同条件只stage，source base6485/tree186d3b60/snapshot63043993，control7534；五实际fixture逐字同候选，除七fixture/helper文件外生产全同原6485，证据cpu-v3-paired-fixture-identity.json。新detached基线保留旧WIP不动；169终态采证才launch170。新的comparison_role在stage前明确baseline，helper guard不变。

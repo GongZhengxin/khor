@@ -220,3 +220,6 @@ base25d0c803/tree6805b7b7/snapshote0a42573/controlb998：Turing150th fmt/编译/
 ### 2026-11-09 CPU有效性校准3/3，不代替完整性能对照
 
 166th source886b084c/treeed97f217/snapshot349bd7ba/control7534，短校准3pass（0.50秒），Linux实际CPU14允许集合0–127，两个sleep模拟resident和两个busy contender全thread绑同CPU；305ms各增加15CPU ticks，clock100ticks/s，且负例/reap断言过。新机制支持测量前/尖峰/结束的实际证据，尚未跑真实Node600秒p1s或原版同fixture对照。167th Mac同完整source根格式/net66+1ignored绿，仅net-unit。所有report/环境/driver/transport/hash已采。168th同源f4i生命周期diagnostic三轮在途，明确非SLO，清理政策仍原样。
+
+
+168诊断3/3没有重现162原same-wire撤路，全部27生命周期事件留证，不能用无复现替代修复。N1继续验证peer共享载路的连接所有权范围。CPU169/170用checked_affinity_v3相同真实Node fixture作原版/候选串行对照，生产基线纯净；结果未出，不预报性能通过。

@@ -1635,6 +1635,137 @@ impl Slot {
 
 #[cfg(test)]
 mod tests {
+    /// A carrier belongs to the peer, while measurements belong to each
+    /// connection. A direct outgoing wire cannot release the stream under
+    /// an incoming wire that still uses it. Two endpoints with the same
+    /// remote key, one loopback-only and one carried-only, make those two
+    /// live routes deterministic without fabricated path measurements.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn a_shared_carrier_is_kept_for_a_live_incoming_connection() {
+        use iroh::endpoint::presets;
+        use iroh::{Endpoint, EndpointAddr, RelayMode, SecretKey};
+        use khor_net::carry::{Carrier, Links, RoadOrder, transport_addr};
+
+        const ALPN: &[u8] = b"khor/shared-carrier-test";
+        let (ka, kb) = (SecretKey::generate(), SecretKey::generate());
+        let (aid, bid) = (ka.public(), kb.public());
+        let (la, lb) = (Links::new(aid), Links::new(bid));
+        let a = Endpoint::builder(presets::Minimal)
+            .secret_key(ka)
+            .relay_mode(RelayMode::Disabled)
+            .clear_ip_transports()
+            .bind_addr("127.0.0.1:0")
+            .unwrap()
+            .add_custom_transport(la.transport())
+            .path_selector(Arc::new(RoadOrder::default()))
+            .alpns(vec![ALPN.to_vec()])
+            .bind()
+            .await
+            .unwrap();
+        let direct = Endpoint::builder(presets::Minimal)
+            .secret_key(kb.clone())
+            .relay_mode(RelayMode::Disabled)
+            .clear_ip_transports()
+            .bind_addr("127.0.0.1:0")
+            .unwrap()
+            .alpns(vec![ALPN.to_vec()])
+            .bind()
+            .await
+            .unwrap();
+        let (outgoing, direct_incoming) = tokio::time::timeout(Duration::from_secs(5), async {
+            tokio::join!(
+                async { a.connect(direct.addr(), ALPN).await.unwrap() },
+                async { direct.accept().await.unwrap().await.unwrap() },
+            )
+        })
+        .await
+        .expect("the first wire is a real loopback connection");
+
+        let carried = Endpoint::builder(presets::Minimal)
+            .secret_key(kb)
+            .relay_mode(RelayMode::Disabled)
+            .clear_ip_transports()
+            .add_custom_transport(lb.transport())
+            .path_selector(Arc::new(RoadOrder::default()))
+            .alpns(vec![ALPN.to_vec()])
+            .bind()
+            .await
+            .unwrap();
+        let (near, far) = tokio::io::duplex(1 << 20);
+        let (nr, nw) = tokio::io::split(near);
+        let (fr, fw) = tokio::io::split(far);
+        let _near = la.attach(bid, Carrier::Ssh, nr, nw);
+        let _far = lb.attach(aid, Carrier::Ssh, fr, fw);
+        let (carried_outgoing, incoming) = tokio::time::timeout(Duration::from_secs(5), async {
+            tokio::join!(
+                async {
+                    carried
+                        .connect(
+                            EndpointAddr::from_parts(aid, [transport_addr(&aid)]),
+                            ALPN,
+                        )
+                        .await
+                        .unwrap()
+                },
+                async { a.accept().await.unwrap().await.unwrap() },
+            )
+        })
+        .await
+        .expect("the second wire really crosses the shared carrier");
+
+        async fn echo(client: &Connection, server: &Connection) {
+            tokio::time::timeout(Duration::from_secs(5), async {
+                tokio::join!(
+                    async {
+                        let (mut tx, mut rx) = client.open_bi().await.unwrap();
+                        tx.write_all(b"ping").await.unwrap();
+                        tx.finish().unwrap();
+                        assert_eq!(rx.read_to_end(4).await.unwrap(), b"ping");
+                    },
+                    async {
+                        let (mut tx, mut rx) = server.accept_bi().await.unwrap();
+                        let bytes = rx.read_to_end(4).await.unwrap();
+                        tx.write_all(&bytes).await.unwrap();
+                        tx.finish().unwrap();
+                    },
+                )
+            })
+            .await
+            .expect("both independent connections answer real bytes");
+        }
+        echo(&outgoing, &direct_incoming).await;
+        echo(&carried_outgoing, &incoming).await;
+        let direct_facts = khor_net::path::path_facts(&outgoing);
+        let carried_facts = khor_net::path::path_facts(&incoming);
+        assert!(outgoing.close_reason().is_none() && incoming.close_reason().is_none());
+        assert_eq!(outgoing.remote_id(), incoming.remote_id());
+        assert_ne!(outgoing.stable_id(), incoming.stable_id());
+        assert!(direct_facts.iter().any(|p| p.selected && !p.carried));
+        assert!(carried_facts.iter().any(|p| p.selected && p.carried));
+
+        let wires = Wires::default();
+        let id = bid.to_string();
+        wires.adopt(&id, Proto::Main, outgoing.clone());
+        assert!(wires.selected_beats_carried(&id), "the sole direct wire needs no carrier");
+        wires.serving(&incoming);
+        let release_live = wires.selected_beats_carried(&id);
+        incoming.close(0u32.into(), b"test done");
+        assert!(incoming.close_reason().is_some());
+        let release_closed = wires.selected_beats_carried(&id);
+        outgoing.close(0u32.into(), b"test done");
+        carried_outgoing.close(0u32.into(), b"test done");
+        direct_incoming.close(0u32.into(), b"test done");
+        a.close().await;
+        direct.close().await;
+        carried.close().await;
+
+        assert!(release_closed, "a closed incoming wire holds no carrier");
+        assert!(
+            !release_live,
+            "a live incoming wire still uses the peer's carrier: outgoing={direct_facts:?}, incoming={carried_facts:?}"
+        );
+    }
+
     /// flap: a wire's first seconds show no round trip — its handshake's,
     /// over a relay that was reconnecting, read 14632 ms on a 50 ms road.
     #[test]
