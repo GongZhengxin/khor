@@ -2,7 +2,7 @@
 
 更新：2026-11-09 08:00 UTC；root串行，无子智能体。活动目标“完成计划”仍active。
 
-**Turing唯一在途：turing-20261109T075531Z-b6277f48（PID4083030，recovery），已实核/proc cmdline仍live，正在固定Rust1.95安装。** 基线turing-20261109T075906Z-5464f2db仅staged未launch，必须等candidate终态后串行。用户U9已明确授权Turing；Mac VZ仅备用，不继续guest产品原型。127 refs：125旧终态+1 live+1 staged；完整N0–N5未完成。
+**Turing唯一在途：turing-20261109T075531Z-b6277f48（PID4083030，recovery），已实核/proc cmdline仍live，Rust1.95校验/安装通过，正在产品依赖/构建阶段。** 基线turing-20261109T075906Z-5464f2db仅staged未launch，必须等candidate终态后串行。用户U9已明确授权Turing；Mac VZ仅备用，不继续guest产品原型。127 refs：125旧终态+1 live+1 staged；完整N0–N5未完成。
 完整范围：[PLAN](PLAN.md)；约束：[REQUIREMENTS](REQUIREMENTS.md)；运行记录：[RUNS](RUNS.md)；原始结果：[REPORT](REPORT.md)。
 此前STATE原样归档[Accepted轮历史](HISTORY-20261109-before-accepted-green.md)与[本轮历史](HISTORY-20261109-before-probe-green.md)；历史在途/候选文字仅代表当时状态，恢复以本页和实际工作区为准。
 
@@ -174,3 +174,6 @@ source baseb56576ce52c56b4d8c31d84e6618abec662d0cd9、tree2b5bfce2e95c0ef4169a6c
 基线未启动。candidate终态并下载留证后，使用`/usr/bin/python3`通过subprocess.Popen启动该基线input/network-ssh-runner.py，stdin=DEVNULL、stdout/stderr=该run/launcher.log、start_new_session=True、最小HOME/USER/LOGNAME/LANG及系统PATH环境；记录真实PID到该baseline receipt。不要在锁忙时并行启动/把admission红算产品红。runner内部flock保持单槽，编译jobs16，原network.sh recovery是test_threads1/repeats3。
 
 对照必须承认两套机器不同：旧托管Linux与Turing x86_64相同ISA仍非同硬件，不能直接取历史差值；先Turing同配置baseline/candidate。五个paths/hop/lab/nat/netlab.sh已逐字一致，baseline第六改动仅dev.py；其余生产6485。最新candidate网络生产仍d4a2e115，后续仅工具/文档，无重定义SLO。
+
+
+最新观察2026-11-09T08:05:25.056040+00:00：candidate /proc PID4083030命令行匹配仍live，phase=network-driver，child4090915；toolchain rustc1.95.0/cargo1.95.0/rustfmt1.9.0与四SHA已实核，namespace前置通过，remote source/snapshot/control与receipt一致。CARGO冷依赖先出现多次30秒超时，随后真实Downloaded条目持续推进，未因此重启任务。已有NFS cache 997锁包中815存在（含非Linux包，不能称完整）；当前运行保持，后续baseline复用项目本地cache，未改正在使用的cache或NFS。详细live观察存/Volumes/disk0/Khor/evidence/net/turing-20261109T075531Z-b6277f48/status-observed-20261109T080506Z.json。当前无产品测试结论，下一步继续poll同run；baseline仍staged未launch。
