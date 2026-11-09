@@ -13595,7 +13595,10 @@ mod dial_budget {
             let peer = peer.clone();
             async move {
                 let request = if blackhole {
-                    Request::FetchPath { path: "/fixture-read-only".to_owned(), offset: 0 }
+                    Request::FetchPath {
+                        path: "/fixture-read-only".to_owned(),
+                        offset: 0,
+                    }
                 } else {
                     Request::Sessions
                 };
@@ -13647,10 +13650,19 @@ mod dial_budget {
         #[cfg(target_os = "linux")]
         if blackhole {
             freeze.send(()).unwrap();
-            tokio::time::timeout(Duration::from_secs(1), freeze_seen).await.unwrap().unwrap();
+            tokio::time::timeout(Duration::from_secs(1), freeze_seen)
+                .await
+                .unwrap()
+                .unwrap();
             wire::observe_accepted_blackhole(
-                &node, &peer, &shared, &remote.upgrade().unwrap(), &mut asking, &requests,
-            ).await;
+                &node,
+                &peer,
+                &shared,
+                &remote.upgrade().unwrap(),
+                &mut asking,
+                &requests,
+            )
+            .await;
             ep.close().await;
             server.close().await;
             let task = serving.0.take().unwrap();

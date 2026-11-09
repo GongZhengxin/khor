@@ -534,8 +534,14 @@ async fn observe_abandoned_wire(changed: bool) {
         live.is_none(),
         "long real silence must not keep handing out a dead wire"
     );
-    assert_eq!(tick_retired, 0, "tick must not preempt a pending confirmation");
-    assert_eq!(live_after_tick.map(|c| c.stable_id()), Some(f.local.stable_id()));
+    assert_eq!(
+        tick_retired, 0,
+        "tick must not preempt a pending confirmation"
+    );
+    assert_eq!(
+        live_after_tick.map(|c| c.stable_id()),
+        Some(f.local.stable_id())
+    );
     assert_eq!(counts.retired_unanswered, 1);
     assert_eq!(counts.retired_network, 0);
     assert_eq!(counts.retired_silent, 0);
@@ -875,7 +881,12 @@ pub(super) async fn observe_accepted_blackhole(
         .stdin(Stdio::piped())
         .spawn()
         .unwrap();
-    firewall.stdin.take().unwrap().write_all(rules.as_bytes()).unwrap();
+    firewall
+        .stdin
+        .take()
+        .unwrap()
+        .write_all(rules.as_bytes())
+        .unwrap();
     assert!(firewall.wait().unwrap().success());
     tokio::time::sleep(Duration::from_millis(300)).await;
     let count = wires::heard_count(conn);
@@ -883,10 +894,24 @@ pub(super) async fn observe_accepted_blackhole(
     assert!(silence >= Duration::from_secs(15) && silence < Duration::from_secs(16));
     let grace = wires::ask_every_path(conn);
     tokio::time::sleep(silence + Duration::from_millis(100)).await;
-    assert_eq!(wires::heard_count(conn), count, "native UDP fixture must stay unheard");
-    assert!(remote.close_reason().is_none(), "remote must not substitute a close for silence");
-    assert!(!asking.0.as_ref().unwrap().is_finished(), "Accepted must still await its answer");
-    assert_eq!(requests.load(Ordering::SeqCst), 2, "warmup and early request only");
+    assert_eq!(
+        wires::heard_count(conn),
+        count,
+        "native UDP fixture must stay unheard"
+    );
+    assert!(
+        remote.close_reason().is_none(),
+        "remote must not substitute a close for silence"
+    );
+    assert!(
+        !asking.0.as_ref().unwrap().is_finished(),
+        "Accepted must still await its answer"
+    );
+    assert_eq!(
+        requests.load(Ordering::SeqCst),
+        2,
+        "warmup and early request only"
+    );
     let task = asking.0.take().unwrap();
     task.abort();
     assert!(matches!(task.await, Err(error) if error.is_cancelled()));
@@ -895,18 +920,33 @@ pub(super) async fn observe_accepted_blackhole(
         while node.wires.live(&peer.id, wires::Proto::Main).is_some() {
             tokio::time::sleep(Duration::from_millis(10)).await;
         }
-    }).await.is_ok();
-    let out = Command::new("nft").args(["list", "table", "inet", "khor_f10"]).output().unwrap();
+    })
+    .await
+    .is_ok();
+    let out = Command::new("nft")
+        .args(["list", "table", "inet", "khor_f10"])
+        .output()
+        .unwrap();
     assert!(out.status.success());
     let text = String::from_utf8(out.stdout).unwrap();
     let words: Vec<_> = text.split_whitespace().collect();
-    let dropped: u64 = words.windows(2).filter(|pair| pair[0] == "packets").map(|pair| pair[1].parse::<u64>().unwrap()).sum();
+    let dropped: u64 = words
+        .windows(2)
+        .filter(|pair| pair[0] == "packets")
+        .map(|pair| pair[1].parse::<u64>().unwrap())
+        .sum();
     let counts = node.wires.counts.snapshot();
     assert!(dropped > 0, "real native UDP must hit drop rules");
     assert_eq!(wires::heard_count(conn), count);
     assert!(remote.close_reason().is_none());
-    assert_eq!(held_at_cancel.map(|c| c.stable_id()), Some(conn.stable_id()));
-    assert!(confirmed, "cancelled silent Accepted answer must leave a bounded wire confirmation");
+    assert_eq!(
+        held_at_cancel.map(|c| c.stable_id()),
+        Some(conn.stable_id())
+    );
+    assert!(
+        confirmed,
+        "cancelled silent Accepted answer must leave a bounded wire confirmation"
+    );
     assert_eq!(counts.retired_unanswered, 1);
     assert_eq!(counts.retired_network, 0);
     assert_eq!(counts.retired_silent, 0);

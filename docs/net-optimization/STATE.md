@@ -3,6 +3,8 @@
 更新：2026-11-09 11:30 UTC；root串行，无子智能体。活动目标“完成计划”仍active。
 
 **当前Turing：baseline stalls153rd turing-20261109T110456Z-42e6ec16，PID327881/child327922。** 已实核/proc、准确source/control，正在network-driver。candidate152nd turing-20261109T110456Z-dee800e0已终态SUCCESS2/2，1193.92秒；原p1s 600秒/20×300ms、0/0切路/零退役，但最慢按键3.8秒、12次打洞/3449包/1335065B，不能据旧门绿宣称体验收口。p5三档150/300/600ms各4次，零切relay/零打洞，最慢279.9/518.6/992.0ms。完整report/源码/driver/bundle/hash/原进程组已采核。两角色五实际fixture逐字一致，原门/driver不变。154th turing-20261109T112647Z-c5e5e53d修复后同准确源hop三轮仅stage未launch，待baseline终态采证后串行运行。F8取消误退役已143rd实红→150th Linux21全绿；151st Mac19也全绿，二者同snapshot e0a42573/tree6805b7b7/base25d0c803/controlb998。154 refs=152终态+1在途+1 staged。完整N0–N5未完成。
+
+**F9/F10新增回归准备**：155th Mac42611015315在途，basefdaf20f8/treee58c548b/snapshot8f52df34/controlb998；只增测试/验收合同，生产仍25d0c803。先校格式和健康Accepted控制，再待Turing计时对照结束跑Linux私有netns反例。155refs=152终态+baseline153与Mac155在途+hop154 staged；没有新行为红/绿。
 完整范围：[PLAN](PLAN.md)；约束：[REQUIREMENTS](REQUIREMENTS.md)；运行记录：[RUNS](RUNS.md)；原始结果：[REPORT](REPORT.md)。
 此前STATE原样归档[Accepted轮历史](HISTORY-20261109-before-accepted-green.md)与[本轮历史](HISTORY-20261109-before-probe-green.md)及[Turing141前历史](HISTORY-20261109-before-turing-141.md)与[共享确认绿前历史](HISTORY-20261109-before-shared-confirmation-green.md)；历史在途/候选文字仅代表当时状态，恢复以本页和实际工作区为准。
 
