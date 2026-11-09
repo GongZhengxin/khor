@@ -1132,11 +1132,47 @@ impl RemoteStateActor {
     /// khor patch 17: one measurement tick. Watches the selected path for going
     /// silent or slowing down, then runs the selector on the paths' stats as they are now.
     fn reselect(&mut self) {
+        let tuples_changed = self.refresh_path_tuples();
         let (sample, waiting) = self.read_paths();
         self.watch_selected(sample);
         self.probe_others(waiting);
         self.refresh_candidates();
-        self.select_path_on(true);
+        self.select_path_on(!tuples_changed);
+    }
+
+    /// A passive QUIC migration can change a path's tuple without opening a
+    /// new path ID. Reconcile the cached identity before attributing samples
+    /// or applying the peer's selection to its individual connections.
+    fn refresh_path_tuples(&mut self) -> bool {
+        let mut retired = Vec::new();
+        for (conn_id, conn_state) in self.connections.iter_mut() {
+            let Some(conn) = conn_state.handle.upgrade() else { continue };
+            let changes: Vec<_> = conn_state.paths.iter().filter_map(|(id, cached)| {
+                let path = conn.path(*id)?;
+                let actual = self.state.mapped_addrs.to_transport_tuple(&path.network_path().ok()?)?;
+                (actual != *cached).then_some((cached.clone(), actual, path))
+            }).collect();
+            for (cached, actual, path) in changes {
+                // Old samples name the old road, even when QUIC preserves its
+                // RTT estimate for a port-only rebind. Other copies stay intact.
+                self.state.measured.rtts.remove(&(*conn_id, path.id()));
+                self.state.register_and_configure_path(*conn_id, conn_state, &path);
+                retired.push(cached.remote());
+                if std::env::var_os("KHOR_NET_DIAGNOSTICS").is_some() {
+                    eprintln!(
+                        "[khor-path-tuple-refreshed] peer={} conn={} path={} cached={:?} actual={:?}",
+                        self.state.endpoint_id, conn_id, path.id(), cached, actual,
+                    );
+                }
+            }
+        }
+        let changed = !retired.is_empty();
+        for remote in retired {
+            if !self.connections.values().any(|c| c.paths.values().any(|p| p.remote() == remote)) {
+                self.state.paths.abandoned_path(&remote);
+            }
+        }
+        changed
     }
 
     /// STREAM traffic makes discovery responsive. At most one existing

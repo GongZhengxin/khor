@@ -1,6 +1,6 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-09 21:59 UTC（本地2026-11-10）。root串行，无子智能体。
+更新：2026-11-09 22:10 UTC（本地2026-11-10）。root串行，无子智能体。
 
 完整目标仍是完成[PLAN](PLAN.md)的N0–N5，尚未完成。用户已授权实施/远端验证并多次要求继续；U14明确不能因goal服务paused或阶段通过自行停止。后台调度状态不是本轮停止/授权门，不另建目标，不伪造complete/blocked。速度和体验优先，个人可信设备网络；无合main、发布、中继采购/生产部署授权。
 
@@ -15,6 +15,9 @@
 - 246及此前所有任务已终态采证。`evidence/net/source-refs.json`、`turing-next-matrix.json`、每run receipt/collection/report hashes是真实句柄入口。最新批量refs审计source-refs-audit-20261109-owner-green-243.json逐核243 refs，后续逐条先pin；应在246终态后刷新全审计。
 
 ## 最新实证与未闭合问题
+
+**247已终态，NAT错路因果取得真实反例**：138.17s/rc0/原group空、124/124可达绿；B实际Noq conn/path1已迁50002、iroh仍缓存50001，69条逐次不一致。独立合同nat-selection-contract.json实际红（warm remote 30次0通过、新tuple未selected）；原整个rebind.rs SHA ac97726906429a5dd63dd91b5c9ed99624c273d9a253f7facb916ffcf47e8a9b保留不动。下一候选只在既有reselect前reconcile真实tuple、移除变更path旧Reading、重新登记/强制apply；不改策略/计时/并发/发包。尚待同整fixture真实绿与vendor合同，不称已完成。248 Mac同代码tree便携全绿（67/12/11/30/20），不同snapshot元数据明确保留。
+
 
 **246已终态**：132.16s/rc0/原group空，r0+r1可达2/2、124/124ok；after AB p5022166us、BA123616us，首BA660726us。nat-rebind-calibration.json与request-wire-correlation.json核141条非重复lifecycle；实际after-change每方向31个request streams，B业务wire已有新:50002但所有路径selected=false，另wire仍selected旧:50001。247只增加Noq真实tuple vs iroh缓存的gated mismatch诊断，保持旧行为查因，不盲改策略。
 

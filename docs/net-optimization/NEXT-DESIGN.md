@@ -305,3 +305,12 @@ N4真跨网可优先用公开Node::serve在隔离测试进程内启动resident�
 当前path::selected_beats_carried的逻辑是“没有carried满足selector gain”，并不要求selected反过来显著更快；也不单独核quality.age/samples。故上述约110对131ms确实会按现行quarter margin得到release，不能称实现违反现有公式；问题在确认/滞回/开路试用与成本策略是否符合速度优先目标。两次age/rtt不同，不无依据声称是同一旧样本计了两次。不能仅降低gain门或让所有候选无限保留。
 
 收敛时要区分：①新候选仍在有界验证/估计不确定；②有足够新鲜端到端证据确认既有替代路更好；③无消费者/试用到期应收回成本。确认失败后10分钟LOST与“收益未证实/样本稀疏”不应未经合同混为一类。给foreground更快且有上限的验证机会、保留健康共享消费者与旧epoch所有权、idle有明确资源回收；先构造稀疏/静默/真正较慢的正反控制，再同时测速度/探测/流量/能耗。当前只留设计边界，完整N1/N2仍未完成。
+
+
+## N4 SSH恢复后的具体控制协议（2026-11-09 22:06UTC，尚未实现/运行）
+
+用户要求重试后macserver SSH已实际成功，停止沿用旧banner timeout作为依赖。仍沿Mac installed run-build guard与Turing owned单槽；双方编译结束、计时无其他任务后才启跨网数据面。临时root使用短路径、create-new owner/UID/run-ID，拒绝覆盖，避免macOS Unix socket路径上限；KHOR_NETLAB始终不设置。
+
+拟以dev-only Rust example运行Node::serve与本进程公开stop_serving，另open_as只通过该resident IPC发操作。控制走owned root内Unix socket、JSON request ID及固定命令白名单：ready(public ID/fixture path)、mint(私有ticket)、pair(只接临时ticket)、devices(核expected ID)、read(只读对方新fixture)、links、stop。私有ticket只经两个可信SSH控制器内存转交，不打印/保存普通artifact；日志仅ID/hash/请求outcomes，pair后票按原规则烧毁，不扩15分钟。首次pair后的读取明确不是冷建连。
+
+Python lease supervisor持有Unix socket端，每次controller EOF/绝对期限/自身错误关闭lease，Rust看到EOF即stop_serving并真正等待serve JoinHandle；进程kill时kernel自动关闭lease也触发相同清理。选择可取消的Unix socket读取，避免tokio::io::stdin的不可取消blocking线程拖住runtime退出。Rust本身也有不依赖controller的绝对资源期限；正常/EOF/受控kill supervisor分别做合同，完成需核子PGID空、resident已join、只本次owned root/socket生命周期结束。未知目录/UID/旧owner保留并拒绝，不以state文件消失冒称进程已停。此节是执行前设计，未创建resident或开始跨网验收。

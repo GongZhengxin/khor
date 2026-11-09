@@ -447,3 +447,10 @@ NAT另设netlab-nat-rebind-lifecycle诊断profile，沿原r0先物理成功才r1
 
 
 246真实业务wire中，慢方向已有新:50002路径但所有PathFact.selected=false，另一wire仍selected旧:50001。下一诊断仅在read_paths读取已有stats时、KHOR_NET_DIAGNOSTICS开启时比对Noq path.network_path映射的真实FourTuple与iroh缓存tuple；不一致则记peer/conn/path/cached/actual，不改缓存/测量/选择/发包，不增加timer/probe。用于验证“同一PathId被动迁移后，旧地址缓存和质量仍被使用”的假设；未取得真实不一致前不得据静态怀疑直接修策略。诊断profile非普通性能对照；默认不开日志。
+
+
+### U12/N1 NAT重绑必须在真实业务连接选中新tuple（修复前冻结）
+
+沿同一完整rebind.rs fixture、node_nat_port_rebind_v1物理/负载/预算/remote-first协议与lifecycle模式，不改任何Rust fixture字节或量测门。独立数据合同warm_remote_requests_select_the_rebound_tuple_v1：物理与全部124outcomes先绿；after-ba 30次warm真实请求，每次started→finished窗口内必须有B实际request_stream_opened，其每个记录仅一个selected path且为新WAN:50002 Direct；journal必须确认新tuple selected，诊断不得残留Noq真实tuple与iroh缓存不一致。它是实际使用连接的开流快照，不是逐包/回复路由保证；没有新增时延SLO/p99门。
+
+247准确源上独立数据合同实际红：30次0通过、69条cached50001/actual50002、journal未选新端口；availability 124/124绿保持。全fixture SHA ac97726906429a5dd63dd91b5c9ed99624c273d9a253f7facb916ffcf47e8a9b；合同脚本与输入哈希留evidence/net。候选在既有250ms reselect前核Noq真实路径tuple，仅变化的path重新登记/清其旧Reading、旧remote无其他live copy才撤其open事实；不改收益/确认/重试/并发/新timer或probe。变化时强制同步各conn选中标记/状态，避免全局选择未变而个别连接仍全Backup。下一同整fixture与同合同、vendor/便携及完整网络门验证；未绿不称修复完成。
