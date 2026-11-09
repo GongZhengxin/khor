@@ -1,6 +1,6 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-09 18:23 UTC（本地2026-11-10）。root串行，无子智能体。完整目标仍为“完成计划”；用户曾暂停，现明确“继续”并已恢复本轮工作（goal服务18:07仍返回paused，自动跨轮续跑由用户面板控制）；完整N0–N5未完成。速度/体验优先，个人可信设备网；没有合main、发布、中继采购或生产部署授权。
+更新：2026-11-09 18:29 UTC（本地2026-11-10）。root串行，无子智能体。完整目标仍为“完成计划”；用户曾暂停，现明确“继续”并已恢复本轮工作（goal服务18:07仍返回paused，自动跨轮续跑由用户面板控制）；完整N0–N5未完成。速度/体验优先，个人可信设备网；没有合main、发布、中继采购或生产部署授权。
 
 ## 当前执行与下一步
 
@@ -99,3 +99,8 @@ N4只读preflight：macserver alias映射z13，严格known host/不转发agent�
 
 
 200 Mac42668241618（base6fa5b972/treef19337f9/snapshotbc6dc66d/control7598180）只bootstrap错误消息一hunk format红，无编译/行为；完整source/transport/9 control blobs/hash核留，原patch已应用。200 refs snapshot/tree双引用全批核，当时无在途，当前201/202见首条。198 carried-bootstrap-journal.json已逐轮核：三次只见setup后约10020ms ask dial失败，没有成功hop开路事件，不能凭设备表等于载路已就绪；v2即针对这一前置缺口，不改产品策略。
+
+
+## 201后自动路径诊断准备
+
+新增SSH-only netlab-hop-reference-lifecycle，control32fa23c，automatic原case单线程三轮，lifecycle samples=off、完整attempts consumer，失败仍完成余轮。产品只给reference子模块补测量后/准备失败时的三角色sample_diagnostics收集，既有测量体和负载逐字不变，proof reference-v2-lifecycle-fixture-identity.json；产品选路/gain/期限/CC未改。driver2/runner4共6 Python stub tests绿（含新profile首轮失败/parser失败子例），没有本机Rust执行。先在Turing跑同准确source net-node的格式/既有24合同，再跑automatic诊断；尚未启动/未预记通过，后续以source-refs与实际句柄为准。

@@ -2,6 +2,13 @@
 use super::*;
 use crate::lab::LabNode;
 
+fn diagnostics(s: &str, x: &LabNode, y: &LabNode, m: &LabNode) {
+    super::hop_diagnostics(x, y, m);
+    for n in [x, y, m] {
+        super::sample_diagnostics(s, n);
+    }
+}
+
 fn relay_isolation(n: &LabNode, ip: std::net::Ipv4Addr) {
     super::cut_as(&n.dev, ip, "reference_relay");
     let mut command = std::process::Command::new("nft");
@@ -139,7 +146,7 @@ async fn reference(s: &str, want: Option<Hop>) {
     })
     .await;
     if !matches!(prepared, Ok(Ok(()))) {
-        super::hop_diagnostics(&x, &y, &m);
+        diagnostics(s, &x, &y, &m);
         result(
             s,
             false,
@@ -168,7 +175,7 @@ async fn reference(s: &str, want: Option<Hop>) {
         && yx_errors.is_empty()
         && xy_errors.is_empty()
         && ends_on_target;
-    super::hop_diagnostics(&x, &y, &m);
+    diagnostics(s, &x, &y, &m);
     result(
         s,
         ok,
