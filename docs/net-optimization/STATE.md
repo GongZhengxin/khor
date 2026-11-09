@@ -4,7 +4,7 @@
 
 ## 当前源码与已收齐证据
 
-- **221换网三病例重跑已启动**：`turing-20261109T202849Z-513b3d42`，PID1080567/child1080771；base21457c7e/treece58c098/snapshot336600b5/control05c8d7c。只修router_state空stdout记录，不改物理/业务预算或判定；已通过format/编译进入实际用例，同句柄继续采证。
+- **221终态采证：dual再次124/124绿、另两例nft JSON仍不合法**：`turing-20261109T202849Z-513b3d42`，101.96s、rc101、原group空；base21457c7e/treece58c098/snapshot336600b5/control05c8d7c。dual首B→A900943us/后A→B19109us，物理与完整raw核。先前把问题理解为纯空stdout不充分：增加空值判断后，另两例仍在非空JSON解析失败，原输出在unwrap前未保留，不能确定它是空规则。现改为先保留raw JSON stdout/stderr/解析错误，并独立保存/核成功的text ruleset；业务/物理协议不改。接下来先N1冷排序真实红，再按准确源继续三病例。
 - **下一N1冷候选排序反例已加入、未运行**：原本已经合格的Relay2ms+SSH3ms与Direct100ms+SSH20ms/未知Direct；Measured正控后Dial必须按两腿5/120/65536ms排序。旧生产排序保留用于取得实际红，资格/两middle合计3s/收益门不动。该合同只是尝试顺序，不称完整最优连接完成。
 
 - **220已完整采证：双栈业务绿，另两例fixture前置错误**：`turing-20261109T202504Z-0960af0c`，baseb689aa30/tree821781de/snapshot37baf115/control05c8d7c，104.06s、rc101、原group空。dual真实IPv4 10.0.1.2→10.0.2.2、IPv6 /64前缀…:2→…:3、独立UDP外部映射198.18.0.11:28666→…12:18027；replug256ms，remote-first紧接+1ms开始772543us成功，其后本端23413us；124/124ok。proof node-roam-calibration.json准确source/control/ref/hash与raw核。v4 NAT与v4→v6两个病例在业务前router_state解析空stdout panic，不计产品失败；修正为明确空rules并保留raw stdout/stderr/code后继续原协议。

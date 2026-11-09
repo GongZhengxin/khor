@@ -50,23 +50,37 @@ fn router_state(router: &Router, s: &str, phase: &str) {
         .unwrap()
         .wait_with_output()
         .unwrap();
-    assert!(output.status.success());
-    // nft 0.9.3 can print no JSON at all for a namespace with no rules.
-    // Preserve the raw output rather than parsing that as a malformed ruleset.
+    // Retain stdout even when the older nft cannot encode a rule as JSON.
+    // The textual listing below is the independent ruleset record.
     let stdout = String::from_utf8(output.stdout).unwrap();
-    let rules = if stdout.trim().is_empty() {
-        serde_json::json!({"nftables": []})
-    } else {
-        serde_json::from_str::<serde_json::Value>(&stdout).unwrap()
+    let (rules, json_error) = match serde_json::from_str::<serde_json::Value>(&stdout) {
+        Ok(rules) => (Some(rules), None),
+        Err(error) => (None, Some(error.to_string())),
     };
+    let mut command = Command::new("nft");
+    command
+        .args(["list", "ruleset"])
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped());
+    let text = router
+        .spawn_command_sync(command)
+        .unwrap()
+        .wait_with_output()
+        .unwrap();
+    let text_stdout = String::from_utf8(text.stdout).unwrap();
     eprintln!(
         "[netlab-roam-router] {}",
         serde_json::json!({
             "case": s, "router": router.name(), "phase": phase, "rules": rules,
+            "json_error": json_error,
             "stdout": stdout, "stderr": String::from_utf8_lossy(&output.stderr),
             "code": output.status.code(),
+            "text": text_stdout, "text_stderr": String::from_utf8_lossy(&text.stderr),
+            "text_code": text.status.code(),
         })
     );
+    assert!(output.status.success(), "read the actual JSON ruleset output");
+    assert!(text.status.success(), "read the actual textual ruleset");
 }
 
 async fn business(
