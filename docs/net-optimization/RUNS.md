@@ -494,3 +494,6 @@ N3道路双向因果校准测试已按先前协议写下，模型未改；contro
 
 
 42566472411终态仅**格式门失败**，新fixture的matches/链式调用/async块排版，远端patch原样应用；准确source/control/ref已核，112 refs终态，未编译或执行六测试。所有权问题尚未取得行为红，生产仍原样。
+
+
+**42566727617 Mac net-node Accepted回归格式修正源在途**：basef1ef9049559cbb26b93eee361f293929842e53c3 clean、treec21e025c0cbd66cdb4aca4a5ab523d3be1be7434、snapshot9ca1c0fab8980b93903aee579ee14bf01f6b7f33、control0cff9671fb2f80945423132e0df46995f6ff3198；113th ref/mac-accepted-answer-formatted-42566727617已锚。六测试仍待真实编译/执行，生产回答所有权不变。
