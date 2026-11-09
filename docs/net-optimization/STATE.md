@@ -15,7 +15,7 @@
 | 产品 | `/Volumes/disk0/Khor/worktrees/current/khor-net`，`feat/net`；恢复核实际HEAD/diff，本轮API入口已验证；37仍为72b1d891，N2锁等待候选随后提交，恢复核实际diff |
 | 控制 | `/Volumes/disk0/Khor/worktrees/current/khor-build-net`，`feat/net`；2e70c39fe6a70bbbd09b7434f90e6c2d62e84b16已push；历史run绑定各自control |
 | 基线 | `/Volumes/disk0/Khor/worktrees/current/khor-net-baseline`，detached6485cb83d3b1f0bb93d4633825dc956623d78af9；只允许paths/hop/lab/nat.rs、dev.py/netlab.sh六fixture；生产基线原样 |
-| 证据 | `/Volumes/disk0/Khor/evidence/net/`；source-refs.json现103条不可变source refs；均已终态 |
+| 证据 | `/Volumes/disk0/Khor/evidence/net/`；source-refs.json现104条不可变source refs；仅42559155803在途 |
 
 ## 执行通道现状
 
@@ -73,7 +73,7 @@ N0部分、**N1仍红**、N2–N4未完成、N5部分。不能以单元绿或执
 
 恢复先核绝对worktree/branch/HEAD/diff、当前run终态和回执，不从摘要覆盖未提交内容，不重复调度活动run。
 每run锚refs/khor/net-evidence/<run>；git rev-parse REF:source必须等于回执tree；只用git show读容器，不checkout覆盖、不push本地证据refs。
-source-refs.json现103条；425527传输失败与托管账单拒绝均tests_executed=false、remote_source_verified=false。旧Mac实际红已验证source/control。重要artifact下载到规范证据目录。
+source-refs.json现104条；425527传输失败与托管账单拒绝均tests_executed=false、remote_source_verified=false。旧Mac实际红已验证source/control。重要artifact下载到规范证据目录。
 Mac源/bundle分支仅在终态、证据保留、所有权和SHA匹配后清理；复用源的请求不拥有原源分支。重试不改旧源/control/attempt证据。
 外盘缺失只读git show feat/net:docs/net-optimization/STATE.md和PLAN；原外盘未提交内容不能按摘要覆盖。治理另沿中央code-quality STATE/RESUME，不与本任务混合。
 
@@ -104,3 +104,5 @@ N3因果校准用例已按ACCEPTANCE冻结协议写入congestion.rs，尚未编�
 **42558820303 early格式修正源Mac net-node SUCCESS**：base783619dd2bf1d034828f717bfb90f1f2b635a6a7 clean、treef3b250de87c64b452ccf2dac6543eb63d677938a、snapshot27bfd24c3233e98ab8998f8056bbba3f8650e5c4、controle7258e57155da1618f0f3b00fd1e395f481b5f19。含early修复/格式patch及N3模型校准测试（本profile仅格式/Node，不执行N3测试）。mac-early-admission-formatted-42558820303已核source/control并保存；根格式、net66pass/1ignored、hop9/wires10/journal28/dial_budget3全绿。normal/early持锁期限两项分别实际红转绿，N3仅格式通过、未编译/校准。
 
 下一步以e7258e5控制profile执行net-congestion：先实际UDP双向道路校准预期红，模型仍旧shared_fifo_v1；取红后修独立方向派发并显式版本，再校准绿/三轮完整v2采样。不要把尚未运行的模型/测量记为N3绿。N2除锁准入之外的冻结边界及N1 Linux原红、N4/N5均继续。
+
+**42559155803 N3模型校准Mac net-congestion在途**：base599c57d0be6abee38488b7814daa9ca598370402 clean、treeb84a3bc4ea9a028fa8e2c147264623dfcb5fa971、snapshot54082af8662510e0548c5d4b584d06531724c8c0、controle7258e57155da1618f0f3b00fd1e395f481b5f19；模型仍shared_fifo_v1，校准先实际取红，不预记编译或测量绿。mac-road-model-red-42559155803及104th ref已锚，恢复只查该ID。
