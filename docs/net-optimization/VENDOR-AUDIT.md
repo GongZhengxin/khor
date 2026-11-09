@@ -18,7 +18,7 @@ Noq4另补真实虚拟连接专项a_backup_probe_is_acked_when_the_responders_da
 | 编号 | 保留目标 | 当前覆盖及缺口 | 上游静态观察与退出条件 |
 | --- | --- | --- | --- |
 | 1 | BBRv3及时知道应用闲置，避免闲后输出慢 | KHOR记录旧congestion对照，但移植时没有带专属测试；435通用绿不能补这项缺口。需闲置→突发、loss/inflight一致性及与Cubic对照 | 1.4完整链已复核：poll_transmit更新path标志，BBR在on_end_acks才接收；下一发送先读自身idle状态。loss路径也未即时扣自身inflight，见UPSTREAM。已证实事件时序差异，最终体验/等价仍须隔离同seed突发与丢包验证 |
-| 2 | OBSERVED_ADDR不能进入0-RTT，且可发送性判断一致 | 原accepted在恢复时禁用客户端reporting，未盖住始终both；新增reporting_waits_for_one_rtt真实握手测试，尚未编译/执行。原帧准入不变，最终源实际早数据仍待 | 1.4缓存角色→pending→可发0-RTT STREAM→populate分支及接收端1-RTT门已逐段确认，见UPSTREAM；缺少本地等价保护，但未执行上游。始终启用reporting的恢复覆盖及两处准入等价后退出 |
+| 2 | OBSERVED_ADDR不能进入0-RTT，且可发送性判断一致 | 原accepted在恢复时禁用客户端reporting，未盖住始终both；新增reporting_waits_for_one_rtt真实握手测试，42555870179 Mac实际438Noq全绿。原帧准入不变，最终源实际早数据仍待 | 1.4缓存角色→pending→可发0-RTT STREAM→populate分支及接收端1-RTT门已逐段确认，见UPSTREAM；缺少本地等价保护，但未执行上游。始终启用reporting的恢复覆盖及两处准入等价后退出 |
 | 3 | 发布不应答所需PTO、最近收到包、最早未确认包及无退避PTO | 黑洞Backup两用例实际读取这些stats，iroh有不应答判据覆盖；max_path_id_reached_lasts_until_a_path_is_abandoned只证明ID释放前提，不是stats专项测试 | 1.4公开PathStats和构造函数已核；4项接口无对应，qlog内部私有metrics不是公共替代。需要等价接口/调用者整体迁移。覆盖闲置、短暂停顿、ACK/PTO重置后退出 |
 | 4 | 可自行发包的多路径ACK沿自己的路返回，避免共享坏回程污染全部路径 | path_acks仅断言出现PATH_ACK，不验证走哪条路；历史p3/p4及现有黑洞场景有集成覆盖。需补非对称单向故障与ACK额外开销专项证据 | 1.4 populate_packet仍在may_send_data路上枚举各包号空间的pending ACK，未具本地按本路/兜底路分发。升级候选须验证备用路可独立收到ACK、未验证/abandoned仍有兜底，兼顾包数预算 |
 | 5 | 最大ACK号不是本次新确认时，不用旧发送时间取RTT | KHOR有7次旧网络异常采样证据；当前没有据此确认一条独立、构造该ACK序列的回归。泛化435绿不够退出 | 1.4完整ACK链已复核：最大号不在记录时仍抬new_largest，较低号新ACK非空可进入旧时间采样表达式。见UPSTREAM/RFC9002；需合法已发但回收记录的ACK序列及正常采样对照，尚未取得行为红绿 |
@@ -82,7 +82,7 @@ Noq4另补真实虚拟连接专项a_backup_probe_is_acked_when_the_responders_da
 | 35 | 首次新往返恢复可用性，质量/类型不再门住；重复故障仍hold | 42539860644已436Noq绿/iroh33pass1fail，候选移除quick回调、不加timer/探测；原旧包/重复故障/闭路覆盖与普通防抖/恢复待新源验证。上游等价性尚未核完 |
 | 36 | 故障离开也需决定后备用包，当前探测选最高PTO副本 | 42541459177已436Noq绿/iroh34pass1fail；候选双向PING、备用用最低PTO副本、4秒兜底不变；p3<1秒/防抖/额外包数及上游等价待验证 |
 
-| 37 | 无当前copy接收提示时可用故障后已有备用应答快速离开 | 42551075037 Mac实际437Noq绿/路径35pass1fail，候选条件分支已写待绿；有提示保留36、旧包/4秒/正常确认不变，原p3/CPU/转发未收口 |
+| 37 | 无当前copy接收提示时可用故障后已有备用应答快速离开 | 42551075037 Mac实际437Noq绿/路径35pass1fail，候选条件分支42555870179 Mac根格式438Noq/36路径/9选家绿；有提示保留36、旧包/4秒/正常确认不变，原p3/CPU/转发未收口 |
 
 1.4.1固定源码与PR证据见UPSTREAM；本轮未把账本中的旧OPEN状态照搬成事实。
 2/3/5/9/23含用户配置/策略，不能仅因上游有不同默认策略便删除；需明确等价配置能力和调用者迁移。

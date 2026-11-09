@@ -85,3 +85,6 @@ controlc6a20c5，单场景顺序三轮，准确tree/snapshot见RUNS。baseline42
 
 
 519ad4aa探测后打洞修正已435Noq/33iroh绿，首慢值probe/punch同时触发先取得确定性红。没有增加原探测预算；普通质量需要2秒与决定后证据，极慢RTT和真实故障仍有原快速探索。新control6af仅增加原p1s/p5定向入口，实际忙CPU/短停顿、相位、转发三项正在运行，最终N1仍未完成。
+
+
+42555870179 Mac根格式、438Noq/36路径/9选家全绿，准确tree4a9c4d89/snapshotb6a4e924/controldd57be6。37无接收copy快速离开用例从42551075037实际红转绿；有提示/旧包/兜底覆盖保留，Noq2始终启用reporting恢复实际通过。API bundle远端还原源码与可信控制后复用原guard，旧Git HTTPS两attempt执行器失败不记产品红。Linux真实p3与f4s红尚未复验，不代表N1或整计划完成；N3测量记录器只有格式证据。

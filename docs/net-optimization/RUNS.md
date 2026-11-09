@@ -399,3 +399,7 @@ Mac便携分流control6b1616c8b816bdb72a8a031d0ff28cc46a3fb4c7在feat/net，沿�
 
 
 **42555870179 Mac net-vendor在途**：clean d2849d4732c7e9b6dd2e953616ce583f0e520391、tree4a9c4d89cc01e33a480375d50cc9f77b6d2d7a83、snapshotb6a4e9240786b1b178aee1e11284e6164aecc377、controldd57be6c57090a811726983e700d0b39a40fd1e8。API bundle17935476字节，blob91937c9b7d1330f2b1d8352dbe6d309c278e38b5，SHA256284904bec454a22f964fbb5c4f5e0307e3f76342815d95d641dd9f18c261cf0b。API bootstrap实际success、两Git checkout skipped、进入原build guard；测试结果未出。97 refs，本run唯一pending；mac-api-vendor-42555870179已存本机准确回执和raw run。
+
+
+42555870179终态 **SUCCESS：根格式、438Noq/36路径/9选家**，回执tree4a9c4d89/snapshotb6a4e924/controldd57be6已逐项核对；mac-api-vendor-42555870179保存source/environment/bundle/原始log和classification。37快速Go回归由42551075037旧源红转绿；Noq2 reporting始终启用恢复实际通过。N3记录器仅格式通过，未编译/测量。host VZ=1、16GiB/10CPU、约76.2GB空闲、无已装VM工具，仅brew；没有启动VM。97 refs全终态，Linux原p3/CPU/hop与N2–N5仍缺。
+新增N2真实dial锁deadline回归，未改生产；候选待Mac net-node取红，control2e70c39扩展原filter。

@@ -13276,6 +13276,55 @@ impl Node {
 mod dial_budget {
     use super::*;
 
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn a_call_deadline_bounds_waiting_for_another_dial_without_blaming_the_peer() {
+        let root = tempfile::tempdir().unwrap();
+        std::fs::create_dir_all(root.path().join(".khor")).unwrap();
+        std::fs::write(
+            root.path().join(".khor/relays.json"),
+            r#"{"relays":[{"url":"http://127.0.0.1:9"}],"only_mine":true}"#,
+        )
+        .unwrap();
+        let node = Node::open_hosting(root.path().to_path_buf(), "budget", false).unwrap();
+        let peer_id = iroh::SecretKey::generate().public().to_string();
+        {
+            let loaded = node.devices_loaded().unwrap();
+            loaded.doc.upsert(&peer_id, "peer", &[]).unwrap();
+            let mut store = loaded.store;
+            store.flush(&loaded.doc).unwrap();
+        }
+        let peer = node
+            .devices()
+            .unwrap()
+            .into_iter()
+            .find(|d| d.id == peer_id)
+            .unwrap();
+        // Minimal has no discovery or public relay. Bind before starting the
+        // caller's clock, so first-touch Mac network setup is outside its budget.
+        let ep = iroh::Endpoint::builder(iroh::endpoint::presets::Minimal)
+            .relay_mode(iroh::RelayMode::Disabled)
+            .alpns(vec![ALPN.to_vec()])
+            .bind()
+            .await
+            .unwrap();
+        let lock = node.wires.dial_lock(&peer.id, wires::Proto::Main);
+        let held = lock.lock().await;
+        let by = std::time::Instant::now() + Duration::from_millis(40);
+        let answer = tokio::time::timeout(
+            Duration::from_millis(500),
+            node.line_to_by(&ep, &peer, wires::Proto::Main, Some(by)),
+        )
+        .await;
+        ep.close().await;
+
+        assert!(answer.is_ok(), "waiting for the dial lock outlived the caller");
+        assert!(answer.unwrap().is_err(), "an expired waiter has no wire");
+        assert!(held.is_none(), "the active dial's shared result is untouched");
+        assert_eq!(node.wires.counts.snapshot().dial_failed, 0);
+        assert_eq!(node.wires.link(&peer.id).down, None);
+        assert_eq!(node.wires.backing_off(&peer.id), None);
+    }
+
     /// **A dial never outlasts QUIC's own idle timeout** (net-dial B5): a
     /// machine once measured slow — 2.6 s on a relay, turing 2026-10-20 —
     /// was given 12 × that, capped at 60 s, so QUIC's 30 s 「timed out」

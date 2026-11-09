@@ -15,7 +15,7 @@
 | 产品 | `/Volumes/disk0/Khor/worktrees/current/khor-net`，`feat/net`；恢复核实际HEAD/diff，本轮只新增API bundle入口/测试/文档，37等生产代码仍为72b1d891 |
 | 控制 | `/Volumes/disk0/Khor/worktrees/current/khor-build-net`，`feat/net`；dd57be6c57090a811726983e700d0b39a40fd1e8已push；历史run绑定各自control |
 | 基线 | `/Volumes/disk0/Khor/worktrees/current/khor-net-baseline`，detached6485cb83d3b1f0bb93d4633825dc956623d78af9；只允许paths/hop/lab/nat.rs、dev.py/netlab.sh六fixture；生产基线原样 |
-| 证据 | `/Volumes/disk0/Khor/evidence/net/`；source-refs.json现97条不可变source refs；仅42555870179在途 |
+| 证据 | `/Volumes/disk0/Khor/evidence/net/`；source-refs.json现97条不可变source refs；均已终态 |
 
 ## 执行通道现状
 
@@ -28,23 +28,23 @@ Mac自托管runner可执行：worker-smoke42549824680 SUCCESS仅工具链/guard�
 attempt1源checkout、attempt2控制checkout连续github.com:443超时；未到源码校验/格式/编译/测试/host-capabilities；无source artifact。
 两attempt日志、raw run/jobs与未执行分类分开保存在mac-fault-candidate-checkout-42552723913/及attempt-2/。不得再把该run记pending或438/36/9绿。
 
-**API Git bundle已实际远端传输成功，产品检查尚在途。** 控制dd57be6沿GitHub API取准确bundle、在GITHUB_SHA取可信控制文件；校验Git blob/SHA-256、快照与parentless/tree后，复用原prepare和build guard。Git只读本地bundle。
+**API Git bundle已实际远端传输成功，产品单元已通过。** 控制dd57be6沿GitHub API取准确bundle、在GITHUB_SHA取可信控制文件；校验Git blob/SHA-256、快照与parentless/tree后，复用原prepare和build guard。Git只读本地bundle。
 本机客户端额外上传私库dev-bundles/<request_id>，仅含无父快照的Git对象；64MiB上限，无开发历史/未跟踪文件。原source分支保留。
 短期只读job token只在可信bootstrap步骤；Git/prepare和构建步骤不继承。默认standard不发送新inputs，保留旧main兼容；省略bundle双输入可走旧checkout。
 本机remote_development12项、bootstrap3项（准确还原/错误checksum/错误snapshot）、prepare1项、network-driver1项通过；Ruby YAML及16个bash语法块、diff-check通过。没有本机Rust/Node构建。
-**42555870179 net-vendor在途**：base d2849d4732c7e9b6dd2e953616ce583f0e520391 clean、tree4a9c4d89cc01e33a480375d50cc9f77b6d2d7a83、snapshotb6a4e9240786b1b178aee1e11284e6164aecc377、control dd57be6c57090a811726983e700d0b39a40fd1e8。
-API bootstrap步骤实际success、两checkout均跳过，已进入现有共享guard；单元结果未出，不预认通过。bundle17935476字节，SHA-256 284904bec454a22f964fbb5c4f5e0307e3f76342815d95d641dd9f18c261cf0b，blob91937c9b7d1330f2b1d8352dbe6d309c278e38b5。
+**42555870179 net-vendor SUCCESS**：base d2849d4732c7e9b6dd2e953616ce583f0e520391 clean、tree4a9c4d89cc01e33a480375d50cc9f77b6d2d7a83、snapshotb6a4e9240786b1b178aee1e11284e6164aecc377、control dd57be6c57090a811726983e700d0b39a40fd1e8。
+API bootstrap步骤实际success、两checkout均跳过，已进入现有共享guard；根格式、438Noq/36路径/9选家全绿；Noq2新恢复测试与37快速Go实际通过。bundle17935476字节，SHA-256 284904bec454a22f964fbb5c4f5e0307e3f76342815d95d641dd9f18c261cf0b，blob91937c9b7d1330f2b1d8352dbe6d309c278e38b5。
 refs/khor/net-evidence/42555870179已create-only锚定，回执及raw run在mac-api-vendor-42555870179；恢复只查该ID，不重发。
 
 ## N1当前候选与真实红
 
-37生产条件分支已提交72b1d891c879cab63aaed032e201aee7baf1734c，尚未执行当前源：
+37生产条件分支72b1d891c879cab63aaed032e201aee7baf1734c已由42555870179实际单元验证；Linux SLO仍缺：
 当前tuple有故障后且最近原250ms tick接收copy提示时，保留36的决定后备用应答与当前坏copy复测；无提示时接受began之后已有备用应答，避免真黑洞多等tick。
 接收提示不能证明当前正向健康；故障前旧样本仍无效、4秒兜底/正常两样本/速度优先/原节奏不变，不增加应用请求重放。
 
 实际预期红 **42551075037**，旧7b61b7edc12ed5ef384b7054240e7b5202f1638b / snapshota21c1a978549979a8956639d35fdbd722cc6c8df / basea087 dirty / control6b1616c8b816bdb72a8a031d0ff28cc46a3fb4c7：
 根格式/437Noq绿，Iroh35pass1fail仅无接收copy快速Go用例，实际Hold双PING、预期Go。home因失败未执行；证据mac-current-copy-hint-red-42551075037，Mac26.6.2 arm64/Rust1.95/jobs2。
-37新增false旧包/4秒用例属于待验证绿覆盖，不宣称它们也已有旧源红。Noq2 reporting启用的新0-RTT测试与N3记录器也在当前源，均尚未格式/编译/执行。
+37新增false旧包/4秒为实际绿覆盖，不宣称它们也已有旧源红。Noq2 reporting启用的新0-RTT测试实际通过；N3记录器仅根格式通过，尚未编译/执行。
 
 36普通Linux结果仍有效且不能被Mac单元覆盖。同basea087 clean、treec807d328e78bdfda1dbebd7bdd4c14b0eaa8cd25、controlc68b644，日志关闭：
 
@@ -61,13 +61,13 @@ f4s中继2.5秒双向注入在断腿恢复1.5秒后清除，不能把后续整�
 
 N0部分、**N1仍红**、N2–N4未完成、N5部分。不能以单元绿或执行通道建立完成整计划。
 
-1. 先API bundle Mac vendor取当前格式/编译/单元；若格式红只应用远端patch再准确源复验。
-2. 恢复Linux能力后，原p3三轮<1秒、CPU0/0、hop不回退，再准确源完整矩阵；不能放宽门。Mac候选host-capabilities仅只读探针，不启动VM/安装/改空间策略；Linux VM尚为提议。
+1. Mac vendor当前已根格式/438/36/9绿；N2新增真实Node/Endpoint持dial锁的调用deadline回归，仅测试，预期红尚未执行。控制2e70c39把link::dial_budget加入net-node；下一次准确源Mac net-node先取红。
+2. 恢复Linux能力后，原p3三轮<1秒、CPU0/0、hop不回退，再准确源完整矩阵；不能放宽门。host-capabilities实际：VZ支持1、16GiB/10CPU、可用约76.2GB，仅brew已装，Lima/QEMU/Docker/Podman/Colima均无；未启动VM/安装/改空间策略，Linux VM尚为提议。
 3. 独立定因f4s回退，必要时保存默认关闭诊断三端trace，保持原断腿与1500ms门。
 4. N2七类预算/取消/0-RTT/写协议已冻结ACCEPTANCE，真实源码设计见NEXT-DESIGN。锁/hop/首拨尚未贯通by、早数据回答取消所有权缺口仍未实施。按Op原30/300/3600档传deadline，不能把长操作压成28秒；hop3秒为两个中间设备合计，取消不计peer故障，真实RetireUnheard仍要保留。
 5. N3记录v2候选f17b8a31：全部echo/typing/screen结果、成功/全部结束时间分布分开、bulk真实字节/时长/结束原因；默认几何/seed/工作量不变。net-congestion三轮顺序、独立log、slo=false；尚未远端运行。实际Node32席位/content预算/Custom外层队列、SSH/hop公平与能耗仍缺。
 6. N4默认北京HTTP/TLS同机、自家登记集中北京；香港存在中继但无默认独立pkarr。已有多登记/选家机制需沿用，不能重复造。两端全路径/不对称/冷暖发现/故障域/容量实测与最优拓扑设计仍缺；不采购/部署。
-7. N5补丁48项（Iroh37+Noq11）初步清单见VENDOR-AUDIT。Noq6覆盖42543928044根格式437/35/9绿、Noq4 ACK隔离42539256792绿；Noq1/5专项、其余边界与上游行为等价仍缺。固定1.4.0调用链/hash证据见UPSTREAM，不升级/删补丁。原生代理/Mac/手机/多机/能耗与最终可信Quality仍缺。
+7. N5补丁48项（Iroh37+Noq11）初步清单见VENDOR-AUDIT。Noq6覆盖42543928044根格式437/35/9绿、Noq4 ACK隔离42539256792绿、Noq2 reporting恢复与37条件分支42555870179根格式438/36/9绿；Noq1/5专项、其余边界与上游行为等价仍缺。固定1.4.0调用链/hash证据见UPSTREAM，不升级/删补丁。原生代理/Mac/手机/多机/能耗与最终可信Quality仍缺。
 
 ## 证据与接续
 
@@ -76,3 +76,5 @@ N0部分、**N1仍红**、N2–N4未完成、N5部分。不能以单元绿或执
 source-refs.json现97条；425527传输失败与托管账单拒绝均tests_executed=false、remote_source_verified=false。旧Mac实际红已验证source/control。重要artifact下载到规范证据目录。
 Mac源/bundle分支仅在终态、证据保留、所有权和SHA匹配后清理；复用源的请求不拥有原源分支。重试不改旧源/control/attempt证据。
 外盘缺失只读git show feat/net:docs/net-optimization/STATE.md和PLAN；原外盘未提交内容不能按摘要覆盖。治理另沿中央code-quality STATE/RESUME，不与本任务混合。
+
+N2新测试a_call_deadline_bounds_waiting_for_another_dial_without_blaming_the_peer：scratch/hosts=false Node与Minimal无relay/discovery Endpoint，绑定在计时前；持同peer/proto真实dial锁，40ms调用期限、500ms外层防挂；要求按期返回错误且不改owner结果/peer down/backoff/失败计数。仅覆盖等待边界，尚未执行，不声称无取消/0-RTT/跳路其余缺口。

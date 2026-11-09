@@ -120,3 +120,6 @@ PacketNumberSpace::sent本身有非ACK-eliciting尾部记录回收，说明“�
 来源：[固定连接入口与恢复](https://github.com/n0-computer/noq/blob/34f75c49f93de5e2ff943483cabc5b6d0c5df918/noq-proto/src/connection/mod.rs)、
 [公开PathStats](https://github.com/n0-computer/noq/blob/34f75c49f93de5e2ff943483cabc5b6d0c5df918/noq-proto/src/connection/stats.rs)、
 [内部qlog metrics](https://github.com/n0-computer/noq/blob/34f75c49f93de5e2ff943483cabc5b6d0c5df918/noq-proto/src/connection/paths.rs)。
+
+
+本地补丁Noq2新增reporting始终启用恢复测试已由42555870179 Mac实际通过（438Noq全绿）；没有执行固定1.4.0上游同一用例，不能据此宣称上游行为红或直接升级。准确源/平台见RUNS。
