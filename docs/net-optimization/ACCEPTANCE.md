@@ -479,3 +479,10 @@ Mac-only net-wan-lifetime可通过既有GH installed guard通道执行上面三�
 264实际准备失败：四个outer端均Direct约41–42ms，inner quality约109ms/public Relay约131ms，未过既有25%收益门而两look后回收，150秒未完成Carried准备。尚未发生移动，不称换网行为红。253完整samples中已找到36个原始样本：raw-delay为正、仅略低于已观察min RTT，传输RFC估计器保留raw，使选路也把整段ACK delay计入网络；例如raw108.729887ms/delay25ms/min85.358693ms/sample108.729887ms。这些样本尚无准确conn/path绑定，下一265沿264整source开full samples核对，不先归为唯一根因。
 
 新增Noq真实单元合同：先实测85ms，再raw109ms/ack_delay25ms；选路质量应保守取85ms下界，原传输get仍88ms、conservative仍109ms、min85ms、计数2。仅存在既往真实sample、且0<raw-delay<min时允许选路样本夹到min；初始无样本和delay>=raw维持原保守语义。既有过量ACK-delay测试不改。原SRTT/方差/PTO/拥塞/线上协议/25%收益门均不得因此改变，新增单元先远端取红，再考虑候选；物理peer relay及原稳定性/黑洞门仍要另外验证。
+
+
+## Noq旧短停顿测试的网络准备纠正（修改fixture前冻结）
+
+268候选新增ACK-floor单元通过，但旧`a_backup_that_fails_after_the_path_move_releases_its_in_flight_data`在虚拟97ms失败：trace显示96ms首次PTO即由`resend_off_backups`重排47B原stream包。此时不足300ms/2PTO，按原代码只能是far_slower分支，不是unanswered门；新的selection latest_sample仅发布PathStats，无Noq内部运输消费者，SRTT/var不改。旧fixture把两路估计都手设20ms，但`ManyToManyRouting::simple_symmetric`实际每腿1ms，下一ACK可把活路估计拉回远快值，因而并不持续保证“同速”；不把旧失败抹去或笼统叫flaky。
+
+下一fixture保持真正两路各10ms单程（20ms RTT），包括屏蔽首路时新建routing也设相同latency；保留fake20ms起点但不再让后续网络是2ms。循环显式核未进far_slower准备条件，再检查原300ms内零提前lost、至少350ms且2PTO后释放、<1秒恢复和原完整stream字节。收尾推进20ms仅让新设10ms单程包实际送达，不放宽上述恢复截止点。新几何分别在旧Noq质量源和新候选取完整vendor对照；新ACK-floor paths tests模块保持不变。原268失败继续保留，不用改断言隐藏真实传输回归。

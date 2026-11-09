@@ -2530,7 +2530,10 @@ fn a_backup_that_fails_after_the_path_move_releases_its_in_flight_data() -> Test
 
 fn blackholed_backup_resends_after_move(move_before_silence: bool) -> TestResult {
     let _guard = subscribe();
-    let mut pair = ConnPair::builder().enable_multipath().connect();
+    let mut pair = ConnPair::builder()
+        .with_latency(Duration::from_millis(10))
+        .enable_multipath()
+        .connect();
     let routing = pair.routes.as_basic();
     let (mut ca, mut sa) = (routing.client_addr, routing.server_addr);
     let addrs_client = vec![ca, {
@@ -2551,6 +2554,9 @@ fn blackholed_backup_resends_after_move(move_before_silence: bool) -> TestResult
         },
         PathStatus::Backup,
     )?;
+    // Both routes must keep the 20 ms RTT that is set below. A 1 ms
+    // routing default would make a new ACK turn the live road far faster.
+    pair.routes.set_latency(Duration::from_millis(10));
     pair.drive();
     while pair.poll(Client).is_some() {}
     while pair.poll(Server).is_some() {}
@@ -2562,6 +2568,7 @@ fn blackholed_backup_resends_after_move(move_before_silence: bool) -> TestResult
     pair.routes = ManyToManyRouting::simple_symmetric(
         [addrs_client[1]], [addrs_server[1]],
     ).into();
+    pair.routes.set_latency(Duration::from_millis(10));
     let stream = pair.streams(Client).open(Dir::Uni).unwrap();
     pair.send_stream(Client, stream).write(b"past the blackhole").unwrap();
     let sent = pair.time;
@@ -2580,6 +2587,11 @@ fn blackholed_backup_resends_after_move(move_before_silence: bool) -> TestResult
     for _ in 0..32 {
         let stats = pair.conn_mut(Client).path_stats(PathId::ZERO).unwrap();
         if move_before_silence && pair.time < sent + Duration::from_millis(300) {
+            let live = pair.conn_mut(Client).path_stats(second).unwrap();
+            assert!(
+                stats.rtt < live.rtt * 2 + Duration::from_millis(10),
+                "both roads must remain outside the far-slower branch"
+            );
             assert_eq!(stats.lost_packets, lost_before, "a short stall must not release backup data");
         }
         if stats.pto_count >= 2 && pair.time >= sent + Duration::from_millis(350) {
@@ -2601,7 +2613,7 @@ fn blackholed_backup_resends_after_move(move_before_silence: bool) -> TestResult
     if move_before_silence {
         assert!(pair.time < sent + Duration::from_secs(1), "the next recovery timeout releases it");
     }
-    pair.time += Duration::from_millis(5);
+    pair.time += Duration::from_millis(20);
     pair.drive_server();
     assert_matches!(pair.streams(Server).accept(Dir::Uni), Some(id) if id == stream);
     let mut recv = pair.recv_stream(Server, stream);
