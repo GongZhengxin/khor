@@ -280,3 +280,8 @@ N3 CPU181多punch仅单pair信号。vendor remote_state已有三类低量debug�
 用户已确认A=macserver、B=Turing异网。20261109T172201只读Mac SSH在banner超时，GH构建通道仍正常；这是一次访问通道观测，非Mac离线结论。可复用GH受guard构建/运行Mac主动客户端，与Turing临时resident配对，避免等待Mac SSH或新公网控制端口。Turing先在owned目录建立fresh identity/store与短期配对能力，私库workflow只将该临时能力交给可信controller/测试客户端，个人PAT/SSH key/模型/签名/生产store均不转移；能力不进普通日志、源码/通用artifact，回执只记hash和public ID。双方都核实际snapshot/control/binary/fixture身份。
 
 两端完成编译后再开始测量：使用真实Node复用client及自身IPC、独立测试目录；Mac主动pair后，Turing从新scratch roster识别唯一Mac测试peer，双向读取双方fixture。先测冷/暖请求与选路，再逐步增加断线/不对称/背景流。Mac测试resident须在guard生命周期内保持到Turing结束，异常、期限/取消后只清本次资源；不能后台脱离guard或把本机已安装Khor当测试产物。具体短期能力传输/私有输入字段、角色同步/终态资源证明需先做合同并查实际API，再实施；这是接续设计，尚未实现或运行。
+
+
+N4实际API接续核对（c85ed1b1，静态）：Node::invite是同步API，需endpoint文件，能力包含issuer id/name/live direct/relays与fresh token；发行端保存token hash与mint instant，15分钟、成功pair后烧毁，不能延长该窗。Node::pair在resident上执行且返回对端name，并非ID；成功后应另核fresh roster中的expected Turing public ID/双方唯一测试peer。Node::links只返回cached/aged Wires reading，不等于当前Links carrier map；不得拿它当原子attachment证明。
+
+物理测试不能设置KHOR_NETLAB：该env仅让198.18.0.0/15 lab地址绕过代理TUN过滤。应保持off-the-segment（KHOR_NO_MDNS=1）和每角色独立KHOR_HOME/TMUX_TMPDIR/socket，沿实际全网可达性、正常信任/0RTT规则；Node.scratch现有Reaped可按keeper PID TERM/等待/KILL，但现有scratch(tag)会删同PID目录，新物理controller应create-new owned root/owner marker，拒绝覆盖旧目录。冷/暖读只读双方新fixture，不碰既有store/session。要在测试本身/控制器证明lease EOF/截止/异常清理，不因进程state文件消失就推已清。

@@ -698,3 +698,6 @@ N0 v4源码开始记录paths/hop逐次logical_request和f4故障窗口，ignored
 
 
 197th Mac42663152585仅新reference.rs **format红**，无编译/测试；完整source/control/transport/hash已核，原patch应用。原195几何/hold体提取身份已留hop-reference-default-fixture-extraction.json，运行仍待。N4第一次macserver只读SSH握手timeout留证，GH通道正常；不将访问通道问题等于主机/设备缺失，计划沿Mac主动配对隔离Turing节点通道继续。
+
+
+198th v1参照终态**6/9**，587.30s，准确source同199、control614c266。375started/375finished=372ok+3error，三次carried首准备请求错误且0稳态样本；auto/relay各3/3、两方向30个summary与raw逐项一致，隔离配置/实际nft表核留。完整身份/bytes/driver/group/hash采核。199th Mac42664955779同源fmt/net66+1ignored绿，不代替198实际校准。当前v2先保留bootstrap通道、等正确M的hop开路事件再隔离，三组至少60s发现期、总准备仍120s；控制7598180元数据显式v2，6 Python stub checks绿，尚未远端编译/执行。

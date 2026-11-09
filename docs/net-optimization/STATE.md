@@ -88,3 +88,8 @@ control614c266已push，仅新增SSH-only netlab-hop-reference，三case单线�
 197 Mac42663152585（basebb7504c7/tree139a305a/snapshot72e1aeb2/control614c266）只有新reference.rs排版format红，无编译/行为测试。source/transport/9 control blobs/hash已核；原patch应用后新准确源再验。原195 f4几何体（剔除仅reference启用的if分支）与完整hold/失败/返回体逐字同，proof hop-reference-default-fixture-extraction.json；源码提取不当运行等价证明。
 
 N4只读preflight：macserver alias映射z13，严格known host/不转发agent；一次SSH banner握手timeout（real-network/macserver-preflight-20261109T172201Z.json），而GH Mac197正常完成，不能记主机离线。后续实际跨网可让Mac在guard任务中主动配对Turing新scratch节点，配对能力仅限临时网络、经私库请求传入，不复制个人token/密钥或生产store；无需Mac SSH作为前置。具体控制/身份/清理协议仍待实现验证，不冒称跨网已跑。
+
+
+198`turing-20261109T172658Z-50f1621e` v1参照已完整采证**6/9**，587.30s、原group清空；准确basec85ed1b1/treefaee139c/snapshot2c321f78/control614c266。375请求完整配对：372ok＋3error，三次error均carried准备的首个请求，carried稳态0覆盖。Automatic/relay-only各3/3，两个方向每组每轮30个记录与原summary的n/p50/p95/max逐项一致；两端peer-hop=off和实际两张nft表已核。前两者都停在Relay，尚无candidate建立屏障，不能据此断定选择器最优/错误或聚合为产品成功率。reference-v1-calibration.json保留全部失败/分组；199 Mac42664955779同完整source root fmt/net66+1ignored绿，完整identity/control/hash核留。
+
+当前工作副本为hop_reference_v2（尚未远端format/编译/跑）：120s总准备期限内，先在未切断Relay时完成双向bootstrap；automatic/carried等原journal中对正确M的成功hop开路事件（发在attach前，只证明已开始，还要靠后续真实请求验证）；carried此时才阻断Relay。三组均从同一起点至少等60s，再双向真实请求、连续稳定10s后测量。产品选路/gain/时间门与测量负载不改，v1全保留、不混入v2分布。control7598180已push改metadata为v2，driver2/runner4共6 stub tests绿；原timed profiles不改。

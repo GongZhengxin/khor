@@ -343,3 +343,10 @@ paths echo与hop typing每个被实际poll的逻辑目录请求留唯一(pid,att
 三组都先真实建立两个方向的目录请求，再在120秒绝对准备期限内等双端有效路径连续稳定10秒；fixed组必须为所选承载，automatic可为任一实际可用Direct/Relay/Forwarded。准备请求同样记录outcomes、单独setup case；不能将其作为稳态样本。之后Y→X与X→Y各30个原30秒预算目录请求，间隔200ms，按方向保留全部耗时/错误并报告n/p50/p95/max与起止路径；样本少不报p99。首个错误后可停止该方向以控制坏路任务总时长，必须记录已尝试数、失败以及覆盖不足，n不足不能算通过。两方向都尝试，case失败不阻止同run其他reference/repeat。
 
 此实验仅要求准备/隔离有效、完整30×2请求零错误及fixed组末尾仍在目标路径，不新增p95阈值来调参。它提供可达到的稳态操作参照，不是首次拨号、f4故障恢复或能耗验收。控制SSH-only netlab-hop-reference按一线程三轮，sampling diagnostics关闭、非SLO；仍用attempt_outcomes_v4完整性consumer。未来baseline/candidate须同fixture/工具链/负载串行，先看真实数据再决定gain/confidence/清理策略。
+
+
+### hop_reference_v2：候选启动校准（198首轮数据之后冻结）
+
+v1在mesh刚有设备表时便阻断Relay，没有证明carried候选已建立；198前两轮carried准备失败，automatic/relay-only虽然可测，尚不能据其差值评价未建立的载路。保留v1所有数据。v2不改产品策略、几何、负载、120秒准备上限或测量断言；在该总上限内先完成两个方向的可用请求，automatic/carried再等至少一端journal有向正确M成功打开hop的原事件。该事件在attach前发出，只证明opening已开始；阻断后的真实请求还须证明载路可用，不能把事件本身当成功数据面。carried此后才双向阻断Relay。
+
+三组从同一准备起点至少等待60秒（给现有30秒compare两个机会），再各发两个方向的真实准备请求、确认连续10秒稳定后测量；计时总上限仍120秒。Relay-only无需不可能的hop事件，M仍在线；候选开路、阻断和measurement时间点分别保留。若120秒内没建立有效前置，则记未校准，不抬高产品SLO或从失败分布删除该次尝试。v2记录hop_reference_v2，不能混用v1或把对照当单参数因果证明。

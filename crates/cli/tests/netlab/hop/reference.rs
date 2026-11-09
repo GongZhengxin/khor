@@ -64,13 +64,38 @@ fn distribution(samples: &[Duration]) -> serde_json::Value {
 
 async fn reference(s: &str, want: Option<Hop>) {
     let (_lab, relay, _rx, x, y, m) = super::f4_topology(s, want == Some(Hop::Relay)).await;
-    if want == Some(Hop::Forwarded) {
-        let ip = relay.dev.ip().expect("the sole relay is IPv4");
-        relay_isolation(&x, ip);
-        relay_isolation(&y, ip);
-    }
     crate::attempts::phase(s, "reference_setup_started", super::now_ms());
+    let began = tokio::time::Instant::now();
     let prepared = tokio::time::timeout(Duration::from_secs(120), async {
+        for (from, to) in [(&y, &x), (&x, &y)] {
+            let (_, errors) = requests(&format!("{s}-bootstrap"), from, to, 1).await;
+            if !errors.is_empty() {
+                return Err(format!("bootstrap {} -> {}: {errors:?}", from.name, to.name));
+            }
+        }
+        if want != Some(Hop::Relay) {
+            // A roster is not an established hop. Wait for its actual
+            // opening before removing the road used to bootstrap it.
+            loop {
+                let offered = [(&x, &y), (&y, &x)].into_iter().any(|(from, to)| {
+                    from.journal(Some(to)).iter().any(|event| {
+                        event["e"] == "hop" && event["via"].as_str() == Some(m.id.as_str())
+                    })
+                });
+                if offered {
+                    crate::attempts::phase(s, "reference_candidate_offered", super::now_ms());
+                    break;
+                }
+                tokio::time::sleep(Duration::from_millis(250)).await;
+            }
+        }
+        if want == Some(Hop::Forwarded) {
+            let ip = relay.dev.ip().expect("the sole relay is IPv4");
+            relay_isolation(&x, ip);
+            relay_isolation(&y, ip);
+            crate::attempts::phase(s, "reference_other_road_blocked", super::now_ms());
+        }
+        tokio::time::sleep_until(began + Duration::from_secs(60)).await;
         for (from, to) in [(&y, &x), (&x, &y)] {
             let (_, errors) = requests(&format!("{s}-setup"), from, to, 1).await;
             if !errors.is_empty() {
@@ -145,7 +170,7 @@ async fn reference(s: &str, want: Option<Hop>) {
         s,
         ok,
         format!(
-            "hop_reference_v1 want {want:?}; yx {} errors {yx_errors:?}; xy {} errors {xy_errors:?}; before {before:?}; after {after:?}",
+            "hop_reference_v2 want {want:?}; yx {} errors {yx_errors:?}; xy {} errors {xy_errors:?}; before {before:?}; after {after:?}",
             distribution(&yx),
             distribution(&xy),
         ),
