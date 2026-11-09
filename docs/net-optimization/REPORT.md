@@ -202,3 +202,12 @@ base25d0c803/tree6805b7b7/snapshote0a42573/controlb998：Turing150th fmt/编译/
 152nd turing-20261109T110456Z-dee800e0与Linux150/Mac151同准确源码（base25d0c803/tree6805b7b7/snapshote0a42573，controlb998），原single-thread/repeat1的p1s/p5 **2/2**。600秒20×300ms CPU停顿，alpha/beta0/0路径移动、零退役；但按键最慢3.8秒，alpha12打洞/3449包/1335065B。p1s原门只约束移动/退役等原assert，不因绿色忽略长尾与开销。p5 150/300/600ms各4次，三档均零relay移动/零打洞，最慢279.9/518.6/992.0ms。
 
 完整report与source/driver/bundle/hash/原进程组已采核，classification存run目录。总1193.92秒，host load before4.90/6.36/7.33、after5.58/8.26/8.90；baseline153仍在途，尚无本轮前后因果结论，不跨旧硬件/源比较。原报告只保留scenarios/task/build日志，无额外逐包journal；打洞/长按键定因需后续独立诊断。完整N0–N5、hop/f4i、交互批量、真实手机/能耗仍未收口。
+
+
+### 2026-11-09 F9/F10共享确认红转绿，Linux24/Mac20同源
+
+158th在全部真实namespace/UDP静默/drop>0/remote-open等前置之后，两项owner确认目标失败（原21过）。生产候选df592ad7对齐probe计数基线、巡检等待pending proof，并给Accepted响应等待同样的取消guard；长等待历史ACK不再等同永久健康，但取消只请求全路验证，只有owner原grace内仍无新包才退役。正常完成的guard早返，不额外读取paths。
+
+160th Linux24全绿（合同92.30秒）；161st Mac20全绿（50.01秒），两者准确tree3c8bc03a/snapshote30f6377/controlb998。新增16秒健康Accepted取消，等全路grace后再发独立控制仍同wire、零退役；原短取消/期限/读写/探针/update及LinuxF7/F8保持。F9/F10core helper/F8相对红158逐字一致，身份文件f9-f10-f8-red158-candidate160-function-identity.json。全部source/env/control/transport/hash/原group已采核。
+
+这只收本批Node合同：无pending时tick/served静默、完整resident/跨进程期限、长预算/候选资源、N1切路与N3实际应用/能耗等仍未完成。CPU152/153原两门均绿，但3.8秒vs732.4ms及12vs5打洞不支持整体提速；绑核/busy有效负载仍未被旧fixture断言。新准确源hop162三轮在途，不能预记稳定性或最终体验通过。

@@ -606,3 +606,8 @@ F9/F10 fixture：155th Mac42611015315（basefdaf20f8/treee58c548b/snapshot8f52df
 
 
 158th turing-20261109T115934Z-20aa3073 **FAILURE21pass2fail**，base41c50ba7/treed0484c04/snapshot4767c09c/controlb998，199.74秒。只将F9原前置断言前移，网络/时长/门不变；F9与F10均通过完整真实namespace/零新包/drop>0/remote-open等前置后，在独立owner confirmation目标上实际红。原Linux21全绿，F8函数未改。完整source/driver/bundle/group/hash已采核；157旧F9暂定分类不改成已完成前置。当前候选对齐probe基线并使tick等待pending proof，Accepted加入guard，长取消触发当前计数独立验证；另外加16秒健康Accepted阳性。尚未运行新候选，不能预记绿。
+
+
+160th turing-20261109T120752Z-38c3c975 **SUCCESS Linux24**，basedf592ad7/tree3c8bc03a/snapshote30f6377/controlb998，总217.80秒、合同92.30秒；fmt/net66+1ignored/hop9/wires10/journal29保持。158两真实红F9/F10转绿，三个core helper/F8函数SHA逐字一致；新16秒健康Accepted也绿，原F7/F8/owner/replacement/期限/读写/探针/update21保持。161st Mac42614651338完全同source，**SUCCESS Mac20**（50.01秒），相同基础子集全绿，四Linux-only排除；两份完整报告/身份/control/transport/hash/原group采核。159th仅format红，原patch已应用并加disarmed guard早返，未编译/行为测试。
+
+旧154th hop已现场核远端无report/launcher，从未执行，superseded_not_launched、tests=false，refs/input全保留。162nd turing-20261109T121345Z-8ba7e561使用与160/161完全同source，原hop三轮，已launch **PID390824/child390871**、实际/proc与driver核live；五实际fixture对baseline137逐字一致、network.sh对59dc逐字同，证据turing-tick-accepted-hop-fixture-identity.json。162refs=161终态+162在途，全部snapshot/tree双引用批核；goal完整active。
