@@ -51,8 +51,8 @@ esac
 DIAGNOSTIC_FEATURE=
 case ${NETLAB_DIAGNOSTICS:-0} in
     0) ;;
-    1) DIAGNOSTIC_FEATURE=--features=net-diagnostics ;;
-    *) echo 'netlab: NETLAB_DIAGNOSTICS must be 0 or 1' >&2; exit 2 ;;
+    1|lifecycle) DIAGNOSTIC_FEATURE=--features=net-diagnostics ;;
+    *) echo 'netlab: NETLAB_DIAGNOSTICS must be 0, 1 or lifecycle' >&2; exit 2 ;;
 esac
 SRC=$(cd "$(dirname "$0")/.." && pwd)
 TOOLS=${NETLAB_TOOLS:-$HOME/khor-netlab/tools}

@@ -238,14 +238,24 @@ impl Links {
                 "serial": serial, "carrier": format!("{carrier:?}"),
             })
         });
-        self.lock().insert(
-            peer,
-            Link {
-                out,
-                carrier,
-                serial,
-            },
-        );
+        {
+            let mut map = self.lock();
+            let previous_serial = map.get(&peer).map(|l| l.serial);
+            map.insert(
+                peer,
+                Link {
+                    out,
+                    carrier,
+                    serial,
+                },
+            );
+            observe_lifecycle(peer, "link_attachment_committed", || {
+                serde_json::json!({
+                    "serial": serial, "previous_serial": previous_serial,
+                    "carrier": format!("{carrier:?}"),
+                })
+            });
+        }
         self.0
             .last
             .lock()

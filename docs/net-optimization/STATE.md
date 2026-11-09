@@ -1,14 +1,14 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-09 16:21 UTC；root串行，无子智能体。活动目标“完成计划”仍active，完整N0–N5未完成。没有合main、发布、中继采购或生产部署授权。
+更新：2026-11-09 16:29 UTC；root串行，无子智能体。活动目标“完成计划”仍active，完整N0–N5未完成。没有合main、发布、中继采购或生产部署授权。
 
 **182th原hop三轮已终态采证8/9，N1仍红。** `turing-20261109T145455Z-205ad096`，原准确source3948872d/tree3ffbc0f7/snapshotab6cbce2/control7534，总1590.25秒、rc101、原group无存活。三轮2/3、3/3、3/3；首轮f4从0.056秒即Relay且未恢复，m腿3.7秒听见、最长请求4.9秒、结束Relay193ms。f4i三轮8.9/22.7/19.6秒回carried，无旧回退；f4s最长8.4/8.5/9.9秒。所有raw/source/control/inputs/hash核留。首轮完整失败journal见observations/first-f4-red-all-journal.json，y→x同wire由carried转relay相隔5936ms，且carried候选消失；旧source无准确t0，不能断言发生在故障窗口或归因旧watcher。下一步低量生命周期诊断，原门不放宽。
 
 181`turing-20261109T145440Z-735ffd55`（同179/180准确source）已采证**原稳定性2/2**，1190.05秒；22条CPU64准入/20spike/end、身份/所有线程mask及两busy逐期进展实核。与176同完整fixture/control/CPU/allowed集合：p1s均1/0移动、零退役；候选最慢728.3ms、18punch/4369包1641546B，对照537.2ms、3punch/2801包1211229B。p5三档都零relay/punch。单个顺序pair不证明单补丁因果或总体提升；候选更高探测/流量是必须追查的信号。comparison在fixed-core-original176-candidate181-comparison.json，旧原echo错误遗漏不能推零失败。
 
-**N0 v4真实节点校准183已过；184 Mac仅format红，原patch已应用。** 183`turing-20261109T160336Z-88cf4c78`准确baseab2b939b/treef8336c08/snapshot4c56003b/control5c67b39，99.22秒、ignored real Node case1/1；五请求10事件完整配对：ok2/error1/timeout1/cancelled1。实际peer SIGSTOP+状态T、200ms期限记录201053us，已poll未来取消52273us，CONT后成功17367us。独立consumer在远端校准valid；本机仅Python读取实际183事件的11项完整性/缺失/重复/未知revision/错context等检查通过，非本机产品测试。
+**N0 v4真实节点校准183已过；184 Mac仅format红，185修正后fmt/net66已绿。** 183`turing-20261109T160336Z-88cf4c78`准确baseab2b939b/treef8336c08/snapshot4c56003b/control5c67b39，99.22秒、ignored real Node case1/1；五请求10事件完整配对：ok2/error1/timeout1/cancelled1。实际peer SIGSTOP+状态T、200ms期限记录201053us，已poll未来取消52273us，CONT后成功17367us。独立consumer在远端校准valid；本机仅Python读取实际183事件的11项完整性/缺失/重复/未知revision/错context等检查通过，非本机产品测试。
 
-v4共用netlab/attempts.rs记录paths echo与hop typing逐次started/finished及全部outcomes，原30秒外层预算不加长，内部重试仍一logical_request；f4保留故障/观察准确时间点。取消只证明caller future结束，不代表远端停止。旧v3日志不可补出失败分布。184 Mac42651079158同完整source/control，只有一个assert重排format红，未编译/测试；完整transport/source/9 control blobs/hash已核，原patch应用后待新准确源再验。控制5c67b39已push SSH-only measure-check，原timed profiles不变；Python driver2/runner4为stub检查。两端当前无在途heavy job。
+v4共用netlab/attempts.rs记录paths echo与hop typing逐次started/finished及全部outcomes，原30秒外层预算不加长，内部重试仍一logical_request；f4保留故障/观察准确时间点。取消只证明caller future结束，不代表远端停止。旧v3日志不可补出失败分布。184 Mac42651079158同完整source/control，只有一个assert重排format红，未编译/测试；完整transport/source/9 control blobs/hash已核，原patch应用后185 Mac42654241724新源base2747e8d1/treeb461bc39/snapshotfa2cbdd7/control5c67b39已root fmt/net66+1ignored绿。控制5c67b39已push SSH-only measure-check，原timed profiles不变；Python driver2/runner4为stub检查。两端当前无在途heavy job。
 
 **共享载路178真实policy红已按原整fixture转绿：179 Linux24/wires11、180 Mac20/wires11。** 179`turing-20261109T144404Z-49c374ac`总219.77秒、dial contracts91.99秒；180 Mac42637760137同完整snapshot。两端root fmt/net66+1ignored/hop9/wires11/journal29保持，Linux24含四namespace合同、Mac20排除四项，完整source/control/transport/group/hash采核。178整v2 fixture SHA逐字同，hop.rs和net/path.rs也逐字同；五CLI timed fixtures及scripts/netlab.sh与176基线逐字同，证据`shared-owner-red178-green179-180-fixture-identity.json`。这收口一个释放判断反例，尚非三机/WAN/App/手机或原162因果证明。
 
@@ -32,7 +32,7 @@ v4共用netlab/attempts.rs记录paths echo与hop typing逐次started/finished及
 | 控制 | /Volumes/disk0/Khor/worktrees/current/khor-build-net，feat/net，5c67b39已push新增measure-check；原7534及timed profiles保留，Python驱动2/runner4 stub检查绿 |
 | 旧基线 | khor-net-baseline detached6485，原六fixture WIP未动；immutable source90126283/tree97040f31保留 |
 | 当前CPU基线 | khor-net-baseline-cpu-v3 detached6485，仅七fixture/helper变化，staged树49211b55/source31db523a已用于176；前版186d/63043993也留ref，不覆盖旧WIP |
-| 证据 | /Volumes/disk0/Khor/evidence/net；source-refs.json184个run refs，184终态/明确未启动，snapshot/tree双ref全批核；另有fixed-core源准备ref |
+| 证据 | /Volumes/disk0/Khor/evidence/net；source-refs.json185个run refs，184终态/明确未启动，snapshot/tree双ref全批核；另有fixed-core源准备ref |
 
 Turing root /tmp/khor-netlab-feat-net-1110，每run新目录/owned资源，flock单重型槽；计时场景不并跑编译/其他负载。无sudo/宿主网络改动，user/netns隔离；50GiB准入/40GiB停止/90分钟预算，原pin/hash不变。SSH BatchMode、ForwardAgent=no、StrictHostKeyChecking=yes。collector终态核原group后留完整报告；101也可能采证成功，不能把采证rc当作未下载。
 
@@ -63,3 +63,9 @@ Turing root /tmp/khor-netlab-feat-net-1110，每run新目录/owned资源，flock
 辅助编排evidence/net/ops/submit-turing.py仅Git/Python/SSH：stage可--source复用完整snapshot、--control显式7534、--role先标baseline/candidate/diagnostic；默认control仍b998。launch必须已采证前驱，再核原group/flock/输入hash。helper新增measure-check白名单、旧版/SHA保留，观察超时重查同句柄不重发。当前Turing队列为空；182/183与Mac184已终态采证，local exec sessions都已完成。
 
 Mac临时source/bundle分支只在终态、完整留证、所有权/SHA一致后清理；复用者不删原请求分支。外盘缺失只读Git恢复，不按摘要覆盖WIP；其他治理任务沿中央STATE/RESUME，不接管其树。完整goal仍active；工期暂估数天、最近对用户粗估3–5开发日，取决回归与真机，不是完成承诺或缩范围。
+
+## 当前诊断准备（185后，未预记结果）
+
+185 Mac修正后的准确源已采证，后续工作副本仅增加低量lifecycle诊断：native samples=off且初始化成功后写mode header，lab保留header＋实际lifecycle事件；原1/full模式与timed profiles不变。Links.attach新增map锁内link_attachment_committed（serial/previous_serial），原link_attached仍仅代表意图，不按它推断挂接完成。f4在此模式即使通过也留全部六方向journal，v4故障窗口/逐次请求保留，所有原门不变。尚未编译/运行这一批source。
+
+control39633806已push新增SSH-only netlab-hop-ownership：原f4单线程三轮，lifecycle模式，非SLO；所有轮即使失败也继续，并在结束解析所有请求，parser非零不放过。Python driver2/runner4共6 test（含新profile两个子例）为stub检查绿。下一步冻结新源，Turing诊断与Mac格式检查；不盲改退役计时。

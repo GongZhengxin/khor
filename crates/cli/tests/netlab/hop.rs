@@ -334,6 +334,9 @@ async fn f4_lab(
         .await;
     if hopped.is_none() {
         hop_diagnostics(&x, &y, &m);
+        for n in [&x, &y, &m] {
+            sample_diagnostics(s, n);
+        }
         result(
             s,
             false,
@@ -650,7 +653,7 @@ async fn f4_stall(s: &str, st: Stall) {
         && stayed
         && (on_relay.is_none() || after_answer.is_some_and(|ms| ms <= 1500));
     let secs = |at: u64| format!("{:.1}s", at.saturating_sub(t) as f64 / 1000.0);
-    if !ok {
+    if !ok || std::env::var("NETLAB_DIAGNOSTICS").as_deref() == Ok("lifecycle") {
         hop_diagnostics(&x, &y, &m);
     }
     result(

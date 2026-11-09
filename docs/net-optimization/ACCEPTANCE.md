@@ -320,3 +320,10 @@ paths echo与hop typing每个被实际poll的逻辑目录请求留唯一(pid,att
 独立ignored校准用真实两Node：同一peer目录请求成功、缺失目录错误、SIGSTOP状态确证后的200ms超时、确认future已poll再取消、CONT后恢复成功。外部schema consumer必须得到五个started和五个finished（ok2/error1/timeout1/cancelled1），不接受重复、孤立、上下文变化或无instrumentation。控制netlab-measure-check单线程一次、非SLO；stub驱动检查不替代该真实校准。caller取消记录不证明远端执行停止，IPC取消传播仍属未完成N2。
 
 旧176/181是v3原稳定性门对照，不能因新v4存在就回写为完整失败分布。新量测用于性能对照时需重新绑定相同fixture、记录开销、CPU/allowed集合及原目标；旧门不据此放宽。
+
+
+### f4共享载路生命周期诊断（独立非SLO）
+
+`netlab-hop-ownership`在Turing仅跑原f4 filter、单线程三轮，保留原准备、故障、时长与所有断言。`NETLAB_DIAGNOSTICS=lifecycle`仍显式编译net-diagnostics，但native subscriber为off；初始化成功后写`mode=lifecycle samples=off`header，人工生命周期事件单独输出。lab必须实核header及实际事件并留原始serve日志，不用高频ACK/selector sample日志扰动该轮。原`NETLAB_DIAGNOSTICS=1`及普通timed profiles保持。
+
+原`link_attached`在map写入前仅代表意图；新`link_attachment_committed`在map锁内、写入后输出serial/previous_serial，配合link_io_ended、link_detached、hop_measured_release、carried_close_requested定位当前世代。f4即使通过也留六个方向journal；准备失败也尝试保存各resident诊断。v4逐次请求与故障时间点保留；三轮有红继续后续轮，最后必须通过完整性consumer，不将缺失请求算零失败。诊断绿不等于修复或SLO绿。

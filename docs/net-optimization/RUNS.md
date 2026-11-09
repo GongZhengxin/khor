@@ -663,3 +663,6 @@ N0 v4源码开始记录paths/hop逐次logical_request和f4故障窗口，ignored
 183rd turing-20261109T160336Z-88cf4c78 **N0真实Node v4校准1/1**，baseab2b939b/treef8336c08/snapshot4c56003b/control5c67b39，99.22秒。五请求10事件完整配对：ok2/error1/timeout1/cancelled1；SIGSTOP状态实核、200ms期限201053us、已poll后取消52273us、CONT后成功17367us。独立consumer远端valid，本机仅Python按实际原始事件11完整性/负例检查通过。非延迟/能耗/SLO通过，取消不代表远端执行停止。
 
 184th Mac42651079158同183完整source/control，只有assert一hunk的**format红**，未编译/行为测试。source/env/transport/全部9 control blobs/hash已核；原patch应用后新准确源再验。184 refs snapshot/tree全批核、当前两端无在途；不复发已终态任务。
+
+
+185th Mac42654241724，base2747e8d1/treeb461bc39/snapshotfa2cbdd7/control5c67b39，**root fmt/net66+1ignored绿**。184原patch仅assert重排，完整source/transport/9 control blobs/hash已核；不覆盖随后写的lifecycle诊断源码。39633806控制分支已push新增SSH-only netlab-hop-ownership，原f4三轮/所有原门不变、低量生命周期/非SLO；driver2/runner4共6 stub test（含新profile+parser失败子例）绿，无本机产品执行。

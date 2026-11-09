@@ -270,8 +270,10 @@ pub async fn node_on(
         .envs(env.iter().copied())
         .stdout(Stdio::null())
         .stderr(std::fs::File::create(home.0.join("serve.log")).unwrap());
-    if std::env::var("NETLAB_DIAGNOSTICS").as_deref() == Ok("1") {
-        cmd.env("KHOR_NET_DIAGNOSTICS", "1");
+    if let Ok(mode) = std::env::var("NETLAB_DIAGNOSTICS") {
+        if matches!(mode.as_str(), "1" | "lifecycle") {
+            cmd.env("KHOR_NET_DIAGNOSTICS", mode);
+        }
     }
     let child = dev.spawn_command_sync(cmd).unwrap();
     let began = Instant::now();
@@ -309,13 +311,19 @@ pub async fn node_on(
 /// Preserve optional decision/ACK logs after measurement, before scratch cleanup.
 /// These runs include logging overhead and are not ordinary SLO measurements.
 pub fn sample_diagnostics(scenario: &str, n: &LabNode) {
-    if std::env::var("NETLAB_DIAGNOSTICS").as_deref() != Ok("1") {
+    let mode = std::env::var("NETLAB_DIAGNOSTICS").unwrap_or_default();
+    if !matches!(mode.as_str(), "1" | "lifecycle") {
         return;
     }
     let text = std::fs::read_to_string(n.home.0.join("serve.log")).unwrap();
     assert!(
-        text.contains("khor_net_samples"),
-        "{} has no sample diagnostics",
+        if mode == "lifecycle" {
+            text.contains("[khor-net-diagnostics] mode=lifecycle samples=off")
+                && text.contains("[khor-carried-lifecycle]")
+        } else {
+            text.contains("khor_net_samples")
+        },
+        "{} has no requested diagnostics",
         n.name
     );
     let dir = std::env::var_os("NETLAB_DIAGNOSTICS_DIR").expect("diagnostic artifact directory");
