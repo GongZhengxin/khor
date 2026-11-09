@@ -69,3 +69,8 @@ Mac临时source/bundle分支只在终态、完整留证、所有权/SHA一致后
 185 Mac修正后的准确源已采证，后续工作副本仅增加低量lifecycle诊断：native samples=off且初始化成功后写mode header，lab保留header＋实际lifecycle事件；原1/full模式与timed profiles不变。Links.attach新增map锁内link_attachment_committed（serial/previous_serial），原link_attached仍仅代表意图，不按它推断挂接完成。f4在此模式即使通过也留全部六方向journal，v4故障窗口/逐次请求保留，所有原门不变。尚未编译/运行这一批source。
 
 control39633806已push新增SSH-only netlab-hop-ownership：原f4单线程三轮，lifecycle模式，非SLO；所有轮即使失败也继续，并在结束解析所有请求，parser非零不放过。Python driver2/runner4共6 test（含新profile两个子例）为stub检查绿。下一步冻结新源，Turing诊断与Mac格式检查；不盲改退役计时。
+
+
+186 Turing`turing-20261109T162719Z-9c283711`低量f4诊断已launch PID753802/child753843，实际/proc/driver核live，56.30秒编译后第一轮。准确base3bc6ba59/tree3253636f/snapshotcc34bd29/control39633806。187 Mac42655499657与186完整source相同，net-node已dispatch，实际headSha39633806/in_progress，未预记结果。Mac首次手工import因缺scripts路径在upload前本机失败，note已留，未调度/不计产品红；加scripts到sys.path后才生成187实际run。
+
+后续工作副本正补N2旧watcher世代合同：只把原两次losing后的release块逐句抽成实际helper，原kind-based detach与lost顺序保持，策略/计时不改。新测试先证明当前Relay/Direct owner仍可释放，再用真实duplex挂接旧/同via新两代、等待旧actor ended与新actor确活，调用实际旧release尾部，要求新代不关闭且不错误抑制middle。尚未远端编译/跑，不能预记行为红或182因果。

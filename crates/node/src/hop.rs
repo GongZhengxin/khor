@@ -145,6 +145,27 @@ fn was_lost(to: &str, via: &str) -> bool {
         .is_some_and(|t| t.elapsed() < LOST_FOR)
 }
 
+/// The watcher's measured release, after its two losing looks.
+fn release_measured_hop(
+    links: &khor_net::carry::Links,
+    id: &str,
+    peer: EndpointId,
+    via: EndpointId,
+    attachment: u64,
+    road: Option<khor_net::path::PathKind>,
+    looks: u8,
+) {
+    khor_net::carry::observe_lifecycle(id, "hop_measured_release", || {
+        serde_json::json!({
+            "attachment": attachment, "via": via.to_string(), "road": format!("{road:?}"), "looks": looks,
+        })
+    });
+    if road == Some(khor_net::path::PathKind::Relay) {
+        lost(id, &via.to_string());
+    }
+    links.detach(&peer, Carrier::Hop { via });
+}
+
 /// Per (this machine, far machine): hops this machine asked for, opening
 /// or up ([`Asking`]).
 static ASKING: std::sync::LazyLock<
@@ -544,15 +565,7 @@ impl Node {
                 };
                 held = if losing { held + 1 } else { 0 };
                 if held >= 2 {
-                    khor_net::carry::observe_lifecycle(&id, "hop_measured_release", || {
-                        serde_json::json!({
-                            "attachment": attachment, "via": via.to_string(), "road": format!("{road:?}"), "looks": held,
-                        })
-                    });
-                    if road == Some(khor_net::path::PathKind::Relay) {
-                        lost(&id, &via.to_string());
-                    }
-                    links.detach(&peer, Carrier::Hop { via });
+                    release_measured_hop(&links, &id, peer, via, attachment, road, held);
                 }
             }
         });
@@ -761,6 +774,78 @@ async fn splice(a: (SendStream, RecvStream), b: (SendStream, RecvStream)) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// An old watcher can finish a measured look after replacement. Its
+    /// completed attachment never owns a later stream through the same middle.
+    #[tokio::test]
+    async fn a_finished_hop_watcher_cannot_release_its_live_replacement() {
+        use khor_net::carry::Links;
+        use khor_net::path::PathKind;
+
+        let me = iroh::SecretKey::generate().public();
+        let via = iroh::SecretKey::generate().public();
+        // Positive controls: the current owner still releases a losing hop;
+        // only an actual loss to the relay suppresses that middle afterward.
+        for road in [PathKind::Relay, PathKind::Direct] {
+            let peer = iroh::SecretKey::generate().public();
+            let links = Links::new(me);
+            let (here, _remote) = tokio::io::duplex(64);
+            let (r, w) = tokio::io::split(here);
+            let current = links.attach(peer, Carrier::Hop { via }, r, w);
+            let serial = current.serial();
+            assert!(links.has(&peer));
+            release_measured_hop(&links, &peer.to_string(), peer, via, serial, Some(road), 2);
+            assert!(!links.has(&peer), "the current owner releases its own link");
+            assert_eq!(
+                was_lost(&peer.to_string(), &via.to_string()),
+                road == PathKind::Relay
+            );
+            tokio::time::timeout(Duration::from_secs(1), current.ended())
+                .await
+                .expect("released current link ends");
+        }
+
+        let peer = iroh::SecretKey::generate().public();
+        let links = Links::new(me);
+        let (old_here, _old_remote) = tokio::io::duplex(64);
+        let (old_r, old_w) = tokio::io::split(old_here);
+        let old = links.attach(peer, Carrier::Hop { via }, old_r, old_w);
+        let stale = old.serial();
+        let (new_here, _new_remote) = tokio::io::duplex(64);
+        let (new_r, new_w) = tokio::io::split(new_here);
+        let replacement = links.attach(peer, Carrier::Hop { via }, new_r, new_w);
+        let current = replacement.serial();
+        assert_ne!(stale, current, "distinct attachment generations");
+        tokio::time::timeout(Duration::from_secs(1), old.ended())
+            .await
+            .expect("the replaced stream has actually ended");
+        let ended = replacement.ended();
+        tokio::pin!(ended);
+        assert!(
+            tokio::time::timeout(Duration::from_millis(20), &mut ended)
+                .await
+                .is_err()
+        );
+        assert_eq!(links.carrier(&peer), Some(Carrier::Hop { via }));
+        assert!(!was_lost(&peer.to_string(), &via.to_string()));
+
+        release_measured_hop(
+            &links,
+            &peer.to_string(),
+            peer,
+            via,
+            stale,
+            Some(PathKind::Relay),
+            2,
+        );
+        let still_live = links.has(&peer);
+        let wrongly_lost = was_lost(&peer.to_string(), &via.to_string());
+        eprintln!("[hop-owner-contract] old={stale} current={current} old_ended=true replacement_alive_before=true alive_after={still_live} lost_after={wrongly_lost}");
+        assert!(
+            still_live && !wrongly_lost,
+            "a stale watcher cannot release or suppress its replacement"
+        );
+    }
 
     fn middles(
         me: &str,
