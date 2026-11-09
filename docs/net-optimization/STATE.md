@@ -126,3 +126,6 @@ Accepted后原裸JoinHandle await本批尚未修正；握手到期若刚得到�
 
 
 **42566472411 Mac net-node Accepted回答取消回归在途**：base371d92b018bfd0732edda959504a0af887e6db99 clean、tree3efb5c3ef62d366356d9db978a55464b5ce4c732、snapshot9c417d4632b2040881d8898205ec5c506dd79a08、control0cff9671fb2f80945423132e0df46995f6ff3198；112th ref/mac-accepted-answer-red-42566472411已锚。生产裸回答所有权未改；五预算回归也待实际验证，不能预认新用例行为红。
+
+
+42566472411终态仅**格式门失败**，新fixture的matches/链式调用/async块排版，远端patch原样应用；准确source/control/ref已核，112 refs终态，未编译或执行六测试。所有权问题尚未取得行为红，生产仍原样。

@@ -13499,17 +13499,29 @@ mod dial_budget {
                     .unwrap();
                 let (mut send, mut recv) = warm.accept_bi().await.unwrap();
                 let bytes = recv.read_to_end(MAX_FRAME).await.unwrap();
-                assert!(matches!(proto::question(&bytes).unwrap(), Request::Sessions));
+                assert!(matches!(
+                    proto::question(&bytes).unwrap(),
+                    Request::Sessions
+                ));
                 requests.fetch_add(1, Ordering::SeqCst);
                 send.write_all(&answer).await.unwrap();
                 send.finish().unwrap();
                 warm.closed().await;
 
-                let resumed = endpoint.accept().await.unwrap().accept().unwrap().into_0rtt();
+                let resumed = endpoint
+                    .accept()
+                    .await
+                    .unwrap()
+                    .accept()
+                    .unwrap()
+                    .into_0rtt();
                 let (delayed, mut recv) = resumed.accept_bi().await.unwrap();
                 let was_early = recv.is_0rtt();
                 let bytes = recv.read_to_end(MAX_FRAME).await.unwrap();
-                assert!(matches!(proto::question(&bytes).unwrap(), Request::Sessions));
+                assert!(matches!(
+                    proto::question(&bytes).unwrap(),
+                    Request::Sessions
+                ));
                 requests.fetch_add(1, Ordering::SeqCst);
                 entered.send(was_early).unwrap();
                 tokio::join!(
@@ -13521,7 +13533,10 @@ mod dial_budget {
                     async {
                         let (mut send, mut recv) = resumed.accept_bi().await.unwrap();
                         let bytes = recv.read_to_end(MAX_FRAME).await.unwrap();
-                        assert!(matches!(proto::question(&bytes).unwrap(), Request::Sessions));
+                        assert!(matches!(
+                            proto::question(&bytes).unwrap(),
+                            Request::Sessions
+                        ));
                         requests.fetch_add(1, Ordering::SeqCst);
                         send.write_all(&answer).await.unwrap();
                         send.finish().unwrap();
@@ -13554,7 +13569,10 @@ mod dial_budget {
             let node = node.clone();
             let endpoint = ep.clone();
             let peer = peer.clone();
-            async move { node.ask_early(&endpoint, &peer, &Request::Sessions, None).await }
+            async move {
+                node.ask_early(&endpoint, &peer, &Request::Sessions, None)
+                    .await
+            }
         })));
         let was_early = tokio::time::timeout(Duration::from_secs(5), ready)
             .await
