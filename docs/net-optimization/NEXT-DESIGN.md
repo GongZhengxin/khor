@@ -177,3 +177,5 @@ N3模型校准与v2首批三轮已由42560015454实际通过：704全量请求0�
 | serve_tunnel/handle/serve_updates | 远端响应任务归连接/服务器生命周期，不继承本机前台Op；应保留各自服务预算、信任与0RTT准入 |
 
 上述表把“要随调用停止”与“有意常驻”按已有产品语义确认，没有新增全局任务deadline或扩大请求重放白名单。
+
+42567527752已取得Accepted回答取消/期限双行为红，且同wire独立请求/请求数/peer控制全部通过。最小候选以Aborts作为Accepted返回值保持任务所有者，adopt后的await显式被原by包住；该任务只做流IO、不再发起Node操作，因此由父等待的by和abort owner覆盖，毋须假设task-local继承。父未来在握手前、adopt前或回答期间被drop均保有abort owner；CallerExpired不重放/不记peer失败，已adopt健康conn保留。候选待七测试真实绿，不能收N2全包。

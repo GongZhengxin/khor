@@ -3779,7 +3779,7 @@ impl Node {
             // timed out, or a handshake that failed, used to leave this task
             // running with its clone of the connection — an orphan wire that
             // nobody held, answered by the far side until its idle timeout.
-            let mut asked = Aborts(Some({
+            let asked = Aborts(Some({
                 let (early, frame, budget) = (early.clone(), frame.clone(), req.budget());
                 tokio::spawn(async move {
                     let (mut send, mut recv) = early.open_bi().await.ok()?;
@@ -3793,7 +3793,7 @@ impl Node {
                 })
             }));
             match early.handshake_completed().await.map_err(of_connecting)? {
-                iroh::endpoint::ZeroRttStatus::Accepted(conn) => Ok((conn, asked.0.take())),
+                iroh::endpoint::ZeroRttStatus::Accepted(conn) => Ok((conn, Some(asked))),
                 // Rejected: the far side kept nothing of it; asked again
                 // on the wire, which is up. (`asked` aborts as it drops.)
                 iroh::endpoint::ZeroRttStatus::Rejected(conn) => Ok((conn, None)),
@@ -3801,10 +3801,7 @@ impl Node {
         };
         let outcome = tokio::time::timeout(within, attempt).await;
         if crate::deadline::expired(by) {
-            if let Ok(Ok((conn, asked))) = &outcome {
-                if let Some(asked) = asked {
-                    asked.abort();
-                }
+            if let Ok(Ok((conn, _))) = &outcome {
                 conn.close(0u32.into(), b"caller deadline");
             }
             return Early::Failed(DialFailure::CallerExpired);
@@ -3844,10 +3841,7 @@ impl Node {
             );
         }
         match outcome {
-            Ok(Ok((conn, asked))) if self.resting.load(std::sync::atomic::Ordering::Relaxed) => {
-                if let Some(asked) = asked {
-                    asked.abort();
-                }
+            Ok(Ok((conn, _asked))) if self.resting.load(std::sync::atomic::Ordering::Relaxed) => {
                 conn.close(0u32.into(), b"suspended");
                 Early::Failed(DialFailure::Refused(msg::resting_no_dial().to_owned()))
             }
@@ -3863,16 +3857,27 @@ impl Node {
                 self.wires.adopt(&d.id, wires::Proto::Main, conn.clone());
                 drop(one);
                 match asked {
-                    Some(asked) => match asked.await.ok().flatten() {
-                        Some(resp) => {
-                            self.wires.heard(&d.id, wires::Proto::Main, &conn);
-                            Early::Answered(resp)
+                    Some(mut asked) => {
+                        // Keep the abort owner across adoption and the whole
+                        // response wait. Cancellation stops only this stream;
+                        // the shared healthy wire stays held by the node.
+                        let answer = crate::deadline::wait(
+                            by,
+                            asked.0.as_mut().expect("accepted answer is owned"),
+                        )
+                        .await;
+                        match answer {
+                            Ok(Ok(Some(resp))) => {
+                                self.wires.heard(&d.id, wires::Proto::Main, &conn);
+                                Early::Answered(resp)
+                            }
+                            Err(_) => Early::Failed(DialFailure::CallerExpired),
+                            // No answer to the early question: asked again on
+                            // the wire, which is up — a reading, so twice is
+                            // the same as once.
+                            Ok(_) => Early::NotTaken,
                         }
-                        // No answer to the early question: asked again on
-                        // the wire, which is up — a reading, so twice is
-                        // the same as once.
-                        None => Early::NotTaken,
-                    },
+                    }
                     None => Early::NotTaken,
                 }
             }
