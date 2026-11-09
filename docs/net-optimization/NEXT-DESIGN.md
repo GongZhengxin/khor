@@ -182,4 +182,12 @@ N3模型校准与v2首批三轮已由42560015454实际通过：704全量请求0�
 
 ## 配对探针：三红后的最小所有权候选
 
-42570772550已实际证明直接取消、配对外层取消均留下HTTP请求；第二URL已204、首URL仍等待时整体也不及时返回。旧11预算/流控制全绿。候选用doctor JoinSet按完成取首成功，并在赢家/父drop时取消输者；pair_with再持有Aborts，闭合两层所有权，不能只修一层。诊断探针不做Node操作，因此由owner生命周期覆盖，不依赖task-local继承。原并发量、2.6秒单HTTP上限、proxy策略、全部失败/空false及pair超时措辞语义保留；不把HTTP可达当真实中继数据面性能。候选待十四专项远端绿。
+42570772550已实际证明直接取消、配对外层取消均留下HTTP请求；第二URL已204、首URL仍等待时整体也不及时返回。旧11预算/流控制全绿。候选用doctor JoinSet按完成取首成功，并在赢家/父drop时取消输者；pair_with再持有Aborts，闭合两层所有权，不能只修一层。诊断探针不做Node操作，因此由owner生命周期覆盖，不依赖task-local继承。原并发量、2.6秒单HTTP上限、proxy策略、全部失败/空false及pair超时措辞语义保留；不把HTTP可达当真实中继数据面性能。42571393016十四专项及既有子集已实际绿；ears_heard亦直接await该helper，boolean映射保留，未据此收echo故障场景。
+
+
+## Linux执行器：镜像工具依赖的固定源审查
+
+Lima v2.3.0 Git树800a96b14e96b5d2ceb20ab2602147c1e79224ea，9份源码已与tree逐blob/SHA256核对，保存在evidence/net/linux-vm-source-audit/verified-source-manifest.json；本机仅下载/读源，没有执行Lima/Go或安装工具。
+Linux VZ [CreateDisk](https://github.com/lima-vm/lima/blob/v2.3.0/pkg/driver/vz/vz_driver_darwin.go)调用[driverutil.EnsureDisk](https://github.com/lima-vm/lima/blob/v2.3.0/pkg/driverutil/disk.go)；raw转换经[proxyimgutil](https://github.com/lima-vm/lima/blob/v2.3.0/pkg/imgutil/proxyimgutil/proxyimgutil.go)在qemu-img缺失的ErrNotFound时回退[nativeimgutil](https://github.com/lima-vm/lima/blob/v2.3.0/pkg/imgutil/nativeimgutil/nativeimgutil.go)，native也支持创建/resize。不是仅用Mac guest的native分支推断Linux；不需要为该方案先全局brew装QEMU，其他转换错误仍正常失败。该静态链不是实际镜像可启动/磁盘预算证明。
+[默认配置](https://github.com/lima-vm/lima/blob/v2.3.0/templates/default.yaml)支持显式ssh.loadDotSSHPubKeys/forwardAgent/forwardX11=false及networkOpts.hostLoopback=false（限VZ默认用户网络，不能配共享user-v2）。后者只限制默认网关到宿主loopback，不阻断宿主其他LAN地址，不能误当完全网络隔离。仍需明确无个人home/key挂载、仅指定只读source/control与独立报告目录、关闭自动portForward/proxy传播、项目专属LIMA_HOME及原guard下资源/进程生命周期。
+`instance/start.go`确认foreground走ForegroundSysProcAttr，但真实guard对子孙进程、SIGTERM/SIGKILL、正常退出/失败清理仍需审查并探针验证；不将该flag本身当生命周期已证明。下一步先isolated guest能力探针，再同后端基线/候选与netlab原门；现未启动VM、不宣称恢复Linux。

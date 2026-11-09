@@ -116,3 +116,13 @@ controlc6a20c5，单场景顺序三轮，准确tree/snapshot见RUNS。baseline42
 42567946141修复源2fc650b30a3ab16792adb7babe566b8cec1bfeb5 clean、tree314894b33ed72a5ff2aeed47504d6c9e7f575bd9、snapshot78c6fb8eabf86ff755800188d9f92e64f8d4e3cf、control0cff9671fb2f80945423132e0df46995f6ff3198：根格式/net66+1ignored/hop9/wires10/journal28/dial_budget7全绿。Mac26.6.2 arm64/Rust1.95/jobs2；预算子集1.67秒为测试运行时，不是性能SLO。Accepted交接保留Aborts owner，回答等待沿原绝对by；取消/到期停止本流并保留共享健康wire。
 
 这批证明已测的锁、scope与Accepted回答合同，尚未覆盖普通交换/真实死wire/一次读重试/写入失答/跨IPC剩余预算/完整后台及并发释放。未执行Linux最终矩阵、全Quality或真机/能耗，不宣称N2或全计划完成。原始证据在mac-accepted-owner-candidate-42567946141，失败与fixture修订原因保留RUNS/ACCEPTANCE。
+
+
+## N2普通wire与配对探针
+
+42569954515新增四项普通wire覆盖实际绿（dial_budget11、其余既有子集绿）：普通1秒到期仅STOP本流、同时等待的第二请求在同stable_id成功；真实读重试沿原2秒by；失答Sessions严格2次/Mkdir严格1次。生产不变，未宣称这四新增用例在旧源实际红；长黑洞F7尚未验证。
+
+42570772550以原pair/doctor取得三行为红，旧11绿；完整GET/配对pending/fast已204且在单HTTP2.6秒前等前置已过，失败仅在取消未关闭HTTP、pair取消残留与快second被slow first挡住。
+42571393016 based4a2e115b898fc337f5091b51fa71e45740c667f clean、treef278b9330f51268182b142729db2c86687f4af4b、snapshot3459894c81cb994310a97bfcba4ca39ae97e569b、control0cff9671fb2f80945423132e0df46995f6ff3198：根格式/net66+1ignored/hop9/wires10/journal28/dial_budget14全绿，预算子集9.93秒是运行时不是性能SLO。Mac26.6.2 arm64/Rust1.95/jobs2，真实取消后TCP EOF及首成功均在冻结观察内；测试server未提前关闭制造EOF。
+
+修复仅闭合probe两层任务所有权、按完成首成功并取消输者；未增加并发/改变2.6秒预算或proxy。ears_heard也是该函数的直接caller，HTTP boolean映射保留，完整echo/故障场景未由本批证明。原始source/env/raw/classification均保留；没有Linux最终矩阵、全Quality或真机/能耗结论。

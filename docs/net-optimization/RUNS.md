@@ -545,3 +545,6 @@ N3道路双向因果校准测试已按先前协议写下，模型未改；contro
 
 
 **42571393016 Mac net-node配对probe双层所有权修复候选在途**：based4a2e115b898fc337f5091b51fa71e45740c667f clean、treef278b9330f51268182b142729db2c86687f4af4b、snapshot3459894c81cb994310a97bfcba4ca39ae97e569b、control0cff9671fb2f80945423132e0df46995f6ff3198；121st ref/mac-probe-owner-candidate-42571393016已锚。doctor JoinSet首成功+取消输者，pair Aborts闭合外层取消；待十四专项/既有子集，不预记绿。
+
+
+42571393016终态 **SUCCESS**：fmt/编译/net66+1ignored/hop9/wires10/journal28/dial_budget14全绿（9.93秒）。准确based4a2e115/treef278b933/snapshot3459894c/control0cff967已核并下载，121 refs全部逐项验证/终态。probe三实际红42570772550→绿，旧11保持；普通四项是42569954515首次取得的新增绿覆盖，不冒称旧源红。仅Mac子集，不是N2全包/完整Quality/Linux SLO。STATE已汇总，旧页归档HISTORY-20261109-before-probe-green.md。
