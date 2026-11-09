@@ -253,3 +253,12 @@ Accepted前置42566727617未成立，不能算取消行为红。为让本地调�
 source snapshot无父+bundle SHA256、远端tree/metadata/materialized commit、可信driver字节与control、environment均核；本地ref位于refs/khor/net-evidence/<turing-run>，不冒充GitHub run/release。终态采证使用control scripts/collect-network-ssh.py receipt.json：先terminal/原job group，再不跟链接的tar/身份核验及逐文件SHA。报告留存失败与所有repeat。
 
 turing-20261109T075531Z-b6277f48候选recovery3轮6/6实际绿（p3最慢518.5/597.9/706.9ms）；同host baseline127th ref在途，尚无速度差值结论。后续CPU/hop/full和N2–N5矩阵不因此缩减，旧托管Linux红仍保留。
+
+
+## N2全路径探测宽限前的取消（F8，修复前冻结）
+
+Linux-only真实fixture，先启动新unshare -Urn子harness，核network namespace不同与单uid映射，才up lo/加tc；不改主机网络。先完成原生UDP握手并settle 1秒，再只在该namespace的lo加netem每向2400ms（约4.8秒往返），启动两个真实exchange_on Sessions，共享同stable_id；其中一个by=4.1秒，控制调用by=12秒。
+
+前置必须证明两请求恰各一次到达server、其发送响应时刻>=2.2秒，响应再经过固定2.4秒路程晚于首调用到期，首调用正常CallerExpired且到期观察在by+400ms内、到期前heard_count未增加。前置失败独立归fixture；未取得实际运行红前，不把静态风险写成行为红。
+
+目标：首调用到期时wire仍live，控制请求收到真实延迟回答、heard_count随后增加，同stable_id继续保留；零retired_unanswered/closed/readretry/dialfailed/answer_late/down/backoff。12秒与400ms为测试防挂/调度观察，不改产品budget或体验门。场景结束捕获全部事实后才删该namespace的qdisc/关闭端点，异步任务均Aborts持有并abort/join。原真实长静默F7和长ACK阳性必须保持；不能一律禁用取消退役来让F8过。

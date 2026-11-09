@@ -210,24 +210,18 @@ async fn observe_ordinary_expiry(within: Duration) {
 }
 
 #[cfg(target_os = "linux")]
-#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn abandoning_a_long_silent_exchange_still_retires_the_dead_wire() {
-    use std::future::Future;
-    use std::io::Write;
-    use std::process::{Command, Stdio};
+fn isolated_network_namespace(test: &str) -> bool {
+    use std::process::Command;
 
-    const PARENT_NETNS: &str = "KHOR_F7_TEST_PARENT_NETNS";
+    const PARENT_NETNS: &str = "KHOR_WIRE_TEST_PARENT_NETNS";
     let namespace = std::fs::read_link("/proc/self/ns/net").unwrap();
     let Ok(parent_namespace) = std::env::var(PARENT_NETNS) else {
         let out = Command::new("unshare")
             .arg("-Urn")
             .arg(std::env::current_exe().unwrap())
-            .args([
-                "--exact",
-                "link::dial_budget::wire::abandoning_a_long_silent_exchange_still_retires_the_dead_wire",
-                "--nocapture",
-                "--test-threads=1",
-            ])
+            .arg("--exact")
+            .arg(format!("link::dial_budget::wire::{test}"))
+            .args(["--nocapture", "--test-threads=1"])
             .env(PARENT_NETNS, &namespace)
             .output()
             .unwrap();
@@ -237,7 +231,7 @@ async fn abandoning_a_long_silent_exchange_still_retires_the_dead_wire() {
             String::from_utf8_lossy(&out.stdout),
             String::from_utf8_lossy(&out.stderr)
         );
-        return;
+        return false;
     };
     assert_ne!(namespace.to_string_lossy(), parent_namespace);
     let mapping = std::fs::read_to_string("/proc/self/uid_map").unwrap();
@@ -252,6 +246,19 @@ async fn abandoning_a_long_silent_exchange_still_retires_the_dead_wire() {
             .unwrap()
             .success()
     );
+    true
+}
+
+#[cfg(target_os = "linux")]
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn abandoning_a_long_silent_exchange_still_retires_the_dead_wire() {
+    use std::future::Future;
+    use std::io::Write;
+    use std::process::{Command, Stdio};
+
+    if !isolated_network_namespace("abandoning_a_long_silent_exchange_still_retires_the_dead_wire") {
+        return;
+    }
 
     let f = Fixture::new().await;
     assert_eq!(f.peer.addrs.len(), 1);
@@ -347,6 +354,136 @@ async fn abandoning_a_long_silent_exchange_still_retires_the_dead_wire() {
     assert_eq!(counts.reads_retried, 0);
     assert_eq!(counts.dial_failed, 0);
     assert_eq!(counts.answers_late, 0);
+}
+
+#[cfg(target_os = "linux")]
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn expiry_before_path_probe_grace_preserves_a_slow_live_wire() {
+    use std::process::Command;
+
+    if !isolated_network_namespace("expiry_before_path_probe_grace_preserves_a_slow_live_wire") {
+        return;
+    }
+    let f = Fixture::new().await;
+    tokio::time::sleep(Duration::from_secs(1)).await;
+    assert_eq!(wires::Patience::of(&f.local).ack, Duration::from_secs(4));
+    assert!(
+        Command::new("tc")
+            .args([
+                "qdisc", "add", "dev", "lo", "root", "netem", "delay", "2400ms",
+            ])
+            .status()
+            .unwrap()
+            .success()
+    );
+    let heard_before = wires::heard_count(&f.local);
+    let requests = Arc::new(AtomicUsize::new(0));
+    let (received, reception) = tokio::sync::oneshot::channel();
+    let mut serving = Aborts(Some(tokio::spawn({
+        let conn = f.remote.clone();
+        let requests = requests.clone();
+        async move {
+            for _ in 0..2 {
+                let (mut send, mut recv) = conn.accept_bi().await.unwrap();
+                let bytes = recv.read_to_end(MAX_FRAME).await.unwrap();
+                assert!(matches!(
+                    proto::question(&bytes).unwrap(),
+                    Request::Sessions
+                ));
+                requests.fetch_add(1, Ordering::SeqCst);
+                let answer = proto::encode(&Response::SessionRows { rows: vec![] }).unwrap();
+                send.write_all(&answer).await.unwrap();
+                send.finish().unwrap();
+            }
+            received.send(tokio::time::Instant::now()).unwrap();
+            conn.closed().await;
+        }
+    })));
+    let start = tokio::time::Instant::now();
+    let by = start + Duration::from_millis(4100);
+    let mut asking = Aborts(Some(tokio::spawn({
+        let node = f.node.clone();
+        let line = f.line();
+        crate::deadline::scope(by, async move {
+            node.exchange_on(&line, &Request::Sessions).await
+        })
+    })));
+    let mut control = Aborts(Some(tokio::spawn({
+        let node = f.node.clone();
+        let line = f.line();
+        crate::deadline::scope(start + Duration::from_secs(12), async move {
+            node.exchange_on(&line, &Request::Sessions).await
+        })
+    })));
+    let answer = observed_by(&mut asking, by + Duration::from_millis(400)).await;
+    let expired_at = tokio::time::Instant::now();
+    let heard_at_expiry = wires::heard_count(&f.local);
+    let live_at_expiry = f.node.wires.live(&f.peer.id, wires::Proto::Main);
+    let received_at = tokio::time::timeout_at(by, reception).await.unwrap().unwrap();
+    let control = observed_by(&mut control, start + Duration::from_secs(12)).await;
+    let heard_after = wires::heard_count(&f.local);
+    let live_after = f.node.wires.live(&f.peer.id, wires::Proto::Main);
+    let counts = f.node.wires.counts.snapshot();
+    let down = f.node.wires.link(&f.peer.id).down;
+    let backoff = f.node.wires.backing_off(&f.peer.id);
+    assert!(
+        Command::new("tc")
+            .args(["qdisc", "del", "dev", "lo", "root"])
+            .status()
+            .unwrap()
+            .success()
+    );
+    f.close().await;
+    serving.0.as_ref().unwrap().abort();
+    let _ = serving.0.as_mut().unwrap().await;
+
+    eprintln!(
+        "[wire-grace-fixture] received_after_ms={} expired_after_ms={} heard_before={} heard_at_expiry={} heard_after={} requests={} live_at_expiry={} control_ok={} retired_unanswered={}",
+        received_at.duration_since(start).as_millis(),
+        expired_at.duration_since(start).as_millis(),
+        heard_before,
+        heard_at_expiry,
+        heard_after,
+        requests.load(Ordering::SeqCst),
+        live_at_expiry.is_some(),
+        matches!(control, Some(Ok(Response::SessionRows { .. }))),
+        counts.retired_unanswered
+    );
+    assert!(matches!(answer, Some(Err(Miss::CallerExpired))));
+    assert!(expired_at <= by + Duration::from_millis(400));
+    assert_eq!(
+        requests.load(Ordering::SeqCst),
+        2,
+        "both real requests reached the peer"
+    );
+    assert!(received_at >= start + Duration::from_millis(2200));
+    assert!(received_at + Duration::from_millis(2400) > expired_at);
+    assert_eq!(
+        heard_at_expiry,
+        heard_before,
+        "no packet arrived before the caller expired"
+    );
+    assert_eq!(
+        live_at_expiry.map(|conn| conn.stable_id()),
+        Some(f.local.stable_id()),
+        "caller expiry before path-probe grace cannot condemn a shared wire"
+    );
+    assert!(matches!(control, Some(Ok(Response::SessionRows { .. }))));
+    assert!(
+        heard_after > heard_before,
+        "the delayed native UDP road actually answered"
+    );
+    assert_eq!(
+        live_after.map(|conn| conn.stable_id()),
+        Some(f.local.stable_id())
+    );
+    assert_eq!(counts.retired_unanswered, 0);
+    assert_eq!(counts.retired_closed, 0);
+    assert_eq!(counts.reads_retried, 0);
+    assert_eq!(counts.dial_failed, 0);
+    assert_eq!(counts.answers_late, 0);
+    assert_eq!(down, None);
+    assert_eq!(backoff, None);
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]

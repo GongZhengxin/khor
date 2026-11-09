@@ -110,3 +110,6 @@ Mac source/bundle分支只在终态、证据留存且所有权/SHA匹配后清�
 当前remote root=/tmp/khor-netlab-feat-net-1110；每run在runs/<run_id>，receipt和report位于/Volumes/disk0/Khor/evidence/net/<run_id>。先核remote report/execution.json及/proc/PID/cmdline匹配input/network-ssh-runner.py。基线已launch后不要再提交；终态先用control scripts/collect-network-ssh.py采证，再launch两个既有stalls。SSH观察失败只重查，不重发；status文件不能单独证明进程live。
 
 原用户设备组合已确认iPhone＋两台不同网络电脑；型号/iOS/电脑OS的异步问题仍待回复，不重复询问或阻断独立工作。更新本页/REQUIREMENTS不能缩小PLAN；本轮为progress，完整goal保持active，无合并/发布/部署。
+
+
+N2下一反例F8已写入wire.rs并冻结ACCEPTANCE：新私有netns的lo netem单向2400ms，两个真实同wire请求；首个4.1秒到期、另一个12秒预算等待约4.8秒UDP往返。核server收到严格两请求/响应时序/到期前零回包后才判共享wire保留。仅新增测试与提取原F7隔离helper；生产仍d4a，F8尚未实际编译/运行或取得行为红。当前baseline hop PID161772 live，不能与新Linux编译/测试并跑；先由独立Mac通道检格式/15便携合同，再排Turing单槽。
