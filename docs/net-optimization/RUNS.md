@@ -427,3 +427,10 @@ Mac便携分流control6b1616c8b816bdb72a8a031d0ff28cc46a3fb4c7在feat/net，沿�
 
 
 42557961726终态 **实际early准入红**：格式、net66pass/1ignored、hop9/wires10/journal28绿，dial_budget2pass1fail，仅early持锁40ms调用未结束至500ms防挂；normal控制绿。tree11262ccc/snapshot4eb0b8da/control2e70c39已核，mac-early-admission-red-42557961726保存raw/log/classification；101 refs终态。随后early有界锁/CallerExpired候选待绿，额外过期空锁覆盖不宣称旧源红；N2其余边界仍缺。N3双向调度校准协议在修改模型前冻结，尚未运行测量。
+
+
+**42558490443 Mac net-node early候选在途**：clean802e13a8、treef2afc1c9a48599f6091675105bc66075c73fe830、snapshotbfb637abe9d3d8a56683a5d7c6b5fcefa0999273、control2e70c39fe6a70bbbd09b7434f90e6c2d62e84b16。102th ref与mac-early-admission-candidate-42558490443已锚定，尚未绿。
+
+
+42558490443终态**格式门失败**，source/tree/control已核；仅新增early过期空锁assert内await换行，远端patch已原样应用，无编译/测试，不算early行为红/绿。102 refs终态。
+N3道路双向因果校准测试已按先前协议写下，模型未改；control e7258e57155da1618f0f3b00fd1e395f481b5f19已push并在net-congestion计时前强制校准1pass/0fail。本机driver桩测试证明校准红即止、首计时轮红仍执行后两轮保留最终exit8；非Rust执行。下一准确源先net-node，再N3校准待红。

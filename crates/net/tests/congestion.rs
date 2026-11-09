@@ -356,6 +356,39 @@ fn report_samples(
     !samples.is_empty() && answered.len() == samples.len()
 }
 
+#[tokio::test]
+async fn road_directions_do_not_wait_for_each_others_future_packets() {
+    let server = UdpSocket::bind("127.0.0.1:0").await.unwrap();
+    let client = UdpSocket::bind("127.0.0.1:0").await.unwrap();
+    let at = road(
+        server.local_addr().unwrap(),
+        Road {
+            rtt: Duration::from_millis(20),
+            loss_pct: 0,
+            bytes_per_sec: 1000,
+            queue: Duration::from_secs(1),
+        },
+    )
+    .await;
+    client.send_to(&[b'a'; 500], at).await.unwrap();
+    client.send_to(&[b'b'; 500], at).await.unwrap();
+    let mut bytes = [0u8; 512];
+    let (n, reply_to) = tokio::time::timeout(Duration::from_secs(2), server.recv_from(&mut bytes))
+        .await
+        .expect("the first serialized packet arrives")
+        .unwrap();
+    assert_eq!(n, 500);
+    server.send_to(b'e', reply_to).await.unwrap();
+    // The reverse lane needs 11ms, while the second forward packet has
+    // about 500ms left. This calibrates independent directions, not a SLO.
+    let echoed = tokio::time::timeout(Duration::from_millis(250), client.recv_from(&mut bytes))
+        .await
+        .expect("a reverse packet must not wait behind a future forward packet")
+        .unwrap();
+    assert_eq!(echoed.0, 1);
+    assert_eq!(bytes[0], b'e');
+}
+
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 #[ignore = "a measurement on a simulated road: run by hand"]
 async fn controllers_and_priorities_on_a_slow_lossy_road() {

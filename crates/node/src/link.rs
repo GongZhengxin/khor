@@ -13409,7 +13409,8 @@ mod dial_budget {
         assert_eq!(node.wires.backing_off(&peer.id), None);
         drop(held);
         assert!(matches!(
-            node.ask_early(&ep, &peer, &Request::Sessions, Some(by)).await,
+            node.ask_early(&ep, &peer, &Request::Sessions, Some(by))
+                .await,
             Early::Failed(DialFailure::CallerExpired)
         ));
         assert_eq!(node.wires.counts.snapshot().dialed, 0);
