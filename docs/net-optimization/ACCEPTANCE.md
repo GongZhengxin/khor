@@ -402,3 +402,8 @@ Peer relay就是可信设备承载的carried候选，必须与Direct IPv4、Dire
 mesh后真实双向setup请求，reported双向可用/rtt连续10s（不要求Direct，不能冒称最快路或固定承载），绝对准备120s；before双向各n30/200ms/30s caller预算。开始/完成replug留phase，完成后立即只发B→A首业务（禁止先主动probe/目录/诊断），finished后再A→B首业务，再双向各n30。A后台流量保留。全部started/finished/error/timeout/cancel，kernel before/after IPv4/IPv6、两NAT router前后真实nft、完整journal及first/warm分组留证；总240s实验资源门不扩大caller预算。首错方向可停，但n不足或任一失败不绿，first失败不因后面恢复消失。
 
 独立固定本地UDP端口的reflector在before负载前/全部after负载后验证NAT出口IP确实变更；后探针不帮助首业务恢复。它不是Khor QUIC socket的映射，不能据此声称Khor端口本身已经量测。IPv6-only病例后无IPv4探针，以真实kernel移除v4及新增v6核几何。此批校准完整可达和记录；不新造恢复SLO/同wire保证，无长流、peer-relay移动、真实手机或能耗结论。
+
+
+### N1冷peer-relay候选排序合同（运行前冻结）
+
+对生产middles_with_cost，以原本已经符合资格的三条非recursive候选、固定完整两腿RTT比较：Relay2ms＋SSH3ms，Direct100ms＋SSH20ms，Direct未知＋SSH1ms。Measured正控应按5/120/65536ms排序，Dial同样必须先5ms；未知不得因Direct越过已测快路。原资格、最多两个middle、合计3s、trust/paused/only_mine/SSH优先承载、选择收益/确认不改。本合同只证明冷候选尝试顺序不被Direct硬优先覆盖，不证明各路roadbook新鲜、额外候选资格、并发拨号/首响应/吞吐最优。先跑旧生产实际红，再最小排序修正，同整fixture复验。

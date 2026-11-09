@@ -873,6 +873,39 @@ mod tests {
         Road::own(to, k, None, Some(ms))
     }
 
+    /// Both candidates are already eligible before a dial. A direct
+    /// first leg must not put a 120 ms hop ahead of a 5 ms relay/SSH hop.
+    #[test]
+    fn cold_hop_candidates_rank_by_the_measured_two_leg_cost() {
+        let rows: Vec<_> = ["unknown", "slow-direct", "fast-relay"]
+            .into_iter()
+            .map(|id| (id.to_owned(), false, false))
+            .collect();
+        let mine = |id: &str| match id {
+            "unknown" => Some(Road::own(id, RoadKind::Direct, None, None)),
+            "slow-direct" => Some(road(id, RoadKind::Direct, 100)),
+            "fast-relay" => Some(road(id, RoadKind::Relay, 2)),
+            _ => None,
+        };
+        let theirs = |id: &str| match id {
+            "unknown" => Some(road("to", RoadKind::Ssh, 1)),
+            "slow-direct" => Some(road("to", RoadKind::Ssh, 20)),
+            "fast-relay" => Some(road("to", RoadKind::Ssh, 3)),
+            _ => None,
+        };
+        for policy in [Legs::Measured, Legs::Dial] {
+            assert_eq!(
+                middles_with_cost("me", "to", &rows, mine, theirs, policy),
+                vec![
+                    ("fast-relay".to_owned(), 5),
+                    ("slow-direct".to_owned(), 120),
+                    ("unknown".to_owned(), u32::from(u16::MAX) + 1),
+                ],
+                "known two-leg cost is primary under {policy:?}"
+            );
+        }
+    }
+
     /// **A hop that found no middle is not asked for before every dial**
     /// (net-dial B3): 30 s after the first miss, doubling to ten minutes,
     /// and asked again at once after a hop to it opened.
