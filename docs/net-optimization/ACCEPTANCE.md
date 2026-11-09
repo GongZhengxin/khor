@@ -244,3 +244,12 @@ Accepted前置42566727617未成立，不能算取消行为红。为让本地调�
 42578713267：socket107字节，VM前失败；42579282147：实际Linux启动/正常清理绿但guest探针空输出非零、完整就绪未证，未验父死；42579909366：所有上述能力/生命周期绿。三run准确tree2b5bfce2/snapshot6a046588，同源不同可信control97334be/8d39080/bedd896；前两红仍保留，不算产品红。最后一次两不同boot IID、真实controller=-9、两个stop rc0、双Stopped、无残留，原始证据在mac-vz-ready-42579909366。
 
 此任务不运行产品编译或测试。Linux aarch64 VZ上的netlab接入、编译及原基线/候选门仍待执行；旧托管Linux硬件/架构不可直接比较。源码/结果回执和正常/失败清理不得因接产品而略过；默认standard仍沿原执行器。用户iPhone/两台异网电脑验收独立保留。
+
+
+## U9 Turing主Linux执行器
+
+用户明确授权Turing并优先其性能。SSH既有alias/known host，不forward agent或token；项目owner root `/tmp/khor-netlab-feat-net-1110`，每run不可重用目录/receipt，固定Rust1.95四component SHA、CARGO_HOME/target本地盘、原network.sh filter/repeat/gate、flock串行，编译jobs16/nice10、测试线程沿已冻结profile。只在新user/net namespace操作nft/netem，不改宿主网络/默认Rust/系统包/现装App。
+
+source snapshot无父+bundle SHA256、远端tree/metadata/materialized commit、可信driver字节与control、environment均核；本地ref位于refs/khor/net-evidence/<turing-run>，不冒充GitHub run/release。终态采证使用control scripts/collect-network-ssh.py receipt.json：先terminal/原job group，再不跟链接的tar/身份核验及逐文件SHA。报告留存失败与所有repeat。
+
+turing-20261109T075531Z-b6277f48候选recovery3轮6/6实际绿（p3最慢518.5/597.9/706.9ms）；同host baseline127th ref在途，尚无速度差值结论。后续CPU/hop/full和N2–N5矩阵不因此缩减，旧托管Linux红仍保留。

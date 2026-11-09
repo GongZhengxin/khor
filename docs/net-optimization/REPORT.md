@@ -126,3 +126,10 @@ controlc6a20c5，单场景顺序三轮，准确tree/snapshot见RUNS。baseline42
 42571393016 based4a2e115b898fc337f5091b51fa71e45740c667f clean、treef278b9330f51268182b142729db2c86687f4af4b、snapshot3459894c81cb994310a97bfcba4ca39ae97e569b、control0cff9671fb2f80945423132e0df46995f6ff3198：根格式/net66+1ignored/hop9/wires10/journal28/dial_budget14全绿，预算子集9.93秒是运行时不是性能SLO。Mac26.6.2 arm64/Rust1.95/jobs2，真实取消后TCP EOF及首成功均在冻结观察内；测试server未提前关闭制造EOF。
 
 修复仅闭合probe两层任务所有权、按完成首成功并取消输者；未增加并发/改变2.6秒预算或proxy。ears_heard也是该函数的直接caller，HTTP boolean映射保留，完整echo/故障场景未由本批证明。原始source/env/raw/classification均保留；没有Linux最终矩阵、全Quality或真机/能耗结论。
+
+
+## Turing首轮恢复（U9，2026-11-09）
+
+用户授权Turing作为Linux主通道后，candidate turing-20261109T075531Z-b6277f48准确treeef392bb7/snapshot8ff966db/control59dc223，3轮recovery全部6/6绿，原p3最坏<1s保持，实际518.5/597.9/706.9ms、均零失败/退役；p2改变慢路后分别3.1s/6.1s/930.4ms达原断言、typing errors空。每轮样本/原始scenario日志在对应evidence/report/netlab/，非跨host改进结论。首编译6m19s，后续repeat0.58/0.53秒；基线同Turing同工具链/同driver原门正串行运行，首次编译55.57秒。
+
+源码全量tuple、原字节SHA、toolchain、namespace、host资源、执行状态、三轮全部结果、原job group检查均留存；采证collector576c127独立于执行control59dc223。只证明此source在Turing recovery profile绿，N1 CPU/hop/full、N2–N5和真实设备未结。历史托管Linux42542984111两个p3红不删除、不据换硬件称已定因。

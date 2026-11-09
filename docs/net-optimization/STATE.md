@@ -1,8 +1,8 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-09 08:00 UTC；root串行，无子智能体。活动目标“完成计划”仍active。
+更新：2026-11-09 08:19 UTC；root串行，无子智能体。活动目标“完成计划”仍active。
 
-**Turing唯一在途：turing-20261109T075531Z-b6277f48（PID4083030，recovery），已实核/proc cmdline仍live，Rust1.95校验/安装与首次编译通过，正在p2/p3三轮实际场景。** 基线turing-20261109T075906Z-5464f2db仅staged未launch，必须等candidate终态后串行。用户U9已明确授权Turing；Mac VZ仅备用，不继续guest产品原型。127 refs：125旧终态+1 live+1 staged；完整N0–N5未完成。
+**唯一在途：基线 turing-20261109T075906Z-5464f2db，PID4135341，recovery三轮。** 已实核/proc cmdline live，固定Rust1.95，复用本地cache后基线编译55.57秒通过并开始实际场景。候选turing-20261109T075531Z-b6277f48已终态6/6绿并完整采证：p3最慢518.5/597.9/706.9ms，各<原1秒。127 refs=126终态+baseline live。U9 Turing主通道、VZ仅备用；完整N0–N5未完成。
 完整范围：[PLAN](PLAN.md)；约束：[REQUIREMENTS](REQUIREMENTS.md)；运行记录：[RUNS](RUNS.md)；原始结果：[REPORT](REPORT.md)。
 此前STATE原样归档[Accepted轮历史](HISTORY-20261109-before-accepted-green.md)与[本轮历史](HISTORY-20261109-before-probe-green.md)；历史在途/候选文字仅代表当时状态，恢复以本页和实际工作区为准。
 
@@ -15,9 +15,9 @@
 | 用途 | 位置 / 当前基准 |
 | --- | --- |
 | 产品 | `/Volumes/disk0/Khor/worktrees/current/khor-net`，`feat/net`；最新已验证生产d4a2e115b898fc337f5091b51fa71e45740c667f；随后有文档和scripts/dev.py VZ专用调度；生产网络未改，恢复核HEAD/diff |
-| 控制 | `/Volumes/disk0/Khor/worktrees/current/khor-build-net`，`feat/net`，59dc223ad263056bc0fa5c073c69a9c5d66b592a已push，现场clean；新Turing runner 4个stdlib测试绿，原VZ9个保持历史证据 |
+| 控制 | `/Volumes/disk0/Khor/worktrees/current/khor-build-net`，`feat/net`，576c12769beef5f7ca08340f1df18ee87b019d8f已push，现场clean；仅新增collector/2测试；当前两Turing运行仍control59dc223，runner4测试/VZ9测试历史证据保留 |
 | 基线 | `/Volumes/disk0/Khor/worktrees/current/khor-net-baseline`，detached6485cb83d3b1f0bb93d4633825dc956623d78af9；仅paths/hop/lab/nat.rs、dev.py/netlab.sh六fixture，生产原样 |
-| 证据 | `/Volumes/disk0/Khor/evidence/net/`；source-refs.json现127条不可变refs；125旧终态，candidate Turing live、baseline staged；SSH receipt位于对应evidence/run/receipt.json，不是GitHub run |
+| 证据 | `/Volumes/disk0/Khor/evidence/net/`；source-refs.json127条不可变refs；126终态，baseline Turing live；candidate完整report已采/核。SSH receipt位于对应evidence/run/receipt.json，不是GitHub run |
 
 ## N2本轮：普通wire覆盖与配对探针三红→绿
 
@@ -87,7 +87,7 @@ N0部分、N1仍红、N2部分、N3部分、N4未完成、N5部分；完整PLAN�
 
 ## 证据与恢复规则
 
-先核worktree/branch/HEAD/diff、当前run与准确回执；当前Turing candidate真实live，baseline仅staged；按上方run/path/PID复核，SSH观察失败须重查同句柄，不重启。source-refs.json127条，旧125终态+2 pending（live/staged分开）。
+先核worktree/branch/HEAD/diff、当前run与准确回执；当前Turing baseline真实live，candidate已终态并下载核验；按上方run/path/PID复核，SSH观察失败须重查同句柄，不重启。source-refs.json127条，126终态+baseline pending。
 `git rev-parse refs/khor/net-evidence/<run>:source`必须等于回执tree；只git show读容器，不checkout覆盖/push本地证据refs。失败明确分format/compile/fixture/行为/执行器；tests_executed只按实际子集，历史红不删除。
 Mac source/bundle分支只在终态、证据留存且所有权/SHA匹配后清理；复用源的请求不拥有原源分支。原attempt不覆盖。
 外盘缺失只读`git show feat/net:docs/net-optimization/STATE.md`与PLAN；原外盘未提交内容不能按摘要覆盖。其他治理沿中央STATE/RESUME，不混授权。
@@ -180,3 +180,15 @@ source baseb56576ce52c56b4d8c31d84e6618abec662d0cd9、tree2b5bfce2e95c0ef4169a6c
 
 
 Turing首次产品编译实际通过（6m19s，Noq/Iroh均项目vendor准确路径），现phase=network-driver；2026-11-09T08:09:41.852879+00:00实核进程live=True。部分场景结果已出现（见/Volumes/disk0/Khor/evidence/net/turing-20261109T075531Z-b6277f48/status-observed-20261109T080923Z.json），仅部分、未终态，不把它们算完整三轮通过。基线仍staged；收candidate完整报告再launch。当前完整目标仍active，上一goal轮VZ能力/本轮Turing实际源码编译与运行均为progress，非blocked。
+
+
+候选turing-20261109T075531Z-b6277f48终态 **SUCCESS6/6（3轮各2）**，完整report已取回并核source/control/driver/bundle/hash，原PGID无live剩余。p3最慢[518.5, 597.9, 706.9]ms、各<原1000ms，零失败/退役；p2三绿。只收recovery，不是CPU/hop/full或N2–N5全绿，未跑根fmt。126ref终态。
+
+**基线turing-20261109T075906Z-5464f2db已launch，PID4135341**，remote/tmp/khor-netlab-feat-net-1110/runs/turing-20261109T075906Z-5464f2db；base6485/tree52a44260/snapshot9e64c63c，同control59dc223与原三轮recovery。准确receipt更新launched。当前127refs=126终态+baseline在途；不可重发基线。收藏器已提交control576c12769beef5f7ca08340f1df18ee87b019d8f，仅新增本地采证工具/2测试；执行中的两run仍绑定59dc223，不挪写controlSHA。
+
+
+本轮progress：候选完整3轮recovery实际6/6绿，已取回原始report并核source/控制文件字节/hash/原PGID无live进程；新增安全采证工具并实际使用；baseline准确启动并实核/proc命令live，编译55.57秒完成后跑场景。对照尚未完成，不由候选绿收整体。当前唯一下一动作是收baseline同句柄，不能再launch它。
+
+采证命令（终态后）：在control worktree运行 `PYTHONDONTWRITEBYTECODE=1 python3 scripts/collect-network-ssh.py /Volumes/disk0/Khor/evidence/net/turing-20261109T075906Z-5464f2db/receipt.json`。它先核terminal和原group无活进程，取tar不跟链接，核source三元组/任务/control driver实际字节/bundle/environment，保留每文件SHA。失败报告仍保留；原断言红与executor/compile红分开。collector source576c127不改变两个job执行control59dc223。
+
+之后按原门Turing同机串行跑candidate与baseline的hop（f4/f4s/f4i三轮）、stalls（600秒/20×300ms CPU的0/0移动等），再dynamic/full准确源矩阵；f4s回退未定因。需要新任务时复用immutable源码可省上传，但每run新receipt/ref/job目录/任务，不能把老run改task重跑。旧托管机器与Turing的差值不算产品加速；本机编译与Rust依赖仍禁。手机/两电脑OS细节未答不阻断独立N1–N5工作。

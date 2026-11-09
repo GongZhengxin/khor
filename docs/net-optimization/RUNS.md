@@ -557,3 +557,6 @@ N3道路双向因果校准测试已按先前协议写下，模型未改；contro
 
 
 VZ能力三run（源码一致baseb56576ce/tree2b5bfce2/snapshot6a046588）：42578713267 control97334be，固定资产下载校验通过，完整SSH临时socket107>104，未boot；42579282147 control8d39080，native raw/VZ/Linux boot及正常清理实际成功，guest探针非零空输出/无退出码，父死未跑；42579909366 controlbedd896，当前IID完整就绪、namespace/veth/netem/nft/conntrack、正常/真实controller SIGKILL=-9后lease EOF清理全绿，stop rc0/双Stopped/同guard PGID/无本次helper/清理临时state和tools。两IID不同。均product_tests_executed=false，前两executor红不隐藏，第三能力绿不当产品SLO。对应证据mac-vz-capability-42578713267 / mac-vz-short-path-42579282147 / mac-vz-ready-42579909366，123–125 refs已锚/全终态，复用者不拥有原源分支。125 REF:source逐项核一致。下一步可信Linux产品driver/固定Rust1.95后同后端基线候选原门；完整N0–N5继续。
+
+
+**Turing candidate turing-20261109T075531Z-b6277f48 SUCCESS**（非GitHub run）：basec55d74ddaf697f7a389c2bc377d1e0016c47adcf clean、treeef392bb746c998a10c0b6cf8b14f40ffcfe2a2aa、snapshot8ff966dbf71bb0c027bbeac2277ccce6e315dbcf、control59dc223ad263056bc0fa5c073c69a9c5d66b592a；126th ref。Rust1.95 x86_64/kernel5.15/128CPU，jobs16、原recovery单线程三轮；源码/driver/bundle/环境/原job进程组已核、完整report与SHA清单已下载。首编译6m19s；3轮各2pass，p3最慢518.5/597.9/706.9ms、各零失败/退役、p2三绿。只收recovery；未跑root fmt/CPU/hop/full，不能跨旧机器算收益。baseline turing-20261109T075906Z-5464f2db（base6485/tree52a44260/snapshot9e64c63c/control59dc223，127th ref）随后串行launch，PID4135341，编译55.57秒，仍在途。两源五实际fixture逐字同，baseline生产原样。完整目标active。
