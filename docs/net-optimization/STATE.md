@@ -15,7 +15,7 @@
 | 产品 | `/Volumes/disk0/Khor/worktrees/current/khor-net`，`feat/net`；恢复核实际HEAD/diff，本轮只新增API bundle入口/测试/文档，37等生产代码仍为72b1d891 |
 | 控制 | `/Volumes/disk0/Khor/worktrees/current/khor-build-net`，`feat/net`；dd57be6c57090a811726983e700d0b39a40fd1e8已push；历史run绑定各自control |
 | 基线 | `/Volumes/disk0/Khor/worktrees/current/khor-net-baseline`，detached6485cb83d3b1f0bb93d4633825dc956623d78af9；只允许paths/hop/lab/nat.rs、dev.py/netlab.sh六fixture；生产基线原样 |
-| 证据 | `/Volumes/disk0/Khor/evidence/net/`；source-refs.json现98条不可变source refs；均已终态 |
+| 证据 | `/Volumes/disk0/Khor/evidence/net/`；source-refs.json现99条不可变source refs；仅42556768499在途 |
 
 ## 执行通道现状
 
@@ -73,7 +73,7 @@ N0部分、**N1仍红**、N2–N4未完成、N5部分。不能以单元绿或执
 
 恢复先核绝对worktree/branch/HEAD/diff、当前run终态和回执，不从摘要覆盖未提交内容，不重复调度活动run。
 每run锚refs/khor/net-evidence/<run>；git rev-parse REF:source必须等于回执tree；只用git show读容器，不checkout覆盖、不push本地证据refs。
-source-refs.json现98条；425527传输失败与托管账单拒绝均tests_executed=false、remote_source_verified=false。旧Mac实际红已验证source/control。重要artifact下载到规范证据目录。
+source-refs.json现99条；425527传输失败与托管账单拒绝均tests_executed=false、remote_source_verified=false。旧Mac实际红已验证source/control。重要artifact下载到规范证据目录。
 Mac源/bundle分支仅在终态、证据保留、所有权和SHA匹配后清理；复用源的请求不拥有原源分支。重试不改旧源/control/attempt证据。
 外盘缺失只读git show feat/net:docs/net-optimization/STATE.md和PLAN；原外盘未提交内容不能按摘要覆盖。治理另沿中央code-quality STATE/RESUME，不与本任务混合。
 
@@ -84,3 +84,5 @@ N2新测试a_call_deadline_bounds_waiting_for_another_dial_without_blaming_the_p
 **42556474188 net-node executor=mac终态格式门失败**：base5d117debe832e974daab00d6ebde3348b9cda772 clean、tree4f5179e59e64576fd6696b17f23fcc1c50fbc14b、snapshot44930072797913fbefd2a3d1f6e9269965cd0a5d、control2e70c39fe6a70bbbd09b7434f90e6c2d62e84b16。仅新增测试、生产N2未改，目标为实际锁到期红；未预认定编译或结果。mac-dial-budget-red-42556474188已保存提交回执/raw run；本地ref已create-only锚定，98 refs，恢复只查询该run。
 
 42556474188已校验准确source/control，未进入编译或单元；仅新assert的远端rustfmt patch，现已原样应用。本机未运行formatter，生产N2仍原样，不记实际期限红。98 refs均终态；下一步格式修正源重跑net-node。
+
+**42556768499 Mac net-node格式修正源在途**：base2018ff956744f5dc33f5aa8b16a5caa93a36dad8 clean、treec60e145a72b88dd311fd90c9ff6a193983644210、snapshot654d409551e512462901a237e8bd47c7bc2c42da、control2e70c39fe6a70bbbd09b7434f90e6c2d62e84b16。N2生产仍原样、仅测试取红；mac-dial-budget-formatted-42556768499与99th ref已保存，恢复查该ID。

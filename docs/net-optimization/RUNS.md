@@ -409,3 +409,6 @@ Mac便携分流control6b1616c8b816bdb72a8a031d0ff28cc46a3fb4c7在feat/net，沿�
 
 
 42556474188终态**根格式门失败**：仅新测试两处assert多行格式，格式patch已下载校验后原样应用；source/tree/control实际匹配，但无编译/测试，不记行为红。98 refs均终态。N2生产原样，下一准确源再取红。
+
+
+**42556768499 Mac net-node在途**：clean2018ff95、treec60e145a72b88dd311fd90c9ff6a193983644210、snapshot654d409551e512462901a237e8bd47c7bc2c42da、control2e70c39fe6a70bbbd09b7434f90e6c2d62e84b16，原样应用远端格式patch后的N2测试源、生产未改。mac-dial-budget-formatted-42556768499/99th ref已锚定，未预记行为红。
