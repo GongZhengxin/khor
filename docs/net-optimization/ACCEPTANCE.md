@@ -188,3 +188,12 @@ python3 scripts/dev.py check --task net-congestion --builder-ref feat/net
 Mac便携网络入口（control6b1616c，已实际执行）通过--executor mac选择同一development.yml，不走托管prepare/retire。
 只允net-unit/net-node/net-vendor/net-congestion，CLI在上传前拒绝netlab/native等；默认standard不新增dispatch input以兼容旧控制main。
 42551075037已实际完成根格式/437Noq，Iroh新故障边界35pass1fail为预期产品红。Mac平台不替代p3<1秒、转发/CPU及全Linux矩阵。
+
+
+## N3模拟道路校准补充（2026-11-09，修改派发器前冻结）
+
+静态发现：congestion.rs的双向Lane虽各有free_at，却共用单个FIFO发送任务。该任务等待队头未来due时，会阻塞队尾已经到期的反向包。现v2仅完整采样记录协议，不能据此把该模拟器视为已校准全双工道路或决定产品CC/优先级。
+
+先新增实际UDP因果回归：RTT20ms、每方向1000B/s、队列1000ms、0%损失；client连续发两个500B包，server收到第一包后立刻回1B。反向包应在后续正向序列化结束前独立送达。绑定/设置在计时前；给反向独立送达250ms调度容差（理论约11ms，相对下一正向约500ms间隔），仅为模型校准，不是产品SLO；外层防挂并清理测试runtime。
+
+旧共享FIFO先远端取红，再独立方向派发或按due排序并取绿。记录schema可沿v2，必须显式区分road_model版本；之前同源数据原样保留，不把旧模型与修正模型差值当成产品策略收益。完整采样/默认300ms/2%/20Mbit/200ms/20s/seed不因校准失败而放宽；实际Node/SSH/hop/能耗继续独立验收。

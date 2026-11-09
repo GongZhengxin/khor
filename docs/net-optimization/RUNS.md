@@ -424,3 +424,6 @@ Mac便携分流control6b1616c8b816bdb72a8a031d0ff28cc46a3fb4c7在feat/net，沿�
 
 
 **42557961726 Mac net-node early入口回归在途**：clean91d8777c、tree11262ccc042a1bfcd4628a5b00f669d7cafc151a、snapshot4eb0b8da9b37a2d3554c6179f479e347fd3ac5e7、control2e70c39fe6a70bbbd09b7434f90e6c2d62e84b16。normal锁修复不变、early锁生产原样，新测试待实际红；101th ref/mac-early-admission-red-42557961726已保存。
+
+
+42557961726终态 **实际early准入红**：格式、net66pass/1ignored、hop9/wires10/journal28绿，dial_budget2pass1fail，仅early持锁40ms调用未结束至500ms防挂；normal控制绿。tree11262ccc/snapshot4eb0b8da/control2e70c39已核，mac-early-admission-red-42557961726保存raw/log/classification；101 refs终态。随后early有界锁/CallerExpired候选待绿，额外过期空锁覆盖不宣称旧源红；N2其余边界仍缺。N3双向调度校准协议在修改模型前冻结，尚未运行测量。

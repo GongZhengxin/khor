@@ -3653,6 +3653,9 @@ impl Node {
         req: &Request,
         by: Option<std::time::Instant>,
     ) -> Early {
+        if by.is_some_and(|by| std::time::Instant::now() >= by) {
+            return Early::Failed(DialFailure::CallerExpired);
+        }
         // Resting: not taken here, and refused by `line_to_inner` after.
         if !req.rides_early()
             || self.paused()
@@ -3664,7 +3667,17 @@ impl Node {
         }
         let waited = std::time::Instant::now();
         let lock = self.wires.dial_lock(&d.id, wires::Proto::Main);
-        let mut one = lock.lock().await;
+        let mut one = if let Some(by) = by {
+            let Ok(one) = tokio::time::timeout_at(by.into(), lock.lock()).await else {
+                return Early::Failed(DialFailure::CallerExpired);
+            };
+            one
+        } else {
+            lock.lock().await
+        };
+        if by.is_some_and(|by| std::time::Instant::now() >= by) {
+            return Early::Failed(DialFailure::CallerExpired);
+        }
         if self.wires.live(&d.id, wires::Proto::Main).is_some() {
             return Early::NotTaken;
         }
@@ -13394,6 +13407,13 @@ mod dial_budget {
         assert_eq!(node.wires.counts.snapshot().dial_failed, 0);
         assert_eq!(node.wires.link(&peer.id).down, None);
         assert_eq!(node.wires.backing_off(&peer.id), None);
+        drop(held);
+        assert!(matches!(
+            node.ask_early(&ep, &peer, &Request::Sessions, Some(by)).await,
+            Early::Failed(DialFailure::CallerExpired)
+        ));
+        assert_eq!(node.wires.counts.snapshot().dialed, 0);
+        assert_eq!(node.wires.counts.snapshot().dial_failed, 0);
     }
 
     /// **A dial never outlasts QUIC's own idle timeout** (net-dial B5): a

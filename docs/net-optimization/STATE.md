@@ -15,7 +15,7 @@
 | 产品 | `/Volumes/disk0/Khor/worktrees/current/khor-net`，`feat/net`；恢复核实际HEAD/diff，本轮API入口已验证；37仍为72b1d891，N2锁等待候选随后提交，恢复核实际diff |
 | 控制 | `/Volumes/disk0/Khor/worktrees/current/khor-build-net`，`feat/net`；2e70c39fe6a70bbbd09b7434f90e6c2d62e84b16已push；历史run绑定各自control |
 | 基线 | `/Volumes/disk0/Khor/worktrees/current/khor-net-baseline`，detached6485cb83d3b1f0bb93d4633825dc956623d78af9；只允许paths/hop/lab/nat.rs、dev.py/netlab.sh六fixture；生产基线原样 |
-| 证据 | `/Volumes/disk0/Khor/evidence/net/`；source-refs.json现101条不可变source refs；仅42557961726在途 |
+| 证据 | `/Volumes/disk0/Khor/evidence/net/`；source-refs.json现101条不可变source refs；均已终态 |
 
 ## 执行通道现状
 
@@ -92,4 +92,7 @@ mac-dial-budget-formatted-42556768499已核source/control、保存原log及class
 
 新增独立early入口测试an_early_call_deadline_bounds_waiting_for_another_dial：同真实Node/Endpoint/持锁fixture、Request::Sessions、40ms by与500ms防挂；early生产锁仍原样，待实际取红。fixture只整理测试设置，正常已绿行为仍需随新源复验。首次证据下载API EOF后同run只读重取成功，无重跑。
 
-**42557961726 early锁期限Mac net-node测试在途**：base91d8777ce7bbe6ad55234482361f399f3f2372d7 clean、tree11262ccc042a1bfcd4628a5b00f669d7cafc151a、snapshot4eb0b8da9b37a2d3554c6179f479e347fd3ac5e7、control2e70c39fe6a70bbbd09b7434f90e6c2d62e84b16；early生产锁未改，独立回归待红。mac-early-admission-red-42557961726及101th ref已保存；恢复查该ID。
+**42557961726 early锁期限Mac net-node实际预期红**：base91d8777ce7bbe6ad55234482361f399f3f2372d7 clean、tree11262ccc042a1bfcd4628a5b00f669d7cafc151a、snapshot4eb0b8da9b37a2d3554c6179f479e347fd3ac5e7、control2e70c39fe6a70bbbd09b7434f90e6c2d62e84b16；当时early生产锁原样，根格式/net66+1ignored/hop9/wires10/journal28绿、dial_budget2pass1fail仅early持锁40ms不返回至500ms防挂；normal控制绿。mac-early-admission-red-42557961726及101th ref已保存；恢复查该ID。
+
+early准入现按实际红最小写候选：by到期入门与取锁后都拒绝、等待锁timeout_at受同by约束，None原样。到期返回CallerExpired且不写owner共享结果/peer失败；额外过期空锁不拨号覆盖待绿。只有两个准入边界，未补hop/拨号截断分类/普通交换/Accepted回答取消/总期限和长操作档，N2仍不完整。101 refs终态，下一准确源net-node待绿。
+N3已发现旧共享FIFO延迟派发器可能跨方向阻塞，模型校准协议先冻结ACCEPTANCE；此时未改N3派发器/写校准测试或实际测量，不能据toy模型选产品CC。

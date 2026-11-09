@@ -133,3 +133,6 @@ Mac实际host-capabilities见42555870179：VZ=1，16GiB、10CPU、约76.2GB空�
 - 首次先工具/镜像checksum+启动/停止+能力探针，不称产品通过；候选与6485基线使用同一VM配置/后端重新测，不能把旧x86托管结果与新arm64差值当策略收益。
 
 依据：[Lima安装](https://lima-vm.io/docs/installation/)、[VZ](https://lima-vm.io/docs/config/vmtype/vz/)、[默认home挂载及禁用](https://lima-vm.io/docs/usage/)、[固定2.3.0 Ubuntu24.04模板](https://github.com/lima-vm/lima/blob/v2.3.0/templates/_images/ubuntu-24.04.yaml)、[前台hostagent实现](https://github.com/lima-vm/lima/blob/v2.3.0/pkg/instance/start.go)。
+
+
+N3在首个真实测量前新增模型校准审查：congestion.rs双向Lane共用单个按入队FIFO sleep_until的发送任务，存在跨方向队头阻塞，不能代表独立全双工调度。ACCEPTANCE已在改派发器前冻结20ms/1000Bps/两个500B包+反向1B的因果回归及模型版本要求；尚未写测试/修模型或取得运行证据。v2记录器与该物理模型问题分开，不能凭记录完整认定模型可信。
