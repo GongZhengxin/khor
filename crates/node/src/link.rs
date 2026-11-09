@@ -3988,7 +3988,10 @@ impl Node {
                 };
                 // A hop's ask rides the exit's stream (round ROAD-3).
                 match crate::hop::Ask::of(&target) {
-                    Some(ask) => node.serve_hop(ep, &remote, incoming_wire, ask, send, recv, paired).await,
+                    Some(ask) => {
+                        node.serve_hop(ep, &remote, incoming_wire, ask, send, recv, paired)
+                            .await
+                    }
                     None => {
                         let _ = crate::tunnel::serve_target(send, recv, &target, paired).await;
                     }

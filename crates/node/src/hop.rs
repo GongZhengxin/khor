@@ -506,7 +506,8 @@ impl Node {
             None
         };
         let tried = u32::try_from(picked.len().min(TRIES)).unwrap_or(u32::MAX);
-        let Ok(Some((via, outer_wire, send, recv))) = tokio::time::timeout(HOP_WITHIN, tries).await else {
+        let Ok(Some((via, outer_wire, send, recv))) = tokio::time::timeout(HOP_WITHIN, tries).await
+        else {
             if tried > 0 {
                 self.wires
                     .note(Some(&y.id), crate::journal::What::Hop { via: None, tried });
@@ -741,7 +742,9 @@ impl Node {
                         .ok()
                         .map(|(send, recv)| (wire, send, recv))
                 });
-                let Ok(Some((onward_wire, ys, yr))) = tokio::time::timeout(MIDDLE_WITHIN, onward).await else {
+                let Ok(Some((onward_wire, ys, yr))) =
+                    tokio::time::timeout(MIDDLE_WITHIN, onward).await
+                else {
                     return refuse(send, NO_ROUTE).await;
                 };
                 if send.write_all(&[OK]).await.is_err() {

@@ -4,6 +4,9 @@
 
 ## 当前源码与已收齐证据
 
+- **237→239/240 blocked-owner红绿闭合**：240 Turing turing-20261109T214055Z-1eb59ad7实际204.43s/rc0/原group空，与239 Mac完全同source。fmt/net67+1ignored/hop12/wires11/journal30/Linux预算24（91.94s）全部绿；原整个carry tests SHA f6a0e6324d3c2b27763cb80b8e1cb90533727f444dcc521c6742259e20534365与237红相同。blocked-carrier-owner-red-green.json保留准确身份/哈希/双平台结果；只证明blocked stream的owner回收，不替代最优选路验收。
+- **241只在新诊断格式前置失败**：42705246391，完整source/transport/9 control blobs/hash核；尚未编译/执行。远端format.patch原样应用，不计行为回归。接下来NAT r0→r1实际执行与Mac native同源预检可在不同主机并行，Turing仍单重型槽。
+
 - **239 Mac同整blocked-owner合同全绿**：[42704634733](https://github.com/colehank/khor-build/actions/runs/42704634733)，base2654cbdf/tree34c8e822/snapshot8c3205d4/controle4c58dc。fmt/net67+1ignored/hop12/wires11/journal30/budget20（49.93s）绿；完整source/transport/9 control blobs/hash核。整个carry tests模块与237真实红逐字相同，blocked-carrier-owner-red-green.json已记Mac绿，240 Linux同源待核。不是N1最优恢复已通过。
 - **241新诊断与NAT结果标记Mac预检**：[42705246391](https://github.com/colehank/khor-build/actions/runs/42705246391)，requestcc1d544275f64e54814634a87c643184，basef2c40777/tree6c6cd566/snapshot28f49ee6/controle4c58dc，实际状态/结果按句柄核，禁止盲重发。
 - **238物理校准独立数据审计已核**：nat-rebind-calibration.json对准确输入、refs、bundle/control/report哈希、原group空、旧新端口同WAN、固定local tuple/conntrack、两族kernel逐项核；business_executed=false明确保留。下一源只补netlab-result成功行，shell guard保持。
