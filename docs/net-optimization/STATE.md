@@ -87,3 +87,7 @@ N0部分、N1仍红、N2部分、N3部分、N4未完成、N5部分；完整PLAN�
 `git rev-parse refs/khor/net-evidence/<run>:source`必须等于回执tree；只git show读容器，不checkout覆盖/push本地证据refs。失败明确分format/compile/fixture/行为/执行器；tests_executed只按实际子集，历史红不删除。
 Mac source/bundle分支只在终态、证据留存且所有权/SHA匹配后清理；复用源的请求不拥有原源分支。原attempt不覆盖。
 外盘缺失只读`git show feat/net:docs/net-optimization/STATE.md`与PLAN；原外盘未提交内容不能按摘要覆盖。其他治理沿中央STATE/RESUME，不混授权。
+
+## 新接续：普通wire与重试覆盖待远端
+
+上一目标轮为progress（总预算与Accepted双红→绿）。现新增`dial_budget::wire`普通到期并发保活、真实一次读重试剩余预算、写失答不重放/读失答最多一次四用例，生产不变；协议已在ACCEPTANCE冻结，预期补足现有实现绿覆盖，尚未编译/运行。F7真正长黑洞未覆盖，不删除原保护。下一准确源Mac net-node应选中旧7+新4共11预算/流用例。

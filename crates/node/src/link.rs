@@ -13421,6 +13421,8 @@ impl Node {
 mod dial_budget {
     use super::*;
 
+    mod wire;
+
     async fn fixture() -> (tempfile::TempDir, Node, DeviceInfo, iroh::Endpoint) {
         fixture_for(iroh::SecretKey::generate().public().to_string()).await
     }

@@ -209,3 +209,13 @@ STOP_SENDING观察按[Noq 1.3 SendStream::stopped](https://docs.rs/noq/1.3.0/noq
 Accepted前置42566727617未成立，不能算取消行为红。为让本地调度下真正发出early数据，server接到第二次Incoming后延迟100ms才accept/发首TLS握手包，仍以is_0rtt检查为准；该fixture延迟不参与产品性能判断。新增同fixture的deadline变体：warmup后为ask_early传1秒绝对by，必须先adopt且仍在by之前；在by+500ms防挂内必须正常返回CallerExpired，并仍停止回答流、同wire独立请求成功/计数3/零peer失败。旧裸回答所有权保持待红。
 
 **前置修正依据（取新行为红前冻结）**：42566727617只有旧is_0rtt前置红；42567204795格式门失败未测试100ms延迟提议。准确依赖[Noq1.3 poll_accept源码](https://docs.rs/noq/1.3.0/src/noq/connection.rs.html#1147-1159)在应用accept时取is_handshaking，无法保证历史数据包的加密级别。撤回100ms延迟及is_0rtt硬前置，改上述实际Accepted路径与20ms pending观察；没有删除STOP_SENDING、CallerExpired、共享wire/请求计数/peer验收，也不声称该测试验证包级重放安全。详细推理保存evidence/net/accepted-answer-fixture-notes-20261109.md。
+
+## N2普通wire/读重试/写失答覆盖（执行前冻结）
+
+新增`link::dial_budget::wire`四项真实连接覆盖，继续由现有net-node profile选中。复用scratch Node身份fixture；server仅loopback、Minimal无relay/discovery，先完成真实握手并adopt Main wire，再开始预算。生产实现本批未变；这是补足既有贯通候选的运行覆盖，若绿不宣称这些新增用例在旧源实际取红。
+
+- 普通exchange_on在1秒scope内等待一个延迟Sessions回答，同时另一无该scope的Sessions已被同一server接收并等待。仅收到首流STOP_SENDING后才回答第二流。首调用须正常CallerExpired，第二调用成功、stable_id不变、请求数2、零读重试/拨号失败/answer_late/未答退役/down/backoff。by+500ms只是防挂容差，不是产品SLO。
+- 真实ask_on首个Sessions在原2秒scope耗至仅余700ms时关闭连接且失答；第二次真实握手和Sessions必须在原by之前进入，回答保持等待。调用在原by到期而非另起完整预算，第二流收到STOP，恰好两请求/一次读重试/一次真实closed退役，无dial_failed/answer_late/未答退役；第二条live wire保留。
+- 两项失答对照都由server接收并执行后立即关闭conn，不发送回答；server仍继续接收可能的重放（每轮800ms观察、最多4条），不以不服务第二连接隐藏重发。Mkdir只执行一次/零读重试；Sessions严格两次/一次读重试；调用正常错误、server完成，零dial_failed。
+
+所有绑定/初次握手在计时前；任务用Aborts归测试所有，超出观察会abort并join，最后关闭端点。短预算场景不替代真正黑洞持续超过Patience.ack后的F7退役验证，该项仍待Linux/可控故障通道。
