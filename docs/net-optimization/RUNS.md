@@ -406,3 +406,6 @@ Mac便携分流control6b1616c8b816bdb72a8a031d0ff28cc46a3fb4c7在feat/net，沿�
 
 
 **42556474188 Mac net-node在途**，clean5d117deb、tree4f5179e59e64576fd6696b17f23fcc1c50fbc14b、snapshot44930072797913fbefd2a3d1f6e9269965cd0a5d、control2e70c39fe6a70bbbd09b7434f90e6c2d62e84b16。真实Node/Endpoint持dial锁的40ms deadline回归，N2生产未改，预期红未实际取得。mac-dial-budget-red-42556474188与98th ref已保存，勿重发活动run。
+
+
+42556474188终态**根格式门失败**：仅新测试两处assert多行格式，格式patch已下载校验后原样应用；source/tree/control实际匹配，但无编译/测试，不记行为红。98 refs均终态。N2生产原样，下一准确源再取红。

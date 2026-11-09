@@ -15,7 +15,7 @@
 | 产品 | `/Volumes/disk0/Khor/worktrees/current/khor-net`，`feat/net`；恢复核实际HEAD/diff，本轮只新增API bundle入口/测试/文档，37等生产代码仍为72b1d891 |
 | 控制 | `/Volumes/disk0/Khor/worktrees/current/khor-build-net`，`feat/net`；dd57be6c57090a811726983e700d0b39a40fd1e8已push；历史run绑定各自control |
 | 基线 | `/Volumes/disk0/Khor/worktrees/current/khor-net-baseline`，detached6485cb83d3b1f0bb93d4633825dc956623d78af9；只允许paths/hop/lab/nat.rs、dev.py/netlab.sh六fixture；生产基线原样 |
-| 证据 | `/Volumes/disk0/Khor/evidence/net/`；source-refs.json现98条不可变source refs；仅42556474188在途 |
+| 证据 | `/Volumes/disk0/Khor/evidence/net/`；source-refs.json现98条不可变source refs；均已终态 |
 
 ## 执行通道现状
 
@@ -81,4 +81,6 @@ N2新测试a_call_deadline_bounds_waiting_for_another_dial_without_blaming_the_p
 
 ## N2首次锁期限回归调度
 
-**42556474188 net-node executor=mac在途**：base5d117debe832e974daab00d6ebde3348b9cda772 clean、tree4f5179e59e64576fd6696b17f23fcc1c50fbc14b、snapshot44930072797913fbefd2a3d1f6e9269965cd0a5d、control2e70c39fe6a70bbbd09b7434f90e6c2d62e84b16。仅新增测试、生产N2未改，目标为实际锁到期红；未预认定编译或结果。mac-dial-budget-red-42556474188已保存提交回执/raw run；本地ref已create-only锚定，98 refs，恢复只查询该run。
+**42556474188 net-node executor=mac终态格式门失败**：base5d117debe832e974daab00d6ebde3348b9cda772 clean、tree4f5179e59e64576fd6696b17f23fcc1c50fbc14b、snapshot44930072797913fbefd2a3d1f6e9269965cd0a5d、control2e70c39fe6a70bbbd09b7434f90e6c2d62e84b16。仅新增测试、生产N2未改，目标为实际锁到期红；未预认定编译或结果。mac-dial-budget-red-42556474188已保存提交回执/raw run；本地ref已create-only锚定，98 refs，恢复只查询该run。
+
+42556474188已校验准确source/control，未进入编译或单元；仅新assert的远端rustfmt patch，现已原样应用。本机未运行formatter，生产N2仍原样，不记实际期限红。98 refs均终态；下一步格式修正源重跑net-node。

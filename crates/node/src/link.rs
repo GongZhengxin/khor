@@ -13317,9 +13317,15 @@ mod dial_budget {
         .await;
         ep.close().await;
 
-        assert!(answer.is_ok(), "waiting for the dial lock outlived the caller");
+        assert!(
+            answer.is_ok(),
+            "waiting for the dial lock outlived the caller"
+        );
         assert!(answer.unwrap().is_err(), "an expired waiter has no wire");
-        assert!(held.is_none(), "the active dial's shared result is untouched");
+        assert!(
+            held.is_none(),
+            "the active dial's shared result is untouched"
+        );
         assert_eq!(node.wires.counts.snapshot().dial_failed, 0);
         assert_eq!(node.wires.link(&peer.id).down, None);
         assert_eq!(node.wires.backing_off(&peer.id), None);
