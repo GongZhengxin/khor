@@ -462,3 +462,6 @@ net-wan-build仅在原guard/Rust jobs限制内编译net_wan_probe，记录source
 
 
 N1后续outer副本快照只持WeakConnectionHandle，沿actual initiator incoming/onward/receiver端读path_facts；initiator复用原LOOK_EVERY，middle与receiver的5秒interval只在诊断开启时存在、同一等待future select范围内回收，不派脱离owner的后台observer。默认原splice/ended await不增加timer/probe。其采样/wake开销属于额外诊断，禁止拿这种分布当普通性能收益。旧peer_relay_replug_v1物理/Rust测试fixture仍保持；未来先核实际承载四端/过期质量/所有权与日志时间，再改政策。
+
+
+Mac-only net-wan-lifetime可通过既有GH installed guard通道执行上面三种真实Node退出合同，避免把独立iroh-ssh认证前超时当产品失败。只发送ready/stop、EOF或受控kill bridge，绝不mint/pair票。guardian新增为bootstrap准确control blob，FD与PGID由原guard继承，所有private RPC由进程pipe/Unix socket承载；公开报告只有source/binary hash、run-id、join与owned process证明。正向通过后仅删本次已核owner且进程空的home/tmux/binary；失败保留private诊断状态并停止后续case。binary manifest执行标记依据runtime结果更新，不能仍称“未运行”。这不是Mac↔Turing业务验收；后续临时能力仍只能经可信私有通道传递，不能为了测试进artifact/日志。

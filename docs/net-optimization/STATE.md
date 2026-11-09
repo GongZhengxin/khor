@@ -1,6 +1,6 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-09 22:47 UTC（本地2026-11-10）。root串行，无子智能体。
+更新：2026-11-09 23:08 UTC（本地2026-11-10）。root串行，无子智能体。
 
 完整目标仍是完成[PLAN](PLAN.md)的N0–N5，尚未完成。用户已授权实施/远端验证并多次要求继续；U14明确不能因goal服务paused或阶段通过自行停止。后台调度状态不是本轮停止/授权门，不另建目标，不伪造complete/blocked。速度和体验优先，个人可信设备网络；无合main、发布、中继采购/生产部署授权。
 
@@ -8,6 +8,9 @@
 
 ## 先核当前句柄，禁止盲重发
 
+- **当前Turing唯一重型任务260**：turing-20261109T230112Z-9c86057f，PID1251102，outer-copy真实快照诊断；base2aa73679/tree26251e706f114acf4f2524c0bd7fda48a8d07401/snapshot73ba9741e0d7b2f63e19212eae039764d62e9fbd/controlbe11104，已修weak_handle API。按同句柄核真实终态，不能盲重发。
+- **261 Mac42717041225已完成绿（原始身份核中）**：request5d463e2944a045e4b6f7cb9f1bb6023d，base2aa73679/tree26251e70/snapshotee6a81b3/control d16ed041dd09067485b407fd924668a5cd96c38b。同代码tree但snapshot元数据与260不同，不称相同完整snapshot。
+- **Mac SSH重试3次均认证前失败，真实Node退出未执行**：ops/wan-runtime-contracts.py没有上传/启动Node，wan-leases/preflight.json保留not_started；独立本地SSH master同样未认证，专用控制连接已结束。既有GH channel正常，因此新增Mac-only net-wan-lifetime：原guard内编译并核binary，然后不mint/pair，只跑stop/EOF/bridge-kill真实Node并核serve join/owned process空，成功后清本次fresh home/tmux/复制binary，报告只收sanitized JSON。普通artifact不含私钥/票/二进制；控制bootstrap新增guardian作为第10个准确blob，旧9blob结果仍保留原边界。13个Python stub/小Git控制检查绿；真实合同待GH执行，不能先记通过。
 - **259仅诊断编译失败，未执行移动病例**：turing-20261109T224926Z-8bca1d0d，49.78s/rc1/原group空，basee5a0e997/treec47a9aa2/snapshot1681dbdd/controlbe11104。fmt/namespace前置通过，但三个位置误用了不存在的Connection::downgrade；已对照vendored endpoint API改weak_handle()，不改选路/回收协议，不计产品行为红。下一准确源继续真实四端快照。
 - **Mac SSH再次为认证前超时，Node退出合同尚未实跑**：独立private master及30秒控制连接等待也未认证，WAN脚本未上传/未启动resident；早前成功连接事实保留，不推Mac离线/不称Khor故障。改沿已有GH guard通道执行无pair/mint的stop/EOF/bridge-kill真实Node合同，不再依赖SSH；真正跨网临时能力仍需私有可信传递，不进入普通artifact/日志。
 - **256 Mac/257 Turing同整source WAN build-only已绿**：Mac42713674809，Linux turing-20261109T224020Z-47ce1ea3（69.89s/rc0/原group空）；source baseff608e91/tree7d0c74673460a512ab4f271802372e6fb7f31550/snapshotb13e4398491b7d6d85568b3e5900ac850bbf2203/controlbe11104。wan-binary-manifests.json留实际两架构hash/path/bytes/source；普通artifact无二进制，executed=false，尚未启动Node。runtime必须guard下重核hash/copy至fresh owner/run root，不直接信mutable cache。Mac binary约182MB，Linux207MB，只在各自服务器。
