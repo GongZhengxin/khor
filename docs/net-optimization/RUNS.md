@@ -669,3 +669,8 @@ N0 v4源码开始记录paths/hop逐次logical_request和f4故障窗口，ignored
 
 
 187th Mac42655499657同186完整source，root fmt/net66+1ignored/hop9/wires11/journal29/portable20全绿，所有source/control/transport/hash核留。188th Mac42655862010，basef17f07e1/treea56bdd85/snapshotbefe92e5/control39633806，**仅format红**（eprintln一hunk），无行为测试；原patch应用。186前两轮原f4门绿但诊断助手错误要求splice-only M也有端点载路事件，导致采集校验红；不能算产品红。修正模式校验与先保存文件，尚未重验；三轮原任务继续，不重发同run。
+
+
+186th诊断终态**fixture红3次**，458.77秒；三个f4结果行绿，但M日志assert拦住末尾原断言，不能记原门已过。73/73 logical_request完整、全部ok，六x/y日志实核samples=off且仅attach＋committed，无释放/结束；M文件缺失已解释并修正。所有source/control/bundle/group/hash采核。190th turing-20261109T163727Z-f72bdaf4修正后独立诊断已launch PID774320，同189完整snapshot/control39633806，不含后续所有权修复。
+
+189th Mac42656499764 **真实旧watcher所有权policy红**，base656e274e/tree70acbbc1/snapshota13dce7d/control39633806。root fmt/net66+1ignored过，hop9过1红；两个当前owner控制、old ended/new live/different serial/same via/never lost全部先通过，再实际release尾部关闭新link并错误lost。raw alive_after=false/lost_after=true；整fixture SHA f620fc97...完整留证。不是format/fixture红；未跑wires/journal/dial，不等同182原f4因果。下一版只限定实际释放需当前serial，测试逐字不改、原计时/quality门保持。

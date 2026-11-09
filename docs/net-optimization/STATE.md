@@ -79,3 +79,10 @@ control39633806已push新增SSH-only netlab-hop-ownership：原f4单线程三轮
 187已终态成功：准确186同源Mac root fmt/net66+1ignored/hop9/wires11/journal29/portable20（49.95秒）绿，完整source/transport/control/hash已核；不覆盖之后新合同或CLI模式。188 Mac42655862010（basef17f07e1/treea56bdd85/snapshotbefe92e5/control39633806）只有eprintln一hunk format红，无编译/测试；原patch已应用。
 
 186前两轮原f4恢复门绿，但诊断采集校验因M没有端点载路事件而失败；不可记整个任务绿或产品红。M是splice角色，无此事件本来合法。x/y已各核真实committed serial1、没有释放/结束；第3轮仍在跑。工作副本修正为所有resident需正确mode header，实际事件逐角色核对，先保存原始serve日志再assert。原故障/准备/恢复/时长/门不变，当前源待新准确运行。
+
+
+189 Mac42656499764真实policy红（base656e274e/tree70acbbc1/snapshota13dce7d/control39633806）：root fmt/net66+1ignored保持、hop9过1红。当前Relay/Direct owner释放与cooldown两个控制先过；旧serial1已ended，新serial2真实duplex actor活着、同via、未曾lost，最后实际release尾部使alive_after=false/lost_after=true。whole fixture SHA f620fc97b204ca6a2e78a45715e9b6205f026c8a4e9069ea4354b51590318c5f已留；完整source/transport/control/hash核留，wires/journal/dial未到。
+
+当前修复只加Links::detach_attached：在同一map锁内核carrier＋serial后删除，原kind-only detach行为保留。实际watcher release只有成功移除当前owner才标lost；过期owner记hop_release_not_current并返回，原测试逐字不变、2×5秒与质量条件不改。尚待新准确源验证。这是独立真实资源所有权反例，不冒称182/162因果已定。
+
+186已终态采证458.77秒、3次fixture红：三个原f4结果行绿，但M诊断assert在末尾原恢复断言前，原断言未到，故不能计原门通过。73请求146事件完整且全部ok；六个x/y文件各仅attach意图＋committed serial1，无IO结束/释放。M原日志未复制，这是已修的采集缺口。190`turing-20261109T163727Z-f72bdaf4`已launch PID774320，用189完整source（只有释放helper抽取，无本批所有权修复）/control39633806，修正splice日志后独立三轮非SLO；准确源已固定，不受当前修复影响。

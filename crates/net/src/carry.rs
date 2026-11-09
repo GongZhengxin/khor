@@ -115,7 +115,7 @@ pub struct Attached {
 }
 
 impl Attached {
-    /// Process-local attachment identity for lifecycle observations.
+    /// Attachment identity within the Links table that created it.
     pub fn serial(&self) -> u64 {
         self.serial
     }
@@ -204,15 +204,30 @@ impl Links {
     /// queue closes, so its writer and then its task end. A newer link of
     /// another kind is left alone.
     pub fn detach(&self, peer: &EndpointId, carrier: Carrier) {
+        self.detach_matching(peer, carrier, None);
+    }
+
+    /// Ends only the attachment this owner created. A later stream of the
+    /// same kind, even through the same middle, belongs to its new owner.
+    /// Returns whether the current link was removed.
+    pub fn detach_attached(&self, peer: &EndpointId, carrier: Carrier, serial: u64) -> bool {
+        self.detach_matching(peer, carrier, Some(serial))
+    }
+
+    fn detach_matching(&self, peer: &EndpointId, carrier: Carrier, serial: Option<u64>) -> bool {
         let mut map = self.lock();
-        if map.get(peer).is_some_and(|l| l.carrier == carrier) {
-            observe_lifecycle(peer, "link_detached", || {
-                serde_json::json!({
-                    "serial": map.get(peer).map(|l| l.serial), "carrier": format!("{carrier:?}"),
-                })
-            });
-            map.remove(peer);
+        if !map.get(peer).is_some_and(|l| {
+            l.carrier == carrier && serial.is_none_or(|expected| l.serial == expected)
+        }) {
+            return false;
         }
+        observe_lifecycle(peer, "link_detached", || {
+            serde_json::json!({
+                "serial": map.get(peer).map(|l| l.serial), "carrier": format!("{carrier:?}"),
+            })
+        });
+        map.remove(peer);
+        true
     }
 
     /// Frames dropped on a full queue since this table was made.

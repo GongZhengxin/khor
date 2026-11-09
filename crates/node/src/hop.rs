@@ -155,6 +155,12 @@ fn release_measured_hop(
     road: Option<khor_net::path::PathKind>,
     looks: u8,
 ) {
+    if !links.detach_attached(&peer, Carrier::Hop { via }, attachment) {
+        khor_net::carry::observe_lifecycle(id, "hop_release_not_current", || {
+            serde_json::json!({ "attachment": attachment, "via": via.to_string() })
+        });
+        return;
+    }
     khor_net::carry::observe_lifecycle(id, "hop_measured_release", || {
         serde_json::json!({
             "attachment": attachment, "via": via.to_string(), "road": format!("{road:?}"), "looks": looks,
@@ -163,7 +169,6 @@ fn release_measured_hop(
     if road == Some(khor_net::path::PathKind::Relay) {
         lost(id, &via.to_string());
     }
-    links.detach(&peer, Carrier::Hop { via });
 }
 
 /// Per (this machine, far machine): hops this machine asked for, opening
