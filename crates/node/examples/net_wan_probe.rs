@@ -60,7 +60,12 @@ mod unix {
                 peer(node, expected)?;
                 Ok(json!({"name": name, "peer": expected}))
             }
-            "devices" => serde_json::to_value(node.devices()?).map_err(|e| e.to_string()),
+            "devices" => Ok(Value::Array(
+                node.devices()?
+                    .into_iter()
+                    .map(|d| json!({"id": d.id, "name": d.name}))
+                    .collect(),
+            )),
             "links" => serde_json::to_value(node.links().await.map_err(|e| format!("{e:?}"))?)
                 .map_err(|e| e.to_string()),
             "read" => {

@@ -8,6 +8,8 @@
 
 ## 先核当前句柄，禁止盲重发
 
+- **253样本诊断已终态**：turing-20261109T222815Z-b033159a，246.74s/rc0/原group空；准确原source、samples模式1，124/124可达但60秒未reported双向再hold10s。inner只见+约0.58s Custom→Relay故障Go，未见20秒内回Custom确认；X+21.5/+26.5s已无Custom→Unused回收，+56.4s重新attach serial3。不是单纯固定确认门7.5s可概括；实际outer carrier副本需要单独快照。不把详细日志当普通SLO对照。
+- **255首次WAN仅编译失败**：42712837277/requestb8c661be41984a3a920027748ca7e76e，basecba63d7b/tree48a934a9/snapshotcd8f0d29/controlbe11104。root fmt通过、Rust example因DeviceInfo没有Serialize而失败，没有启动Node或产出成功manifest。只将devices控制回复显式映射id/name，避免序列化无关设备字段；继续build-only验。lease supervisor/真实清理合同尚未实现，不称跨网已通。
 - **当前唯一Turing重型任务253**：turing-20261109T222815Z-b033159a，netlab-peer-mobility-samples，PID1217909/child以execution核；复用251/249完整source c01c72de/tree4d493502/snapshote3be1244，control ef0b1ab021802a17710a6748e373ea12b87bf52d。只是额外samples debug诊断，不混普通性能/放宽门。后续本地WAN代码不混入。
 - **254 Mac42712203779仅WAN草稿format前置失败**，requesta04744c77223427b86f4d945de8448b0，base73cd2166/tree2d2b4be3/snapshot05532efd/controlef0b1ab。尚未编译/执行；远端format.patch原样应用。源码/transport/9control blobs/hash按verification核，不把格式失败记成资源/业务反例。
 - **build-only控制be11104f0149637c918456bbfba5329578aea096已push**：net-wan-build在原guard内仅cargo build khor-node example、核cache二进制是本UID正规非symlink可执行文件并写source/hash/path/size manifest，明确executed=false。普通artifact不含二进制；cache路径可变，真正runtime copy前必须在guard下重核hash。12个Python stub/小Git控制合同绿，含普通/缺文件/伪symlink与bootstrap输入校验；本机不运行Rust。下一Mac只编译，不启动居民；lease supervisor与真实EOF/kill/join合同及双host实测仍未完成。
