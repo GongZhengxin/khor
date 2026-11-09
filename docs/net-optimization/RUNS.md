@@ -332,3 +332,11 @@ NAT helper仅失败后输出两端既有path诊断，门和注入不变。提交
 35已提交66e37760。新增故障确认回归取红 **42541459177 net-vendor**：base66e37760 dirty、tree32f638229d81beea7cd0dc40ccd16d67cb35282a、snapshot00e5b0a17f4364e83ba3a0c42d6a5a3361db7a0c、controlc68b644。
 只新增a_fault_move_probes_the_current_road_and_requires_a_post_decision_backup_sample，备用包在故障后但决定前发出时，要求Hold并探测当前路/候选。
 生产35未改；预期436Noq绿/34路径pass1fail，未出结果不预认定。拟修leave的决定后证据与当前最高PTO副本探测，仍需p3<1秒/防抖/转发共同复验，不引入应用请求重放。86 refs。
+
+42541459177终态预期产品红：**436Noq绿/iroh34pass1fail**，仅新fault_move回归失败，实际Go、期望Hold {from:true,to:true}；fault-confirmation-red-42541459177。原4秒兜底等既有测试通过，home过滤器因路径红未执行，不回填成绩。
+
+36候选已写未验证：leave用max(since,began)后的备用包，候选探测tick也夹在此后；Hold双向PING。当前路选择最高PTO live copy，候选最低PTO copy；可选日志记实际conn/path/pto/result。原4秒上限不延长、正常收益/确认/routine wake规则不变，没有应用请求重放。旧早期fault测试按新协议要求先探测，再用决定后答复Go；额外检查原normal move更早时不能用故障前样本。
+
+同treea7f419472a9189c691a773535c70d223c2921ff9、base6c62a1bf dirty、controlc68b644两项在途：**42542123882 net-vendor**，snapshot2de64d8fa80f2fa067e82eddba2e2dfd7514ba76（目标436/35/9）；**42542228149 netlab-diagnostic**，snapshot44cde49b6afb8e561a5e8664253aa7ddc93d218e（原f4s/p1s完整时长、日志非SLO）。产品9项Python/diff检查通过。增加当前PING的代价与p3<1秒/稳定性/转发必须一起复验，不能靠单元完成N1。88源ref，另35普通stalls继续独立在途。
+
+42542123882终态 **SUCCESS 根格式、436Noq/35路径/9选家**，fault-confirmation-green-42542123882。新fault回归34/1红→35绿；另在同用例补normal move更早时的故障前样本保护，只记为额外绿覆盖。提交前36策略文件与绿快照无diff；实际普通p3/防抖/转发与日志诊断仍待，不能以单元称5次抖动或<1秒恢复已收口。

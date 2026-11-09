@@ -1092,15 +1092,27 @@ impl RemoteStateActor {
         let ping = match step {
             Step::Go => return true,
             Step::Rest => return false,
-            Step::Hold { from: f, to: t } => [(f, from), (t, to.clone())],
+            Step::Hold { from: f, to: t } => [(f, true, from), (t, false, to.clone())],
         };
-        for (_, road) in ping.into_iter().filter(|(p, _)| *p) {
-            let copy = self.connections.values().find_map(|c| {
-                let path_id = c.paths.iter().find(|(_, t)| **t == road)?.0;
-                c.handle.upgrade()?.path(*path_id)
-            });
-            if let Some(path) = copy {
-                let _ = path.ping();
+        for (_, current, road) in ping.into_iter().filter(|(p, _, _)| *p) {
+            // An idle copy can be the only one in PTO while another copy of
+            // the same road answers. Probe the suspect copy, not an arbitrary
+            // healthy one; the candidate instead uses its least-backed-off copy.
+            let road = &road;
+            let copy = self.connections.iter().flat_map(|(conn_id, c)| {
+                c.paths.iter().filter_map(move |(path_id, tuple)| {
+                    if tuple != road {
+                        return None;
+                    }
+                    let conn = c.handle.upgrade()?;
+                    let pto_count = conn.path_stats(*path_id)?.pto_count;
+                    let priority = if current { pto_count } else { u32::MAX - pto_count };
+                    Some((priority, *conn_id, *path_id, pto_count, conn.path(*path_id)?))
+                })
+            }).max_by_key(|(priority, ..)| *priority);
+            if let Some((_, conn_id, path_id, pto_count, path)) = copy {
+                let result = path.ping();
+                debug!(target: "khor_net_samples", ?conn_id, ?path_id, current, pto_count, ?result, "confirmation probe");
             }
         }
         false
@@ -2321,8 +2333,9 @@ enum Step {
 
 impl Moving {
     /// One tick of the selection wanting to leave a path that stopped answering at `began` for
-    /// `to`: [`Step::Go`] once `to` took a sample after `began` (`to_sampled`), or after
-    /// [`CONFIRM_MAX`] of wanting it whatever; until then `to` is pinged.
+    /// `to`: [`Step::Go`] once `to` took a sample after this decision and `began`, or after
+    /// [`CONFIRM_MAX`] of wanting it whatever. Until then both roads are probed: an idle
+    /// copy's PTO must not move a healthy road before that copy gets a fresh opportunity.
     fn leave(
         &mut self,
         to: &transports::FourTuple,
@@ -2337,13 +2350,13 @@ impl Moving {
                 now
             }
         };
-        if to_sampled(began) || now >= since + CONFIRM_MAX {
+        if to_sampled(since.max(began)) || now >= since + CONFIRM_MAX {
             self.to = None;
             return Step::Go;
         }
-        let tick = now.checked_sub(RESELECT_INTERVAL).unwrap_or(now);
+        let tick = now.checked_sub(RESELECT_INTERVAL).unwrap_or(now).max(since).max(began);
         Step::Hold {
-            from: false,
+            from: true,
             to: !to_sampled(tick),
         }
     }
@@ -3668,13 +3681,13 @@ mod tests {
     /// 10-21: a road that stopped answering is left for one that answered since, at once if it
     /// did; one that has not is pinged until it does, or for [`CONFIRM_MAX`].
     #[test]
-    fn a_silent_road_is_left_for_one_that_answered_since() {
+    fn a_silent_road_uses_a_new_backup_round_trip_before_leaving() {
         let t0 = Instant::now();
         let began = t0 - MS(300);
         let to = addr(2);
         let mut m = Moving::default();
-        assert_eq!(m.leave(&to, t0, began, |after| after < t0), Step::Go, "the spare answered after the stall began");
-        assert_eq!(m.leave(&to, t0, began, |_| false), Step::Hold { from: false, to: true }, "it has not: ping it");
+        assert_eq!(m.leave(&to, t0, began, |after| after < t0), Step::Hold { from: true, to: true }, "the spare's old answer predates the decision");
+        assert_eq!(m.leave(&to, t0, began, |_| false), Step::Hold { from: true, to: true }, "probe both roads while waiting");
         assert_eq!(m.leave(&to, t0 + MS(250), began, |after| after < t0 + MS(100)), Step::Go, "now it did");
         let mut m = Moving::default();
         assert!(matches!(m.leave(&to, t0, began, |_| false), Step::Hold { .. }));
@@ -3701,6 +3714,11 @@ mod tests {
         let step = moving.leave(&to, now, now - MS(500), |after| old_backup_packet > after);
         assert_eq!(step, Step::Hold { from: true, to: true },
             "probe the suspected current copy as well; a pre-decision backup ACK cannot end confirmation");
+        let mut older_move = Moving::default();
+        let _ = older_move.step(&to, now - MS(1000), MS(30), MS(20), |_| false, |_| false);
+        let before_fault = now - MS(600);
+        assert_eq!(older_move.leave(&to, now, now - MS(500), |after| before_fault > after),
+            Step::Hold { from: true, to: true }, "an older move cannot reuse a pre-fault sample");
     }
 
     #[test]
