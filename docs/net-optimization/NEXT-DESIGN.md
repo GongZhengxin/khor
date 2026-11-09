@@ -161,3 +161,19 @@ N3模型校准与v2首批三轮已由42560015454实际通过：704全量请求0�
 
 
 本轮scope双回归已由42562932053实际取红。候选连接Op入口的原档-.5s截止点、锁/hop/拨号/普通交换重试；网络阶段显式取早，拨号保留独立安全上限并区分CallerExpired。独立ask无Op时以Request自身工作预算加现有dial25s/hop3s/最大road120s组成外层上限，各阶段自己的上限仍可先结束；原套IPC档位提议经复核撤回，以免压缩工作加路程预算。实际Op保留其原档截止点。更新拨号另保留原10秒上限，不把它误归为CallerExpired。退役仍凭原RetireUnheard证据；IPC半关闭/准入未改。该候选尚未编译/验证，Accepted后回答所有权故意保持原状，下一独立真实0RTT测试先取红后修，前台spawn/后台入口继承审计继续。
+
+## N2跨spawn所有权初审（本轮静态，未作通过证明）
+
+图谱先查run_handoff_within/ask_early；doctor::any_relay_answers不在当前图谱，随后定向源码读取。此次只覆盖link.rs显式spawn及配对探针，不代表全仓异步任务审计。
+
+| 任务 | 目前归属与接续 |
+| --- | --- |
+| ask_early回答 | 属于正在等待的前台ask；握手Accepted后原take裸handle会丢失abort owner，真实回归先取红。回答显式沿用by，不依赖task-local自动继承 |
+| dial_with两候选 | 已是JoinSet，父未来退出会abort输者；候选显式by、延迟候选在开始connect前检查；尚需真实资源释放与不额外拨号的验证 |
+| pair_with中继探针 | 父任务手动abort只覆盖正常分支；外层取消会drop裸handle。any_relay_answers还创建Vec裸JoinHandle，成功/取消也可能留下其它HTTP探针。需验证并贯穿取消所有权，不能只包最外层就称解决 |
+| reach/code/borrow代理 | 已建立的常驻listener归Node映射/HostedBorrow；前台操作结束后应继续服务，不继承已结束by。创建阶段/中途取消的资源释放仍需测 |
+| nudge/Pump/Visit/配对后visit | 独立同步工作，现有频率/合并机制不改；不自动继承前台by。后台多阶段的整体预算与风暴测试仍缺 |
+| drop_here/pending_takes | 持久任务/传输job独立于第一次查询；不能因前台完成就取消。run_drop/run_take整体预算/取消边界继续核查，不能将每次ask的新预算当完整job上限 |
+| serve_tunnel/handle/serve_updates | 远端响应任务归连接/服务器生命周期，不继承本机前台Op；应保留各自服务预算、信任与0RTT准入 |
+
+上述表把“要随调用停止”与“有意常驻”按已有产品语义确认，没有新增全局任务deadline或扩大请求重放白名单。
