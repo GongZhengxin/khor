@@ -145,7 +145,8 @@ fn was_lost(to: &str, via: &str) -> bool {
         .is_some_and(|t| t.elapsed() < LOST_FOR)
 }
 
-/// The watcher's measured release, after its two losing looks.
+/// Reclaims a carrier after two looks. Only an actual comparison loss
+/// suppresses its middle; disappearing paths merely make it unused.
 fn release_hop(
     links: &khor_net::carry::Links,
     id: &str,
@@ -154,7 +155,7 @@ fn release_hop(
     attachment: u64,
     road: Option<khor_net::path::PathKind>,
     looks: u8,
-    _comparison: CarrierComparison,
+    comparison: CarrierComparison,
 ) {
     if !links.detach_attached(&peer, Carrier::Hop { via }, attachment) {
         khor_net::carry::observe_lifecycle(
@@ -164,12 +165,18 @@ fn release_hop(
         );
         return;
     }
-    khor_net::carry::observe_lifecycle(id, "hop_measured_release", || {
+    let phase = match comparison {
+        CarrierComparison::Unused => "hop_unused_release",
+        _ => "hop_measured_release",
+    };
+    khor_net::carry::observe_lifecycle(id, phase, || {
         serde_json::json!({
             "attachment": attachment, "via": via.to_string(), "road": format!("{road:?}"), "looks": looks,
         })
     });
-    if road == Some(khor_net::path::PathKind::Relay) {
+    if comparison == CarrierComparison::Outperformed
+        && road == Some(khor_net::path::PathKind::Relay)
+    {
         lost(id, &via.to_string());
     }
 }

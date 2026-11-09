@@ -4,6 +4,9 @@
 
 ## 当前源码与已收齐证据
 
+- **232真实行为红→最小条件修正待验证**：`turing-20261109T211634Z-78586410`，base8a886552/tree11788251/snapshot4b8bc522/controle4c58dc，112.05s、rc101、原group空。fmt/net66+1ignored过；hop11绿1红，真实Links/current owner回收完成而suppressed=true。旧测量Relay/Direct、旧owner与冷排序正反控均绿。候选只在comparison=Outperformed且road=Relay时lost，Unused仍回收但记hop_unused_release；原LOST时长/收益/两look/owner guard不变。整个hop测试模块字节未改，proof unused-hop-release-red-green.json；完整实际移动仍待复验。
+
+
 - **231仅根format前置失败，Unused合同未执行**：`turing-20261109T211319Z-3e206189`，base9333af64/tree20b1c7fa/snapshot8efac588/controle4c58dc；43.73s、原group空。4278字节远端format.patch已原样应用，原退避行为仍保留；下一准确源取真实红，不把格式失败记成行为红。
 
 
