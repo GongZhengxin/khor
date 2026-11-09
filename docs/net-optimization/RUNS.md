@@ -482,3 +482,6 @@ N3道路双向因果校准测试已按先前协议写下，模型未改；contro
 
 
 42564749932终态**Node编译失败**：根格式/net66pass+1ignored绿；dial_update旧std参数与新Tokio签名不匹配，Node测试未执行。准确tree1f167717/snapshotc39f8cc6/control0cff967/ref已核，mac-operation-budget-propagation-42564749932保留raw与classification；tests_executed=true仅net单元，不算行为红。修正候选保留更新10秒自身上限，另合入操作截止点；独立ask外层预算改由已有阶段上限合成，不套IPC档位。110 refs全终态。
+
+
+**42565998212 Mac net-node更新拨号上限修正候选在途**：baseeb4f8c1b70d118394b596ff21bd31a280ad4a412 clean、treeab8e723fbb02aecb43f7c86b0577563f6c32052b、snapshot8964af950889ceec388af1af9eabf900db9206eb、control0cff9671fb2f80945423132e0df46995f6ff3198；111th ref和mac-operation-budget-limits-42565998212已锚。更新保留原10秒自身上限；独立ask外层由既有阶段预算合成。待格式/编译/五预算回归，不预记绿。
