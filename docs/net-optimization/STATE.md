@@ -86,3 +86,8 @@ control39633806已push新增SSH-only netlab-hop-ownership：原f4单线程三轮
 当前修复只加Links::detach_attached：在同一map锁内核carrier＋serial后删除，原kind-only detach行为保留。实际watcher release只有成功移除当前owner才标lost；过期owner记hop_release_not_current并返回，原测试逐字不变、2×5秒与质量条件不改。尚待新准确源验证。这是独立真实资源所有权反例，不冒称182/162因果已定。
 
 186已终态采证458.77秒、3次fixture红：三个原f4结果行绿，但M诊断assert在末尾原恢复断言前，原断言未到，故不能计原门通过。73请求146事件完整且全部ok；六个x/y文件各仅attach意图＋committed serial1，无IO结束/释放。M原日志未复制，这是已修的采集缺口。190`turing-20261109T163727Z-f72bdaf4`已launch PID774320，用189完整source（只有释放helper抽取，无本批所有权修复）/control39633806，修正splice日志后独立三轮非SLO；准确源已固定，不受当前修复影响。
+
+
+192 Mac42657406850与191 staged源完全相同（base62cf1cb3/tree47413f50/snapshotf6a5c0e4/control39633806），只有observer helper一hunk format红，未编译/行为测试；原patch已应用，189整fixture仍逐字不变。191 Turing从未launch，已实际核remote无execution/launcher并标superseded_not_launched，inputs/ref保留；不浪费一个重型槽重跑已知format红。下版新准确源重新验证。
+
+190修正诊断首轮出现真实f4红：恢复后1.6秒超过原1.5秒门，最长请求5.0秒，没有后续回退；各resident日志均已保存，末尾原断言到达。仍在后两轮；门不放宽，不能与186采集错误混为一类，亦不归因尚未包含的新owner修复。

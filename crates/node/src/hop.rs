@@ -156,9 +156,11 @@ fn release_measured_hop(
     looks: u8,
 ) {
     if !links.detach_attached(&peer, Carrier::Hop { via }, attachment) {
-        khor_net::carry::observe_lifecycle(id, "hop_release_not_current", || {
-            serde_json::json!({ "attachment": attachment, "via": via.to_string() })
-        });
+        khor_net::carry::observe_lifecycle(
+            id,
+            "hop_release_not_current",
+            || serde_json::json!({ "attachment": attachment, "via": via.to_string() }),
+        );
         return;
     }
     khor_net::carry::observe_lifecycle(id, "hop_measured_release", || {
