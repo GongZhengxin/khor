@@ -1,6 +1,6 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-09 22:17 UTC（本地2026-11-10）。root串行，无子智能体。
+更新：2026-11-09 22:27 UTC（本地2026-11-10）。root串行，无子智能体。
 
 完整目标仍是完成[PLAN](PLAN.md)的N0–N5，尚未完成。用户已授权实施/远端验证并多次要求继续；U14明确不能因goal服务paused或阶段通过自行停止。后台调度状态不是本轮停止/授权门，不另建目标，不伪造complete/blocked。速度和体验优先，个人可信设备网络；无合main、发布、中继采购/生产部署授权。
 
@@ -8,8 +8,11 @@
 
 ## 先核当前句柄，禁止盲重发
 
+- **251/252已终态，当前无Turing重型在途**：251 turing-20261109T221609Z-bf323de3，168.30s/rc0/原group空，124/124ok、原hold10420/10406ms、replug298ms。实际outer Direct约+1.2s，inner selected carried约+7.4/+7.5s。after AB p50155031us、BA110693us，但两个方向顺序采样（AB较早），不能据差值称持续方向性故障；实际request wire在+7873ms也回Carried。3resident没有tuple mismatch/refresh，M移动不是247的被动NAT缓存反例；仍要收敛约6秒inner确认/恢复等待。252 Mac42710424112同249准确source/control，fmt/net67+1ignored/hop12/wires11/journal30/budget20（49.89s）全绿，完整source/transport/9control blobs/hash核。
+- **下一独立样本诊断**：保留251整source/fixture，另netlab-peer-mobility-samples只把diagnostic=lifecycle改成1（samples debug），记录Moving/确认/质量时序；这不是无诊断性能比较，不能放宽原门。控制正在单独stub验证/提交，句柄后续按ledger核。
+- **N4跨网进程源码初稿**：crates/node/examples/net_wan_probe.rs。Unix私有lease socket、fresh root/role/run-id/权限核、Node::serve+open_as、仅mint/pair/devices/links/fixture-read/stop，peer身份与machine对应，租约EOF/绝对期限时stop_serving并join；Windows仅明确unsupported入口。尚未远端format/编译或启动resident，supervisor与EOF/kill合同/双host实际验收未写完，不能当N4已通。首次mint/pair能力只过私有socket，不进stdout/artifact。
 - **249严格NAT实物理红绿闭合、250 Mac vendor同源全绿**：249 turing-20261109T221123Z-cf202137，136.20s/rc0/原group空；原整个fixture SHA ac97726906429a5dd63dd91b5c9ed99624c273d9a253f7facb916ffcf47e8a9b和同一独立严格合同字节未变，30/30实际warm remote streams选中新Direct :50002、0 cached/actual mismatch、实际refresh1次。124/124全部ok，after AB/BA p50 21115/21297us；首BA748962us仍需优化。250 Mac42709847858准确同snapshot/control，fmt/Noq438/iroh路径36/选家9全绿；source/transport/9control blobs/hash核。nat-tuple-red-green.json、249/nat-selection-contract.json留证；只有单病例/单轮，不冒称p99/整个U12完成。
-- **当前唯一Turing重型任务251**：turing-20261109T221609Z-bf323de3，netlab-peer-mobility，沿249完整source/control，PID按receipt。原peer_relay_replug_v1整fixture保持，复验middle换网与实际承载。252 Mac另跑同249源net-node，句柄待提交收据核；不同主机，不污染Turing计时。
+- **251已终态**：turing-20261109T221609Z-bf323de3，netlab-peer-mobility，沿249完整source/control，PID按receipt。原peer_relay_replug_v1整fixture保持，复验middle换网与实际承载。252 Mac另跑同249源net-node，句柄待提交收据核；不同主机，不污染Turing计时。
 - **249已终态**：turing-20261109T221123Z-cf202137，PID1198443/child1198657，netlab-nat-rebind-lifecycle；basec01c72de/tree4d49350250ac97e03e0bac4b5974e1de2b97e949/snapshote3be1244d4741390d296205f1a5372c80f9d043c/controlfc204ac。候选功能4a0c359b。最后已实际编译、r0物理1/1绿，r1在途；原整个rebind.rs与独立严格合同SHA均核不变。
 - **250 Mac42709847858已终态绿**，requesteb05eac32faa47e5bb25772d55ae925a，net-vendor，与249完整source/control一致，运行Noq整个lib、iroh remote_state与khor_home，非仅便携net-unit。终态按句柄核。
 - 产品worktree `/Volumes/disk0/Khor/worktrees/current/khor-net`，feat/net；最新功能2654cbdf，后续增加诊断与文档，实际HEAD/diff以Git为准。control `/Volumes/disk0/Khor/worktrees/current/khor-build-net`，feat/net，已push **fc204ac4764fab1bcb71842b0e95ce9b49e4e7a5**。
