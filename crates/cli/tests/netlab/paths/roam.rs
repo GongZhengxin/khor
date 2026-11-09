@@ -51,11 +51,20 @@ fn router_state(router: &Router, s: &str, phase: &str) {
         .wait_with_output()
         .unwrap();
     assert!(output.status.success());
-    let rules: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    // nft 0.9.3 can print no JSON at all for a namespace with no rules.
+    // Preserve the raw output rather than parsing that as a malformed ruleset.
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    let rules = if stdout.trim().is_empty() {
+        serde_json::json!({"nftables": []})
+    } else {
+        serde_json::from_str::<serde_json::Value>(&stdout).unwrap()
+    };
     eprintln!(
         "[netlab-roam-router] {}",
         serde_json::json!({
             "case": s, "router": router.name(), "phase": phase, "rules": rules,
+            "stdout": stdout, "stderr": String::from_utf8_lossy(&output.stderr),
+            "code": output.status.code(),
         })
     );
 }
