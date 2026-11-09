@@ -172,6 +172,8 @@ def submit(args):
     identifier = uuid.uuid4().hex
     info.update({"repository": repository, "builder_ref": builder_ref, "task": args.task, "executor": executor, "request_id": identifier,
                  "snapshot_ref": "dev-snapshots/" + identifier})
+    if wan_run_id:
+        info["wan_run_id"] = wan_run_id
     records = state_dir() / "runs"
     records.mkdir(parents=True, exist_ok=True)
     record = records / (identifier + ".json")
