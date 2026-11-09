@@ -674,26 +674,46 @@ impl Wires {
             .filter(|c| c.close_reason().is_none())
     }
 
-    /// **Whether the selected road keeps `id` off its carried road on measurement**
-    /// ([`khor_net::path::selected_beats_carried`]), on the live wire
-    /// [`Self::link`] reads (requests first). No live wire: true, the relay
-    /// as good as kept it.
+    /// Whether every live connection to `id` can let the peer's carrier go.
+    /// Main, tunnel and incoming wires share the stream, but can have
+    /// different open paths. One wire's faster road cannot withdraw a
+    /// carried-only road another still uses. Connections without a custom
+    /// path need no carrier; unknown snapshots keep it. Where both roads
+    /// exist, use the selector's measured gain. No live wires: unused.
     pub(crate) fn selected_beats_carried(&self, id: &str) -> bool {
-        let Some(conn) = self
-            .live(id, Proto::Main)
-            .or_else(|| self.live(id, Proto::Tunnel))
-        else {
-            return true;
-        };
-        let facts = khor_net::path::path_facts(&conn);
-        let losing = khor_net::path::selected_beats_carried(&facts);
-        if losing {
-            khor_net::carry::observe_lifecycle(id, "outgoing_comparison", || {
-                serde_json::json!({
-                    "wire": conn.stable_id(), "measurements": facts,
-                })
-            });
+        let mut conns: Vec<_> = [Proto::Main, Proto::Tunnel]
+            .into_iter()
+            .filter_map(|proto| self.live(id, proto))
+            .collect();
+        {
+            let served = self.served.lock().unwrap_or_else(|p| p.into_inner());
+            conns.extend(
+                served
+                    .iter()
+                    .filter(|w| w.id == id)
+                    .filter_map(|w| w.conn.upgrade())
+                    .filter(|c| c.close_reason().is_none()),
+            );
         }
+        conns.sort_unstable_by_key(Connection::stable_id);
+        conns.dedup_by_key(|c| c.stable_id());
+        let facts: Vec<_> = conns
+            .iter()
+            .map(|c| (c.stable_id(), khor_net::path::path_facts(c)))
+            .collect();
+        let losing = facts.iter().all(|(_, paths)| {
+            !paths.is_empty()
+                && (paths.iter().all(|p| !p.carried)
+                    || khor_net::path::selected_beats_carried(paths))
+        });
+        khor_net::carry::observe_lifecycle(id, "shared_comparison", || {
+            serde_json::json!({
+                "scope": "all_live_connections_v1", "release": losing,
+                "connections": facts.iter().map(|(wire, paths)| serde_json::json!({
+                    "wire": wire, "measurements": paths,
+                })).collect::<Vec<_>>(),
+            })
+        });
         losing
     }
 

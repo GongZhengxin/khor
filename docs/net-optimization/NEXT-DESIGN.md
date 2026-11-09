@@ -257,3 +257,8 @@ CPU新helper的首轮Mac163只因模块路径解析停在formatter，无编译/�
 162nd第二轮X同wire139750384102992的carried(quality85.61ms)在7347ms后消失，仅relay133ms，故这部分不是journal聚合假象。Y两事件wire不同，仍不能合成同连接回退。x/y open_hop后的两次5秒检查时间与两次撤路相近；源码Wires.selected_beats_carried只挑Main再Tunnel一条，而Link/close_carried按peer共享；未知/缺carried时目前返回true。这是待证的主动清理解释，不排除stream结束或旧attachment清理。
 
 当前只加opt-in生命周期事实：Attached.serial、Link attach/detach/IO side/current serial、outgoing comparison wire/facts、hop2look release与close request，默认不构建details、不改变政策或journal词。f4i诊断在断言前复制x/y/m serve.log，新增SSH-only profile三轮diagnostic，非SLO；168当前在跑。实际触发点/所属generation须先与Path/Retired wire对齐，再决定共享连接证据范围与cleanup所有权，不能仅把所有未知路径永久保留来骗过门。
+
+
+## 178共享carrier所有权反例与候选
+
+peer级质量/selected tuple共享，不代表每条connection都有共同selected路径。入站可能只剩Custom且watcher无selected，仍在传真实数据；178 v2已证明只看Main会错误允许释放。候选释放条件须对Main/Tunnel/served所有live消费者成立，并去重stable_id、排除closed/expired。非空无Custom集合无需carrier；空快照保守；有Custom仍用原测量gain。2×5秒节奏不动，诊断shared_comparison留全连接事实。实际红→绿、完整Hop、未知快照/多quiet epoch/资源成本与generation竞态仍须逐项验证；没有据此宣布162根因或N1/N2完成。

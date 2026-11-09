@@ -232,3 +232,6 @@ CPU169未进入测量：真实Node CPU admission返回无路径ENOENT，不能�
 
 
 174实Node短准入4/4绿，所有549个存活线程实核CPU89，真实echo与两busy CPU进展通过；172线程退出竞态修复取得真实短case绿，未覆盖600秒p1s。完整A/B将明确同一allowed CPU中间ID，原门和压力不改。175仍仅formatter红，N1多连接合同尚无行为结果；生产清理判断不提前改。
+
+
+共享资源判断在178取得真实反例：peer共同selected tuple在outgoing上选IP，但incoming仅Custom仍实际收发、其watcher selected为空。只比较Main即允许释放peer carrier，违反现存消费者合同。候选改为检查所有live Main/Tunnel/incoming；非空且无Custom不占carrier，未知快照保留，含Custom按原gain判断。178整fixture字节冻结待红→绿，原162因果与完整hop仍须复验。176固定核原版2/2与22期实际CPU证明已留；p1s未留echo error的旧缺口明确，不能推零失败或延迟SLO。
