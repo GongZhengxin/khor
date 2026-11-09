@@ -94,6 +94,11 @@ netlab 里测到 7 次，全是这种：1 ms 的路上 4.67 秒、17.6 秒的样
 
 ### 4. `src/connection/mod.rs`：一条路径的 ACK 走它自己（2026-10-17，path-fix）
 
+2026-11-09覆盖补齐候选：`a_backup_probe_is_acked_when_the_responders_data_road_is_blackholed`
+建立两路后将响应端备用路设Backup，黑洞其主数据路，独立PING备用；断言ACK从健康备用本路回来。
+这是此前path_acks只数总PATH_ACK没有覆盖的行为，尚待远端执行；不把新增用例当作已在旧源取红。
+非对称单向故障、未验证/abandoned兜底及额外包数预算仍需另外覆盖。
+
 上游把所有 PATH_ACK 都放在「最适合发数据」的那条路径上（`may_send_data`，即本端标 `Available` 的那条），备用路径的 ACK
 从别的路回来。于是一条路径答没答、RTT 多少，量的其实是「这条路去 + 对方选的那条路回」：
 一、对方选的路回程断了，这边每条路径都收不到 ACK、PTO 一起涨，连中继也像死了，选路器没有一条可换（netlab p3，10-17：

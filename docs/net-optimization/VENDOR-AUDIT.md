@@ -11,6 +11,10 @@
 
 ## Noq 1–11
 
+Noq4另补真实虚拟连接专项a_backup_probe_is_acked_when_the_responders_data_road_is_blackholed，
+42539256792待执行结果（目标436/33/9）；不是只检查计数器方法本身，要求备用路独立回ACK。
+未对旧源取红，单向故障/兜底/成本仍需覆盖，不能提前把下表该项记完整。
+
 | 编号 | 保留目标 | 当前覆盖及缺口 | 上游静态观察与退出条件 |
 | --- | --- | --- | --- |
 | 1 | BBRv3及时知道应用闲置，避免闲后输出慢 | KHOR记录旧congestion对照，但移植时没有带专属测试；435通用绿不能补这项缺口。需闲置→突发、loss/inflight一致性及与Cubic对照 | 1.4仍设置path.app_limited，Controller未见本地同名on_app_limited；BBR另有app_limited状态，不能只凭方法名认定无等价。隔离升级候选验证相同突发与丢包行为后逐条退出 |

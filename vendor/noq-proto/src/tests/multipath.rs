@@ -92,6 +92,41 @@ fn path_acks() {
     assert!(stats.frame_tx.path_acks > 0);
 }
 
+/// A backup's probe must be acknowledged over that road even while the
+/// responder's selected data road is blackholed.
+#[test]
+fn a_backup_probe_is_acked_when_the_responders_data_road_is_blackholed() -> TestResult {
+    let _guard = subscribe();
+    let mut pair = ConnPair::builder().enable_multipath().connect();
+    let routing = pair.routes.as_basic();
+    let (mut ca, mut sa) = (routing.client_addr, routing.server_addr);
+    let clients = vec![ca, { ca.set_port(ca.port() + 1); ca }];
+    let servers = vec![sa, { sa.set_port(sa.port() + 1); sa }];
+    pair.routes = ManyToManyRouting::simple_symmetric(clients.clone(), servers.clone()).into();
+    let backup = pair.open_path(Client, FourTuple {
+        local_ip: Some(clients[1].ip()), remote: servers[1],
+    }, PathStatus::Backup)?;
+    pair.drive();
+    pair.set_path_status(Server, backup, PathStatus::Backup)?;
+    pair.drive();
+    let before = pair.path_stats(Client, backup).unwrap().frame_rx.path_acks;
+    pair.routes = ManyToManyRouting::simple_symmetric([clients[1]], [servers[1]]).into();
+    pair.ping_path(Client, backup)?;
+    let by = pair.time + Duration::from_millis(200);
+    for _ in 0..64 {
+        if pair.path_stats(Client, backup).unwrap().frame_rx.path_acks > before || pair.time >= by {
+            break;
+        }
+        if !pair.step() {
+            break;
+        }
+    }
+    assert!(pair.time < by, "a healthy backup answers without waiting for the dead data road");
+    assert!(pair.path_stats(Client, backup).unwrap().frame_rx.path_acks > before,
+        "the probe's ACK returns on its own backup road");
+    Ok(())
+}
+
 #[test]
 fn path_status() -> TestResult {
     let _guard = subscribe();

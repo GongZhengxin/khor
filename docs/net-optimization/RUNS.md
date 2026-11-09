@@ -305,3 +305,7 @@ control **6af0ac328457a8c3aea9157e8b2ffcd65ae7e5c2**已push feat/net，新增net
 下一候选先冻结observer client v1并在lab.rs复用同设备runtime的Arc<Node>观察客户端，避免每次观测反复本地初始化争用；生产状态保护/网络策略均不改。追加静默copy的PTO/等待/最近收包和道路聚合heard/wake_allowed日志，明确旧wake只在off_direct启用的历史原因（旧EWMA下曾放大p1s），不盲目删除。新增netlab-hop-diagnostic原f4s一次1线程，完整诊断模式仍保留p1s/f4s。未来A/B需匹配新的lab.rs，旧对照不回填。
 
 observer v1实际调度同treebe7b5abef3cc3c1ef81744075f4436efdf668fd0、base82e0d3b5 dirty、controlc68b644：42538717126 netlab-hop-diagnostic / snapshotce0af01606b4368ff6c3a190d59afbb14a58ecba；42538759858 netlab-diagnostic / snapshot5bd8418703baccc5a71979a984e19b861447c6f8；42538808023 net-unit / snapshote62f6126eb1c9dbb2e17a3c43a33b71dedc64fa3。均在途，不是策略修复成绩。源锚点81份，产品9项Python/control1项准备/sh-n/bash-n通过，Rust/实际Arc观察客户端待远端。
+
+42538808023终态 **SUCCESS 根格式、66pass/1ignored**，observer-client-unit-42538808023已下载。它不编译CLI netlab，Arc观察客户端实际启动仍待两诊断run，不用核心绿替代。
+
+补Noq4专项 **42539256792 net-vendor** 在途：baseff5b4d36 dirty、treec0d5c1b516b5c6272f17f83e9bb6bbe597813bcd、snapshot09de7c0a3f15e534ccd06b298702290bf3ffcb19、controlc68b644；目标436/33/9。只新增a_backup_probe_is_acked_when_the_responders_data_road_is_blackholed：已验证Backup仍能回PING ACK，即使响应方的主数据路不可达。未改生产传输逻辑，也未宣称已对旧源取红或完成单向故障/ACK预算。82源ref。
