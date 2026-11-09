@@ -503,7 +503,7 @@ impl Node {
                     return Some((
                         via,
                         line.conn.stable_id(),
-                        line.conn.downgrade(),
+                        line.conn.weak_handle(),
                         send,
                         recv,
                     ));
@@ -753,7 +753,7 @@ impl Node {
                     crate::tunnel::dial(&line.conn, &Ask::From(from_id).words())
                         .await
                         .ok()
-                        .map(|(send, recv)| (wire, line.conn.downgrade(), send, recv))
+                        .map(|(send, recv)| (wire, line.conn.weak_handle(), send, recv))
                 });
                 let Ok(Some((onward_wire, onward, ys, yr))) =
                     tokio::time::timeout(MIDDLE_WITHIN, onward).await

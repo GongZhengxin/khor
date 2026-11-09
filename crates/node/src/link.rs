@@ -3980,7 +3980,7 @@ impl Node {
             // here, per stream, so a pause bites on a tunnel already up.
             let paired =
                 !crate::pause::peer_on(self.root(), &remote) && self.admit(&remote).is_ok();
-            let incoming = conn.downgrade();
+            let incoming = conn.weak_handle();
             let (node, ep, remote) = (self.clone(), ep.clone(), remote.clone());
             tokio::spawn(async move {
                 let Ok(target) = crate::tunnel::read_target(&mut recv).await else {

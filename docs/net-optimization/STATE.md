@@ -8,6 +8,8 @@
 
 ## 先核当前句柄，禁止盲重发
 
+- **259仅诊断编译失败，未执行移动病例**：turing-20261109T224926Z-8bca1d0d，49.78s/rc1/原group空，basee5a0e997/treec47a9aa2/snapshot1681dbdd/controlbe11104。fmt/namespace前置通过，但三个位置误用了不存在的Connection::downgrade；已对照vendored endpoint API改weak_handle()，不改选路/回收协议，不计产品行为红。下一准确源继续真实四端快照。
+- **Mac SSH再次为认证前超时，Node退出合同尚未实跑**：独立private master及30秒控制连接等待也未认证，WAN脚本未上传/未启动resident；早前成功连接事实保留，不推Mac离线/不称Khor故障。改沿已有GH guard通道执行无pair/mint的stop/EOF/bridge-kill真实Node合同，不再依赖SSH；真正跨网临时能力仍需私有可信传递，不进入普通artifact/日志。
 - **256 Mac/257 Turing同整source WAN build-only已绿**：Mac42713674809，Linux turing-20261109T224020Z-47ce1ea3（69.89s/rc0/原group空）；source baseff608e91/tree7d0c74673460a512ab4f271802372e6fb7f31550/snapshotb13e4398491b7d6d85568b3e5900ac850bbf2203/controlbe11104。wan-binary-manifests.json留实际两架构hash/path/bytes/source；普通artifact无二进制，executed=false，尚未启动Node。runtime必须guard下重核hash/copy至fresh owner/run root，不直接信mutable cache。Mac binary约182MB，Linux207MB，只在各自服务器。
 - **258 Mac outer-copy诊断仅format前置失败**：42714069877，requestbb2ae40d681e429182f51c82745020a4，basef377d166/tree77ea6fc1/snapshotadc15826/controlbe11104，身份/9control blobs/hash核，未编译/执行；远端format.patch原样应用。下一Turing新outer诊断与Mac便携同源编译按新receipt，旧WAN binary源不混入。
 - **N4 lease守护控制合同已过**：13个Python stub/小Git控制检查（其中lease用真实Python pipe/socket/子进程测normal stop、EOF、SIGKILL bridge、worker crash、40GiB reserve拒绝），无本机Rust/产品执行。Guardian+bridge+Rust worker同PGID、继承原guard FD；bridge死后guardian保持guard直至Rust exit/join与本次process空，私有RPC字节不写日志。真实Node三种退出合同尚待分别在服务器实跑；不是N4真跨网绿。
