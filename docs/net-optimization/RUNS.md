@@ -476,3 +476,6 @@ N3道路双向因果校准测试已按先前协议写下，模型未改；contro
 
 
 42564150236终态仅根格式门失败，已核source/control；签名/array/await排版patch原样应用，本机未执行formatter，无编译或行为测试。109 refs终态，贯通候选待新源绿。
+
+
+**42564749932 Mac net-node贯通候选格式修正源在途**：cleana4ca8637、tree1f1677176b810668ef61103fafaffd9e52d1eb66、snapshotc39f8cc6f3793d2ef828f9d7b29ff83bdc479d91、control0cff9671fb2f80945423132e0df46995f6ff3198。仅修远端布局，110th ref与mac-operation-budget-propagation-42564749932已锚，不预认行为绿。

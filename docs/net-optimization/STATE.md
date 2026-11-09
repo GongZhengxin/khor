@@ -15,7 +15,7 @@
 | 产品 | `/Volumes/disk0/Khor/worktrees/current/khor-net`，`feat/net`；恢复核实际HEAD/diff，N3模型实现1478bf97，N2生产802e13a8+远端格式修正；随后HEAD为证据文档提交 |
 | 控制 | `/Volumes/disk0/Khor/worktrees/current/khor-build-net`，`feat/net`；0cff9671fb2f80945423132e0df46995f6ff3198已push；历史run各绑定原control |
 | 基线 | `/Volumes/disk0/Khor/worktrees/current/khor-net-baseline`，detached6485cb83d3b1f0bb93d4633825dc956623d78af9；仅paths/hop/lab/nat.rs、dev.py/netlab.sh六fixture；生产原样，现场已复核 |
-| 证据 | `/Volumes/disk0/Khor/evidence/net/`；source-refs.json现109条不可变refs，全部终态 |
+| 证据 | `/Volumes/disk0/Khor/evidence/net/`；source-refs.json现110条不可变refs；仅42564749932待分类 |
 
 ## 当前工作：N3校准与三轮完成，下一步贯通N2总预算
 
@@ -111,3 +111,5 @@ Accepted后原裸JoinHandle await本批尚未修正；握手到期若刚得到�
 **42564150236 Mac net-node总期限贯通候选在途**：base1950943bdfff6f2944f5dd9a5124328ae7fa50dc clean、tree9f57f8181925f12763dd597fd336ead82741abd9、snapshot787c72e71038003da290e0b3009c47244eddc9cf、control0cff9671fb2f80945423132e0df46995f6ff3198。mac-operation-budget-candidate-42564150236/109th ref已锚，未预记五测试绿；Accepted回答所有权尚未改。
 
 42564150236仅根格式门失败（函数签名、array和链式await布局），source/control已核、无编译/测试；远端patch已原样应用。109 refs终态，贯通候选仍待新源验证，不记行为红或五测试绿。
+
+**42564749932 Mac net-node贯通格式修正源在途**：basea4ca8637cad3fa13554a54c7ef95e7e481041b75 clean、tree1f1677176b810668ef61103fafaffd9e52d1eb66、snapshotc39f8cc6f3793d2ef828f9d7b29ff83bdc479d91、control0cff9671fb2f80945423132e0df46995f6ff3198；mac-operation-budget-propagation-42564749932/110th ref已锚，恢复查询此ID。
