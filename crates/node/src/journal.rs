@@ -1843,12 +1843,13 @@ mod tests {
         for changed in [[v4, next_v6], [next_v4, v6]] {
             let mut interfaces = Interfaces::new(vec![v4, v6]);
             for (ms, port) in [(0, 8000), (400, 8001), (800, 8002)] {
-                let mut candidates = std::collections::BTreeSet::from(changed.map(|addr| {
-                    DirectAddr {
+                let mut candidates = std::collections::BTreeSet::new();
+                for addr in changed {
+                    candidates.insert(DirectAddr {
                         addr,
                         typ: DirectAddrType::Local,
-                    }
-                }));
+                    });
+                }
                 candidates.insert(DirectAddr {
                     addr: std::net::SocketAddr::from(([203, 0, 113, 7], port)),
                     typ: DirectAddrType::Qad,
