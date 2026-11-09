@@ -1,8 +1,11 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-09 19:37 UTC（本地2026-11-10）。root串行，无子智能体。完整目标仍是“完成计划”N0–N5，未完成；用户明确“继续”并补充U11–U13，当前工作已恢复。goal服务19:06前最近读仍paused，自动跨轮续跑由用户面板控制；不得伪造complete/blocked或另建目标。速度/体验优先、个人可信设备网；没有合main、发布、中继采购/生产部署授权。
+更新：2026-11-09 19:37 UTC（本地2026-11-10）。root串行，无子智能体。完整目标仍是“完成计划”N0–N5，未完成；用户明确“继续”并补充U11–U13，当前工作已恢复。用户再次指出不应停止；goal服务的paused只是后台调度状态，不构成本轮停止依据。必须持续推进完整计划，不能在阶段通过后自行停下，也不得伪造complete/blocked或另建目标。速度/体验优先、个人可信设备网；没有合main、发布、中继采购/生产部署授权。
 
 ## 当前源码与已收齐证据
+
+- **用户U14要求不停下，已继续实际业务迁移**：新增ignored paths::mobile::mv6_overlap_（ipv6_node_overlap_v1），两fresh Node及各自IPC/唯一fixture；mesh后两端eth0阻断全部外部IPv4，loopback保留，IPv4直连/HTTP Relay无备路。先setup正控+Direct连续10秒，双向各30基线；A同prefix加新IPv6/ready后删旧，立即双向首请求，再双向各30，原30秒caller预算/完整outcomes，最后才做旧址ping负控。首轮只是业务可达/记录校准，非新造恢复SLO/同wire保证；尚未远端format/编译/运行。215裸包fixture仅三个helper可见性变化、主体不动，老profile不变。下一步Turing自身format前置→编译→实际病例；阶段通过不再当停止条件。
+
 
 - **215物理IPv6地址替换已实际校准1/1**：`turing-20261109T192606Z-22c24322`，75.90s、原group空。base897251615ed0932be2e15416721274f57ae7259d/treeb1ed82c5eeea6497fcc272deb3e7bcf4086362cf/snapshotba0e5d7f43527496f778c2ab76b1bdde2d5d5276，control f5838d7d5398da99786108face83bd8f204d8c35。新ignored paths::mobility::在fresh双栈Public namespace实际将IPv6 `2001:db8:1:1::2`换`…::42`、同/64；三阶段kernel JSON与8packet全核（7正、旧IPv6负控1），IPv4地址JSON完全相同且仍可达。地址ready状态已核，不独立证明DAD流程/时延。root fmt/CLI编译/控制与source/bundle/report hashes核，事后cached tree正确且tracked干净。`ipv6-renumber-calibration.json`留全部原值；只是物理注入，不是Node/QUIC业务迁移、前缀变化、IPv4/NAT或手机验收，单包无SLO/分位数。
 - **214 Mac42682546955同215完整source预检全绿**：control ea97dd4a1d7d10b92b8201c4b49adba518ad9d66，root fmt/net66+1ignored，完整source/transport/9 control blobs/hash核；不执行CLI物理校准。213 Mac42681901453前版仅新fixture format红，原patch已应用、两Router显式DualStack，source ref/input全保留，不计产品/物理失败。

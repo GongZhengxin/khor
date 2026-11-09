@@ -4,7 +4,7 @@ use std::net::Ipv6Addr;
 
 const REVISION: &str = "ipv6_renumber_v1";
 
-fn command(dev: &Device, args: &[&str]) -> std::process::Output {
+pub(super) fn command(dev: &Device, args: &[&str]) -> std::process::Output {
     let mut command = Command::new(args[0]);
     command
         .args(&args[1..])
@@ -16,13 +16,13 @@ fn command(dev: &Device, args: &[&str]) -> std::process::Output {
         .unwrap()
 }
 
-fn addresses(dev: &Device, family: &str) -> serde_json::Value {
+pub(super) fn addresses(dev: &Device, family: &str) -> serde_json::Value {
     let output = command(dev, &["ip", "-j", family, "address", "show"]);
     assert!(output.status.success(), "read namespace addresses");
     serde_json::from_slice(&output.stdout).unwrap()
 }
 
-fn entry(snapshot: &serde_json::Value, ip: Ipv6Addr) -> Option<(String, serde_json::Value)> {
+pub(super) fn entry(snapshot: &serde_json::Value, ip: Ipv6Addr) -> Option<(String, serde_json::Value)> {
     for iface in snapshot.as_array()? {
         for info in iface["addr_info"].as_array()? {
             if info["local"]

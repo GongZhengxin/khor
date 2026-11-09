@@ -56,6 +56,8 @@ mod attempts;
 mod cpu;
 #[path = "paths/mobility.rs"]
 mod mobility;
+#[path = "paths/mobile.rs"]
+mod mobile;
 
 fn now_ms() -> u64 {
     SystemTime::now()

@@ -373,3 +373,12 @@ Peer relay就是可信设备承载的carried候选，必须与Direct IPv4、Dire
 ### U12物理前置校准：ipv6_renumber_v1（未执行，先冻结）
 
 为响应U12先补N0/U12物理校准，暂先于N1下一轮策略修改；不放弃完整N1。全新patchbay双栈Public router/device namespace，原IPv6、IPv4双向ping可用后，在一个device自身接口同prefix加新的IPv6地址，等待实际DAD完成并验证从另一device可达，再移除旧IPv6。实际kernel JSON分别保存地址前/加后/删后；IPv4地址集合保持且IPv4仍可达，新IPv6双向成功、旧IPv6不可达。每次ping只1packet、2秒命令等待，所有stdout/stderr/status/elapsed都留；共6个IPv6检查（5正1负）和2个IPv4正控，属于fixture数据，不是业务成功率/SLO/分位数。只在新建用户namespace内ip addr变更，宿主网络不改。单独SSH-only ignored profile，一轮/单线程；任何工具/前置失败分类为校准失败，不冒称产品回归。这次只证明注入几何成立，Node/QUIC/地址发布发现/peer relay/移动设备/IPv6前缀变化仍需后续矩阵。
+
+
+### U12真实Node迁移基线：ipv6_node_overlap_v1（先冻结，未运行）
+
+在215同prefix IPv6重编号几何上接两台fresh真实khor resident与各自复用IPC client、唯一marker目录。先mesh，再在双方eth0 input/output实际nft阻断所有外部IPv4（loopback IPC保留），因此IPv4地址保持但IPv4直连/唯一HTTP Relay均不可用、无第三peer/SSH备路。双方实际目录正控＋reported Direct连续10秒，准备绝对120秒；不能拿cached Link单独证明物理数据面。
+
+测前两个方向各30次真实目录请求，200ms间隔、原30秒caller预算、验证指定peer唯一marker及大小。然后只给A加同/64新IPv6，确认assigned/ready，保留新旧重叠后删旧；三阶段kernel JSON留证。删除后立即同时发起双向首请求（先请求，再做任何耗时ping负控），然后两方向各30次同负载。全部started/finished与error/timeout/cancel保留，某方向首错可停但n不足不得绿；首请求与前/后warm分组，单独记恢复时刻、所有路径/退休/拨号与全局network事件。最后再验证新IPv6可达/旧IPv6不可达、IPv4地址未变、实际nft隔离仍在；日志不计入业务分位数。
+
+首轮只校准前置、双向业务可达和记录，不新造恢复延迟SLO、不强断言复用同wire；连接连续性及首请求耗时作为原始基线，之后按N0收敛目标再改策略。make-before-break同prefix、无备路，只是一项；prefix/IPv4映射/两端与peer-relay移动、断网缺口、活备用、真手机仍是独立要求。scenario在resident ready后总240秒上限只作实验资源边界，不扩大每请求30秒或原已有门。
