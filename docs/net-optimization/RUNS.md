@@ -403,3 +403,6 @@ Mac便携分流control6b1616c8b816bdb72a8a031d0ff28cc46a3fb4c7在feat/net，沿�
 
 42555870179终态 **SUCCESS：根格式、438Noq/36路径/9选家**，回执tree4a9c4d89/snapshotb6a4e924/controldd57be6已逐项核对；mac-api-vendor-42555870179保存source/environment/bundle/原始log和classification。37快速Go回归由42551075037旧源红转绿；Noq2 reporting始终启用恢复实际通过。N3记录器仅格式通过，未编译/测量。host VZ=1、16GiB/10CPU、约76.2GB空闲、无已装VM工具，仅brew；没有启动VM。97 refs全终态，Linux原p3/CPU/hop与N2–N5仍缺。
 新增N2真实dial锁deadline回归，未改生产；候选待Mac net-node取红，control2e70c39扩展原filter。
+
+
+**42556474188 Mac net-node在途**，clean5d117deb、tree4f5179e59e64576fd6696b17f23fcc1c50fbc14b、snapshot44930072797913fbefd2a3d1f6e9269965cd0a5d、control2e70c39fe6a70bbbd09b7434f90e6c2d62e84b16。真实Node/Endpoint持dial锁的40ms deadline回归，N2生产未改，预期红未实际取得。mac-dial-budget-red-42556474188与98th ref已保存，勿重发活动run。
