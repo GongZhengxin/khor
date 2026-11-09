@@ -347,18 +347,44 @@ async fn f4_lab(
         );
         panic!("{s}: y reaches x through m");
     }
-    // Held: 10 s on the hop, both ways.
-    let began = std::time::Instant::now();
-    while began.elapsed() < Duration::from_secs(10) {
-        tokio::time::sleep(Duration::from_millis(500)).await;
-        let held = y.link(&x).await.is_some_and(|l| l.hop == Hop::Forwarded)
-            && x.link(&y).await.is_some_and(|l| l.hop == Hop::Forwarded);
-        if !held {
-            y.until(&x, Duration::from_secs(60), |l| l.hop == Hop::Forwarded)
-                .await;
-            x.until(&y, Duration::from_secs(60), |l| l.hop == Hop::Forwarded)
-                .await;
+    // Fixture revision held_precondition_v2: the old two 60 s waits could
+    // both expire and still return a Relay start. Require a continuous
+    // 10 s reported hold, within their combined 120 s preparation budget.
+    crate::attempts::phase(s, "held_precondition_v2_started", now_ms());
+    let held = tokio::time::timeout(Duration::from_secs(120), async {
+        let mut since: Option<std::time::Instant> = None;
+        loop {
+            let both = y.link(&x).await.is_some_and(|l| l.hop == Hop::Forwarded)
+                && x.link(&y).await.is_some_and(|l| l.hop == Hop::Forwarded);
+            let now = std::time::Instant::now();
+            if both {
+                let began = since.get_or_insert_with(|| {
+                    crate::attempts::phase(s, "carried_hold_started", now_ms());
+                    now
+                });
+                if now.duration_since(*began) >= Duration::from_secs(10) {
+                    crate::attempts::phase(s, "carried_hold_confirmed", now_ms());
+                    break;
+                }
+            } else if since.take().is_some() {
+                crate::attempts::phase(s, "carried_hold_lost", now_ms());
+            }
+            tokio::time::sleep(Duration::from_millis(500)).await;
         }
+    })
+    .await;
+    if held.is_err() {
+        crate::attempts::phase(s, "carried_hold_failed", now_ms());
+        hop_diagnostics(&x, &y, &m);
+        for n in [&x, &y, &m] {
+            sample_diagnostics(s, n);
+        }
+        result(
+            s,
+            false,
+            "both reported carried roads were not held continuously for 10 s within 120 s",
+        );
+        panic!("{s}: carried hold precondition failed before fault injection");
     }
     (lab, r, rx, x, y, m)
 }

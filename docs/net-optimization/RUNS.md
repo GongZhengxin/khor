@@ -677,3 +677,13 @@ N0 v4源码开始记录paths/hop逐次logical_request和f4故障窗口，ignored
 
 
 192th Mac42657406850（191同完整source）仅helper observer一hunk **format红**，无编译/行为测试；原patch应用。191th turing-20261109T164022Z-76b5cc1c实际remote无execution/launcher，从未launch，已superseded_not_launched，全部inputs/ref保留。190独立诊断第一轮真f4 after-answer门红（1.6s>1.5s、最长请求5.0s、无回退），修正的日志采集已过；后两轮继续，不放宽原门、不冒称本批owner修复因果。
+
+
+190th turing-20261109T163727Z-f72bdaf4终态**0/3**，663.76s，完整source/control/bundle/group/hash采核。三红为1558ms>1500ms、180s未达carried前置、准备助手在前置丢失后仍返回Relay。40/40逻辑请求全部ok（21/0/19），零请求不是零延迟/验收绿；九个诊断文件保留。四次释放均属当前committed serial；第三轮释放发生于t0前81.4/54.8s，证明准备helper忽略until失败/非连续持有，不是189stale owner重现。完整时间线见full-round-timeline/current-owner-release-trace。
+
+194th Mac42658228868 **同189整fixture实际红→绿**，base d077d020/tree49b1aeb7/snapshotb4eef0cc/control39633806，与193完全同源。root fmt/net66+1ignored/hop10/wires11/journal29/portable20全绿（49.93s）；原fixture SHA f620fc97...、所有实际CLI fixture/netlab.sh/netpath逐字同，proof stale-owner-red189-green194-fixture-identity.json。193th turing-20261109T164452Z-f0c1a5db已在190完整采证后launch PID798928/child798963、actual /proc/driver核live；Linux24待，不冒称N1/WAN/手机完成。
+
+
+193rd turing-20261109T164452Z-f0c1a5db **SUCCESS**，219.72s，与194完全同source/control。root fmt/net66+1ignored/hop10/wires11/journal29/Linux24全绿（92.02s），完整source/control/bundle/group/hash采核。189整fixture SHA f620fc97...真实红→Linux/Mac同源绿，proof stale-owner-red189-green193-194-fixture-identity.json；194 refs snapshot/tree全批核、无在途。不替代当前owner质量策略、f4前置/恢复门、N1/WAN/iPhone/能耗。
+
+193/194后新工作副本仅修改f4准备helper为held_precondition_v2：双方reported carried连续10秒，掉路重置；原两60秒等待改同总120秒绝对准备期限，过期前置失败并不注故障。记录phase，故障/恢复/稳定门不变；尚未远端编译/格式/运行，不补写旧结果。
