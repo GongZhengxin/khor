@@ -141,3 +141,6 @@ Accepted后原裸JoinHandle await本批尚未修正；握手到期若刚得到�
 
 
 42567204795终态仅**格式门失败**：deadline变体matches缩为一行，远端patch原样应用；准确source/control/ref已核，114 refs终态、未编译或执行七测试。随后官方Noq1.3 poll_accept源码明确is_0rtt在应用接纳当时取is_handshaking，不能当此前包加密级别证明；notes在结果取得前已保存。修正fixture以真实第二请求+Node adopt+调用继续pending20ms证明Accepted分支；撤回is_0rtt硬前置和100ms握手延迟，标志只观察。所有权生产、STOP/独立请求/计数/peer条件不改。下一准确源先取真实所有权红。
+
+
+**42567527752 Mac net-node Accepted所有权双回归在途**：baseb097a2dec5a61e26032b8f4336d1caf4fe56e17a clean、tree54b47ae52986e9d1a1663a25805c212e30d94aee、snapshot6c7e63589e1a968650dcc3021dc337a471718a22、control0cff9671fb2f80945423132e0df46995f6ff3198；115th ref/mac-accepted-owner-red-42567527752已锚。使用实际adopt+pending的Accepted前置；生产裸回答所有权未改，取消和1秒by预期红未取得。
