@@ -1,6 +1,10 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-09 13:48 UTC；root串行，无子智能体。活动目标“完成计划”仍active，完整N0–N5未完成。
+更新：2026-11-09 14:00 UTC；root串行，无子智能体。活动目标“完成计划”仍active，完整N0–N5未完成。
+
+**172th真实Node短准入已定位线程退出竞态；173th Mac仍仅format红。** 172`turing-20261109T135004Z-7a6fa08a`原三个校准绿、新实际Node短case红：两resident550244/550613仍在测试生命周期内，读取枚举过的`/proc/550613/task/551658/status`时该task已消失。source base7da5608e/tree62657b3b/snapshot56ce281d/control7534，101.22秒；完整采证。当前只修CPU fixture快照：只容忍确已消失的task，随后重新枚举并要求每个仍存活thread均有真实mask，新增线程触发整轮重取，100ms无完整快照即失败；前后再核PID start identity。所有存活thread绑核、两个真实contender CPU进展、负例、原600秒/20尖峰/原门保持；日志另标exit_aware_v1，不改旧v3结果。修正尚未远端验证。
+
+173 Mac42629466427与172完整source相同，只有CPU新case的assert布局format红；无编译/多连接行为执行。原format.patch已应用。N1共享载路合同仍待实际红，生产清理策略保持；不能把格式红说成产品红。
 
 **169th实际Node压力准入失败，170th原版对照从未启动，已superseded。** 169`turing-20261109T133049Z-d4827d09`完整采证，rc101，581.57秒；p1s在CPU准入处因无具体路径的ENOENT失败，没有admitted记录、未进入600秒测量；p5原门绿（最慢295.9/497.0/972.6ms）。不能视为产品性能红或压力通过。新补proc读错误路径与真实Node短准入case，先定位fixture；原压力/时长/门不改。170原版已stage的source/ref/input全留，不花计时轮盲重跑。171 Mac42627527851仅formatter红、无编译/行为测试，准确报告已采核，原format.patch已应用。
 
@@ -10,7 +14,7 @@
 
 162nd原三轮hop已终态**8/9**，3/3、2/3、3/3，1688.88秒；只有第二轮f4i红。X同一wire从carried切relay，间隔7347ms，载路从候选列表消失；Y的两条聚合事件属于不同wire。原因尚未被生命周期事件直接证明，不能归为显示抖动或直接宣布排名算法错误。f4s三轮虽原门绿，最慢按键均9.9秒；极致体验仍未达标。
 
-166th `netlab-cpu-check` **3/3校准绿**：两个owned sleep子进程模拟resident、两个真实busy loop在CPU14；两contender在305ms分别增加15ticks，100ticks/s，实际亲和/存活/负例/清理通过。**不是600秒p1s或真实Node负载验收。** 167th Mac`42622111828`同完整snapshot根格式与net66+1ignored绿；没有跑Node20或App。当前171个run refs均已终态/明确未启动；另有基线准备ref，准确source均先锚。
+166th `netlab-cpu-check` **3/3校准绿**：两个owned sleep子进程模拟resident、两个真实busy loop在CPU14；两contender在305ms分别增加15ticks，100ticks/s，实际亲和/存活/负例/清理通过。**不是600秒p1s或真实Node负载验收。** 167th Mac`42622111828`同完整snapshot根格式与net66+1ignored绿；没有跑Node20或App。当前173个run refs均已终态/明确未启动；另有基线准备ref，snapshot/tree双引用全批核。
 
 完整范围：[PLAN](PLAN.md)、[REQUIREMENTS](REQUIREMENTS.md)、[ACCEPTANCE](ACCEPTANCE.md)。运行与原始结论：[RUNS](RUNS.md)、[REPORT](REPORT.md)。此前STATE逐字保存在[本轮前历史](HISTORY-20261109-before-cpu-calibration.md)和更早HISTORY文件；历史在途文字只代表当时，恢复以本页顶端及实际进程为准。
 
@@ -25,7 +29,7 @@
 | 产品 | `/Volumes/disk0/Khor/worktrees/current/khor-net`，`feat/net`；本批代码886b084c为CPU fixture校验＋opt-in载路生命周期事实，清理/选路政策未变；恢复核实际HEAD/diff |
 | 控制 | `/Volumes/disk0/Khor/worktrees/current/khor-build-net`，`feat/net`；7534d6e已push，新增SSH-only cpu-check与hop-lifecycle两个profile；Python驱动2＋runner4 checks绿；原timed profiles未改 |
 | 原基线 | `/Volumes/disk0/Khor/worktrees/current/khor-net-baseline`，detached6485cb83；原六fixture WIP未改，旧source90126283/tree97040f31已锚；不得按摘要覆盖 |
-| 证据 | `/Volumes/disk0/Khor/evidence/net/`；source-refs.json171条不可变run ref，均终态或明确未启动；SSH run不是GitHub run |
+| 证据 | `/Volumes/disk0/Khor/evidence/net/`；source-refs.json173条不可变run ref，均终态或明确未启动；SSH run不是GitHub run |
 
 Turing根`/tmp/khor-netlab-feat-net-1110`，每run在`runs/<id>`。只操作此任务owned资源，flock单重型槽，计时/诊断场景运行时不并跑编译或其他负载。无sudo/主机网络改动；user/netns隔离。50GiB准入/40GiB停止/90分钟预算；原工具pin/hash/可信source bundle不变。
 
@@ -70,7 +74,7 @@ CPU旧152/153原两门均2/2：候选0/0移动、最慢3.8秒、12打洞；基�
 
 ## 证据与恢复规则
 
-先核worktree/branch/HEAD/diff、receipt/source/ref与实际进程，不以摘要覆盖WIP。所有`refs/khor/net-evidence/<run>`必须同时等于账本snapshot，`:source`等于tree。最近审计`source-refs-audit-20261109-lifecycle-diagnostic.json`（169条时）；后新增170需下次批核。不checkout/push这些本地证据refs。
+先核worktree/branch/HEAD/diff、receipt/source/ref与实际进程，不以摘要覆盖WIP。所有`refs/khor/net-evidence/<run>`必须同时等于账本snapshot，`:source`等于tree。最近全量审计`source-refs-audit-20261109-real-resident-admission.json`（173条）。不checkout/push这些本地证据refs。
 
 辅助编排`evidence/net/ops/submit-turing.py`仅本地Git/Python/SSH；stage可--source复用完整回执，--control显式选新profile的7534（默认仍b998），launch必须给已采证前驱并重核原group/flock。helper历史及SHA保留。观察超时重查同句柄，不重发。169终态、170 superseded未启动，当前无Turing重型任务。helper新增--role在stage之前准确记录baseline/candidate/diagnostic；原guard未改，旧helper/SHA归档。
 

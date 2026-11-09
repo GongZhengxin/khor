@@ -1,6 +1,6 @@
 //! Admission and evidence for p1s's original one-CPU, two-contender load.
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::process::Command;
 use std::time::{Duration, Instant};
@@ -50,50 +50,94 @@ struct Process {
     threads: Vec<(u32, Vec<usize>)>,
 }
 
-impl Process {
-    fn read(pid: u32) -> Result<Self, String> {
-        let stat = proc_text(format!("/proc/{pid}/stat"))?;
-        // The comm field may itself contain spaces and parentheses.
-        let fields: Vec<_> = stat
-            .rsplit_once(") ")
-            .ok_or("missing stat comm terminator")?
-            .1
-            .split_whitespace()
-            .collect();
-        if matches!(fields.first().copied(), Some("Z" | "X")) {
-            return Err(format!("process {pid} is no longer running"));
-        }
-        let field = |index: usize| -> Result<u64, String> {
-            fields
-                .get(index)
-                .ok_or("short proc stat")?
-                .parse()
-                .map_err(|_| "invalid proc stat number".to_owned())
-        };
-        // After comm: state is field3/index0; utime14, stime15, starttime22.
-        let ticks = field(11)?
-            .checked_add(field(12)?)
-            .ok_or("CPU ticks overflow")?;
-        let mut threads = Vec::new();
-        for entry in fs::read_dir(format!("/proc/{pid}/task"))
-            .map_err(|e| format!("list /proc/{pid}/task: {e}"))?
-        {
-            let entry = entry.map_err(|e| format!("entry in /proc/{pid}/task: {e}"))?;
-            let tid: u32 = entry
+fn process_times(pid: u32) -> Result<(u64, u64), String> {
+    let stat = proc_text(format!("/proc/{pid}/stat"))?;
+    // The comm field may itself contain spaces and parentheses.
+    let fields: Vec<_> = stat
+        .rsplit_once(") ")
+        .ok_or("missing stat comm terminator")?
+        .1
+        .split_whitespace()
+        .collect();
+    if matches!(fields.first().copied(), Some("Z" | "X")) {
+        return Err(format!("process {pid} is no longer running"));
+    }
+    let field = |index: usize| -> Result<u64, String> {
+        fields
+            .get(index)
+            .ok_or("short proc stat")?
+            .parse()
+            .map_err(|_| "invalid proc stat number".to_owned())
+    };
+    // After comm: state is field3/index0; utime14, stime15, starttime22.
+    let ticks = field(11)?
+        .checked_add(field(12)?)
+        .ok_or("CPU ticks overflow")?;
+    Ok((field(19)?, ticks))
+}
+
+fn task_ids(pid: u32) -> Result<BTreeSet<u32>, String> {
+    fs::read_dir(format!("/proc/{pid}/task"))
+        .map_err(|e| format!("list /proc/{pid}/task: {e}"))?
+        .map(|entry| {
+            entry
+                .map_err(|e| format!("entry in /proc/{pid}/task: {e}"))?
                 .file_name()
                 .to_string_lossy()
                 .parse()
-                .map_err(|_| "invalid thread ID")?;
-            let status = proc_text(entry.path().join("status"))?;
-            threads.push((tid, allowed(&status)?));
+                .map_err(|_| "invalid thread ID".to_owned())
+        })
+        .collect()
+}
+
+fn thread_masks(pid: u32) -> Result<Vec<(u32, Vec<usize>)>, String> {
+    let began = Instant::now();
+    loop {
+        let mut observed = BTreeMap::new();
+        for tid in task_ids(pid)? {
+            let path = format!("/proc/{pid}/task/{tid}/status");
+            match fs::read_to_string(&path) {
+                Ok(status) => {
+                    observed.insert(tid, allowed(&status)?);
+                }
+                // A resident may finish a blocking worker between the
+                // directory snapshot and its status read. Only an absent
+                // task may be skipped, never an unreadable live thread.
+                Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+                Err(e) => return Err(format!("read {path}: {e}")),
+            }
         }
-        threads.sort_by_key(|(tid, _)| *tid);
-        if threads.is_empty() {
+        let live = task_ids(pid)?;
+        if live.is_empty() {
             return Err("process has no observable thread".to_owned());
+        }
+        if live.iter().all(|tid| observed.contains_key(tid)) {
+            return Ok(live
+                .into_iter()
+                .map(|tid| (tid, observed.remove(&tid).unwrap()))
+                .collect());
+        }
+        // Every task still listed must have a real mask. New arrivals or
+        // a vanished status still present in the listing require a fresh
+        // complete scan; sustained churn fails closed within 100 ms.
+        if began.elapsed() >= Duration::from_millis(100) {
+            return Err(format!("no complete live-thread snapshot for resident {pid}"));
+        }
+        std::thread::sleep(Duration::from_millis(1));
+    }
+}
+
+impl Process {
+    fn read(pid: u32) -> Result<Self, String> {
+        let (start, _) = process_times(pid)?;
+        let threads = thread_masks(pid)?;
+        let (after, ticks) = process_times(pid)?;
+        if after != start {
+            return Err(format!("resident {pid} changed identity during observation"));
         }
         Ok(Self {
             pid,
-            start: field(19)?,
+            start,
             ticks,
             threads,
         })
@@ -106,7 +150,7 @@ impl Process {
     }
 
     fn record(&self) -> Value {
-        json!({"pid": self.pid, "start_ticks": self.start, "cpu_ticks": self.ticks, "threads": self.threads})
+        json!({"pid": self.pid, "start_ticks": self.start, "cpu_ticks": self.ticks, "threads": self.threads, "thread_snapshot_revision": "exit_aware_v1"})
     }
 }
 
@@ -340,7 +384,10 @@ async fn checked_load_admits_real_residents_and_they_answer() {
         .await
         .expect("actual residents admit the checked CPU load");
     let (_, error) = super::echo(&pair.a).await;
-    assert!(error.is_none(), "real residents answer under load: {error:?}");
+    assert!(
+        error.is_none(),
+        "real residents answer under load: {error:?}"
+    );
     tokio::time::sleep(Duration::from_millis(300)).await;
     load.verify("real-resident-calibration").unwrap();
     drop(load);

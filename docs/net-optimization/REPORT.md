@@ -226,3 +226,6 @@ base25d0c803/tree6805b7b7/snapshote0a42573/controlb998：Turing150th fmt/编译/
 
 
 CPU169未进入测量：真实Node CPU admission返回无路径ENOENT，不能与170构造性能对照；170原版未启动已保留并superseded。下一步只增加错误路径上下文和真实Node短准入，不放宽压力/进展/affinity断言。用户U10明确跨网实机A=macserver、B=Turing（Linux），P=iPhone；设备身份已确定，A↔B可独立推进。
+
+
+172真实Node短准入红把169类失败定位到枚举与读取之间的线程退出（具体task status ENOENT）；先修fixture快照，不改产品或压力条件。修正仍必须覆盖每个存活thread、PID identity与真实CPU ticks。173仅format红，无多连接行为结论；共享载路清理假设仍待可重复合同。

@@ -629,3 +629,6 @@ control7534d6e已push，仅增加SSH-only cpu-check与hop-lifecycle；驱动Pyth
 
 
 169th真实Node CPU准入**FAILURE**，rc101，总581.57秒，原p1s在BusyCpu::start返回无路径ENOENT时停止，0个admitted记录，600秒窗口未开始；p5原门绿，150/300/600ms最慢295.9/497.0/972.6ms。完整report/source/control/bundle/原group/hash采核。170th原版相同fixture从未launch，已superseded_not_launched，inputs/ref保留。166 sleep短校准仍是真实3/3，不扩张成Node准入证明。171 Mac42627527851（basebe31e983/tree42f87d24/snapshot601c3c9c/control7534）仅format红，原patch应用，未编译/行为测试；首次下载遇只读GitHub EOF，重取同run成功，没有重发构建。
+
+
+172nd turing-20261109T135004Z-7a6fa08a（base7da5608e/tree62657b3b/snapshot56ce281d/control7534）CPU短校准3绿1红，101.22秒含编译、四case40.47秒。新真实Node case定位读取/proc/550613/task/551658/status返回ENOENT，原sleep/负例/解析三个保持绿；完整source/control/bundle/group/hash采核。173rd Mac42629466427同完整source，只有CPU新case assert布局format红，无编译/行为；原patch已应用。当前fixture修正为退出感知的完整存活线程快照＋前后process identity，100ms无完整快照失败；压力和原门保持，尚未预记绿。
