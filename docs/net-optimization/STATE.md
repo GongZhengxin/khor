@@ -4,6 +4,9 @@
 
 ## 当前源码与已收齐证据
 
+- **243 Mac最新outer-wire准确源便携预检全绿**：42705855560，与242/244完整source相同d1a7a401/tree0bb908a7/snapshot6833a423/controle4c58dc；fmt/net67+1ignored/hop12/wires11/journal30/budget20（49.88s）全部绿，完整source/transport/9 control blobs/hash核。不代表CLI物理病例原生可跑。
+- **新独立NAT lifecycle控制profile已通过8项stub合同并提交**：control fc204ac（全SHA以Git/receipt为准），普通netlab-nat-rebind保留；新netlab-nat-rebind-lifecycle明确samples off，r0失败/无成功证明就不启r1，r1或parser失败保留原错误。Python cargo/rustc stubs＋小Git验证，本机没有产品编译/测试。244仍pin旧e4，不会受控制更新影响。下一Mac先验证新增request_stream_opened与整个便携合同，再Turing独立诊断NAT慢方向。
+
 - **242 NAT-only真实校准+业务2/2可达绿，最好路不绿**：turing-20261109T214614Z-f70be96f，base d1a7a401/tree0bb908a7/snapshot6833a423/controle4c58dc；138.23s/rc0/原group空。r0同local tuple/同WAN:50001→:50002、kernel两族不变实际1/1；r1全部124/124ok，mapping82ms、remote-first开始紧接+0ms、首BA616119us/其后AB121397us；after AB p50 18186us、BA121073us（before18573/18048us）。nat-rebind-calibration.json核准确source/control/refs/hash/raw/summary/物理；新Direct :50002在B journal +610ms确实opened，但未见selected，另一wire +1501ms仍selected旧:50001。字段new_quic_path_selected=false；不能把它写成完全未发现新端口，不能把业务绿当最优绿。
 - **244 Peer移动实际wire关联在途**：turing-20261109T215036Z-46419d95，与242/243完全同源，含2654 owner停止修复和新outer-wire绑定；PID1170834，按同句柄核终态。原peer_relay_replug_v1全部业务/hold/资源界不变；这轮改源多于Unused单项，不冒称单补丁因果对照。
 - **后续NAT诊断补真实请求wire**：exchange_inner在实际open_bi成功后仅以gated lifecycle记wire/stream ID、reading布尔与path facts，不含请求正文/个人路径/token，不额外probe/持有连接/改变期限重试。它关联使用的Connection，不冒充逐包最终路径。244已pin旧准确源，不混此新增观测。

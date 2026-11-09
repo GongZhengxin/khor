@@ -437,3 +437,10 @@ M的eth0真实replug到另一Public IPv4 Router，新接口恢复原20ms链路�
 调用真实Links::attach与write_frames：一字节duplex容量，实际队列写入多字节frame，远端只读一个字节，证明writer已进入、仍不能排空。分别detach当前serial、以同peer/carrier新serial替换；旧Attached::ended必须在远端仍保持不读/不关闭时完成（1s只是合同资源观察界）。先记录是否在关闭远端前完成，再关闭远端并清理旧task；旧源失败时也不能泄漏fixture。替换分支同时证明新serial/新stream仍在、旧task结束不删新owner，最后单独关闭新远端并等待新stream结束。
 
 两分支均运行后再断言，保留mode/serial/blocked-write-seen/stopped-before-peer-close逐条事实。先原实现实际红，再仅加owner专属的停止信号，保证detach/replacement取消该旧读写任务；不改变队列/256KiB容量、QUIC加密/重试/正常半关闭及共享健康连接。不是新的网络延迟SLO；与232/233 unused退避修复分开pin源，实际peer移动仍先测233准确源避免混因果。Mac先跑便携合同以并行利用独立执行器，Turing计时不并跑编译/其他重负载。
+
+
+### N1/U12真实承载wire关联诊断（额外诊断，业务协议不变）
+
+peer_relay_replug_v1新增hop_outer_bound把发起端/接收端的attachment serial对应到实际Proto::Tunnel stable wire；middle以incoming/onward wire和splice起止对应两腿。只记ID，不额外持有连接、发probe或改回收/选路。后续request_stream_opened在真实open_bi成功后记录wire/stream ID、reading布尔和当时完整path facts；不记请求正文/token/个人路径。它证明哪条连接被使用及开流时的选路快照，不能冒称逐包最终路径、回复路径或同wire迁移。
+
+NAT另设netlab-nat-rebind-lifecycle诊断profile，沿原r0先物理成功才r1的完整node_nat_port_rebind_v1；所有地址几何、hold/样本/预算/remote-first顺序不变，只在mode显式diagnostic=lifecycle、samples off并保存两个resident日志。原无诊断netlab-nat-rebind保留，诊断数据不可与原正常分布当成同条件性能比较。失败/无新快路仍须分别保留，不能以有日志或可达绿闭合最优路径要求。
