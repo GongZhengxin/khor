@@ -392,3 +392,7 @@ Mac便携分流control6b1616c8b816bdb72a8a031d0ff28cc46a3fb4c7在feat/net，沿�
 
 
 37与Mac CLI已提交72b1d891c879cab63aaed032e201aee7baf1734c。**42552723913 net-vendor，executor=mac**正式调度：clean、treef6d0e84996723b8e9ad4659b6a2be8b625cb74b5、snapshotbafedc8a33390550c2bd0b10de0103e305500d31、controlb9b27116ad286fb51edc1e211949127681c5aa27。源码包括Noq2和N3未验证候选，不预认通过；host-capabilities只读，不启动VM或改资源门。96 refs，当前该run pending。
+
+
+42552723913两attempt最终均**执行器源码传输失败**：attempt1 source checkout、attempt2 control checkout，Mac→github.com:443连接超时，未校验源/格式/编译/测试，无source artifact。两attempt raw/log/classification分开保存mac-fault-candidate-checkout-42552723913/及attempt-2；96 refs全部终态。原72b1/treef6d0/snapshotbafed/controlb9b271不改，不记产品红。
+控制dd57be6c57090a811726983e700d0b39a40fd1e8已push：可选API Git bundle传输、准确GITHUB_SHA可信脚本、现prepare/guard，未远端验证。本机产品12项、bootstrap3项、prepare1项、driver1项以及YAML/16shell语法通过，无Rust/Node本机构建。STATE重写为当前状态，旧页原样归档HISTORY-20261109-before-api-transport.md；N0–N5范围不缩。

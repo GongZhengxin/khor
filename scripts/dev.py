@@ -113,6 +113,41 @@ def _upload_snapshot(info):
             "https://github.com/" + info["repository"] + ".git", info["snapshot_commit"] + ":refs/heads/" + info["snapshot_ref"])
 
 
+def upload_source_bundle(info):
+    from khor_lab.lock import source_transport_lock
+    with source_transport_lock(state_dir()):
+        return _upload_source_bundle(info)
+
+
+def _upload_source_bundle(info):
+    # A parentless snapshot has no developer history or untracked credentials.
+    # Transport its exact Git objects through the API when the Mac cannot reach
+    # github.com's Git endpoint. The worker still verifies the original SHA/tree.
+    with tempfile.TemporaryDirectory(prefix="khor-source-bundle-") as temporary:
+        directory = Path(temporary) / "objects.git"
+        bundle = Path(temporary) / "source.bundle"
+        git("init", "--bare", "--quiet", str(directory))
+        git("-C", str(directory), "-c", "protocol.file.allow=always", "fetch", "--quiet", "--no-tags",
+            str(root()), info["snapshot_commit"] + ":refs/heads/snapshot")
+        git("-C", str(directory), "symbolic-ref", "HEAD", "refs/heads/snapshot")
+        git("-C", str(directory), "bundle", "create", str(bundle), "--all", "HEAD")
+        if bundle.stat().st_size > 64 * 1024 * 1024:
+            raise ValueError("Source bundle exceeds the Mac API transport limit")
+        digest = hashlib.sha256(bundle.read_bytes()).hexdigest()
+        blob = git("-C", str(directory), "hash-object", "-w", str(bundle))
+        tree = subprocess.check_output(["git", "-C", str(directory), "mktree"],
+                                       input=f"100644 blob {blob}\tsource.bundle\n", text=True).strip()
+        environment = dict(os.environ, GIT_AUTHOR_NAME="Khor source transport", GIT_AUTHOR_EMAIL="snapshot@localhost",
+                           GIT_COMMITTER_NAME="Khor source transport", GIT_COMMITTER_EMAIL="snapshot@localhost")
+        commit = command("git", "-C", str(directory), "commit-tree", tree, "-m",
+                         "Khor source bundle " + info["request_id"], env=environment)
+        bundle_ref = "dev-bundles/" + info["request_id"]
+        git("-C", str(directory), "-c", "credential.helper=", "-c", "credential.helper=!gh auth git-credential", "push",
+            "https://github.com/" + info["repository"] + ".git", commit + ":refs/heads/" + bundle_ref)
+        return {"bundle_blob_sha": blob, "bundle_sha256": digest, "bundle_ref": bundle_ref,
+                "bundle_commit": commit, "bundle_bytes": bundle.stat().st_size}
+
+
 def submit(args):
     executor = getattr(args, "executor", "standard")
     if executor == "mac" and args.task not in {"net-unit", "net-node", "net-vendor", "net-congestion"}:
@@ -135,10 +170,14 @@ def submit(args):
     record.write_text(json.dumps(info, indent=2) + "\n")
     print(f"Source tree {info['tree']}; base {info['base_commit']}; untracked files excluded: {info['excluded_untracked_count']}", flush=True)
     upload_snapshot(info)
+    if executor == "mac":
+        info.update(upload_source_bundle(info))
+        record.write_text(json.dumps(info, indent=2) + "\n")
     dispatch = ["gh", "workflow", "run", "development.yml", "--repo", repository, "--ref", builder_ref,
                 "-f", "snapshot_sha=" + info["snapshot_commit"], "-f", "task=" + args.task, "-f", "request_id=" + identifier]
     if executor == "mac":
-        dispatch.extend(["-f", "executor=mac"])
+        dispatch.extend(["-f", "executor=mac", "-f", "bundle_blob_sha=" + info["bundle_blob_sha"],
+                         "-f", "bundle_sha256=" + info["bundle_sha256"]])
     command(*dispatch)
     for _ in range(20):
         runs = json.loads(command("gh", "run", "list", "--repo", repository, "--workflow", "development.yml",

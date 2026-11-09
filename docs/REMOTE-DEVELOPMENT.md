@@ -69,3 +69,5 @@ Mac入口先由可信控制步骤校验parentless源码容器，再运行源码�
 不向租机转发个人token、SSH私钥、签名、模型凭据或生产store。此路径不依赖托管prepare/retire，不新增中继、部署或正式签名。
 源码快照、平台、run/control及原始输出仍各自留证；Mac单元/loopback测量不能替代Linux命名空间SLO、可信Quality或真机结论。
 Mac路径不自动退休快照分支；确认任务终态及本地证据ref后，只清理本请求实际拥有且SHA匹配的分支。复用快照的请求不能删原请求的分支。
+
+Mac客户端现会另传dev-bundles/<request_id>：只包含无父源码快照的Git bundle，64MiB上限。worker经GitHub API读bundle，并按工作流GITHUB_SHA读取可信控制脚本，核Git blob、SHA-256、snapshot/tree后复用原准备与构建锁；Git只访问本地bundle。短期只读token不继承到Git/准备或构建步骤。旧checkout通道仍可由省略bundle双输入使用。终态证据保留后，bundle分支同样须核本请求所有权和bundle_commit才可清理。接口依据：[Git blobs API](https://docs.github.com/en/rest/git/blobs#get-a-blob)、[固定ref读取内容](https://docs.github.com/en/rest/repos/contents#get-repository-content)。
