@@ -218,6 +218,7 @@ impl BusyCpu {
 }
 
 #[test]
+#[ignore = "separate CPU calibration; never alongside timed netlab"]
 fn allowed_ids_are_explicit_and_invalid_lists_fail_closed() {
     assert_eq!(allowed("Cpus_allowed_list:\t3,7-8,12\n").unwrap(), [3, 7, 8, 12]);
     for bad in ["", "Cpus_allowed_list:", "Cpus_allowed_list: 5-3", "Cpus_allowed_list: x", "Cpus_allowed_list: 1,,2"] {
@@ -226,6 +227,7 @@ fn allowed_ids_are_explicit_and_invalid_lists_fail_closed() {
 }
 
 #[tokio::test]
+#[ignore = "separate CPU calibration; never alongside timed netlab"]
 async fn checked_load_proves_real_cpu_progress_and_reaps_its_contenders() {
     let first = Reaped(Command::new("sleep").arg("10").spawn().unwrap());
     let second = Reaped(Command::new("sleep").arg("10").spawn().unwrap());
@@ -239,6 +241,7 @@ async fn checked_load_proves_real_cpu_progress_and_reaps_its_contenders() {
 }
 
 #[tokio::test]
+#[ignore = "separate CPU calibration; never alongside timed netlab"]
 async fn failed_pinning_or_disallowed_cpu_cannot_admit_load() {
     let child = Reaped(Command::new("sleep").arg("10").spawn().unwrap());
     let before = Process::read(child.0.id()).unwrap();

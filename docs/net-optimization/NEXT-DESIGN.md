@@ -247,3 +247,6 @@ ask_early的Accepted分支在adopt后继续持有Aborts并等待原by，已有�
 Accepted在adopt后持有与普通请求相同RetireUnheard，正常响应disarm；取消只触发/加入owner确认，不直接判dead。长等待期间可能收到过早期握手ACK，不能将一次历史count变化当永久健康：原ACK时间无进展或整个等待达到原silent时间后，允许用当前count做全路验证，是否退役仍由之后原grace内有无新包决定。此条件可能为仍健康的长取消增加一次验证，按wire合并有界；新增16秒健康Accepted阳性并等待grace后才发独立控制，N3实际探测开销仍需计量。
 
 这不等于所有tick/served静默策略已统一：无pending确认时现有silence/network条件、入站served的独立close、长期后台与跨进程期限等剩余合同继续保留，不能用本批绿结束完整N2。
+
+
+CPU新helper的首轮Mac163只因模块路径解析停在formatter，无编译/运行。已增加显式path，路径相对声明文件目录，依据[Rust模块路径规则](https://doc.rust-lang.org/reference/items/modules.html#the-path-attribute)。三项短校准明确ignore，单独profile加--ignored执行全部，避免full netlab并行运行短校准的busy loop污染计时场景；这不是忽略产品失败，N0校准必须独立有证据后才开始新CPU对照。

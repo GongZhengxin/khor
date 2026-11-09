@@ -50,6 +50,7 @@ use khor_core::Hop;
 use patchbay::{Device, IpSupport, Lab, LinkCondition, LinkDirection, Nat, Router, RouterPreset};
 
 use crate::lab::{LabNode, mesh, node, qad_relays_dual, relay, result, sample_diagnostics};
+#[path = "paths/cpu.rs"]
 mod cpu;
 
 fn now_ms() -> u64 {
