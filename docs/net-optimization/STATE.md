@@ -4,6 +4,9 @@
 
 ## 当前源码与已收齐证据
 
+- **229仅根format前置失败，NAT校准/业务均未执行**：`turing-20261109T210331Z-bba623f2`，base54e48129/treec4982e18/snapshotfd93cc4e/controle4c58dc，43.74s、原group空。远端rebind fixture format.patch已原样应用，下一准确源执行r0再r1。
+- **228原始慢路追踪新增事实**：X/Y在M换网后都先退Relay；M多份外层Direct约1秒恢复，但inner carried样本开始持续变旧，后来custom paths消失。X+约26秒两次shared_comparison=true时所有live wire都已无Custom，仍调用hop_measured_release并按Relay记lost十分钟。没有新owner替换，不是189的stale-owner反例。先拆分Unused（无Custom消费者的回收）与Outperformed（实测不足收益），不能把前者计成middle输路；底层为何先不再刷新inner path仍待因果核查，不能以拆分类别宣称已定全因。
+
 - **228 Peer relay移动：可用性1/1绿，但最好路未恢复**：`turing-20261109T205517Z-dee53ece`，base08b89cc6/tree8ab90a33/snapshot9dc90f9c/controlf4fa74c，230.56s、rc0、原group空。全部124/124ok，before p50 109187/110073us，首585544/538639us，after157580/156624us；M实际198.18.2.2→198.18.3.2，replug250ms，移动前两次10秒hold都达到。其后60秒未见双向carried再稳定10秒，carried_observed_again=false；不能把case可达绿当最优绿。当前正在核对外层早恢复、inner Carried不再选中的raw path/lifecycle；N1慢路滞留待解决，不能停工。
 - **下一NAT-only端口重绑病例/控制已写，8项Python stub控制检查通过、未远端format/编译**：nat_port_rebind_calibration_v1先真实fixed本地UDP tuple、同WAN:50001→:50002、局部conntrack删除与设备两族kernel完全不变正控，失败不启Node；node_nat_port_rebind_v1再真实remote-first目录124请求、原预算/hold/完整outcomes，公共Relay保持。只动owned namespace，完整规则/conntrack原文与新QUIC path事实保留；不会用“本机IP变化”掩盖仅NAT变化。
 

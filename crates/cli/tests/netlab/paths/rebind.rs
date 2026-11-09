@@ -30,59 +30,117 @@ impl Network {
         };
         let rules = format!(
             "{header}add rule ip rebind_v4 mapped oifname \"ix\" ip saddr {} ip daddr {} meta l4proto udp snat to {}\n",
-            self.a.ip().unwrap(), self.b.ip().unwrap(), self.mapped(port),
+            self.a.ip().unwrap(),
+            self.b.ip().unwrap(),
+            self.mapped(port),
         );
         let mut command = Command::new("nft");
-        command.args(["-f", "-"]).stdin(Stdio::piped())
-            .stdout(Stdio::piped()).stderr(Stdio::piped());
+        command
+            .args(["-f", "-"])
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped());
         let mut child = self.nat.spawn_command_sync(command).unwrap();
-        child.stdin.take().unwrap().write_all(rules.as_bytes()).unwrap();
+        child
+            .stdin
+            .take()
+            .unwrap()
+            .write_all(rules.as_bytes())
+            .unwrap();
         let output = child.wait_with_output().unwrap();
-        eprintln!("[netlab-rebind-rules] {}", serde_json::json!({
-            "case": s, "port": port, "initial": initial, "rules": rules,
-            "code": output.status.code(), "stdout": String::from_utf8_lossy(&output.stdout),
-            "stderr": String::from_utf8_lossy(&output.stderr),
-        }));
-        assert!(output.status.success(), "install rules only in the owned router namespace");
+        eprintln!(
+            "[netlab-rebind-rules] {}",
+            serde_json::json!({
+                "case": s, "port": port, "initial": initial, "rules": rules,
+                "code": output.status.code(), "stdout": String::from_utf8_lossy(&output.stdout),
+                "stderr": String::from_utf8_lossy(&output.stderr),
+            })
+        );
+        assert!(
+            output.status.success(),
+            "install rules only in the owned router namespace"
+        );
     }
 
     fn conntrack(&self, s: &str, phase: &str, delete: bool) -> serde_json::Value {
         let mut command = Command::new("conntrack");
-        command.args([
-            if delete { "-D" } else { "-L" }, "-p", "udp", "--orig-src",
-            &self.a.ip().unwrap().to_string(), "--orig-dst", &self.b.ip().unwrap().to_string(),
-        ]).stdout(Stdio::piped()).stderr(Stdio::piped());
-        let output = self.nat.spawn_command_sync(command).unwrap().wait_with_output().unwrap();
+        command
+            .args([
+                if delete { "-D" } else { "-L" },
+                "-p",
+                "udp",
+                "--orig-src",
+                &self.a.ip().unwrap().to_string(),
+                "--orig-dst",
+                &self.b.ip().unwrap().to_string(),
+            ])
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped());
+        let output = self
+            .nat
+            .spawn_command_sync(command)
+            .unwrap()
+            .wait_with_output()
+            .unwrap();
         let value = serde_json::json!({
             "case": s, "phase": phase, "delete": delete, "at_ms": now_ms(),
             "code": output.status.code(), "stdout": String::from_utf8_lossy(&output.stdout),
             "stderr": String::from_utf8_lossy(&output.stderr),
         });
         eprintln!("[netlab-rebind-conntrack] {value}");
-        assert!(output.status.success(), "inspect or delete only this fixture's UDP flows");
+        assert!(
+            output.status.success(),
+            "inspect or delete only this fixture's UDP flows"
+        );
         value
     }
 
     fn snapshot(&self, s: &str, phase: &str) -> (serde_json::Value, serde_json::Value) {
         let v4 = addresses(&self.a, "-4");
         let v6 = addresses(&self.a, "-6");
-        eprintln!("[netlab-rebind-addresses] {}", serde_json::json!({
-            "case": s, "phase": phase, "at_ms": now_ms(), "v4": v4, "v6": v6,
-        }));
+        eprintln!(
+            "[netlab-rebind-addresses] {}",
+            serde_json::json!({
+                "case": s, "phase": phase, "at_ms": now_ms(), "v4": v4, "v6": v6,
+            })
+        );
         (v4, v6)
     }
 }
 
 async fn network() -> Network {
     let lab = Lab::new().await.unwrap();
-    let nat = lab.add_router("nat").nat(Nat::Strict)
-        .ip_support(IpSupport::V4Only).build().await.unwrap();
-    let public = lab.add_router("public").preset(RouterPreset::PublicV4)
-        .build().await.unwrap();
+    let nat = lab
+        .add_router("nat")
+        .nat(Nat::Strict)
+        .ip_support(IpSupport::V4Only)
+        .build()
+        .await
+        .unwrap();
+    let public = lab
+        .add_router("public")
+        .preset(RouterPreset::PublicV4)
+        .build()
+        .await
+        .unwrap();
     let a = lab.add_device("a").uplink(nat.id()).build().await.unwrap();
-    let b = lab.add_device("b").uplink(public.id()).build().await.unwrap();
-    let reflector = b.spawn_reflector(SocketAddr::new(b.ip().unwrap().into(), 39999)).await.unwrap();
-    Network { _reflector: reflector, a, b, nat, _lab: lab }
+    let b = lab
+        .add_device("b")
+        .uplink(public.id())
+        .build()
+        .await
+        .unwrap();
+    let reflector = b
+        .spawn_reflector(SocketAddr::new(b.ip().unwrap().into(), 39999))
+        .await
+        .unwrap();
+    Network {
+        _reflector: reflector,
+        a,
+        b,
+        nat,
+        _lab: lab,
+    }
 }
 
 async fn direct(s: &str, a: &LabNode, b: &LabNode) {
@@ -95,15 +153,20 @@ async fn direct(s: &str, a: &LabNode, b: &LabNode) {
                 crate::attempts::phase(s, "direct_hold_started", now_ms());
                 Instant::now()
             });
-            if since.elapsed() >= Duration::from_secs(10) { return; }
-        } else { held = None; }
+            if since.elapsed() >= Duration::from_secs(10) {
+                return;
+            }
+        } else {
+            held = None;
+        }
         tokio::time::sleep(Duration::from_millis(500)).await;
     }
 }
 
 fn observed(b: &LabNode, a: &LabNode, address: SocketAddr) -> bool {
     b.journal(Some(a)).iter().any(|event| {
-        event["e"] == "path" && event["road"] == "direct"
+        event["e"] == "path"
+            && event["road"] == "direct"
             && matches!(event["change"].as_str(), Some("started" | "selected"))
             && event["addr"].as_str() == Some(address.to_string().as_str())
     })
@@ -124,33 +187,48 @@ async fn r0_fixed_local_udp_tuple_gets_a_new_external_port() {
     let new = net.a.probe_udp_mapping(net.reflector()).unwrap();
     let after = net.snapshot(s, "after");
     let remaining = net.conntrack(s, "after", false);
-    eprintln!("[netlab-rebind-calibration] {}", serde_json::json!({
-        "revision": "nat_port_rebind_calibration_v1", "old": old, "new": new,
-        "addresses_unchanged": before == after, "before": listed,
-        "deleted": deleted, "after": remaining,
-    }));
+    eprintln!(
+        "[netlab-rebind-calibration] {}",
+        serde_json::json!({
+            "revision": "nat_port_rebind_calibration_v1", "old": old, "new": new,
+            "addresses_unchanged": before == after, "before": listed,
+            "deleted": deleted, "after": remaining,
+        })
+    );
     assert_eq!(new, net.mapped(50002));
     assert_eq!(before, after, "neither family nor interface changed");
 }
 
-async fn business(s: &str, net: &Network, a: &LabNode, b: &LabNode) -> Result<serde_json::Value, String> {
+async fn business(
+    s: &str,
+    net: &Network,
+    a: &LabNode,
+    b: &LabNode,
+) -> Result<serde_json::Value, String> {
     tokio::time::timeout(Duration::from_secs(120), async {
         mesh(&[a, b]).await;
         for (from, to) in [(a, b), (b, a)] {
             let checked = reads(&format!("{s}-setup"), from, to, 1).await;
-            if !complete(&checked, 1) { return Err(format!("setup failed: {}", summary(&checked))); }
+            if !complete(&checked, 1) {
+                return Err(format!("setup failed: {}", summary(&checked)));
+            }
         }
         direct(s, a, b).await;
         Ok(())
-    }).await.map_err(|_| "rebind setup exceeded 120 seconds".to_owned())??;
+    })
+    .await
+    .map_err(|_| "rebind setup exceeded 120 seconds".to_owned())??;
     let before_ab = reads(&format!("{s}-before-ab"), a, b, 30).await;
     let before_ba = reads(&format!("{s}-before-ba"), b, a, 30).await;
     if !complete(&before_ab, 30) || !complete(&before_ba, 30) {
         return Err("before-rebind business incomplete".to_owned());
     }
-    tokio::time::timeout(Duration::from_secs(45), direct(s, a, b)).await
+    tokio::time::timeout(Duration::from_secs(45), direct(s, a, b))
+        .await
         .map_err(|_| "old direct road did not hold before rebinding".to_owned())?;
-    if !observed(b, a, net.mapped(50001)) { return Err("old external QUIC path was not observed".to_owned()); }
+    if !observed(b, a, net.mapped(50001)) {
+        return Err("old external QUIC path was not observed".to_owned());
+    }
     let before = net.snapshot(s, "before");
     let listed = net.conntrack(s, "before", false);
     crate::attempts::phase(s, "mapping_change_started", now_ms());
@@ -164,7 +242,10 @@ async fn business(s: &str, net: &Network, a: &LabNode, b: &LabNode) -> Result<se
     let after_ba = reads(&format!("{s}-after-ba"), b, a, 30).await;
     crate::attempts::phase(s, "reads_finished", now_ms());
     let after = net.snapshot(s, "after");
-    let observed_mapping = net.a.probe_udp_mapping(net.reflector()).map_err(|e| e.to_string())?;
+    let observed_mapping = net
+        .a
+        .probe_udp_mapping(net.reflector())
+        .map_err(|e| e.to_string())?;
     let remaining = net.conntrack(s, "after", false);
     let report = serde_json::json!({
         "case": s, "revision": "node_nat_port_rebind_v1", "nodes": [a.name, b.name],
@@ -176,8 +257,13 @@ async fn business(s: &str, net: &Network, a: &LabNode, b: &LabNode) -> Result<se
         "after_ab": summary(&after_ab), "after_ba": summary(&after_ba),
     });
     eprintln!("[netlab-rebind-result] {report}");
-    if before != after || observed_mapping != net.mapped(50002) || !complete(&first_ba, 1)
-        || !complete(&first_ab, 1) || !complete(&after_ab, 30) || !complete(&after_ba, 30) {
+    if before != after
+        || observed_mapping != net.mapped(50002)
+        || !complete(&first_ba, 1)
+        || !complete(&first_ab, 1)
+        || !complete(&after_ab, 30)
+        || !complete(&after_ba, 30)
+    {
         return Err(format!("port-only rebind business incomplete: {report}"));
     }
     Ok(report)
@@ -200,5 +286,8 @@ async fn r1_remote_reads_when_only_the_external_nat_port_changes() {
     diagnostics(s, &b, &a);
     let ok = matches!(&checked, Ok(Ok(_)));
     result(s, ok, format!("node_nat_port_rebind_v1 {checked:?}"));
-    assert!(ok, "complete remote-first business through a port-only NAT rebind");
+    assert!(
+        ok,
+        "complete remote-first business through a port-only NAT rebind"
+    );
 }
