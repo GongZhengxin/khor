@@ -716,3 +716,12 @@ Turing `turing-20261109T175508Z-912bcc0c`，base9c2e73488723fc550d335883e96eba78
 ### 202｜Mac42671621101，两次GitHub内部错误，无job
 
 同201完整source/control，request06db4946b3854c5d8d300dc247958846。attempt1、一次同run rerun attempt2均completed/failure、jobs=[]/artifacts0；原生Chrome GitHub Summary明确Internal server error，correlation分别8f4c3a68-b894-489d-aa05-f583f2a54e85与10c5e6b4-5407-4563-b375-5da3017696d6。API元数据、UI注释转录与无产物记录在mac-hop-reference-v2-ready-42671621101。没有远端source执行/format/编译/测试证明，不计产品失败；不第三次重发，等服务恢复补验。上传SSL timeout的dispatch前恢复与同request回执另留201/mac-upload-timeout-note.json。
+
+
+### 203–209｜继续执行与开发缓存
+
+203仅stage时捕获调用cwd导致root checkout快照，remote无report/launcher，保留并supersede；未执行。ops snapshot已固定产品cwd并核base，后续control SHA自动规范40位。204 `turing-20261109T182656Z-273ef96c`同205源d90bf666/tree9a7bd3d0/snapshot1a501da8/control32fa23c，219.90秒、root fmt/net66+1ignored/hop10/wires11/journal29/Linux24全绿，原group清空、全身份hash核。205 `…183013Z-fdf5424c` automatic lifecycle三轮3/3、192/192全ok，416.55秒、9诊断files与原group完整核；无当前owner释放/close，未复现201，不算因果收口。
+
+206/207同205完整source、control9135b6d4311ce74ee3a90dac188f4b094f780e35，稳定源码缓存首次/复用，两次fmt/net66+1ignored全绿。构建17.05→0.41秒，总51.5156→35.8381秒，实际net tests11.79/11.93秒，jobs16保持；pair proof turing-source-cache-pair-206-207.json。206输入短SHA原样保留，执行前已用canonical proof/ref核全SHA与所有control字节；207全SHA。源缓存仅Turing owned root原flock内使用，未知owner/脏tracked/软链拒绝保留，未改installed policy；Mac原隔离checkout路径保持。
+
+208 `turing-20261109T184729Z-59b8eed7`同source，追加原automatic lifecycle三轮（PID969908）；209 Mac42677483225/net-node同source、requestb2262c13…、实际control9135b6d，已in_progress。结果未预记，按原句柄继续采证。

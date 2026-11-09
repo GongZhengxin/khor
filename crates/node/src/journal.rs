@@ -1833,6 +1833,40 @@ mod tests {
     }
 
     #[test]
+    fn unrelated_candidates_do_not_postpone_a_stable_ipv4_or_ipv6_change() {
+        use iroh::endpoint::{DirectAddr, DirectAddrType};
+        let v4: std::net::SocketAddr = "192.168.1.5:7000".parse().unwrap();
+        let v6: std::net::SocketAddr = "[2001:db8::5]:7000".parse().unwrap();
+        let next_v4: std::net::SocketAddr = "10.0.0.7:7000".parse().unwrap();
+        let next_v6: std::net::SocketAddr = "[2001:db8:1::7]:7000".parse().unwrap();
+        let t = std::time::Instant::now();
+        for changed in [[v4, next_v6], [next_v4, v6]] {
+            let mut interfaces = Interfaces::new(vec![v4, v6]);
+            for (ms, port) in [(0, 8000), (400, 8001), (800, 8002)] {
+                let mut candidates = std::collections::BTreeSet::from(changed.map(|addr| {
+                    DirectAddr {
+                        addr,
+                        typ: DirectAddrType::Local,
+                    }
+                }));
+                candidates.insert(DirectAddr {
+                    addr: std::net::SocketAddr::from(([203, 0, 113, 7], port)),
+                    typ: DirectAddrType::Qad,
+                });
+                let set = interface_addrs(&candidates, &interfaces.told);
+                interfaces.saw(set, t + Duration::from_millis(ms));
+            }
+            assert!(
+                interfaces.due.is_some_and(|due| due <= t + ADDRS_SETTLE),
+                "the unchanged interface set must be deliverable at the original settle deadline"
+            );
+            assert!(interfaces.settled());
+            interfaces.saw(interfaces.told.clone(), t + Duration::from_secs(2));
+            assert_eq!(interfaces.due, None, "the same interface is not told twice");
+        }
+    }
+
+    #[test]
     fn a_file_is_cut_back_to_its_last_lines_and_reads_in_order() {
         let root = crate::testdir::TempTree::fresh("journal-ring");
         let j = Journal::open(&root.path());

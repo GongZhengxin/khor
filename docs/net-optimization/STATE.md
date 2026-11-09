@@ -1,8 +1,21 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-09 18:29 UTC（本地2026-11-10）。root串行，无子智能体。完整目标仍为“完成计划”；用户曾暂停，现明确“继续”并已恢复本轮工作（goal服务18:07仍返回paused，自动跨轮续跑由用户面板控制）；完整N0–N5未完成。速度/体验优先，个人可信设备网；没有合main、发布、中继采购或生产部署授权。
+更新：2026-11-09 18:52 UTC（本地2026-11-10）。root串行，无子智能体。完整目标仍为“完成计划”；用户曾暂停，现明确“继续”并已恢复本轮工作（goal服务18:07仍返回paused，自动跨轮续跑由用户面板控制）；完整N0–N5未完成。速度/体验优先，个人可信设备网；没有合main、发布、中继采购或生产部署授权。
 
 ## 当前执行与下一步
+
+- **208追加三轮automatic lifecycle诊断运行**：`turing-20261109T184729Z-59b8eed7`，PID969908；同205完整source（d90bf666/9a7bd3d0/1a501da8），control9135b6d4311ce74ee3a90dac188f4b094f780e35；仅执行器稳定源码缓存变化，原负载/窗口不变，不能预记结果。
+- **209 Mac42677483225已进入in_progress**：net-node，同205完整source/control9135b6d；requestb2262c13fdbe45ff988cb0cf71c92597；local ref/实际GH headSHA已核。不是对202第三次rerun，新准确source补原生合同，原两次Internal server error保留。
+- **205已终态完整采证3/3**：416.55s、原group清空，192/192全ok；双向各n30/轮、p50/p95/max与raw逐项一致，九诊断文件均lifecycle samples=off，无measured release/close。三个automatic保持Carried，**未复现201第二轮**，不能冒称原因已修。
+- **206/207稳定源码缓存同源对照已全绿**：`turing-20261109T184220Z-81707871`与`…184314Z-9e2b17cb`，同205完整source，两次root fmt/net66+1ignored与group/hash核；build17.05→0.41秒、job51.52→35.84秒，net tests11.79/11.93秒。仅一组同快照初始/复用对照，不承诺普遍倍数；jobs16与所有网络观察门保持。cache/source在原flock下校验owner、非symlink、clean tracked与准确tree，不reset/clean/删除未知目录；web占位内容相同不重写mtime。control9135b6d已push，driver2/runner6共8 Python控制检查绿，含实际小Git fixture/保mtime/拒绝脏树/未知目录/symlink，没有本机产品编译。206原输入control为短SHA，完整SHA已在执行前用canonical-control-before-launch.json和control ref锚定、逐blob核；原输入不改，未来stage自动规范为40位。
+- **U12发现通知timer待验证边界**：Interfaces::saw每次filtered候选更新重设due，可能令已稳定接口集合在QAD-only地址变化下延后；尚未实际红，先加原1秒/双地址族合同再跑原实现，协议已入ACCEPTANCE。完整移动矩阵仍缺。
+
+
+- **用户补充U11–U13已入PLAN/REQUIREMENTS/ACCEPTANCE**：peer relay须参与全候选最优选择，真实移动IPv4/IPv6地址独立/同时变化与peer-relay移动是硬验收；Turing加速先分辨编译/网络等待，普通/诊断缓存复用，build并行不污染计时或缩门。该完整矩阵未完成，不以单middle/IPv4-only的201替代。
+- **205 automatic lifecycle诊断已启动**：`turing-20261109T183013Z-fdf5424c`，PID944868；准确base d90bf666/tree9a7bd3d0/snapshot1a501da8/control32fa23c，三轮automatic原case，samples off。准备/负载/期限不改，增加的仅末尾/失败日志收集，source proof已留。实际状态须查同句柄，不预记通过。
+- **204同205完整source已终态全绿**：`turing-20261109T182656Z-273ef96c`，219.90s、原group清空；root fmt/net66+1ignored/hop10/wires11/journal29/Linux24（91.83s），source/control/bundle/ref/report hashes完整核。没有Mac/WAN/手机证据。
+- **203仅stage未启动，已保留并supersede**：`turing-20261109T182533Z-d5957674`，快照助手受调用cwd影响取到root checkout467c37；发起执行前发现，remote report/launcher均不存在，inputs/refs保留，不计产品结果。ops/submit-turing.py已在snapshot期间固定cwd到产品worktree，并assert base等于该worktree预读HEAD；204/205准确source实核，不触动203或任何其他checkout。
+
 
 - **201 hop_reference_v2已终态完整采证9/9**：`turing-20261109T175508Z-912bcc0c`，1228.41s、原group清空。准确base9c2e7348/treedcad2092/snapshotd862e1ae/control7598180。576 started/finished全ok，其中测量540、bootstrap/setup36；三组各轮双方向n30、summary与raw的p50/p95/max逐项一致，两端实际nft input/output relay drop与peer-hop=off均核。reference-v2-calibration.json保留准备phase、9次真实10秒hold、全部结果与逐wire journal；不混入v1、不当SLO。
 - **N1速度目标尚未达成**：201 automatic第一/三轮p50约147/149ms，与固定carried约145/146ms接近；第二轮automatic yx/xy为189.106/173.863ms，同轮固定carried145.221/145.701、固定relay190.427/193.093。第二轮automatic从reported Relay开始；x→y同wire在测量开始后15.271s变carried，再7.889s后变relay且Custom消失；y→x无carried selected事件。缓存摘要与逐wire事实分开保留；还不能定位当前owner释放/offer竞态/建立延迟的因果，下一步仅诊断，不盲改gain门。
