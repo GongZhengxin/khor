@@ -1,6 +1,6 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-09 04:06 UTC；root串行，无子智能体。活动目标“完成计划”仍active。
+更新：2026-11-09 05:12 UTC；root串行，无子智能体。活动目标“完成计划”仍active。
 完整范围：[PLAN](PLAN.md)；约束：[REQUIREMENTS](REQUIREMENTS.md)；准确源/历史结果：[RUNS](RUNS.md)。
 此前STATE原样保存在[本轮历史](HISTORY-20261109-before-duplex-candidate.md)，其中pending/未执行均为当时记录；当前以本页为准。
 
@@ -15,7 +15,7 @@
 | 产品 | `/Volumes/disk0/Khor/worktrees/current/khor-net`，`feat/net`；恢复核实际HEAD/diff，N3模型实现1478bf97，N2生产802e13a8+远端格式修正；随后HEAD为证据文档提交 |
 | 控制 | `/Volumes/disk0/Khor/worktrees/current/khor-build-net`，`feat/net`；0cff9671fb2f80945423132e0df46995f6ff3198已push；历史run各绑定原control |
 | 基线 | `/Volumes/disk0/Khor/worktrees/current/khor-net-baseline`，detached6485cb83d3b1f0bb93d4633825dc956623d78af9；仅paths/hop/lab/nat.rs、dev.py/netlab.sh六fixture；生产原样，现场已复核 |
-| 证据 | `/Volumes/disk0/Khor/evidence/net/`；source-refs.json现110条不可变refs；仅42564749932待分类 |
+| 证据 | `/Volumes/disk0/Khor/evidence/net/`；source-refs.json现110条不可变refs；全部终态 |
 
 ## 当前工作：N3校准与三轮完成，下一步贯通N2总预算
 
@@ -79,7 +79,7 @@ N0部分、N1仍红、N2部分、N3部分、N4未完成、N5部分。不能用�
 
 ## 证据与恢复
 
-先核worktree/branch/HEAD/diff、当前run与准确回执，不按摘要覆盖未提交内容，不重发活动run。source-refs.json现108项，42562932053已实际预期红；42562380977为格式门失败、未编译/测试；前106项终态且ref/tree已核。
+先核worktree/branch/HEAD/diff、当前run与准确回执，不按摘要覆盖未提交内容，不重发活动run。source-refs.json现110项，均终态；42562932053已实际预期红；42562380977为格式门失败、未编译/测试；前106项终态且ref/tree已核。
 git rev-parse refs/khor/net-evidence/<run>:source必须等于回执tree；只git show读容器，不checkout覆盖或push本地证据refs。账单/checkout失败均tests_executed=false，校验成功但format/compile失败与真实行为红分开。
 Mac源/bundle分支只在终态、证据已留、所有权/SHA匹配后清理；复用源的请求不拥有原源分支。原attempt记录不覆盖。
 外盘缺失只读git show feat/net:docs/net-optimization/STATE.md和PLAN；原外盘未提交内容不能按摘要覆盖。其他治理继续中央STATE/RESUME，不混授权。
@@ -87,7 +87,7 @@ Mac源/bundle分支只在终态、证据已留、所有权/SHA匹配后清理；
 ## 本轮收尾与下次具体入口
 
 42560015454的v2 Noq样本仅此固定300ms/2%/20Mbit/200ms、三轮同seed，非产品SLO。合并bulk-echo p95：Cubic普通890.3ms/优先389.9ms，BBR3普通449.6ms/优先612.4ms；不能据此宣称优先级总能改善或修改产品CC。吞吐范围及样本量见REPORT；每CC screen仅9样本，不报p99/置信尾部。
-当前link.rs Git blob与42558820303相同，两个vendor目录tree与42555870179相同，applicability.json保存适用范围；没有把这些局部绿当最终完整Quality。
+此前applicability核对时link.rs与42558820303相同；现在N2候选已改变link.rs，该Node证据只适用历史版本。两个vendor目录仍与42555870179相同，applicability.json保存适用范围；没有把这些局部绿当最终完整Quality。
 下一步先按NEXT-DESIGN/ACCEPTANCE推进N2真实Op截止点贯通：保持IPC正常半关闭和长档位，覆盖hop准备/拨号截断分类、普通交换/一次读重试、Accepted回答取消与其他并发请求独立。并行的逻辑设计可继续N3真实Node/SSH/hop排队；Linux/VZ仍未实施、N1原红须恢复后复验、N4/N5仍未完成。goal保持active，不标complete或因额度问题整体blocked。
 
 ## 新接续：N2操作总预算回归待执行
@@ -105,7 +105,7 @@ Mac源/bundle分支只在终态、证据已留、所有权/SHA匹配后清理；
 42562932053已实际红：根格式/net66pass+1ignored/hop9/wires10/journal28绿，dial_budget3pass2fail，仅真实ask_on忽略40ms scope、并以固定28秒截断300秒scope；测试均清理任务/endpoint并检查ready返回为正常错误，无peer失败。准确tree6c3de5d3/snapshot79e97ce7/control0cff967已核，mac-operation-budget-formatted-42562932053保存raw/log/source/classification；108 refs终态。
 
 当前候选在run_handoff_within一次建立Op原档-.5s的Tokio绝对截止点，任务局部只承载不可变值，普通/early锁、hop准备、有限拨号候选/1500ms延迟、普通交换与一次读重试均向下沿用。显式短by与操作by取早；短操作到期不记peer失败/退避，拨号自己的上限仍保留；Miss::CallerExpired独立，RetireUnheard的原独立活性证据继续生效。
-独立ask无Op上下文时按Request工作预算选择已有30/300/3600档，而不是固定28秒；新阶段不重建时长，原请求预算/读写/0RTT白名单不改。IPC正常半关闭不动。**候选尚未远端验证**，跨前台spawn的显式继承审计、后台多阶段入口、0RTT Accepted后回答所有权/取消的真实回归与其余七类合同仍需完成，不能以本次两锁测试覆盖全链路。
+独立ask无Op上下文时，由Request工作预算加既有拨号25秒、hop3秒与最大路程120秒合成外层上限；各阶段仍受自身上限裁剪。这次复核纠正先前套IPC档位会挤掉工作加路程预算的问题；实际前台仍用原Op截止点。新阶段不重建时长，原请求预算/读写/0RTT白名单不改。IPC正常半关闭不动。**候选尚未远端验证**，跨前台spawn的显式继承审计、后台多阶段入口、0RTT Accepted后回答所有权/取消的真实回归与其余七类合同仍需完成，不能以本次两锁测试覆盖全链路。
 Accepted后原裸JoinHandle await本批尚未修正；握手到期若刚得到未adopt的conn则中止该回答并关闭该新conn，避免新代码引入额外孤儿。下一步先候选net-node格式/编译/五测试，再单独构造真实0RTT恢复取消/健康共享wire对照。
 
 **42564150236 Mac net-node总期限贯通候选在途**：base1950943bdfff6f2944f5dd9a5124328ae7fa50dc clean、tree9f57f8181925f12763dd597fd336ead82741abd9、snapshot787c72e71038003da290e0b3009c47244eddc9cf、control0cff9671fb2f80945423132e0df46995f6ff3198。mac-operation-budget-candidate-42564150236/109th ref已锚，未预记五测试绿；Accepted回答所有权尚未改。
@@ -113,3 +113,5 @@ Accepted后原裸JoinHandle await本批尚未修正；握手到期若刚得到�
 42564150236仅根格式门失败（函数签名、array和链式await布局），source/control已核、无编译/测试；远端patch已原样应用。109 refs终态，贯通候选仍待新源验证，不记行为红或五测试绿。
 
 **42564749932 Mac net-node贯通格式修正源在途**：basea4ca8637cad3fa13554a54c7ef95e7e481041b75 clean、tree1f1677176b810668ef61103fafaffd9e52d1eb66、snapshotc39f8cc6f3793d2ef828f9d7b29ff83bdc479d91、control0cff9671fb2f80945423132e0df46995f6ff3198；mac-operation-budget-propagation-42564749932/110th ref已锚，恢复查询此ID。
+
+42564749932终态：根格式/net66pass+1ignored绿，Node因dial_update旧std时钟参数编译失败，Node测试未运行，不算行为红。准确source/control/ref已核，raw与classification保留。现将更新拨号自身10秒上限与调用期限分开；无Op的ask外层上限由现有阶段预算合成，避免IPC档位错误压缩工作。此修正候选待新的Mac net-node。

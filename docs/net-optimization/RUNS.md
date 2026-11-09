@@ -479,3 +479,6 @@ N3道路双向因果校准测试已按先前协议写下，模型未改；contro
 
 
 **42564749932 Mac net-node贯通候选格式修正源在途**：cleana4ca8637、tree1f1677176b810668ef61103fafaffd9e52d1eb66、snapshotc39f8cc6f3793d2ef828f9d7b29ff83bdc479d91、control0cff9671fb2f80945423132e0df46995f6ff3198。仅修远端布局，110th ref与mac-operation-budget-propagation-42564749932已锚，不预认行为绿。
+
+
+42564749932终态**Node编译失败**：根格式/net66pass+1ignored绿；dial_update旧std参数与新Tokio签名不匹配，Node测试未执行。准确tree1f167717/snapshotc39f8cc6/control0cff967/ref已核，mac-operation-budget-propagation-42564749932保留raw与classification；tests_executed=true仅net单元，不算行为红。修正候选保留更新10秒自身上限，另合入操作截止点；独立ask外层预算改由已有阶段上限合成，不套IPC档位。110 refs全终态。

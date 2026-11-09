@@ -53,7 +53,7 @@ const HAND: &str = "hop-in ";
 
 /// What X gives the hop before dialling without it: a middle's wire
 /// that has to be dialled first, plus its own stream to Y.
-const HOP_WITHIN: Duration = Duration::from_secs(3);
+pub(crate) const HOP_WITHIN: Duration = Duration::from_secs(3);
 
 /// How long B gives its own wire to Y: inside X's [`HOP_WITHIN`], so B
 /// stops dialling for X before X stops waiting (net-dial B3: it was 5 s,

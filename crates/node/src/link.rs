@@ -3496,7 +3496,10 @@ impl Node {
                 .await
                 .map_err(|_| DialFailure::CallerExpired)?;
         }
-        match self.dial(ep, &d.id, &d.addrs, proto.alpn(), by).await {
+        match self
+            .dial(ep, &d.id, &d.addrs, proto.alpn(), by, DIAL_MOST)
+            .await
+        {
             // Gone to the background while it dialled (net-dial B6): the
             // suspension let every wire go and this one is not taken up.
             Ok(conn) if self.resting.load(std::sync::atomic::Ordering::Relaxed) => {
@@ -3623,17 +3626,14 @@ impl Node {
         req: &Request,
     ) -> Result<Response, String> {
         // A resident op has already chosen its deadline. Standalone work
-        // uses the existing operation tier that holds this request's budget.
+        // reserves the existing stage limits around the request's own work,
+        // including the maximum road allowance, rather than inventing an IPC op.
         let by = crate::deadline::current().unwrap_or_else(|| {
-            let work = req.budget();
-            let budget = [
-                ipc::DEADLINE_FAR,
-                ipc::DEADLINE_SLOW,
-                ipc::DEADLINE_TRANSFER,
-            ]
-            .into_iter()
-            .find(|budget| *budget >= work)
-            .unwrap_or(work);
+            let budget = req
+                .budget()
+                .saturating_add(DIAL_MOST)
+                .saturating_add(crate::hop::HOP_WITHIN)
+                .saturating_add(wires::RTT_BUDGET_MOST);
             tokio::time::Instant::now() + budget
         });
         crate::deadline::scope(by, self.ask_on_within(ep, d, req, by)).await
@@ -13380,6 +13380,7 @@ impl Node {
         direct: &[String],
         alpn: &[u8],
         by: Option<tokio::time::Instant>,
+        most: Duration,
     ) -> Result<iroh::endpoint::Connection, DialFailure> {
         // A machine last seen behind a slow road is given that road's time
         // to answer a handshake (`wires::Patience`); one never measured, or
@@ -13388,7 +13389,8 @@ impl Node {
         // A machine its relay just said left, and that has not been heard
         // from since: a short dial — long enough for one that came straight
         // back on a new connection, not the full wait on one that is gone.
-        let mut within = dial_within(self.wires.last_rtt(id), self.wires.gone_lately(id), by);
+        let mut within =
+            dial_within(self.wires.last_rtt(id), self.wires.gone_lately(id), by).min(most);
         // No relay to go out by (C7): only a road this machine has can
         // answer — a direct one, or the hop asked for before the dial.
         // A short dial, not the full wait on relays it cannot reach.
@@ -14031,7 +14033,8 @@ impl Node {
             &target.id,
             &target.addrs,
             endpoint::UPDATE_ALPN,
-            Some(std::time::Instant::now() + DIAL_TIMEOUT),
+            crate::deadline::current(),
+            DIAL_TIMEOUT,
         )
         .await
         .map_err(|e| unreached_words(&target.shown(), e))

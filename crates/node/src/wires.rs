@@ -190,12 +190,15 @@ pub(crate) fn ask_every_path(conn: &Connection) -> Duration {
         .min(Duration::from_secs(30))
 }
 
+/// Maximum road allowance added to a request's own work budget.
+pub(crate) const RTT_BUDGET_MOST: Duration = Duration::from_secs(120);
+
 /// How long a far session's open is given on top of the request's own
 /// budget for the road it travels: the same nine RTTs.
 pub(crate) fn budget_for(base: Duration, conn: &Connection) -> Duration {
     base + rtt_of(conn)
         .saturating_mul(RTTS)
-        .min(Duration::from_secs(120))
+        .min(RTT_BUDGET_MOST)
 }
 
 /// The longest any wire waits after a change before its verdict.
