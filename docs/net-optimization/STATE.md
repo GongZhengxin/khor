@@ -15,7 +15,7 @@
 | 产品 | `/Volumes/disk0/Khor/worktrees/current/khor-net`，`feat/net`；恢复核实际HEAD/diff，N3模型实现1478bf97，N2生产802e13a8+远端格式修正；随后HEAD为证据文档提交 |
 | 控制 | `/Volumes/disk0/Khor/worktrees/current/khor-build-net`，`feat/net`；0cff9671fb2f80945423132e0df46995f6ff3198已push；历史run各绑定原control |
 | 基线 | `/Volumes/disk0/Khor/worktrees/current/khor-net-baseline`，detached6485cb83d3b1f0bb93d4633825dc956623d78af9；仅paths/hop/lab/nat.rs、dev.py/netlab.sh六fixture；生产原样，现场已复核 |
-| 证据 | `/Volumes/disk0/Khor/evidence/net/`；source-refs.json现108条不可变refs；仅42562932053在途 |
+| 证据 | `/Volumes/disk0/Khor/evidence/net/`；source-refs.json现108条不可变refs，全部终态 |
 
 ## 当前工作：N3校准与三轮完成，下一步贯通N2总预算
 
@@ -79,7 +79,7 @@ N0部分、N1仍红、N2部分、N3部分、N4未完成、N5部分。不能用�
 
 ## 证据与恢复
 
-先核worktree/branch/HEAD/diff、当前run与准确回执，不按摘要覆盖未提交内容，不重发活动run。source-refs.json现108项，42562932053在途；42562380977为格式门失败、未编译/测试；前106项终态且ref/tree已核。
+先核worktree/branch/HEAD/diff、当前run与准确回执，不按摘要覆盖未提交内容，不重发活动run。source-refs.json现108项，42562932053已实际预期红；42562380977为格式门失败、未编译/测试；前106项终态且ref/tree已核。
 git rev-parse refs/khor/net-evidence/<run>:source必须等于回执tree；只git show读容器，不checkout覆盖或push本地证据refs。账单/checkout失败均tests_executed=false，校验成功但format/compile失败与真实行为红分开。
 Mac源/bundle分支只在终态、证据已留、所有权/SHA匹配后清理；复用源的请求不拥有原源分支。原attempt记录不覆盖。
 外盘缺失只读git show feat/net:docs/net-optimization/STATE.md和PLAN；原外盘未提交内容不能按摘要覆盖。其他治理继续中央STATE/RESUME，不混授权。
@@ -99,3 +99,11 @@ Mac源/bundle分支只在终态、证据已留、所有权/SHA匹配后清理；
 42562380977只因新测试调用的布局被根格式门拦下，无编译/行为红；远端patch已原样应用。本机未跑formatter，107 refs终态；生产仍未消费新scope，下一准确源继续取红。
 
 **42562932053 Mac net-node操作期限回归格式修正源在途**：base28d9fe6ebb02475a6054d87bc0ab089f21290a02 clean、tree6c3de5d38a2d302813f6c66401436d3ddf6454ad、snapshot79e97ce75b77d17889ac0a2bcb008fbff47df146、control0cff9671fb2f80945423132e0df46995f6ff3198；载体仍未被生产消费。mac-operation-budget-formatted-42562932053/108th ref已锚，恢复查询该ID，不重发。
+
+## N2总预算实际红与贯通候选
+
+42562932053已实际红：根格式/net66pass+1ignored/hop9/wires10/journal28绿，dial_budget3pass2fail，仅真实ask_on忽略40ms scope、并以固定28秒截断300秒scope；测试均清理任务/endpoint并检查ready返回为正常错误，无peer失败。准确tree6c3de5d3/snapshot79e97ce7/control0cff967已核，mac-operation-budget-formatted-42562932053保存raw/log/source/classification；108 refs终态。
+
+当前候选在run_handoff_within一次建立Op原档-.5s的Tokio绝对截止点，任务局部只承载不可变值，普通/early锁、hop准备、有限拨号候选/1500ms延迟、普通交换与一次读重试均向下沿用。显式短by与操作by取早；短操作到期不记peer失败/退避，拨号自己的上限仍保留；Miss::CallerExpired独立，RetireUnheard的原独立活性证据继续生效。
+独立ask无Op上下文时按Request工作预算选择已有30/300/3600档，而不是固定28秒；新阶段不重建时长，原请求预算/读写/0RTT白名单不改。IPC正常半关闭不动。**候选尚未远端验证**，跨前台spawn的显式继承审计、后台多阶段入口、0RTT Accepted后回答所有权/取消的真实回归与其余七类合同仍需完成，不能以本次两锁测试覆盖全链路。
+Accepted后原裸JoinHandle await本批尚未修正；握手到期若刚得到未adopt的conn则中止该回答并关闭该新conn，避免新代码引入额外孤儿。下一步先候选net-node格式/编译/五测试，再单独构造真实0RTT恢复取消/健康共享wire对照。

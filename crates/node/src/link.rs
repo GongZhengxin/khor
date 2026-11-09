@@ -945,17 +945,22 @@ const DIAL_TIMEOUT: Duration = Duration::from_secs(10);
 /// every dial to turing while it was stuck, from every machine.
 const DIAL_MOST: Duration = Duration::from_secs(25);
 
+struct DialWindow {
+    within: Duration,
+    by: Option<tokio::time::Instant>,
+}
+
 /// How long a dial to a machine is given: [`DIAL_TIMEOUT`], or twelve of
 /// the last round trip measured to it when that is longer, never past
 /// [`DIAL_MOST`]; short for one its relay just said left; and never past
 /// the caller's own deadline `by`.
-fn dial_within(last_rtt: Duration, gone_lately: bool, by: Option<std::time::Instant>) -> Duration {
+fn dial_within(last_rtt: Duration, gone_lately: bool, by: Option<tokio::time::Instant>) -> Duration {
     let mut within = DIAL_TIMEOUT.max(last_rtt.saturating_mul(12)).min(DIAL_MOST);
     if gone_lately {
         within = within.min(Duration::from_secs(3).max(last_rtt.saturating_mul(6)));
     }
     if let Some(by) = by {
-        within = within.min(by.saturating_duration_since(std::time::Instant::now()));
+        within = within.min(by.saturating_duration_since(tokio::time::Instant::now()));
     }
     within
 }
@@ -2327,9 +2332,12 @@ impl Node {
     ) -> ipc::Reply {
         let (name, deadline) = (op.name(), op.deadline());
         let mine = deadline.saturating_sub(Duration::from_millis(500));
-        match tokio::time::timeout(mine, self.run_handoff(ep, op, response)).await {
-            Ok(reply) => reply,
-            Err(_) => {
+        let by = crate::deadline::earlier(Some(tokio::time::Instant::now() + mine))
+            .expect("an operation supplies its deadline");
+        let operation = crate::deadline::scope(by, self.run_handoff(ep, op, response));
+        match tokio::time::timeout_at(by, operation).await {
+            Ok(reply) if !crate::deadline::expired(Some(by)) => reply,
+            _ => {
                 let stamp = jiff::Zoned::now().strftime("%Y-%m-%d %H:%M:%S").to_string();
                 eprintln!("{}", msg::serve_op_late(&stamp, name, mine.as_secs()));
                 self.wires
@@ -3419,7 +3427,8 @@ impl Node {
         by: Option<std::time::Instant>,
         may_hop: bool,
     ) -> Result<Line, DialFailure> {
-        if by.is_some_and(|by| std::time::Instant::now() >= by) {
+        let by = crate::deadline::earlier(by.map(tokio::time::Instant::from_std));
+        if crate::deadline::expired(by) {
             return Err(DialFailure::CallerExpired);
         }
         if crate::pause::peer_on(self.root(), &d.id) {
@@ -3455,16 +3464,13 @@ impl Node {
         }
         let waited = std::time::Instant::now();
         let lock = self.wires.dial_lock(&d.id, proto);
-        let mut one = match by {
-            Some(by) => tokio::time::timeout_at(by.into(), lock.lock())
-                .await
-                .map_err(|_| DialFailure::CallerExpired)?,
-            None => lock.lock().await,
-        };
+        let mut one = crate::deadline::wait(by, lock.lock())
+            .await
+            .map_err(|_| DialFailure::CallerExpired)?;
         // A ready lock must not win after the caller's clock has run out.
         // Expiring a waiter neither changes the owner's result nor says
         // anything about the peer's reachability.
-        if by.is_some_and(|by| std::time::Instant::now() >= by) {
+        if crate::deadline::expired(by) {
             return Err(DialFailure::CallerExpired);
         }
         if let Some(conn) = self.wires.live(&d.id, proto) {
@@ -3482,7 +3488,9 @@ impl Node {
         // The peer hop (round ROAD-3): a road through a third machine,
         // ready before the dial so it races from the first packet.
         if may_hop {
-            self.hop_ahead(ep, d).await;
+            crate::deadline::wait(by, self.hop_ahead(ep, d))
+                .await
+                .map_err(|_| DialFailure::CallerExpired)?;
         }
         match self.dial(ep, &d.id, &d.addrs, proto.alpn(), by).await {
             // Gone to the background while it dialled (net-dial B6): the
@@ -3541,7 +3549,8 @@ impl Node {
     /// skip the retirement, so a dead wire was handed out again for
     /// 100 s of 29.5 s hangs.
     pub(crate) async fn exchange_on(&self, line: &Line, req: &Request) -> Result<Response, Miss> {
-        self.exchange_on_inner(line, req, None).await
+        self.exchange_on_inner(line, req, None, crate::deadline::current())
+            .await
     }
 
     async fn exchange_doc_on(
@@ -3550,7 +3559,8 @@ impl Node {
         req: &Request,
         attempt: &mut DocAttempt,
     ) -> Result<Response, Miss> {
-        self.exchange_on_inner(line, req, Some(attempt)).await
+        self.exchange_on_inner(line, req, Some(attempt), crate::deadline::current())
+            .await
     }
 
     async fn exchange_on_inner(
@@ -3558,10 +3568,16 @@ impl Node {
         line: &Line,
         req: &Request,
         attempt: Option<&mut DocAttempt>,
+        by: Option<tokio::time::Instant>,
     ) -> Result<Response, Miss> {
         let mut guard = RetireUnheard::new(&self.wires, line);
         let budget = wires::budget_for(req.budget(), &line.conn);
-        let out = exchange_inner(&line.conn, &line.name, req, budget, attempt).await;
+        let out = crate::deadline::wait(
+            by,
+            exchange_inner(&line.conn, &line.name, req, budget, attempt),
+        )
+        .await
+        .map_err(|_| Miss::CallerExpired)?;
         guard.disarm();
         match &out {
             Ok(_) => self.wires.heard(&line.id, line.proto, &line.conn),
@@ -3583,7 +3599,7 @@ impl Node {
                     .answers_late
                     .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
             }
-            Err(Miss::Garbled(_)) => {}
+            Err(Miss::Garbled(_) | Miss::CallerExpired) => {}
         }
         out
     }
@@ -3602,33 +3618,51 @@ impl Node {
         d: &DeviceInfo,
         req: &Request,
     ) -> Result<Response, String> {
-        // **Answer inside the face's own wait** (round NET-5): a face asks
-        // through the resident, which gives up after `ipc::DEADLINE_FAR`
-        // and says only that it stopped waiting. A dead wire's ack wait
-        // plus the redial behind a slow road could run past that (29.5 s
-        // at 600 ms / 5 % loss), so the redial is cut to what is left,
-        // and the face reads 「无法连接」 rather than 「未在 30 秒内完成」.
-        let by = std::time::Instant::now() + ipc::DEADLINE_FAR - Duration::from_secs(2);
-        match self.ask_early(ep, d, req, Some(by)).await {
+        // A resident op has already chosen its deadline. Standalone work
+        // uses the existing operation tier that holds this request's budget.
+        let by = crate::deadline::current().unwrap_or_else(|| {
+            let work = req.budget();
+            let budget = [ipc::DEADLINE_FAR, ipc::DEADLINE_SLOW, ipc::DEADLINE_TRANSFER]
+                .into_iter()
+                .find(|budget| *budget >= work)
+                .unwrap_or(work);
+            tokio::time::Instant::now() + budget
+        });
+        crate::deadline::scope(by, self.ask_on_within(ep, d, req, by)).await
+    }
+
+    async fn ask_on_within(
+        &self,
+        ep: &iroh::Endpoint,
+        d: &DeviceInfo,
+        req: &Request,
+        by: tokio::time::Instant,
+    ) -> Result<Response, String> {
+        match self.ask_early(ep, d, req, Some(by.into_std())).await {
             Early::Answered(resp) => return Ok(resp),
             Early::Failed(e) => return Err(unreached_words(&d.name, e)),
             Early::NotTaken => {}
         }
         let line = self
-            .line_to(ep, d, wires::Proto::Main)
+            .line_to_by(ep, d, wires::Proto::Main, Some(by.into_std()))
             .await
             .map_err(|e| unreached_words(&d.name, e))?;
-        match self.exchange_on(&line, req).await {
+        match self.exchange_on_inner(&line, req, None, Some(by)).await {
             Err(Miss::Unreached(_)) if req.is_reading() => {
+                if crate::deadline::expired(Some(by)) {
+                    return Err(unreached_words(&d.name, DialFailure::CallerExpired));
+                }
                 self.wires
                     .counts
                     .reads_retried
                     .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                 let line = self
-                    .line_to_by(ep, d, wires::Proto::Main, Some(by))
+                    .line_to_by(ep, d, wires::Proto::Main, Some(by.into_std()))
                     .await
                     .map_err(|e| unreached_words(&d.name, e))?;
-                self.exchange_on(&line, req).await.map_err(Miss::words)
+                self.exchange_on_inner(&line, req, None, Some(by))
+                    .await
+                    .map_err(Miss::words)
             }
             other => other.map_err(Miss::words),
         }
@@ -3653,7 +3687,8 @@ impl Node {
         req: &Request,
         by: Option<std::time::Instant>,
     ) -> Early {
-        if by.is_some_and(|by| std::time::Instant::now() >= by) {
+        let by = crate::deadline::earlier(by.map(tokio::time::Instant::from_std));
+        if crate::deadline::expired(by) {
             return Early::Failed(DialFailure::CallerExpired);
         }
         // Resting: not taken here, and refused by `line_to_inner` after.
@@ -3667,15 +3702,10 @@ impl Node {
         }
         let waited = std::time::Instant::now();
         let lock = self.wires.dial_lock(&d.id, wires::Proto::Main);
-        let mut one = if let Some(by) = by {
-            let Ok(one) = tokio::time::timeout_at(by.into(), lock.lock()).await else {
-                return Early::Failed(DialFailure::CallerExpired);
-            };
-            one
-        } else {
-            lock.lock().await
+        let Ok(mut one) = crate::deadline::wait(by, lock.lock()).await else {
+            return Early::Failed(DialFailure::CallerExpired);
         };
-        if by.is_some_and(|by| std::time::Instant::now() >= by) {
+        if crate::deadline::expired(by) {
             return Early::Failed(DialFailure::CallerExpired);
         }
         if self.wires.live(&d.id, wires::Proto::Main).is_some() {
@@ -3686,7 +3716,9 @@ impl Node {
         {
             return Early::Failed(failed.clone());
         }
-        self.hop_ahead(ep, d).await;
+        if crate::deadline::wait(by, self.hop_ahead(ep, d)).await.is_err() {
+            return Early::Failed(DialFailure::CallerExpired);
+        }
         let Ok(mut addr) = endpoint::dial_addr(&d.id, &d.addrs, &self.published_relays(ep)) else {
             return Early::NotTaken;
         };
@@ -3706,6 +3738,9 @@ impl Node {
         );
         let started = std::time::Instant::now();
         let attempt = async {
+            if crate::deadline::expired(by) {
+                return Err(DialFailure::CallerExpired);
+            }
             let connecting = ep
                 .connect_with_opts(addr, ALPN, Default::default())
                 .await
@@ -3754,6 +3789,15 @@ impl Node {
             }
         };
         let outcome = tokio::time::timeout(within, attempt).await;
+        if crate::deadline::expired(by) {
+            if let Ok(Ok((conn, asked))) = &outcome {
+                if let Some(asked) = asked {
+                    asked.abort();
+                }
+                conn.close(0u32.into(), b"caller deadline");
+            }
+            return Early::Failed(DialFailure::CallerExpired);
+        }
         {
             let (won, error) = match &outcome {
                 Ok(Ok(_)) => (Some(crate::journal::Won::Early), None),
@@ -10926,7 +10970,17 @@ impl Node {
         let dialled = crate::journal::BY
             .scope(
                 crate::journal::By::Pair,
-                self.dial_with(ep, &t.id, &t.direct, &relays, ALPN, DIAL_TIMEOUT),
+                self.dial_with(
+                    ep,
+                    &t.id,
+                    &t.direct,
+                    &relays,
+                    ALPN,
+                    DialWindow {
+                        within: DIAL_TIMEOUT,
+                        by: None,
+                    },
+                ),
             )
             .await;
         let conn = match dialled {
@@ -12581,10 +12635,13 @@ enum Early {
     NotTaken,
 }
 
-/// Why one exchange produced no answer — three things, because only the
-/// first may be asked again and only the first retires the wire.
+/// Why one exchange produced no answer. Only Unreached permits a read
+/// retry; independent liveness evidence also protects abandoned requests.
 #[derive(Debug)]
 pub(crate) enum Miss {
+    /// The local operation's total budget ended. Independent liveness
+    /// evidence may still retire a truly silent wire via RetireUnheard.
+    CallerExpired,
     /// The wire is dead, or the far machine never acknowledged the
     /// request: nothing came back within [`wires::ACK_WITHIN`] of
     /// sending, or nothing for [`wires::SILENT_AFTER`] after that, or the
@@ -12601,6 +12658,7 @@ pub(crate) enum Miss {
 impl Miss {
     pub(crate) fn words(self) -> String {
         match self {
+            Miss::CallerExpired => msg::dial_timed_out().to_string(),
             Miss::Unreached(w) | Miss::Late(w) | Miss::Garbled(w) => w,
         }
     }
@@ -12642,7 +12700,12 @@ async fn exchange(
     req: &Request,
     budget: Duration,
 ) -> Result<Response, Miss> {
-    exchange_inner(conn, who, req, budget, None).await
+    crate::deadline::wait(
+        crate::deadline::current(),
+        exchange_inner(conn, who, req, budget, None),
+    )
+    .await
+    .map_err(|_| Miss::CallerExpired)?
 }
 
 async fn exchange_inner(
@@ -13149,8 +13212,12 @@ impl Node {
         direct: &[String],
         relays: &[String],
         alpn: &[u8],
-        within: Duration,
+        window: DialWindow,
     ) -> Result<iroh::endpoint::Connection, DialFailure> {
+        let by = crate::deadline::earlier(window.by);
+        if crate::deadline::expired(by) {
+            return Err(DialFailure::CallerExpired);
+        }
         // 按机器暂停: not dialled at all, and said so — the sync tick,
         // every verb and every tunnel come through here.
         if crate::pause::peer_on(self.root(), id) {
@@ -13176,8 +13243,10 @@ impl Node {
             addr.addrs.extend(carried);
             tried = crate::journal::offered(&addr);
             let (ep, alpn) = (ep.clone(), alpn.to_vec());
-            roads
-                .spawn(async move { (crate::journal::Won::Direct, ep.connect(addr, &alpn).await) });
+            roads.spawn(async move {
+                let connected = crate::deadline::wait(by, ep.connect(addr, &alpn)).await;
+                (crate::journal::Won::Direct, connected)
+            });
         }
         // By identity alone. Nothing here can be stale: a machine's id
         // is the one thing about it that a restart does not change.
@@ -13188,19 +13257,24 @@ impl Node {
             }
             let (ep, alpn, wait) = (ep.clone(), alpn.to_vec(), ahead);
             roads.spawn(async move {
-                if wait {
-                    tokio::time::sleep(RELAY_HEAD_START).await;
+                if wait
+                    && crate::deadline::wait(by, tokio::time::sleep(RELAY_HEAD_START))
+                        .await
+                        .is_err()
+                {
+                    return (crate::journal::Won::Relay, Err(crate::deadline::Expired));
                 }
-                (crate::journal::Won::Relay, ep.connect(addr, &alpn).await)
+                let connected = crate::deadline::wait(by, ep.connect(addr, &alpn)).await;
+                (crate::journal::Won::Relay, connected)
             });
         }
         let tunnel = alpn == khor_net::endpoint::TUNNEL_ALPN;
-        let by = crate::journal::by_now();
+        let origin = crate::journal::by_now();
         let note = |won: Option<crate::journal::Won>, error: Option<String>, asleep: bool| {
             // A failure's backoff is the one its caller is about to count
             // (`Node::line_to_inner`); a pairing dial counts none, nor a
             // middle's for another machine, nor one the far side refused.
-            let (failures, retry_s) = match (won, by) {
+            let (failures, retry_s) = match (won, origin) {
                 (None, b)
                     if !asleep
                         && !matches!(b, crate::journal::By::Pair | crate::journal::By::Onward) =>
@@ -13220,7 +13294,7 @@ impl Node {
             self.wires.note(
                 Some(id),
                 crate::journal::What::Dial {
-                    by,
+                    by: origin,
                     tunnel,
                     ms: crate::journal::ms(started.elapsed()),
                     direct: tried.0,
@@ -13235,20 +13309,29 @@ impl Node {
             );
         };
 
-        let deadline = tokio::time::sleep(within);
+        let deadline = tokio::time::sleep(window.within);
         tokio::pin!(deadline);
+        let caller = async {
+            match by {
+                Some(by) => tokio::time::sleep_until(by).await,
+                None => std::future::pending::<()>().await,
+            }
+        };
+        tokio::pin!(caller);
         // First road home wins; a road that fails only counts if every
         // other one does too, so one dead direct address cannot decide
         // the answer while the relay is still walking.
         let mut refused: Option<String> = None;
         loop {
             tokio::select! {
+                biased;
+                () = &mut caller => return Err(DialFailure::CallerExpired),
                 () = &mut deadline => {
                     note(None, refused.map(|why| crate::journal::scrub(&why)), false);
                     return Err(DialFailure::TimedOut);
                 }
                 joined = roads.join_next() => match joined {
-                    Some(Ok((won, Ok(conn)))) => {
+                    Some(Ok((won, Ok(Ok(conn))))) => {
                         note(Some(won), None, false);
                         crate::roads::replied(&self.roads, id, started.elapsed());
                         crate::roads::watch(&self.roads, id, &conn, self.wires.journal.get().cloned(), &self.carry);
@@ -13257,7 +13340,8 @@ impl Node {
                     // **Refused is the far machine's own answer** (net-dial
                     // B4): whichever road carried it, the machine is there
                     // and resting, and the other road would hear the same.
-                    Some(Ok((_, Err(e)))) => match DialFailure::of_connect(&e) {
+                    Some(Ok((_, Err(_)))) => return Err(DialFailure::CallerExpired),
+                    Some(Ok((_, Ok(Err(e))))) => match DialFailure::of_connect(&e) {
                         DialFailure::Asleep(why) => {
                             note(None, Some(why.clone()), true);
                             return Err(DialFailure::Asleep(why));
@@ -13284,7 +13368,7 @@ impl Node {
         id: &str,
         direct: &[String],
         alpn: &[u8],
-        by: Option<std::time::Instant>,
+        by: Option<tokio::time::Instant>,
     ) -> Result<iroh::endpoint::Connection, DialFailure> {
         // A machine last seen behind a slow road is given that road's time
         // to answer a handshake (`wires::Patience`); one never measured, or
@@ -13303,8 +13387,15 @@ impl Node {
         // This machine's own home among the relays tried (net-f): two
         // machines homed on the same public relay meet there even while
         // each one's row still names only its own list.
-        self.dial_with(ep, id, direct, &self.published_relays(ep), alpn, within)
-            .await
+        self.dial_with(
+            ep,
+            id,
+            direct,
+            &self.published_relays(ep),
+            alpn,
+            DialWindow { within, by },
+        )
+        .await
     }
 }
 
@@ -13440,7 +13531,7 @@ mod dial_budget {
             Duration::from_secs(3),
             "its relay said it left: short"
         );
-        let by = std::time::Instant::now() + Duration::from_secs(2);
+        let by = tokio::time::Instant::now() + Duration::from_secs(2);
         assert!(
             dial_within(Duration::from_secs(1), false, Some(by)) <= Duration::from_secs(2),
             "inside the caller's deadline"
