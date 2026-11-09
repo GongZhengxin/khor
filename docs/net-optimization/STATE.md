@@ -15,9 +15,9 @@
 | 产品 | `/Volumes/disk0/Khor/worktrees/current/khor-net`，`feat/net`；恢复核实际HEAD/diff，本轮最后提交将含N3独立方向候选；N2生产为802e13a8+远端格式修正 |
 | 控制 | `/Volumes/disk0/Khor/worktrees/current/khor-build-net`，`feat/net`；0cff9671fb2f80945423132e0df46995f6ff3198已push；历史run各绑定原control |
 | 基线 | `/Volumes/disk0/Khor/worktrees/current/khor-net-baseline`，detached6485cb83d3b1f0bb93d4633825dc956623d78af9；仅paths/hop/lab/nat.rs、dev.py/netlab.sh六fixture；生产原样，现场已复核 |
-| 证据 | `/Volumes/disk0/Khor/evidence/net/`；source-refs.json现105条不可变refs，全部已终态；下一候选尚待调度 |
+| 证据 | `/Volumes/disk0/Khor/evidence/net/`；source-refs.json现106条不可变refs；仅42560015454在途 |
 
-## 当前工作：N3模型校准候选待绿
+## 当前工作：N3模型校准候选42560015454在途
 
 **42559476637实际模型红**：base6880d251edd38218007da99c9d070df2dd1957a5 clean、tree751e95115a7fb3a17faca1a5a44129e00a27655c、snapshote851d256586088d589971c2c1cb60f1461233a0c、controle7258e57155da1618f0f3b00fd1e395f481b5f19。
 根格式与congestion目标编译通过，真实UDP校准0pass/1fail：双向各1000B/s、RTT20ms、0损失、队列1秒，正向两个500B，第一包到后反向1B被队头未来包挡住，超过250ms容差。两ignored过滤，零计时轮；完整v2记录器已编译但尚未测量。证据mac-road-model-typed-42559476637已核source/control并下载。
@@ -25,7 +25,8 @@
 
 ACCEPTANCE在修改模型前冻结校准协议。当前候选仅改测试道路：每方向一个FIFO派发器，保留每lane序列化/损失/队列/seed，移除跨方向未来due阻塞；标识`independent_fifo_v2`。记录schema仍v2，case/summary/sample均标road_model。
 产品CC/优先级没有调整。control同步该model字段；先要求唯一校准1pass/0fail，再跑三轮ignored完整采样。driver本机桩检查通过：校准红即止，首计时轮红仍保留三轮及最终exit8；不是Rust实测。
-**下一步准确源Mac net-congestion：先候选根格式/编译/校准，再三轮计时；全部结果仍待。** 若format/compile红先按真实类型处理，不冒充模型红。旧shared_fifo_v1结果不能与新模型差值算产品改进。
+**42560015454 Mac net-congestion在途**：base1478bf9712ad50c00b502c78613cd932f20586b3 clean、tree33d5ef6d47cde04620db1baa470bd7fefdf0c99d、snapshot9a6f9717470e0a741aedbdd9dd1ecf0a32d18fc8、control0cff9671fb2f80945423132e0df46995f6ff3198。
+mac-duplex-congestion-42560015454及106th ref已锚，API请求e7e4871ed8c5478ebcc9022972cb3a0c；先根格式/编译/校准，再三轮计时，结果仍待。恢复只查询该ID，不重复调度。 若format/compile红先按真实类型处理，不冒充模型红。旧shared_fifo_v1结果不能与新模型差值算产品改进。
 
 ## 已取得的本轮真实回归证据
 
@@ -78,7 +79,7 @@ N0部分、N1仍红、N2部分、N3部分、N4未完成、N5部分。不能用�
 
 ## 证据与恢复
 
-先核worktree/branch/HEAD/diff、当前run与准确回执，不按摘要覆盖未提交内容，不重发活动run。source-refs.json现105项终态；下一调度后立刻更新ref/STATE。
+先核worktree/branch/HEAD/diff、当前run与准确回执，不按摘要覆盖未提交内容，不重发活动run。source-refs.json现106项，42560015454 pending；其余终态。
 git rev-parse refs/khor/net-evidence/<run>:source必须等于回执tree；只git show读容器，不checkout覆盖或push本地证据refs。账单/checkout失败均tests_executed=false，校验成功但format/compile失败与真实行为红分开。
 Mac源/bundle分支只在终态、证据已留、所有权/SHA匹配后清理；复用源的请求不拥有原源分支。原attempt记录不覆盖。
 外盘缺失只读git show feat/net:docs/net-optimization/STATE.md和PLAN；原外盘未提交内容不能按摘要覆盖。其他治理继续中央STATE/RESUME，不混授权。
