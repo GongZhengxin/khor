@@ -530,3 +530,6 @@ N3道路双向因果校准测试已按先前协议写下，模型未改；contro
 
 
 42569954515终态 **SUCCESS**：根格式/编译/net66+1ignored/hop9/wires10/journal28/dial_budget11全绿（预算6.73秒），新增四普通wire覆盖均实际执行：scope到期STOP本流且并发控制成功/同stable_id、真实读重试沿原by、失答读最多一次、Mkdir失答不重放。准确basef42121b5/treef198bbd5/snapshot40418eb1/control0cff967已核并下载，118 refs终态。生产与2fc650b3相同；新增绿覆盖不宣称这些用例在旧源取红，F7真正长黑洞仍缺。下一探针取消/首成功回归生产保持原样待实际红。
+
+
+**42570381896 Mac net-node探针所有权/首成功三回归在途**：basea2cf865cf1c0f3eb5073ffac5612a8ab8b7a6ae1 clean、treef7d1528532848f0fccbe4b8eb674cc66183982e0、snapshot70ec29da02a513fed7c04e6a8b8810756783bbf6、control0cff9671fb2f80945423132e0df46995f6ff3198；119th ref/mac-probe-owner-red-42570381896已锚。生产pair/doctor原样，旧11+新3待格式/编译/实际前置与红，不能预记行为红。
