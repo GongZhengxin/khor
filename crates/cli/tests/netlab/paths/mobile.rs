@@ -4,8 +4,22 @@ use super::*;
 use std::io::Write;
 use std::net::Ipv6Addr;
 
-const REVISION: &str = "ipv6_node_overlap_v1";
 const CONTENT: &[u8] = b"owned network fixture\n";
+
+#[derive(Clone, Copy)]
+enum FirstBusiness {
+    Both,
+    Remote,
+}
+
+impl FirstBusiness {
+    fn revision(self) -> &'static str {
+        match self {
+            Self::Both => "ipv6_node_overlap_v1",
+            Self::Remote => "ipv6_node_overlap_remote_first_v1",
+        }
+    }
+}
 
 fn ipv6_only(n: &LabNode) {
     let rules = "table inet mobile_ipv4 {\n chain cut_in { type filter hook input priority -10; policy accept;\n  iifname \"eth0\" meta nfproto ipv4 drop\n }\n chain cut_out { type filter hook output priority -10; policy accept;\n  oifname \"eth0\" meta nfproto ipv4 drop\n }\n}\n";
@@ -35,13 +49,13 @@ fn isolation(n: &LabNode) {
     eprintln!("[netlab-mobile-isolation] {} {table}", n.name);
 }
 
-fn state(n: &LabNode, phase: &str) -> (serde_json::Value, serde_json::Value) {
+fn state(n: &LabNode, phase: &str, revision: &str) -> (serde_json::Value, serde_json::Value) {
     let v4 = addresses(&n.dev, "-4");
     let v6 = addresses(&n.dev, "-6");
     eprintln!(
         "[netlab-mobile-addresses] {}",
         serde_json::json!({
-            "revision": REVISION, "node": n.name, "phase": phase,
+            "revision": revision, "node": n.name, "phase": phase,
             "at_ms": now_ms(), "v4": v4, "v6": v6,
         }),
     );
@@ -133,7 +147,13 @@ fn diagnostics(n: &LabNode, peer: &LabNode) {
     sample_diagnostics("mobile-v6", n);
 }
 
-async fn session(s: &str, a: &LabNode, b: &LabNode) -> Result<serde_json::Value, String> {
+async fn session(
+    s: &str,
+    a: &LabNode,
+    b: &LabNode,
+    first: FirstBusiness,
+) -> Result<serde_json::Value, String> {
+    let revision = first.revision();
     tokio::time::timeout(Duration::from_secs(120), async {
         mesh(&[a, b]).await;
         ipv6_only(a);
@@ -174,7 +194,7 @@ async fn session(s: &str, a: &LabNode, b: &LabNode) -> Result<serde_json::Value,
         ));
     }
     let old = a.dev.ip6().ok_or("a needs IPv6")?;
-    let (before_v4, before_v6) = state(a, "before");
+    let (before_v4, before_v6) = state(a, "before", revision);
     let (interface, info) = entry(&before_v6, old).ok_or("old IPv6 is absent")?;
     let prefix = info["prefixlen"].as_u64().ok_or("prefix missing")?;
     if prefix > 120 {
@@ -209,7 +229,7 @@ async fn session(s: &str, a: &LabNode, b: &LabNode) -> Result<serde_json::Value,
         }
         tokio::time::sleep(Duration::from_millis(100)).await;
     }
-    let (added_v4, added_v6) = state(a, "added");
+    let (added_v4, added_v6) = state(a, "added", revision);
     if added_v4 != before_v4 || entry(&added_v6, old).is_none() || entry(&added_v6, new).is_none() {
         return Err("address overlap precondition failed".to_owned());
     }
@@ -225,14 +245,22 @@ async fn session(s: &str, a: &LabNode, b: &LabNode) -> Result<serde_json::Value,
     crate::attempts::phase(s, "address_removed", now_ms());
     let first_ab_case = format!("{s}-first-ab");
     let first_ba_case = format!("{s}-first-ba");
-    let (first_ab, first_ba) = tokio::join!(
-        reads(&first_ab_case, a, b, 1),
-        reads(&first_ba_case, b, a, 1),
-    );
+    let (first_ab, first_ba) = match first {
+        FirstBusiness::Both => tokio::join!(
+            reads(&first_ab_case, a, b, 1),
+            reads(&first_ba_case, b, a, 1),
+        ),
+        FirstBusiness::Remote => {
+            let ba = reads(&first_ba_case, b, a, 1).await;
+            crate::attempts::phase(s, "first_remote_finished", now_ms());
+            let ab = reads(&first_ab_case, a, b, 1).await;
+            (ab, ba)
+        }
+    };
     let after_ab = reads(&format!("{s}-after-ab"), a, b, 30).await;
     let after_ba = reads(&format!("{s}-after-ba"), b, a, 30).await;
     crate::attempts::phase(s, "reads_finished", now_ms());
-    let (after_v4, after_v6) = state(a, "removed");
+    let (after_v4, after_v6) = state(a, "removed", revision);
     isolation(a);
     isolation(b);
     let new_check = command(
@@ -244,7 +272,8 @@ async fn session(s: &str, a: &LabNode, b: &LabNode) -> Result<serde_json::Value,
         &["ping", "-6", "-n", "-c", "1", "-W", "2", &old.to_string()],
     );
     let report = serde_json::json!({
-        "revision": REVISION, "old": old.to_string(), "new": new.to_string(),
+        "revision": revision, "case": s, "nodes": [a.name, b.name],
+        "old": old.to_string(), "new": new.to_string(),
         "before_ab": summary(&before_ab), "before_ba": summary(&before_ba),
         "first_ab": summary(&first_ab), "first_ba": summary(&first_ba),
         "after_ab": summary(&after_ab), "after_ba": summary(&after_ba),
@@ -273,7 +302,16 @@ async fn session(s: &str, a: &LabNode, b: &LabNode) -> Result<serde_json::Value,
 #[tokio::test(flavor = "multi_thread", worker_threads = 6)]
 #[ignore = "real Node mobility baseline, not the packet-only calibration"]
 async fn mv6_overlap_keeps_bidirectional_reads_without_an_ipv4_backup() {
-    let s = "mobile-v6";
+    run("mobile-v6", FirstBusiness::Both).await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 6)]
+#[ignore = "remote initiates the first business request after the moving peer changes IPv6"]
+async fn mv6_overlap_remote_initiates_without_a_moving_side_business_request() {
+    run("mobile-v6-remote", FirstBusiness::Remote).await;
+}
+
+async fn run(s: &str, first: FirstBusiness) {
     let lab = Lab::new().await.unwrap();
     let relay = relay(&lab, s, "relay", Some(Duration::from_millis(100))).await;
     let left = lab
@@ -297,16 +335,20 @@ async fn mv6_overlap_keeps_bidirectional_reads_without_an_ipv4_backup() {
         .build()
         .await
         .unwrap();
-    let a = node(s, da, "mobile-a", &[&relay], &[]).await;
-    let b = node(s, db, "mobile-b", &[&relay], &[]).await;
+    let (a_name, b_name) = match first {
+        FirstBusiness::Both => ("mobile-a", "mobile-b"),
+        FirstBusiness::Remote => ("mobile-remote-a", "mobile-remote-b"),
+    };
+    let a = node(s, da, a_name, &[&relay], &[]).await;
+    let b = node(s, db, b_name, &[&relay], &[]).await;
     fixture(&a);
     fixture(&b);
     crate::attempts::phase(s, "session_started", now_ms());
-    let checked = tokio::time::timeout(Duration::from_secs(240), session(s, &a, &b)).await;
+    let checked = tokio::time::timeout(Duration::from_secs(240), session(s, &a, &b, first)).await;
     diagnostics(&a, &b);
     diagnostics(&b, &a);
     let ok = matches!(&checked, Ok(Ok(_)));
-    result(s, ok, format!("{REVISION} {checked:?}"));
+    result(s, ok, format!("{} {checked:?}", first.revision()));
     assert!(
         ok,
         "complete bidirectional business reads across IPv6 replacement"

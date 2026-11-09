@@ -1,13 +1,14 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-09 19:37 UTC（本地2026-11-10）。root串行，无子智能体。完整目标仍是“完成计划”N0–N5，未完成；用户明确“继续”并补充U11–U13，当前工作已恢复。用户再次指出不应停止；goal服务的paused只是后台调度状态，不构成本轮停止依据。必须持续推进完整计划，不能在阶段通过后自行停下，也不得伪造complete/blocked或另建目标。速度/体验优先、个人可信设备网；没有合main、发布、中继采购/生产部署授权。
+更新：2026-11-09 20:18 UTC（本地2026-11-10）。root串行，无子智能体。完整目标仍是“完成计划”N0–N5，未完成；用户明确“继续”并补充U11–U13，当前工作已恢复。用户再次指出不应停止；goal服务的paused只是后台调度状态，不构成本轮停止依据。必须持续推进完整计划，不能在阶段通过后自行停下，也不得伪造complete/blocked或另建目标。速度/体验优先、个人可信设备网；没有合main、发布、中继采购/生产部署授权。
 
 ## 当前源码与已收齐证据
 
-- **216已实际启动Turing Node迁移用例**：`turing-20261109T195955Z-5d3a0f91`，base8f72d7a5/treeb2c6d97b/snapshot21183b84/control5bc236867e97cfb72034cc91b873759aef5eb518。格式前置先跑，之后才编译/业务；所有请求原30s，准备120s、scenario240s资源界限。未知/format/compile/前置/行为分开归类，不预记通过；必须按同句柄采证后继续，不因阶段通过或goal服务paused停工。
+- **217实际Node迁移1/1绿，已完整收齐**：`turing-20261109T200546Z-6622ff6c`，81.97s、rc0、原group空；base06b67c8c/tree7aa3c7fa/snapshot86c4fafa/control5bc2368准确身份、bundle/control/report hashes与refs核。两方向before/after各n30，加setup2/first2，共124/124全部ok；首AB509570us/BA1703454us，after p50 21362/20830us。实际kernel新旧切换、IPv4完全相同、两端隔离nft前后保留、新IPv6 ping正/旧负均核。raw与summary逐项一致，proof node-mobility-calibration.json。
+- **下一新增Remote-first病例已冻结**：沿用ipv6_node_overlap_v1全部物理/负载/预算，新增ipv6_node_overlap_remote_first_v1，删旧后只先发B→A，finished后才A→B；两病例fresh环境，pair profile单线程。前台静默不等于无后台包，不冒称手机/长流/全矩阵通过。217新路径opened/selected在删旧+264/+1595ms；A addrs/network在+3260/+4261ms，晚于首业务，不能把业务恢复归功于Node接口通知。当前无在途，继续新增实际测试，不停在阶段通过。
 
-
-- **用户U14要求不停下，已继续实际业务迁移**：新增ignored paths::mobile::mv6_overlap_（ipv6_node_overlap_v1），两fresh Node及各自IPC/唯一fixture；mesh后两端eth0阻断全部外部IPv4，loopback保留，IPv4直连/HTTP Relay无备路。先setup正控+Direct连续10秒，双向各30基线；A同prefix加新IPv6/ready后删旧，立即双向首请求，再双向各30，原30秒caller预算/完整outcomes，最后才做旧址ping负控。首轮只是业务可达/记录校准，非新造恢复SLO/同wire保证；尚未远端format/编译/运行。215裸包fixture仅三个helper可见性变化、主体不动，老profile不变。下一步Turing自身format前置→编译→实际病例；阶段通过不再当停止条件。
+- **216只在格式前置失败，已完整收齐**：`turing-20261109T195955Z-5d3a0f91`，43.76s、rc1、原group空，没有编译或实际病例。远端导出12572字节format.patch并在一次性副本生成；cached source tree仍是输入b2c6d97b且tracked干净，真实远端证明f583的cache保护。补丁原样应用并提交06b67c8c，再冻结217准确源；不把格式失败当产品行为红。
+- **U14业务迁移协议已冻结**：ignored paths::mobile::mv6_overlap_（ipv6_node_overlap_v1），两fresh Node及各自IPC/唯一fixture；mesh后两端eth0阻断全部外部IPv4，loopback保留，IPv4直连/HTTP Relay无备路。setup正控+Direct连续10秒、双向各30基线；A同prefix加新IPv6/ready后删旧，立即双向首请求，再双向各30，所有outcomes保留，最后旧址ping负控。双向同时发送有助于地址学习，首轮不能代表移动端静默的远端首请求；后续须另测。只作业务可达/记录校准，未新造恢复SLO或承诺同wire。215裸包fixture仅三个helper可见性变化、主体不动，旧profile不变。
 
 
 - **215物理IPv6地址替换已实际校准1/1**：`turing-20261109T192606Z-22c24322`，75.90s、原group空。base897251615ed0932be2e15416721274f57ae7259d/treeb1ed82c5eeea6497fcc272deb3e7bcf4086362cf/snapshotba0e5d7f43527496f778c2ab76b1bdde2d5d5276，control f5838d7d5398da99786108face83bd8f204d8c35。新ignored paths::mobility::在fresh双栈Public namespace实际将IPv6 `2001:db8:1:1::2`换`…::42`、同/64；三阶段kernel JSON与8packet全核（7正、旧IPv6负控1），IPv4地址JSON完全相同且仍可达。地址ready状态已核，不独立证明DAD流程/时延。root fmt/CLI编译/控制与source/bundle/report hashes核，事后cached tree正确且tracked干净。`ipv6-renumber-calibration.json`留全部原值；只是物理注入，不是Node/QUIC业务迁移、前缀变化、IPv4/NAT或手机验收，单包无SLO/分位数。
@@ -17,7 +18,7 @@
 - **最新功能10ae1ca0：稳定接口通知不被无关候选更新推迟**。Interfaces::saw在filtered set等于seen时直接返回，仅真正新集合重置原1秒settle。生产文件只增加四行guard，210整个fixture逐字不变；空网/同址恢复、回到已通知集合、Local↔QAD来源翻转原合同保留。
 - **210真实红→211 Linux/212 Mac同完整source绿**：210 `turing-20261109T185254Z-88fdeca5`，base16a0bafc/treee6aebe0c/snapshotcbbbac6f，fmt/net66+1ignored/hop10/wires11过，journal29过1红、118.09s、原group空；first IPv6变化/IPv4保持iteration失败，reverse未到。211 `turing-20261109T190201Z-d70459fa` 与212 Mac42679667230完整source相同：base10ae1ca0b0935f8b72e78aab89a65c1932a6333b/tree00ca0b6f31322d551402610b7b38d5dd8a7e48da/snapshotaa259f3d1376aa9a2e96a0cb257d336eb20a57e6，control9135b6d4311ce74ee3a90dac188f4b094f780e35。
 - 211 root fmt/net66+1ignored/hop10/wires11/**journal30/Linux24**（91.86s）全过，206.47s、原group空；212同源root fmt/net66+1ignored/hop10/wires11/**journal30/Mac20**（50.06s）全过，完整source/transport/9 control blobs/artifact hashes核。整fixture SHA `d66be0e62f349d2298d666c8470e09403f4bee6b53832d9e2fbf9f839315a822`；整生产文件除四行guard外逐字不变，proof `stable-interface-red210-green211-212.json`。green两族iteration均到；不是物理重编号、真跨网或手机能耗证明。
-- **当前全部任务已终态收齐，无在途**：211/212终态完整采证，queue空；`source-refs-audit-20261109-ipv6-calibration-215.json`已逐run核全部215 snapshot/tree refs。任何后续恢复先查实际句柄/branch/diff，不按摘要重发。
+- **旧任务截至215全部终态，217已终态**：211/212终态完整采证；`source-refs-audit-20261109-ipv6-calibration-215.json`已逐run核全部215 snapshot/tree refs。任何后续恢复先查实际句柄/branch/diff，不按摘要重发。
 
 ## Peer relay与速度仍待收口
 
@@ -67,7 +68,7 @@ U13：利用Turing128逻辑CPU、约504GiB RAM加速开发，先减少重复工�
 
 ## 工作区与执行规矩
 
-- 产品：`/Volumes/disk0/Khor/worktrees/current/khor-net`，feat/net；control：`…/khor-build-net`，feat/net，f5838d7已push。先核实际HEAD/diff；docs提交不改变上面的211/212准确源适用性。
+- 产品：`/Volumes/disk0/Khor/worktrees/current/khor-net`，feat/net；control：`…/khor-build-net`，feat/net，5bc2368已push。先核实际HEAD/diff；docs提交不改变上面的211/212准确源适用性。
 - 旧baseline `khor-net-baseline` detached6485六fixture WIP、CPU baseline `khor-net-baseline-cpu-v3` detached6485七staged fixture/helper均未触动，原refs/ledger保留。
 - 本机source-only，禁Cargo/Rust/Node/Xcode编译、产品测试、formatter、下载可执行物。只用Git/Python stdlib、脚本stub与数据核；不得改installed policy、ensure-budget、已装App/生产store/其他worktree。
 - Turing root `/tmp/khor-netlab-feat-net-1110`，owned单flock重型槽，Rust1.95/jobs16/nice10，50GiB准入/40GiB stop/90min，计时不并跑编译/其他重负载，无sudo/宿主网络改动，仅user/netns；SSH BatchMode/ForwardAgent=no/StrictHostKeyChecking=yes，不传个人密钥/token/agent/签名/模型凭据。
