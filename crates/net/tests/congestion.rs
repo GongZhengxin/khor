@@ -42,6 +42,8 @@ use noq::{ClientConfig, Endpoint, ServerConfig, TransportConfig, congestion};
 use tokio::net::UdpSocket;
 use tokio::sync::mpsc;
 
+const ROAD_MODEL: &str = "independent_fifo_v2";
+
 fn env_u64(key: &str, default: u64) -> u64 {
     std::env::var(key)
         .ok()
@@ -90,8 +92,10 @@ impl Lane {
 async fn road(server: SocketAddr, road: Road) -> SocketAddr {
     let sock = Arc::new(UdpSocket::bind("127.0.0.1:0").await.unwrap());
     let at = sock.local_addr().unwrap();
-    let (tx, mut rx) = mpsc::unbounded_channel::<(Instant, Vec<u8>, SocketAddr)>();
-    {
+    // A lane's due times are ordered, but the two directions' combined
+    // enqueue order is not. Each direction must wait on its own clock.
+    let [out_tx, back_tx] = std::array::from_fn(|_| {
+        let (tx, mut rx) = mpsc::unbounded_channel::<(Instant, Vec<u8>, SocketAddr)>();
         let sock = sock.clone();
         tokio::spawn(async move {
             while let Some((due, bytes, to)) = rx.recv().await {
@@ -99,7 +103,8 @@ async fn road(server: SocketAddr, road: Road) -> SocketAddr {
                 let _ = sock.send_to(&bytes, to).await;
             }
         });
-    }
+        tx
+    });
     tokio::spawn(async move {
         let now = Instant::now();
         let mut out = Lane {
@@ -119,12 +124,12 @@ async fn road(server: SocketAddr, road: Road) -> SocketAddr {
                 return;
             };
             let now = Instant::now();
-            let (lane, to) = if from == server {
+            let (lane, to, tx) = if from == server {
                 let Some(c) = client else { continue };
-                (&mut back, c)
+                (&mut back, c, &back_tx)
             } else {
                 client = Some(from);
-                (&mut out, server)
+                (&mut out, server, &out_tx)
             };
             if let Some(due) = lane.admit(n, now) {
                 let _ = tx.send((due, buf[..n].to_vec(), to));
@@ -332,7 +337,8 @@ fn report_samples(
     eprintln!(
         "[cc-summary-v2] {}",
         serde_json::json!({
-            "phase": phase, "cc": cc, "priority": prioritised, "round": round,
+            "road_model": ROAD_MODEL, "phase": phase, "cc": cc,
+            "priority": prioritised, "round": round,
             "attempted": samples.len(), "answered": answered.len(),
             "failed": samples.len() - answered.len() - timed_out, "timed_out": timed_out,
             "answer_p50_ns": pct(&answered, 0.5).map(|d| d.as_nanos()),
@@ -347,7 +353,8 @@ fn report_samples(
         eprintln!(
             "[cc-sample-v2] {}",
             serde_json::json!({
-                "phase": phase, "cc": cc, "priority": prioritised, "round": round,
+                "road_model": ROAD_MODEL, "phase": phase, "cc": cc,
+                "priority": prioritised, "round": round,
                 "index": index, "elapsed_ns": sample.elapsed.as_nanos(),
                 "outcome": sample.outcome,
             })
@@ -419,7 +426,7 @@ async fn controllers_and_priorities_on_a_slow_lossy_road() {
         eprintln!(
             "[cc-case-v2] {}",
             serde_json::json!({
-                "cc": r.cc, "priority": r.prioritised,
+                "road_model": ROAD_MODEL, "cc": r.cc, "priority": r.prioritised,
                 "rtt_ms": road_is.rtt.as_millis(), "loss_pct_per_direction": road_is.loss_pct,
                 "bytes_per_sec": road_is.bytes_per_sec, "queue_ms": road_is.queue.as_millis(),
                 "planned_bulk_seconds": secs, "bytes": r.bytes,

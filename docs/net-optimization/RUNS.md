@@ -449,3 +449,6 @@ N3道路双向因果校准测试已按先前协议写下，模型未改；contro
 
 
 **42559476637 Mac net-congestion校准在途**：clean6880d251、tree751e95115a7fb3a17faca1a5a44129e00a27655c、snapshote851d256586088d589971c2c1cb60f1461233a0c、controle7258e57155da1618f0f3b00fd1e395f481b5f19。仅修测试字节切片、模型原样，待实际红；105th ref/mac-road-model-typed-42559476637已保存，baseline六fixture合同现场复核仍保持。
+
+
+42559476637终态 **实际模型红**：根格式和congestion目标（含v2记录器）编译通过，校准0pass/1fail，反向1B被未来正向包挡住至250ms超时；两ignored过滤、零计时轮。tree751e9511/snapshote851d256/controle7258e5已核并下载raw/source/log/classification，105 refs终态。随后只改测试道路为每方向独立FIFO，标independent_fifo_v2，schema仍v2且每条case/summary/sample带model；产品CC未改。control同步mode并桩检查通过；候选尚未远端格式/编译/校准/测量。STATE已汇总重写，旧页完整归档HISTORY-20261109-before-duplex-candidate.md。

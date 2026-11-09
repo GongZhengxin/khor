@@ -1,112 +1,84 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-09 03:19 UTC · owner=root，串行，无子智能体。
-完整范围：[PLAN](PLAN.md)；要求：[REQUIREMENTS](REQUIREMENTS.md)；历史准确源/结果：[RUNS](RUNS.md)。
-此前STATE原样保存在[历史检查点](HISTORY-20261109-before-api-transport.md)，其中pending/未改leave均为当时记录，不代表当前状态。
+更新：2026-11-09 04:06 UTC；root串行，无子智能体。活动目标“完成计划”仍active。
+完整范围：[PLAN](PLAN.md)；约束：[REQUIREMENTS](REQUIREMENTS.md)；准确源/历史结果：[RUNS](RUNS.md)。
+此前STATE原样保存在[本轮历史](HISTORY-20261109-before-duplex-candidate.md)，其中pending/未执行均为当时记录；当前以本页为准。
 
-## 授权与位置
+## 授权与工作区
 
-活动目标“完成计划”授权N0–N5实施/验证，取代最初仅规划；速度/体验优先，个人可信设备网。
-没有合main、发布、中继采购/部署授权。本机source-only：不运行Cargo/Rust/Node/Xcode构建、测试、格式器或下载可执行物；小型Python/Git/脚本检查可用。
-重型沿macserver/GitHub；不碰其他任务树、现装App或用户会话。图谱先用，缺覆盖再定向读；不建CodeGraph索引。
+速度/体验优先，个人可信设备网；活动目标授权N0–N5实施验证，取代最初仅写计划。没有合main、发布、中继采购/部署授权。
+本机source-only：不运行Cargo/Rust/Node/Xcode编译、测试、formatter或下载可执行物；小型Git/Python/脚本检查可用。重型沿macserver/GitHub，不碰现装App、生产store、个人会话或其他任务树。
+图谱先用，覆盖不足才定向读；不新建CodeGraph索引。外盘布局和治理入口遵守仓库AGENTS，本网络任务不接管治理。
 
 | 用途 | 位置 / 分支 |
 | --- | --- |
-| 产品 | `/Volumes/disk0/Khor/worktrees/current/khor-net`，`feat/net`；恢复核实际HEAD/diff，本轮API入口已验证；37仍为72b1d891，N2锁等待候选随后提交，恢复核实际diff |
-| 控制 | `/Volumes/disk0/Khor/worktrees/current/khor-build-net`，`feat/net`；2e70c39fe6a70bbbd09b7434f90e6c2d62e84b16已push；历史run绑定各自control |
-| 基线 | `/Volumes/disk0/Khor/worktrees/current/khor-net-baseline`，detached6485cb83d3b1f0bb93d4633825dc956623d78af9；只允许paths/hop/lab/nat.rs、dev.py/netlab.sh六fixture；生产基线原样 |
-| 证据 | `/Volumes/disk0/Khor/evidence/net/`；source-refs.json现105条不可变source refs；仅42559476637在途 |
+| 产品 | `/Volumes/disk0/Khor/worktrees/current/khor-net`，`feat/net`；恢复核实际HEAD/diff，本轮最后提交将含N3独立方向候选；N2生产为802e13a8+远端格式修正 |
+| 控制 | `/Volumes/disk0/Khor/worktrees/current/khor-build-net`，`feat/net`；0cff9671fb2f80945423132e0df46995f6ff3198已push；历史run各绑定原control |
+| 基线 | `/Volumes/disk0/Khor/worktrees/current/khor-net-baseline`，detached6485cb83d3b1f0bb93d4633825dc956623d78af9；仅paths/hop/lab/nat.rs、dev.py/netlab.sh六fixture；生产原样，现场已复核 |
+| 证据 | `/Volumes/disk0/Khor/evidence/net/`；source-refs.json现105条不可变refs，全部已终态；下一候选尚待调度 |
 
-## 执行通道现状
+## 当前工作：N3模型校准候选待绿
 
-托管Linux prepare仍因GitHub账单/额度拒绝：42545673450两attempt及42545712302没有进入步骤，没有产品测试/source artifact；原始拒绝证据已保留。
-已异步询问恢复额度或已有Linux通道，无回复，不改账单/采购。直接SSH macserver经原iroh-ssh路由banner超时，未改路由或信任。
-Mac自托管runner可执行：worker-smoke42549824680 SUCCESS仅工具链/guard探针；42551075037已实际执行产品回归，见下文。
-既有Mac入口跳过托管prepare/retire，沿development.yml、mac-mini-worker共享队列和已安装run-build；只接受net-unit/net-node/net-vendor/net-congestion。资源/空间/清理策略未改。
+**42559476637实际模型红**：base6880d251edd38218007da99c9d070df2dd1957a5 clean、tree751e95115a7fb3a17faca1a5a44129e00a27655c、snapshote851d256586088d589971c2c1cb60f1461233a0c、controle7258e57155da1618f0f3b00fd1e395f481b5f19。
+根格式与congestion目标编译通过，真实UDP校准0pass/1fail：双向各1000B/s、RTT20ms、0损失、队列1秒，正向两个500B，第一包到后反向1B被队头未来包挡住，超过250ms容差。两ignored过滤，零计时轮；完整v2记录器已编译但尚未测量。证据mac-road-model-typed-42559476637已核source/control并下载。
+前42559155803仅新fixture误用u8编译失败，修b"e"后才实际取红，不能混算。
 
-**42552723913两attempt均终态执行器传输失败，不是产品红。** 同clean72b1d891、treef6d0e84996723b8e9ad4659b6a2be8b625cb74b5、snapshotbafedc8a33390550c2bd0b10de0103e305500d31、controlb9b27116ad286fb51edc1e211949127681c5aa27。
-attempt1源checkout、attempt2控制checkout连续github.com:443超时；未到源码校验/格式/编译/测试/host-capabilities；无source artifact。
-两attempt日志、raw run/jobs与未执行分类分开保存在mac-fault-candidate-checkout-42552723913/及attempt-2/。不得再把该run记pending或438/36/9绿。
+ACCEPTANCE在修改模型前冻结校准协议。当前候选仅改测试道路：每方向一个FIFO派发器，保留每lane序列化/损失/队列/seed，移除跨方向未来due阻塞；标识`independent_fifo_v2`。记录schema仍v2，case/summary/sample均标road_model。
+产品CC/优先级没有调整。control同步该model字段；先要求唯一校准1pass/0fail，再跑三轮ignored完整采样。driver本机桩检查通过：校准红即止，首计时轮红仍保留三轮及最终exit8；不是Rust实测。
+**下一步准确源Mac net-congestion：先候选根格式/编译/校准，再三轮计时；全部结果仍待。** 若format/compile红先按真实类型处理，不冒充模型红。旧shared_fifo_v1结果不能与新模型差值算产品改进。
 
-**API Git bundle已实际远端传输成功，产品单元已通过。** 控制dd57be6沿GitHub API取准确bundle、在GITHUB_SHA取可信控制文件；校验Git blob/SHA-256、快照与parentless/tree后，复用原prepare和build guard。Git只读本地bundle。
-本机客户端额外上传私库dev-bundles/<request_id>，仅含无父快照的Git对象；64MiB上限，无开发历史/未跟踪文件。原source分支保留。
-短期只读job token只在可信bootstrap步骤；Git/prepare和构建步骤不继承。默认standard不发送新inputs，保留旧main兼容；省略bundle双输入可走旧checkout。
-本机remote_development12项、bootstrap3项（准确还原/错误checksum/错误snapshot）、prepare1项、network-driver1项通过；Ruby YAML及16个bash语法块、diff-check通过。没有本机Rust/Node构建。
-**42555870179 net-vendor SUCCESS**：base d2849d4732c7e9b6dd2e953616ce583f0e520391 clean、tree4a9c4d89cc01e33a480375d50cc9f77b6d2d7a83、snapshotb6a4e9240786b1b178aee1e11284e6164aecc377、control dd57be6c57090a811726983e700d0b39a40fd1e8。
-API bootstrap步骤实际success、两checkout均跳过，已进入现有共享guard；根格式、438Noq/36路径/9选家全绿；Noq2新恢复测试与37快速Go实际通过。bundle17935476字节，SHA-256 284904bec454a22f964fbb5c4f5e0307e3f76342815d95d641dd9f18c261cf0b，blob91937c9b7d1330f2b1d8352dbe6d309c278e38b5。
-refs/khor/net-evidence/42555870179已create-only锚定，回执及raw run在mac-api-vendor-42555870179；恢复只查该ID，不重发。
+## 已取得的本轮真实回归证据
 
-## N1当前候选与真实红
+| 边界 | 实际红 | 实际绿 / 范围 |
+| --- | --- | --- |
+| N1 Iroh37：无当前copy近期接收提示时允许故障后备用ACK快速Go | 42551075037：根格式437Noq绿，路径35pass1fail仅新快速Go用例 | 42555870179：根格式438Noq/36路径/9选家全绿；同时Noq2 reporting始终启用恢复测试通过；Mac26.6.2 arm64、Rust1.95/jobs2 |
+| N2 normal拨号锁调用期限 | 42556768499：根格式/net66+1ignored/hop9/wires10/journal28绿，dial_budget1pass1fail；40ms调用被锁挡至500ms防挂 | 42557583517：同既有子集及dial_budget2全绿；CallerExpired、owner结果不变、零peer down/backoff/失败，过期空锁不拨号为新增绿覆盖 |
+| N2 early-data拨号锁调用期限 | 42557961726：normal控制绿，仅early持锁40ms不返回至500ms防挂；dial_budget2pass1fail | 42558820303：根格式/net66+1ignored/hop9/wires10/journal28/dial_budget3全绿；含两入口与过期空锁；treef3b250de87c64b452ccf2dac6543eb63d677938a、snapshot27bfd24c3233e98ab8998f8056bbba3f8650e5c4、controle7258e5 |
 
-37生产条件分支72b1d891c879cab63aaed032e201aee7baf1734c已由42555870179实际单元验证；Linux SLO仍缺：
-当前tuple有故障后且最近原250ms tick接收copy提示时，保留36的决定后备用应答与当前坏copy复测；无提示时接受began之后已有备用应答，避免真黑洞多等tick。
-接收提示不能证明当前正向健康；故障前旧样本仍无效、4秒兜底/正常两样本/速度优先/原节奏不变，不增加应用请求重放。
+N2新增CallerExpired与peer TimedOut区分；by入门过期、取锁等待和锁就绪后都检查，None保持原来等待。到期不写共享失败缓存/peer失败/退避。fixture为scratch hosts=false Node及无relay/discovery的Minimal Endpoint，绑定在计时前，不碰个人网络。
+42556474188和42558490443分别只有新测试assert的格式门失败；均原样应用远端format.patch后复验，不是行为红。本机未运行formatter。
 
-实际预期红 **42551075037**，旧7b61b7edc12ed5ef384b7054240e7b5202f1638b / snapshota21c1a978549979a8956639d35fdbd722cc6c8df / basea087 dirty / control6b1616c8b816bdb72a8a031d0ff28cc46a3fb4c7：
-根格式/437Noq绿，Iroh35pass1fail仅无接收copy快速Go用例，实际Hold双PING、预期Go。home因失败未执行；证据mac-current-copy-hint-red-42551075037，Mac26.6.2 arm64/Rust1.95/jobs2。
-37新增false旧包/4秒为实际绿覆盖，不宣称它们也已有旧源红。Noq2 reporting启用的新0-RTT测试实际通过；N3记录器仅根格式通过，尚未编译/执行。
+37生产最初72b1d891：当前tuple最近原250ms tick内且晚于故障began的live copy收包仅作为复测提示，不证明正向健康；有提示保留36的决定后备用应答/当前坏copy探测，无提示接受began后的已有备用应答。旧包/4秒兜底/正常两样本/速度优先/原节奏保留，无应用请求重放。
+以上都是Mac单元，不能收Linux SLO或完成整计划。
 
-36普通Linux结果仍有效且不能被Mac单元覆盖。同basea087 clean、treec807d328e78bdfda1dbebd7bdd4c14b0eaa8cd25、controlc68b644，日志关闭：
+## Linux原红与已有稳定性证据
 
-| Run | 结果 / 未解决事项 |
+下列同basea087 clean、treec807d328e78bdfda1dbebd7bdd4c14b0eaa8cd25、controlc68b644，普通日志关闭：
+
+| Run | 结果 |
 | --- | --- |
-| 42542824071 netlab-stalls | SUCCESS2/2；p1s600秒/20次300ms忙CPU，alpha/beta0/0移动、零退役/打洞、最慢865.4ms、3019包312293字节；p5原150/300ms绿，600ms仅观察 |
-| 42542984111 netlab-dynamic | FAILURE25/27；p3 1.1/1.2秒/818.4ms，前两轮超原1秒门；p2与21相位绿，零错误/退役 |
-| 42543254686 netlab-hop | FAILURE8/9；f4s第一轮0.7秒回carried，10.9秒后又退Relay、28.8秒才再回，最终LinkRelay；另两轮0.4/0.6秒无回退，f4/f4i均绿 |
+| 42542824071 netlab-stalls | SUCCESS2/2；p1s600秒/20次300ms忙CPU，alpha/beta0/0移动、零退役/打洞，最慢865.4ms、3019包312293字节；p5原150/300ms门绿、600ms仅观察 |
+| 42542984111 netlab-dynamic | FAILURE25/27；p3三轮1.1/1.2秒/818.4ms，前两轮超原1秒门；p2及21相位绿，零错/退役 |
+| 42543254686 netlab-hop | FAILURE8/9；f4s首轮0.7秒回carried、10.9秒后退Relay、28.8秒才再回，最终LinkRelay；另两轮0.4/0.6秒无回退，f4/f4i均绿 |
 
-f4s中继2.5秒双向注入在断腿恢复1.5秒后清除，不能把后续整段观察当作5秒Relay RTT。回退红独立保留，不能声称37已解决。
-42542228149诊断2/2仅定因证据，不是SLO。旧Watch p3较快但CPU3/1移动及hop1513ms红保留，不混不同源/机器算改善百分比。
+f4s中继2.5秒双向注入在断腿恢复1.5秒后清除，后续整段不能当5秒Relay RTT。回退独立定因，不宣称37已修复。
+42542228149诊断2/2不是SLO；旧Watch较快但CPU3/1与hop1513ms红仍留RUNS，不混源/机器算百分比。恢复Linux后原p3三轮<1秒、CPU0/0、hop无回退，再准确源完整矩阵，门不放宽。
 
-## N2–N5与顺序
+## 执行通道与限制
 
-N0部分、**N1仍红**、N2–N4未完成、N5部分。不能以单元绿或执行通道建立完成整计划。
+托管Linux prepare因GitHub账单/额度拒绝：42545673450两attempt及42545712302无步骤/无产品测试/source artifact；原始拒绝已保存。已异步询问额度或已有Linux通道，无回复，不改账单/采购。
+直接SSH macserver经原iroh-ssh路由banner超时，未改路由/信任。Mac自托管worker-smoke42549824680仅工具链探针；实际产品测试现已恢复。
+42552723913两attempt在Mac→github.com:443的source/control checkout超时，无编译/测试/源artifact；执行器传输失败不是产品红。
 
-1. Mac vendor根格式/438/36/9绿。N2锁期限回归42556768499已实际红；最小CallerExpired/normal有界锁42557583517已实际绿，下一步early入口独立回归。
-2. 恢复Linux能力后，原p3三轮<1秒、CPU0/0、hop不回退，再准确源完整矩阵；不能放宽门。host-capabilities实际：VZ支持1、16GiB/10CPU、可用约76.2GB，仅brew已装，Lima/QEMU/Docker/Podman/Colima均无；未启动VM/安装/改空间策略，Linux VM尚为提议。
-3. 独立定因f4s回退，必要时保存默认关闭诊断三端trace，保持原断腿与1500ms门。
-4. N2七类预算/取消/0-RTT/写协议已冻结ACCEPTANCE，真实源码设计见NEXT-DESIGN。锁/hop/首拨尚未贯通by、早数据回答取消所有权缺口仍未实施。按Op原30/300/3600档传deadline，不能把长操作压成28秒；hop3秒为两个中间设备合计，取消不计peer故障，真实RetireUnheard仍要保留。
-5. N3记录v2候选f17b8a31：全部echo/typing/screen结果、成功/全部结束时间分布分开、bulk真实字节/时长/结束原因；默认几何/seed/工作量不变。net-congestion三轮顺序、独立log、slo=false；尚未远端运行。实际Node32席位/content预算/Custom外层队列、SSH/hop公平与能耗仍缺。
-6. N4默认北京HTTP/TLS同机、自家登记集中北京；香港存在中继但无默认独立pkarr。已有多登记/选家机制需沿用，不能重复造。两端全路径/不对称/冷暖发现/故障域/容量实测与最优拓扑设计仍缺；不采购/部署。
-7. N5补丁48项（Iroh37+Noq11）初步清单见VENDOR-AUDIT。Noq6覆盖42543928044根格式437/35/9绿、Noq4 ACK隔离42539256792绿、Noq2 reporting恢复与37条件分支42555870179根格式438/36/9绿；Noq1/5专项、其余边界与上游行为等价仍缺。固定1.4.0调用链/hash证据见UPSTREAM，不升级/删补丁。原生代理/Mac/手机/多机/能耗与最终可信Quality仍缺。
+当前API Git bundle通道已多次实用：本机上传私库dev-bundles/<request_id>，仅无父快照对象、64MiB上限；worker经API读bundle和GITHUB_SHA的可信控制文件，校Git blob/SHA256/snapshot/parentless/tree，复用原prepare和已安装build guard。Git只读本地bundle；临时repo-read token不继承到Git/prepare/构建。
+沿development.yml、mac-mini-worker单槽，仅net-unit/net-node/net-vendor/net-congestion；默认standard不发新input、旧checkout保留。资源/空间/清理策略不改，无个人key/token/签名/模型凭据/生产store。产品12项、bootstrap3项、prepare1项、driver桩检查及YAML/16shell语法先前通过，后续driver改动亦已重验。
 
-## 证据与接续
+host-capabilities42555870179实际：VZ=1、16GiB/10CPU、约76.2GB空闲，仅brew已装，无Lima/QEMU/容器工具。Linux VM具体候选已写NEXT-DESIGN：项目专属Lima2.3.0/Ubuntu24.04固定checksum、2CPU/6GiB/30GiB、无home/key/agent挂载、前台hostagent归guard生命周期。**没有安装/启动VM**，不能说Linux已恢复；新后端需同配置基线重新测。
 
-恢复先核绝对worktree/branch/HEAD/diff、当前run终态和回执，不从摘要覆盖未提交内容，不重复调度活动run。
-每run锚refs/khor/net-evidence/<run>；git rev-parse REF:source必须等于回执tree；只用git show读容器，不checkout覆盖、不push本地证据refs。
-source-refs.json现105条；425527传输失败与托管账单拒绝均tests_executed=false、remote_source_verified=false。旧Mac实际红已验证source/control。重要artifact下载到规范证据目录。
-Mac源/bundle分支仅在终态、证据保留、所有权和SHA匹配后清理；复用源的请求不拥有原源分支。重试不改旧源/control/attempt证据。
-外盘缺失只读git show feat/net:docs/net-optimization/STATE.md和PLAN；原外盘未提交内容不能按摘要覆盖。治理另沿中央code-quality STATE/RESUME，不与本任务混合。
+## N0–N5未完成范围与接续顺序
 
-## N2锁期限实际红与当前候选
+N0部分、N1仍红、N2部分、N3部分、N4未完成、N5部分。不能用本轮单元或测量器修复结束目标。
 
-42556474188第一轮仅新assert根格式失败，未编译/测试；远端format.patch原样应用，本机未运行格式器。
-**42556768499实际预期红**：base2018ff956744f5dc33f5aa8b16a5caa93a36dad8 clean、treec60e145a72b88dd311fd90c9ff6a193983644210、snapshot654d409551e512462901a237e8bd47c7bc2c42da、control2e70c39fe6a70bbbd09b7434f90e6c2d62e84b16。
-根格式、net66pass/1ignored、hop9、wires10、journal28全绿；dial_budget旧用例pass、新用例fail：真实line_to_by持同peer/proto锁，40ms调用期限不返回、外层500ms防挂触发。scratch hosts=false Node、Minimal无relay/discovery Endpoint，绑定在计时前，失败后关ep清理；不碰个人会话。
-mac-dial-budget-formatted-42556768499已核source/control、保存原log及classification；99 refs均终态。
+1. 先收当前N3独立方向候选校准/完整三轮；失败/超时保留，成功与全尝试结束分布分开、空分布null，不用少量screen样本报p99；它只是Noq模拟层。
+2. N2除已绿normal/early锁准入外：hop准备、拨号自身裁剪/CallerExpired分类、普通交换/一次读重试总期限、Accepted后Aborts回答取消、长操作档位和并发/输者释放仍缺。按Op原30/300/3600真实deadline贯通，不能把长CodeServe/transfer压成28秒。hop3秒为两个middle合计；取消不计peer故障，真实RetireUnheard仍保留。七类合同在ACCEPTANCE，具体调用链NEXT-DESIGN。
+3. N1先恢复Linux能力，独立定因f4s再原门复验与最终完整矩阵。Linux新VM尚是设计，不跳过能力预检/基线。
+4. N3真实Node32席位/content独立32预算、Custom1024帧/256KiB外层队列、SSH/hop排队/公平、共享vs分连接、1/3/5设备后台与手机能耗仍缺。不能把增加总资源当调度胜出或Noq模拟当Node SLO。
+5. N4默认北京HTTP/TLS同机、自家登记集中北京，香港默认无独立pkarr；已有多登记/选家/继任机制须复用，尊重only_mine和用户n0配置。两端全路/不对称/冷暖发现/故障域/容量实测与拓扑设计仍缺，不采购/部署。
+6. N5共48初步补丁（Iroh37+Noq11）：Noq6计时覆盖42543928044、Noq4备用ACK隔离42539256792和本轮Noq2/37绿保留。Noq1/5专项、其余边界、固定1.4.0逐行为等价仍缺；UPSTREAM静态hash证据不当上游运行，不升级/删补丁。原生Mac/代理/真实手机/多机/能耗及最终可信Quality仍缺。
 
-当前最小生产候选：line_to_inner到期入门拒绝；有by时timeout_at等待锁，到期/锁同时ready再核时钟；无by仍原锁等待。CallerExpired独立于peer TimedOut，不写共享失败结果/peer down/backoff；各错误消费点有显式处理。
-原测试加强验证CallerExpired及释放锁后已过期调用也不拨号（后者为额外绿覆盖，不宣称已有旧源红）。已由42557583517远端格式/编译/单元通过。
-**此批只处理normal line锁等待。** ask_early锁、hop准备、拨号自身裁剪与CallerExpired分类、operation总期限和普通交换/一次读重试、Accepted回答取消、长操作30/300/3600档仍须后续实施/实测，N2不能收口。
+## 证据与恢复
 
-**42557583517 normal锁期限Mac net-node SUCCESS**：base19f0e1900e9344461c2b7cb2cb85f9e4a7921361 clean、tree2fd3cf7ea6ba50276be1bb7e9243c784c50830d8、snapshotd76915fc0c91ffde65ceb63d5fde560fb5506162、control2e70c39fe6a70bbbd09b7434f90e6c2d62e84b16。mac-dial-lock-candidate-42557583517及100th ref已保存；根格式、net66pass/1ignored、hop9/wires10/journal28/dial_budget2全绿；普通锁边界由42556768499实际红转绿。
-
-新增独立early入口测试an_early_call_deadline_bounds_waiting_for_another_dial：同真实Node/Endpoint/持锁fixture、Request::Sessions、40ms by与500ms防挂；early生产锁仍原样，待实际取红。fixture只整理测试设置，正常已绿行为仍需随新源复验。首次证据下载API EOF后同run只读重取成功，无重跑。
-
-**42557961726 early锁期限Mac net-node实际预期红**：base91d8777ce7bbe6ad55234482361f399f3f2372d7 clean、tree11262ccc042a1bfcd4628a5b00f669d7cafc151a、snapshot4eb0b8da9b37a2d3554c6179f479e347fd3ac5e7、control2e70c39fe6a70bbbd09b7434f90e6c2d62e84b16；当时early生产锁原样，根格式/net66+1ignored/hop9/wires10/journal28绿、dial_budget2pass1fail仅early持锁40ms不返回至500ms防挂；normal控制绿。mac-early-admission-red-42557961726及101th ref已保存；恢复查该ID。
-
-early准入现按实际红最小写候选：by到期入门与取锁后都拒绝、等待锁timeout_at受同by约束，None原样。到期返回CallerExpired且不写owner共享结果/peer失败；额外过期空锁不拨号覆盖待绿。只有两个准入边界，未补hop/拨号截断分类/普通交换/Accepted回答取消/总期限和长操作档，N2仍不完整。101 refs终态，下一准确源net-node待绿。
-N3已发现旧共享FIFO延迟派发器可能跨方向阻塞，模型校准协议先冻结ACCEPTANCE；此时未改N3派发器/写校准测试或实际测量，不能据toy模型选产品CC。
-
-**42558490443 early锁期限候选Mac net-node终态格式门失败**：base802e13a86ba738d54a8b096445b95435ab6b7712 clean、treef2afc1c9a48599f6091675105bc66075c73fe830、snapshotbfb637abe9d3d8a56683a5d7c6b5fcefa0999273、control2e70c39fe6a70bbbd09b7434f90e6c2d62e84b16。mac-early-admission-candidate-42558490443保存准确source及format.patch；仅新增过期空锁assert内await换行，未编译/测试，现已原样应用。生产early候选待新源绿，不记行为红。
-
-N3因果校准用例已按ACCEPTANCE冻结协议写入congestion.rs，尚未编译/执行；模型本身仍旧单FIFO。control e7258e57155da1618f0f3b00fd1e395f481b5f19已push：net-congestion先运行唯一校准用例并要求1pass/0fail，再执行三轮ignored测量；失败时不产后续计时log。本机driver桩检查1项通过（校准红即止、计时首轮红仍三轮全留），无本机Cargo/Rust。下一准确源先Mac net-node检查early候选与新增源码格式，再N3校准预期红；不可在校准前据模拟结果选择CC。
-
-**42558820303 early格式修正源Mac net-node SUCCESS**：base783619dd2bf1d034828f717bfb90f1f2b635a6a7 clean、treef3b250de87c64b452ccf2dac6543eb63d677938a、snapshot27bfd24c3233e98ab8998f8056bbba3f8650e5c4、controle7258e57155da1618f0f3b00fd1e395f481b5f19。含early修复/格式patch及N3模型校准测试（本profile仅格式/Node，不执行N3测试）。mac-early-admission-formatted-42558820303已核source/control并保存；根格式、net66pass/1ignored、hop9/wires10/journal28/dial_budget3全绿。normal/early持锁期限两项分别实际红转绿，N3仅格式通过、未编译/校准。
-
-下一步以e7258e5控制profile执行net-congestion：先实际UDP双向道路校准预期红，模型仍旧shared_fifo_v1；取红后修独立方向派发并显式版本，再校准绿/三轮完整v2采样。不要把尚未运行的模型/测量记为N3绿。N2除锁准入之外的冻结边界及N1 Linux原红、N4/N5均继续。
-
-**42559155803 N3模型校准Mac net-congestion测试fixture编译失败**：base599c57d0be6abee38488b7814daa9ca598370402 clean、treeb84a3bc4ea9a028fa8e2c147264623dfcb5fa971、snapshot54082af8662510e0548c5d4b584d06531724c8c0、controle7258e57155da1618f0f3b00fd1e395f481b5f19；模型仍shared_fifo_v1，校准先实际取红，不预记编译或测量绿。mac-road-model-red-42559155803及104th ref已锚，恢复只查该ID。
-
-42559155803准确source/control已核、根格式通过，校准fixture的send_to错误传u8而非字节切片，未执行测试；现已修b"e"，模型仍未改，不能记模型行为红或N3记录器已编译完成。104 refs终态，下一准确源重取原模型校准红。
-
-**42559476637 N3校准类型修正源Mac net-congestion在途**：base6880d251edd38218007da99c9d070df2dd1957a5 clean、tree751e95115a7fb3a17faca1a5a44129e00a27655c、snapshote851d256586088d589971c2c1cb60f1461233a0c、controle7258e57155da1618f0f3b00fd1e395f481b5f19。模型仍旧shared_fifo_v1，待实际行为红；mac-road-model-typed-42559476637和105th ref已锚，恢复查该ID。baseline实际仍仅原六fixture，生产未改。
+先核worktree/branch/HEAD/diff、当前run与准确回执，不按摘要覆盖未提交内容，不重发活动run。source-refs.json现105项终态；下一调度后立刻更新ref/STATE。
+git rev-parse refs/khor/net-evidence/<run>:source必须等于回执tree；只git show读容器，不checkout覆盖或push本地证据refs。账单/checkout失败均tests_executed=false，校验成功但format/compile失败与真实行为红分开。
+Mac源/bundle分支只在终态、证据已留、所有权/SHA匹配后清理；复用源的请求不拥有原源分支。原attempt记录不覆盖。
+外盘缺失只读git show feat/net:docs/net-optimization/STATE.md和PLAN；原外盘未提交内容不能按摘要覆盖。其他治理继续中央STATE/RESUME，不混授权。
