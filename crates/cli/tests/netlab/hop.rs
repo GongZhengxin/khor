@@ -554,12 +554,14 @@ async fn f4_stall(s: &str, st: Stall) {
     let x_base = (LEG.as_millis() / 2) as u32;
 
     let t = now_ms();
+    crate::attempts::phase(s, "observation_started", t);
     // Y types on X's terminal throughout (an echo every 200 ms): an idle
     // connection has nothing in flight for 3 s of black to show, and the
     // phone's own network change pings every path.
     let typing_until = std::time::Instant::now() + Duration::from_secs(typing_s);
     let stall = async {
         cut_as(&x.dev, m_ip, "flap_m");
+        crate::attempts::phase(s, "middle_blocked", now_ms());
         if relay_black > 0 {
             cut_as(&x.dev, relay_ip, "flap_relay");
         }
@@ -567,6 +569,7 @@ async fn f4_stall(s: &str, st: Stall) {
         if both {
             delay_to(&x.dev, relay_ip, x_base, Some(late)).await;
         }
+        crate::attempts::phase(s, "relay_delayed", now_ms());
         if relay_black > 0 {
             tokio::time::sleep(Duration::from_millis(relay_black)).await;
             uncut(&x.dev, "flap_relay");
@@ -574,11 +577,13 @@ async fn f4_stall(s: &str, st: Stall) {
         tokio::time::sleep(Duration::from_millis(black - relay_black)).await;
         uncut(&x.dev, "flap_m");
         let uncut_at = now_ms();
+        crate::attempts::phase(s, "middle_unblocked", uncut_at);
         tokio::time::sleep(Duration::from_millis(1500)).await;
         delay_to(&r.dev, x_out, F4_RELAY_ONE_WAY, None).await;
         if both {
             delay_to(&x.dev, relay_ip, x_base, None).await;
         }
+        crate::attempts::phase(s, "relay_restored", now_ms());
         uncut_at
     };
     // When the carried road answers again: its leg, m's wire to x, heard
@@ -617,6 +622,7 @@ async fn f4_stall(s: &str, st: Stall) {
     };
     let (uncut_at, slowest, (), leg) =
         tokio::join!(stall, typing(&y, &x, typing_until), watch, leg_back);
+    crate::attempts::phase(s, "observation_finished", now_ms());
     let answers = leg.unwrap_or(uncut_at);
 
     let events = path_lines(&y, &x, t);
@@ -708,14 +714,16 @@ async fn typing(
 ) -> Duration {
     let mut slowest = Duration::ZERO;
     while std::time::Instant::now() < until {
-        let began = std::time::Instant::now();
         let to = peer.name.clone();
-        let _ = tokio::time::timeout(
+        let (took, _) = crate::attempts::measure(
+            &n.scenario,
+            &n.id,
+            &peer.name,
             Duration::from_secs(30),
             n.with(move |node| async move { node.ls_of(&to, "/tmp").await.map(|_| ()) }),
         )
         .await;
-        slowest = slowest.max(began.elapsed());
+        slowest = slowest.max(took);
         tokio::time::sleep(Duration::from_millis(200)).await;
     }
     slowest

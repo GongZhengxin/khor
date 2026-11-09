@@ -19,6 +19,8 @@
 
 mod scratch;
 
+#[path = "netlab/attempts.rs"]
+mod attempts;
 #[path = "netlab/hop.rs"]
 mod hop;
 #[path = "netlab/lab.rs"]

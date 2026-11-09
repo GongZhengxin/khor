@@ -311,3 +311,12 @@ p1s原门/600秒/每30秒一轮300ms道路延迟尖峰不变，仍为两个resid
 Peer共享底层carrier；iroh共享selected FourTuple，但每条connection的open paths可能不同。`PathList::is_selected`是该tuple是否存在于connection watcher，不能单凭入站无selected marker推断数据没走carrier。校准场景在同一个本地endpoint同时保持一条IP outgoing和同remote key的carried-only incoming；远端分别为loopback-only与carried-only隔离endpoint，两条连接都须实际echo字节。两秒内验证outgoing确选IP、incoming非空且仅Custom、carried-only client确选Custom且无其他路径，保留三方facts和不同wire IDs；未满足前置不算清理逻辑红。
 
 目标是仍有这条真实carried消费者时，不能因另一条IP wire胜出而释放peer共享carrier；只剩IP消费者和carried incoming关闭后都应可释放。177只证明v1前置不成立，目标未执行；v2校准理由来自vendor apply_selected_path/record_selected，原ownership目标和两个清理控制保持。此合同不替代162原f4i故障因果与完整hop矩阵。
+
+
+## caller outcome量测v4（校准待执行）
+
+paths echo与hop typing每个被实际poll的逻辑目录请求留唯一(pid,attempt)的started/finished，成功、错误、超时、调用方取消与panic abort均保留；30秒原外层预算不扩大，记录工作纳入同一总预算。内部重试属于同一个用户逻辑请求。记录包含case、from/to、操作、wall timestamp、单调耗时、deadline及错误原因；f4另留观察/故障生效与清除的实际时间，避免将观察前路径变化误作窗口内变化。
+
+独立ignored校准用真实两Node：同一peer目录请求成功、缺失目录错误、SIGSTOP状态确证后的200ms超时、确认future已poll再取消、CONT后恢复成功。外部schema consumer必须得到五个started和五个finished（ok2/error1/timeout1/cancelled1），不接受重复、孤立、上下文变化或无instrumentation。控制netlab-measure-check单线程一次、非SLO；stub驱动检查不替代该真实校准。caller取消记录不证明远端执行停止，IPC取消传播仍属未完成N2。
+
+旧176/181是v3原稳定性门对照，不能因新v4存在就回写为完整失败分布。新量测用于性能对照时需重新绑定相同fixture、记录开销、CPU/allowed集合及原目标；旧门不据此放宽。

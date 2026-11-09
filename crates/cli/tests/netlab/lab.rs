@@ -223,6 +223,7 @@ pub async fn slow(dev: &Device, rtt: Duration) {
 
 /// A khor resident on a device, with a scratch home of its own.
 pub struct LabNode {
+    pub scenario: String,
     pub name: String,
     pub id: String,
     client: std::sync::Arc<Node>,
@@ -295,6 +296,7 @@ pub async fn node_on(
     eprintln!("[netlab] observer client v1: {name} reused");
     eprintln!("[netlab] {name} up: v4 {:?} v6 {:?}", dev.ip(), dev.ip6());
     LabNode {
+        scenario: tag.to_owned(),
         name: name.to_owned(),
         id,
         client,

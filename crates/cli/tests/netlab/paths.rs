@@ -50,6 +50,8 @@ use khor_core::Hop;
 use patchbay::{Device, IpSupport, Lab, LinkCondition, LinkDirection, Nat, Router, RouterPreset};
 
 use crate::lab::{LabNode, mesh, node, qad_relays_dual, relay, result, sample_diagnostics};
+#[path = "paths/attempts.rs"]
+mod attempts;
 #[path = "paths/cpu.rs"]
 mod cpu;
 
@@ -544,18 +546,14 @@ fn drop_between(dev: &Device, ip: &str, on: bool) {
 /// A listing of beta's /tmp from alpha: one request and its answer on
 /// the wire, a keystroke's worth. How long it took, or why it failed.
 async fn echo(a: &LabNode) -> (Duration, Option<String>) {
-    let t = Instant::now();
-    let got = tokio::time::timeout(
+    crate::attempts::measure(
+        &a.scenario,
+        &a.id,
+        "beta",
         Duration::from_secs(30),
         a.with(|n| async move { n.ls_of("beta", "/tmp").await.map(|_| ()) }),
     )
-    .await;
-    let error = match got {
-        Ok(Ok(())) => None,
-        Ok(Err(e)) => Some(e),
-        Err(_) => Some("no answer in 30 s".to_owned()),
-    };
-    (t.elapsed(), error)
+    .await
 }
 
 /// NET-01: the same endpoint pair has a slow direct road and a fast

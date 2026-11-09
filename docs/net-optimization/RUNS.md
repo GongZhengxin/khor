@@ -651,3 +651,8 @@ control7534d6e已push，仅增加SSH-only cpu-check与hop-lifecycle；驱动Pyth
 179th turing-20261109T144404Z-49c374ac与180th Mac42637760137完全同source（base3948872d/tree3ffbc0f7/snapshotab6cbce2/control7534）**双端绿**：fmt/net66+1ignored/hop9/wires11/journal29保持、Linux24（91.99秒）/Mac20。178整v2 fixture SHA逐字不变红→绿，hop.rs/netpath不变；五CLI fixture与netlab.sh逐字同176。完整report/source/control/bundle/transport/原group/hash留核，180refs已批审。只证明Node合同，不代替完整hop/CPU/WAN/手机。
 
 181th turing-20261109T145440Z-735ffd55 exact same source candidate stalls已launch PID624261/child624303，实际/proc/driver核live，已CPU64准入/all masks/两busy进展；182th turing-20261109T145455Z-205ad096同source原hop三轮只stage，181终态采证后串行launch。182refs双引用全批核，队列/evidence同步；两长任务结果未出，不预记绿。
+
+
+181st候选stalls终态原门**2/2**，1190.05秒，source同179/180。22个CPU64 records/全mask/identity/两busy进展保持，原p1s1/0 move、0retire，但18punch、4369包1641546B、最高728.3ms，176对照3punch/2801包1211229B/537.2ms；完整比较fixed-core-original176-candidate181-comparison.json。原p1s错误未留，不能宣称零失败或整体加速。182随后launch PID662914/child662947实核live，首轮f4红、f4i/f4s绿，窗口起即Relay且结束193ms，observations/first-f4-red-context.json保留；后续仍在跑，未定因。
+
+N0 v4源码开始记录paths/hop逐次logical_request和f4故障窗口，ignored五个真实请求校准＋schema consumer未远端跑。控制5c67b39新增SSH-only measure-check，Python driver2/runner4共6 stub checks绿；原timed case命令与门不改，当前182仍旧准确source/control。
