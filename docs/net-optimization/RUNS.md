@@ -470,3 +470,6 @@ N3道路双向因果校准测试已按先前协议写下，模型未改；contro
 
 
 42562932053终态**实际操作预算双红**：fmt/net66pass+1ignored/hop9/wires10/journal28绿，dial_budget3pass2fail，只Scope40ms未到达ask、300秒被28秒截断。source/control已核、108 refs终态。随后操作入口/锁/hop/拨号/普通交换重试的绝对截止点贯通候选待远端验证；Accepted后回答裸await暂未改，需独立真实回归，不能凭锁测试收N2。
+
+
+**42564150236 Mac net-node贯通候选在途**：clean1950943b、tree9f57f8181925f12763dd597fd336ead82741abd9、snapshot787c72e71038003da290e0b3009c47244eddc9cf、control0cff9671fb2f80945423132e0df46995f6ff3198；候选覆盖入口/锁/hop/拨号/普通交换读重试绝对期限，待格式/编译/五回归，Accepted后原await未改。109th ref/mac-operation-budget-candidate-42564150236已保存。
