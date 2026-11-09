@@ -9,10 +9,10 @@
 ## 先核当前句柄，禁止盲重发
 
 - 产品worktree `/Volumes/disk0/Khor/worktrees/current/khor-net`，feat/net；最新功能2654cbdf，后续增加诊断与文档，实际HEAD/diff以Git为准。control `/Volumes/disk0/Khor/worktrees/current/khor-build-net`，feat/net，已push **fc204ac4764fab1bcb71842b0e95ce9b49e4e7a5**。
-- **当前唯一Turing重型任务247**：turing-20261109T220331Z-f5000d4f，netlab-nat-rebind-lifecycle，PID以receipt为准。base3852c0cc/treeb6c2174e08297d6c1110de612f73575bff6bc09b/snapshotbe5032f83a7cc9b986ad8f3ffde5badb9f0b35a7/controlfc204ac；只加tuple mismatch诊断，旧行为保持。246已完整终态。
-- **248 Mac42708373196**，request0df1499e94ed49488b4a86e938c23ce0；与247同base/tree，但snapshot6cacbb659e00b3bc8550eca637f7a119262774d5（created_at不同，不称同完整snapshot）。便携net-node预检，结果按实际句柄核。
+- **247已终态采证，无Turing在途**：turing-20261109T220331Z-f5000d4f，netlab-nat-rebind-lifecycle，PID以receipt为准。base3852c0cc/treeb6c2174e08297d6c1110de612f73575bff6bc09b/snapshotbe5032f83a7cc9b986ad8f3ffde5badb9f0b35a7/controlfc204ac；只加tuple mismatch诊断，旧行为保持。246已完整终态。
+- **248 Mac42708373196已终态全绿**，request0df1499e94ed49488b4a86e938c23ce0；与247同base/tree，但snapshot6cacbb659e00b3bc8550eca637f7a119262774d5（created_at不同，不称同完整snapshot）。便携net-node预检，结果按实际句柄核。
 - **245 Mac42706942409终态全绿**，request5479e3b5ea81417bb56fc6f167653dc2；与246完整source/control一致。fmt/net67+1ignored/hop12/wires11/journal30/budget20（49.90s），source/transport/9control blobs/artifact hashes核。证明新增request_stream_opened编译与便携合同，不替代Linux/真跨网验收。
-- 246及此前所有任务已终态采证。`evidence/net/source-refs.json`、`turing-next-matrix.json`、每run receipt/collection/report hashes是真实句柄入口。最新批量refs审计source-refs-audit-20261109-owner-green-243.json逐核243 refs，后续逐条先pin；应在246终态后刷新全审计。
+- 248及此前所有任务已终态采证。`evidence/net/source-refs.json`、`turing-next-matrix.json`、每run receipt/collection/report hashes是真实句柄入口。最新批量refs审计source-refs-audit-20261109-owner-green-243.json逐核243 refs，后续逐条先pin；应在246终态后刷新全审计。
 
 ## 最新实证与未闭合问题
 
@@ -64,7 +64,7 @@
 | N2 | IPC剩余预算/取消贯通、长多阶段/两middle合计3秒、输者与晚候选、近期地址/重启/jitter合并/quiet epoch/close-vs-offer；写不重放/正常half-close不取消 |
 | N3 | 真实Node32席位/content32、Custom1024帧/256KiB外层队列、SSH/hop混合公平/共享vs分连接、1/3/5设备CPU/字节/唤醒/手机能耗；Noq FIFO_v2低层704请求不能替代 |
 | N4 | U12完整移动矩阵、Mac↔Turing↔iPhone真跨网、冷暖/双端不对称、登记/出口/整机故障域、布局容量运维；不是采购部署 |
-| N5 | 48 vendor补丁（Iroh37+Noq11）逐项覆盖/上游等价/退出、Noq1/5缺口、准确最终源可信Quality、Mac原生App/代理/多机/手机/能耗；证据前不升级/删补丁 |
+| N5 | 原48＋新增38候选，共49 vendor补丁（Iroh38+Noq11）逐项覆盖/上游等价/退出、Noq1/5缺口、准确最终源可信Quality、Mac原生App/代理/多机/手机/能耗；证据前不升级/删补丁 |
 
 ## 执行与证据规矩
 

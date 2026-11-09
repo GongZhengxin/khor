@@ -12,6 +12,14 @@
 
 ## 补丁
 
+### 38. 被动地址迁移后按真实FourTuple更新缓存与测量归属（2026-11-09，feat/net）
+
+247在真实NAT端口重绑中124/124请求可达，但慢方向约123ms（另一方向约21ms）；同一Noq conn/path1实际remote已从:50001迁到:50002，iroh缓存仍指旧:50001，69次不一致。独立数据合同warm_remote_requests_select_the_rebound_tuple_v1在原整fixture上30次warm remote请求0次选中新tuple，journal也没有新selected；输入/原文/身份与合同哈希见net优化证据账本。
+
+在既有250ms reselect前核Noq真实网络tuple，只重登记确实改变的path、清该path旧Reading（其他copy不动），旧remote没有其他live copy才撤其open事实。tuple变化时强制把现行选择应用到各conn，避免全局选择未变时个别conn仍全Backup；正常收益/新鲜确认/安全验证/重试/并发/定时与probe节奏不改。不把前地址的历史质量无条件挪给新地址。Noq自身验证/放大限制保持。
+
+候选尚待同整NAT fixture/data合同、完整vendor与便携回归，以及IPv6/中继移动/原矩阵与成本验证。没有改Rust fixture去放宽门；上游若已提供等价被动迁移事件或持续tuple同步，须相同真实合同与调用者覆盖后再退出。本地诊断默认关闭，tuple已及时同步且验收留证后可单独移除诊断输出；不得凭去掉日志认定根因解决。
+
 ### 37. 无当前副本接收提示时保留故障后的快速备用证据（2026-11-09，feat/net）
 
 36的双路确认修复了CPU短停顿误切，但普通p3在42542984111两轮1.1/1.2秒超过原1秒。

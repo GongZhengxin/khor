@@ -1,6 +1,6 @@
 # Vendor 补丁覆盖与退出审计
 
-2026-11-09，进行中。当前编号为iroh 1–37、Noq 1–11；原45项盘点后新增35/36/37修正，合48项。
+2026-11-09，进行中。当前编号为iroh 1–38、Noq 1–11；原48项保留，新增38被动迁移tuple同步候选，合49项（38尚待实际绿）。
 覆盖盘点不等于行为验收或上游等价性验证，缺口保持未完成。
 本地行为源截至a087e1c5；最新42543928044已绿（437Noq/35iroh路径/9选家、根格式）。
 可选CLI已实际编译/诊断，但日志模式不作SLO；普通p3与f4s仍有红项，准确源见STATE/RUNS。历史大套件通过只证明该套件，不自动证明每个补丁的专属回归齐全。
@@ -34,7 +34,7 @@ Noq4另补真实虚拟连接专项a_backup_probe_is_acked_when_the_responders_da
 [1.4固定stats.rs](https://github.com/n0-computer/noq/blob/34f75c49f93de5e2ff943483cabc5b6d0c5df918/noq-proto/src/connection/stats.rs)、
 [1.4固定BBR](https://github.com/n0-computer/noq/blob/34f75c49f93de5e2ff943483cabc5b6d0c5df918/noq-proto/src/congestion/bbr3/mod.rs)。
 
-## iroh 1–37：第一轮覆盖盘点与新增修正
+## iroh 1–38：第一轮覆盖盘点与新增修正
 
 目标来自[补丁账本](../../vendor/iroh/KHOR.md)，不把其中“上游没有”“尚待验证”等历史描述当作当前事实。
 42536711138的435/33中的33仅选中remote_state::tests，遗漏net_report/socket的khor_测试。
@@ -96,3 +96,8 @@ Noq4另补真实虚拟连接专项a_backup_probe_is_acked_when_the_responders_da
 4. 所有补丁和调用者均不依赖本地实现、准确最终源验证齐全后，才可删整个vendor/patch行。当前N5仍部分完成。
 
 诊断日志调用未作为第12/35条生产行为补丁计数；其默认关闭、用途和可删除条件已分别记入两份KHOR.md。
+
+
+## 新增38：被动迁移tuple同步（候选，未闭合）
+
+247真实NAT-only端口重绑、Noq实际tuple与iroh缓存69次不一致，124/124可达但warm remote新路选择0/30；整个fixture与严格数据合同/哈希已冻结在ACCEPTANCE和nat-tuple-red-green.json。候选在既有reselect前按实际路径身份重登记/清变更Reading/重apply，不改其他策略。待同整fixture转绿、vendor/便携与完整移动/转发/成本矩阵；上游等价事件/同步API及调用者行为未验证，不声称上游必然有缺陷，也不自动批准升级。原48项覆盖/退出缺口继续保留。
