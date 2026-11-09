@@ -15,7 +15,7 @@
 | 产品 | `/Volumes/disk0/Khor/worktrees/current/khor-net`，`feat/net`；恢复核实际HEAD/diff，本轮API入口已验证；37仍为72b1d891，N2锁等待候选随后提交，恢复核实际diff |
 | 控制 | `/Volumes/disk0/Khor/worktrees/current/khor-build-net`，`feat/net`；2e70c39fe6a70bbbd09b7434f90e6c2d62e84b16已push；历史run绑定各自control |
 | 基线 | `/Volumes/disk0/Khor/worktrees/current/khor-net-baseline`，detached6485cb83d3b1f0bb93d4633825dc956623d78af9；只允许paths/hop/lab/nat.rs、dev.py/netlab.sh六fixture；生产基线原样 |
-| 证据 | `/Volumes/disk0/Khor/evidence/net/`；source-refs.json现99条不可变source refs；均已终态 |
+| 证据 | `/Volumes/disk0/Khor/evidence/net/`；source-refs.json现100条不可变source refs；仅42557583517在途 |
 
 ## 执行通道现状
 
@@ -73,7 +73,7 @@ N0部分、**N1仍红**、N2–N4未完成、N5部分。不能以单元绿或执
 
 恢复先核绝对worktree/branch/HEAD/diff、当前run终态和回执，不从摘要覆盖未提交内容，不重复调度活动run。
 每run锚refs/khor/net-evidence/<run>；git rev-parse REF:source必须等于回执tree；只用git show读容器，不checkout覆盖、不push本地证据refs。
-source-refs.json现99条；425527传输失败与托管账单拒绝均tests_executed=false、remote_source_verified=false。旧Mac实际红已验证source/control。重要artifact下载到规范证据目录。
+source-refs.json现100条；425527传输失败与托管账单拒绝均tests_executed=false、remote_source_verified=false。旧Mac实际红已验证source/control。重要artifact下载到规范证据目录。
 Mac源/bundle分支仅在终态、证据保留、所有权和SHA匹配后清理；复用源的请求不拥有原源分支。重试不改旧源/control/attempt证据。
 外盘缺失只读git show feat/net:docs/net-optimization/STATE.md和PLAN；原外盘未提交内容不能按摘要覆盖。治理另沿中央code-quality STATE/RESUME，不与本任务混合。
 
@@ -87,3 +87,5 @@ mac-dial-budget-formatted-42556768499已核source/control、保存原log及class
 当前最小生产候选：line_to_inner到期入门拒绝；有by时timeout_at等待锁，到期/锁同时ready再核时钟；无by仍原锁等待。CallerExpired独立于peer TimedOut，不写共享失败结果/peer down/backoff；各错误消费点有显式处理。
 原测试加强验证CallerExpired及释放锁后已过期调用也不拨号（后者为额外绿覆盖，不宣称已有旧源红）。尚未远端编译/执行候选。
 **此批只处理normal line锁等待。** ask_early锁、hop准备、拨号自身裁剪与CallerExpired分类、operation总期限和普通交换/一次读重试、Accepted回答取消、长操作30/300/3600档仍须后续实施/实测，N2不能收口。
+
+**42557583517 normal锁期限候选Mac net-node在途**：base19f0e1900e9344461c2b7cb2cb85f9e4a7921361 clean、tree2fd3cf7ea6ba50276be1bb7e9243c784c50830d8、snapshotd76915fc0c91ffde65ceb63d5fde560fb5506162、control2e70c39fe6a70bbbd09b7434f90e6c2d62e84b16。mac-dial-lock-candidate-42557583517及100th ref已保存；当前源含CallerExpired最小候选，不预记绿。
