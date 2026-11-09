@@ -454,3 +454,8 @@ NAT另设netlab-nat-rebind-lifecycle诊断profile，沿原r0先物理成功才r1
 沿同一完整rebind.rs fixture、node_nat_port_rebind_v1物理/负载/预算/remote-first协议与lifecycle模式，不改任何Rust fixture字节或量测门。独立数据合同warm_remote_requests_select_the_rebound_tuple_v1：物理与全部124outcomes先绿；after-ba 30次warm真实请求，每次started→finished窗口内必须有B实际request_stream_opened，其每个记录仅一个selected path且为新WAN:50002 Direct；journal必须确认新tuple selected，诊断不得残留Noq真实tuple与iroh缓存不一致。它是实际使用连接的开流快照，不是逐包/回复路由保证；没有新增时延SLO/p99门。
 
 247准确源上独立数据合同实际红：30次0通过、69条cached50001/actual50002、journal未选新端口；availability 124/124绿保持。全fixture SHA ac97726906429a5dd63dd91b5c9ed99624c273d9a253f7facb916ffcf47e8a9b；合同脚本与输入哈希留evidence/net。候选在既有250ms reselect前核Noq真实路径tuple，仅变化的path重新登记/清其旧Reading、旧remote无其他live copy才撤其open事实；不改收益/确认/重试/并发/新timer或probe。变化时强制同步各conn选中标记/状态，避免全局选择未变而个别连接仍全Backup。下一同整fixture与同合同、vendor/便携及完整网络门验证；未绿不称修复完成。
+
+
+### N4跨网worker构建与租约验收分阶段
+
+net-wan-build仅在原guard/Rust jobs限制内编译net_wan_probe，记录source与cache二进制路径/UID/正规非symlink/hash/size，executed=false；普通artifact不下载二进制到source-only本机。cache不被称为不可变产物，控制器真正运行前必须在guard下核源码/二进制hash并复制到本次owned root。构建成功不能当Node已启动或租约清理已通过。Rust worker只接私有Unix lease socket，严格fresh owner/run-id/role/0700 root/0600 owner、KHOR_NO_MDNS=1且无KHOR_NETLAB；与指定peer身份/名称绑定的fixture读。运行前必须在远端分别验证正常stop、controller EOF、受控kill controller后stop_serving/serve join与本次PGID空，异常资源期限/cleanup错误明确失败，不以state文件或EOF代替真正join。私有票只在可信控制器/lease内存中转交，既有15分钟/单次pair销毁不扩大，不进入stdout/源码/通用artifact。

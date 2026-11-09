@@ -1,6 +1,6 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-09 22:27 UTC（本地2026-11-10）。root串行，无子智能体。
+更新：2026-11-09 22:32 UTC（本地2026-11-10）。root串行，无子智能体。
 
 完整目标仍是完成[PLAN](PLAN.md)的N0–N5，尚未完成。用户已授权实施/远端验证并多次要求继续；U14明确不能因goal服务paused或阶段通过自行停止。后台调度状态不是本轮停止/授权门，不另建目标，不伪造complete/blocked。速度和体验优先，个人可信设备网络；无合main、发布、中继采购/生产部署授权。
 
@@ -8,6 +8,9 @@
 
 ## 先核当前句柄，禁止盲重发
 
+- **当前唯一Turing重型任务253**：turing-20261109T222815Z-b033159a，netlab-peer-mobility-samples，PID1217909/child以execution核；复用251/249完整source c01c72de/tree4d493502/snapshote3be1244，control ef0b1ab021802a17710a6748e373ea12b87bf52d。只是额外samples debug诊断，不混普通性能/放宽门。后续本地WAN代码不混入。
+- **254 Mac42712203779仅WAN草稿format前置失败**，requesta04744c77223427b86f4d945de8448b0，base73cd2166/tree2d2b4be3/snapshot05532efd/controlef0b1ab。尚未编译/执行；远端format.patch原样应用。源码/transport/9control blobs/hash按verification核，不把格式失败记成资源/业务反例。
+- **build-only控制be11104f0149637c918456bbfba5329578aea096已push**：net-wan-build在原guard内仅cargo build khor-node example、核cache二进制是本UID正规非symlink可执行文件并写source/hash/path/size manifest，明确executed=false。普通artifact不含二进制；cache路径可变，真正runtime copy前必须在guard下重核hash。12个Python stub/小Git控制合同绿，含普通/缺文件/伪symlink与bootstrap输入校验；本机不运行Rust。下一Mac只编译，不启动居民；lease supervisor与真实EOF/kill/join合同及双host实测仍未完成。
 - **251/252已终态，当前无Turing重型在途**：251 turing-20261109T221609Z-bf323de3，168.30s/rc0/原group空，124/124ok、原hold10420/10406ms、replug298ms。实际outer Direct约+1.2s，inner selected carried约+7.4/+7.5s。after AB p50155031us、BA110693us，但两个方向顺序采样（AB较早），不能据差值称持续方向性故障；实际request wire在+7873ms也回Carried。3resident没有tuple mismatch/refresh，M移动不是247的被动NAT缓存反例；仍要收敛约6秒inner确认/恢复等待。252 Mac42710424112同249准确source/control，fmt/net67+1ignored/hop12/wires11/journal30/budget20（49.89s）全绿，完整source/transport/9control blobs/hash核。
 - **下一独立样本诊断**：保留251整source/fixture，另netlab-peer-mobility-samples只把diagnostic=lifecycle改成1（samples debug），记录Moving/确认/质量时序；这不是无诊断性能比较，不能放宽原门。控制正在单独stub验证/提交，句柄后续按ledger核。
 - **N4跨网进程源码初稿**：crates/node/examples/net_wan_probe.rs。Unix私有lease socket、fresh root/role/run-id/权限核、Node::serve+open_as、仅mint/pair/devices/links/fixture-read/stop，peer身份与machine对应，租约EOF/绝对期限时stop_serving并join；Windows仅明确unsupported入口。尚未远端format/编译或启动resident，supervisor与EOF/kill合同/双host实际验收未写完，不能当N4已通。首次mint/pair能力只过私有socket，不进stdout/artifact。
