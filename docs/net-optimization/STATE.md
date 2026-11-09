@@ -208,3 +208,13 @@ Baseline recovery turing-20261109T075906Z-5464f2db终态FAILURE5/6：p3三轮[78
 
 
 本轮progress：完整采证baseline recovery 5/6并核原200ms断言、三轮p3值与host负载变化；候选6/6没有被扩大为因果/全矩阵胜出。四后续任务准确stage且remote JSON/control字节已核，没有运行staged jobs。candidate hop已实际启动，剩baseline hop/candidate stalls/baseline stalls见turing-next-matrix.json；131个immutable REF:source逐项已核。下一步先收candidate hop；如果f4s红，保留原profile结果后走诊断，不改门或重跑覆盖旧红。继续完整N0–N5，goal active。
+
+
+本轮并行独立机器验证（无子agent）：Turing仍candidate hop PID4163640，第一轮f4s红，all3继续；完整首轮scenario已只读复制first-round-observation。静态/原始事件证实该轮Y→X旧wire retired unanswered，之后started carried新wire，Link约8.9s已Forwarded，但f4_stall只计selected、忽略started，因此45.3s relay统计需独立修正/复验；不是据此否定所有旧f4s红，旧回归仍保留。待全3轮与baseline。
+
+**Mac 42587980042 net-node在途**：base54d58ddca5842b3f0860136952f4f22cba9a9bca、tree6ca60d934b5a9f3262a819d39f62ef4da2df8805、snapshot21c5105122b9bab8e606aa6d8efc8f6e3041450f、control576c127；132nd ref已锚。仅wire.rs测试新增UDP gate真静默与长ACK-positive控制，生产未改；新覆盖不能预记绿或冒称旧源行为红。独立Mac不与Turing计时争资源。黑洞test当前边界4.1秒位于ACK floor后/all-path grace前，还须审查不要把这个过早退役边界冻结成最优设计；可改为真实长静默后abandon已poll一次的真实request future，验证Drop guard而不钉提前退役政策。
+
+
+42587980042终态仅FORMAT红（无新测试执行），原始format.patch/task/source已存，132ref终态。已基于远端patch手工排版；黑洞覆盖调整为实际request future先poll入response wait，等真实ACK+all-path grace后abandon，避免固定过早4.1秒retire政策，生产仍未改。
+
+**Mac 42589161986 net-node在途**：base9368c5372b99225c058360aa15e5ff323c74b882、dirty（STATE WIP）、tree877fb49295297ab7d19ac336eb56ab6119c234f2、snapshot9e04578396e61384ce5c4c0c0dfbf51dd8449225、control576c127；133ref已锚。测试尚未验证，后续勿把formatter门算行为红。Turingcandidate hop第二轮3/3绿，首轮f4s仍保留红且静态/原始事件支持selected-only误计新wire started carried，第三轮继续。

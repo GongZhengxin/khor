@@ -393,6 +393,96 @@ async fn f4_a_stalled_carried_road_is_taken_again_at_once_off_a_slow_relay() {
     .await;
 }
 
+// TIMELINE_AUDIT_BEGIN
+#[derive(Debug)]
+struct Recovery {
+    on_relay: Option<u64>,
+    back: Option<u64>,
+    longest: u64,
+    after_answer: Option<u64>,
+    fell: Option<u64>,
+    stayed: bool,
+}
+
+fn recovery(events: &[(u64, String, String)], answers: u64, end: u64) -> Recovery {
+    let lines: Vec<_> = events.iter().filter(|(_, change, _)| change == "selected").collect();
+    let on_relay = lines.iter().find(|row| row.2 == "relay").map(|row| row.0);
+    let back = on_relay.and_then(|left| {
+        lines.iter().find(|row| row.0 >= left && row.2 == "carried").map(|row| row.0)
+    });
+    let mut longest = 0;
+    let mut since = None;
+    for row in &lines {
+        match (row.2.as_str(), since) {
+            ("relay", None) => since = Some(row.0),
+            ("relay", Some(_)) => {}
+            (_, Some(began)) => {
+                longest = longest.max(row.0 - began);
+                since = None;
+            }
+            _ => {}
+        }
+    }
+    if let Some(began) = since {
+        longest = longest.max(end - began);
+    }
+    let after_answer = back.map(|at| at.saturating_sub(answers));
+    let fell = back.and_then(|back| {
+        lines.iter().find(|row| row.0 > back && row.2 == "relay").map(|row| row.0 - back)
+    });
+    let stayed = back.is_none_or(|at| fell.is_none_or(|after| after >= 30_000) && end >= at + 30_000);
+    Recovery { on_relay, back, longest, after_answer, fell, stayed }
+}
+
+#[test]
+fn timeline_replacement_returns_without_a_selection_move() {
+    let events = vec![
+        (4_800, "selected".into(), "relay".into()),
+        (8_900, "started".into(), "carried".into()),
+    ];
+    let found = recovery(&events, 8_400, 50_000);
+    assert_eq!(found.back, Some(8_900));
+    assert_eq!(found.after_answer, Some(500));
+    assert_eq!(found.longest, 4_100);
+    assert!(found.stayed);
+}
+
+#[test]
+fn timeline_an_opened_candidate_does_not_end_relay_occupancy() {
+    let events = vec![
+        (4_800, "selected".into(), "relay".into()),
+        (8_900, "opened".into(), "carried".into()),
+    ];
+    let found = recovery(&events, 8_400, 50_000);
+    assert_eq!(found.back, None);
+    assert_eq!(found.longest, 45_200);
+}
+
+#[test]
+fn timeline_a_real_later_fallback_still_fails_stability() {
+    let events = vec![
+        (4_800, "selected".into(), "relay".into()),
+        (5_500, "selected".into(), "carried".into()),
+        (16_400, "selected".into(), "relay".into()),
+        (34_300, "selected".into(), "carried".into()),
+    ];
+    let found = recovery(&events, 5_000, 50_000);
+    assert_eq!(found.fell, Some(10_900));
+    assert!(!found.stayed);
+}
+
+#[test]
+fn timeline_a_new_wire_on_relay_still_counts_toward_the_twenty_second_gate() {
+    let events = vec![
+        (1_000, "started".into(), "relay".into()),
+        (30_000, "started".into(), "carried".into()),
+    ];
+    let found = recovery(&events, 29_000, 70_000);
+    assert_eq!(found.on_relay, Some(1_000));
+    assert_eq!(found.longest, 29_000);
+}
+// TIMELINE_AUDIT_END
+
 /// f4s (carry, 2026-10-23): **f4 on a relay whose round trip is over the
 /// confirmation's 4 s**, the phone's journal reading 4994 ms: the relay's
 /// legs to X 2.5 s late each way from the start, X's leg to M black for 8 s,
@@ -511,47 +601,11 @@ async fn f4_stall(s: &str, st: Stall) {
         tokio::join!(stall, typing(&y, &x, typing_until), watch, leg_back);
     let answers = leg.unwrap_or(uncut_at);
 
-    let lines: Vec<(u64, String, String)> = path_lines(&y, &x, t)
-        .into_iter()
-        .filter(|(_, c, _)| c == "selected")
-        .collect();
-    let on_relay = lines
-        .iter()
-        .find(|(_, _, r)| r == "relay")
-        .map(|(at, _, _)| *at);
-    let back = on_relay.and_then(|left| {
-        lines
-            .iter()
-            .find(|(at, _, r)| *at >= left && r == "carried")
-            .map(|(at, _, _)| *at)
-    });
-    // The longest stretch on the relay, to the end of the watch if it never left.
+    let events = path_lines(&y, &x, t);
     let end = now_ms();
-    let mut longest = 0u64;
-    let mut since: Option<u64> = None;
-    for (at, _, road) in &lines {
-        match (road.as_str(), since) {
-            ("relay", None) => since = Some(*at),
-            ("relay", Some(_)) => {}
-            (_, Some(s0)) => {
-                longest = longest.max(at - s0);
-                since = None;
-            }
-            _ => {}
-        }
-    }
-    if let Some(s0) = since {
-        longest = longest.max(end - s0);
-    }
-    let after_answer = back.map(|b| b.saturating_sub(answers));
-    // Back on the carried road, it stays: no move to the relay within 30 s.
-    let fell = back.and_then(|b| {
-        lines
-            .iter()
-            .find(|(at, _, r)| *at > b && r == "relay")
-            .map(|(at, _, _)| *at - b)
-    });
-    let stayed = back.is_none_or(|b| fell.is_none_or(|f| f >= 30_000) && now_ms() >= b + 30_000);
+    let Recovery { on_relay, back, longest, after_answer, fell, stayed } =
+        recovery(&events, answers, end);
+    let lines: Vec<_> = events.iter().filter(|(_, change, _)| change == "selected").collect();
     let now = y.link(&x).await;
     let x_lines: Vec<String> = path_lines(&x, &y, t)
         .into_iter()
