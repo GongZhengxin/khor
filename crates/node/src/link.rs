@@ -954,7 +954,11 @@ struct DialWindow {
 /// the last round trip measured to it when that is longer, never past
 /// [`DIAL_MOST`]; short for one its relay just said left; and never past
 /// the caller's own deadline `by`.
-fn dial_within(last_rtt: Duration, gone_lately: bool, by: Option<tokio::time::Instant>) -> Duration {
+fn dial_within(
+    last_rtt: Duration,
+    gone_lately: bool,
+    by: Option<tokio::time::Instant>,
+) -> Duration {
     let mut within = DIAL_TIMEOUT.max(last_rtt.saturating_mul(12)).min(DIAL_MOST);
     if gone_lately {
         within = within.min(Duration::from_secs(3).max(last_rtt.saturating_mul(6)));
@@ -3622,10 +3626,14 @@ impl Node {
         // uses the existing operation tier that holds this request's budget.
         let by = crate::deadline::current().unwrap_or_else(|| {
             let work = req.budget();
-            let budget = [ipc::DEADLINE_FAR, ipc::DEADLINE_SLOW, ipc::DEADLINE_TRANSFER]
-                .into_iter()
-                .find(|budget| *budget >= work)
-                .unwrap_or(work);
+            let budget = [
+                ipc::DEADLINE_FAR,
+                ipc::DEADLINE_SLOW,
+                ipc::DEADLINE_TRANSFER,
+            ]
+            .into_iter()
+            .find(|budget| *budget >= work)
+            .unwrap_or(work);
             tokio::time::Instant::now() + budget
         });
         crate::deadline::scope(by, self.ask_on_within(ep, d, req, by)).await
@@ -3716,7 +3724,10 @@ impl Node {
         {
             return Early::Failed(failed.clone());
         }
-        if crate::deadline::wait(by, self.hop_ahead(ep, d)).await.is_err() {
+        if crate::deadline::wait(by, self.hop_ahead(ep, d))
+            .await
+            .is_err()
+        {
             return Early::Failed(DialFailure::CallerExpired);
         }
         let Ok(mut addr) = endpoint::dial_addr(&d.id, &d.addrs, &self.published_relays(ep)) else {

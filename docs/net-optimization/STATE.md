@@ -15,7 +15,7 @@
 | 产品 | `/Volumes/disk0/Khor/worktrees/current/khor-net`，`feat/net`；恢复核实际HEAD/diff，N3模型实现1478bf97，N2生产802e13a8+远端格式修正；随后HEAD为证据文档提交 |
 | 控制 | `/Volumes/disk0/Khor/worktrees/current/khor-build-net`，`feat/net`；0cff9671fb2f80945423132e0df46995f6ff3198已push；历史run各绑定原control |
 | 基线 | `/Volumes/disk0/Khor/worktrees/current/khor-net-baseline`，detached6485cb83d3b1f0bb93d4633825dc956623d78af9；仅paths/hop/lab/nat.rs、dev.py/netlab.sh六fixture；生产原样，现场已复核 |
-| 证据 | `/Volumes/disk0/Khor/evidence/net/`；source-refs.json现109条不可变refs；仅42564150236在途 |
+| 证据 | `/Volumes/disk0/Khor/evidence/net/`；source-refs.json现109条不可变refs，全部终态 |
 
 ## 当前工作：N3校准与三轮完成，下一步贯通N2总预算
 
@@ -109,3 +109,5 @@ Mac源/bundle分支只在终态、证据已留、所有权/SHA匹配后清理；
 Accepted后原裸JoinHandle await本批尚未修正；握手到期若刚得到未adopt的conn则中止该回答并关闭该新conn，避免新代码引入额外孤儿。下一步先候选net-node格式/编译/五测试，再单独构造真实0RTT恢复取消/健康共享wire对照。
 
 **42564150236 Mac net-node总期限贯通候选在途**：base1950943bdfff6f2944f5dd9a5124328ae7fa50dc clean、tree9f57f8181925f12763dd597fd336ead82741abd9、snapshot787c72e71038003da290e0b3009c47244eddc9cf、control0cff9671fb2f80945423132e0df46995f6ff3198。mac-operation-budget-candidate-42564150236/109th ref已锚，未预记五测试绿；Accepted回答所有权尚未改。
+
+42564150236仅根格式门失败（函数签名、array和链式await布局），source/control已核、无编译/测试；远端patch已原样应用。109 refs终态，贯通候选仍待新源验证，不记行为红或五测试绿。

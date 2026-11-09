@@ -473,3 +473,6 @@ N3道路双向因果校准测试已按先前协议写下，模型未改；contro
 
 
 **42564150236 Mac net-node贯通候选在途**：clean1950943b、tree9f57f8181925f12763dd597fd336ead82741abd9、snapshot787c72e71038003da290e0b3009c47244eddc9cf、control0cff9671fb2f80945423132e0df46995f6ff3198；候选覆盖入口/锁/hop/拨号/普通交换读重试绝对期限，待格式/编译/五回归，Accepted后原await未改。109th ref/mac-operation-budget-candidate-42564150236已保存。
+
+
+42564150236终态仅根格式门失败，已核source/control；签名/array/await排版patch原样应用，本机未执行formatter，无编译或行为测试。109 refs终态，贯通候选待新源绿。
