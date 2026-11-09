@@ -91,3 +91,6 @@ Mac source/bundle分支只在终态、证据留存且所有权/SHA匹配后清�
 ## 新接续：普通wire与重试覆盖待远端
 
 上一目标轮为progress（总预算与Accepted双红→绿）。现新增`dial_budget::wire`普通到期并发保活、真实一次读重试剩余预算、写失答不重放/读失答最多一次四用例，生产不变；协议已在ACCEPTANCE冻结，预期补足现有实现绿覆盖，尚未编译/运行。F7真正长黑洞未覆盖，不删除原保护。下一准确源Mac net-node应选中旧7+新4共11预算/流用例。
+
+
+**42569493787 Mac net-node普通wire/重试四项覆盖在途**：base2aace27d1c7bf91aafd61600954bd8a3bd3814af clean、tree089f73291f6b809d1e2d4251e2e1ccfa36a5fd3c、snapshot35c95dc5d489b46db7382cc8a2426a8719d29875、control0cff9671fb2f80945423132e0df46995f6ff3198；117th ref/mac-ordinary-wire-coverage-42569493787已锚。生产不变，旧7+新4共11预算用例待格式/编译/运行；没有预记新用例绿或旧源红。
