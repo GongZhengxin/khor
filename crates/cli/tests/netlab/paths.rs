@@ -58,6 +58,8 @@ mod cpu;
 mod mobile;
 #[path = "paths/mobility.rs"]
 mod mobility;
+#[path = "paths/roam.rs"]
+mod roam;
 
 fn now_ms() -> u64 {
     SystemTime::now()

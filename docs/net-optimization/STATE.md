@@ -1,8 +1,11 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-09 20:18 UTC（本地2026-11-10）。root串行，无子智能体。完整目标仍是“完成计划”N0–N5，未完成；用户明确“继续”并补充U11–U13，当前工作已恢复。用户再次指出不应停止；goal服务的paused只是后台调度状态，不构成本轮停止依据。必须持续推进完整计划，不能在阶段通过后自行停下，也不得伪造complete/blocked或另建目标。速度/体验优先、个人可信设备网；没有合main、发布、中继采购/生产部署授权。
+更新：2026-11-09 20:23 UTC（本地2026-11-10）。root串行，无子智能体。完整目标仍是“完成计划”N0–N5，未完成；用户明确“继续”并补充U11–U13，当前工作已恢复。用户再次指出不应停止；goal服务的paused只是后台调度状态，不构成本轮停止依据。必须持续推进完整计划，不能在阶段通过后自行停下，也不得伪造complete/blocked或另建目标。速度/体验优先、个人可信设备网；没有合main、发布、中继采购/生产部署授权。
 
 ## 当前源码与已收齐证据
+
+- **218 Node双向/Remote-first两病例2/2绿**：`turing-20261109T201549Z-d2c3d29c`，140.30s、rc0、原group空；basecb1a9089/tree9cc2dfd5/snapshot4e577020/control7277b8ee27df630090deeb497c02a5b813cb77fe准确身份、refs/hash核。248/248全ok，raw与summary/物理IPv6/IPv4不变/nft/最后ping正负控均核。Both首AB584118us/BA1404254us；Remote-first B→A1435327us，A→B21459us且其start确在B finished后（删旧+1638ms，含reads原200ms间隔）。proof node-mobility-calibration.json；不冒称静默网络/新SLO/最优体验。
+- **下一换网三病例已冻结并实现，尚未远端format/编译**：node_replug_triad_v1复用原eth0.replug，IPv4 NAT→另一NAT、双栈同时换prefix/IPv4、IPv4-only→IPv6-only。before/after完整双向n30+remote-first，实际kernel/NAT rules和独立UDP映射正控；不先用probe帮助首业务恢复。原IPv6 pair协议保留。
 
 - **217实际Node迁移1/1绿，已完整收齐**：`turing-20261109T200546Z-6622ff6c`，81.97s、rc0、原group空；base06b67c8c/tree7aa3c7fa/snapshot86c4fafa/control5bc2368准确身份、bundle/control/report hashes与refs核。两方向before/after各n30，加setup2/first2，共124/124全部ok；首AB509570us/BA1703454us，after p50 21362/20830us。实际kernel新旧切换、IPv4完全相同、两端隔离nft前后保留、新IPv6 ping正/旧负均核。raw与summary逐项一致，proof node-mobility-calibration.json。
 - **下一新增Remote-first病例已冻结**：沿用ipv6_node_overlap_v1全部物理/负载/预算，新增ipv6_node_overlap_remote_first_v1，删旧后只先发B→A，finished后才A→B；两病例fresh环境，pair profile单线程。前台静默不等于无后台包，不冒称手机/长流/全矩阵通过。217新路径opened/selected在删旧+264/+1595ms；A addrs/network在+3260/+4261ms，晚于首业务，不能把业务恢复归功于Node接口通知。当前无在途，继续新增实际测试，不停在阶段通过。

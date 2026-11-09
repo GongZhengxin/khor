@@ -389,3 +389,16 @@ Peer relay就是可信设备承载的carried候选，必须与Direct IPv4、Dire
 沿用上述同prefix、新旧重叠后删旧、IPv4双向实际隔离、setup/Direct连续10s、before/after各方向n30、每请求30s及scenario240s资源界限。区别只在删旧后：B→A首请求立即发起；其finished（包括失败）记录后，才发A→B首请求，留first_remote_finished phase。A原有后台同步、keepalive与网络变化处理保留，因此是“无移动端前台业务帮助”，不是静默网络。首请求失败不得被后续A发包恢复抹去；全部124逻辑请求outcomes，kernel/nft/最后ping正负控与分方向首样本保留。
 
 两病例各fresh Lab、居民与身份，按原单线程串行运行；pair profile列明两个scenario revision，原v1数值/门不改。不把一次首样本当尾延迟分布，也不把同pair中的两个不同场景当baseline/candidate策略因果比较。217首轮raw已校准124/124ok，换址首AB509570us/BA1703454us；其Node addrs/network事件晚于两首业务完成，不归功于接口通知修复。
+
+
+### U12真实接口换网：node_replug_triad_v1（新增，运行前冻结）
+
+复用原uplink::e已使用的patchbay eth0.replug，真实删除旧veth/接入另一router并设置新地址/路由，非只改连接摘要。每病例fresh真实Node/身份/IPC/唯一目录marker；三病例单线程串行：
+
+- node_v4_nat_replug_v1：Home IPv4 NAT→Strict IPv4 NAT，IPv4地址及另一NAT出口映射变化，HTTP Relay仍可用。
+- node_dual_stack_replug_v1：Campus双栈→Cellular双栈，IPv4/NAT出口及IPv6 /64前缀一起变化，HTTP Relay仍可用；不能把双族同时变化归因单一族。
+- node_v4_to_v6_replug_v1：Home IPv4-only→Public IPv6-only，删除IPv4并获得IPv6，原唯一IPv4 HTTP Relay换网后无法承载；远端始终Public双栈。
+
+mesh后真实双向setup请求，reported双向可用/rtt连续10s（不要求Direct，不能冒称最快路或固定承载），绝对准备120s；before双向各n30/200ms/30s caller预算。开始/完成replug留phase，完成后立即只发B→A首业务（禁止先主动probe/目录/诊断），finished后再A→B首业务，再双向各n30。A后台流量保留。全部started/finished/error/timeout/cancel，kernel before/after IPv4/IPv6、两NAT router前后真实nft、完整journal及first/warm分组留证；总240s实验资源门不扩大caller预算。首错方向可停，但n不足或任一失败不绿，first失败不因后面恢复消失。
+
+独立固定本地UDP端口的reflector在before负载前/全部after负载后验证NAT出口IP确实变更；后探针不帮助首业务恢复。它不是Khor QUIC socket的映射，不能据此声称Khor端口本身已经量测。IPv6-only病例后无IPv4探针，以真实kernel移除v4及新增v6核几何。此批校准完整可达和记录；不新造恢复SLO/同wire保证，无长流、peer-relay移动、真实手机或能耗结论。

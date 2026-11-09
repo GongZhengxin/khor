@@ -62,13 +62,13 @@ fn state(n: &LabNode, phase: &str, revision: &str) -> (serde_json::Value, serde_
     (v4, v6)
 }
 
-fn fixture(n: &LabNode) {
+pub(super) fn fixture(n: &LabNode) {
     let dir = n.home.0.join("mobile-fixture");
     std::fs::create_dir(&dir).unwrap();
     std::fs::write(dir.join(format!("peer-{}", n.id)), CONTENT).unwrap();
 }
 
-async fn reads(
+pub(super) async fn reads(
     case: &str,
     from: &LabNode,
     to: &LabNode,
@@ -114,11 +114,11 @@ async fn reads(
     (durations, errors)
 }
 
-fn complete(result: &(Vec<Duration>, Vec<String>), count: usize) -> bool {
+pub(super) fn complete(result: &(Vec<Duration>, Vec<String>), count: usize) -> bool {
     result.0.len() == count && result.1.is_empty()
 }
 
-fn summary(result: &(Vec<Duration>, Vec<String>)) -> serde_json::Value {
+pub(super) fn summary(result: &(Vec<Duration>, Vec<String>)) -> serde_json::Value {
     let mut values: Vec<_> = result.0.iter().map(|v| v.as_micros()).collect();
     values.sort();
     if values.is_empty() {
@@ -131,7 +131,7 @@ fn summary(result: &(Vec<Duration>, Vec<String>)) -> serde_json::Value {
     })
 }
 
-fn diagnostics(n: &LabNode, peer: &LabNode) {
+pub(super) fn diagnostics(n: &LabNode, peer: &LabNode) {
     for (scope, events) in [("peer", n.journal(Some(peer))), ("here", n.journal(None))] {
         for event in events
             .into_iter()
