@@ -15,7 +15,7 @@
 | 产品 | `/Volumes/disk0/Khor/worktrees/current/khor-net`，`feat/net`；恢复核实际HEAD/diff，N3模型实现1478bf97，N2生产802e13a8+远端格式修正；随后HEAD为证据文档提交 |
 | 控制 | `/Volumes/disk0/Khor/worktrees/current/khor-build-net`，`feat/net`；0cff9671fb2f80945423132e0df46995f6ff3198已push；历史run各绑定原control |
 | 基线 | `/Volumes/disk0/Khor/worktrees/current/khor-net-baseline`，detached6485cb83d3b1f0bb93d4633825dc956623d78af9；仅paths/hop/lab/nat.rs、dev.py/netlab.sh六fixture；生产原样，现场已复核 |
-| 证据 | `/Volumes/disk0/Khor/evidence/net/`；source-refs.json现107条不可变refs；全部已终态 |
+| 证据 | `/Volumes/disk0/Khor/evidence/net/`；source-refs.json现108条不可变refs；仅42562932053在途 |
 
 ## 当前工作：N3校准与三轮完成，下一步贯通N2总预算
 
@@ -79,7 +79,7 @@ N0部分、N1仍红、N2部分、N3部分、N4未完成、N5部分。不能用�
 
 ## 证据与恢复
 
-先核worktree/branch/HEAD/diff、当前run与准确回执，不按摘要覆盖未提交内容，不重发活动run。source-refs.json现107项，42562380977为格式门失败、未编译/测试；前106项终态且ref/tree已核。
+先核worktree/branch/HEAD/diff、当前run与准确回执，不按摘要覆盖未提交内容，不重发活动run。source-refs.json现108项，42562932053在途；42562380977为格式门失败、未编译/测试；前106项终态且ref/tree已核。
 git rev-parse refs/khor/net-evidence/<run>:source必须等于回执tree；只git show读容器，不checkout覆盖或push本地证据refs。账单/checkout失败均tests_executed=false，校验成功但format/compile失败与真实行为红分开。
 Mac源/bundle分支只在终态、证据已留、所有权/SHA匹配后清理；复用源的请求不拥有原源分支。原attempt记录不覆盖。
 外盘缺失只读git show feat/net:docs/net-optimization/STATE.md和PLAN；原外盘未提交内容不能按摘要覆盖。其他治理继续中央STATE/RESUME，不混授权。
@@ -97,3 +97,5 @@ Mac源/bundle分支只在终态、证据已留、所有权/SHA匹配后清理；
 **42562380977 Mac net-node操作期限载体回归在途**：base4b7773007e2d3a4fd61960ce6f82b305167ac111 clean、treed3cc715bcac2173cdaa5905ad173ce295f931906、snapshot2daaec31a984488b7cfbf6f5ef8549448d1546c7、control0cff9671fb2f80945423132e0df46995f6ff3198。载体未被生产消费，真实ask_on两个scope测试预期红未实际取得；mac-operation-budget-red-42562380977/107th ref已锚，恢复只查此ID。
 
 42562380977只因新测试调用的布局被根格式门拦下，无编译/行为红；远端patch已原样应用。本机未跑formatter，107 refs终态；生产仍未消费新scope，下一准确源继续取红。
+
+**42562932053 Mac net-node操作期限回归格式修正源在途**：base28d9fe6ebb02475a6054d87bc0ab089f21290a02 clean、tree6c3de5d38a2d302813f6c66401436d3ddf6454ad、snapshot79e97ce75b77d17889ac0a2bcb008fbff47df146、control0cff9671fb2f80945423132e0df46995f6ff3198；载体仍未被生产消费。mac-operation-budget-formatted-42562932053/108th ref已锚，恢复查询该ID，不重发。

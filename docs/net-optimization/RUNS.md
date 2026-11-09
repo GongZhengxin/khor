@@ -464,3 +464,6 @@ N3道路双向因果校准测试已按先前协议写下，模型未改；contro
 
 
 42562380977终态仅**根格式门失败**，准确source/control已核；新测试调用排版patch已原样应用，无编译/测试，不记scope行为红。107 refs终态，生产消费者仍未接入。
+
+
+**42562932053 Mac net-node scope预算回归在途**：clean28d9fe6e、tree6c3de5d38a2d302813f6c66401436d3ddf6454ad、snapshot79e97ce75b77d17889ac0a2bcb008fbff47df146、control0cff9671fb2f80945423132e0df46995f6ff3198。格式patch/ready结果须为正常返回错误的加强检查，生产仍忽略scope；108th ref/mac-operation-budget-formatted-42562932053已保存。
