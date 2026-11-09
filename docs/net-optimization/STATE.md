@@ -117,3 +117,9 @@ control 97334be 添加单独 netlab-vz-probe，沿既有 Mac worker/admission/to
 验收先固定为：准确 source/control；installed guard SHA/fd；foreground 同 PGID；guest 实际 Linux/userns/veth/netem/nft/conntrack；正常停机；杀死测试 controller 后 pipe EOF 触发 supervisor 停机；无本次 helper 残留才清理本次临时状态。supervisor 持 admission fd，避免 controller 先死释放单槽；不改 installed guard/空间策略，不调用 ensure-budget。不挂载宿主目录、不编译产品，product_tests_executed=false。能力或生命周期红独立归执行环境，不计产品红/绿。通过后仍须同新后端重跑基线和候选，原门不改。
 
 产品 scripts/dev.py 只增加该 task 的 Mac 专用调度与回执检查；生产网络仍 d4a2e115 的已验证实现。待推控制后提交此次客户端/计划，再 dispatch；恢复以实际 run/receipt 为准，不重复提交。
+
+
+**42578713267 VZ 能力探针在途**：baseb56576ce52c56b4d8c31d84e6618abec662d0cd9 clean、tree2b5bfce2e95c0ef4169a6cb3bd719ba9914d414b、snapshot6a0465886f46b8058eb8cb149d3f4a54584a7c93、control97334bed6074a4b4208887d705ae0621e3b929be；123rd immutable ref 已锚。远端已通过可信源码准备，正在 guard 内执行；尚未读取 VM 结论。
+
+
+42578713267终态 FAILURE，已核准确 source/control/bundle。仅执行器路径红：Lima 的 ssh.sock.1234567890123456 路径107字节，要求<104，未启动VM/未执行产品测试。固定两资产实际下载校验通过，limactl2.3.0，foreground 与 guard 同 PGID；无本次残留且临时状态已清理，owner 下载缓存保留。接续缩短确定性实例名并冻结完整临时socket长度检查；不放宽Linux/产品门。123 refs现全部终态。
