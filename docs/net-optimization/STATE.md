@@ -12,7 +12,7 @@
 
 | 用途 | 位置 / 分支 |
 | --- | --- |
-| 产品 | `/Volumes/disk0/Khor/worktrees/current/khor-net`，`feat/net`；恢复核实际HEAD/diff，本轮最后提交将含N3独立方向候选；N2生产为802e13a8+远端格式修正 |
+| 产品 | `/Volumes/disk0/Khor/worktrees/current/khor-net`，`feat/net`；恢复核实际HEAD/diff，N3模型实现1478bf97，N2生产802e13a8+远端格式修正；随后HEAD为证据文档提交 |
 | 控制 | `/Volumes/disk0/Khor/worktrees/current/khor-build-net`，`feat/net`；0cff9671fb2f80945423132e0df46995f6ff3198已push；历史run各绑定原control |
 | 基线 | `/Volumes/disk0/Khor/worktrees/current/khor-net-baseline`，detached6485cb83d3b1f0bb93d4633825dc956623d78af9；仅paths/hop/lab/nat.rs、dev.py/netlab.sh六fixture；生产原样，现场已复核 |
 | 证据 | `/Volumes/disk0/Khor/evidence/net/`；source-refs.json现106条不可变refs，全部已终态；没有在途任务 |
@@ -20,13 +20,13 @@
 ## 当前工作：N3校准与三轮完成，下一步贯通N2总预算
 
 **42559476637实际模型红**：base6880d251edd38218007da99c9d070df2dd1957a5 clean、tree751e95115a7fb3a17faca1a5a44129e00a27655c、snapshote851d256586088d589971c2c1cb60f1461233a0c、controle7258e57155da1618f0f3b00fd1e395f481b5f19。
-根格式与congestion目标编译通过，真实UDP校准0pass/1fail：双向各1000B/s、RTT20ms、0损失、队列1秒，正向两个500B，第一包到后反向1B被队头未来包挡住，超过250ms容差。两ignored过滤，零计时轮；完整v2记录器已编译但尚未测量。证据mac-road-model-typed-42559476637已核source/control并下载。
+根格式与congestion目标编译通过，真实UDP校准0pass/1fail：双向各1000B/s、RTT20ms、0损失、队列1秒，正向两个500B，第一包到后反向1B被队头未来包挡住，超过250ms容差。两ignored过滤，零计时轮；该红源的v2记录器完成编译但未进入计时。证据mac-road-model-typed-42559476637已核source/control并下载。
 前42559155803仅新fixture误用u8编译失败，修b"e"后才实际取红，不能混算。
 
-ACCEPTANCE在修改模型前冻结校准协议。当前候选仅改测试道路：每方向一个FIFO派发器，保留每lane序列化/损失/队列/seed，移除跨方向未来due阻塞；标识`independent_fifo_v2`。记录schema仍v2，case/summary/sample均标road_model。
+ACCEPTANCE在修改模型前冻结校准协议。本轮修复仅改测试道路：每方向一个FIFO派发器，保留每lane序列化/损失/队列/seed，移除跨方向未来due阻塞；标识`independent_fifo_v2`。记录schema仍v2，case/summary/sample均标road_model。
 **当前独立方向模型已实际校准绿**（旧源42559476637红→本源绿）。产品CC/优先级没有调整。control同步该model字段；先要求唯一校准1pass/0fail，再跑三轮ignored完整采样。driver本机桩检查通过：校准红即止，首计时轮红仍保留三轮及最终exit8；不是Rust实测。
 **42560015454 Mac net-congestion SUCCESS**：base1478bf9712ad50c00b502c78613cd932f20586b3 clean、tree33d5ef6d47cde04620db1baa470bd7fefdf0c99d、snapshot9a6f9717470e0a741aedbdd9dd1ecf0a32d18fc8、control0cff9671fb2f80945423132e0df46995f6ff3198。
-mac-duplex-congestion-42560015454及106th ref已锚，API请求e7e4871ed8c5478ebcc9022972cb3a0c；根格式/编译/校准1pass、三轮各2pass完成（167.64/167.09/167.29秒）；704原始请求/51摘要/15bulk case逐项核计数、索引和分位数，零失败/超时，sample-audit.json已保存。此任务已终态，不重跑。 若format/compile红先按真实类型处理，不冒充模型红。旧shared_fifo_v1结果不能与新模型差值算产品改进。
+mac-duplex-congestion-42560015454及106th ref已锚，API请求e7e4871ed8c5478ebcc9022972cb3a0c；根格式/编译/校准1pass、三轮各2pass完成（167.64/167.09/167.29秒）；704原始请求/51摘要/15bulk case逐项核计数、索引和分位数，零失败/超时，sample-audit.json已保存。此任务已终态，不重跑。旧shared_fifo_v1结果不能与新模型差值算产品改进。
 
 ## 已取得的本轮真实回归证据
 
