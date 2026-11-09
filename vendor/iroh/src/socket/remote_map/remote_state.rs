@@ -1216,6 +1216,10 @@ impl RemoteStateActor {
                 let key = (*conn_id, *path_id);
                 present.push(key);
                 if let Some(waited) = unanswered_for(&stats, now.into_std()) {
+                    debug!(target: "khor_net_samples", ?conn_id, ?path_id, ?tuple, ?now,
+                        pto_count = stats.pto_count, last_received = ?stats.last_received,
+                        unacked_since = ?stats.unacked_since, pto = ?stats.pto,
+                        "silent path copy");
                     silent_now.push((tuple.clone(), now.checked_sub(waited).unwrap_or(now)));
                 }
                 if stats.pto_count > 0
@@ -1262,6 +1266,10 @@ impl RemoteStateActor {
         // relay or a carried road, as in [`Moving::step`]: between direct roads the hold, and
         // the waking, stay as they were.
         let off_direct = selected.is_some_and(|s| !s.is_ip());
+        if !silent_now.is_empty() {
+            debug!(target: "khor_net_samples", ?now, ?selected, ?backed_off, ?heard,
+                wake_allowed = off_direct, "road recovery inputs");
+        }
         let in_use = selected
             .filter(|_| off_direct)
             .and_then(|s| measured.road(s))

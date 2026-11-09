@@ -20,16 +20,32 @@
 不触碰其他GUI/治理worktree、现装App或用户原会话。新目录/证据放`/Volumes/disk0/Khor`分类。
 图谱部分覆盖，先图工具，缺失后定向读；本树没有CodeGraph索引，不擅自建立。
 
-## 当前唯一在途任务：先查询，不重复提交
+## 最近诊断终态与下一轮
+
+**当前在途：42538717126、42538759858、42538808023**。三者同treebe7b5abef3cc3c1ef81744075f4436efdf668fd0、
+base82e0d3b5 dirty、controlc68b644；先查询，不重复调度。observer v1只改实验客户端/诊断，选路策略未改。
+
+| Run | 任务 | snapshot |
+| --- | --- | --- |
+| 42538717126 | netlab-hop-diagnostic，原f4s一次1线程 | ce0af01606b4368ff6c3a190d59afbb14a58ecba |
+| 42538759858 | netlab-diagnostic，原f4s/p1s各一次1线程 | 5bd8418703baccc5a71979a984e19b861447c6f8 |
+| 42538808023 | net-unit，根格式与66核心/1ignored | e62f6126eb1c9dbb2e17a3c43a33b71dedc64fa3 |
 
 | Run | 任务与准确源 | 最后观察 |
 | --- | --- | --- |
-| 42536677230 | netlab-diagnostic；basedf5b0864 dirty；tree1113605daf5597c2663d5e6468c45dade34031c9；snapshot72b0f7e13c0cb7142db033434cbd8182a1ba610a；controlc3b117d | prepare成功，Linux network运行，Mac跳过；原f4s/p1s各一次、1线程 |
+| 42536677230 | netlab-diagnostic；basedf5b0864 dirty；tree1113605daf5597c2663d5e6468c45dade34031c9；snapshot72b0f7e13c0cb7142db033434cbd8182a1ba610a；controlc3b117d | FAILURE 0pass/2fail，714.13秒；已下载decision-diagnostics-42536677230。f4s准备Busy未测；p1s移动2/0，零打洞/退役，最慢1.1秒；日志模式不作SLO |
 
 诊断代码5f69db3f：CLI可选net-diagnostics加显式环境开关才安装subscriber，使用已锁tracing-subscriber0.3.23。
 记录ACK raw/delay/corrected、采样包时间、迁移初始/Go的Reading与Silence、恢复hold起止。
 测量后保存各节点原serve.log，默认构建不开日志。**日志模式不作为SLO成绩**，原600秒/20次300ms/忙CPU及f4s断腿/1500ms门不变。
-可选CLI feature实际编译/日志非空由此run确认；Noq/Iroh单元绿不替代它。
+可选CLI feature实际编译/日志非空已由该run确认；Noq/Iroh单元绿不替代它。
+
+本run已确认可选CLI编译与subscriber有效，p1s两份原日志399888字节，分析摘要analysis-decisions.json。
+**两次实际Go均failed=true**，不是普通质量/快分支。第一次当前路quality3.807ms、候选2.576ms，
+仍按Silence离开；原路在Go后约238ms的下一测量tick才记answered，随后还等恢复hold。
+不能用先前缓存quality反转直接归因普通收益门。实际copy级PTO/last_received仍缺，下一轮追加这些诊断，不先调阈值。
+LabNode.with反复开Node争用元数据，现候选只改fixture为一次Arc观察客户端复用，并补静默copy/恢复输入日志；
+没有修改生产状态保护或选路策略。observer client v1先冻结，未来A/B须同步lab.rs，不能把其负载变化算策略改善。
 
 ## 当前阶段判断
 
@@ -77,7 +93,7 @@ N0部分、N1仍红、N2–N4未完成、N5部分。完整范围和逐项缺口�
 
 ## 接下来按顺序做
 
-1. 查询42536677230终态并下载完整证据。若失败先区分构建/日志缺失/准备/原产品断言；不缩短或放宽场景。
+1. 42536677230已终态，下一轮先验证observer client v1与copy级日志；新run回执落盘后只查其ID，不重复旧run。
 2. 对p1s每个Go/当前路关闭事件，关联实际Reading和ACK raw/delay/corrected；对f4s关联静默判定、决定后应答、hold解除和Go。
    现有缓存快照提示候选质量可能残留故障值，但尚未证明根因；不要凭快照调gain或加固定等待。
 3. 由确定性行为回归先取红，再最小修复。保留速度优先、故障快通道、健康备用/探测预算和不重放应用操作。
@@ -90,10 +106,10 @@ N2七类预算/取消/写入行为已在ACCEPTANCE实现前冻结；静态发现
 
 ## 源码证据与恢复规范
 
-现78个本地immutable `refs/khor/net-evidence/<run>`，清单`evidence/net/source-refs.json`。
+现81个本地immutable `refs/khor/net-evidence/<run>`，清单`evidence/net/source-refs.json`。
 重要快照不依赖七天artifact保留；`git rev-parse REF:source`须等于收据tree。
 快照是parentless容器，读取用`git show REF:source/<path>`，不得直接覆盖工作区，也不push这些本地ref。
-收据终态及时刷新pending；目前只42536677230未完成。
+收据终态及时刷新pending；当前只有上表observer v1三项在途。
 
 恢复先核本目录、branch/HEAD/diff与已有run，保留未提交内容。两main及产品feature未合并发布。
 外盘缺失时，从共同仓只读`git show feat/net:docs/net-optimization/STATE.md`与PLAN恢复已提交文档；不覆盖原外盘未提交内容。

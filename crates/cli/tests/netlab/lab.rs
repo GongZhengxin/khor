@@ -225,6 +225,7 @@ pub async fn slow(dev: &Device, rtt: Duration) {
 pub struct LabNode {
     pub name: String,
     pub id: String,
+    client: std::sync::Arc<Node>,
     pub dev: Device,
     pub home: Scratch,
     pub serve: Option<Reaped>,
@@ -280,14 +281,23 @@ pub async fn node_on(
         );
         tokio::time::sleep(Duration::from_millis(100)).await;
     }
-    let id = Node::open_as(home.0.clone(), name)
+    // One observer client per resident, as in the app. Reopening for every
+    // sample can contend with an earlier local metadata operation.
+    let (client_home, client_name) = (home.0.clone(), name.to_owned());
+    let client = dev
+        .spawn(move |_| async move {
+            std::sync::Arc::new(Node::open_as(client_home, &client_name).unwrap())
+        })
         .unwrap()
-        .device_str()
-        .to_owned();
+        .await
+        .unwrap();
+    let id = client.device_str().to_owned();
+    eprintln!("[netlab] observer client v1: {name} reused");
     eprintln!("[netlab] {name} up: v4 {:?} v6 {:?}", dev.ip(), dev.ip6());
     LabNode {
         name: name.to_owned(),
         id,
+        client,
         dev,
         home,
         serve: Some(Reaped(child)),
@@ -319,12 +329,12 @@ impl LabNode {
     pub async fn with<T, F, Fut>(&self, f: F) -> T
     where
         T: Send + 'static,
-        F: FnOnce(Node) -> Fut + Send + 'static,
+        F: FnOnce(std::sync::Arc<Node>) -> Fut + Send + 'static,
         Fut: Future<Output = T> + Send + 'static,
     {
-        let (home, name) = (self.home.0.clone(), self.name.clone());
+        let client = self.client.clone();
         self.dev
-            .spawn(move |_| async move { f(Node::open_as(home, &name).unwrap()).await })
+            .spawn(move |_| async move { f(client).await })
             .unwrap()
             .await
             .unwrap()

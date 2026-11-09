@@ -297,3 +297,11 @@ control **6af0ac328457a8c3aea9157e8b2ffcd65ae7e5c2**已push feat/net，新增net
 追加覆盖 **42537392595 net-vendor** 已调度：based5e926bf clean、tree d7f8f38cdeaabefc398f5580a747c7e599209c49、snapshot a256f6708e9ad3920c1d01561b785e6e1425d1bd、control322835b。生产代码与5f69db3f相同，只增文档/控制执行覆盖。包含原435/33及khor_选家/QAD/网桥专项，结果待取；不当作重复旧33就证明遗漏覆盖。78份源码锚点，当前两项pending。
 
 42537392595终态 **SUCCESS：根格式、435Noq、33路径、9选家/QAD/网桥**，vendor-home-coverage-42537392595已下载。9项逐个为fallback tier、家驻留/对等历史样本/hinton轨迹、接班频繁断开冷却、HTTPS可达、QAD复用/失败单族探测、网桥过滤；全部ok。不是iroh158项全量，更不替代对应故障域/真实设备集成。当前只42536677230诊断在途。此前STATE原文归档HISTORY-20261109-before-diagnostic-results.md，恢复以精简当前STATE为准，不按历史在途表重复调度。
+
+42536677230终态 **FAILURE 0pass/2fail、714.13秒**，decision-diagnostics-42536677230。可选CLI编译成功，subscriber有效。f4s在准备观察LabNode.with/Node::open_as报document transfer state busy，未进入恢复测量；p1s原600秒/20次300ms/忙CPU，alpha移动2次（lan@244s、second@275s），beta0，零打洞/退役，最慢1.1秒、3187包343563字节。两份原serve.log共399888字节，另存analysis-decisions.json；日志模式不是SLO，不与普通3/1数字比较因果改善。
+
+两次Go均failed=true。第一Go monotonic567.1171、since566.6073，当前Second仍有quality3.807ms/1近期观测，候选LAN2.576ms/1；Silence began566.2036、judged567.1169、answered None。原路在567.3554记answered（Go后238ms），568.6044才解除hold、quick=false。第二Go598.1150、since同刻，当前LAN最后ACK590.8951/窗口0，候选Second597.6363/1；Silence began597.2961、judged598.1148。由此定位实际快速故障通道，未证明全部来自ACK校正/普通quality；copy级PTO与last_received尚待补诊断。
+
+下一候选先冻结observer client v1并在lab.rs复用同设备runtime的Arc<Node>观察客户端，避免每次观测反复本地初始化争用；生产状态保护/网络策略均不改。追加静默copy的PTO/等待/最近收包和道路聚合heard/wake_allowed日志，明确旧wake只在off_direct启用的历史原因（旧EWMA下曾放大p1s），不盲目删除。新增netlab-hop-diagnostic原f4s一次1线程，完整诊断模式仍保留p1s/f4s。未来A/B需匹配新的lab.rs，旧对照不回填。
+
+observer v1实际调度同treebe7b5abef3cc3c1ef81744075f4436efdf668fd0、base82e0d3b5 dirty、controlc68b644：42538717126 netlab-hop-diagnostic / snapshotce0af01606b4368ff6c3a190d59afbb14a58ecba；42538759858 netlab-diagnostic / snapshot5bd8418703baccc5a71979a984e19b861447c6f8；42538808023 net-unit / snapshote62f6126eb1c9dbb2e17a3c43a33b71dedc64fa3。均在途，不是策略修复成绩。源锚点81份，产品9项Python/control1项准备/sh-n/bash-n通过，Rust/实际Arc观察客户端待远端。

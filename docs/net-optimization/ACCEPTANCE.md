@@ -108,6 +108,17 @@ control322835b起，`net-vendor`除原Noq全单元与iroh remote_state过滤器�
 这不代表iroh全158个单元都执行，也不能从旧33个路径单元绿回填这些遗漏测试。
 补丁逐项缺口见[VENDOR-AUDIT](VENDOR-AUDIT.md)，原生代理/真机/能耗仍独立验收。
 
+## 观察客户端 v1（fixture改动前冻结，非N2实现）
+
+42536677230的f4s准备在LabNode.with反复Node::open_as处报document transfer state busy，未测恢复。
+Node打开会申请本地状态permit并进行初始化，不应每次观察都重复；生产app本来复用Node。
+LabNode改为在本设备runtime构造一次Arc<Node>，后续with在同一runtime使用克隆的Arc。
+不改生产状态门、不加Busy重试、不忽略IPC/状态错误，初始打开失败仍报告准备失败。
+明确输出observer client v1；网络注入、settle/600秒/停顿/原断言不变。
+该fixture改变本地观察开销，未来A/B必须复制同一lab.rs；此前四文件匹配A/B只对旧观察方式成立，不能回填。
+先用原时长诊断验证助手，选路策略暂不改；netlab-hop-diagnostic只跑原f4s一次1线程，
+用于避免准备修正的验证被p1s十分钟等待挡住，普通SLO仍须关闭日志复验。
+
 ## N2 行为协议（实现前冻结，未执行）
 
 当前link.rs已核：普通ask首轮line_to未传by，锁/hop等待不受by约束；exchange重建自身budget；
