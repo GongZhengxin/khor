@@ -223,3 +223,6 @@ base25d0c803/tree6805b7b7/snapshote0a42573/controlb998：Turing150th fmt/编译/
 
 
 168诊断3/3没有重现162原same-wire撤路，全部27生命周期事件留证，不能用无复现替代修复。N1继续验证peer共享载路的连接所有权范围。CPU169/170用checked_affinity_v3相同真实Node fixture作原版/候选串行对照，生产基线纯净；结果未出，不预报性能通过。
+
+
+CPU169未进入测量：真实Node CPU admission返回无路径ENOENT，不能与170构造性能对照；170原版未启动已保留并superseded。下一步只增加错误路径上下文和真实Node短准入，不放宽压力/进展/affinity断言。用户U10明确跨网实机A=macserver、B=Turing（Linux），P=iPhone；设备身份已确定，A↔B可独立推进。

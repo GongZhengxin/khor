@@ -1700,10 +1700,7 @@ mod tests {
             tokio::join!(
                 async {
                     carried
-                        .connect(
-                            EndpointAddr::from_parts(aid, [transport_addr(&aid)]),
-                            ALPN,
-                        )
+                        .connect(EndpointAddr::from_parts(aid, [transport_addr(&aid)]), ALPN)
                         .await
                         .unwrap()
                 },
@@ -1746,7 +1743,10 @@ mod tests {
         let wires = Wires::default();
         let id = bid.to_string();
         wires.adopt(&id, Proto::Main, outgoing.clone());
-        assert!(wires.selected_beats_carried(&id), "the sole direct wire needs no carrier");
+        assert!(
+            wires.selected_beats_carried(&id),
+            "the sole direct wire needs no carrier"
+        );
         wires.serving(&incoming);
         let release_live = wires.selected_beats_carried(&id);
         incoming.close(0u32.into(), b"test done");

@@ -34,7 +34,12 @@ fn allowed(text: &str) -> Result<Vec<usize>, String> {
 }
 
 fn current_allowed() -> Result<Vec<usize>, String> {
-    allowed(&fs::read_to_string("/proc/thread-self/status").map_err(|e| e.to_string())?)
+    allowed(&proc_text("/proc/thread-self/status")?)
+}
+
+fn proc_text(path: impl AsRef<std::path::Path>) -> Result<String, String> {
+    let path = path.as_ref();
+    fs::read_to_string(path).map_err(|e| format!("read {}: {e}", path.display()))
 }
 
 #[derive(Debug)]
@@ -47,7 +52,7 @@ struct Process {
 
 impl Process {
     fn read(pid: u32) -> Result<Self, String> {
-        let stat = fs::read_to_string(format!("/proc/{pid}/stat")).map_err(|e| e.to_string())?;
+        let stat = proc_text(format!("/proc/{pid}/stat"))?;
         // The comm field may itself contain spaces and parentheses.
         let fields: Vec<_> = stat
             .rsplit_once(") ")
@@ -70,15 +75,16 @@ impl Process {
             .checked_add(field(12)?)
             .ok_or("CPU ticks overflow")?;
         let mut threads = Vec::new();
-        for entry in fs::read_dir(format!("/proc/{pid}/task")).map_err(|e| e.to_string())? {
-            let entry = entry.map_err(|e| e.to_string())?;
+        for entry in fs::read_dir(format!("/proc/{pid}/task"))
+            .map_err(|e| format!("list /proc/{pid}/task: {e}"))?
+        {
+            let entry = entry.map_err(|e| format!("entry in /proc/{pid}/task: {e}"))?;
             let tid: u32 = entry
                 .file_name()
                 .to_string_lossy()
                 .parse()
                 .map_err(|_| "invalid thread ID")?;
-            let status =
-                fs::read_to_string(entry.path().join("status")).map_err(|e| e.to_string())?;
+            let status = proc_text(entry.path().join("status"))?;
             threads.push((tid, allowed(&status)?));
         }
         threads.sort_by_key(|(tid, _)| *tid);
@@ -203,7 +209,7 @@ impl BusyCpu {
     fn exec_ready(&self) -> Result<bool, String> {
         for contender in &self.contenders {
             let bytes = fs::read(format!("/proc/{}/cmdline", contender.0.id()))
-                .map_err(|e| e.to_string())?;
+                .map_err(|e| format!("read contender {}/cmdline: {e}", contender.0.id()))?;
             let args: Vec<_> = bytes
                 .split(|b| *b == 0)
                 .filter(|arg| !arg.is_empty())
@@ -312,6 +318,36 @@ async fn checked_load_proves_real_cpu_progress_and_reaps_its_contenders() {
         "cpu-admit",
         true,
         "two checked residents and two real CPU contenders on one allowed CPU; contenders reaped",
+    );
+}
+
+/// The sleep-child calibration does not exercise a resident's thread
+/// lifecycle. Admit the exact load against real isolated khor residents
+/// before spending the original 600-second measurement window.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "separate real-resident CPU calibration; never alongside timed netlab"]
+async fn checked_load_admits_real_residents_and_they_answer() {
+    let pair = super::pair("cpu-node", async |_, _| {}).await;
+    let residents = [
+        u32::try_from(pair.a.pid()).unwrap(),
+        u32::try_from(pair.b.pid()).unwrap(),
+    ];
+    eprintln!(
+        "[netlab-cpu-node] {}",
+        json!({"residents": residents, "harness_pid": std::process::id()})
+    );
+    let mut load = BusyCpu::start(&residents)
+        .await
+        .expect("actual residents admit the checked CPU load");
+    let (_, error) = super::echo(&pair.a).await;
+    assert!(error.is_none(), "real residents answer under load: {error:?}");
+    tokio::time::sleep(Duration::from_millis(300)).await;
+    load.verify("real-resident-calibration").unwrap();
+    drop(load);
+    crate::lab::result(
+        "cpu-node-admit",
+        true,
+        "two actual khor residents admitted on one CPU; real request answered; contenders advanced",
     );
 }
 

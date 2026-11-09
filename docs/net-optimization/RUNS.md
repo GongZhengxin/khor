@@ -626,3 +626,6 @@ control7534d6e已push，仅增加SSH-only cpu-check与hop-lifecycle；驱动Pyth
 168th turing-20261109T130858Z-465046e7终态诊断**3/3绿**，base886b084c/treeed97f217/snapshot349bd7ba/control7534，691.75秒。三轮回carried17.2/10.7/23.2秒，原有意离线后的serial1 IO结束均位于返回前，serial2返回后未结束；9日志共27事件、无hop_measured_release/link_detached。完整source/control/driver/bundle/原group/hash采核。原162同wire撤路未重现，非修复或SLO通过，保留红结论。
 
 169th turing-20261109T133049Z-d4827d09与168完全同source/control，原netlab-stalls单线程1轮，checked_affinity_v3真实Node压力，launch PID522226/child522272实际/proc/driver核live。170th turing-20261109T133425Z-7a9c0dfa原版同条件只stage，source base6485/tree186d3b60/snapshot63043993，control7534；五实际fixture逐字同候选，除七fixture/helper文件外生产全同原6485，证据cpu-v3-paired-fixture-identity.json。新detached基线保留旧WIP不动；169终态采证才launch170。新的comparison_role在stage前明确baseline，helper guard不变。
+
+
+169th真实Node CPU准入**FAILURE**，rc101，总581.57秒，原p1s在BusyCpu::start返回无路径ENOENT时停止，0个admitted记录，600秒窗口未开始；p5原门绿，150/300/600ms最慢295.9/497.0/972.6ms。完整report/source/control/bundle/原group/hash采核。170th原版相同fixture从未launch，已superseded_not_launched，inputs/ref保留。166 sleep短校准仍是真实3/3，不扩张成Node准入证明。171 Mac42627527851（basebe31e983/tree42f87d24/snapshot601c3c9c/control7534）仅format红，原patch应用，未编译/行为测试；首次下载遇只读GitHub EOF，重取同run成功，没有重发构建。
