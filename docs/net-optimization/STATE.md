@@ -1,8 +1,8 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-09 10:46 UTC；root串行，无子智能体。活动目标“完成计划”仍active。
+更新：2026-11-09 10:51 UTC；root串行，无子智能体。活动目标“完成计划”仍active。
 
-**共享活性确认修复候选已提交45465a6a，正在准备新源runtime验证，尚未取绿。** Slot最多一份probe任务/count/grace，normal exchange与取消共用，只有全路确认可退役；接收/替换/清理取消旧任务，任务只持Weak。F8函数保持143rd实红源逐字相同；F7保留真黑洞并验证外部thread取消后的独立确认。另补替换新wire和不保留owner两真实回归。147th Turing仅format门红、未编译/测试；完整report已采，远端patch原样应用。147 refs=145终态+2 staged（旧stalls），当前无运行。完整N0–N5未完成。
+**共享确认候选仍待行为验证。** 147th仅format红，远端patch已应用；148th Turing根格式/net66+1ignored绿，node编译因两处Arc未全限定失败，无node合同运行。已仅补std::sync::Arc，下一新源重跑。149th Mac42604002430正在验证与148th相同snapshot ef83ab11/tree473e41ce（独立request/ref），待实际artifact，不能预记同因失败。149 refs=146终态+Mac149在途+2 staged（旧stalls）。完整N0–N5未完成。
 完整范围：[PLAN](PLAN.md)；约束：[REQUIREMENTS](REQUIREMENTS.md)；运行记录：[RUNS](RUNS.md)；原始结果：[REPORT](REPORT.md)。
 此前STATE原样归档[Accepted轮历史](HISTORY-20261109-before-accepted-green.md)与[本轮历史](HISTORY-20261109-before-probe-green.md)及[Turing141前历史](HISTORY-20261109-before-turing-141.md)；历史在途/候选文字仅代表当时状态，恢复以本页和实际工作区为准。
 
@@ -17,7 +17,7 @@
 | 产品 | `/Volumes/disk0/Khor/worktrees/current/khor-net`，`feat/net`；最新已验证生产d4a2e115b898fc337f5091b51fa71e45740c667f；后续有fixture/调度与journal wire编号（Mac146便携子集已验）；选路/预算逻辑仍d4a，恢复核HEAD/diff |
 | 控制 | `/Volumes/disk0/Khor/worktrees/current/khor-build-net`，`feat/net`，b9984797f412f352f3c76f99c47ade3ee10f68e9已push；新增net-node SSH任务白名单，profile未改；当前hop/stalls仍control59dc223，不能回写历史控制版本 |
 | 基线 | `/Volumes/disk0/Khor/worktrees/current/khor-net-baseline`，detached6485cb83d3b1f0bb93d4633825dc956623d78af9；仅paths/hop/lab/nat.rs、dev.py/netlab.sh六fixture，生产原样 |
-| 证据 | `/Volumes/disk0/Khor/evidence/net/`；source-refs.json147条不可变refs；145终态，其余2 staged；当前无运行。每次源变化前锚ref；SSH不是GitHub run |
+| 证据 | `/Volumes/disk0/Khor/evidence/net/`；source-refs.json149条不可变refs；146终态、Mac149在途，其余2 staged。每次源变化前锚ref；SSH不是GitHub run |
 
 ## N2本轮：普通wire覆盖与配对探针三红→绿
 
@@ -87,7 +87,7 @@ N0部分、N1仍红、N2部分、N3部分、N4未完成、N5部分；完整PLAN�
 
 ## 证据与恢复规则
 
-先核worktree/branch/HEAD/diff、当前run与准确回执；以本页顶端当前任务为准，历史在途文字仅在归档中保留。147refs=145终态+2 staged；恢复按run/path/PID实核，SSH观察失败须重查同句柄，不重启。
+先核worktree/branch/HEAD/diff、当前run与准确回执；以本页顶端当前任务为准，历史在途文字仅在归档中保留。149refs=146终态+1在途+2 staged；恢复按run/path/PID实核，SSH观察失败须重查同句柄，不重启。
 `git rev-parse refs/khor/net-evidence/<run>:source`必须等于回执tree；只git show读容器，不checkout覆盖/push本地证据refs。失败明确分format/compile/fixture/行为/执行器；tests_executed只按实际子集，历史红不删除。
 Mac source/bundle分支只在终态、证据留存且所有权/SHA匹配后清理；复用源的请求不拥有原源分支。原attempt不覆盖。
 外盘缺失只读`git show feat/net:docs/net-optimization/STATE.md`与PLAN；原外盘未提交内容不能按摘要覆盖。其他治理沿中央STATE/RESUME，不混授权。
@@ -151,3 +151,8 @@ F8函数与143rd红源逐字相同，已存SHA；F7观察升级f7_owned_confirma
 
 
 147th turing-20261109T104331Z-90266679已终态，仅FORMAT红：base45465a6adc5b9d341c9e8d820642033d7c2196a5/tree434de4e4189c4ef02c9e557063d57fd1793cc25e/snapshot366fb9ec00860c6db3203455e1958b76522a6ddf/controlb998479。44.81秒，未编译/执行；完整report已采/身份/group/hash核。原format.patch覆盖三个Rust文件，原样应用；下一同准确源码分别Turing21 Linux与Mac19便携（含two resource tests），不能预记通过。
+
+
+148th turing-20261109T104749Z-3c7d804a终态编译红：basef28d04ae420ab51465576022de783600a11c0a1d/tree473e41cec25ed75e70325a896056181069ea3b71/snapshotef83ab1177ef1f12c75efd64ef7ca832d787cdbf/controlb998479。fmt及net66+1ignored通过，Node E0425两处Arc未限定，未执行21合同；report/group/source/bytes/hash已采核。类型已仅改std::sync::Arc，下一新源继续。
+
+149th Mac42604002430与148th准确source完全相同（ef83ab11/tree473e41ce/basef28d），controlb998，新的独立request fd528bf6aeca4ee1b496d1b73da68110及owned source/bundle branches；复用了immutable snapshot，未重新创建另一tree。仍在途；21 Linux/19 Mac未预报绿。

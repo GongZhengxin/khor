@@ -12830,7 +12830,7 @@ async fn request(
 /// start or join the wire owner's all-path confirmation, whose grace and
 /// receive count are independent of the caller's deadline (F7/F8).
 struct RetireUnheard<'a> {
-    wires: &'a Arc<wires::Wires>,
+    wires: &'a std::sync::Arc<wires::Wires>,
     line: &'a Line,
     count: u64,
     at: std::time::Instant,
@@ -12839,7 +12839,7 @@ struct RetireUnheard<'a> {
 }
 
 impl<'a> RetireUnheard<'a> {
-    fn new(wires: &'a Arc<wires::Wires>, line: &'a Line) -> Self {
+    fn new(wires: &'a std::sync::Arc<wires::Wires>, line: &'a Line) -> Self {
         Self {
             wires,
             line,
