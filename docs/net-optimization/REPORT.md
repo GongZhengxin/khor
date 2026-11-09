@@ -156,3 +156,10 @@ Turing recovery同机对照已完整采证：
 | f4i | 2/3 | 首轮恢复后X carried→relay→carried，to_relay=1而原门0；后两轮绿，第三次回carried91.4秒 |
 
 首轮f4i首行started relay条件通过，失败来自后续回退；精确X事件carried→relay1697ms、relay→carried5803ms。journal没有connection stable_id，不能只凭该报告区分连接或定因；未归咎reducer或改门。3轮完整log、source/driver/bundle/environment、原PGID无live与逐文件SHA已采；执行1652.41秒。尚无corrected baseline完成数据，不给因果加速/稳定性结论。新Linux net-node与基线hop/CPU对照仍待，完整计划未完成。
+
+
+## Linux真正长静默与取消覆盖（141th）
+
+Turing141th turing-20261109T095017Z-93c2c1a2，base9eafba74/treef93c32b1/snapshot6708accb/controlb998479，固定Rust1.95，根格式/编译/net66+1ignored/hop9/wires10/journal28/预算取消探针16全绿，完整原始报告已采。新F7在单独unshare -Urn的user/netns核隔离后安装两向UDP端口丢包规则，真实request/probe命中drop计数、heard不再变；ACK+all-path grace后abandon真实Pending future恰一次unanswered退役，远端仍open、其余失败计数零。长ACK阳性同wire并发请求仍成功。
+
+前Mac UDP代理前置12→15收包以及140th nft语法错误均按fixture红保留，没有当产品退役红；新覆盖通过不声称旧源实际红。该结果只证明已测长静默合同，未证明grace之前取消的备用可达性、跨IPC期限/取消、完整N2或全Quality。21.24秒为子集运行时，不作性能SLO。当前基线hop137th已准确启动，仍待完整对照。
