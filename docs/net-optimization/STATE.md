@@ -1,6 +1,10 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-09 14:09 UTC；root串行，无子智能体。活动目标“完成计划”仍active，完整N0–N5未完成。
+更新：2026-11-09 14:12 UTC；root串行，无子智能体。活动目标“完成计划”仍active，完整N0–N5未完成。
+
+**当前176th原版完整stalls在Turing运行，PID570285/child570324。** `turing-20261109T141037Z-b813a5b3`，原生产6485、仅七fixture/source helper变化；tree49211b55/snapshot31db523a/control7534，role=baseline。已核/proc实际runner和execution running/network-driver。fixed-core exit-aware v3，原p1s600秒＋p5、单线程1轮；运行中不并跑Turing编译或另一负载。此轮入场还须实际核CPU ID、每thread mask/CPU ticks，未预报通过。
+
+Mac同批源码net-node提交中：source basec716c916/tree5ba04b34/snapshota1981daa，request b2822fb7885c4d358e3647cead841604，本地exec session82832；source/bundle已上传，尚待同session真实GitHub ID，不重发。source已锚`refs/khor/net-evidence/candidate-cpu-v3-exit-aware-fixed-core`。baseline同五actual fixture逐字相同，详`cpu-v3-fixed-core-paired-fixture-identity.json`；原旧基线WIP未动，新owned baseline-v3预先write-tree核旧186d再仅更新五fixture，新snapshot已锚，前版63043993保留。
 
 **174th真实Node短CPU准入4/4绿；175th Mac仍仅format红，标准patch已应用。** 174`turing-20261109T140109Z-0973b7c9`，base86bb24cd/treecfcde850/snapshotad2fee6e/control7534，101.18秒含编译、四case41.38秒，完整source/control/group/bundle/hash采证。CPU89上真实Node561853/562203分别274/275存活threads，全mask=[89]，真实echo回答；492ms内两contender分别增加9/10ticks（100Hz），PID/start稳定。sleep-child与负例/解析控制保持。172线程退出导致的读/proc task status ENOENT由exit-aware完整实时线程快照修正；原短case除formatter布局外断言/负载不改。此绿不覆盖600秒完整p1s或整体体验。
 
@@ -18,7 +22,7 @@
 
 162nd原三轮hop已终态**8/9**，3/3、2/3、3/3，1688.88秒；只有第二轮f4i红。X同一wire从carried切relay，间隔7347ms，载路从候选列表消失；Y的两条聚合事件属于不同wire。原因尚未被生命周期事件直接证明，不能归为显示抖动或直接宣布排名算法错误。f4s三轮虽原门绿，最慢按键均9.9秒；极致体验仍未达标。
 
-166th `netlab-cpu-check` **3/3校准绿**：两个owned sleep子进程模拟resident、两个真实busy loop在CPU14；两contender在305ms分别增加15ticks，100ticks/s，实际亲和/存活/负例/清理通过。**不是600秒p1s或真实Node负载验收。** 167th Mac`42622111828`同完整snapshot根格式与net66+1ignored绿；没有跑Node20或App。当前175个run refs均已终态/明确未启动；另有基线准备ref。173条时双引用全批核，后新增174/175各已核。
+166th `netlab-cpu-check` **3/3校准绿**：两个owned sleep子进程模拟resident、两个真实busy loop在CPU14；两contender在305ms分别增加15ticks，100ticks/s，实际亲和/存活/负例/清理通过。**不是600秒p1s或真实Node负载验收。** 167th Mac`42622111828`同完整snapshot根格式与net66+1ignored绿；没有跑Node20或App。当前176个run refs=175终态/明确未启动＋176在途，另有两份fixed-core源准备ref；Mac提交命令尚待真实run ID。
 
 完整范围：[PLAN](PLAN.md)、[REQUIREMENTS](REQUIREMENTS.md)、[ACCEPTANCE](ACCEPTANCE.md)。运行与原始结论：[RUNS](RUNS.md)、[REPORT](REPORT.md)。此前STATE逐字保存在[本轮前历史](HISTORY-20261109-before-cpu-calibration.md)和更早HISTORY文件；历史在途文字只代表当时，恢复以本页顶端及实际进程为准。
 
@@ -33,7 +37,7 @@
 | 产品 | `/Volumes/disk0/Khor/worktrees/current/khor-net`，`feat/net`；本批代码886b084c为CPU fixture校验＋opt-in载路生命周期事实，清理/选路政策未变；恢复核实际HEAD/diff |
 | 控制 | `/Volumes/disk0/Khor/worktrees/current/khor-build-net`，`feat/net`；7534d6e已push，新增SSH-only cpu-check与hop-lifecycle两个profile；Python驱动2＋runner4 checks绿；原timed profiles未改 |
 | 原基线 | `/Volumes/disk0/Khor/worktrees/current/khor-net-baseline`，detached6485cb83；原六fixture WIP未改，旧source90126283/tree97040f31已锚；不得按摘要覆盖 |
-| 证据 | `/Volumes/disk0/Khor/evidence/net/`；source-refs.json175条不可变run ref，均终态或明确未启动；SSH run不是GitHub run |
+| 证据 | `/Volumes/disk0/Khor/evidence/net/`；source-refs.json176条不可变run ref，175终态或明确未启动/176在途；SSH run不是GitHub run |
 
 Turing根`/tmp/khor-netlab-feat-net-1110`，每run在`runs/<id>`。只操作此任务owned资源，flock单重型槽，计时/诊断场景运行时不并跑编译或其他负载。无sudo/主机网络改动；user/netns隔离。50GiB准入/40GiB停止/90分钟预算；原工具pin/hash/可信source bundle不变。
 

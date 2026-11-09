@@ -635,3 +635,6 @@ control7534d6e已push，仅增加SSH-only cpu-check与hop-lifecycle；驱动Pyth
 
 
 174th turing-20261109T140109Z-0973b7c9（base86bb24cd/treecfcde850/snapshotad2fee6e/control7534）CPU短校准**4/4绿**，101.18秒含编译、case41.38秒。真实两个Node561853/562203的274/275存活线程均CPU89，真实请求过；492ms内两个contender分别增加9/10ticks，identity/进展/负例保持。sleep控制也通过。完整source/control/bundle/group/hash已采核。175th Mac42631155176同准确完整source仅format红（两个CPU helper hunk），无Node编译/行为测试，原patch已应用。后续完整A/B以allowed CPU集合固定中间ID替代按harness PID选核，日志标allowed_midpoint_v1，压力及门保持；未执行的新选择不能当作174观测事实。
+
+
+176th turing-20261109T141037Z-b813a5b3原版fixed-core exit-aware v3 stalls已launch PID570285/child570324，实际/proc/driver核live。base6485/tree49211b55/snapshot31db523a/control7534，生产除七fixture/helper文件全同原6485；五actual fixture同candidate c716/tree5ba04b34/snapshota1981daa逐字一致，proof cpu-v3-fixed-core-paired-fixture-identity.json。Mac后者准确source net-node提交中，exec82832、request b2822fb7885c4d358e3647cead841604，仅source/bundle上传已知，待真实run ID不能重发。
