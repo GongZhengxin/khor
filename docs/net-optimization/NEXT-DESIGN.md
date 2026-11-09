@@ -139,3 +139,12 @@ N3在首个真实测量前新增模型校准审查：congestion.rs双向Lane共�
 
 
 N3模型校准42559476637已实际取红（类型笔误轮42559155803仅编译失败，不能混算），v2记录器已编译但零计时轮。候选独立方向FIFO保留各Lane几何/seed，显式independent_fifo_v2；schema仍v2，所有采样记录带model。产品CC不动，下一准确源先校准再三轮全量测量，不能跨物理模型算产品改进。
+
+
+## N2接续核查：IPC边界与取消（2026-11-09）
+
+准确源hash/摘录存evidence/net/deadline-continuation-20261109/inputs.json：ipc::exchange明确write_all后shutdown发送端，再read_to_end回复；Node::handle_handoff读取请求至EOF后才run_handoff_within。正常请求本来就半关闭，不能把服务端read EOF当用户取消，否则正常操作全部被撤销。要传播调用方取消，先定义和验证独立协议/所有权信号；不得静默改变半关闭协议或重发已发送操作。
+
+客户端call_refreshing现以Op::deadline包住连接/刷新/交换，serve run_handoff_within在请求完整解码后重新取该档位-.5s。只有拒绝TCP连接可刷新重试，连接后一律不因失答/写失败重放。后续贯通需明确caller/serve各自起点和剩余预算，而不是在每层重新开始同一duration；长档仍保留。
+
+RetireUnheard已经同时要求armed、heard_count自请求开始不变、elapsed>=Patience::of(conn).ack，短取消不构成退役证据；不是“所有取消都退役”。后续普通交换的deadline/取消测试应同时证明短取消保留wire/其他并发请求、真实足够久全无收包仍退役。不要以caller到期不是peer失败为由移除F7保护。此核查仅静态，无新端到端运行或期限总链路绿。

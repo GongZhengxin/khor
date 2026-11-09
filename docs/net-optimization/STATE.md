@@ -71,7 +71,7 @@ host-capabilities42555870179实际：VZ=1、16GiB/10CPU、约76.2GB空闲，仅b
 N0部分、N1仍红、N2部分、N3部分、N4未完成、N5部分。不能用本轮单元或测量器修复结束目标。
 
 1. 先收当前N3独立方向候选校准/完整三轮；失败/超时保留，成功与全尝试结束分布分开、空分布null，不用少量screen样本报p99；它只是Noq模拟层。
-2. N2除已绿normal/early锁准入外：hop准备、拨号自身裁剪/CallerExpired分类、普通交换/一次读重试总期限、Accepted后Aborts回答取消、长操作档位和并发/输者释放仍缺。按Op原30/300/3600真实deadline贯通，不能把长CodeServe/transfer压成28秒。hop3秒为两个middle合计；取消不计peer故障，真实RetireUnheard仍保留。七类合同在ACCEPTANCE，具体调用链NEXT-DESIGN。
+2. N2接续另核IPC正常半关闭不等于取消；RetireUnheard已有完全无收包+Patience.ack门，具体hash/摘录见deadline-continuation-20261109与NEXT-DESIGN，未新增运行。N2除已绿normal/early锁准入外：hop准备、拨号自身裁剪/CallerExpired分类、普通交换/一次读重试总期限、Accepted后Aborts回答取消、长操作档位和并发/输者释放仍缺。按Op原30/300/3600真实deadline贯通，不能把长CodeServe/transfer压成28秒。hop3秒为两个middle合计；取消不计peer故障，真实RetireUnheard仍保留。七类合同在ACCEPTANCE，具体调用链NEXT-DESIGN。
 3. N1先恢复Linux能力，独立定因f4s再原门复验与最终完整矩阵。Linux新VM尚是设计，不跳过能力预检/基线。
 4. N3真实Node32席位/content独立32预算、Custom1024帧/256KiB外层队列、SSH/hop排队/公平、共享vs分连接、1/3/5设备后台与手机能耗仍缺。不能把增加总资源当调度胜出或Noq模拟当Node SLO。
 5. N4默认北京HTTP/TLS同机、自家登记集中北京，香港默认无独立pkarr；已有多登记/选家/继任机制须复用，尊重only_mine和用户n0配置。两端全路/不对称/冷暖发现/故障域/容量实测与拓扑设计仍缺，不采购/部署。
