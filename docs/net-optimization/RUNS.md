@@ -437,3 +437,6 @@ N3道路双向因果校准测试已按先前协议写下，模型未改；contro
 
 
 **42558820303 Mac net-node在途**：clean783619dd、treef3b250de87c64b452ccf2dac6543eb63d677938a、snapshot27bfd24c3233e98ab8998f8056bbba3f8650e5c4、controle7258e57155da1618f0f3b00fd1e395f481b5f19。early格式patch及N3校准测试源码；Node profile不执行N3，结果未出，103th ref/mac-early-admission-formatted-42558820303已锚。
+
+
+42558820303终态 **SUCCESS**：根格式、net66pass/1ignored、hop9/wires10/journal28/dial_budget3全绿；treef3b250de/snapshot27bfd24c/controle7258e5已核，mac-early-admission-formatted-42558820303下载source/environment/raw/log/classification。early持锁期限由42557961726独立红转绿，normal控制保持绿；过期空锁两项为额外绿覆盖。N3测试文件只格式通过，未编译/校准；N2其他预算/取消边界仍缺。103 refs全部终态，下一net-congestion模型校准预期红。

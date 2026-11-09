@@ -15,7 +15,7 @@
 | 产品 | `/Volumes/disk0/Khor/worktrees/current/khor-net`，`feat/net`；恢复核实际HEAD/diff，本轮API入口已验证；37仍为72b1d891，N2锁等待候选随后提交，恢复核实际diff |
 | 控制 | `/Volumes/disk0/Khor/worktrees/current/khor-build-net`，`feat/net`；2e70c39fe6a70bbbd09b7434f90e6c2d62e84b16已push；历史run绑定各自control |
 | 基线 | `/Volumes/disk0/Khor/worktrees/current/khor-net-baseline`，detached6485cb83d3b1f0bb93d4633825dc956623d78af9；只允许paths/hop/lab/nat.rs、dev.py/netlab.sh六fixture；生产基线原样 |
-| 证据 | `/Volumes/disk0/Khor/evidence/net/`；source-refs.json现103条不可变source refs；仅42558820303在途 |
+| 证据 | `/Volumes/disk0/Khor/evidence/net/`；source-refs.json现103条不可变source refs；均已终态 |
 
 ## 执行通道现状
 
@@ -101,4 +101,6 @@ N3已发现旧共享FIFO延迟派发器可能跨方向阻塞，模型校准协�
 
 N3因果校准用例已按ACCEPTANCE冻结协议写入congestion.rs，尚未编译/执行；模型本身仍旧单FIFO。control e7258e57155da1618f0f3b00fd1e395f481b5f19已push：net-congestion先运行唯一校准用例并要求1pass/0fail，再执行三轮ignored测量；失败时不产后续计时log。本机driver桩检查1项通过（校准红即止、计时首轮红仍三轮全留），无本机Cargo/Rust。下一准确源先Mac net-node检查early候选与新增源码格式，再N3校准预期红；不可在校准前据模拟结果选择CC。
 
-**42558820303 early格式修正源Mac net-node在途**：base783619dd2bf1d034828f717bfb90f1f2b635a6a7 clean、treef3b250de87c64b452ccf2dac6543eb63d677938a、snapshot27bfd24c3233e98ab8998f8056bbba3f8650e5c4、controle7258e57155da1618f0f3b00fd1e395f481b5f19。含early修复/格式patch及N3模型校准测试（本profile仅格式/Node，不执行N3测试）。mac-early-admission-formatted-42558820303与103th ref已保存，恢复查该ID。
+**42558820303 early格式修正源Mac net-node SUCCESS**：base783619dd2bf1d034828f717bfb90f1f2b635a6a7 clean、treef3b250de87c64b452ccf2dac6543eb63d677938a、snapshot27bfd24c3233e98ab8998f8056bbba3f8650e5c4、controle7258e57155da1618f0f3b00fd1e395f481b5f19。含early修复/格式patch及N3模型校准测试（本profile仅格式/Node，不执行N3测试）。mac-early-admission-formatted-42558820303已核source/control并保存；根格式、net66pass/1ignored、hop9/wires10/journal28/dial_budget3全绿。normal/early持锁期限两项分别实际红转绿，N3仅格式通过、未编译/校准。
+
+下一步以e7258e5控制profile执行net-congestion：先实际UDP双向道路校准预期红，模型仍旧shared_fifo_v1；取红后修独立方向派发并显式版本，再校准绿/三轮完整v2采样。不要把尚未运行的模型/测量记为N3绿。N2除锁准入之外的冻结边界及N1 Linux原红、N4/N5均继续。
