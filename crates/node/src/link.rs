@@ -13518,10 +13518,6 @@ mod dial_budget {
                 warm.closed().await;
 
                 let incoming = endpoint.accept().await.unwrap();
-                // Keep the server's first handshake flight behind the
-                // client's early stream, even on a fast loopback scheduler.
-                // The is_0rtt precondition below must still prove it happened.
-                tokio::time::sleep(Duration::from_millis(100)).await;
                 let resumed = incoming.accept().unwrap().into_0rtt();
                 let (delayed, mut recv) = resumed.accept_bi().await.unwrap();
                 let was_early = recv.is_0rtt();
@@ -13587,7 +13583,9 @@ mod dial_budget {
             .await
             .unwrap()
             .unwrap();
-        assert!(was_early, "fixture must send a real resumed early request");
+        // Noq computes is_0rtt when this server task accepts the stream,
+        // so a fast handshake can clear it before the application runs.
+        eprintln!("server accepted stream while handshaking: {was_early}");
         let shared = tokio::time::timeout(Duration::from_secs(5), async {
             loop {
                 if let Some(conn) = node.wires.live(&peer.id, wires::Proto::Main) {
@@ -13603,6 +13601,15 @@ mod dial_budget {
         .await
         .unwrap();
         assert!(!asking.0.as_ref().unwrap().is_finished());
+        // Only Accepted with an outstanding answer waits after adoption;
+        // the fresh-handshake and Rejected paths return NotTaken. Observe
+        // the real task past a scheduler turn before testing its owner.
+        assert!(
+            tokio::time::timeout(Duration::from_millis(20), asking.0.as_mut().unwrap())
+                .await
+                .is_err(),
+            "fixture must reach Accepted with an outstanding answer"
+        );
         assert!(by.is_none_or(|by| std::time::Instant::now() < by));
         let mut task = asking.0.take().unwrap();
         let ended = match by {
@@ -13612,10 +13619,7 @@ mod dial_budget {
                     &mut task,
                 )
                 .await;
-                let ended = matches!(
-                    &observed,
-                    Ok(Ok(Early::Failed(DialFailure::CallerExpired)))
-                );
+                let ended = matches!(&observed, Ok(Ok(Early::Failed(DialFailure::CallerExpired))));
                 if observed.is_err() {
                     task.abort();
                     let _ = task.await;

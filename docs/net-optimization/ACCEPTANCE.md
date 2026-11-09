@@ -201,9 +201,11 @@ Mac便携网络入口（control6b1616c，已实际执行）通过--executor mac�
 ## N2真实Accepted回答取消回归（执行前冻结）
 
 `link::dial_budget::cancelling_an_accepted_early_answer_stops_only_its_stream`使用scratch Node、Minimal且禁relay/discovery的端点，server只绑127.0.0.1；先完成一条真实Sessions请求与应答，为同一client/server身份建立resumption cache。
-第二条请求必须在server观察为0RTT、已被Node adopt且回答仍等待，才进入取消观察；未满足前置条件是fixture失败，不是所有权行为红。
+第二条请求必须由server实际收到、已被Node adopt且真实ask_early在额外20ms观察内仍等待，才进入取消观察；生产的fresh/Rejected路径在adopt后直接返回NotTaken，只有Accepted带回答任务才继续等答。未满足前置是fixture失败，不是所有权行为红。server is_0rtt只保留观察值。
 取消并join真实ask_early调用后，500ms观察server发送流收到STOP_SENDING（Ok(Some(code))）；连接关闭/EOF不能替代该证据。随后普通ask_on Sessions必须在5s防挂内成功，Main连接stable_id保持相同、peer dial_failed为0、总请求严格3次（warmup/被取消读/独立读），最后关闭端点并停止fixture任务。
 500ms是取消观察容差而非产品SLO。server延迟回答、不关闭共享wire；原生产Accepted裸JoinHandle代码保留，先执行取实际红，再修所有权。已有scope40ms/300s和两锁回归仍同批运行，不扩展0RTT/重放白名单。
 STOP_SENDING观察按[Noq 1.3 SendStream::stopped](https://docs.rs/noq/1.3.0/noq/struct.SendStream.html#method.stopped)；本地只读源码、未运行Rust formatter/编译/测试。
 
 Accepted前置42566727617未成立，不能算取消行为红。为让本地调度下真正发出early数据，server接到第二次Incoming后延迟100ms才accept/发首TLS握手包，仍以is_0rtt检查为准；该fixture延迟不参与产品性能判断。新增同fixture的deadline变体：warmup后为ask_early传1秒绝对by，必须先adopt且仍在by之前；在by+500ms防挂内必须正常返回CallerExpired，并仍停止回答流、同wire独立请求成功/计数3/零peer失败。旧裸回答所有权保持待红。
+
+**前置修正依据（取新行为红前冻结）**：42566727617只有旧is_0rtt前置红；42567204795格式门失败未测试100ms延迟提议。准确依赖[Noq1.3 poll_accept源码](https://docs.rs/noq/1.3.0/src/noq/connection.rs.html#1147-1159)在应用accept时取is_handshaking，无法保证历史数据包的加密级别。撤回100ms延迟及is_0rtt硬前置，改上述实际Accepted路径与20ms pending观察；没有删除STOP_SENDING、CallerExpired、共享wire/请求计数/peer验收，也不声称该测试验证包级重放安全。详细推理保存evidence/net/accepted-answer-fixture-notes-20261109.md。

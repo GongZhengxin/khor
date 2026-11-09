@@ -503,3 +503,6 @@ N3道路双向因果校准测试已按先前协议写下，模型未改；contro
 
 
 **42567204795 Mac net-node延迟服务端握手fixture在途**：based3e9a6a8772211cc603c67be4c7d55f0babf4487 clean、tree68329fdd70be7901a43a3194c79b154002d7a29a、snapshot225a9db2aa9df1ca769618ea0d4d374e9b0028f8、control0cff9671fb2f80945423132e0df46995f6ff3198；114th ref/mac-accepted-answer-delayed-42567204795已锚。取消与1秒by两Accepted回归生产未修，待格式/编译及真实前置判定。
+
+
+42567204795终态仅**格式门失败**：deadline变体matches缩为一行，远端patch原样应用；准确source/control/ref已核，114 refs终态、未编译或执行七测试。随后官方Noq1.3 poll_accept源码明确is_0rtt在应用接纳当时取is_handshaking，不能当此前包加密级别证明；notes在结果取得前已保存。修正fixture以真实第二请求+Node adopt+调用继续pending20ms证明Accepted分支；撤回is_0rtt硬前置和100ms握手延迟，标志只观察。所有权生产、STOP/独立请求/计数/peer条件不改。下一准确源先取真实所有权红。
