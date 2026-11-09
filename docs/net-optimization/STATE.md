@@ -1,6 +1,6 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-09 22:14 UTC（本地2026-11-10）。root串行，无子智能体。
+更新：2026-11-09 22:17 UTC（本地2026-11-10）。root串行，无子智能体。
 
 完整目标仍是完成[PLAN](PLAN.md)的N0–N5，尚未完成。用户已授权实施/远端验证并多次要求继续；U14明确不能因goal服务paused或阶段通过自行停止。后台调度状态不是本轮停止/授权门，不另建目标，不伪造complete/blocked。速度和体验优先，个人可信设备网络；无合main、发布、中继采购/生产部署授权。
 
@@ -8,8 +8,10 @@
 
 ## 先核当前句柄，禁止盲重发
 
-- **当前Turing唯一重型任务249**：turing-20261109T221123Z-cf202137，PID1198443/child1198657，netlab-nat-rebind-lifecycle；basec01c72de/tree4d49350250ac97e03e0bac4b5974e1de2b97e949/snapshote3be1244d4741390d296205f1a5372c80f9d043c/controlfc204ac。候选功能4a0c359b。最后已实际编译、r0物理1/1绿，r1在途；原整个rebind.rs与独立严格合同SHA均核不变。
-- **250 Mac42709847858**，requesteb05eac32faa47e5bb25772d55ae925a，net-vendor，与249完整source/control一致，运行Noq整个lib、iroh remote_state与khor_home，非仅便携net-unit。终态按句柄核。
+- **249严格NAT实物理红绿闭合、250 Mac vendor同源全绿**：249 turing-20261109T221123Z-cf202137，136.20s/rc0/原group空；原整个fixture SHA ac97726906429a5dd63dd91b5c9ed99624c273d9a253f7facb916ffcf47e8a9b和同一独立严格合同字节未变，30/30实际warm remote streams选中新Direct :50002、0 cached/actual mismatch、实际refresh1次。124/124全部ok，after AB/BA p50 21115/21297us；首BA748962us仍需优化。250 Mac42709847858准确同snapshot/control，fmt/Noq438/iroh路径36/选家9全绿；source/transport/9control blobs/hash核。nat-tuple-red-green.json、249/nat-selection-contract.json留证；只有单病例/单轮，不冒称p99/整个U12完成。
+- **当前唯一Turing重型任务251**：turing-20261109T221609Z-bf323de3，netlab-peer-mobility，沿249完整source/control，PID按receipt。原peer_relay_replug_v1整fixture保持，复验middle换网与实际承载。252 Mac另跑同249源net-node，句柄待提交收据核；不同主机，不污染Turing计时。
+- **249已终态**：turing-20261109T221123Z-cf202137，PID1198443/child1198657，netlab-nat-rebind-lifecycle；basec01c72de/tree4d49350250ac97e03e0bac4b5974e1de2b97e949/snapshote3be1244d4741390d296205f1a5372c80f9d043c/controlfc204ac。候选功能4a0c359b。最后已实际编译、r0物理1/1绿，r1在途；原整个rebind.rs与独立严格合同SHA均核不变。
+- **250 Mac42709847858已终态绿**，requesteb05eac32faa47e5bb25772d55ae925a，net-vendor，与249完整source/control一致，运行Noq整个lib、iroh remote_state与khor_home，非仅便携net-unit。终态按句柄核。
 - 产品worktree `/Volumes/disk0/Khor/worktrees/current/khor-net`，feat/net；最新功能2654cbdf，后续增加诊断与文档，实际HEAD/diff以Git为准。control `/Volumes/disk0/Khor/worktrees/current/khor-build-net`，feat/net，已push **fc204ac4764fab1bcb71842b0e95ce9b49e4e7a5**。
 - **247已终态采证，无Turing在途**：turing-20261109T220331Z-f5000d4f，netlab-nat-rebind-lifecycle，PID以receipt为准。base3852c0cc/treeb6c2174e08297d6c1110de612f73575bff6bc09b/snapshotbe5032f83a7cc9b986ad8f3ffde5badb9f0b35a7/controlfc204ac；只加tuple mismatch诊断，旧行为保持。246已完整终态。
 - **248 Mac42708373196已终态全绿**，request0df1499e94ed49488b4a86e938c23ce0；与247同base/tree，但snapshot6cacbb659e00b3bc8550eca637f7a119262774d5（created_at不同，不称同完整snapshot）。便携net-node预检，结果按实际句柄核。
