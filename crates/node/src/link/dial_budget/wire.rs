@@ -53,7 +53,12 @@ impl Gate {
                 }
             }
         })));
-        Self { address, open, dropped, pump }
+        Self {
+            address,
+            open,
+            dropped,
+            pump,
+        }
     }
 
     async fn close(&mut self) {
@@ -118,15 +123,18 @@ impl Fixture {
         let (local, remote) = (local.unwrap(), remote.unwrap());
         node.wires
             .adopt(&peer.id, wires::Proto::Main, local.clone());
-        (Self {
-            _root: root,
-            node: Arc::new(node),
-            peer,
-            ep,
-            server,
-            local,
-            remote,
-        }, gate)
+        (
+            Self {
+                _root: root,
+                node: Arc::new(node),
+                peer,
+                ep,
+                server,
+                local,
+                remote,
+            },
+            gate,
+        )
     }
 
     fn line(&self) -> Line {
@@ -264,16 +272,23 @@ async fn observe_ordinary_expiry(within: Duration) {
     assert_eq!(counts.dial_failed, 0);
     assert_eq!(counts.answers_late, 0);
     assert_eq!(counts.retired_unanswered, 0);
-    assert!(heard_after > heard_before, "the peer's transport actually acknowledged");
+    assert!(
+        heard_after > heard_before,
+        "the peer's transport actually acknowledged"
+    );
     if within > patience {
-        assert!(tokio::time::Instant::now() >= by, "this control crosses the real ACK floor");
+        assert!(
+            tokio::time::Instant::now() >= by,
+            "this control crosses the real ACK floor"
+        );
     }
     assert_eq!(down, None);
     assert_eq!(backoff, None);
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn expiry_after_real_udp_silence_still_retires_the_dead_wire() {
+async fn abandoning_a_long_silent_exchange_still_retires_the_dead_wire() {
+    use std::future::Future;
     let (f, gate) = Fixture::new_via(true).await;
     let mut gate = gate.unwrap();
     assert!(f.local.close_reason().is_none() && f.remote.close_reason().is_none());
@@ -282,20 +297,35 @@ async fn expiry_after_real_udp_silence_still_retires_the_dead_wire() {
     tokio::time::sleep(Duration::from_millis(200)).await;
     let heard_before = wires::heard_count(&f.local);
     tokio::time::sleep(Duration::from_millis(100)).await;
-    assert_eq!(wires::heard_count(&f.local), heard_before, "gate fixture must first be quiet");
+    assert_eq!(
+        wires::heard_count(&f.local),
+        heard_before,
+        "gate fixture must first be quiet"
+    );
     let patience = wires::Patience::of(&f.local).ack;
     assert_eq!(patience, Duration::from_secs(4));
-    // Expire after the real ACK floor but before the next liveness beat can
-    // finish the all-path grace. The cancellation guard must do the retirement.
-    let by = tokio::time::Instant::now() + patience + Duration::from_millis(100);
-    let mut asking = Aborts(Some(tokio::spawn({
-        let node = f.node.clone();
-        let line = f.line();
-        crate::deadline::scope(by, async move {
-            node.exchange_on(&line, &Request::Sessions).await
-        })
-    })));
-    let answer = observed_by(&mut asking, by + Duration::from_secs(1)).await;
+    let grace = wires::ask_every_path(&f.local);
+    let line = f.line();
+    let by = tokio::time::Instant::now() + patience + grace + Duration::from_millis(100);
+    let mut asking = Box::pin(crate::deadline::scope(
+        by,
+        f.node.exchange_on(&line, &Request::Sessions),
+    ));
+    let pending = std::future::poll_fn(|cx| {
+        std::task::Poll::Ready(matches!(asking.as_mut().poll(cx), std::task::Poll::Pending))
+    })
+    .await;
+    assert!(pending, "the real exchange must enter its response wait");
+    // Keep the application future unpolled while transport I/O continues.
+    // This models an operation abandoned after a scheduler delay and makes
+    // Drop, rather than the inner liveness beat, own the retirement. Wait out
+    // both ACK patience and all-path grace; do not pin an early-retirement policy.
+    tokio::time::sleep_until(by + Duration::from_millis(100)).await;
+    assert_eq!(
+        f.node.wires.live(&f.peer.id, wires::Proto::Main).map(|c| c.stable_id()),
+        Some(f.local.stable_id())
+    );
+    drop(asking);
     let unheard = wires::heard_count(&f.local) == heard_before;
     let dropped = gate.dropped.load(Ordering::SeqCst);
     let remote_open = f.remote.close_reason().is_none();
@@ -304,11 +334,22 @@ async fn expiry_after_real_udp_silence_still_retires_the_dead_wire() {
     f.close().await;
     gate.close().await;
 
-    assert!(unheard, "fixture bypassed its UDP gate; this is not a blackhole");
-    assert!(dropped > 0, "the real request/probes must hit the closed gate");
-    assert!(remote_open, "fixture must not substitute a connection close for silence");
-    assert!(matches!(answer, Some(Err(Miss::CallerExpired))));
-    assert!(live.is_none(), "long real silence must not keep handing out a dead wire");
+    assert!(
+        unheard,
+        "fixture bypassed its UDP gate; this is not a blackhole"
+    );
+    assert!(
+        dropped > 0,
+        "the real request/probes must hit the closed gate"
+    );
+    assert!(
+        remote_open,
+        "fixture must not substitute a connection close for silence"
+    );
+    assert!(
+        live.is_none(),
+        "long real silence must not keep handing out a dead wire"
+    );
     assert_eq!(counts.retired_unanswered, 1);
     assert_eq!(counts.retired_closed, 0);
     assert_eq!(counts.reads_retried, 0);
