@@ -588,3 +588,8 @@ Mac139th42594133373仅format门失败；baseef90/tree3f3c4c52/snapshot800a54f8/c
 150th turing-20261109T105401Z-df35bc80 **SUCCESS**：base25d0c803/tree6805b7b7/snapshote0a42573/controlb998；fmt/net66+1ignored/hop9/wires10/journal29/dial_budget21全绿（46.37s）。143rd真正F8红的函数逐字不变→绿；F7按f7_owned_confirmation_v2的真实黑洞、std thread Drop独立确认及Weak owner/replacement两回归均过。151st Mac42605391960与150准确source完全相同，**SUCCESS**，同基础/29journal/19便携全绿（32.31s），Linux F7/F8排除。两边全report/tuple/control/transport/group/hash采核；只证明Node子集，完整N2及SLO未收。
 
 旧stalls130/131未launch已superseded，保留ref/receipt且tests_executed=false。新152nd turing-20261109T110456Z-dee800e0 candidate stalls已launch PID288279，source同150；153rd turing-20261109T110456Z-42e6ec16 baseline仅stage、未launch，复用137th6485原生产+六fixture/source97040f31/snapshot90126283，两者controlb998、原p1s/p5/repeat1/test_threads1不变，五实际fixture逐字一致。152已实核live，编译55.96秒后进入p1s；终态采证后才launch153。153refs=151终态+1在途+1staged。
+
+
+152nd turing-20261109T110456Z-dee800e0 candidate stalls终态**SUCCESS2/2**，准确source同150/151（base25d0c803/tree6805b7b7/snapshote0a42573/controlb998），1193.92秒、场景1135.16秒。原p1s 600秒/20×300ms，alpha/beta0/0切路、零退役；最慢按键3.8秒、12打洞、3449包/1335065B，旧p1s不对这些体验/开销值设门，不能宣称完整体验绿。p5 150/300/600ms各4次，三档零选relay/零打洞、最慢279.9/518.6/992.0ms。全部report/source/environment/driver/bundle/原group/hash采核，classification保留缺口。host load before4.90/6.36/7.33，after5.58/8.26/8.90。
+
+153rd baseline turing-20261109T110456Z-42e6ec16随后串行launch **PID327881/child327922**，已实核/proc与network-driver，仍用tree97040f31/snapshot90126283/controlb998原门。154th candidate hop turing-20261109T112647Z-c5e5e53d复用150准确snapshot，仅stage未launch；原单线程三轮/原hop occupancy v2，待153终态采证后再启动。154refs=152终态+baseline153在途+hop154 staged，不重发。

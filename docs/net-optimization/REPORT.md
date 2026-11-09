@@ -195,3 +195,10 @@ base25d0c803/tree6805b7b7/snapshote0a42573/controlb998：Turing150th fmt/编译/
 正常exchange和取消共享Slot拥有的一份全路径probe/count/grace，调用过期不跳过宽限；fresh receive、replacement、wire清理中止旧确认，任务仅Weak持有，原runtime handle允许在std thread Drop发起确认。F7保留同真实黑洞及一次退役/远端open/零其他故障，仅观察改为owner自身确认后退役，已先记录v2协议；replacement后真实Sessions成功、pending不保留owner也通过。独立确认仍可在黑洞证据充分后记Unanswered，不能把CallerExpired本身当peer故障。
 
 150预算子集46.37秒、151子集32.31秒是测试耗时，不是体验SLO。只是这一边界红→绿，resident tick较长grace协调、Accepted长取消、其余N2与原hop回退/长卡顿、N3–N5仍待；新源CPU对照152→153正在推进，不提前给性能结论。
+
+
+### 2026-11-09 Turing 修复后候选CPU停顿：原两门绿，体验仍有缺口
+
+152nd turing-20261109T110456Z-dee800e0与Linux150/Mac151同准确源码（base25d0c803/tree6805b7b7/snapshote0a42573，controlb998），原single-thread/repeat1的p1s/p5 **2/2**。600秒20×300ms CPU停顿，alpha/beta0/0路径移动、零退役；但按键最慢3.8秒，alpha12打洞/3449包/1335065B。p1s原门只约束移动/退役等原assert，不因绿色忽略长尾与开销。p5 150/300/600ms各4次，三档均零relay移动/零打洞，最慢279.9/518.6/992.0ms。
+
+完整report与source/driver/bundle/hash/原进程组已采核，classification存run目录。总1193.92秒，host load before4.90/6.36/7.33、after5.58/8.26/8.90；baseline153仍在途，尚无本轮前后因果结论，不跨旧硬件/源比较。原报告只保留scenarios/task/build日志，无额外逐包journal；打洞/长按键定因需后续独立诊断。完整N0–N5、hop/f4i、交互批量、真实手机/能耗仍未收口。

@@ -1,8 +1,8 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-09 11:14 UTC；root串行，无子智能体。活动目标“完成计划”仍active。
+更新：2026-11-09 11:30 UTC；root串行，无子智能体。活动目标“完成计划”仍active。
 
-**当前Turing：candidate stalls152nd turing-20261109T110456Z-dee800e0，PID288279。** 已实核/proc、准确source/control，编译55.96秒后原p1s/p5单线程场景在跑。baseline153rd turing-20261109T110456Z-42e6ec16已stage、未launch；两角色五实际fixture逐字一致，原门/driver不变。F8取消误退役已143rd实红→150th Linux21全绿；151st Mac19也全绿，二者同snapshot e0a42573/tree6805b7b7/base25d0c803/controlb998。旧130/131 stalls从未launch，因源更新已superseded，保留全部refs。153 refs=151终态+1在途+1 staged。完整N0–N5未完成。
+**当前Turing：baseline stalls153rd turing-20261109T110456Z-42e6ec16，PID327881/child327922。** 已实核/proc、准确source/control，正在network-driver。candidate152nd turing-20261109T110456Z-dee800e0已终态SUCCESS2/2，1193.92秒；原p1s 600秒/20×300ms、0/0切路/零退役，但最慢按键3.8秒、12次打洞/3449包/1335065B，不能据旧门绿宣称体验收口。p5三档150/300/600ms各4次，零切relay/零打洞，最慢279.9/518.6/992.0ms。完整report/源码/driver/bundle/hash/原进程组已采核。两角色五实际fixture逐字一致，原门/driver不变。154th turing-20261109T112647Z-c5e5e53d修复后同准确源hop三轮仅stage未launch，待baseline终态采证后串行运行。F8取消误退役已143rd实红→150th Linux21全绿；151st Mac19也全绿，二者同snapshot e0a42573/tree6805b7b7/base25d0c803/controlb998。154 refs=152终态+1在途+1 staged。完整N0–N5未完成。
 完整范围：[PLAN](PLAN.md)；约束：[REQUIREMENTS](REQUIREMENTS.md)；运行记录：[RUNS](RUNS.md)；原始结果：[REPORT](REPORT.md)。
 此前STATE原样归档[Accepted轮历史](HISTORY-20261109-before-accepted-green.md)与[本轮历史](HISTORY-20261109-before-probe-green.md)及[Turing141前历史](HISTORY-20261109-before-turing-141.md)与[共享确认绿前历史](HISTORY-20261109-before-shared-confirmation-green.md)；历史在途/候选文字仅代表当时状态，恢复以本页和实际工作区为准。
 
@@ -17,7 +17,7 @@
 | 产品 | `/Volumes/disk0/Khor/worktrees/current/khor-net`，`feat/net`；当前生产候选25d0c803d153cb3476125ec2a6a197460e558911；共享确认修复已有Linux21/Mac19同源绿；选路vendor未改，准确源全矩阵待验，恢复核HEAD/diff |
 | 控制 | `/Volumes/disk0/Khor/worktrees/current/khor-build-net`，`feat/net`，b9984797f412f352f3c76f99c47ade3ee10f68e9已push；新增net-node SSH任务白名单，profile未改；新CPU两run用b998；历史hop/recovery仍control59dc223，不能回写历史控制版本 |
 | 基线 | `/Volumes/disk0/Khor/worktrees/current/khor-net-baseline`，detached6485cb83d3b1f0bb93d4633825dc956623d78af9；仅paths/hop/lab/nat.rs、dev.py/netlab.sh六fixture，生产原样 |
-| 证据 | `/Volumes/disk0/Khor/evidence/net/`；source-refs.json153条不可变refs；151终态、candidate stalls152在途、baseline153 staged。每次源变化前锚ref；SSH不是GitHub run |
+| 证据 | `/Volumes/disk0/Khor/evidence/net/`；source-refs.json154条不可变refs；152终态、baseline stalls153在途、candidate hop154 staged。每次源变化前锚ref；SSH不是GitHub run |
 
 ## N2：期限/流/探针与共享活性确认
 
@@ -79,7 +79,7 @@ host实际VZ=1、16GiB/10CPU，installed guard实际50/40GiB、Mac target100GiB�
 
 N0部分、N1仍红、N2部分、N3部分、N4未完成、N5部分；完整PLAN范围保留，不以本批单元绿结束目标。
 
-1. **当前Turing串行CPU对照**：先收152nd candidate完整p1s/p5与report，再launch已stage的153rd baseline。同b998/固定Rust1.95/原single-thread/repeat1/门，五实际fixture逐字一致；source150是修复后生产，baseline复用137th原6485+六fixture。不得重启当前任务，不并跑重型构建或计时。之后修复后源recovery/hop/dynamic/full矩阵及f4i连接身份定因仍需推进。
+1. **当前Turing串行CPU对照**：152nd candidate已采证2/2，153rd baseline已launch PID327881、实核live。先收baseline终态和完整report后，launch已stage的154th hop三轮。同b998/固定Rust1.95/原single-thread与门，五实际fixture逐字一致；candidate source同150，baseline复用137th原6485+六fixture。不得重启当前任务，不并跑重型构建或计时。CPU对照需保留3.8秒按键/12打洞缺口；之后修复后源recovery/dynamic/full矩阵及f4i连接身份定因仍需推进。
 2. **N2剩余合同**：F8本批已红→绿，F7真黑洞/外部thread取消/owner与替换已实证；update10秒与200ms by已绿。长工作、多阶段、hop两middle合计3秒、dial输者和延迟候选资源/过期、独立后台预算仍缺。还要核resident tick独立silence/network门与较长probe grace的协调，以及Accepted长无应答取消，不能由本批直接Node合同替代。pair/doctor两层已修；代理listener/传输job/Visit/nudge有意独立，不继承结束的前台by。
 3. **IPC边界**：client Op外层与serve接收后deadline起点不同，尚未跨进程传递剩余预算或取消。正常exchange本来就shutdown发送半边，服务端EOF不是取消；不得为贯通而重放已发送写请求。具体原源码hash见deadline-continuation-20261109。
 4. **N1**：Turing已恢复产品验证；旧候选hop8/9、baseline7/9的红及约10秒/91.4秒体验缺口保留；本次owner修复后的准确源完整矩阵、连接身份RCA仍待。Mac单元不能替代namespace/netem/nft实测。
@@ -91,7 +91,7 @@ N0部分、N1仍红、N2部分、N3部分、N4未完成、N5部分；完整PLAN�
 
 ## 证据与恢复规则
 
-先核worktree/branch/HEAD/diff、当前run与准确回执；以本页顶端当前任务为准，历史在途文字仅在归档中保留。153refs=151终态+1在途+1 staged；恢复按run/path/PID实核，SSH观察失败须重查同句柄，不重启。
+先核worktree/branch/HEAD/diff、当前run与准确回执；以本页顶端当前任务为准，历史在途文字仅在归档中保留。154refs=152终态+1在途+1 staged；恢复按run/path/PID实核，SSH观察失败须重查同句柄，不重启。
 `git rev-parse refs/khor/net-evidence/<run>:source`必须等于回执tree；只git show读容器，不checkout覆盖/push本地证据refs。失败明确分format/compile/fixture/行为/执行器；tests_executed只按实际子集，历史红不删除。
 Mac source/bundle分支只在终态、证据留存且所有权/SHA匹配后清理；复用源的请求不拥有原源分支。原attempt不覆盖。
 外盘缺失只读`git show feat/net:docs/net-optimization/STATE.md`与PLAN；原外盘未提交内容不能按摘要覆盖。其他治理沿中央STATE/RESUME，不混授权。
@@ -103,14 +103,15 @@ Mac source/bundle分支只在终态、证据留存且所有权/SHA匹配后清�
 | 143 / turing-20261109T100821Z-08748d90 | base5aa96708/tree42050b56/snapshoted287397/controlb998 | 真实F8红，16pass1fail；全部隔离/两请求/时序前置先过，原report保留 |
 | 150 / turing-20261109T105401Z-df35bc80 | base25d0c803d153cb3476125ec2a6a197460e558911/tree6805b7b71472b9a872721b00acd744081f23507e/snapshote0a42573bba599f022e82cb6c3b039f2897c34fd/controlb9984797f412f352f3c76f99c47ade3ee10f68e9 | SUCCESS Linux21；fmt/net66+1ignored/hop9/wires10/journal29，原group/全部report已采核 |
 | 151 / Mac42605391960 | 与150完全同snapshot/tree/base/control，独立request50938337986345e1ad6f1d794af852fa | SUCCESS Mac19；同既有子集/29journal绿，Linux F7/F8排除；完整report/transport已采核 |
-| 152 / turing-20261109T110456Z-dee800e0 | 与150同source、controlb998 | candidate netlab-stalls已launch PID288279，child288323，p1s/p5运行中 |
-| 153 / turing-20261109T110456Z-42e6ec16 | base6485cb83d3b1f0bb93d4633825dc956623d78af9/tree97040f31c547e90bf21703a396d14bda455c17c2/snapshot9012628386be6fc6b9bdc5ca15f4558d79d2f16c/controlb998 | baseline netlab-stalls仅stage、未launch，待152终态采证后启动 |
+| 152 / turing-20261109T110456Z-dee800e0 | 与150同source、controlb998 | SUCCESS2/2，完整report已采；p1s0/0切路/零退役，但3.8秒按键/12次打洞，p5三档全绿；不是完整体验绿 |
+| 153 / turing-20261109T110456Z-42e6ec16 | base6485cb83d3b1f0bb93d4633825dc956623d78af9/tree97040f31c547e90bf21703a396d14bda455c17c2/snapshot9012628386be6fc6b9bdc5ca15f4558d79d2f16c/controlb998 | baseline netlab-stalls已launch PID327881/child327922，原/proc与network-driver准确source实核，待终态 |
+| 154 / turing-20261109T112647Z-c5e5e53d | 与150完全同source/controlb998 | candidate netlab-hop仅stage未launch，hop_occupancy_started_v2、原单线程三轮，排baseline153之后 |
 
 F8固定函数与红源逐字相同，SHA与两个snapshot核见evidence下f8-source-identity-red143-green150.json。F7的v2观察改变已先写ACCEPTANCE，仍同namespace端口丢弃/零新收包/远端open/一次unanswered/零其他故障。150下21合同46.37秒、151下19合同32.31秒均是子集运行时，不是产品SLO。
 
 147th只是format红；148th Turing与149th Mac同旧snapshot ef83ab11，仅node编译Arc未限定红（net66绿，没执行node合同）；源码已仅补std::sync::Arc后得到150/151绿。原始失败与精确source/control/report均保留，不混为行为红。原旧stalls130/131未launch已标superseded_not_launched，没有测试红/绿。
 
-新CPU两角色五fixture SHA在turing-stalls-shared-probe-fixture-identity.json，Bash network.sh与原59dc版本逐字相同；不是改实验门。队列evidence/net/turing-next-matrix.json已替换为152→153，原队列归档before-shared-confirmation-stalls。root=/tmp/khor-netlab-feat-net-1110；每run runs/<id>。恢复先核execution.json与/proc/PID/cmdline匹配input/network-ssh-runner.py；SSH观察失败重查同句柄，不重发。终态用control scripts/collect-network-ssh.py对应receipt采证；原group无live后再启动基线，当前无其他Turing重型任务。
+新CPU两角色五fixture SHA在turing-stalls-shared-probe-fixture-identity.json，Bash network.sh与原59dc版本逐字相同；不是改实验门。队列evidence/net/turing-next-matrix.json已替换为152→153，原队列归档before-shared-confirmation-stalls。root=/tmp/khor-netlab-feat-net-1110；每run runs/<id>。恢复先核execution.json与/proc/PID/cmdline匹配input/network-ssh-runner.py；SSH观察失败重查同句柄，不重发。终态用control scripts/collect-network-ssh.py对应receipt采证；baseline153原group无live后再启动candidate hop154，当前无其他Turing重型任务。
 
 旧corrected hop136th候选8/9（f4s3/3、f4i2/3）与137th基线7/9（f4s1/3、f4i3/3）都已采证，whole-source观测不证明单patch因果；新owner源尚未跑这些场景。新journal Path/Retired wire身份兼容已过29测试，真实多连接关联定因仍待；不能再用旧注释“一peer一份路径选择”推断当前Iroh，它按conn分配path_state。
 

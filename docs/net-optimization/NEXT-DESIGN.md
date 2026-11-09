@@ -224,3 +224,10 @@ F8现已在Turing143rd取得真正行为红（2401ms到达、4101ms过期、零�
 ### 共享确认本批已实证，后续仍须保留的边界
 
 150/151同源Linux21/Mac19全绿，F8不改函数，F7 v2与Weak owner/replacement通过；实现与证据见STATE。只覆盖本批直接Node及其流/确认生命周期，不能把下列复核遗漏：resident tick仍有独立silence/network条件，当全路grace比其silence门更长时需验证协调；Accepted后长无应答的取消也需独立真实覆盖。Idle、正常运行中多次quiet epoch、替换和退出后的任务/流量成本在N3计量，不用字段数量替代实际成本。
+
+
+### 2026-11-09 11:30 UTC：两处剩余活性边界静态复核
+
+准确生产源25d0c803中，Wires::tick对held slot仍直接依据quiet/silent或network change门close，未先检查/加入Slot::probe；独立确认的grace可长达30秒，而network change低RTT门可为3秒，因此必须以真实连接/网络场景验证两者不会抢先判死。这是静态风险，尚未取得行为红，也未改生产。served入站弱连接也有独立静默close，不能只检查held路径。
+
+ask_early的Accepted分支在adopt后继续持有Aborts并等待原by，已有短取消/到期证明STOP本流和保留健康wire。该分支尚未建立RetireUnheard/Slot确认，内部spawn只以req.budget等read_to_end；长时间无收包后取消的死wire保护不能由普通exchange F7推定。下一独立回归应先到真实Accepted/adopt/响应pending，再私有netns按该UDP端口双向drop，确认heard不变/真实包命中/drop前远端open，取消后观察owner全路grace内恰一次退役，同时保留现有健康Accepted控制。不要把局部静态发现记作已重现故障或修改已在途CPU/hop快照。
