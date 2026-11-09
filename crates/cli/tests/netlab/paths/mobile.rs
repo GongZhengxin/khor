@@ -1,6 +1,6 @@
 //! Real Node directory reads across an isolated IPv6 address replacement.
-use super::*;
 use super::mobility::{addresses, command, entry};
+use super::*;
 use std::io::Write;
 use std::net::Ipv6Addr;
 
@@ -12,13 +12,24 @@ fn ipv6_only(n: &LabNode) {
     let mut cmd = Command::new("nft");
     cmd.args(["-f", "-"]).stdin(Stdio::piped());
     let mut child = n.dev.spawn_command_sync(cmd).unwrap();
-    child.stdin.take().unwrap().write_all(rules.as_bytes()).unwrap();
-    assert!(child.wait().unwrap().success(), "install owned namespace isolation");
+    child
+        .stdin
+        .take()
+        .unwrap()
+        .write_all(rules.as_bytes())
+        .unwrap();
+    assert!(
+        child.wait().unwrap().success(),
+        "install owned namespace isolation"
+    );
     isolation(n);
 }
 
 fn isolation(n: &LabNode) {
-    let output = command(&n.dev, &["nft", "-j", "list", "table", "inet", "mobile_ipv4"]);
+    let output = command(
+        &n.dev,
+        &["nft", "-j", "list", "table", "inet", "mobile_ipv4"],
+    );
     assert!(output.status.success());
     let table: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
     eprintln!("[netlab-mobile-isolation] {} {table}", n.name);
@@ -43,12 +54,22 @@ fn fixture(n: &LabNode) {
     std::fs::write(dir.join(format!("peer-{}", n.id)), CONTENT).unwrap();
 }
 
-async fn reads(case: &str, from: &LabNode, to: &LabNode, count: usize) -> (Vec<Duration>, Vec<String>) {
+async fn reads(
+    case: &str,
+    from: &LabNode,
+    to: &LabNode,
+    count: usize,
+) -> (Vec<Duration>, Vec<String>) {
     let mut durations = Vec::new();
     let mut errors = Vec::new();
     for _ in 0..count {
         let name = to.name.clone();
-        let path = to.home.0.join("mobile-fixture").to_string_lossy().into_owned();
+        let path = to
+            .home
+            .0
+            .join("mobile-fixture")
+            .to_string_lossy()
+            .into_owned();
         let marker = format!("peer-{}", to.id);
         let (took, error) = crate::attempts::measure(
             case,
@@ -57,13 +78,18 @@ async fn reads(case: &str, from: &LabNode, to: &LabNode, count: usize) -> (Vec<D
             Duration::from_secs(30),
             from.with(move |node| async move {
                 let (_, entries, truncated) = node.ls_of(&name, &path).await?;
-                if !truncated && entries.iter().any(|e| e.name == marker && !e.dir && e.size == CONTENT.len() as u64) {
+                if !truncated
+                    && entries
+                        .iter()
+                        .any(|e| e.name == marker && !e.dir && e.size == CONTENT.len() as u64)
+                {
                     Ok(())
                 } else {
                     Err("the requested peer's fixture marker is missing".to_owned())
                 }
             }),
-        ).await;
+        )
+        .await;
         durations.push(took);
         if let Some(error) = error {
             errors.push(error);
@@ -93,7 +119,14 @@ fn summary(result: &(Vec<Duration>, Vec<String>)) -> serde_json::Value {
 
 fn diagnostics(n: &LabNode, peer: &LabNode) {
     for (scope, events) in [("peer", n.journal(Some(peer))), ("here", n.journal(None))] {
-        for event in events.into_iter().rev().take(100).collect::<Vec<_>>().into_iter().rev() {
+        for event in events
+            .into_iter()
+            .rev()
+            .take(100)
+            .collect::<Vec<_>>()
+            .into_iter()
+            .rev()
+        {
             eprintln!("[netlab-mobile-journal] {} {scope} {event}", n.name);
         }
     }
@@ -127,32 +160,53 @@ async fn session(s: &str, a: &LabNode, b: &LabNode) -> Result<serde_json::Value,
             tokio::time::sleep(Duration::from_millis(500)).await;
         }
         Ok(())
-    }).await.map_err(|_| "IPv6-only preparation exceeded 120 seconds".to_owned())??;
+    })
+    .await
+    .map_err(|_| "IPv6-only preparation exceeded 120 seconds".to_owned())??;
     crate::attempts::phase(s, "ipv6_ready", now_ms());
     let before_ab = reads(&format!("{s}-before-ab"), a, b, 30).await;
     let before_ba = reads(&format!("{s}-before-ba"), b, a, 30).await;
     if !complete(&before_ab, 30) || !complete(&before_ba, 30) {
-        return Err(format!("baseline failed: ab {} ba {}", summary(&before_ab), summary(&before_ba)));
+        return Err(format!(
+            "baseline failed: ab {} ba {}",
+            summary(&before_ab),
+            summary(&before_ba)
+        ));
     }
     let old = a.dev.ip6().ok_or("a needs IPv6")?;
     let (before_v4, before_v6) = state(a, "before");
     let (interface, info) = entry(&before_v6, old).ok_or("old IPv6 is absent")?;
     let prefix = info["prefixlen"].as_u64().ok_or("prefix missing")?;
-    if prefix > 120 { return Err("unsupported calibration prefix".to_owned()); }
+    if prefix > 120 {
+        return Err("unsupported calibration prefix".to_owned());
+    }
     let mut octets = old.octets();
     octets[15] ^= 64;
     let new = Ipv6Addr::from(octets);
-    if entry(&before_v6, new).is_some() { return Err("replacement address already exists".to_owned()); }
+    if entry(&before_v6, new).is_some() {
+        return Err("replacement address already exists".to_owned());
+    }
     let added = format!("{new}/{prefix}");
     crate::attempts::phase(s, "address_add_started", now_ms());
-    let output = command(&a.dev, &["ip", "-6", "address", "add", &added, "dev", &interface]);
-    if !output.status.success() { return Err("could not add owned IPv6".to_owned()); }
+    let output = command(
+        &a.dev,
+        &["ip", "-6", "address", "add", &added, "dev", &interface],
+    );
+    if !output.status.success() {
+        return Err("could not add owned IPv6".to_owned());
+    }
     let due = Instant::now() + Duration::from_secs(10);
     loop {
         let (_, info) = entry(&addresses(&a.dev, "-6"), new).ok_or("new IPv6 is absent")?;
-        if info["dadfailed"] == serde_json::Value::Bool(true) { return Err("new IPv6 DAD failed".to_owned()); }
-        if info["tentative"] != serde_json::Value::Bool(true) { break; }
-        if Instant::now() >= due { return Err("new IPv6 did not become ready".to_owned()); }
+        if info["dadfailed"] == serde_json::Value::Bool(true) {
+            return Err("new IPv6 DAD failed".to_owned());
+        }
+        if info["tentative"] != serde_json::Value::Bool(true) {
+            break;
+        }
+        if Instant::now() >= due {
+            return Err("new IPv6 did not become ready".to_owned());
+        }
         tokio::time::sleep(Duration::from_millis(100)).await;
     }
     let (added_v4, added_v6) = state(a, "added");
@@ -161,8 +215,13 @@ async fn session(s: &str, a: &LabNode, b: &LabNode) -> Result<serde_json::Value,
     }
     let removed = format!("{old}/{prefix}");
     crate::attempts::phase(s, "address_remove_started", now_ms());
-    let output = command(&a.dev, &["ip", "-6", "address", "del", &removed, "dev", &interface]);
-    if !output.status.success() { return Err("could not remove old owned IPv6".to_owned()); }
+    let output = command(
+        &a.dev,
+        &["ip", "-6", "address", "del", &removed, "dev", &interface],
+    );
+    if !output.status.success() {
+        return Err("could not remove old owned IPv6".to_owned());
+    }
     crate::attempts::phase(s, "address_removed", now_ms());
     let first_ab_case = format!("{s}-first-ab");
     let first_ba_case = format!("{s}-first-ba");
@@ -176,8 +235,14 @@ async fn session(s: &str, a: &LabNode, b: &LabNode) -> Result<serde_json::Value,
     let (after_v4, after_v6) = state(a, "removed");
     isolation(a);
     isolation(b);
-    let new_check = command(&b.dev, &["ping", "-6", "-n", "-c", "1", "-W", "2", &new.to_string()]);
-    let old_check = command(&b.dev, &["ping", "-6", "-n", "-c", "1", "-W", "2", &old.to_string()]);
+    let new_check = command(
+        &b.dev,
+        &["ping", "-6", "-n", "-c", "1", "-W", "2", &new.to_string()],
+    );
+    let old_check = command(
+        &b.dev,
+        &["ping", "-6", "-n", "-c", "1", "-W", "2", &old.to_string()],
+    );
     let report = serde_json::json!({
         "revision": REVISION, "old": old.to_string(), "new": new.to_string(),
         "before_ab": summary(&before_ab), "before_ba": summary(&before_ba),
@@ -190,10 +255,16 @@ async fn session(s: &str, a: &LabNode, b: &LabNode) -> Result<serde_json::Value,
         "old_ping_stderr": String::from_utf8_lossy(&old_check.stderr),
     });
     eprintln!("[netlab-mobile-result] {report}");
-    if !complete(&first_ab, 1) || !complete(&first_ba, 1)
-        || !complete(&after_ab, 30) || !complete(&after_ba, 30)
-        || before_v4 != after_v4 || entry(&after_v6, old).is_some() || entry(&after_v6, new).is_none()
-        || !new_check.status.success() || old_check.status.code() != Some(1) {
+    if !complete(&first_ab, 1)
+        || !complete(&first_ba, 1)
+        || !complete(&after_ab, 30)
+        || !complete(&after_ba, 30)
+        || before_v4 != after_v4
+        || entry(&after_v6, old).is_some()
+        || entry(&after_v6, new).is_none()
+        || !new_check.status.success()
+        || old_check.status.code() != Some(1)
+    {
         return Err(format!("IPv6-only business migration incomplete: {report}"));
     }
     Ok(report)
@@ -205,10 +276,27 @@ async fn mv6_overlap_keeps_bidirectional_reads_without_an_ipv4_backup() {
     let s = "mobile-v6";
     let lab = Lab::new().await.unwrap();
     let relay = relay(&lab, s, "relay", Some(Duration::from_millis(100))).await;
-    let left = lab.add_router("left").preset(RouterPreset::Public).ip_support(IpSupport::DualStack).build().await.unwrap();
-    let right = lab.add_router("right").preset(RouterPreset::Public).ip_support(IpSupport::DualStack).build().await.unwrap();
+    let left = lab
+        .add_router("left")
+        .preset(RouterPreset::Public)
+        .ip_support(IpSupport::DualStack)
+        .build()
+        .await
+        .unwrap();
+    let right = lab
+        .add_router("right")
+        .preset(RouterPreset::Public)
+        .ip_support(IpSupport::DualStack)
+        .build()
+        .await
+        .unwrap();
     let da = lab.add_device("a").uplink(left.id()).build().await.unwrap();
-    let db = lab.add_device("b").uplink(right.id()).build().await.unwrap();
+    let db = lab
+        .add_device("b")
+        .uplink(right.id())
+        .build()
+        .await
+        .unwrap();
     let a = node(s, da, "mobile-a", &[&relay], &[]).await;
     let b = node(s, db, "mobile-b", &[&relay], &[]).await;
     fixture(&a);
@@ -219,5 +307,8 @@ async fn mv6_overlap_keeps_bidirectional_reads_without_an_ipv4_backup() {
     diagnostics(&b, &a);
     let ok = matches!(&checked, Ok(Ok(_)));
     result(s, ok, format!("{REVISION} {checked:?}"));
-    assert!(ok, "complete bidirectional business reads across IPv6 replacement");
+    assert!(
+        ok,
+        "complete bidirectional business reads across IPv6 replacement"
+    );
 }

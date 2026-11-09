@@ -4,6 +4,9 @@
 
 ## 当前源码与已收齐证据
 
+- **216已实际启动Turing Node迁移用例**：`turing-20261109T195955Z-5d3a0f91`，base8f72d7a5/treeb2c6d97b/snapshot21183b84/control5bc236867e97cfb72034cc91b873759aef5eb518。格式前置先跑，之后才编译/业务；所有请求原30s，准备120s、scenario240s资源界限。未知/format/compile/前置/行为分开归类，不预记通过；必须按同句柄采证后继续，不因阶段通过或goal服务paused停工。
+
+
 - **用户U14要求不停下，已继续实际业务迁移**：新增ignored paths::mobile::mv6_overlap_（ipv6_node_overlap_v1），两fresh Node及各自IPC/唯一fixture；mesh后两端eth0阻断全部外部IPv4，loopback保留，IPv4直连/HTTP Relay无备路。先setup正控+Direct连续10秒，双向各30基线；A同prefix加新IPv6/ready后删旧，立即双向首请求，再双向各30，原30秒caller预算/完整outcomes，最后才做旧址ping负控。首轮只是业务可达/记录校准，非新造恢复SLO/同wire保证；尚未远端format/编译/运行。215裸包fixture仅三个helper可见性变化、主体不动，老profile不变。下一步Turing自身format前置→编译→实际病例；阶段通过不再当停止条件。
 
 

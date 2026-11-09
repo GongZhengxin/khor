@@ -22,7 +22,10 @@ pub(super) fn addresses(dev: &Device, family: &str) -> serde_json::Value {
     serde_json::from_slice(&output.stdout).unwrap()
 }
 
-pub(super) fn entry(snapshot: &serde_json::Value, ip: Ipv6Addr) -> Option<(String, serde_json::Value)> {
+pub(super) fn entry(
+    snapshot: &serde_json::Value,
+    ip: Ipv6Addr,
+) -> Option<(String, serde_json::Value)> {
     for iface in snapshot.as_array()? {
         for info in iface["addr_info"].as_array()? {
             if info["local"]
