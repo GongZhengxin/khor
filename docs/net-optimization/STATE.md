@@ -97,3 +97,6 @@ Mac source/bundle分支只在终态、证据留存且所有权/SHA匹配后清�
 
 
 42569493787终态仅**格式门失败**：新增wire fixture的adopt链与一处matches缩进，远端patch原样应用；准确source/control/ref已核，117 refs终态，未编译或执行新4/旧7测试。生产不变，继续新源验证覆盖。
+
+
+**42569954515 Mac net-node普通wire格式修正源在途**：basef42121b51e5ceb5252dd8594a8f6523553c33450 clean、treef198bbd5b488cf3f4e59f15b2ac1c77f6b11a1cd、snapshot40418eb1f61e2a436f583e846fc766f89e4bdfec、control0cff9671fb2f80945423132e0df46995f6ff3198；118th ref/mac-ordinary-wire-formatted-42569954515已锚。生产仍与2fc650b3相同，11预算测试待实际结果。
