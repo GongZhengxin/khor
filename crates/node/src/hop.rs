@@ -220,6 +220,28 @@ impl Drop for Asking {
     }
 }
 
+/// A prepared stream still belongs to its opening future until the
+/// watcher accepts the handoff. Cancellation removes only this generation.
+struct PendingHop {
+    links: khor_net::carry::Links,
+    peer: EndpointId,
+    via: EndpointId,
+    attachment: u64,
+    committed: bool,
+}
+
+impl Drop for PendingHop {
+    fn drop(&mut self) {
+        if !self.committed {
+            self.links.detach_attached(
+                &self.peer,
+                Carrier::Hop { via: self.via },
+                self.attachment,
+            );
+        }
+    }
+}
+
 fn asking(me: &str, to: &str) -> bool {
     ASKING
         .lock()
@@ -540,18 +562,19 @@ impl Node {
         );
         let attached = self.carry.attach(peer, Carrier::Hop { via }, recv, send);
         let attachment = attached.serial();
-        #[cfg(test)]
-        self.wires.hold_hop_offer_for_test(attachment).await;
+        let mut pending = PendingHop {
+            links: self.carry.clone(),
+            peer,
+            via,
+            attachment,
+            committed: false,
+        };
         khor_net::carry::observe_lifecycle(&y.id, "hop_outer_bound", || {
             serde_json::json!({
                 "role": "initiator", "attachment": attachment,
                 "via": via.to_string(), "outer_wire": outer_wire,
             })
         });
-        if let Some(addr) = self.carried_addr(&y.id) {
-            ep.offer_addrs(iroh::EndpointAddr::from_parts(peer, [addr]))
-                .await;
-        }
         let (links, wires, id, node) = (
             self.carry.clone(),
             self.wires.clone(),
@@ -561,10 +584,27 @@ impl Node {
         // The wire to the middle is judged on a hop's patience while the
         // hop lives (`wires::HOP_SILENT`): a frozen middle hands back sooner.
         let riding = wires.hop_held(&via.to_string());
+        let (handoff, handed) = tokio::sync::oneshot::channel::<Asking>();
         tokio::spawn(async move {
-            let _riding = (riding, asked);
+            let _riding = riding;
             let ended = attached.ended();
             tokio::pin!(ended);
+            // Register the existing watcher before the first cancellable
+            // await. It owns path cleanup even if the opening future stops
+            // during offer_addrs; Asking transfers only after that offer.
+            let handed = tokio::select! {
+                () = &mut ended => {
+                    crate::carry::let_path_go(&node, &links, peer).await;
+                    return;
+                }
+                received = handed => received.ok(),
+            };
+            let Some(asked) = handed else {
+                ended.await;
+                crate::carry::let_path_go(&node, &links, peer).await;
+                return;
+            };
+            let _asked = asked;
             let mut held = 0u8;
             loop {
                 tokio::select! {
@@ -610,6 +650,16 @@ impl Node {
                 }
             }
         });
+        #[cfg(test)]
+        self.wires.hold_hop_offer_for_test(attachment).await;
+        if let Some(addr) = self.carried_addr(&y.id) {
+            ep.offer_addrs(iroh::EndpointAddr::from_parts(peer, [addr]))
+                .await;
+        }
+        if handoff.send(asked).is_err() {
+            return false;
+        }
+        pending.committed = true;
         true
     }
 
