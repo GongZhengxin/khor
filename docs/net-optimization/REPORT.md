@@ -262,3 +262,14 @@ Turing稳定源码缓存首/复用同快照206/207均fmt/net66+1ignored绿，bui
 源码找到并各自真实红绿验证三个有限问题：同tick旧suspended关闭覆盖新wire已收包；旧retire释放slot后迟到Asleep覆盖新adopt；旧拨号Asleep提交/排队失败复用覆盖同peer真实反向连接。前两项3a3及f9各自同source双OS全net-node绿；第三项fccc/tree714/snapshot2b5/control68，Mac旧543/42806129212实际24/2红→42806745387的26绿，Linux61121d16的30绿，双方全部12 profile绿，原whole tests与新whole fixture保持。peer-contact-fixture-freeze.json仅该scope true，field_phone_issue_resolved=false。修复无生产timer/probe/重放，120/600秒安静与原退避/总期限保留；没有安装到手机或改生产进程。
 
 所有负面记录保留：最初fixture格式、cleanup panic、pulse字段编译遗漏、Mac反向握手setup超时与portable fixture修订；Linux99534d56原remote32在private-node pairing准备60秒超时，观察过Cargo DN等待但因果未证。原源码/控制/fixture/期限复测611全绿不抹去该失败，也不关闭独立pairing稳定性。下一正验证取消半成品peer relay的所有权，之后才实施并行寻路与网络/地址epoch缓存失效；这些尚未接受。
+
+
+## 2026-11-10 13:20UTC：已使用载体所有权与完整准备期限
+
+真实旧行为a75/a038/871在56d2ca30为hop17/4红：新Custom-only目标经真实Tunnel完成TLS、固定echo且路径为Carried，adopt该live Main wire后取消准备者，载体/Asking/后续echo一起消失；正常publication与此前15例通过，三个prepare期限红保留。更早8475/ffd/ceaa在9484048e已实际16/3红：admit后默认3秒或caller1秒均不结束，真实持有新Incoming不admit时caller超时误记MISSED。没有用假拨号或放宽原期限。
+
+候选PendingHop持Asking和handoff，正常交付及取消时已被registered live selected-carried连接使用的载体都交给既有watcher；无人使用时仅撤本serial。Wires提取原live连接收集复用，compare评分不改。open_hop入口单绝对by=min(原3秒,caller)，tries和offer共享，不因阶段重置；caller先到或已admit的本机公布等待不记middle miss。无新生产task、timer或probe。
+
+首候选921/06db/23db两端新增hop21/0绿，但Turing a1b1dbe9及Mac42821367661原leased IPC32均栈溢出/SIGABRT，后续profile未执行，该source不接受且原件保留。仅在两个实际cold open_hop调用处Box::pin，原线程栈、fixture、时钟与业务语义不改。最终a35/95e/c74/control68在Linux1952febb（265.399秒、21artifact、原group空）和Mac42822434248（exact artifact13766619208、20files、11controlblobs）同canonical全部12组绿，hop21、wires15、budget30Linux/26Mac；原IPC32、remote32、32明确STOP、resume与canonical caller均通过。
+
+原offer整个c071前缀、新prepare/published whole、原hop/wires测试尾及前几轮fixtures逐byte保持，详两freeze JSON和boxed-fixture-audit。此证据只接受这些合同，未覆盖incoming-only无selected标记、late-close/new-offer/pending Noq、ears/network/address epochs、并行寻路、WAN/真机自动恢复或能耗；没有安装到手机。高host load下普通功能回归不作p99性能数据。
