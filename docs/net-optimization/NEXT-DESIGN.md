@@ -555,3 +555,8 @@ a35/95e/c74已双OS全12组绿，完成已登记selected-carried与完整准备�
 ### 14:02UTC 真实actor排队合同（测试已写，尚未运行）
 
 close_offer原整个文件保持70af完整前缀，只尾附queued_close模块；新模块用scratch endpoint的透明RoadOrder wrapper一次同步暂停真实RemoteStateActor，其他选择/测量不变，RAII始终释放。旧frame结束后暂停actor，真实Node let_path_go已将close入队并join，而actor仍停在回调；随后才attach替代frame流，再释放actor/实际offer、用同actor barrier和真实Closed/paths/echo观察。无replacement控制应仍关闭。该gate不进入生产、不注入测量/时钟、不重放业务。为证明执行点guard而非提前check有效，需独立scratch baseline仅把Node调用恢复到原无条件close_carried，Iroh候选加法API保留但不使用；两份源新whole测试一致、原API None分支即旧关闭行为，先真实红再候选绿，不伪装成旧完整Git提交。原25全部继续覆盖。
+
+
+## U17/NET-16 第一片：真实hop_ahead准入合同（14:29UTC）
+
+新增published子模块sole_peer_tests，旧published整个文件保留为前缀。fresh Node仅一个实际Direct Tunnel邻居，目标无当前Main/Tunnel/Custom；两端仍声明有Relay配置，复现配置存在不等于可达。分别写middle第二腿Relay提示、不写提示、目标历史Direct提示，调用真实Node.hop_ahead，经实际offer gate/admission/inner TLS/固定echo判断是否尝试。已知Direct第二腿为正控、已被其他peer转发的第二腿为单跳拒绝负控，原27继续。中间stream到目标由既有fixture脚本适配，**不声称第二段真经过公共Relay**；真实两腿Relay场景仍属NET-16/N4。先实际旧红，再设计“没有当前目标可用线”的Recovery准入，健康已连通时的Measured性能比较保持；第二腿未知只允许有限真实准入，不信任其旧样本当作当前数据面证据。旧MISSED/LOST随候选/本地网络/地址epoch正确失效仍独立待做，不能靠每个包或全局清空来绕过quiet。

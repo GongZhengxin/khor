@@ -264,3 +264,6 @@ async fn normal_publication_keeps_the_same_actual_carried_connection() {
 
 #[path = "incoming_tests.rs"]
 mod incoming;
+
+#[path = "sole_peer_tests.rs"]
+mod sole_peer;
