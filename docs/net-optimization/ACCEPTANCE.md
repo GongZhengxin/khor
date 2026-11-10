@@ -509,3 +509,8 @@ control在net-node便携合同追加ipc::tests串行过滤器，无新编译prof
 原“一次PING”提议未实施。诊断turing-20261110T002954Z-cabd9725已实际记录70条缺post-judgment往返的conn/path快照，PTO均为0且unacked_since均None；第一回包hint约+1062ms，外层两个Go约+1187/+1253ms。因此一次过早探测可能仍经过慢外层，单个新样本不能保证质量已恢复。候选预算改为每peer/road/故障epoch最多3次恢复PING申请，至少间隔既有250ms tick，限既有2秒确认窗口；失败或被已有确认合并也消耗申请，不因重复hint重置。该修订改变尚未实施的探测预算，不改上方四秒合同/冻结checker/物理几何、原2秒两fresh ticks/收益门/可用性新鲜证明/重hold。
 
 只有已判silent、收到judged之后的真实回包hint、当前无silent copy、已有真实往返历史才可启动；初次未建立/健康闲置/黑洞无hint不申请。恢复后最多补满本轮有限样本，若已有Moving确认或当前已选且可用则合并；正常业务已有足够新样本也停止。相同epoch用尽或到期后不能重新启动；新独立故障另起epoch，关闭路回收状态。最多3次是actor调用预算，实际UDP包数/Noq重传须另计。先单元与vendor验证，再至少3次原physical四秒门及旧stalls/黑洞/流量成本验证，未测不得标绿。
+
+
+## IPC v2 helpers层合同（真实路径启用前）
+
+先远端验证合法legacy正常half-close、v2长度结束无half-close、body等候不得重置header预算、坏magic/未知版本/零/超长/截断拒绝、过期header零发送；caller EOF/额外输入应在work首次poll前取消，blocked reply的buffer/owner随取消或deadline释放。预认证完整framing沿已有5秒local门，解码后cookie仍单独核，不把helper的decode成功写为认证或业务执行成功。EndpointFile/via_serve尚未接入；本层绿不是全IPC/32content permits/独立process/QUIC执行取消证明。

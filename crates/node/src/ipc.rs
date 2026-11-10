@@ -15,6 +15,8 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 use crate::proto::{self, MAX_FRAME};
 
+pub(crate) mod lease;
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Handoff {
     pub cookie: String,

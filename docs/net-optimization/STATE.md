@@ -52,3 +52,5 @@ A=macserver、B=Turing天然异网，P=iPhone，不再询问另找两电脑。�
 
 
 继续完整N0–N5。最终源可信Quality、Mac App/多机/iPhone/能耗以及上表缺口仍须闭合。
+
+最新补充（01:17UTC）：42733228660准确3ad3851a/ce02实际fmt、IPC6/net67/hop12/wires11/journal30/budget20绿；全IPC测试块原始字节自#[cfg(test)]至EOF在实际红/绿均SHA10838747。旧证据a40fbc31的抽取方法未能复现，原hash保留且不冒称其已核，独立逐字节对照证明fixture未变。Iroh39 Mac42734017374准确ba7bcefb/tree144025c2/controlce02已fmt/439/42/9绿，6个新路径单元；物理尚未运行。同完整source portable Mac42734610668在途/control9992254（只追加WAN v2控制器，不影响该测试profile）。WAN控制器已准备30目录＋30正文/每方向、完整失败取消outcomes，尚未实际执行。
