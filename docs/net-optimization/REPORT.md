@@ -293,3 +293,7 @@ Iroh13加法close_carried_if在实际RemoteStateActor执行之前检查最新Lin
 99d8ec5c/tree7f6c0b7b/snapshotef1ef86b在Turing1446794a和Mac42849256788同canonical通过全部12组，hop36/wires15/budget30（Mac26），没有安装或发布。旧f51/0e9314a5快IP真实32/1红，旧839/085ea57e未登记/pending真实33/3红，fixture原样通过。hop准备与普通拨号共用一个期限，原两项均失败后可补一次新carrier握手（最多2活动、3 lifetime），普通成功先adopt后drop准备；pending消费者交给原watcher等待并在取消后回收。Iroh/Noq未加新补丁/任务/探针。
 
 此分项不含后来42fc5e3e已复现的successor新owner清理竞态（37/1红）、0RTT并行、旧Asleep提前返回、cached候选新鲜度、network/address epochs、真实第二publicRelay或phone换网/能耗；原854 core transfer Busy保留未归因。14ea初版Send编译失败两端原件保留，99以cold hop显式boxed Send边界解决，不放宽栈/期限/测试。
+
+## 2026-11-10 pending successor清理分项
+
+cbf3a8d4/tree38430683/snapshotff8e3735同source在Linux47439bfb（252.734秒/21files/group空）与Mac42851130886（exact13779833868/20files/11controls）全12组绿，hop38。旧58e0/42fc5e3e真实37/1红，旧owner结束且watcher已暂停后，新owner入场仍被旧清理拆carrier；无successor控制正常释放。现将最后检查与精确serial撤回放入pending admission同锁，新owner则原watcher订阅后再检查；不加task/timer，不改正常publication两LOOK。仅这个取消清理scope验证，不覆盖initial PendingHop Drop、normal watcher释放、Noq opened/abandoned或network/address epochs，更不证明phone现场解决。

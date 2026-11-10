@@ -6,6 +6,9 @@
 
 ### 最新覆盖状态（优先于下方历史段落）
 
+- **最新已验证分项cbf3a8d4/tree38430683/snapshotff8e3735**：Linux47439bfb全12/hop38/wires15/budget30/resume1，252.734秒/21artifact/group空核；Mac42851130886同canonical全12/hop38/wires15/budget26/resume1，exact13779833868/20files/11control blobs核。pending-successor freeze仅scope true、field false，原38红37/1与无successor清理控制保留。没有新vendor/task/timer/探针。
+- 当前HEAD8d0328c5只追加live-vs-cached fixture（此前7e067）和远端格式，产品rank仍旧。Linux4e280e8e实际正在跑；格式首1da5c964保留。两个cached low-RTT endpoints实际保持Incoming不admit，唯一live Tunnel应在同2秒caller内救通，正常普通拨号并行、已有gate/cleanup保持。尚未接受排序候选/NET16。下一步以该真实红决定rank修改；0RTT、Asleep、MISSED/地址族/epoch仍继续。
+
 - **最新已接受分项99d8ec5c/7f6c0b7b/ef1ef86b**：Linux1446794a全12/hop36/wires15/budget30与Mac42849256788同canonical全12/hop36/wires15/budget26；exact13780730056/20files/11control blobs已核。sole-peer准入、慢middle不挡快IP、已握手未登记lease三个freeze仅各scope true，field false；不表示NET16/整包/手机完成。原854 pairing core Busy仍未归因。
 - **successor真实红**：58e0d00f/tree7700f891/snapshot567573c5，Linux42fc5e3e 38项37/1红，新lease在旧owner结束且旧watcher决策前真实进入，carrier却被拆；无successor释放控制/此前36全过，136.162秒/11artifact/group空/identity核。首4a65f8d0格式-only另存。
 - 当前successor候选WIP：复用同weak lease与原watcher；pending准入锁内查最新owner与live使用，再撤自己serial。有successor则订阅新owner结束，继续同watcher，不另起task/timer。不改变正常publication的两LOOK comparison。本版尚未编译/测，initial PendingHop Drop与normal watcher释放之间更广epoch仍不冒称闭合。
