@@ -328,3 +328,10 @@ v1曾在0f8a81d0两读取都成功却warm server is_0rtt=false，40/1失败保�
 ## 2026-11-11 Iroh46单元与双OS窄范围（物理待验）
 
 1c847229/tree90f62/snapshot4c18在5c2e4ff2 vendor439/55/11通过，对应旧c775/eec09ec1路径53/2红（旧50及3负控过），冻结whole ae62及原测试尾相同。Linuxdc23e338与Mac42892759864同canonical全12组/hop55/wires16，Linux315.188秒/21files/group空，Mac exact13799886372/20files/11control均核。只确认有限首次baseline-return质量刷新与既有回归，未证明四秒/N1/phone/energy。物理三组源对照前瞻计划已登记，首9cb240b7在20:18:34 UTC启动；不覆盖旧三轮失败。
+
+
+## 2026-11-11 Iroh46固定三组物理源对照：未接受
+
+预登记C-B,B-C,C-B六次全完成，无第七次或丢失败，control68cad、原topology/20ms/holds/124请求/两个四秒门保持。C=1c847229，B=c7750419，同显式DEBUG。C结果9cb3855.026/4068.484ms红、71ea3851.354/3820.801绿、6aa双向无Go且未观察到carried红；B为f793557.596/3732.647绿、32663751.098/5469.355红、21353521.250/3484.977绿。744业务全成功不替代恢复门，C1绿2红/B2绿1红；known-quality-physical-pairs-through-6.json保留全部源和原始差值。样本少、copy数4/6与随机时序不同，不宣称显著收益/p99。
+
+6aa质量epoch未刷新、steps0，X仅零星收到Custom包而Y未见故障后收包或新RTT。四端实际绑定outer快照曾选41–42ms IP且未关闭，middle onward质量年龄3.526秒；0tuple mismatch。仅据此不能定因46/Noq/应用转发。载体约21秒后结束，接下来补真实stream/frame推进诊断。探测预约合同全保留；inner Custom实际计数按两个窗口给上下界，6aa长窗口缺边界保留unknown，不能补0或算手机/outer能耗。单元439/55/11及双OSNode全12仍仅对应窄scope；候选不作为最终N1方案接受。
