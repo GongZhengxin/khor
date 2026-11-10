@@ -1381,15 +1381,29 @@ impl RemoteStateActor {
                     let waited = now.into_std().saturating_duration_since(sent);
                     waiting = Some(waiting.map_or(waited, |w: Duration| w.max(waited)));
                 }
-                match measured.rtts.get_mut(&key) {
+                let previous_quality = measured.recovery.contains_key(tuple)
+                    .then(|| measured.road(tuple).map(|(rtt, _)| rtt)).flatten();
+                let observed = match measured.rtts.get_mut(&key) {
                     Some(r) => {
-                        if r.observe(&stats, now) && Some(tuple) == selected {
+                        let observed = r.observe(&stats, now);
+                        if observed && Some(tuple) == selected {
                             sample = sample.max(stats.latest_rtt);
                         }
+                        observed
                     }
                     None => {
-                        measured.rtts.insert(key, Reading::new(tuple.clone(), &stats, now));
+                        let since = measured.rtts.values().filter(|r| r.road == *tuple)
+                            .filter_map(|r| r.quality_since).max();
+                        let reading = match since {
+                            Some(since) => Reading::with_epoch(tuple.clone(), &stats, now, Some(since)),
+                            None => Reading::new(tuple.clone(), &stats, now),
+                        };
+                        measured.rtts.insert(key, reading);
+                        false
                     }
+                };
+                if observed && let Some(previous) = previous_quality {
+                    measured.recovery_quality_step(key, stats.latest_rtt, previous, now);
                 }
             }
         }
@@ -2631,6 +2645,8 @@ struct RecoveryCheck {
     last: Option<Instant>,
     next: Option<Instant>,
     copy: Option<(ConnId, PathId)>,
+    quality_steps: u8,
+    quality_best: Option<Duration>,
 }
 
 #[derive(Debug)]
@@ -2686,6 +2702,9 @@ struct Reading {
     /// Sampled packet send and ACK processing instants for fresh observation ticks.
     /// This counts ticks rather than every ACK received between ticks.
     changed: VecDeque<(Instant, Instant)>,
+    /// khor patch 41: packets from before a verified recovery quality step
+    /// cannot refresh the new quality window, including on another copy.
+    quality_since: Option<Instant>,
     /// Send time of the latest sampled packet; absent for an initial estimate.
     sent: Option<Instant>,
     /// When the latest sample's ACK was processed, not when stats were read.
@@ -2694,6 +2713,10 @@ struct Reading {
 
 impl Reading {
     fn new(road: transports::FourTuple, stats: &PathStats, now: Instant) -> Self {
+        Self::with_epoch(road, stats, now, None)
+    }
+
+    fn with_epoch(road: transports::FourTuple, stats: &PathStats, now: Instant, quality_since: Option<Instant>) -> Self {
         let mut reading = Self {
             road,
             rtt: stats.rtt,
@@ -2701,11 +2724,24 @@ impl Reading {
             quality: stats.rtt,
             recent: VecDeque::new(),
             changed: VecDeque::new(),
+            quality_since,
             sent: None,
             at: now,
         };
         reading.observe(stats, now);
         reading
+    }
+
+    fn restart_quality(&mut self, since: Instant, now: Instant) {
+        let since = self.quality_since.map_or(since, |old| old.max(since));
+        let latest = self.recent.back().copied().filter(|(at, _)| {
+            *at == self.at && self.sent.is_some_and(|sent| sent >= since)
+        });
+        self.quality_since = Some(since);
+        self.recent.clear();
+        if let Some((at, sample)) = latest {
+            self.record(sample, at, now);
+        }
     }
 
     fn record(&mut self, sample: Duration, received: Instant, now: Instant) {
@@ -2758,6 +2794,9 @@ impl Reading {
         else {
             return false;
         };
+        if self.quality_since.is_some_and(|since| sent < since) {
+            return false;
+        }
         self.sent = Some(sent);
         self.at = received;
         self.record(stats.latest_rtt, received, now);
@@ -2770,6 +2809,36 @@ impl Reading {
 }
 
 impl Measured {
+    /// A recovered road can improve in steps as its substrate leaves a slow
+    /// fallback. Restart only on a fresh, substantial, monotonically lower step;
+    /// ordinary healthy medians and the subsequent Moving confirmation stay intact.
+    fn recovery_quality_step(
+        &mut self,
+        key: (ConnId, PathId),
+        sample: Duration,
+        previous: Duration,
+        now: Instant,
+    ) {
+        let Some(reading) = self.rtts.get(&key) else { return };
+        let Some(sent) = reading.sent else { return };
+        let road = reading.road.clone();
+        let Some(check) = self.recovery.get_mut(&road) else { return };
+        if now >= check.began + CONFIRM_FOR || sent <= check.began
+            || check.quality_steps >= RECOVERY_PROBES
+            || sample.saturating_mul(4) > previous.saturating_mul(3)
+            || check.quality_best.is_some_and(|best| sample.saturating_mul(4) > best.saturating_mul(3))
+        {
+            return;
+        }
+        check.quality_steps += 1;
+        check.quality_best = Some(sample);
+        debug!(target: "khor_net_samples", ?road, ?sent, ?previous, ?sample,
+            step = check.quality_steps, "recovery quality window restarted");
+        for reading in self.rtts.values_mut().filter(|r| r.road == road) {
+            reading.restart_quality(sent, now);
+        }
+    }
+
     fn recovery_deadline(&self) -> Option<Instant> {
         self.recovery.values().filter_map(|check| check.next).min()
     }
@@ -2805,6 +2874,8 @@ impl Measured {
                 last: None,
                 next: None,
                 copy: None,
+                quality_steps: 0,
+                quality_best: None,
             });
         }
         let roads: Vec<_> = self.recovery.keys().cloned().collect();
@@ -3647,6 +3718,7 @@ mod tests {
             quality: MS(1),
             recent: VecDeque::new(),
             changed: VecDeque::from([(at, at)]),
+            quality_since: None,
             sent: Some(at),
             at,
         }
@@ -3660,6 +3732,107 @@ mod tests {
         m.rtts.insert((ConnId(0), PathId::ZERO), old);
         m.mark_silent(t, &[(road.clone(), t - MS(300))], |_| true);
         (m, road)
+    }
+
+    fn recovery_sample(m: &mut Measured, key: (ConnId, PathId), sample: Duration, at: Instant) {
+        let road = m.rtts[&key].road.clone();
+        let previous = m.road(&road).unwrap().0;
+        let mut stats = PathStats::default();
+        stats.rtt_samples = m.rtts[&key].samples + 1;
+        stats.rtt = sample;
+        stats.latest_rtt = sample;
+        sample_time(&mut stats, at);
+        if m.rtts.get_mut(&key).unwrap().observe(&stats, at) {
+            m.recovery_quality_step(key, sample, previous, at);
+        }
+    }
+
+    fn recovered_quality_case(t: Instant) -> (Measured, transports::FourTuple) {
+        let (mut m, road) = recovery_case(t);
+        let heard = [(road.clone(), (t + MS(1)).into_std())];
+        assert_eq!(m.recovery_probes(t + MS(250), &[], &heard, |_| true).len(), 1);
+        let key = (ConnId(0), PathId::ZERO);
+        recovery_sample(&mut m, key, MS(250), t + MS(600));
+        recovery_sample(&mut m, key, MS(131), t + MS(900));
+        recovery_sample(&mut m, key, MS(85), t + MS(1150));
+        (m, road)
+    }
+
+    #[test]
+    fn a_known_recovery_can_start_a_new_quality_window_without_changing_healthy_medians() {
+        let t = Instant::now();
+        let key = (ConnId(0), PathId::ZERO);
+        let (mut healthy, road) = recovery_case(t);
+        healthy.silent.clear();
+        for (rtt, at) in [(250, 600), (131, 900), (85, 1150)] {
+            recovery_sample(&mut healthy, key, MS(rtt), t + MS(at));
+        }
+        assert_eq!(healthy.road(&road).unwrap().0, MS(131));
+        let (m, road) = recovered_quality_case(t);
+        assert_eq!(m.road(&road).unwrap().0, MS(85));
+        assert_eq!(m.recovery[&road].quality_steps, 2);
+        assert_eq!(m.recovery[&road].attempts, 1, "new quality windows do not mint probe budgets");
+        let reading = &m.rtts[&key];
+        assert_eq!(reading.samples, 4);
+        assert_eq!(reading.changed.len(), 4, "one real observation per ACK update");
+        assert_eq!(reading.at, t + MS(1150));
+        assert_eq!(reading.sent, Some(t + MS(1065)));
+    }
+
+    #[test]
+    fn late_pre_epoch_packets_cannot_refresh_quality_age_or_confirm_a_new_epoch() {
+        let t = Instant::now();
+        let key = (ConnId(0), PathId::ZERO);
+        let (mut m, road) = recovered_quality_case(t);
+        let count = m.rtts[&key].samples;
+        let changed = m.rtts[&key].changed.len();
+        recovery_sample(&mut m, key, MS(500), t + MS(1400));
+        let r = &m.rtts[&key];
+        assert_eq!(r.samples, count + 1, "transport counter remains the real counter");
+        assert_eq!(r.rtt, MS(500), "transport SRTT is still read unchanged");
+        assert_eq!(r.quality, MS(85));
+        assert_eq!(r.at, t + MS(1150));
+        assert_eq!(r.sent, Some(t + MS(1065)));
+        assert_eq!(r.changed.len(), changed);
+        assert_eq!(m.recovery[&road].quality_steps, 2);
+    }
+
+    #[test]
+    fn another_copy_inherits_the_recovery_window_before_reading_an_old_ack() {
+        let t = Instant::now();
+        let (mut m, road) = recovered_quality_case(t);
+        let epoch = m.rtts.values().filter_map(|r| r.quality_since).max();
+        let mut stats = PathStats::default();
+        stats.rtt_samples = 1;
+        stats.latest_rtt = MS(300);
+        sample_time(&mut stats, t + MS(1300));
+        let copy = Reading::with_epoch(road.clone(), &stats, t + MS(1300), epoch);
+        assert!(copy.sent.is_none());
+        assert!(copy.recent.is_empty());
+        let key = (ConnId(1), PathId::ZERO);
+        m.rtts.insert(key, copy);
+        assert_eq!(m.road(&road).unwrap().0, MS(85));
+        recovery_sample(&mut m, key, MS(89), t + MS(1500));
+        assert_eq!(m.road(&road).unwrap().0, MS(89));
+        assert_eq!(m.rtts[&key].quality_since, epoch);
+    }
+
+    #[test]
+    fn recovery_noise_cannot_repeatedly_restart_a_window_or_exceed_the_step_budget() {
+        let t = Instant::now();
+        let key = (ConnId(0), PathId::ZERO);
+        let (mut m, road) = recovered_quality_case(t);
+        recovery_sample(&mut m, key, MS(131), t + MS(1500));
+        assert_eq!(m.road(&road).unwrap().0, MS(131), "a slow follow-up remains evidence");
+        recovery_sample(&mut m, key, MS(85), t + MS(1750));
+        assert_eq!(m.recovery[&road].quality_steps, 2);
+        assert!(m.rtts[&key].recent.iter().any(|(_, rtt)| *rtt == MS(131)));
+        recovery_sample(&mut m, key, MS(50), t + MS(1900));
+        assert_eq!(m.recovery[&road].quality_steps, 3);
+        let epoch = m.rtts[&key].quality_since;
+        recovery_sample(&mut m, key, MS(25), t + MS(2100));
+        assert_eq!(m.recovery[&road].quality_steps, 3);
+        assert_eq!(m.rtts[&key].quality_since, epoch);
     }
 
     #[test]
