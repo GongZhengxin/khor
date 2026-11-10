@@ -3878,6 +3878,13 @@ impl Node {
             };
             self.wires.note_early_failure_for_test(why);
         }
+        #[cfg(test)]
+        if matches!(outcome, Ok(Err(DialFailure::Refused(_)))) {
+            eprintln!(
+                "[early-fallback-stage] refused early_data={early_data} had_carried={had_carried} preparing={preparing} remaining_ms={}",
+                dial_by.saturating_duration_since(tokio::time::Instant::now()).as_millis()
+            );
+        }
         // No early request could have escaped a cold failed handshake.
         // Give a newly prepared carrier one ordinary handshake, still inside
         // the original absolute window. A prior carrier, resting refusal or
@@ -3893,6 +3900,12 @@ impl Node {
             } else {
                 Ok(())
             };
+            #[cfg(test)]
+            eprintln!(
+                "[early-fallback-stage] prepared={} carrier={} caller_expired={} remaining_ms={}",
+                ready.is_ok(), self.carried_addr(&d.id).is_some(), crate::deadline::expired(by),
+                dial_by.saturating_duration_since(tokio::time::Instant::now()).as_millis()
+            );
             match ready {
                 Err(elapsed) => outcome = Err(elapsed),
                 Ok(()) => {
@@ -3901,6 +3914,8 @@ impl Node {
                         && let Some(carried) = self.carried_addr(&d.id)
                         && let Ok(mut addr) = endpoint::dial_addr(&d.id, &[], &[])
                     {
+                        #[cfg(test)]
+                        eprintln!("[early-fallback-stage] starting carried handshake");
                         addr.addrs.insert(carried);
                         tried.2 = true;
                         outcome = tokio::time::timeout_at(dial_by, async {
@@ -3910,6 +3925,18 @@ impl Node {
                                 .map_err(|error| DialFailure::of_connect(&error))
                         })
                         .await;
+                        #[cfg(test)]
+                        {
+                            let result = match &outcome {
+                                Ok(Ok(_)) => "connected".to_owned(),
+                                Ok(Err(DialFailure::Refused(why))) => format!("refused: {why}"),
+                                Ok(Err(DialFailure::Asleep(why))) => format!("asleep: {why}"),
+                                Ok(Err(DialFailure::TimedOut)) => "timed out".to_owned(),
+                                Ok(Err(DialFailure::CallerExpired)) => "caller expired".to_owned(),
+                                Err(_) => "dial window expired".to_owned(),
+                            };
+                            eprintln!("[early-fallback-stage] carried result={result}");
+                        }
                     }
                 }
             }
