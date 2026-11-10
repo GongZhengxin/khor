@@ -88,3 +88,6 @@ async fn cancelling_the_last_pending_dial_reclaims_an_unused_carrier() {
 async fn another_peers_pending_dial_cannot_keep_an_unused_carrier() {
     observe_pending(false, true).await;
 }
+
+#[path = "pending_successor_tests.rs"]
+mod successor;
