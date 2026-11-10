@@ -1,10 +1,13 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-10T16:12:27.108801+00:00。**完整N0–N5仍未完成，用户已授权持续实施；不得因分项绿、旧goal paused或compact停下。** 速度/体验优先、个人可信设备网。root串行，无子智能体；没有main合并、发布、采购、生产部署或改已装App/store的授权。长期范围见[PLAN](PLAN.md)、[REQUIREMENTS](REQUIREMENTS.md)、[ACCEPTANCE](ACCEPTANCE.md)、[NEXT-DESIGN](NEXT-DESIGN.md)。上版STATE完整逐字保存在[历史](HISTORY-20261110-before-peer-contact-state.md)，含更早历史链；本页替代旧段落的当前状态，不删历史失败或矩阵。
+更新：2026-11-10T16:18:45.212841+00:00。**完整N0–N5仍未完成，用户已授权持续实施；不得因分项绿、旧goal paused或compact停下。** 速度/体验优先、个人可信设备网。root串行，无子智能体；没有main合并、发布、采购、生产部署或改已装App/store的授权。长期范围见[PLAN](PLAN.md)、[REQUIREMENTS](REQUIREMENTS.md)、[ACCEPTANCE](ACCEPTANCE.md)、[NEXT-DESIGN](NEXT-DESIGN.md)。上版STATE完整逐字保存在[历史](HISTORY-20261110-before-peer-contact-state.md)，含更早历史链；本页替代旧段落的当前状态，不删历史失败或矩阵。
 
 ## 恢复先核实际句柄
 
 ### 最新覆盖状态（优先于下方历史段落）
+
+- **当前HEAD9995114c**仅新增actual ask_on cold/TLS-resumed Sessions fixture与race尾声明；产品仍2cb56。两个读取合同尚未运行，早期路径仍serial，不冒称全部入口已并行。新源46dc5a58/snapshot3d00bede送Linux（ledger最新cold/resumed baseline），尚无行为结论。
+- **2cb56ccedbba642876dc3e9efc2fa7fc5e62fc23/treeb9bd9865/snapshotb8610837** Linux06d07ccd **全12/hop39/wires15/budget30/resume1**，256.639秒/21files/group空/identity与全部summaries核；Mac **42853193309**同canonical待结果。fresh-middle freeze仍false，不将Linux绿代替双OS。cbf3 successor已双OS闭合其scope；当前无phone/timed physical任务。主vendor仍原53（本轮Node未新增vendor修改）。
 
 - **live-vs-cached实际红已采核**：8d0328c5/treed84b7764/snapshot92bff6ca，Linux4e280e8e实际39项38/1红，won=false/echo=false/tried_cached=true，140.244秒/11artifact/group空；原38和所有owned cleanup均过。排序候选只在Legs::Recovery稳定分组：当前held road在cached road之前，同组仍原cost顺序；Direct/Relay不另分高低，未改TRIES=2/原3秒或caller2秒/信任/单hop。仅此fixture证明的缺口，未涵盖incoming-only first wire/假live僵尸/地址epoch/NoRelay其他策略。本版尚未验证，准备送远端。
 
