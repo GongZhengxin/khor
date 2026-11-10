@@ -11,3 +11,5 @@
 实际进展：Mac42754190117仅formatter失败，c5ba3d25应用精确patch；42754548807实跑上述32合同红（远端回收5秒超时），原fixture已完整冻结，非编译/准备红。17d11fb3监听stopped候选的42755165540只test-build E0425，不能记回收绿；757e013f修复原测试hook作用域并保留response到最终write，待同源Mac/Linux行为验收。原始whole fixtures与现有canonical显式ContentCancel/阻塞IO所有权用例保持，不因新取消实现改断言。
 
 757e013f/tree2d218d48/snapshot3f0c7ea6在Mac42755640884、Turing042313-d964同canonical source实际全绿：新远端32、原canonical忙IO/显式ContentCancel整例、本机32、独立process、IPC18与便携均绿。两整个fixtures在Git红/绿source与当前字节相同；quic-response-owner-32-red-green.json verified限资源/真实QUIC层，尚未以事件记录严格same-wire/STOP或accepted写job证明。
+
+下一层加强合同（实施前）：记录B端真实SendStream::stopped结果，只有Ok(Some(code))算显式STOP，连接错误不能替代；32个被取消Window必须产生32个不同stream的显式STOP。记录B实际接收的connection stable_id，32个Window与取消后的Begin/Cancel必须仍是同一条活wire，且barrier仍未人工释放。以新测试层独立留证，不更改已冻结旧32回归函数或把permit归还冒充STOP。生产非test行为不变，仅cfg(test)观察真实transport事件。
