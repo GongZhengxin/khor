@@ -61,3 +61,12 @@ A=macserver、B=Turing天然异网，P=iPhone，不再询问另找两电脑。�
 证据新增：source-refs-audit-20261110-287.json逐核287源refs/tree/control与25个ops hash；后续逐条pin，待终态再全量更新。register-mac-run.py仅锚GH实际控制HEAD/源码/refs，不分类行为。当前CPU重复比较在ack-floor-controlled-stalls-comparison.json。继续N0–N5，不在阶段绿后停工。
 
 N2下一仍需独立process/真实server收到的预算、caller EOF/额外输入/坏cookie无副作用、IO未完成时owner留存、QUIC远端执行停止及32远端回复回收。当前Mac18项只含独立任务的TCP预算，不是独立process证明。N1下一保留4秒及原stalls两门，原日志定位后再改策略，不凭推测调高收益门或缩短确认。
+
+
+最新接续（2026-11-10 03:20UTC，未完成）：主feat/net已cherry-pick Iroh40为7905f2b1，52 vendor（Iroh40+Noq12）；isolated worktree khor-net-recovery-deadlines detached335b8196另有Iroh41候选，尚未带回主分支。Iroh40 Mac42743081799准确c67365b9/4bf实际fmt/439/46/9绿并核11blobs；Primary整体便携Mac42745451776（request0c70556d20c34759830a2fa75e332dd1/source df20a618/tree3f76fc00）已提交，当前GH TLS失败只影响读状态，禁止重发该run。Iroh41 vendor提交在snapshot上传git push180s超时，requesteb6486e71642447eac4d58e6879f8d4a/snapshot2b4c25c1/tree0c3da38b，调用栈未到workflow dispatch，无实际run ID；先核远端ref/部分receipt再按同canonical source恢复，不能伪记测试红。
+
+Iroh40物理fc435ccd已终态rc0/原group空、124/124可达，但原请求门48/51、双端决策5392/5630ms均红；3次预约、>=250ms与<2秒预算真实绿。旧Iroh39 fa99原请求51/51绿却双端Go4060/5799ms，已补新的独立双方决策四秒门（scripts/netlab-peer-decision.py），原checker/物理文件不改，决策checker在改40/41前已对旧source取红，peer-recovery-decision-four-seconds-red-green.json。不能把顺序AB/BA窗口当双端同时恢复证明。下一41只对有限故障恢复中的真实新packet显著下降重启质量窗口，每次需较前质量/前重启值再低25%、最多3次/2秒，携带packet-send epoch防旧ACK刷新新窗口；原Moving2秒/两fresh/收益与probe预算保持。4新状态测试已写，尚未远端通过。
+
+**Turing唯一重型任务当前为turing-20261110T030246Z-71aa0502，PID1562855，03:09:54UTC启动**：netlab-stalls，准确c67365b9/Iroh40隔离源、control4eeeea9，原quiet600秒/20尖峰+p5，不夹其他重负载。前驱021944-2f23786e fullsamples诊断已终态rc0/原group空：p1s一move/855.6ms/17punch，f4s原门绿但最慢按键10秒；它有日志开销，不能关闭quiet012832两move稳定性红。诊断Go展示无当前hint、PTO3、当前last_received约2.4秒旧、备用新往返后快速离开；尚未证明与quiet同一根因，不凭推测改PTO/gain或旧门。
+
+**IPC真实本机资源分项已闭合红→绿**：42739923461准确76adf825/treeb3af5eb0/control4bf实际fmt/IPC18/原32回归1/portable全绿，32回归0.33s，source/11blobs/hash核；整个wire_tests.rs仍SHA945c22aa，与427371原红相同。此前427389的worker stack overflow保留；00d88f3b Box::pin大型operation future后绿。独立process层只新增已提交IPC-PROCESS-ACCEPTANCE.md合同，尚未实现，不能把独立任务预算当跨process/远端QUIC取消。下一仍须原N0–N5全部未闭合项，不能停在这些分项。
