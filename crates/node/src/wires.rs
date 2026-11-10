@@ -432,9 +432,17 @@ pub(crate) struct Wires {
     #[cfg(test)]
     pending_carrier_test_gate: Mutex<Option<PendingCarrierTestGate>>,
     #[cfg(test)]
+    pending_drop_test_gate: Mutex<Option<PendingDropTestGate>>,
+    #[cfg(test)]
     early_dial_observer: Mutex<Option<tokio::sync::oneshot::Sender<bool>>>,
     #[cfg(test)]
     early_failure_observer: Mutex<Option<tokio::sync::oneshot::Sender<String>>>,
+}
+
+#[cfg(test)]
+struct PendingDropTestGate {
+    entered: tokio::sync::oneshot::Sender<u64>,
+    release: std::sync::mpsc::Receiver<()>,
 }
 
 #[cfg(test)]
@@ -996,6 +1004,40 @@ impl Wires {
         if let Some(gate) = gate {
             let _ = gate.entered.send(0);
             let _ = gate.release.await;
+        }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn gate_pending_drop_for_test(
+        &self,
+    ) -> (
+        tokio::sync::oneshot::Receiver<u64>,
+        std::sync::mpsc::Sender<()>,
+    ) {
+        let (entered, ready) = tokio::sync::oneshot::channel();
+        let (release, released) = std::sync::mpsc::channel();
+        *self
+            .pending_drop_test_gate
+            .lock()
+            .unwrap_or_else(|p| p.into_inner()) = Some(PendingDropTestGate {
+            entered,
+            release: released,
+        });
+        (ready, release)
+    }
+
+    #[cfg(test)]
+    pub(crate) fn hold_pending_drop_for_test(&self, attachment: u64) {
+        let gate = self
+            .pending_drop_test_gate
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .take();
+        if let Some(gate) = gate {
+            let _ = gate.entered.send(attachment);
+            // Drop cannot await. The test owns this sender, so an unwind
+            // disconnects it and releases this one worker too.
+            let _ = gate.release.recv();
         }
     }
 

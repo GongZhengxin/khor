@@ -279,3 +279,6 @@ mod fresh_middle;
 
 #[path = "early_fallback_tests.rs"]
 mod early_fallback;
+
+#[path = "pending_drop_tests.rs"]
+mod pending_drop;

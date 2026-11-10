@@ -6,6 +6,12 @@
 
 ### 最新覆盖状态（优先于下方历史段落）
 
+- **cold fallback同canonical Linux8adb26d3实际hop44已绿**：旧IP身份握手失败后新carrier成功读Sessions、NO_ROUTE无业务请求、live-wire hint撤回负控均过；全12组尚在执行，不先接受。Mac已提交相同source（回执以ledger/dev runs为准），未部署手机。
+- 当前仅新增下一合同pending-drop fixture/cfg(test)同步暂停点：旧opening Drop观察无人使用后、实际detach前，让新有限pending lease与真实未登记carried TLS/echo进入；另有无successor正常清理控制。未改Drop产品行为，先取旧红。freeze保留published旧whole为prefix；未验证，不与cancelled-watcher分支的已接受scope混淆。
+
+- **当前HEAD153263c2/treeee002acd/snapshotf4c5f390**：Iroh45已实现，仅在actor执行时无live连接才撤回所有source时间均<=首次失败边界的IP hints；新来源、Relay/Custom保留，失效selected IP清空。Node只在未可能发early业务数据/无既有carrier/首次Refused后的原绝对拨号窗中调用，再发至多一次新普通握手。不是完整地址epoch，也不称手机根因已闭合。
+- **同source vendor Linux1e1264ef已采核绿**：Noq439/path50/home11（含旧IP撤回、新来源保留），43.738秒/14files/group空/identity核。旧stub基线cf2352f7实际home10/1红保留。下一步同canonical net-node完整请求与live-wire负控；未测，不接受cold fallback scope。主vendor54含候选45，42–44仍隔离预留。
+
 - **诊断3a7424b7已采核42/1红**：首次Refused时early_data=false/had_carried=false/preparing=true，remaining1987；准备完成carrier=true/caller未到且remaining1985；新carried握手实际发起，仍UnknownIssuer。142.184秒/11files/group空；不是总预算耗尽。源码共同地址簿保留旧IP，当前carried-only并不隔离它；这是下一层修复依据，不称已证手机根因。
 - 当前WIP **Iroh45 scaffold**：新Endpoint/Socket/actor消息，actor执行时任何live连接均拒绝撤回；RemotePathState discard当前stub返回0，未改变地址簿行为。拟只移除source timestamps全部<=首次失败边界的IP，新来源/Relay/Custom保留。新增状态old/new-source与实际live-wire字节负控，先跑vendor状态旧红。42–44隔离预留未合主，主由53增加到**54含未实现45**，不升级或删除其他补丁。Node还未调用新API，cold candidate仍未接受。
 

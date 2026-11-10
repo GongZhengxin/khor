@@ -265,6 +265,8 @@ impl Drop for PendingHop {
             self.hand_off(true);
         }
         if !self.committed {
+            #[cfg(test)]
+            self.wires.hold_pending_drop_for_test(self.attachment);
             self.links
                 .detach_attached(&self.peer, Carrier::Hop { via: self.via }, self.attachment);
         }
