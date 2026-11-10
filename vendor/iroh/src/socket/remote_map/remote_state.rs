@@ -604,7 +604,7 @@ impl RemoteStateActor {
                 };
                 if !live && removed > 0 && self.state.selected_path.as_ref().is_some_and(|path| {
                     matches!(path.remote(), transports::Addr::Ip(_))
-                        && !self.state.paths.addrs().any(|addr| addr == path.remote())
+                        && !self.state.paths.addrs().any(|addr| addr == &path.remote())
                 }) {
                     self.state.selected_path = None;
                 }
