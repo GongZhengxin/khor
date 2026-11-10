@@ -114,3 +114,5 @@ v5 ef0bfa7e/tree d635e42951140ed36ca0e41f586bfc9569940cb1/snapshot31e10e49c71361
 21:49 UTC：old54c1/tree4ba70049/snapshotaf88e149在bfe61241终态40.004秒/12files/group空/identity，fmt绿、Noq442项441pass/1FAIL；新explicit path one-RTT合同确实对端收到PING，客户端RTT计数2未增至3，普通delayed ACK与Initial握手控制绿、原439绿；Iroh/home未执行。不是6aa归因。另加真实TLS resumption早期STREAM与path ping兼容控制，whole v2 SHAe0571cbca5d64554d58e9ea960259e8a82a47167df6816d5d7a23e78968ca65b；准备先跑旧行为v2，不改源码策略。IETF ack-frequency-08第3节仅作本地实现所引draft兼容核，不把旧draft当最新标准；支持按min_ack_delay，0RTT禁止这两扩展frame。
 
 21:52 UTC：v2旧efb2/treeb1e95/snapshotef151在8a4a7521终态35.709秒/12files/group空/identity，fmt/原439与三负控（含真实accepted0RTT+实际early STREAM逐字交付）绿，仅explicit probe一RTT时无新样本失败，442pass/1fail。已准备Noq13候选：Established+Data+peer支持时同一次pending PING附IMMEDIATE_ACK，普通ping/保活不动，无新任务/计时器/重试；ACK可能更早额外单包须计量。主vendor候选56，隔离42–44未动；whole v2e057与原multipath/parent还原SHA再核相同。当前未编译，准备原net-vendor执行；不把此独立缺陷当6aa定因。
+
+21:54 UTC：候选4e0/673dd20b终态27.678秒/12files/group空/identity，fmt绿但Noq编译E0308，highest_space实际SpaceKind而非SpaceId；未执行任何行为测试，原源/结果留存。已按声明及既有1079检查修成SpaceKind::Data，测试whole v2e057不变后重提；没有扩大功能/门。

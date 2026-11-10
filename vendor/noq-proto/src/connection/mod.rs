@@ -2775,7 +2775,7 @@ impl Connection {
         // delayed-ACK timer. Ordinary ping/keepalive policy remains unchanged.
         // Cached parameters must never enable this 1-RTT-only frame in 0-RTT.
         let request_immediate_ack = self.state.is_established()
-            && self.highest_space == SpaceId::Data
+            && self.highest_space == SpaceKind::Data
             && self.peer_supports_ack_frequency();
         let path_data = self.spaces[self.highest_space]
             .number_spaces
