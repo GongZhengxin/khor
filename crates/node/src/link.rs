@@ -3769,13 +3769,8 @@ impl Node {
             return Early::Failed(failed.clone());
         }
         let contact = self.wires.contact_version(&d.id);
-        let _using = self.wires.pending_dial(&d.id);
-        if crate::deadline::wait(by, self.hop_ahead(ep, d))
-            .await
-            .is_err()
-        {
-            return Early::Failed(DialFailure::CallerExpired);
-        }
+        let using = self.wires.pending_dial(&d.id);
+        let mut hop = self.hop_ahead(ep, d);
         let Ok(mut addr) = endpoint::dial_addr(&d.id, &d.addrs, &self.published_relays(ep)) else {
             return Early::NotTaken;
         };
@@ -3845,7 +3840,19 @@ impl Node {
                 iroh::endpoint::ZeroRttStatus::Rejected(conn) => Ok((conn, None)),
             }
         };
-        let outcome = tokio::time::timeout(within, attempt).await;
+        // One original handshake and one original budget. Preparing a hop
+        // cooperatively cannot delay a usable ordinary road or duplicate
+        // the early request's task. Keep the preparation until adoption.
+        let mut attempt = Box::pin(tokio::time::timeout(within, attempt));
+        let mut preparing = true;
+        let outcome = loop {
+            tokio::select! {
+                biased;
+                outcome = &mut attempt => break outcome,
+                () = &mut hop, if preparing => preparing = false,
+            }
+        };
+        drop(attempt);
         if crate::deadline::expired(by) {
             if let Ok(Ok((conn, _))) = &outcome {
                 conn.close(0u32.into(), b"caller deadline");
@@ -3901,6 +3908,8 @@ impl Node {
                     &self.carry,
                 );
                 self.wires.adopt(&d.id, wires::Proto::Main, conn.clone());
+                drop(hop);
+                drop(using);
                 drop(one);
                 match asked {
                     Some(mut asked) => {

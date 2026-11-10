@@ -1,10 +1,12 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-10T16:22:20.883968+00:00。**完整N0–N5仍未完成，用户已授权持续实施；不得因分项绿、旧goal paused或compact停下。** 速度/体验优先、个人可信设备网。root串行，无子智能体；没有main合并、发布、采购、生产部署或改已装App/store的授权。长期范围见[PLAN](PLAN.md)、[REQUIREMENTS](REQUIREMENTS.md)、[ACCEPTANCE](ACCEPTANCE.md)、[NEXT-DESIGN](NEXT-DESIGN.md)。上版STATE完整逐字保存在[历史](HISTORY-20261110-before-peer-contact-state.md)，含更早历史链；本页替代旧段落的当前状态，不删历史失败或矩阵。
+更新：2026-11-10T16:24:40.760668+00:00。**完整N0–N5仍未完成，用户已授权持续实施；不得因分项绿、旧goal paused或compact停下。** 速度/体验优先、个人可信设备网。root串行，无子智能体；没有main合并、发布、采购、生产部署或改已装App/store的授权。长期范围见[PLAN](PLAN.md)、[REQUIREMENTS](REQUIREMENTS.md)、[ACCEPTANCE](ACCEPTANCE.md)、[NEXT-DESIGN](NEXT-DESIGN.md)。上版STATE完整逐字保存在[历史](HISTORY-20261110-before-peer-contact-state.md)，含更早历史链；本页替代旧段落的当前状态，不删历史失败或矩阵。
 
 ## 恢复先核实际句柄
 
 ### 最新覆盖状态（优先于下方历史段落）
+
+- **读取路径真实红已取**：95bec358/treeee8d6f2d/snapshotbc291930，Linux957e798f真41项39/2红；cold实际请求0、warm只预热1，两个都won/answered/heldDirect=false，STOP/outer-open/no-orphan cleanup过，138.193秒/11files/group空/identity核。原39全过。当前读取候选WIP仅将原early attempt+原timeout与boxed hop准备select合作poll；原encode/0RTT/accepted回复task完全保留，不增加业务尝试；adopt后即drop hop+pending lease，再等原response。无普通早失败→新hop补握手的fallback修改，此分支仍需独立合同。本候选未验证。
 
 - **读取race当前baseline95bec358/treeee8d6f2d/snapshotbc291930**，Linux新run以ledger为准，正在执行；首04612f40仅远端格式（45.771秒/10files/group空已核），不作行为红。Mac rank42853193309此前register API EOF在写ledger前失败，已确认run存在/control68且无row/ref/folder，再仅恢复登记原run成功；没有重发构建。
 - **用户最新状态询问答复（2026-11-10约16:20 UTC）**：下一份可评审候选约2–4工程小时；完整N0–N5及真机/换网/能耗仍3–5天量级。此前4–6小时是原下一批候选（原锚约13:00 UTC），新复现交接与缓存排序使候选慢于原估；已经向用户说明口径不清，不能再次无声重置时钟。不是完成保证，手机App仍未修改。继续执行，不因状态问句或compact停下。
