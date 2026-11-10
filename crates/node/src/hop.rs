@@ -43,6 +43,9 @@ use khor_core::{Road, RoadKind};
 use khor_net::carry::Carrier;
 
 use crate::Node;
+
+#[path = "hop/stream_trace.rs"]
+mod stream_trace;
 use crate::tunnel::{NO_ROUTE, OK, REFUSED};
 use crate::wires::{CarrierComparison, Proto};
 
@@ -698,7 +701,9 @@ impl Node {
                 tried,
             },
         );
-        let attached = self.carry.attach(peer, Carrier::Hop { via }, recv, send);
+        let attached = stream_trace::attach(
+            &self.carry, peer, Carrier::Hop { via }, outer_wire, "initiator", (send, recv),
+        );
         let attachment = attached.serial();
         let (handoff, handed) = tokio::sync::oneshot::channel::<HopHandoff>();
         let mut pending = PendingHop {
@@ -1014,7 +1019,7 @@ impl Node {
                     })
                 });
                 let _riding = (self.wires.hop_held(from), self.wires.hop_held(&y));
-                let copying = splice((send, recv), (ys, yr));
+                let copying = stream_trace::splice((send, recv), (ys, yr), from_id, (incoming_wire, onward_wire));
                 if std::env::var_os("KHOR_NET_DIAGNOSTICS").is_some() {
                     tokio::pin!(copying);
                     let mut look = tokio::time::interval(LOOK_EVERY);
@@ -1052,9 +1057,10 @@ impl Node {
                 if send.write_all(&[OK]).await.is_err() {
                     return;
                 }
-                let attached = self
-                    .carry
-                    .attach(x, Carrier::Hop { via: from_id }, recv, send);
+                let attached = stream_trace::attach(
+                    &self.carry, x, Carrier::Hop { via: from_id }, incoming_wire,
+                    "receiver", (send, recv),
+                );
                 khor_net::carry::observe_lifecycle(&asker, "hop_outer_bound", || {
                     serde_json::json!({
                         "role": "receiver", "attachment": attached.serial(),
@@ -1097,6 +1103,11 @@ fn outer_facts(outer: &iroh::endpoint::WeakConnectionHandle) -> serde_json::Valu
         Some(conn) => serde_json::json!({
             "wire": conn.stable_id(), "closed": conn.close_reason().is_some(),
             "measurements": khor_net::path::path_facts(&conn),
+            "transport": format!("{:?}", conn.stats()),
+            "transport_paths": conn.paths().iter().map(|p| serde_json::json!({
+                "addr": format!("{:?}", p.remote_addr()), "selected": p.is_selected(),
+                "stats": format!("{:?}", p.stats()),
+            })).collect::<Vec<_>>(),
         }),
         None => serde_json::json!({"dropped": true}),
     }
