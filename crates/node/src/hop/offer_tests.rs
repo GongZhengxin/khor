@@ -282,3 +282,6 @@ async fn cancelling_old_preparation_preserves_the_new_attachment() {
 
 #[path = "prepare_budget_tests.rs"]
 mod prepare_budget;
+
+#[path = "published_tests.rs"]
+mod published;

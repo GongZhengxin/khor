@@ -653,6 +653,8 @@ impl Node {
             ep.offer_addrs(iroh::EndpointAddr::from_parts(peer, [addr]))
                 .await;
         }
+        #[cfg(test)]
+        self.wires.hold_hop_offered_for_test(attachment).await;
         if handoff.send(asked).is_err() {
             return false;
         }
