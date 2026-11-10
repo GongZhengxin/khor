@@ -1386,7 +1386,20 @@ impl EndpointInner {
     /// ([`RemoteStateMessage::CloseCustom`]). Nothing when no actor runs.
     pub(crate) async fn close_custom_paths(&self, id: EndpointId) {
         if let Some(actor) = self.remote_actors.get(&id) {
-            actor.send(RemoteStateMessage::CloseCustom).await.ok();
+            actor.send(RemoteStateMessage::CloseCustom(None)).await.ok();
+        }
+    }
+
+    pub(crate) async fn close_custom_paths_if(
+        &self,
+        id: EndpointId,
+        still_gone: Box<dyn Fn() -> bool + Send + Sync>,
+    ) {
+        if let Some(actor) = self.remote_actors.get(&id) {
+            actor
+                .send(RemoteStateMessage::CloseCustom(Some(still_gone)))
+                .await
+                .ok();
         }
     }
 

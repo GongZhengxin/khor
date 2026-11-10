@@ -1453,6 +1453,21 @@ impl Endpoint {
         self.inner.close_custom_paths(endpoint_id).await;
     }
 
+    /// Close carried paths only if their owner still considers the carrier gone.
+    ///
+    /// The predicate runs in the remote actor immediately before closing paths,
+    /// rather than when this request is enqueued. It must only inspect shared
+    /// state synchronously and must not block on I/O or acquire asynchronous locks.
+    pub async fn close_carried_if(
+        &self,
+        endpoint_id: EndpointId,
+        still_gone: impl Fn() -> bool + Send + Sync + 'static,
+    ) {
+        self.inner
+            .close_custom_paths_if(endpoint_id, Box::new(still_gone))
+            .await;
+    }
+
     /// Returns a [`Watcher`] for any net report runs from this [`Endpoint`].
     ///
     /// <div class="warning">

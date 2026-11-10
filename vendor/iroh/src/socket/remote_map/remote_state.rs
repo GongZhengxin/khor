@@ -593,7 +593,10 @@ impl RemoteStateActor {
             RemoteStateMessage::NetworkChange { is_major } => {
                 self.handle_msg_network_change(is_major);
             }
-            RemoteStateMessage::CloseCustom => {
+            RemoteStateMessage::CloseCustom(still_gone) => {
+                if still_gone.is_some_and(|check| !check()) {
+                    return;
+                }
                 // khor patch 13: the road under every custom (carried)
                 // path to this remote is gone, so close them now. Upstream
                 // leaves a path until its idle timeout (15 s) and the
@@ -2178,7 +2181,8 @@ pub(crate) enum RemoteStateMessage {
     NetworkChange { is_major: bool },
     /// khor patch 13: closes every custom path to this remote on every
     /// connection; the road under them is gone.
-    CloseCustom,
+    #[debug("CloseCustom(..)")]
+    CloseCustom(Option<Box<dyn Fn() -> bool + Send + Sync>>),
 }
 
 /// Information about a holepunch attempt.

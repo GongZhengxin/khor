@@ -371,7 +371,8 @@ pub(crate) async fn let_path_go(
         khor_net::carry::observe_lifecycle(peer, "carried_close_requested", || {
             serde_json::json!({})
         });
-        ep.close_carried(peer).await;
+        let links = links.clone();
+        ep.close_carried_if(peer, move || !links.has(&peer)).await;
     }
 }
 

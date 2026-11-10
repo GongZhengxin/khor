@@ -572,6 +572,8 @@ iroh 随即重新选路。连接只剩这一条路径时 noq 拒绝关，照旧�
 路径关了以后，ssh 重连上来的链路由 `carry::offer_path`（补丁 12）当场在活着的连接上再开。
 改动约 35 行。上游没有对应 PR，升级 iroh 时要重新打。
 
+2026-11-10 feat/net 扩展候选：`Endpoint::close_carried_if` 将一个只读共享状态的同步predicate带到同一RemoteStateActor，在实际关闭之前判断；Node的`let_path_go`用最新Links.has保护已经出现的替代载体，既有无条件`close_carried`保持原语义。该predicate不得做IO/阻塞等待，只活到有界消息处理完，不新增task/timer/probe。真实Node旧行为761c4291为24/1红（实际replacement offer后仍Closed），候选需原fixture/完整net-node双OS与net-vendor验证；排队期间出现新carrier、pending Noq开关及ears epoch仍待单独合同，不声称整个代际问题已解决。
+
 ### 12. `src/socket/remote_map/remote_state.rs`、`src/endpoint.rs`：连接活着时交来的转连地址当场打开（2026-10-09，NET-DIRECT 第四步）
 
 上游收到新地址（`ResolveRemote`，`connect` 时发）只记下，不在已有连接上开路；补丁 6 只在连接加入时补开自定义

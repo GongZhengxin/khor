@@ -533,3 +533,20 @@ a35/95e/c74已双OS全12组绿，完成已登记selected-carried与完整准备�
 当前incoming候选69a6在Linux4c316093全12绿/hop23，Mac42825268619已出artifact待身份与原门核，不预记接受。下一原源码行为不变，仅cfg(test)单次gate在真实let_path_go检查links无连接之后、读取ears/发送close之前。独立scratch Node当前ears为真实Endpoint；A/B先实际IP握手/echo，再通过duplex frame流开真实Custom路径且有测量；断旧stream并join两端Attached后暂停old-close。replacement控制先建立新stream并实际offer同Custom tuple，随后release旧close。真实remote_info对同actor作队列处理barrier，观察Custom Closed事件/当前paths与仍可用IP echo。无replacement负控应真实关闭Custom且IP继续。原gate不进生产，不使用GUI/store或个人身份，不把内存流声称实际SSH/两腿/WAN。
 
 若旧行为真实红，后续修复需处理完整顺序：新offer已完成时迟来的旧close不能赢；close已发但Noq Abandoned未回时的新offer不能被“已开着”吞掉；pending Opened旧完成和换ears也需合同。单独在异步close前再check一次links或只包应用层mutex不足以关闭这些矩阵。候选可考虑以Links单一所有者产生每peer单调revision，Iroh actor接收带revision的desired custom状态，并在实际路径事件后继续收敛；这是提议，不是已实现或已验证，不能新增无界task/probe或把网络epoch和remote Asleep混为一层。
+
+
+### 13:46UTC revision方案设计备忘（尚未实施，等旧行为实际结果）
+
+- 单一事实来自Links的实际提交；不要用当前Attached.serial直接作为按时间有序版本：现在serial在取得links锁之前fetch_add，两个线程的取号和commit顺序可以相反。新revision必须在同一links锁内分配，attach、匹配detach、当前serial的自然I/O结束才推进；旧serial结束不得推进新载体。
+- 现有last map已经跨断线保留每peer carrier，可扩展carrier+revision；snapshot同时读取active map和last，固定links→last锁顺序。在现有map内保留事实，避免第三个无界表，且不在数据包热路径/磁盘读取版本。只为当前owner实际删除推进revision，不因旧Future完成/重复close推进。
+- Iroh actor接收每CustomAddr的(version,available) desired state；老版本不生效，等版本相同状态幂等。不要简单warm ResolveRemote后无条件Close；取消在这两个await之间仍须有既有owner保证最终reconcile。应优先通过Socket actor单个带ack消息到RemoteStateActor，激活可按现有resolve创建actor，失活没有actor时不为无连接peer白建task。
+- desired false要约束generic ResolveRemote、pending_open_paths、path-id等待者、Noq Established/Abandoned后的收敛；desired true在旧path关闭但Abandoned未处理时不能被conn_state“已存在tuple”吞掉。不能把last-open-path拒绝关闭当已关闭，不能靠新永久timer/probe修顺序。单次check或只应用层async mutex不能证明这些性质。
+- 同peer新ears是新endpoint容器，重新同步当前Links状态；旧watcher迟到不能改变新的desired generation。载体generation、underlay实际路径变化的measurement epoch、本地IPv4/v6网络epoch、peer正向contact与authenticated resting事实分层，不能全局清缓存来混同。N1可研究underlay变化使inner质量窗口进入新epoch，但不得提前合未接受42–44、重置拥塞/放宽收益和2秒门、增加未计量包预算。
+- 新vendor行为需独立actor旧红/新绿（late close/new offer、pending Noq开/关、actor重建/ears、无变化负控）与原whole Iroh/Noq合同，及真实Node全net-node双OS；之后才并行普通拨号和hop准备。Noq/API根因若证据否定该提议，先改设计，不把此备忘当实现结论。
+
+
+### 13:53UTC 首个late-close合同实测后候选
+
+8048/73ff/5e19在761c4291真实hop24/1红：新frame stream实际offer、Custom有测量后，旧close仍导致真实Closed、carried=false；无replacement确实关闭Custom且IP继续的负控与此前23全过，126.109秒/11artifact/identity核/group空。原fixture全部冻结。
+
+第一候选先把条件检查放在实际RemoteStateActor执行关闭的点：新增close_carried_if携带仅检查共享Links的同步guard，既有close_carried保持无条件，复用同一个CloseCustom消息；actor执行前读最新has，变为存在则不关。guard只活到有界消息被处理，不新增task/timer/probe/版本表或IO，信任/关闭最后一条path原语义不变；按既有Iroh13扩展记录，不与隔离42–44编号冲突。这个最小合同尚未验证，且**不能凭它关闭“已排队的close之后才有新carrier”、pending Noq open/Abandoned、ears与网络epoch矩阵**；要再用真实actor排队窗口合同决定是否升级revision设计。前一revision备忘保留为提议，不提前落入实现。
