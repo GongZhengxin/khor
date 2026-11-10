@@ -1,6 +1,8 @@
 # Vendor 补丁覆盖与退出审计
 
-2026-11-10，进行中。当前53项：iroh 1–41、Noq 1–12；原48全部保留。新增Iroh38实际NAT tuple红→绿，Noq12 floor单元红→绿；Iroh39/40/41的单元已通过，但物理双端四秒、CPU稳定性/成本仍未收口，不等于完成验收。
+2026-11-11，进行中。**主53已存在补丁之外新增候选Iroh45 scaffold（合计54），42–44仍隔离预留未合主。45旧地址撤回当前返回0，未实施/接受，须状态红绿、实际live guard与Node错误身份回退及原全部vendor回归。**
+
+历史盘点：2026-11-10，进行中。当前53项：iroh 1–41、Noq 1–12；原48全部保留。新增Iroh38实际NAT tuple红→绿，Noq12 floor单元红→绿；Iroh39/40/41的单元已通过，但物理双端四秒、CPU稳定性/成本仍未收口，不等于完成验收。
 当前Iroh41准确1514516e/tree94f45efd/snapshotf07db0c9在Turing035447实际fmt/439Noq/50路径/9选家绿；主分支cherry-pick为0c223ce4+724582b9。整源Mac42753148983准确e15651b7实际便携/IPC18/原32/独立process绿；不是vendor全套或最终Quality。Iroh40 fullsamples物理两次约5.4秒均四秒红，Iroh41完整物理仍待。CPU quiet旧at-most-one gate实际红及新1.3秒worst不能由单元/诊断绿关闭，准确版本见STATE。
 覆盖盘点不等于行为验收或上游等价性验证，缺口保持未完成。下文旧run与旧计数是历史证据，不当当前状态。
 
@@ -122,3 +124,7 @@ Noq4另补真实虚拟连接专项a_backup_probe_is_acked_when_the_responders_da
 | 41 | 故障恢复2秒内新packet显著下降才重启quality窗口，25%再次改善/最多3阶；packet-send epoch阻旧ACK，confidence按当前recent数 | Turing033054真实49绿1红→035447真实50全绿，整个tests SHA5c4da4b4不变；新策略物理与CPU/成本未接受，首次完整样本e3bf仅初连超时、无replug，保留不冒充恢复失败。须同源至少3轮双端四秒与原稳定性/黑洞/字节预算后退出；上游等价未查 |
 
 Noq1/5缺少专门行为覆盖的状态不变。没有升级、删补丁或发布。
+
+## Iroh45 cold IP hint候选
+
+新的公共API只送既有actor，执行时重读live连接；拟只撤掉失败前的IP来源，不撤Relay/Custom和更新的地址。当前scaffold不改地址簿。证据锚3a7424b7（prepare完成1985ms仍UnknownIssuer），新state/live guard合同先红再实现，原439/50/9保持。首次失败边界不是完整network/address epoch，不替代N4/手机；42–44编号仍由隔离试验占用。

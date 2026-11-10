@@ -1,10 +1,13 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-10T17:12:33.719302+00:00。**完整N0–N5仍未完成，用户已授权持续实施；不得因分项绿、旧goal paused或compact停下。** 速度/体验优先、个人可信设备网。root串行，无子智能体；没有main合并、发布、采购、生产部署或改已装App/store的授权。长期范围见[PLAN](PLAN.md)、[REQUIREMENTS](REQUIREMENTS.md)、[ACCEPTANCE](ACCEPTANCE.md)、[NEXT-DESIGN](NEXT-DESIGN.md)。上版STATE完整逐字保存在[历史](HISTORY-20261110-before-peer-contact-state.md)，含更早历史链；本页替代旧段落的当前状态，不删历史失败或矩阵。
+更新：2026-11-10T17:37:03.345366+00:00。**完整N0–N5仍未完成，用户已授权持续实施；不得因分项绿、旧goal paused或compact停下。** 速度/体验优先、个人可信设备网。root串行，无子智能体；没有main合并、发布、采购、生产部署或改已装App/store的授权。长期范围见[PLAN](PLAN.md)、[REQUIREMENTS](REQUIREMENTS.md)、[ACCEPTANCE](ACCEPTANCE.md)、[NEXT-DESIGN](NEXT-DESIGN.md)。上版STATE完整逐字保存在[历史](HISTORY-20261110-before-peer-contact-state.md)，含更早历史链；本页替代旧段落的当前状态，不删历史失败或矩阵。
 
 ## 恢复先核实际句柄
 
 ### 最新覆盖状态（优先于下方历史段落）
+
+- **诊断3a7424b7已采核42/1红**：首次Refused时early_data=false/had_carried=false/preparing=true，remaining1987；准备完成carrier=true/caller未到且remaining1985；新carried握手实际发起，仍UnknownIssuer。142.184秒/11files/group空；不是总预算耗尽。源码共同地址簿保留旧IP，当前carried-only并不隔离它；这是下一层修复依据，不称已证手机根因。
+- 当前WIP **Iroh45 scaffold**：新Endpoint/Socket/actor消息，actor执行时任何live连接均拒绝撤回；RemotePathState discard当前stub返回0，未改变地址簿行为。拟只移除source timestamps全部<=首次失败边界的IP，新来源/Relay/Custom保留。新增状态old/new-source与实际live-wire字节负控，先跑vendor状态旧红。42–44隔离预留未合主，主由53增加到**54含未实现45**，不升级或删除其他补丁。Node还未调用新API，cold candidate仍未接受。
 
 - **cold fallback27686初候选仍失败，不接受**：tree24bbda49/snapshot46437db8，Linuxa24d860e实际43项42/1，positive answered/carried=false、requests0；NO_ROUTE控制及原41仍绿，142.286秒/11files/group空核。不能假定新carrier握手已起或断言Noq旧IP是根因，需阶段证据。
 - 当前HEADa7dcf2a6仅在真实early fallback判定/准备完成/普通carried握手前后加cfg(test)日志，不改生产分支/fixture/期限。sourcefb428050/snapshot475937e8、diagnostic run见ledger，现已送Turing；未测，不记候选绿。主vendor仍53，ConnectOptions源码只有transport_config/additional_alpns，无公开initial-path覆盖，暂不改vendor。

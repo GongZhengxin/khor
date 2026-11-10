@@ -1382,6 +1382,19 @@ impl EndpointInner {
         rx.await.ok()
     }
 
+    pub(crate) async fn discard_ip_hints_if_idle(
+        &self,
+        id: EndpointId,
+        before: n0_future::time::Instant,
+    ) -> usize {
+        let Some(actor) = self.remote_actors.get(&id) else { return 0 };
+        let (tx, rx) = tokio::sync::oneshot::channel();
+        if actor.send(RemoteStateMessage::DiscardIpHints { before, tx }).await.is_err() {
+            return 0;
+        }
+        rx.await.unwrap_or(0)
+    }
+
     /// khor patch 13: closes every custom path to `id`
     /// ([`RemoteStateMessage::CloseCustom`]). Nothing when no actor runs.
     pub(crate) async fn close_custom_paths(&self, id: EndpointId) {

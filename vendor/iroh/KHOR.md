@@ -12,6 +12,14 @@
 
 ## 补丁
 
+### 45. 无live连接时按失败边界撤回旧IP提示（2026-11-11，候选scaffold）
+
+42–44在隔离worktree试验，编号预留且未合主。本条是主分支第54项（Iroh1–41/45、Noq1–12），尚未实现/接受；初始discard函数返回0，先取新状态合同的真实红。
+
+3a7424b7的真实stale-IP不同身份场景：可信middle准备完还剩1985ms，新carried握手仍收UnknownIssuer。Socket将地址加入共同RemotePathState，传carried-only不等于撤回旧IP。拟只在actor执行时没有任何live连接的条件下，移除所有来源时间均不晚于首次失败边界的IP提示；之后新提示及Relay/Custom保留，当前连接不被关闭。无安全校验放宽、探针/任务/永久timer；重新输入地址可再学习，不是永久blacklist。
+
+候选需原Noq/iroh全部合同、状态新旧/新来源、真实live wire负控、Node stale-IP red→green与双OS完整回归；未覆盖网络/地址的完整逻辑epoch，fresh来源时间只是本次边界。上游若提供等价的候选失效/受限握手来源及安全并发保护，按同一真实合同退出。不得将本scaffold记成功或缩减原N0–N5。
+
 ### 41. 恢复中的显著向下变化开启新质量窗口，旧packet不得刷新新窗口（2026-11-10，feat/net候选）
 
 40的fc435ccd预约已满足3次/250ms/2秒，但两次探测早于外层Direct恢复，近期中位数把早期慢结果保留2秒，再等正常2秒确认，实际Go5392/5630ms，原采样门48/51。原物理、两个四秒checker及失败保留。

@@ -1444,6 +1444,19 @@ impl Endpoint {
         let _ = self.inner.resolve_remote(addr).await;
     }
 
+    /// Discard IP hints older than `before` only while the peer has no live connection.
+    ///
+    /// This does not close paths, alter authentication or remove relay/custom addresses.
+    /// The remote actor rechecks live ownership and each source's timestamp when it runs.
+    /// New addresses can be supplied normally after a cold carrier retry.
+    pub async fn discard_ip_hints_if_idle(
+        &self,
+        endpoint_id: EndpointId,
+        before: n0_future::time::Instant,
+    ) -> usize {
+        self.inner.discard_ip_hints_if_idle(endpoint_id, before).await
+    }
+
     /// khor patch 13: **closes every custom (carried) path to a remote**,
     /// on every live connection to it, because the road under them ended.
     /// The path selector then chooses again among the rest at once, rather

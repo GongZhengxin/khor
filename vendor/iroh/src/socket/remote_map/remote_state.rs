@@ -593,6 +593,23 @@ impl RemoteStateActor {
             RemoteStateMessage::NetworkChange { is_major } => {
                 self.handle_msg_network_change(is_major);
             }
+            RemoteStateMessage::DiscardIpHints { before, tx } => {
+                // Recheck at execution, not enqueue: a newly established or
+                // still-pending connection must keep its current addresses.
+                let live = self.connections.values().any(|state| {
+                    state.handle.upgrade().is_some_and(|conn| conn.close_reason().is_none())
+                });
+                let removed = if live { 0 } else {
+                    self.state.paths.discard_ip_hints_before(before)
+                };
+                if !live && removed > 0 && self.state.selected_path.as_ref().is_some_and(|path| {
+                    matches!(path.remote(), transports::Addr::Ip(_))
+                        && !self.state.paths.addrs().any(|addr| addr == path.remote())
+                }) {
+                    self.state.selected_path = None;
+                }
+                let _ = tx.send(removed);
+            }
             RemoteStateMessage::CloseCustom(still_gone) => {
                 if still_gone.is_some_and(|check| !check()) {
                     return;
@@ -2179,6 +2196,11 @@ pub(crate) enum RemoteStateMessage {
     RemoteInfo(oneshot::Sender<RemoteInfo>),
     /// The network status has changed in some way
     NetworkChange { is_major: bool },
+    /// Retire only old, unconnected IP hints for a cold carrier retry.
+    DiscardIpHints {
+        before: Instant,
+        tx: oneshot::Sender<usize>,
+    },
     /// khor patch 13: closes every custom path to this remote on every
     /// connection; the road under them is gone.
     #[debug("CloseCustom(..)")]

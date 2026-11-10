@@ -171,3 +171,6 @@ async fn a_client_identity_failure_can_fall_back_to_the_later_peer_relay() {
 async fn a_later_middle_refusing_the_route_still_fails_without_a_request() {
     observe(false).await;
 }
+
+#[path = "hint_guard_tests.rs"]
+mod hint_guard;
