@@ -976,7 +976,9 @@ impl Wires {
     }
 
     #[cfg(test)]
-    pub(crate) fn gate_pending_carrier_for_test(&self) -> (
+    pub(crate) fn gate_pending_carrier_for_test(
+        &self,
+    ) -> (
         tokio::sync::oneshot::Receiver<u64>,
         tokio::sync::oneshot::Sender<()>,
         tokio::sync::oneshot::Receiver<()>,
@@ -984,20 +986,34 @@ impl Wires {
         let (entered, ready) = tokio::sync::oneshot::channel();
         let (release, released) = tokio::sync::oneshot::channel();
         let (reviewed, completed) = tokio::sync::oneshot::channel();
-        *self.pending_carrier_test_gate.lock().unwrap_or_else(|p| p.into_inner()) =
-            Some(PendingCarrierTestGate { entered, release: released, reviewed });
+        *self
+            .pending_carrier_test_gate
+            .lock()
+            .unwrap_or_else(|p| p.into_inner()) = Some(PendingCarrierTestGate {
+            entered,
+            release: released,
+            reviewed,
+        });
         (ready, release, completed)
     }
 
     #[cfg(test)]
-    pub(crate) async fn hold_pending_carrier_for_test(&self, attachment: u64)
-        -> Option<tokio::sync::oneshot::Sender<()>> {
-        let gate = self.pending_carrier_test_gate.lock().unwrap_or_else(|p| p.into_inner()).take();
+    pub(crate) async fn hold_pending_carrier_for_test(
+        &self,
+        attachment: u64,
+    ) -> Option<tokio::sync::oneshot::Sender<()>> {
+        let gate = self
+            .pending_carrier_test_gate
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .take();
         if let Some(gate) = gate {
             let _ = gate.entered.send(attachment);
             let _ = gate.release.await;
             Some(gate.reviewed)
-        } else { None }
+        } else {
+            None
+        }
     }
 
     /// A freshly dialled wire becomes the one this key holds.

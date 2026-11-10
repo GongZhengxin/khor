@@ -9,14 +9,19 @@ async fn observe_successor(successor: bool) {
     let mut opening = f.opening();
     let serial = ready(entered).await;
     let remote = tokio::time::timeout(Duration::from_secs(2), &mut f.attached_target)
-        .await.unwrap().unwrap();
+        .await
+        .unwrap()
+        .unwrap();
     let conn = tokio::time::timeout(
         Duration::from_secs(2),
         f.ep.connect(
             iroh::EndpointAddr::from_parts(f.target_ep.id(), [transport_addr(&f.target_ep.id())]),
             INNER_ALPN,
         ),
-    ).await.unwrap().unwrap();
+    )
+    .await
+    .unwrap()
+    .unwrap();
     assert!(echo(&conn).await);
     assert!(f.node.wires.live(&f.target.id, Proto::Main).is_none());
     let (drained, reconsider, reviewed) = f.node.wires.gate_pending_carrier_for_test();
@@ -28,18 +33,27 @@ async fn observe_successor(successor: bool) {
     // happened yet; this is an actual new caller, not a cloned old lease.
     let next = successor.then(|| f.node.wires.pending_dial(&f.target.id));
     reconsider.send(()).unwrap();
-    tokio::time::timeout(Duration::from_secs(2), reviewed).await.unwrap().unwrap();
+    tokio::time::timeout(Duration::from_secs(2), reviewed)
+        .await
+        .unwrap()
+        .unwrap();
     let kept = f.node.carry.has(&f.target_ep.id());
     let answered = if successor { echo(&conn).await } else { false };
     if successor && kept {
         f.node.wires.adopt(&f.target.id, Proto::Main, conn.clone());
     }
     drop(next);
-    let outer_open = f.outer_local.close_reason().is_none() && f.outer_remote.close_reason().is_none();
+    let outer_open =
+        f.outer_local.close_reason().is_none() && f.outer_remote.close_reason().is_none();
     f.close(serial).await;
-    tokio::time::timeout(Duration::from_secs(2), remote.ended()).await.unwrap();
+    tokio::time::timeout(Duration::from_secs(2), remote.ended())
+        .await
+        .unwrap();
     assert!(outer_open);
-    assert_eq!(kept, successor, "the cleanup decision must include the new pending caller");
+    assert_eq!(
+        kept, successor,
+        "the cleanup decision must include the new pending caller"
+    );
     assert_eq!(answered, successor);
 }
 

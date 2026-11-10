@@ -680,12 +680,16 @@ impl Node {
             if handoff.cancelled && !wires.carrier_in_use(&id) {
                 links.detach_attached(&peer, Carrier::Hop { via }, attachment);
                 #[cfg(test)]
-                if let Some(reviewed) = reviewed { let _ = reviewed.send(()); }
+                if let Some(reviewed) = reviewed {
+                    let _ = reviewed.send(());
+                }
                 crate::carry::let_path_go(&node, &links, peer).await;
                 return;
             }
             #[cfg(test)]
-            if let Some(reviewed) = reviewed { let _ = reviewed.send(()); }
+            if let Some(reviewed) = reviewed {
+                let _ = reviewed.send(());
+            }
             let mut held = 0u8;
             loop {
                 tokio::select! {
