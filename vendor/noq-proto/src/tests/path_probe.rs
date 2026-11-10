@@ -60,3 +60,39 @@ fn path_ping_during_handshake_does_not_send_one_rtt_only_ack_request() {
     assert!(!pair.client_conn_mut(client).is_handshaking());
     assert_eq!(pair.client_conn_mut(client).stats().frame_tx.immediate_ack, 0);
 }
+
+#[test]
+fn resumed_path_ping_does_not_put_ack_request_in_zero_rtt() {
+    let _guard = subscribe();
+    let mut pair = Pair::default_with_deterministic_pns();
+    let mut config = client_config_with_deterministic_pns();
+    Arc::get_mut(&mut config.transport).unwrap().mtu_discovery_config(None);
+    let first = pair.begin_connect(config.clone());
+    pair.drive();
+    pair.server.assert_accept();
+    let now = pair.time;
+    pair.client_conn_mut(first).close(now, VarInt(0), Bytes::new());
+    pair.drive();
+
+    let client = pair.begin_connect(config);
+    assert!(pair.client_conn_mut(client).has_0rtt());
+    assert!(pair.client_conn_mut(client).is_handshaking());
+    let stream = pair.client_streams(client).open(Dir::Uni).unwrap();
+    const MSG: &[u8] = b"path probe must preserve accepted early bytes";
+    pair.client_send(client, stream).write(MSG).unwrap();
+    pair.client_conn_mut(client).ping_path(PathId::ZERO).unwrap();
+    // No server step: these frames can only use Initial/0-RTT keys.
+    pair.drive_client();
+    let sent = pair.client_conn_mut(client).stats().frame_tx;
+    assert!(sent.stream > 0);
+    assert_eq!(sent.immediate_ack, 0);
+
+    pair.drive();
+    assert!(pair.client_conn_mut(client).accepted_0rtt());
+    let server = pair.server.assert_accept();
+    let mut recv = pair.server_recv(server, stream);
+    let mut chunks = recv.read(false).unwrap();
+    assert_matches!(chunks.next(usize::MAX),
+        Ok(Some(chunk)) if chunk.offset == 0 && chunk.bytes == MSG);
+    let _ = chunks.finalize();
+}
