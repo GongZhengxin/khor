@@ -1,11 +1,13 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-10 04:34 UTC。用户已授权继续完整N0–N5，尚未完成。root串行，无子智能体。旧状态逐字保存在[HISTORY-20261110-before-window-and-process](HISTORY-20261110-before-window-and-process.md)及历史链；计划/硬要求/验收以[PLAN](PLAN.md)、[REQUIREMENTS](REQUIREMENTS.md)、[ACCEPTANCE](ACCEPTANCE.md)为准。速度/体验优先，可信个人设备网；无main合并、发布、中继采购/生产部署授权。
+更新：2026-11-10 04:51 UTC。用户已授权继续完整N0–N5，尚未完成。root串行，无子智能体。旧状态逐字保存在[HISTORY-20261110-before-window-and-process](HISTORY-20261110-before-window-and-process.md)及历史链；计划/硬要求/验收以[PLAN](PLAN.md)、[REQUIREMENTS](REQUIREMENTS.md)、[ACCEPTANCE](ACCEPTANCE.md)为准。速度/体验优先，可信个人设备网；无main合并、发布、中继采购/生产部署授权。
 
 ## 恢复先核实际句柄
 
 - 主worktree `/Volumes/disk0/Khor/worktrees/current/khor-net`，feat/net，功能HEAD757e013f（此后仅计划文档），53 vendor。控制worktree `khor-build-net` feat/net HEADccd8576cabec82510019c786d79948b66d57bc74，已推。先核Git/receipt/GH/真实PID，不盲重发；本段优先旧历史追加，逐字旧状态在[HISTORY-20261110-before-quic-recovery-diagnostics](HISTORY-20261110-before-quic-recovery-diagnostics.md)。
-- **Turing唯一重型任务：turing-20261110T043226Z-84992000**，PID1678906，04:32:48UTC启动，net-wan-build/controlccd8576。使用两OS已通过的同canonical source757e013f/tree2d218d48/snapshot3f0c7ea6，只构建WAN worker；不得冒充真跨网结果。Mac相同canonical net-wan-build request03c60bc2d89b46c3acc7e53a2f29ab32正在上传/派发，先查common receipt拿实际run ID，不重发。全局wan-binary-manifests仍旧ff608，等两端准确hash齐全再建新cohort，不能混用。
+- **Turing唯一重型任务：turing-20261110T044937Z-36296fd4**，PID1694050，04:49:58UTC启动，netlab-peer-mobility-samples/ef0b。隔离88c3c3b9/tree212b08e7/snapshot41149e3c，在c090诊断上再加line_to_inner等待锁/hop_ahead/实际dial开始结束的opt-in lifecycle，不改策略，未合主。原whole物理fixture保持。接下来先collect/分类cold-start，再关联recovery每copy，不盲刷绿。
+- **当前canonical真跨网120/120已绿**：coordinator4cee410c97601afe/Mac42757732776/controlccd8576，同757e013f/tree2d218d48/snapshot3f0c7ea6；双向各30目录+30固定29B正文均ok，双端fresh配对ID相符，MAC11blobs/source/hash核。实际公共Relay101.200.80.77:3340，非Direct/peer/移动/手机/p99验收。两端joined/owned空/Linux原group空/锁释放，临时GH secret已删，Linuxfresh identity已清；Mac trusted成功清理路径已执行，直接目录观测与6+2 lifetime fixture GC尚待。详wan-current-directory-body-proof.json。
+- **新cohort生命周期Mac3/3+Linux3/3真绿**：stop/EOF/kill均Node真正join/worker0/owned空/锁释放；wan-current-lifecycle-proof.json。最初两stop运行的post-observer脚本IndentationError保留，readonly恢复已核清理且不计pass，然后新六轮绿。guardian69e7346与currentccd脚本字节一致。ops/wan-runtime-contracts.py只修observer literal/dedent（3条remote snippet语法核），旧副本与恢复记录保留。新wan-binary-manifests已同3f0 cohort，旧ff608逐字备份；MacSHAcd9be1a8/LinuxSHA0e063201，binary不在本机执行。
 - **N1当前未验收，一绿一红**：Iroh41同源f07db0c9 fullsamples ad62734d双端3816/3613ms绿，repeat2 34871ed6为3747/7238ms、一端红。后续诊断源c090b190/tree381b9052/snapshot7d23febd只增加关联conn/path的debug观测，未合主；Turing042825-2a7fe04f已实际初连10.032秒超时/error1、未replug、rc101/原group空，不能当恢复时序。保留cold-start独立缺陷，不盲刷第三绿或猜测调参。
 - **N2新资源分项同源Mac/Linux全绿**：Mac42755640884与Turing042313-d964a40d，准确757e013f/tree2d218d48/snapshot3f0c7ea6/controlccd8576。实际fmt/portable/IPC18/本机32/process1/远端QUIC32/原canonical busy-wire整例均绿，两端process预算1006ms左右、真实join/reap；源/控制/整fixture/hash均核。前驱两轮formatter、一次test-build错误与真实QUIC红完整保留。
 - macserver SSH最近03:54UTC成功，hostname z13deMac-mini.local；此前banner timeout历史保留，不当Khor数据面故障。A=macserver/B=Turing天然异网，P=iPhone，不再要求另找两电脑。当前源提交用本机GitHub SSH上传，worker保持原API bundle，无个人凭据转发。
@@ -71,3 +73,5 @@
 最新验证：source-refs-audit-20261110-306.json已核306refs/tree/control与30ops hash，此后逐条pin；当前有新增Turing证据通用identity校验器（不分类行为）及probe数据checker。8个pure Python预算正负样例绿。fixture/测量门/旧失败不覆盖。
 
 下一：collect两端当前canonical WAN build并核manifest；建立新cohort后同版本lifecycle stop/EOF/kill、再v2跨网30目录+30正文每方向。Mac不编译/运行本机下载binary，Turing独占heavy guard。N1先cold-start与copy观测，绝不把单次绿当最优策略。完整N0–N5继续。
+
+N4新增事实（2026-11-10 04:51UTC）：正文/目录真实双向各30，worker elapsed_us最近秩p50/p95/max：Mac→Linux目录55382/58815/76133、正文61322/64630/66470；Linux→Mac目录59527/64622/65616、正文55671/58949/59727。caller/controller数据另存proof（约63–73ms p50/p95），全120outcomes无过滤。不是与旧ff608的匹配性能比较，也不是专门cold/p99。coordinator旧ledger registration误标directory_v1，实际两端records均directory_and_content_v2；原label保留并artifact_measurement_revision/erratum补正，ops未来label已修，旧脚本留证，不重跑已实证业务。
