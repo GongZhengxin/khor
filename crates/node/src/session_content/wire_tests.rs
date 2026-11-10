@@ -26,6 +26,19 @@ mod process_contracts;
 #[path = "quic_cancel_tests.rs"]
 mod quic_cancel_contracts;
 
+#[path = "quic_stop_tests.rs"]
+mod quic_stop_contracts;
+
+pub(crate) fn note_quic_reply_event(
+    root: &Path,
+    wire: usize,
+    stream: String,
+    kind: &'static str,
+    explicit_stop: Option<bool>,
+) {
+    quic_stop_contracts::note(root, wire, stream, kind, explicit_stop);
+}
+
 #[derive(Default)]
 struct Gate {
     count: AtomicUsize,

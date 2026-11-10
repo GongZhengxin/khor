@@ -4058,6 +4058,8 @@ impl Node {
                 .store(crate::now_ms(), std::sync::atomic::Ordering::Relaxed);
             let (node, ep, remote, mut done) =
                 (self.clone(), ep.clone(), remote.clone(), done.clone());
+            #[cfg(test)]
+            let reply_wire = conn.stable_id();
             tokio::spawn(async move {
                 let mut seat = Some(seat);
                 let mut content_response = None;
@@ -4112,6 +4114,19 @@ impl Node {
                             | crate::session_content::remote::Action::Record { .. }
                     })
                 );
+                #[cfg(test)]
+                if let Ok(Request::ContentRead { action }) = &question {
+                    use crate::session_content::remote::Action;
+                    let kind = match action {
+                        Action::Begin { .. } => "begin",
+                        Action::Cancel { .. } => "cancel",
+                        Action::Window { .. } => "window",
+                        _ => "other",
+                    };
+                    crate::session_content::wire_tests::note_quic_reply_event(
+                        node.root(), reply_wire, send.id().to_string(), kind, None,
+                    );
+                }
                 let prepare = async {
                     let resp = match question {
                         Ok(req) => {
@@ -4175,7 +4190,14 @@ impl Node {
                 let frame = if interruptible {
                     tokio::select! {
                         biased;
-                        _ = send.stopped() => return,
+                        _stopped = send.stopped() => {
+                            #[cfg(test)]
+                            crate::session_content::wire_tests::note_quic_reply_event(
+                                node.root(), reply_wire, send.id().to_string(), "stop",
+                                Some(matches!(_stopped, Ok(Some(_)))),
+                            );
+                            return;
+                        },
                         frame = Box::pin(prepare) => frame,
                     }
                 } else {
