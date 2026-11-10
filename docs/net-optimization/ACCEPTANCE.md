@@ -530,3 +530,11 @@ IPC真实TCP兼容补充：新增client_tests覆盖cap0/1保持legacy EOF、cap2
 ### 双方恢复决策四秒门（Iroh40实施前补充）
 
 原四秒采样门只约束实际请求窗口，原文件/hash不变。新增scripts/netlab-peer-decision.py结合原门，要求固定peer replug病例两端完整诊断中实际Relay→Custom恢复Go均不晚于middle_replug_finished+4000ms，缺事实不能绿；这是决策时刻门，不外推任意WAN/逐包hard deadline。c397 baseline 7674/7913ms及ba7初候选4060/5799ms已实际红。至少3次同源physical与两门共同绿；probe3次/2秒/250ms、原新鲜往返/2秒两fresh/gain均保持。有限due wake与稳定采样copy是下一候选，未改原物理/原请求负载/10秒holds/全部124 outcomes。
+
+## 2026-11-10：四秒选路的持续状态补充合同（新增量测版本，实施前）
+
+Iroh42首轮4f2d591b原请求50/50与X Go3262ms绿，Y原decision checker因没有Relay→Custom Go失败。完整日志表明Y在首次post-pivot请求仍Custom，所有77次实际开流同一wire，inner peer的最后path事件为pivot前carried、pivot后无path/dial/离开Custom的Go。这属于“未离开好路”的候选证据，不能靠缺失Go直接记绿。
+
+原netlab-peer-selection.py、netlab-peer-decision.py、整个physical fixture及4秒门逐字保留。新增独立数据checker仅补充有完整full-sample日志的持续状态分支：原calibration/请求门必须通过；对应peer的最后pivot前Go及path journal均为carried；第一post-pivot开流与成功完成均在4秒内、选中carried；全部该peer前后开流同wire且post全选carried；pivot后该peer不得出现Go、无当前路重选、path/新dial/关闭或retire，日志不得lagged。任一缺口不算持续；明确晚Go仍红。沿用30s请求预算/原10s holds/全部outcomes，不扩成任意WAN/逐包连续性。
+
+新checker要对旧baseline/Iroh39/40/41真实红与正向源重新校准并留表，原checker结果同时报告。42首轮与freeze前的repeat2仅探索，不凑前瞻验收；正式需要freeze后同一candidate三次独立完整physical，原稳定性/成本门另外通过。保持历史缺失事件失败，不追改原数据或脚本来变绿。
