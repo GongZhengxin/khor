@@ -11,7 +11,8 @@ async fn observe_incoming_middle(available: bool) {
     assert!(f.outer_local.close_reason().is_some());
     let (client, incoming) = tokio::time::timeout(Duration::from_secs(5), async {
         tokio::join!(
-            f.middle_ep.connect(f.ep.addr(), khor_net::endpoint::TUNNEL_ALPN),
+            f.middle_ep
+                .connect(f.ep.addr(), khor_net::endpoint::TUNNEL_ALPN),
             async { f.ep.accept().await.unwrap().accept().unwrap().await }
         )
     })
@@ -137,19 +138,28 @@ async fn observe_incoming_middle(available: bool) {
             .unwrap()
             .unwrap();
     }
-    for task in [&mut preparing, &mut f.middle_task, &mut f.echo_task, &mut reverse_answer] {
+    for task in [
+        &mut preparing,
+        &mut f.middle_task,
+        &mut f.echo_task,
+        &mut reverse_answer,
+    ] {
         stop(task).await;
     }
     if let Some(serial) = serial {
         f.node.carry.detach_attached(
             &f.target_ep.id(),
-            Carrier::Hop { via: f.middle_ep.id() },
+            Carrier::Hop {
+                via: f.middle_ep.id(),
+            },
             serial,
         );
     }
     f.target_links.detach(
         &f.ep.id(),
-        Carrier::Hop { via: f.middle_ep.id() },
+        Carrier::Hop {
+            via: f.middle_ep.id(),
+        },
     );
     if let Some(attached) = admitted {
         tokio::time::timeout(Duration::from_secs(2), attached.ended())
@@ -166,7 +176,8 @@ async fn observe_incoming_middle(available: bool) {
     tokio::join!(f.ep.close(), f.target_ep.close(), f.middle_ep.close());
     assert_eq!(reverse_open, available);
     assert_eq!(
-        serial.is_some() && answered, available,
+        serial.is_some() && answered,
+        available,
         "a live incoming first leg must be eligible; a closed one must not"
     );
 }
