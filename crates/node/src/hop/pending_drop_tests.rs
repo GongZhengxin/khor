@@ -21,7 +21,10 @@ async fn observe_drop(successor: bool) {
         let conn = tokio::time::timeout(
             Duration::from_secs(2),
             f.ep.connect(
-                iroh::EndpointAddr::from_parts(f.target_ep.id(), [transport_addr(&f.target_ep.id())]),
+                iroh::EndpointAddr::from_parts(
+                    f.target_ep.id(),
+                    [transport_addr(&f.target_ep.id())],
+                ),
                 INNER_ALPN,
             ),
         )
@@ -53,7 +56,10 @@ async fn observe_drop(successor: bool) {
         .await
         .unwrap();
     assert!(outer_open);
-    assert_eq!(kept, successor, "Drop must include the newly pending caller");
+    assert_eq!(
+        kept, successor,
+        "Drop must include the newly pending caller"
+    );
     assert_eq!(answered, successor);
 }
 
