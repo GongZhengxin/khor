@@ -233,11 +233,8 @@ struct PendingHop {
 impl Drop for PendingHop {
     fn drop(&mut self) {
         if !self.committed {
-            self.links.detach_attached(
-                &self.peer,
-                Carrier::Hop { via: self.via },
-                self.attachment,
-            );
+            self.links
+                .detach_attached(&self.peer, Carrier::Hop { via: self.via }, self.attachment);
         }
     }
 }
