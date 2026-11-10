@@ -5,18 +5,17 @@ use khor_net::carry::{Attached, Links, RoadOrder, transport_addr};
 
 const INNER_ALPN: &[u8] = khor_net::endpoint::ALPN;
 
-async fn carried_endpoint(
-    key: iroh::SecretKey,
-    links: &Links,
-    loopback: bool,
-) -> iroh::Endpoint {
+async fn carried_endpoint(key: iroh::SecretKey, links: &Links, loopback: bool) -> iroh::Endpoint {
     let mut builder = iroh::Endpoint::builder(iroh::endpoint::presets::Minimal)
         .secret_key(key)
         .relay_mode(iroh::RelayMode::Disabled)
         .clear_ip_transports()
         .add_custom_transport(links.transport())
         .path_selector(Arc::new(RoadOrder::default()))
-        .alpns(vec![INNER_ALPN.to_vec(), khor_net::endpoint::TUNNEL_ALPN.to_vec()]);
+        .alpns(vec![
+            INNER_ALPN.to_vec(),
+            khor_net::endpoint::TUNNEL_ALPN.to_vec(),
+        ]);
     if loopback {
         builder = builder.bind_addr("127.0.0.1:0").unwrap();
     }
@@ -62,7 +61,8 @@ impl Publication {
             r#"{"relays":[{"url":"http://127.0.0.1:9"}],"only_mine":true}"#,
         )
         .unwrap();
-        let node = Arc::new(Node::open_hosting(root.path().to_path_buf(), "published", false).unwrap());
+        let node =
+            Arc::new(Node::open_hosting(root.path().to_path_buf(), "published", false).unwrap());
         let ep = carried_endpoint(node.key.clone(), &node.carry, true).await;
         assert_eq!(ep.id().to_string(), node.device_str());
         let middle_ep = endpoint().await;
@@ -102,7 +102,8 @@ impl Publication {
         .await
         .unwrap();
         let (outer_local, outer_remote) = (outer_local.unwrap(), outer_remote.unwrap());
-        node.wires.adopt(&middle.id, Proto::Tunnel, outer_local.clone());
+        node.wires
+            .adopt(&middle.id, Proto::Tunnel, outer_local.clone());
         let (attached, attached_target) = tokio::sync::oneshot::channel();
         let middle_task = Owned(Some(tokio::spawn({
             let conn = outer_remote.clone();
@@ -124,7 +125,9 @@ impl Publication {
             async move {
                 let conn = ep.accept().await.unwrap().accept().unwrap().await.unwrap();
                 while let Ok((mut send, mut recv)) = conn.accept_bi().await {
-                    let Ok(bytes) = recv.read_to_end(64).await else { break };
+                    let Ok(bytes) = recv.read_to_end(64).await else {
+                        break;
+                    };
                     if send.write_all(&bytes).await.is_err() {
                         break;
                     }
@@ -165,12 +168,16 @@ impl Publication {
     async fn close(mut self, attachment: u64) {
         self.node.carry.detach_attached(
             &self.target_ep.id(),
-            Carrier::Hop { via: self.middle_ep.id() },
+            Carrier::Hop {
+                via: self.middle_ep.id(),
+            },
             attachment,
         );
         self.target_links.detach(
             &self.ep.id(),
-            Carrier::Hop { via: self.middle_ep.id() },
+            Carrier::Hop {
+                via: self.middle_ep.id(),
+            },
         );
         tokio::time::timeout(Duration::from_secs(2), async {
             while asking(self.node.device_str(), &self.target.id) {
@@ -212,8 +219,14 @@ async fn observe(cancelled: bool) {
     .await
     .unwrap()
     .unwrap();
-    assert!(echo(&conn).await, "the published carrier actually carried data");
-    assert_eq!(khor_net::path::classify(&conn), khor_net::path::PathKind::Carried);
+    assert!(
+        echo(&conn).await,
+        "the published carrier actually carried data"
+    );
+    assert_eq!(
+        khor_net::path::classify(&conn),
+        khor_net::path::PathKind::Carried
+    );
     f.node.wires.adopt(&f.target.id, Proto::Main, conn.clone());
     if cancelled {
         cancel(&mut opening).await;

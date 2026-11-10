@@ -1,11 +1,12 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-10 12:22 UTC。**完整N0–N5仍未完成，用户已授权持续实施；不得因分项绿、旧goal paused或compact停下。** 速度/体验优先、个人可信设备网。root串行，无子智能体；没有main合并、发布、采购、生产部署或改已装App/store的授权。长期范围见[PLAN](PLAN.md)、[REQUIREMENTS](REQUIREMENTS.md)、[ACCEPTANCE](ACCEPTANCE.md)、[NEXT-DESIGN](NEXT-DESIGN.md)。上版STATE完整逐字保存在[历史](HISTORY-20261110-before-peer-contact-state.md)，含更早历史链；本页替代旧段落的当前状态，不删历史失败或矩阵。
+更新：2026-11-10 12:58 UTC。**完整N0–N5仍未完成，用户已授权持续实施；不得因分项绿、旧goal paused或compact停下。** 速度/体验优先、个人可信设备网。root串行，无子智能体；没有main合并、发布、采购、生产部署或改已装App/store的授权。长期范围见[PLAN](PLAN.md)、[REQUIREMENTS](REQUIREMENTS.md)、[ACCEPTANCE](ACCEPTANCE.md)、[NEXT-DESIGN](NEXT-DESIGN.md)。上版STATE完整逐字保存在[历史](HISTORY-20261110-before-peer-contact-state.md)，含更早历史链；本页替代旧段落的当前状态，不删历史失败或矩阵。
 
 ## 恢复先核实际句柄
 
-- 主：`/Volumes/disk0/Khor/worktrees/current/khor-net`，branch **feat/net**。最近源码HEAD **334b51153b6399872d9bb7b4260cc67ff2700bb2** 只新增完整hop期限测试；tree **3fa931fe0dd4e9e0ccd9d50b71163f02dc0ac83f**、snapshot **8b503d02cf7d76bf06eff35d9bd7342a8be6606e**，hop-prepare-budget-red-source.json。生产仍已验证 **c071b679** 的PendingHop/早登记watcher/offer后oneshot交付，**完整准备期限修复尚未写**；主53 vendor不变，未部署。后续doc-only HEAD不是实际被测源。
-- **当前唯一heavy Turing：turing-20261110T122135Z-0b361889，PID2307670**，原net-node/control68/source如上。目标是新4个prepare预算旧行为基线，先核fmt/compile/setup/实际断言层，不预记红；前驱147ab8a0已全绿/collect/identity/原group空。无Mac或phone活动，禁重发。
+- 主：`/Volumes/disk0/Khor/worktrees/current/khor-net`，branch **feat/net**。最近已提交测试源 **dec1a5d14123ddbe782c50871b50b4cbb9672e4a**，tree **7895cb3dfced61cb1e698f6ce7cf276123b33e8b**、snapshot **a901b0d199f6111c9233a89adfd4424bea98ce58**，hop-published-red-source.json。当前仅应用远端返回的published fixture格式patch；生产仍已验证 **c071b679**。**完整准备期限与已使用carrier保留修复尚未写**，主53 vendor不变，未部署。
+- **没有活动heavy/Mac/phone任务**：最新Turing **22af4b60** 终态64.457秒，仅新published fixture格式失败，10artifact/identity核/原group空；不算真实运行红。下一仅格式修订后启动同生产行为的实际published回归。前一 **9484048e** 已实际hop16pass/3fail（默认3秒/caller1秒post-admit仍挂、caller到期误记MISSED），原15+正常短caller控制绿，123.098秒/11artifact/原group空；此前0b仅格式失败，原件保留。
+- 新published fixture真实Custom-only目标、真实Tunnel stream、TLS/echo/path=Carried后adopt该wire，再取消post-offer准备owner；必须先旧行为真实红且正常handoff控制绿，尚未达到运行断言。不把格式失败当产品证据。旧offer整文件prefix、新prepare whole、原hop/wires whole均冻结；详NEXT-DESIGN 12:39。
 - **第四个取消所有权分项已同source双OS闭合**：c071/treeeda37c362b793ef63001fb4876be3ce4f44d58e4/snapshotdfc36e759e887a202864dd01390a0bb28bb5c694/control68，Linux147ab8a0全12绿/hop15/wires15/budget30，261.689秒/21artifact/group空；Mac42812850230全12绿/hop15/wires15/budget26，exact artifact13762956979/20files/11controlblobs核。hop-offer-fixture-freeze.json仅pre-offer取消/正常handoff/同middle新serial scope candidate_verified=true，phone false。全部本地52749等旧session已结束，无Mac重发。
 - 旧行为0fb7/treef42/snapshotf954的5ea56c46真实hop14/1红（orphaned=true/stopped=false）、原12+两负向绿，134.349秒/11artifact/group空；c504首538和2b9候选1d66只格式失败原件保留。c071行为与2b9相同只远端格式变化。原一个watcher在首await前登记；准备future持Asking到offer完成再交，取消guard仅撤自己serial，watcher沿既有let_path_go清路，pending无LOOK timer、无额外cleanup task/协议/探针。
 - **新prepare旧行为4例**：真实admit后保持原gate，无caller原3秒总期限/短caller更早期限应结束；正常短caller放gate可成功；关闭fixture旧cachedTunnel并实际持有新Incoming不admit，caller先到不应记MISSED/down。先红再改生产。原offer_tests.rs整个旧文件仍是当前文件**逐byte准确前缀**，只尾加prepare子模块声明；新文件独立，prefix长度/hash与新whole在hop-prepare-budget-fixture-freeze.json。**不能把旧hop-offer proof的旧完整hash改成新blob hash**，旧proof锚原source；追加合同用prefix核。原hop/wires旧tests whole与peer_contact全文件均不变。
@@ -77,14 +78,4 @@
 - collect：control cwd运行`python3 scripts/collect-network-ssh.py /.../receipt.json`；101可为实际产品失败。终态/group空后才取报告。`ops/verify-turing-record.py FOLDER`或`verify-mac-record.py RUN_ID`只核身份，**必须另读fmt/compile/实际测试/原门**。未取得source.json不是身份已核；执行器失败与产品红分开。
 - Mac提交canonical已存JSON，经`ops/submit-mac-source-ssh.py`，原可信API bundle/guard；register-mac-run pin后采attempt精确artifact，再verify。所有重型只经已授权路径，合并/发布须另行满足可信Quality与授权边界。
 
-下一步：先核0b361889四个新prepare预算旧行为结果，区分格式/编译/setup与真实deadline/记账失败，先实际红后按NEXT-DESIGN单绝对by修。保留原offer文件prefix/旧whole与所有门，候选完整net-node双OS；随后offer后代际，再并行寻路。已闭合的4项不重刷或擅发手机操作。继续N1自然质量窗口/独立cold-start与N2 peer relay缓存/网络epoch/候选生命周期，不把几个修复当完整手机或N0–N5完成。
-
-11:21：NEXT-DESIGN已先记录open_hop attach→offer→watcher窗口与并行寻路前置所有权合同；当前只静态事实/设计，未改hop行为或声称field根因。99534d56仍原普通unit，Mac候选exec99550待取；旧baseline543保持clean并已证真实native状态红。
-
-11:38新hop测试only已落c504：真实Node::open_hop+实际Tunnel QUIC status，gate在attach/offer前，取消/正常watcher交付/同peer同middle新serial保护三例；scratch middle只模拟Admission，不冒充onward或业务成功。原hop与wires整个旧tests模块逐byte保持，peer_contact whole保持，hop-offer-fixture-freeze.json冻结；无生产guard修复，未执行/未预记红或绿。
-
-11:43：同源第三竞态双OSscope闭合，当前仅53895ab1执行新的hop取消旧行为基线；guard未实施，peer-contact/原hop/wires whole都保持。完整N0–N5与现场手机自动恢复仍未完成。
-
-12:02补充：只读MacLab当前磁盘App Info.plist为0.2.0/0.2.0、mtime2026-11-08，无Git commit字段，maclab-installed-app-metadata-20261110.json；未执行/改App，不能证明事故进程source。完整N0–N5/现场自动接管仍未完成。
-
-12:22用户再次问进度/ETA：已答当前4类竞态最新同source双OS回归、未部署phone；下一批恢复/寻路候选暂估4–6小时，完整N0–N5及验收3–5天，受新问题/执行器/真机窗口影响。估算已落PLAN，不据此缩范围或到点假完成。继续完整目标，不在分项完成停下。
+下一步：仅格式修订后执行published真实回归；先保护已在使用carrier取消交付，再补完整绝对by及正确MISSED。之后late-close/new-offer/pending-Noq-open/ears epoch、并行寻路/N1和余下全范围仍继续。用户进度答复为下一批恢复/寻路候选4–6小时、完整计划与验收3–5天的工作量估计，非完成保证；phone仍需候选后的自动恢复与能耗验收。
