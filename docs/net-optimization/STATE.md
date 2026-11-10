@@ -46,6 +46,13 @@
 
 ## 当前任务与下一步
 
+19:17 UTC当前：923baaeb/treee8893d45/snapshot37d77b42，Turing828ae604（PID2760606，19:13:45启动）实际hop55/wires16已全绿，全12其余组收尾；Mac42883511676同canonical已提交，request aa8d071e32c144fd8ec3fff23233986e，尚未接受。bd43f055仅fmt43.791秒/10files/group空/identity核，已用远端patch修正。当前无source WIP，除下方文档更新。
+
+最新只读source refs审计source-refs-audit-20261110T191453Z.json：457 refs/snapshot source trees、64control labels、363显式receipt存在，94legacy缺字段原样保留；ledger SHA前后不变，当时仅828 pending。不是runtime/artifact全审。
+
+下方旧任务均已完成，不重发；以上当前828与Mac句柄优先。
+
+
 19:10 UTC：7bb0e664已终态采核，hop55全绿（3项epoch均过）但wires16中15/1，只有过期packet仍被计数当新包失败；fresh无需tick、原15、实际wire仍开与cleanup过。196.500秒/12files/group空/identity核，packet-age freeze baseline true；epoch候选只有Linux分组绿，全套仍红，不接受。
 
 当前freshness产品候选改为：原Patience内当前selected IP/Relay路径Noq last_received的实际年龄，Unknown/Custom/缺timestamp不猜；同一显式now快照，不依赖节点tick新鲜度或计数变化。无新vendor/API/探针/task/timer，未验证。forgive_all额外调用者egress.saw只在本机出口状态变化时调用，确认这是routing-wait context更新，不是每个普通ACK失效。
