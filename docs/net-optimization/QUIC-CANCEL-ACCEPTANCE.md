@@ -7,3 +7,5 @@
 实现边界：只有可放弃的内容查询Resolve/Window/Record的执行与回复准备监测QUIC SendStream::stopped；请求正常FIN只代表输入完成，不当取消。已接受的Begin/Cancel、写请求、持续job和Watch不扩大取消语义；blocking IO不能提前释放其owner。发送最终write本身已有STOP/connection error通知，owner仍随frame/真实worker生存。新合同不改已有cancel_held_responses：显式ContentCancel而调用者仍在读时，旧32回复仍应持有到完成或读侧放弃。
 
 此层两Node为真实QUIC、同一test process，不声明跨主机网络/手机或远端磁盘已被中断。若后续需要更强的same-wire/STOP证据，独立新增，不用资源回收代替其证明。
+
+实际进展：Mac42754190117仅formatter失败，c5ba3d25应用精确patch；42754548807实跑上述32合同红（远端回收5秒超时），原fixture已完整冻结，非编译/准备红。17d11fb3监听stopped候选的42755165540只test-build E0425，不能记回收绿；757e013f修复原测试hook作用域并保留response到最终write，待同源Mac/Linux行为验收。原始whole fixtures与现有canonical显式ContentCancel/阻塞IO所有权用例保持，不因新取消实现改断言。
