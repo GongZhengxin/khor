@@ -9,7 +9,7 @@ struct Tap<T> {
     inner: T,
     peer: EndpointId,
     role: &'static str,
-    wire: usize,
+    wire: Option<usize>,
     stream: String,
     read: u64,
     written: u64,
@@ -17,7 +17,7 @@ struct Tap<T> {
 }
 
 impl<T> Tap<T> {
-    fn new(inner: T, peer: EndpointId, role: &'static str, wire: usize, stream: String) -> Self {
+    fn new(inner: T, peer: EndpointId, role: &'static str, wire: Option<usize>, stream: String) -> Self {
         Self {
             inner,
             peer,
@@ -108,7 +108,7 @@ pub(super) fn attach(
     links: &khor_net::carry::Links,
     peer: EndpointId,
     carrier: Carrier,
-    wire: usize,
+    wire: Option<usize>,
     role: &'static str,
     pair: (SendStream, RecvStream),
 ) -> khor_net::carry::Attached {
@@ -136,7 +136,7 @@ pub(super) async fn splice(
     a: (SendStream, RecvStream),
     b: (SendStream, RecvStream),
     peer: EndpointId,
-    wires: (usize, usize),
+    wires: (Option<usize>, usize),
 ) {
     if std::env::var_os("KHOR_NET_DIAGNOSTICS").is_none() {
         return super::splice(a, b).await;
@@ -155,8 +155,8 @@ pub(super) async fn splice(
         tap_recv(a_recv, "middle_in", wires.0),
     );
     let (mut b_send, mut b_recv) = (
-        tap_send(b_send, "middle_out", wires.1),
-        tap_recv(b_recv, "middle_out", wires.1),
+        tap_send(b_send, "middle_out", Some(wires.1)),
+        tap_recv(b_recv, "middle_out", Some(wires.1)),
     );
     let there = async {
         let _ = tokio::io::copy(&mut a_recv, &mut b_send).await;

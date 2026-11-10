@@ -93,3 +93,5 @@ refs最近只读审计191453Z为457refs/64control/363explicit receipts+94legacy�
 16:20 UTC原下一候选2–4小时锚18:20–20:20已产出48与55/16双OS窄scope，不等于全计划。19:52说明N1当前修正/复验另需2–4工程小时，完整N0–N5仍3–5工程日量级。20:41用户再问，明确同一窗口已用约50分钟，剩余该批对照5–10分钟；20:50已完成固定六次且如实报告候选失败。不得每次compact无声重置窗口，不许承诺到点就关硬红。完整计划含真机/能耗未完成，持续推进。
 
 21:01 UTC：新增stream_trace诊断94d3241a，只在KHOR_NET_DIAGNOSTICS开启时对三位置actual Noq Send/Recv加Tap，按poll真实read/write/flush/shutdown状态及累计偏移记录（pending重复抑制、无payload）；绑定stream/wire/attachment身份。中间仍原双copy/select/finish，关闭时调用逐字未改的normal splice和原Links.attach/Noq IO类型，无hot-path Tap。原5秒outer look另读实际conn/path stats。写入/flush ready不是ACK/远端交付，read ready0不自动当EOF。新诊断尚未类型/行为验证；c801首check仅fmt失败43.803秒/10files/group空/identity，已apply经check的远端4920byte格式patch，无本机formatter。旧源/失败保留，准备格式后重提Node。
+
+21:04 UTC：db9cb1c3 stream诊断beb35913已终态81.964秒/11files/group空/identity；fmt及net67（原1ignored）绿，Node编译两处E0308：incoming_wire为Option<usize>。已修诊断身份为Option，X真实outer用Some、中间incoming/receiver允许None，不unwrap/不伪造0；缺ID不能作跨端精确关联。尚无Node/物理通过结论。无额外heavy，准备v3准确源。

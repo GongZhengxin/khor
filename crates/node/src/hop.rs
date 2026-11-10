@@ -705,7 +705,7 @@ impl Node {
             &self.carry,
             peer,
             Carrier::Hop { via },
-            outer_wire,
+            Some(outer_wire),
             "initiator",
             (send, recv),
         );
