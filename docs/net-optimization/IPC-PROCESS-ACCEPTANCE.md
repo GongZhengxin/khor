@@ -1,6 +1,6 @@
 # 独立进程IPC期限与所有者验收
 
-2026-11-10，a2bbf866已实现，Mac42752637727首次实际验收待采证，尚未通过。已有42739923461只证明真实单resident/独立任务的32回复回收；不能冒称跨process时钟。
+2026-11-10，a2bbf866已实现、e15651b7应用远端formatter并移除HOME覆盖。Mac42752637727只有格式失败，未编译/行为；Mac42753148983准确e15651b7/treea9ab1ab6/snapshot6b1503e3/control5f310f43实际通过，预算回收1006ms、resident正常join/child reap，IPC18/原32/便携全绿，source/11blobs/hash已核。ipc-independent-process-proof.json保留完整证据。已有42739923461只证明真实单resident/独立任务的32回复回收；不能冒称跨process时钟。
 
 使用同一个已构建Rust test binary启动一个仅此case的child helper，fresh 0700 TempTree和owner marker，空环境只保留PATH/动态加载器路径；不传个人凭据。安全OwnedFd→Stdio把UnixStream端点作为child stdin，child用Tokio UnixStream异步读控制EOF/stop并受一次60秒绝对lease约束，无不可取消stdin线程。parent Drop关闭控制端并回收该original Child，正常通过必须真实stop_serving及serve task join、child成功退出，无forced kill。
 

@@ -61,3 +61,9 @@
 - 旧baseline/control worktrees WIP保留不reset；仅终态、所有权/hash留证后清理自有临时资料，不删共享refs。
 
 证据根 `/Volumes/disk0/Khor/evidence/net`。source-refs.json当前305项（后续逐条pin），全量审计最近287项/25ops；待稳定后刷新全量。ops/stage-launch-turing.py只stage一次/launch一次，不自动等待或重试；当前物理跑完先collect。下一Mac新process结果、Turing两个冻结四秒门、真实probe/quality epoch、再按实际失败定位。继续完整N0–N5，不因单项绿/goal服务paused停止。
+
+最新接续（2026-11-10 04:09UTC）：主功能HEAD70ebdad5，独立process合同已在Mac42753148983准确e15651b7/treea9ab1ab6/snapshot6b1503e3/control5f实绿：回收1006ms，resident joined/child reaped，无caller EOF/manual release，旧32及便携全绿，11blobs/hash核。新真实远端QUIC32合同70ebdad5尚未执行，控制acaa3c3已补同net-node入口，先取实际结果再改生产；详QUIC-CANCEL-ACCEPTANCE.md。
+
+Turing035638-c204 lifecycle124/124/请求51/51绿，但我误选精简日志profile，没有完整Go/probe记录；保留为可达与请求事实，不计双端四秒或同profile比较。已补跑同源fullsamples040407-e3bf：实际首次setup业务10.032秒超时、error1/rc101/原group空，未进入replug，非恢复四秒红；完整失败保留并calibration。当前唯一重型任务是匹配Iroh40旧源fullsamples **turing-20261110T040644Z-3d3ebe28，PID1639567，04:07:05UTC启动**，准确5352a0fc/tree d530/snapshotc673/同ef0b；判断初连问题是否candidate特有后再继续。之后真正验四秒必须task netlab-peer-mobility-samples，不能用生命周期profile，两个checker有依赖：先将原request checker JSON保存peer-selection-contract.json，再运行decision。
+
+quiet Iroh40原stalls已独立核全部report/control/bundle/source/hash、22CPU markers/20尖峰/全部resident线程及两contender均CPU64、32/32 outcomes ok；quiet-stalls-audit.json与ack-floor-controlled-stalls-comparison.json新增followup，仍不能用1move/1.3s对零move539/635ms性能验收。source-refs-audit-20261110-306.json已核306refs/tree/control与30ops hash；此后逐条pin。
