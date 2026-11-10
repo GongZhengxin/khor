@@ -4124,7 +4124,11 @@ impl Node {
                         _ => "other",
                     };
                     crate::session_content::wire_tests::note_quic_reply_event(
-                        node.root(), reply_wire, send.id().to_string(), kind, None,
+                        node.root(),
+                        reply_wire,
+                        send.id().to_string(),
+                        kind,
+                        None,
                     );
                 }
                 let prepare = async {
