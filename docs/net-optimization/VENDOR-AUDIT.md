@@ -1,6 +1,6 @@
 # Vendor 补丁覆盖与退出审计
 
-2026-11-11，进行中。**主53已存在补丁之外新增候选Iroh45 scaffold（合计54），42–44仍隔离预留未合主。45旧地址撤回当前返回0，未实施/接受，须状态红绿、实际live guard与Node错误身份回退及原全部vendor回归。**
+2026-11-11，进行中。**主53外新增Iroh45（合计54），42–44仍隔离预留未合主。45已在153263c2实现idle actor按失败时间撤回旧IP；Linux1e1264ef Noq439/path50/home11绿，Linux8adb26d3/Mac42869844599同canonical Node全12/hop44及实际live guard/错误身份回退绿。仅该实测scope接受；完整地址epoch、所有iroh测试与N5最终矩阵仍未完成。** 旧stub cf2352f7 home10/1红及所有初始失败保留，详见STATE及两freeze。
 
 历史盘点：2026-11-10，进行中。当前53项：iroh 1–41、Noq 1–12；原48全部保留。新增Iroh38实际NAT tuple红→绿，Noq12 floor单元红→绿；Iroh39/40/41的单元已通过，但物理双端四秒、CPU稳定性/成本仍未收口，不等于完成验收。
 当前Iroh41准确1514516e/tree94f45efd/snapshotf07db0c9在Turing035447实际fmt/439Noq/50路径/9选家绿；主分支cherry-pick为0c223ce4+724582b9。整源Mac42753148983准确e15651b7实际便携/IPC18/原32/独立process绿；不是vendor全套或最终Quality。Iroh40 fullsamples物理两次约5.4秒均四秒红，Iroh41完整物理仍待。CPU quiet旧at-most-one gate实际红及新1.3秒worst不能由单元/诊断绿关闭，准确版本见STATE。
