@@ -18,15 +18,23 @@ async fn a_live_peer_keeps_its_ip_hints_and_its_actual_wire() {
             f.middle_ep.id(),
             n0_future::time::Instant::now() + Duration::from_secs(1),
         ),
-    ).await.unwrap();
+    )
+    .await
+    .unwrap();
     let mut send = f.outer_local.open_uni().await.unwrap();
     send.write_all(b"keep-live-wire").await.unwrap();
     send.finish().unwrap();
-    let answered = tokio::time::timeout(Duration::from_secs(2), serving).await.unwrap().unwrap();
+    let answered = tokio::time::timeout(Duration::from_secs(2), serving)
+        .await
+        .unwrap()
+        .unwrap();
     let open = f.outer_local.close_reason().is_none() && f.outer_remote.close_reason().is_none();
     stop(&mut f.middle_task).await;
     f.middle_task = Owned(Some(tokio::spawn(async {})));
     f.close(0).await;
-    assert_eq!(removed, 0, "execution-time live ownership must refuse the reset");
+    assert_eq!(
+        removed, 0,
+        "execution-time live ownership must refuse the reset"
+    );
     assert!(open && answered);
 }
