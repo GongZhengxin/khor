@@ -1,13 +1,13 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-10 06:02 UTC。用户授权继续完整N0–N5，尚未完成。速度/体验优先，可信个人设备网；无main合并、发布、中继采购/生产部署授权。root串行、无子智能体。完整计划/硬要求/验收以[PLAN](PLAN.md)、[REQUIREMENTS](REQUIREMENTS.md)、[ACCEPTANCE](ACCEPTANCE.md)为准。旧状态逐字保存在[本轮历史](HISTORY-20261110-before-ping-delivery-investigation.md)与其历史链。
+更新：2026-11-10 06:09 UTC。用户授权继续完整N0–N5，尚未完成。速度/体验优先，可信个人设备网；无main合并、发布、中继采购/生产部署授权。root串行、无子智能体。完整计划/硬要求/验收以[PLAN](PLAN.md)、[REQUIREMENTS](REQUIREMENTS.md)、[ACCEPTANCE](ACCEPTANCE.md)为准。旧状态逐字保存在[本轮历史](HISTORY-20261110-before-ping-delivery-investigation.md)与其历史链。
 
 ## 恢复先核实际句柄
 
 - 主worktree `/Volumes/disk0/Khor/worktrees/current/khor-net`，feat/net，生产行为757e013f；a00c9554此后新增cfg(test)显式STOP/同wire合同，原53 vendor。控制 `khor-build-net` feat/net HEAD69d72afb495da9d7dd88f098407949f74fc7887e已推。
 - 隔离候选 `khor-net-recovery-deadlines` detached8d91e1ec/treebbaf802b/snapshot894ed4e，无IPC v2；新增Iroh42，未合主。不把隔离候选称最终整源验收。
-- Turing前驱 **turing-20261110T054132Z-da82e2b8** 已完成/采证，原group空，1142.731秒/rc0，quiet原p1s600秒20×300ms+p5全绿。新full-counter诊断 **turing-20261110T060223Z-6d83f431** 已启动，PID1783148，06:02:44 UTC，先核receipt/PID，不能盲重发；source1a6371d7/tree80a1f9a0/snapshotd2f17c01/control ef0b，role diagnostic。禁止在计时期间叠编译或其他重负载。
-- Mac没有已知重型在跑。诊断源1a6371d7/tree80a1f9a0/snapshotd2f17c01已在Mac42765006984 fmt/Noq441/iroh50/home9实际全绿（两新PING正负控制含在441），source/control/11blobs/13artifacts核；仅诊断未合主。原whole multipath/物理/paths tests保持，carried-ping-fixture-identity.json。42761341395新STOP合同实际绿，source/control/11blobs/19artifacts已核并terminal登记。macserver SSH已实际恢复（03:54与04:37后均成功），A=Mac/B=Turing天然异网，P=iPhone，不重复要求另找两电脑。
+- Turing前驱 **turing-20261110T054132Z-da82e2b8** 已完成/采证，原group空，1142.731秒/rc0，quiet原p1s600秒20×300ms+p5全绿。full-counter诊断 **turing-20261110T060223Z-6d83f431** 已终态/采证，218.525秒/rc0/原group空/sourcecontrolbundle16artifacts核；原124/124、请求/decision/state全绿，X3585.182/Y3577.754ms，预算6/2episodes绿。只得正常counter参照，未复现前轮5.8秒红，不计性能/三轮接受。当前Turing唯一重型 **turing-20261110T060659Z-c2ec2f99**（PID1790876，06:07:20 UTC），net-node/control69d，补Linux真实STOP强层，精确匹配Mac427613源a00/tree028f/snapshot6ff。结束后先collect核原group，再做第二次有界fullcounter复现。禁止计时期间叠编译或其他重负载。
+- Mac没有已知重型在跑。诊断源1a6371d7/tree80a1f9a0/snapshotd2f17c01已在Mac42765006984 fmt/Noq441/iroh50/home9实际全绿（两新PING正负控制含在441），source/control/11blobs/13artifacts核；仅诊断未合主。原whole multipath/物理/paths tests保持，carried-ping-fixture-identity.json。健康参照counter显示首次API+1.08s、下tick+1.33s实际PING与新219ms RTT，+1.58s取得85/92ms；见carried-ping-counters/reference.json。不是逐packet时间，也不能倒推旧慢run的发包情况。42761341395新STOP合同实际绿，source/control/11blobs/19artifacts已核并terminal登记。macserver SSH已实际恢复（03:54与04:37后均成功），A=Mac/B=Turing天然异网，P=iPhone，不重复要求另找两电脑。
 - 当前N1优先：**trace实际PING发送→ACK→RTT sample**。Iroh42第二轮仍双端约5.8秒红；API ping Ok不是实际发送/往返证明。不盲调250ms节奏/2秒确认/4秒门。
 
 ## N1：已证事实与未闭合项
