@@ -1603,6 +1603,10 @@ impl Node {
                             n.wires.let_go_served(wires::Retired::Paused);
                         }
                         flag.store(now, std::sync::atomic::Ordering::Relaxed);
+                        #[cfg(test)]
+                        if now {
+                            crate::session_content::wire_tests::pause_poll(&root).await;
+                        }
                     }
                 }
             });

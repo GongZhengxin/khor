@@ -29,6 +29,9 @@ mod quic_cancel_contracts;
 #[path = "quic_stop_tests.rs"]
 mod quic_stop_contracts;
 
+#[path = "resume_admission_tests.rs"]
+mod resume_admission_contracts;
+
 pub(crate) fn note_quic_reply_event(
     root: &Path,
     wire: usize,
@@ -51,6 +54,7 @@ struct Gate {
 enum Stage {
     Io,
     Response,
+    PausePoll,
 }
 fn gates() -> &'static Mutex<HashMap<(PathBuf, Stage), Arc<Gate>>> {
     static GATES: OnceLock<Mutex<HashMap<(PathBuf, Stage), Arc<Gate>>>> = OnceLock::new();
@@ -76,6 +80,24 @@ pub(crate) async fn pause_response(root: &Path) {
         .lock()
         .unwrap()
         .get(&(root.into(), Stage::Response))
+        .cloned();
+    if let Some(gate) = gate {
+        gate.count.fetch_add(1, Ordering::Release);
+        gate.entered.notify_one();
+        loop {
+            if *gate.released.lock().unwrap() {
+                gate.resume.notify_one();
+                break;
+            }
+            gate.resume.notified().await;
+        }
+    }
+}
+pub(crate) async fn pause_poll(root: &Path) {
+    let gate = gates()
+        .lock()
+        .unwrap()
+        .get(&(root.into(), Stage::PausePoll))
         .cloned();
     if let Some(gate) = gate {
         gate.count.fetch_add(1, Ordering::Release);
