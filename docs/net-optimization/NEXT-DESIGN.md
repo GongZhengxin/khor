@@ -402,3 +402,12 @@ Linux c2ec同Mac已绿源a00，原busy-wire在主动pause→resume后立刻conte
 先引入actor真正调用的Measured统一bookkeeping入口，旧顺序不改，新增独立状态合同：既有故障+新合法但慢的自然RTT+judgment后真实hint，同tick应恢复可达并保留原有有限恢复episode；随后post-episode快样本才能重建质量窗口。healthy无故障不建episode，旧包不恢复，3预约/250ms/2秒、2秒Moving/两fresh/gain/4秒门全部保持，原whole tests模块5c4da4b4与物理fixture不改。取得真实单元红后，仅让episode登记先于mark_silent清除Silence，再恢复可达，不让第一次ACK直接证明优路、不放宽判断。已有episode采样充分照旧停止额外PING，selected+available或已有Moving仍合并，closed/新epoch/过期回收沿原规则。
 
 新helper避免测试在旁边镜像顺序；actor与单元使用同入口。候选必须旧50+新合同vendor绿、原同版物理两门、至少3次/原quiet成本后再评估；不预记已解决7.4秒或旧5.8秒。
+
+
+## 2026-11-10 07:56UTC：Iroh44有限采样与迁移确认分离（实施前）
+
+43同source首物理f2b832dc仍124/124但请求11bad/decision X7728/Y3470ms红、6预约2episodes预算绿。X同copy actualPING/ACK均前进、pendingfalse/inflight0/cwnd空余；+1478ms 85ms启动Moving，+1727ms新112ms使仅两样本的uppermedian变112，quarter gain暂失，Moving与补测一起取消。直到+5727ms自然keepalive才85.8，再确认至7728。不是copy翻转/cwnd；旧2c9d缺RTT仍单列未证。measurement_stops_after_noisy_quality.json保存counter/transition及推断边界。
+
+下一先做旧行为不变的helper/探测代码抽取及独立状态红。候选设计仅在已有RecoveryCheck有限窗口、原pending候选仍open/可达、current quality recent只有1或2样本、选择器暂留当前路时，保留**采样模式**至原pending开始+2秒内，沿既有confirmation双路probe规则补足median证据；不批准迁移。>=3样本仍无收益、关闭/再次silent、无恢复episode、过期即按原清除；健康场景不延长。恢复额外3预约/250ms/2秒不变、不补预算，合并规则不变；补测使用已有有限confirmation探测途径，原quiet/实际packet成本必须重验，不能以通过预约门替代总成本。
+
+Moving新增私有sampling_only模式，Road/原since仍是值、不持强connection；现有MaybeFuture在采样模式只守2秒边界，无永久timer。**候选重新被选择时必须重启原连续2秒确认**，不得把不合格期间算入确认；旧2fresh/收益/2秒/4秒上限不变。重新失败、另一候选、rest或fault leave均不得复用旧sampling时钟。actor真实调用与新单元同helper；独立fixture覆盖稀疏噪声保采样、>=3慢样本/健康/关闭/silent/过期负向、不能越过连续确认和fresh要求。旧50及43新3整fixture保持，旧红与控制不覆盖。单位红绿后原两四秒门至少3轮/quiet/黑洞/成本仍待，不预记成功。

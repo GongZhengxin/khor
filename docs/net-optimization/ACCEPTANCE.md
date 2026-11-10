@@ -548,3 +548,8 @@ Iroh42首轮4f2d591b原请求50/50与X Go3262ms绿，Y原decision checker因没�
 ### Iroh43：自然ACK与恢复epoch登记顺序（07:09UTC，实施前冻结）
 
 以7bf72701真实Y7404ms红为依据。新增独立actor-state合同与生产相同入口：known silent road、recent真实收包、第一post-judgment自然RTT仍慢时，可达恢复与有限恢复epoch必须同时成立；快post-episode真实样本按既有25%规则刷新质量。无故障/无新hint/仍silent/closed负向以及旧50测试继续。新独立fixture不编辑原whole tests(5c4da4b4)/physical，真实旧顺序红后只交换bookkeeping顺序。阈值/探测总预算/时限/selected合并/自然充分样本停止/所有权保持原值；后续原两四秒门及quiet成本仍是独立必要条件。
+
+
+### Iroh44：有限恢复采样不冒充持续迁移确认（07:56UTC，实施前冻结）
+
+f2b832dc真实X7728ms红作基线：85→112 sparse median使测量与决定一起停止。新独立fixture走actor同helper：known有限recovery且live nonsilent候选1–2质量样本时，选择器留当前路只继续原有限采样；到期/healthy/closed/silent/充分3样本均停止。回到candidate后连续2秒确认时钟重启，旧fresh与gain不放宽；不允许sampling elapsed直接Go。原额外3预约预算/节奏/窗口及旧50+43三case whole不改。先原行为helper基线真红、再同whole绿，后完整固定物理/quiet/packet成本。普通confirmation补测成本单独计，不能用新称呼绕过总流量与能耗验收。

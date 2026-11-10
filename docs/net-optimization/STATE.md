@@ -1,13 +1,13 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-10 07:19 UTC。完整N0–N5仍未完成，用户授权继续。速度/体验优先，可信个人设备网；无main合并、发布、采购/生产部署授权。root串行、无子智能体。长期[PLAN](PLAN.md)/[REQUIREMENTS](REQUIREMENTS.md)/[ACCEPTANCE](ACCEPTANCE.md)不缩减。上一状态逐字在[历史](HISTORY-20261110-before-natural-recovery-epoch.md)，保留更早历史链。不要因旧goal服务paused停止。
+更新：2026-11-10 07:56 UTC。完整N0–N5仍未完成，用户授权继续。速度/体验优先，可信个人设备网；无main合并、发布、采购/生产部署授权。root串行、无子智能体。长期[PLAN](PLAN.md)/[REQUIREMENTS](REQUIREMENTS.md)/[ACCEPTANCE](ACCEPTANCE.md)不缩减。上一状态逐字在[历史](HISTORY-20261110-before-natural-recovery-epoch.md)，保留更早历史链。不要因旧goal服务paused停止。
 
 ## 先核真实句柄
 
 - 主 `/Volumes/disk0/Khor/worktrees/current/khor-net`，feat/net。生产行为HEAD **ba28fc03**（之后文档/注释）；主53vendor、Iroh41。Mac42770379226+Linux4bcfad82同source全部net-node已绿，见下。不把doc-only HEAD误当已测试二进制源。
 - 隔离 `/Volumes/disk0/Khor/worktrees/current/khor-net-recovery-deadlines` detached **4ec3ec08**，source tree5cb081e1/snapshot0555b9f0；无IPC v2、Iroh42未合主。f0a5db0e含Noq3诊断fields，1a6371d7含actualPING两模型；4ec只引入相同旧顺序helper与3个独立回归，**尚未实现Iroh43修复**。旧50tests完整SHA5c4da4b4不动。
 - 控制 `/Volumes/disk0/Khor/worktrees/current/khor-build-net` feat/net HEAD **68cadb57a0ed72d40a4ca9a843e86b9c6797bf34**已推。net-node仅在原remoteQUIC32之后/canonical之前加resume合同；3个source-only stub控制测试实际绿。
-- **Turing唯一heavy：turing-20261110T071705Z-9bfeb364**，PID1877325，07:17:26 UTC，net-vendor/control68cadb，role baseline，source4ec/tree5cb/snapshot0555。目标取得自然恢复epoch顺序的真实单元红，旧顺序不改。先查receipt/PID/execution后collect，不能预记红/绿或盲重发。前驱7bf已terminal采证、原group空。
+- Turing目前无已知heavy。9bf已真实52/1单元红并采证；43候选1cb/tree237/snapshot4584的9cf已441/53/9绿，f2b832dc原物理124/124但请求11bad/GoX7728/Y3470红，全部已terminal/sourcecontrolbundle/原group空核。接下来Iroh44先旧行为helper独立状态红，再同whole绿；具体设计见NEXT-DESIGN/ACCEPTANCE 07:56。不盲刷物理、不放宽4秒门。
 - Mac无已知heavy在跑。macserver SSH早已恢复成功；A=macserver/B=Turing天然异网，P=iPhone。源提交经本机GitHub SSH，worker仍原API bundle/guard，无个人凭据给worker。
 - 用户已确认：**iPhone在手边，可切Wi-Fi/蜂窝；已装khor并已与Macserver/Turing配对**。两次可用性/安装配对问题均已答，不重复问。真机具体采样窗口尚未开始；先核实际版本/cohort/可观测API并准备短操作，不假称手机已通过或要求改生产store。
 
@@ -64,3 +64,5 @@
 SSH BatchMode/ForwardAgent=no/StrictHostKeyChecking=yes；无个人key/PAT/agent/签名/模型凭据给workers，不重设HOME/CODEX_HOME。WAN能力只私管道/一次secret，禁止普通artifact/日志/聊天票据。超时先查receipt/GH/proc/PGID，已有bundle/run先recover不重发。stage/launch显式完整source/control、前驱terminal采证/原group空/锁核；exec session不是结束，commit hook完成后才snapshot；ledger禁止并发writer。
 
 图谱先，缺vendor覆盖才定向读；无.codegraph不自建，无子智能体授权。旧baseline/control WIP保留不reset；终态+owner/hash核后只清本次资源。verify工具只核identity，必须分fmt/compile/fixture/executor/product行为。证据根`/Volumes/disk0/Khor/evidence/net`，source-refs每次pin、最近全审329refs/39ops，后续新增逐条pin，稳定后刷新全量。恢复先核上方句柄，持续完整目标，不因分项绿或旧goal paused停下。
+
+07:56新事实：43排序修复已在同whole新fixture真实52/1红→53绿，Noq441/home9均绿（proof vendor_candidate_verified=true），但first physical f2b832dc失败，candidate_verified仍false。X85→112稀疏质量造成Moving清除、停止补测，new44只分开有限采样/连续迁移确认，原radio总成本仍要验。phone-readonly-preflight-20261110.json保留Turing0.1.15混合cohort：首次devices本地document transfer busy，重试读取成功；对已确认手机localhost只读journal0minute一次360ms/valid空JSON成功，CLI总耗时非网络RTT；未开始受控换网/能耗。macserver只找到KhorDeveloperLab模拟器、标准路径无已装CLI/App，不能拿MacLab生产设备条目当macserver同身份。用户手机测试暂缓，不影响服务器目标。
