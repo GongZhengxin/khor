@@ -1,14 +1,14 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-10 10:06 UTC。完整N0–N5仍未完成，用户授权继续。速度/体验优先，可信个人设备网；无main合并、发布、采购/生产部署授权。root串行、无子智能体。长期[PLAN](PLAN.md)/[REQUIREMENTS](REQUIREMENTS.md)/[ACCEPTANCE](ACCEPTANCE.md)不缩减。上一状态逐字在[历史](HISTORY-20261110-before-natural-recovery-epoch.md)，保留更早历史链。不要因旧goal服务paused停止。
+更新：2026-11-10 10:31 UTC。完整N0–N5仍未完成，用户授权继续。速度/体验优先，可信个人设备网；无main合并、发布、采购/生产部署授权。root串行、无子智能体。长期[PLAN](PLAN.md)/[REQUIREMENTS](REQUIREMENTS.md)/[ACCEPTANCE](ACCEPTANCE.md)不缩减。上一状态逐字在[历史](HISTORY-20261110-before-natural-recovery-epoch.md)，保留更早历史链。不要因旧goal服务paused停止。
 
 ## 先核真实句柄
 
-- 主 `/Volumes/disk0/Khor/worktrees/current/khor-net`，feat/net。当前HEAD **2e46900b**（6ba的独立fixture仅远端格式反馈修正）：3a3同tick修复上只加retirement cfg(test) gate与独立2回归，生产Asleep仍旧after-unlock；主53vendor/Iroh41不改，尚未双OS绿，不是已部署源。Mac42770379226+Linux4bcfad82同source全部net-node已绿，见下。不把doc-only HEAD误当已测试二进制源。
+- 主 `/Volumes/disk0/Khor/worktrees/current/khor-net`，feat/net。当前候选HEAD **f9ced4ad**：3a3同tick修复上再将Asleep旧退役提交移入持槽阶段；retirement gate仅cfg(test)，主53vendor/Iroh41未动；主53vendor/Iroh41不改，尚未双OS绿，不是已部署源。Mac42770379226+Linux4bcfad82同source全部net-node已绿，见下。不把doc-only HEAD误当已测试二进制源。
 - 隔离 `/Volumes/disk0/Khor/worktrees/current/khor-net-recovery-deadlines` detached **2ef6bee5**，treef1da6579/snapshot48e9e24b（b4行为仅追加actual carrier与connect阶段诊断，e819已实际编译执行）；无IPC v2，Iroh42/43/44未合主。Iroh43实际vendor绿但物理f2b仍红。Iroh44基线d7/tree937/snapshot714在fe3实际54/2红；当前b4只保留有限稀疏测量，重新合格或新故障重启确认时钟，原whole50+epoch+sampling fixtures不变；待同源vendor与物理验证。
 - 控制 `/Volumes/disk0/Khor/worktrees/current/khor-build-net` feat/net HEAD **68cadb57a0ed72d40a4ca9a843e86b9c6797bf34**已推。net-node仅在原remoteQUIC32之后/canonical之前加resume合同；3个source-only stub控制测试实际绿。
-- Turing当前retirement runnable baseline **turing-20261110T100314Z-09a93c9e/PID2124709**，source2e46/tree52ef/snapshot6b1d/control68，10:03:35UTC已launch；前驱13d77b6b仅rootfmt一assert包装失败，54.638秒/10artifacts/原group空，不计runtime红。Mac/phone均无本轮active。**3a3同source双OS全node绿** Turing1ea89122+Mac42793316303，whole原11/wake2与source/control对齐；field_phone_issue_resolved=false，无部署。下一必须先09a真实旧Asleep提交红再改retire_slot。
-- Mac本轮42793316303已terminal采证；无已知本轮heavy。macserver SSH已恢复；用户已澄清同LAN为MacLab本地电脑↔Turing；构建macserver为另一台。A=macserver/B=Turing沿用U10用户异网说明，C=MacLab同LAN参照，P=iPhone；公共Relay自身不证明NAT穿透。源提交经本机GitHub SSH，worker仍原API bundle/guard，无个人凭据给worker。
+- Turing当前无本轮heavy，**f9 source0666/snapshot764/control68 的61aa0e2b已全net-node绿**，wires15、全IPC/32STOP/remote32/resume/预算等绿，339.284秒/21artifacts/原group空核。09a原行为14/1实际红、whole原11+wake2+retirement2逐byte同。Mac同source42798075914 attempt1在bootstrap GitHub API截断JSON失败，未还原源/无compile/test，artifact-attempt1与失败证明保留；同一workflow已授权例行重跑failed，attempt2状态待核，禁当产品红/再盲发。request a056239e8193417da93238233b10e77b，当前本地CLI rerunexec12707已完成，状态exec23603需取。
+- Mac前一42793316303同tick source3a3已terminal全绿；当前f9的42798075914 attempt2按上方句柄继续。macserver SSH已恢复；用户已澄清同LAN为MacLab本地电脑↔Turing；构建macserver为另一台。A=macserver/B=Turing沿用U10用户异网说明，C=MacLab同LAN参照，P=iPhone；公共Relay自身不证明NAT穿透。源提交经本机GitHub SSH，worker仍原API bundle/guard，无个人凭据给worker。
 - 用户已确认：**iPhone在手边，可切Wi-Fi/蜂窝；已装khor并已与Macserver/Turing配对**。两次可用性/安装配对问题均已答，不重复问。真机具体采样窗口尚未开始；先核实际版本/cohort/可观测API并准备短操作，不假称手机已通过或要求改生产store。
 
 ## 当前关键因果：稀疏恢复质量中断补测
@@ -101,3 +101,5 @@ SSH BatchMode/ForwardAgent=no/StrictHostKeyChecking=yes；无个人key/PAT/agent
 10:06当前源码LEFT_ALONE_FOR600秒，只抑制后台pump；前台请求不因backoff被直接拒绝，但仍须核gone-short-dial与cached dial failure/epoch等入口。第二退役gate 13d仅fmt红，2e修assert_eq排版后新whole已重冻，业务断言不变。当前root元数据358refs/64controls/45ops全核，09a唯一pending。不要将首次fmt当runtime红；收集/verify完成后据wires-unit实际assert判定。
 
 10:10：09a/2e46实际runtime wires14/1红（replacement真实echo后，旧retire结束再次left_alone），原11+wake2+current-suspended负向绿，116.311秒/12artifacts/原group空；其余node未执行。候选只将Asleep标记移至retire_slot持槽锁阶段，after_retirement不再迟写；现有slot→gone顺序已审，无持gone再取slot路径，adopt发布后back清除。所有原/new whole不改，cfgtest gate不进生产；新serving并发/直接DialFailureAsleep/地址epoch仍未覆盖，不能称现场全修。
+
+10:31：Macf9失败明确为GitHub API blob JSONDecodeError before materialization，64MiB raw/128MiB+JSON cap足够18.347MB bundle，非大小门产品失败，先同run retry一次。第一失败artifact未含source.json，verify identity不可能完成，已保留未误记通过。phone历史journal单次抓取因state busy失败、零手机侧历史，不做更多主动采样；Turing/MacLab被动日志留。用户“关开App”没有独立证明force-quit/OS进程PID变化，仍记manual reopen，不能写成受控进程重启。下一需核stale dial result与fresh positive proof：先清晰建模正向证据版本；不把它等同IPv4v6 network epoch或重置所有LOST/MISSED，不加重放/竞速写入。
