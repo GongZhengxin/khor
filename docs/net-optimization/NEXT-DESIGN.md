@@ -482,3 +482,14 @@ actual carrier repeat2 4dc22c7e并未进入replug：首目录10,033,849us超时�
 候选同时安排流和路径的既有owner，避免只在Drop里删Links而不通知底层：attach后、任何可取消await前建立serial匹配的PendingHop guard，并把**既有一个watcher**提前启动，先只等attachment ended或handoff channel，不启动LOOK计时。准备future仍持Asking，offer返回后才经oneshot交给watcher并解除guard；取消时guard只撤自己serial，Asking同步Drop、handoff关闭，I/O ended由该watcher沿既有let_path_go撤路径。正常交付后的原比较/间隔/弱Node所有权不变；没有额外cleanup task、新timer、协议或探针，不能改公共Attached的Drop。cfg(test) gate仍是attach后/offer前，新增不可中断的owner登记必须在该gate之前，反映生产首个await前建立所有权的真实修复。
 
 这使取消期间也有既有watcher接收stream结束并请求close_carried；并不证明既有let_path_go“check links.has然后await close”与新offer的所有并发均安全。已核resolve_remote经RemoteMap发送ResolveRemote到同peer actor，actor同步登记/open_path；CloseCustom是另一消息；pending Noq open、late close/new replacement、重绑ears仍须实际代际/offer后合同。先同whole上述三例和原全net-node双OS，再补这些窗口，未证明前不并行普通拨号与hop准备，也不声称完整field接管已修复。
+
+
+## 2026-11-10 12:16UTC：完整open_hop准备期限与记账（实施前）
+
+c071/eda/dfc已Linux147ab8a0+Mac42812850230同source全部12项绿，hop15、wires15、budget30Linux/26Mac；旧0fb实际14/1红与新whole/旧whole保持。仅取消所有权scope闭合，尚不证明所有offer后代际/并行接管，未部署phone。
+
+下一先附加独立prepare_budget子模块：旧offer_tests.rs整个文件逐byte保留为前缀，仅尾部新增模块声明，原whole证据仍锚旧source，另冻prefix长度/hash及新增whole；不改旧三个case或helper。真实Node::open_hop和Tunnel Admission后，在原gate保持不释放：无caller时应从入口起原HOP_WITHIN=3秒内返回false/回收；短caller scope应取更早期限；正常短caller放gate仍可成功。另一真实未admit场景关闭fixture旧cached Tunnel、提供实际loopback地址但不accept新handshake，caller到期返回应不记MISSED/peer-down。所有case收尾/join/STOP与原wire语义保持；先旧行为实际红。
+
+候选使用入口冻结的一个绝对by=min(原3秒,caller)，前段tries和后段gate/offer都等待同一个by，不因阶段重置总预算。保留实际middle尝试失败的MISSED/原退避；caller先到期时不把它计作middle失败，admit后本机offer未完成亦不记“没有middle可达”。已有PendingHop+watcher负责超时清理，不新增无主任务或永久timer。hop_ahead入口前的同步设备表/文件IO不被这个异步期限虚假宣称可抢占，仍属N3调度/IO工作。
+
+之后继续late close/new offer、pending Noq open/ears epoch的真实合同；这些与总体3秒门未证明前不并行寻路。不能以新deadline测试替代手机自动恢复或路径快慢选择。
