@@ -3865,8 +3865,13 @@ impl Node {
         drop(attempt);
         #[cfg(test)]
         if let Ok(Err(failed)) = &outcome {
-            self.wires
-                .note_early_failure_for_test(format!("{failed:?}"));
+            let why = match failed {
+                DialFailure::Refused(why) => format!("Refused: {why}"),
+                DialFailure::Asleep(why) => format!("Asleep: {why}"),
+                DialFailure::TimedOut => "TimedOut".to_owned(),
+                DialFailure::CallerExpired => "CallerExpired".to_owned(),
+            };
+            self.wires.note_early_failure_for_test(why);
         }
         if crate::deadline::expired(by) {
             if let Ok(Ok((conn, _))) = &outcome {
