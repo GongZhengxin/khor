@@ -1,10 +1,13 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-10T17:02:19.068858+00:00。**完整N0–N5仍未完成，用户已授权持续实施；不得因分项绿、旧goal paused或compact停下。** 速度/体验优先、个人可信设备网。root串行，无子智能体；没有main合并、发布、采购、生产部署或改已装App/store的授权。长期范围见[PLAN](PLAN.md)、[REQUIREMENTS](REQUIREMENTS.md)、[ACCEPTANCE](ACCEPTANCE.md)、[NEXT-DESIGN](NEXT-DESIGN.md)。上版STATE完整逐字保存在[历史](HISTORY-20261110-before-peer-contact-state.md)，含更早历史链；本页替代旧段落的当前状态，不删历史失败或矩阵。
+更新：2026-11-10T17:12:33.719302+00:00。**完整N0–N5仍未完成，用户已授权持续实施；不得因分项绿、旧goal paused或compact停下。** 速度/体验优先、个人可信设备网。root串行，无子智能体；没有main合并、发布、采购、生产部署或改已装App/store的授权。长期范围见[PLAN](PLAN.md)、[REQUIREMENTS](REQUIREMENTS.md)、[ACCEPTANCE](ACCEPTANCE.md)、[NEXT-DESIGN](NEXT-DESIGN.md)。上版STATE完整逐字保存在[历史](HISTORY-20261110-before-peer-contact-state.md)，含更早历史链；本页替代旧段落的当前状态，不删历史失败或矩阵。
 
 ## 恢复先核实际句柄
 
 ### 最新覆盖状态（优先于下方历史段落）
+
+- **cold fallback27686初候选仍失败，不接受**：tree24bbda49/snapshot46437db8，Linuxa24d860e实际43项42/1，positive answered/carried=false、requests0；NO_ROUTE控制及原41仍绿，142.286秒/11files/group空核。不能假定新carrier握手已起或断言Noq旧IP是根因，需阶段证据。
+- 当前HEADa7dcf2a6仅在真实early fallback判定/准备完成/普通carried握手前后加cfg(test)日志，不改生产分支/fixture/期限。sourcefb428050/snapshot475937e8、diagnostic run见ledger，现已送Turing；未测，不记候选绿。主vendor仍53，ConnectOptions源码只有transport_config/additional_alpns，无公开initial-path覆盖，暂不改vendor。
 
 - **stale-IP fallback已实际43项42/1红**：151dc0f0/treefd1d3896/snapshot424ebf65，Linux263e5ce8，client真实Refused在middle许可前已发生，positive answered=false/carried=false/requests0；NO_ROUTE负控与原41全过，cleanup完成，138.314秒/11files/group空/identity核。此前bfdc441a仅cfg(test)观察点Debug编译失败（81.901秒/11files），已改显式variant分类；dc54仅fmt，均保留。
 - 当前cold-fallback候选WIP：首次addr无carrier、尚未启动任何early请求task且原attempt仅Refused时，等已并行的hop准备，再给新carrier**至多一个普通握手**。共用同一dial_by绝对窗与journal started；每个握手串行，最多2 lifetime（原cold+新carrier），既有ordinary两候选另计不偷混。Asleep、已有carrier、已可能发early数据、已到caller/dial deadline都不进入。原response owner/adopt-before-Drop与只读请求retry规则保持。本版未编译/测，不先宣布成功。
