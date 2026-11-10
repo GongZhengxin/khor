@@ -558,3 +558,8 @@ f2b832dc真实X7728ms红作基线：85→112 sparse median使测量与决定一�
 ## 2026-11-10：前台新wire与旧休眠关闭冲突合同
 
 先用真实两条独立QUIC连接、相同peer身份及真实stream收包，复现Wires::tick同批heard/back被旧resting/asleep覆盖；不得仅调用back/asleep模拟结论。新live wire实际可答时left_alone必须false且继续可请求；两条均真实suspended关闭时必须保留休眠与不记不可达语义。原wires whole fixture不改，新whole红绿同源冻结，原net-node/cancellation/pause恢复全部仍需通过。该合同只解决同tick证据优先顺序，其他after_retirement并发和现场iOS生命周期/IPv4v6地址epoch不能由它代替。
+
+
+## 2026-11-10：真实retire与新adopt之间的旧休眠提交合同
+
+cfg(test) gate仅停实际retire释放slots后尚未after_retirement的边界，新adopt发布并真实echo后，旧retire结束不得重新标设备休眠。负向无新连接时，真实suspended退役仍应left_alone且不记不可达。全旧fixtures和前一wake whole逐byte冻结，新fixture实际红绿同whole，生产构建无测试gate；不覆盖直接dial Asleep、地址epoch或现场全部自动failover。

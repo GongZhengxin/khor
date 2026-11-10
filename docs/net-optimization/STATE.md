@@ -1,14 +1,14 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-10 09:23 UTC。完整N0–N5仍未完成，用户授权继续。速度/体验优先，可信个人设备网；无main合并、发布、采购/生产部署授权。root串行、无子智能体。长期[PLAN](PLAN.md)/[REQUIREMENTS](REQUIREMENTS.md)/[ACCEPTANCE](ACCEPTANCE.md)不缩减。上一状态逐字在[历史](HISTORY-20261110-before-natural-recovery-epoch.md)，保留更早历史链。不要因旧goal服务paused停止。
+更新：2026-11-10 09:53 UTC。完整N0–N5仍未完成，用户授权继续。速度/体验优先，可信个人设备网；无main合并、发布、采购/生产部署授权。root串行、无子智能体。长期[PLAN](PLAN.md)/[REQUIREMENTS](REQUIREMENTS.md)/[ACCEPTANCE](ACCEPTANCE.md)不缩减。上一状态逐字在[历史](HISTORY-20261110-before-natural-recovery-epoch.md)，保留更早历史链。不要因旧goal服务paused停止。
 
 ## 先核真实句柄
 
-- 主 `/Volumes/disk0/Khor/worktrees/current/khor-net`，feat/net。生产行为HEAD **ba28fc03**（之后文档/注释）；主53vendor、Iroh41；当前HEAD85d1054c仅增wake tests及helper返回修正，生产tick仍旧顺序。Mac42770379226+Linux4bcfad82同source全部net-node已绿，见下。不把doc-only HEAD误当已测试二进制源。
+- 主 `/Volumes/disk0/Khor/worktrees/current/khor-net`，feat/net。当前候选HEAD **3a3a29ec**：ba28暂停cache修复上仅加Wires::tick同批resting→heard顺序修正；主53vendor/Iroh41不改，尚未双OS绿，不是已部署源。Mac42770379226+Linux4bcfad82同source全部net-node已绿，见下。不把doc-only HEAD误当已测试二进制源。
 - 隔离 `/Volumes/disk0/Khor/worktrees/current/khor-net-recovery-deadlines` detached **2ef6bee5**，treef1da6579/snapshot48e9e24b（b4行为仅追加actual carrier与connect阶段诊断，e819已实际编译执行）；无IPC v2，Iroh42/43/44未合主。Iroh43实际vendor绿但物理f2b仍红。Iroh44基线d7/tree937/snapshot714在fe3实际54/2红；当前b4只保留有限稀疏测量，重新合格或新故障重启确认时钟，原whole50+epoch+sampling fixtures不变；待同源vendor与物理验证。
 - 控制 `/Volumes/disk0/Khor/worktrees/current/khor-build-net` feat/net HEAD **68cadb57a0ed72d40a4ca9a843e86b9c6797bf34**已推。net-node仅在原remoteQUIC32之后/canonical之前加resume合同；3个source-only stub控制测试实际绿。
-- Turing与Mac均无本轮heavy/phone sampler。**优先追真实手机→MacLab自动接管失败**：用户回Wi-Fi后Turing/hinton/lecun可通、MacLab不通；反复关闭/重开iPhone App后才某次经Turing peer relay成功。不是自动恢复成功。手机无需继续操作。新session090200三phase均已结束，采样方向是Turing→phone，不能代替phone→MacLab；全部mixed installed cohort，App重启时点未控，busy/paused归属未证。MacLabpublic id449aed、local endpoint pid87295已只读核实，其他GUI进程是_host/_ghost/agent子角色，未杀/未当作重复resident故障。正只读采集MacLab/Turing指定peer network journals，MacLab已归档220条，Turing SSH采集本地exec8976须恢复核句柄；不重复启动。
-- Mac无已知heavy在跑。macserver SSH已恢复；用户已澄清同LAN为MacLab本地电脑↔Turing；构建macserver为另一台。A=macserver/B=Turing沿用U10用户异网说明，C=MacLab同LAN参照，P=iPhone；公共Relay自身不证明NAT穿透。源提交经本机GitHub SSH，worker仍原API bundle/guard，无个人凭据给worker。
+- 当前无本轮heavy/sampler。**3a3a29ec同source双OS已全net-node绿**：Turing1ea89122（238.877秒/21artifacts/原group空）+Mac42793316303（11control blobs/20artifacts），tree9c527/snapshot7f1/control68。wires13含原11+新2、resume/canonical/STOP32/remote32/IPC均绿；red7da为12/1、samewhole。wake-epoch-fixture-freeze.json candidate_verified=true仅限same-tick顺序缺陷，field_phone_issue_resolved=false，无部署。下一查retire槽释放后after_retirement旧asleep覆盖新adopt，先真实barrier回归，不把双OS绿当手机整体问题已完。
+- Mac本轮42793316303已terminal采证；无已知本轮heavy。macserver SSH已恢复；用户已澄清同LAN为MacLab本地电脑↔Turing；构建macserver为另一台。A=macserver/B=Turing沿用U10用户异网说明，C=MacLab同LAN参照，P=iPhone；公共Relay自身不证明NAT穿透。源提交经本机GitHub SSH，worker仍原API bundle/guard，无个人凭据给worker。
 - 用户已确认：**iPhone在手边，可切Wi-Fi/蜂窝；已装khor并已与Macserver/Turing配对**。两次可用性/安装配对问题均已答，不重复问。真机具体采样窗口尚未开始；先核实际版本/cohort/可观测API并准备短操作，不假称手机已通过或要求改生产store。
 
 ## 当前关键因果：稀疏恢复质量中断补测
@@ -91,3 +91,7 @@ SSH BatchMode/ForwardAgent=no/StrictHostKeyChecking=yes；无个人key/PAT/agent
 09:38：wake fixture首55d sourcebb21/treec112在ccf95c98实际E0308 helper tuple编译失败，100.176秒/11artifacts/原group空，不计行为红；85d只补discard分号，原测试断言全不改，新whole hash已修订留初版历史。source85d/treeda15/snapshot80cc的新net-node baseline已launch，实际句柄查source-refs/receipt（本地stageexec4050已返回后更新）；需要真实tick断言红才改生产顺序。旧wholewires SHA18acdf83冻结。SDK已只读help核0.1.15支持journal --on，并真实missing-target非busy拒绝，先前busy control为不确定；phone command controls已存，未再采手机。
 
 09:41：85d/7da54d78实际runtime wires12pass/1fresh-newwire FAIL，原11+新all-suspended负向绿，hop12/net/fmt绿，144.211秒/12artifacts/原group空核；其余net-node未执行。首ccf仅helper返回tuple compile错已留，85d只补分号，测试whole冻结。最小候选仅tick末尾先旧resting再新heard，使同批live新收包最后清gone；after_retirement并发与现场根因仍未关闭，原wires whole18ac与新whole不改。接下来同whole完整net-node双OS；不部署生产或重启用户App。
+
+09:44：phone session090200 summary已归档WiFi30(18ok12busy)/to-cell10(8ok2busy)/return39(21ok8busy9paused1error)，三slowcell成功27916/29285/19093ms，return成功最大8311ms；全79 outcomes保留。用户已明确manual反复App重开后才Turingpeer relay成功，自动handover不接受。MacLabpublicid449/PID87295只读证实；Turing被动网络journal186条、MacLab220条已归档（Mac v1漏departed字段需补快照，不能臆造完整性），跨机时钟Turing快18.603–18.644秒。command negative busy一次不确定、随后help与missing-target真实非busy拒绝已核，--on非静默忽略。所有生产App/resident/配置未改，勿自行清理_host/_ghost等子进程。
+
+09:53分项闭合：wake same-tick修复双OS实际13/0，原背景全suspended负向绿，准确source3a3；原canonical2.23s/Macresume1.69s/STOP1.50s等完整profile绿。after_retirement现仍在slots锁释放后写asleep，是相邻未测并发窗口；下一单独cfg(test) barrier在真实retire API停于该窗口，新adopt+真实echo后放行，先红再移asleep到槽所有权内提交。原wholewires18ac与wake fixture不改，原暂停/重试/既有node合同不缩减。

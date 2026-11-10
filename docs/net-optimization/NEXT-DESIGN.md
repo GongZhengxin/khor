@@ -439,3 +439,10 @@ actual carrier repeat2 4dc22c7e并未进入replug：首目录10,033,849us超时�
 当前源码Wires::tick分别收集heard与resting，末尾先back(heard)再asleep(resting)。同一peer旧连接晚到suspended关闭、另一条较新live连接已经收到真实新数据时，后处理旧休眠可覆盖刚确认的新可达，恢复背景pump又被left_alone抑制。这是静态可见候选，并未证明就是现场唯一根因；after_retirement并发、新地址epoch、LOST/MISSED候选冷却、远端resume准入等另查，不能靠此单项关闭整案。
 
 先新增独立tests_wake_epoch真实loopback Noq fixture，原wires tests whole逐byte冻结。两个不同稳定wire、同peer身份：先注册old/new incoming，再关闭old为suspended，确保new实际收一条新stream数据，调用真实tick后仍应不left_alone、new可继续echo。负向两条都suspended时必须仍被left_alone，不变暂停/耗电语义。新模块以tests前缀由原net-node wires::tests filter自动覆盖，控制68不改。先旧行为真实红，源/whole新fixture冻结；然后仅纠正同tick冲突的证据顺序，原net-node全回归双OS、late-close/epoch独立覆盖后再评估，现场手机根因仍需时间线与准确源码验证。
+
+
+## 2026-11-10 09:53：retire旧关闭提交必须早于新连接发布
+
+3a3 same-tick已实际85d/7da wires12/1红→Turing1ea+Mac42793316303同source13绿/full net-node绿；仅此分项，现场自动恢复仍失败。相邻源码窗口：retire在slot所有权检查后retire_slot、释放slots锁，再after_retirement(asleep)。其间新adopt可发布新wire并back清旧状态，随后旧after_retirement又写asleep。原Unanswered已在retire_slot内提交失败，注释明确新adopt应在后清除；Asleep同样需要一致提交顺序。
+
+先只加cfg(test)单次gate：真实Wires::retire在释放slots后/after_retirement前暂停，gate属于该Wires实例，阻塞只在测试spawn_blocking内，生产编译无字段/锁/等待。独立新fixture：真实old suspended close，retire进入gate后真实新wire adopt并echo，再放旧retire，不能重新left_alone；没有新wire时真实paused退役仍应留下休眠。原wires whole、新wake whole不改，new模块tests前缀走原net-node过滤。先旧行为实际红/新fixture冻whole，再只将Asleep提交放入retire_slot持槽锁阶段，after_retirement不再写迟到asleep；确认无反向锁顺序，原全node双OS继续。直接DialFailure::Asleep、新地址epoch与MISSED/LOST仍需各自因果验证，不将此测试扩称整体根因。
