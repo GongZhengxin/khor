@@ -511,3 +511,8 @@ c071/eda/dfc已Linux147ab8a0+Mac42812850230同source全部12项绿，hop15、wir
 ### 13:02UTC 已使用载体旧行为实测
 
 a75/a038/871在56d2ca30实际hop17pass/4fail；真实TLS、首个固定echo和Carried断言均到达，取消后kept=false/owned=false/echoed=false，正常publication控制与原15通过，三个已知prepare期限红原样保留。126.342秒/11artifact/identity核/原group空。下一最小PendingHop持Asking与handoff sender，正常交付或Drop发现真实live selected-carried使用者时都把所有权交既有watcher；无人使用时仅撤本serial。随后同一批补单绝对期限，不改冻结wholefixture，完整net-node双OS。不是现场手机唯一根因证明。
+
+
+### 13:09UTC 首候选保留的栈溢出回归
+
+921/06db/23db在Turing a1b1dbe9新增hop21/0全部绿，整套继续到原leased IPC32出现tokio worker stack overflow/SIGABRT，248.432秒，原group空/identity核，后续profile未执行；不能接受该source。Mac42821367661同source仍在执行，不盲重发或提前视为绿。原fixture与原栈配置不改，先在hop_ahead与compare_roads两个实际冷准备调用边界Box::pin open_hop，避免把完整准备状态嵌进每个上层dial/resident请求future；不加task、不改栈限制或时钟。以原完整net-node原场景复验，尚未证明修好，不把此失败丢弃。

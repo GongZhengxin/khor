@@ -496,7 +496,9 @@ impl Node {
         .into_iter()
         .map(|(b, _)| b)
         .collect();
-        self.open_hop(ep, y, &all, &picked).await;
+        // Keep the cold preparation state out of every enclosing dial and
+        // resident request's future, including requests that need no hop.
+        Box::pin(self.open_hop(ep, y, &all, &picked)).await;
     }
 
     /// **Opens a hop to `y` through the first of `picked` that answers**
@@ -759,7 +761,7 @@ impl Node {
                 |b| was_lost(&y.id, b),
             );
             if !picked.is_empty() {
-                self.open_hop(ep, y, &all, &picked).await;
+                Box::pin(self.open_hop(ep, y, &all, &picked)).await;
             }
         }
     }
