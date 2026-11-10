@@ -1101,7 +1101,7 @@ mod tests {
         .await;
         server.abort();
         let _ = server.await;
-        let reply = outcome.expect("IPC must not replace the caller's deadline with the op's full budget");
+        let reply = outcome.expect("IPC replaced the caller's shorter deadline");
         let why = reply.expect_err("a mute resident did not answer");
         assert!(why.contains(Op::Hops.name()), "the deadline error names its operation: {why}");
     }
