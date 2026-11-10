@@ -37,6 +37,9 @@
 
 ## 当前任务与下一步
 
+最新WIP（18:26 UTC）：新增unused prepared carrier两项真实合同与cfg(test)只读post-look observer；生产comparison仍旧。先正常publication，再让实际主IP连接关闭；原两次5秒观察后，无owner应释放，新pending应保留且结束后再按原两次观察释放。freeze保留normal-release原whole为prefix，尚未运行/接受。下一baseline回执以ledger为准。
+
+
 截至18:23 UTC，本批所有已提交Mac/Turing任务已终态采核，无运行中的采样/重型任务；恢复先查ledger是否后来新增，不重发旧run。当前仅NEXT-DESIGN文档改动，核git实际WIP。
 
 下一合同：正常publication完成后，原主连接消失且无人使用的prepared carrier必须释放；有新有限pending或实际incoming carried-only使用者时保留，owner结束后重新判断。不缩LOOK=5秒/两次观察，不加常驻task/timer，先真实旧红再修，仍保留exact serial与原所有连接比较。

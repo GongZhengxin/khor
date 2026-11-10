@@ -147,3 +147,6 @@ async fn a_pending_carried_wire_survives_the_normal_release_decision() {
 async fn the_normal_release_without_a_pending_consumer_still_reclaims() {
     observe_release(false).await;
 }
+
+#[path = "unused_tests.rs"]
+mod unused;

@@ -768,6 +768,8 @@ impl Node {
                         let _ = reviewed.send(());
                     }
                 }
+                #[cfg(test)]
+                wires.note_hop_look_for_test(attachment);
             }
         });
         let offer = async {

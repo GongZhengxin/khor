@@ -436,6 +436,8 @@ pub(crate) struct Wires {
     #[cfg(test)]
     normal_release_test_gate: Mutex<Option<PendingCarrierTestGate>>,
     #[cfg(test)]
+    hop_look_observer: Mutex<Option<tokio::sync::mpsc::UnboundedSender<u64>>>,
+    #[cfg(test)]
     early_dial_observer: Mutex<Option<tokio::sync::oneshot::Sender<bool>>>,
     #[cfg(test)]
     early_failure_observer: Mutex<Option<tokio::sync::oneshot::Sender<String>>>,
@@ -1006,6 +1008,28 @@ impl Wires {
         if let Some(gate) = gate {
             let _ = gate.entered.send(0);
             let _ = gate.release.await;
+        }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn observe_hop_looks_for_test(&self) -> tokio::sync::mpsc::UnboundedReceiver<u64> {
+        let (observed, ready) = tokio::sync::mpsc::unbounded_channel();
+        *self
+            .hop_look_observer
+            .lock()
+            .unwrap_or_else(|p| p.into_inner()) = Some(observed);
+        ready
+    }
+
+    #[cfg(test)]
+    pub(crate) fn note_hop_look_for_test(&self, attachment: u64) {
+        if let Some(observed) = self
+            .hop_look_observer
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .as_ref()
+        {
+            let _ = observed.send(attachment);
         }
     }
 
