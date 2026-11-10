@@ -46,6 +46,9 @@
 
 ## 当前任务与下一步
 
+当前唯一运行baseline `turing-20261110T190521Z-7bb0e664`，PID2753086，19:05:43 UTC启动；17333cb3/tree04a5e998/snapshotc8cebad0，JSON epoch-candidate-packet-age-formatted-baseline-source.json。兼测MISSED弱epoch候选与incoming计数旧年龄逻辑；已过fmt，尚在编译/测试，不先接受。713f5795仅fmt43.754秒/10files/group空/identity核，远端patch已应用。下方旧run均已完成，不重发。
+
+
 19:03 UTC WIP：31ca9aed仅fmt45.842秒/10files/group空/identity核，已应用远端epoch锁格式。新增incoming packet-age真实握手/echo + 显式now/future快照年龄合同；仅回拨节点cached heard，真实Noq last_received未改，不称真实OS暂停。incoming生产谓词仍旧，只抽显式clock边界；原Wires tests whole tail逐byte保留。下一baseline兼测epoch候选与packet-age旧行为，两个scope尚未接受；查ledger新句柄，不重发旧任务。
 
 

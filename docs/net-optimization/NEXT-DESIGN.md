@@ -613,3 +613,10 @@ close_offer原整个文件保持70af完整前缀，只尾附queued_close模块�
 若复用现全局MISSED，应将context与entry同锁比较，context持弱owner，不能让cache留住Node；旧失败/成功不能覆盖或清掉更晚context，实际写入前复核本次context仍有效。网络版本与尝试顺序是不同值，不能把每个新尝试序号放进相等判断而自动绕过退避。cache键和值均须有界，不能按每次换网永久增加一份记录。若移至每Node/Wires owner，应继续让原纯状态测试覆盖同一生产核心，不为保留旧测试建立无生产调用的平行shim。
 
 LOST当前按(to,via)全局保存，未带本机身份，也与换网/候选变化分离；下一设计须同时明确其owner与何时重新比较。先闭合真实MISSED合同不等于LOST/全部地址代际已完成，禁止静默放宽原收益/确认和十分钟抑制规则。
+
+
+19:07 UTC候选边界：本机MISSED首先实现原forgive_all入口更换唯一Arc<()> token，操作和cache仅存Weak，原全局每(me,to)一条仍有界；旧token无strong owner后不能写/清新miss，原纯退避测试经tokenless入口使用同一生产核心。当前尚未行为接受（真实55旧53/2红已取，下一run以STATE/ledger为准）。这只解决本机all-waits-forgiven，不替代peer/middle候选版本、LOST owner和全逻辑地址context。必须维持“仅Wires持有strong token”的不变量，读取者不能克隆strong来延长旧世代。
+
+packet-age下一合同已加入：真实认证/echo使rx计数确实改变，只有cached reactor heard回拨；显式now快照仍应可达、显式future年龄过期则应不可达。旧谓词未改，先取红；这是快照年龄模型，不冒充OS暂停。现有Iroh Path.stats().last_received可直接读取真实Noq时间，拟只按当前选中IP/Relay路径的实际收包年龄与原Patience判断，避免把“自上次tick计数不同”当作刚收包。网络切换后的路径世代、OS睡眠时钟与用户手机仍独立待验，不以年龄模型覆盖。
+
+真机候选构建入口复核：REMOTE-DEVELOPMENT明确便携Mac executor不运行native，开发机不生成正式iOS签名包，iPhone继续用可信GitHub TestFlight。现阶段无iOS安装/发布，未为测试修改该边界。可提前准备原生/iOS检查与准确源记录；最终TestFlight分发仍需届时明确授权及可信Quality，不能把网络unit绿当App产物。
