@@ -1,11 +1,13 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-10 11:43 UTC。**完整N0–N5仍未完成，用户已授权持续实施；不得因分项绿、旧goal paused或compact停下。** 速度/体验优先、个人可信设备网。root串行，无子智能体；没有main合并、发布、采购、生产部署或改已装App/store的授权。长期范围见[PLAN](PLAN.md)、[REQUIREMENTS](REQUIREMENTS.md)、[ACCEPTANCE](ACCEPTANCE.md)、[NEXT-DESIGN](NEXT-DESIGN.md)。上版STATE完整逐字保存在[历史](HISTORY-20261110-before-peer-contact-state.md)，含更早历史链；本页替代旧段落的当前状态，不删历史失败或矩阵。
+更新：2026-11-10 12:02 UTC。**完整N0–N5仍未完成，用户已授权持续实施；不得因分项绿、旧goal paused或compact停下。** 速度/体验优先、个人可信设备网。root串行，无子智能体；没有main合并、发布、采购、生产部署或改已装App/store的授权。长期范围见[PLAN](PLAN.md)、[REQUIREMENTS](REQUIREMENTS.md)、[ACCEPTANCE](ACCEPTANCE.md)、[NEXT-DESIGN](NEXT-DESIGN.md)。上版STATE完整逐字保存在[历史](HISTORY-20261110-before-peer-contact-state.md)，含更早历史链；本页替代旧段落的当前状态，不删历史失败或矩阵。
 
 ## 恢复先核实际句柄
 
-- 主：`/Volumes/disk0/Khor/worktrees/current/khor-net`，branch **feat/net**。最近源码HEAD **c504b0f7ea3b308aac3eb375c30efe32c8f669b4** 只追加hop取消测试/gate，tree **3934b8f9caab177f2f5554a90241c20f7070be13**、snapshot **ce890e55081045eb71912664ecb10b222d538231**，见hop-offer-red-source.json；尚未提交执行，不称runtime红。生产仍959/fccc，主53 vendor未变，无部署/发布。后续doc-only HEAD不当实际被测源。
-- **当前唯一heavy Turing：turing-20261110T114257Z-53895ab1，PID2260105**，原net-node/control68，sourcec504/tree3934/snapshotce890（上方）。这是hop-offer旧行为基线，先查终态/原group再collect；尚无真实红、可能先fmt/compile/setup失败，不预记结果。前驱61121d16已全绿/collect/identity/group空。
+- 主：`/Volumes/disk0/Khor/worktrees/current/khor-net`，branch **feat/net**。当前生产候选 **c071b679ad340284b537c6135543ac7b4fa21e4e**，tree **eda37c362b793ef63001fb4876be3ce4f44d58e4**、snapshot **dfc36e759e887a202864dd01390a0bb28bb5c694**，见hop-offer-formatted-candidate-source.json。在前三个已验证Asleep修复上增加PendingHop serial guard、既有watcher提前登记/offer后oneshot交付；尚未验证这个新候选，未部署。主53 vendor不变。后续doc-only HEAD不是实际被测源。
+- **当前唯一heavy Turing：turing-20261110T120048Z-147ab8a0，PID2281205**，原net-node/control68/source如上。前驱1d66fb2b只guard wrapping格式失败，51.943秒/10artifact/原group空，已精确应用远端format.patch；不是compile或行为红。147先查终态再collect，无Mac/phone活动，禁重发。
+- **hop-offer旧行为已经真实红**：c504首53895ab1只3处fixture格式失败；0fb7/treef42/snapshotf954的 **5ea56c46实际hop14pass/1fail，orphaned=true/stopped=false**，原12与正常交付/保留同middle新serial两负向绿，134.349秒/11artifact/原group空/sourcecontrolbundle核。整个新fixture与旧hop/wires tests whole冻结，prior peer_contact whole不变。先有真红，才加2b9行为（c071仅格式）。
+- 候选的first await前已有PendingHop与**原一个watcher**：guard取消仅删自己serial，Asking由caller持到offer完成再oneshot交给watcher；取消时Asking同步清、handoff关闭、原watcher等I/O ended沿let_path_go关路。pending阶段无LOOK timer、无额外cleanup task/协议/探针；gate仍attach后/offer前，必要的同步owner登记现在在gate前，真实堵住首await取消窗口。新三例/原whole不改。**既有check links.has→await close与新offer、pending Noq open、ears重绑的代际仍未验；HOP_WITHIN目前只包tries，完整prepare预算也要后续合同，尚不并行普通拨号。**
 - **第三Asleep分项已同canonical双OS绿**：fccc/tree714aaa9373cf3431ece85bb33bee689804fa948b/snapshot2b5af046d9c7b7f11fc95ca2f83538800355b12e/control68，Mac42806745387全12绿/budget26/wires15，Linux **61121d16全12绿/budget30/wires15**，21artifacts/group空/416.794秒，whole原及新fixture与真实Mac旧行为543/42806129212的24/2红逐byte核。peer-contact-fixture-freeze.json仅该scope candidate_verified=true，field_phone_issue_resolved=false；没有手机/生产App部署。当前无Mac或phone任务。
 - **99534d56失败仍保留**：新budget30/wires15等绿，但原remoteQUIC32第16行private-node配对60秒准备超时，未到回收断言，775.052秒/18artifact/group空；STOP/resume/canonical未执行。观察过cargo DN/288秒无log后自行继续，因进程已退出无wchan，**未证明该等待导致pair超时**。611按同源/同控制/同fixture/原期限只复测一次后全绿，不关闭独立pairing稳定性问题或丢弃此失败。
 - portable旧行为baseline **42806129212** source543/treee07/snapshotd16，实际budget24/2旧Asleep红、四负向/setup全绿；候选Mac **42806745387** exact artifact13757749259/20files/11controlblobs全12绿。旧测试only scratch已核clean/只有本次graph与Python缓存后非force移除；base543保留`refs/khor/net-baselines/peer-contact-portable-v1`，source snapshot/run refs仍在，cleanup证明外部peer-contact-baseline-worktree-cleanup.json。所有本地80252/99550等旧会话均已结束。
@@ -73,10 +75,12 @@
 - collect：control cwd运行`python3 scripts/collect-network-ssh.py /.../receipt.json`；101可为实际产品失败。终态/group空后才取报告。`ops/verify-turing-record.py FOLDER`或`verify-mac-record.py RUN_ID`只核身份，**必须另读fmt/compile/实际测试/原门**。未取得source.json不是身份已核；执行器失败与产品红分开。
 - Mac提交canonical已存JSON，经`ops/submit-mac-source-ssh.py`，原可信API bundle/guard；register-mac-run pin后采attempt精确artifact，再verify。所有重型只经已授权路径，合并/发布须另行满足可信Quality与授权边界。
 
-下一步：先核53895ab1旧hop-offer测试only结果，按fmt/compile/setup/实际状态错误分别采证；取得真实红后才改取消所有权guard，原全部fixture/代际保护/offer后窗口保持。第三Asleep已闭合，不再重刷611或发Mac/手机操作。继续N1自然质量窗口/独立cold-start与N2 peer relay缓存/网络epoch/候选生命周期，不把几个修复当完整手机或N0–N5完成。
+下一步：先完成147ab8a0实际fmt/compile/三例行为和原12项；新候选真绿后同canonical Mac。若失败按实际层修，不改冻结fixture或门。随后offer后/代际/全prepare3秒合同，证明完整资源边界后再并行寻路；第三Asleep已闭合，不重刷611或发手机操作。继续N1自然质量窗口/独立cold-start与N2 peer relay缓存/网络epoch/候选生命周期，不把几个修复当完整手机或N0–N5完成。
 
 11:21：NEXT-DESIGN已先记录open_hop attach→offer→watcher窗口与并行寻路前置所有权合同；当前只静态事实/设计，未改hop行为或声称field根因。99534d56仍原普通unit，Mac候选exec99550待取；旧baseline543保持clean并已证真实native状态红。
 
 11:38新hop测试only已落c504：真实Node::open_hop+实际Tunnel QUIC status，gate在attach/offer前，取消/正常watcher交付/同peer同middle新serial保护三例；scratch middle只模拟Admission，不冒充onward或业务成功。原hop与wires整个旧tests模块逐byte保持，peer_contact whole保持，hop-offer-fixture-freeze.json冻结；无生产guard修复，未执行/未预记红或绿。
 
 11:43：同源第三竞态双OSscope闭合，当前仅53895ab1执行新的hop取消旧行为基线；guard未实施，peer-contact/原hop/wires whole都保持。完整N0–N5与现场手机自动恢复仍未完成。
+
+12:02补充：只读MacLab当前磁盘App Info.plist为0.2.0/0.2.0、mtime2026-11-08，无Git commit字段，maclab-installed-app-metadata-20261110.json；未执行/改App，不能证明事故进程source。完整N0–N5/现场自动接管仍未完成。
