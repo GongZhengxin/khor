@@ -170,7 +170,10 @@ async fn observe(early: bool, contact: Contact) {
     } else {
         assert!(asleep_after_old_result);
         assert!(!queued_answered);
-        assert_eq!(dial_count, 1, "unchanged peer stays quiet and shares refusal");
+        assert_eq!(
+            dial_count, 1,
+            "unchanged peer stays quiet and shares refusal"
+        );
     }
 }
 
