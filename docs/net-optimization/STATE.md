@@ -4,10 +4,10 @@
 
 ## 先核真实句柄
 
-- 主 `/Volumes/disk0/Khor/worktrees/current/khor-net`，feat/net。当前候选HEAD **3a3a29ec**：ba28暂停cache修复上仅加Wires::tick同批resting→heard顺序修正；主53vendor/Iroh41不改，尚未双OS绿，不是已部署源。Mac42770379226+Linux4bcfad82同source全部net-node已绿，见下。不把doc-only HEAD误当已测试二进制源。
+- 主 `/Volumes/disk0/Khor/worktrees/current/khor-net`，feat/net。当前HEAD **6ba99632**：3a3同tick修复上只加retirement cfg(test) gate与独立2回归，生产Asleep仍旧after-unlock；主53vendor/Iroh41不改，尚未双OS绿，不是已部署源。Mac42770379226+Linux4bcfad82同source全部net-node已绿，见下。不把doc-only HEAD误当已测试二进制源。
 - 隔离 `/Volumes/disk0/Khor/worktrees/current/khor-net-recovery-deadlines` detached **2ef6bee5**，treef1da6579/snapshot48e9e24b（b4行为仅追加actual carrier与connect阶段诊断，e819已实际编译执行）；无IPC v2，Iroh42/43/44未合主。Iroh43实际vendor绿但物理f2b仍红。Iroh44基线d7/tree937/snapshot714在fe3实际54/2红；当前b4只保留有限稀疏测量，重新合格或新故障重启确认时钟，原whole50+epoch+sampling fixtures不变；待同源vendor与物理验证。
 - 控制 `/Volumes/disk0/Khor/worktrees/current/khor-build-net` feat/net HEAD **68cadb57a0ed72d40a4ca9a843e86b9c6797bf34**已推。net-node仅在原remoteQUIC32之后/canonical之前加resume合同；3个source-only stub控制测试实际绿。
-- 当前无本轮heavy/sampler。**3a3a29ec同source双OS已全net-node绿**：Turing1ea89122（238.877秒/21artifacts/原group空）+Mac42793316303（11control blobs/20artifacts），tree9c527/snapshot7f1/control68。wires13含原11+新2、resume/canonical/STOP32/remote32/IPC均绿；red7da为12/1、samewhole。wake-epoch-fixture-freeze.json candidate_verified=true仅限same-tick顺序缺陷，field_phone_issue_resolved=false，无部署。下一查retire槽释放后after_retirement旧asleep覆盖新adopt，先真实barrier回归，不把双OS绿当手机整体问题已完。
+- Turing当前retirement baseline正在原net-node执行，source6ba/tree3f45/snapshotec51/control68，实际句柄以最新receipt/source-refs为准（stageexec13881）；Mac/phone无本轮active。**3a3a29ec同source双OS已全net-node绿**：Turing1ea89122（238.877秒/21artifacts/原group空）+Mac42793316303（11control blobs/20artifacts），tree9c527/snapshot7f1/control68。wires13含原11+新2、resume/canonical/STOP32/remote32/IPC均绿；red7da为12/1、samewhole。wake-epoch-fixture-freeze.json candidate_verified=true仅限same-tick顺序缺陷，field_phone_issue_resolved=false，无部署。下一查retire槽释放后after_retirement旧asleep覆盖新adopt，先真实barrier回归，不把双OS绿当手机整体问题已完。
 - Mac本轮42793316303已terminal采证；无已知本轮heavy。macserver SSH已恢复；用户已澄清同LAN为MacLab本地电脑↔Turing；构建macserver为另一台。A=macserver/B=Turing沿用U10用户异网说明，C=MacLab同LAN参照，P=iPhone；公共Relay自身不证明NAT穿透。源提交经本机GitHub SSH，worker仍原API bundle/guard，无个人凭据给worker。
 - 用户已确认：**iPhone在手边，可切Wi-Fi/蜂窝；已装khor并已与Macserver/Turing配对**。两次可用性/安装配对问题均已答，不重复问。真机具体采样窗口尚未开始；先核实际版本/cohort/可观测API并准备短操作，不假称手机已通过或要求改生产store。
 
@@ -95,3 +95,5 @@ SSH BatchMode/ForwardAgent=no/StrictHostKeyChecking=yes；无个人key/PAT/agent
 09:44：phone session090200 summary已归档WiFi30(18ok12busy)/to-cell10(8ok2busy)/return39(21ok8busy9paused1error)，三slowcell成功27916/29285/19093ms，return成功最大8311ms；全79 outcomes保留。用户已明确manual反复App重开后才Turingpeer relay成功，自动handover不接受。MacLabpublicid449/PID87295只读证实；Turing被动网络journal186条、MacLab220条已归档（Mac v1漏departed字段需补快照，不能臆造完整性），跨机时钟Turing快18.603–18.644秒。command negative busy一次不确定、随后help与missing-target真实非busy拒绝已核，--on非静默忽略。所有生产App/resident/配置未改，勿自行清理_host/_ghost等子进程。
 
 09:53分项闭合：wake same-tick修复双OS实际13/0，原背景全suspended负向绿，准确source3a3；原canonical2.23s/Macresume1.69s/STOP1.50s等完整profile绿。after_retirement现仍在slots锁释放后写asleep，是相邻未测并发窗口；下一单独cfg(test) barrier在真实retire API停于该窗口，新adopt+真实echo后放行，先红再移asleep到槽所有权内提交。原wholewires18ac与wake fixture不改，原暂停/重试/既有node合同不缩减。
+
+09:59：第二回归6ba仅新增cfg(test)Wires实例gate+独立retirement2tests，production无gate/新锁/等待；新fixturewhole freeze见retirement-epoch-fixture-freeze.json，原whole11与wake2不改。先真实retire released-slot→新adopt+echo→旧finish的旧Asleep提交红，之后才移提交；Turing任务可能先有fmt/setup失败，须据实际日志分类，不伪称运行时红。
