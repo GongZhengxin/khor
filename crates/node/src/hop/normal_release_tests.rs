@@ -131,7 +131,10 @@ async fn observe_release(successor: bool) {
         .await
         .unwrap();
     assert!(direct_echo && outer_open);
-    assert_eq!(kept, successor, "normal release must include the new caller");
+    assert_eq!(
+        kept, successor,
+        "normal release must include the new caller"
+    );
     assert_eq!(answered, successor);
 }
 
