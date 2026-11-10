@@ -33,6 +33,11 @@
 
 ## 当前唯一重型任务与下一步
 
+19:38 UTC覆盖：repeat2 1cb99869已终态采核170.305秒/16files/group空/identity，124/124且原四秒合同51/51绿；**当前唯一repeat3of3 turing-20261110T193636Z-b158e418，PID2788543，19:36:58 UTC启动**，同923 source/control/profile。原计划3轮，第三轮在跑、不重发；完成后再合并三轮报告，不以两轮绿提前关闭重复性。
+
+后续仍按相同已验证主源跑已有netlab-dynamic（原p2/p3/p7三轮）与netlab-stability（原p1/p1j/p1s/p5），不改原门；若仍红先取实际诊断，考虑N1隔离42–44是否应整合/替代，不能先猜其收益。没有Mac重型并发。
+
+
 最新覆盖（19:34 UTC）：第一轮0aeceb60已终态采核，228.871秒/16files/group空/identity核；物理IPv4从198.18.2.2换198.18.3.2，原10秒holds核，124/124全业务成功；原四秒warm合同50个请求全通过，首请求在replug结束后发起，AB594472us/BA584202us（不是fault-start恢复或p99）。main55未含42–44，不作单patch因果结论；旧隔离红保留。
 
 已预先登记两轮额外重复：main55-peer-mobility-repeatability-plan.json，三轮总数/相同source+control+profile/原门全保留，失败也完成固定集合后再改策略，无盲重跑。**当前唯一运行repeat2of3：turing-20261110T193252Z-1cb99869，PID2781710，19:33:14 UTC启动**；同923 canonical。第三轮尚未提交，须等本轮终态采核/group空。不派Mac重型。下方0aec为已完成第一轮，不再运行/重发。
