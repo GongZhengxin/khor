@@ -398,9 +398,9 @@ pub(crate) struct Wires {
     /// The connections other machines opened to this one, weakly, and
     /// when each was last heard ([`Self::serving`]).
     served: Mutex<Vec<Served>>,
-    /// Machines a relay said left it, and when (`Wires::departed`):
-    /// until one is heard from again, a dial to it is given a short time.
-    gone: Mutex<HashMap<String, Instant>>,
+    /// Positive contact versions and the last word that a machine left
+    /// or rested. They share a lock so an old dial cannot undo new contact.
+    presence: Mutex<HashMap<String, PeerPresence>>,
     /// **Machines unreachable now, and when the attempt that said so
     /// failed** (round NET-13): set by a dial that failed
     /// ([`Self::failed`]) and by a request unanswered on its wire
@@ -422,6 +422,12 @@ pub(crate) struct Wires {
     retirement_test_gate: Mutex<Option<RetirementTestGate>>,
     #[cfg(test)]
     asleep_dial_test_gate: Mutex<Option<AsleepDialTestGate>>,
+}
+
+#[derive(Default)]
+struct PeerPresence {
+    contact: u64,
+    gone: Option<Instant>,
 }
 
 #[cfg(test)]
@@ -450,9 +456,10 @@ const GONE_FOR: Duration = Duration::from_secs(120);
 const LEFT_ALONE_FOR: Duration = Duration::from_secs(600);
 
 /// The lock that makes one key's dials one at a time, holding how the
-/// last dial under it failed and when — what an asker who waited for that
-/// dial takes as its own answer (`Node::line_to_inner`).
-pub(crate) type DialLock = Arc<tokio::sync::Mutex<Option<(Instant, crate::link::DialFailure)>>>;
+/// last dial under it failed, when, and the peer contact version it began
+/// with — what an asker who waited for that dial may share.
+pub(crate) type DialLock =
+    Arc<tokio::sync::Mutex<Option<(Instant, crate::link::DialFailure, u64)>>>;
 
 /// A connection another machine opened to this one.
 struct Served {
@@ -660,10 +667,11 @@ impl Wires {
     /// ran out redialled a sleeping phone six times in its first minute.
     fn wait_after(&self, id: &str, n: u32) -> Duration {
         if self
-            .gone
+            .presence
             .lock()
             .unwrap_or_else(|p| p.into_inner())
-            .contains_key(id)
+            .get(id)
+            .is_some_and(|p| p.gone.is_some())
         {
             return BACKOFF_MAX;
         }
@@ -1230,10 +1238,12 @@ impl Wires {
             }
         }
         if !kept {
-            self.gone
+            self.presence
                 .lock()
                 .unwrap_or_else(|p| p.into_inner())
-                .insert(id.to_owned(), now);
+                .entry(id.to_owned())
+                .or_default()
+                .gone = Some(now);
         }
         if any {
             self.let_go_served_by(id, Retired::Departed);
@@ -1247,10 +1257,11 @@ impl Wires {
     /// forgotten when [`LEFT_ALONE_FOR`] runs out: the pump's next failure
     /// to it waits the longest ([`Self::wait_after`]).
     pub(crate) fn gone_lately(&self, id: &str) -> bool {
-        self.gone
+        self.presence
             .lock()
             .unwrap_or_else(|p| p.into_inner())
             .get(id)
+            .and_then(|p| p.gone)
             .is_some_and(|at| at.elapsed() < GONE_FOR)
     }
 
@@ -1261,30 +1272,55 @@ impl Wires {
     /// connection clears the word ([`Self::serving`]) and is answered with
     /// a round at once.
     pub(crate) fn asleep(&self, id: &str) {
-        self.gone
+        self.presence
             .lock()
             .unwrap_or_else(|p| p.into_inner())
-            .insert(id.to_owned(), Instant::now());
+            .entry(id.to_owned())
+            .or_default()
+            .gone = Some(Instant::now());
+    }
+
+    /// The positive contact known when a dial starts. This is not a
+    /// network/address epoch and does not change a caller's deadline.
+    pub(crate) fn contact_version(&self, id: &str) -> u64 {
+        self.presence
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .get(id)
+            .map_or(0, |p| p.contact)
+    }
+
+    /// A dial's resting answer applies only if this peer has not been
+    /// heard since it began. Check and publish under the same lock as back.
+    pub(crate) fn asleep_if_unchanged(&self, id: &str, contact: u64) {
+        let mut presence = self.presence.lock().unwrap_or_else(|p| p.into_inner());
+        let peer = presence.entry(id.to_owned()).or_default();
+        if peer.contact == contact {
+            peer.gone = Some(Instant::now());
+        }
     }
 
     /// Whether the pump should leave this machine alone because its relay
     /// said it left and nothing has been heard from it since
     /// ([`LEFT_ALONE_FOR`]).
     pub(crate) fn left_alone(&self, id: &str) -> bool {
-        self.gone
+        self.presence
             .lock()
             .unwrap_or_else(|p| p.into_inner())
             .get(id)
+            .and_then(|p| p.gone)
             .is_some_and(|at| at.elapsed() < LEFT_ALONE_FOR)
     }
 
     /// Heard from: whatever a relay said about it is old news, and so is
     /// an attempt that failed to reach it.
     fn back(&self, id: &str) {
-        self.gone
-            .lock()
-            .unwrap_or_else(|p| p.into_inner())
-            .remove(id);
+        {
+            let mut presence = self.presence.lock().unwrap_or_else(|p| p.into_inner());
+            let peer = presence.entry(id.to_owned()).or_default();
+            peer.gone = None;
+            peer.contact = peer.contact.wrapping_add(1);
+        }
         self.down
             .lock()
             .unwrap_or_else(|p| p.into_inner())

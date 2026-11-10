@@ -3505,11 +3505,14 @@ impl Node {
         // (net-dial). A round and a person's ask meeting on one dead
         // machine used to dial it one after the other — a whole second
         // dial right after the first had just said no.
-        if let Some((at, failed)) = one.as_ref()
+        if let Some((at, failed, contact)) = one.as_ref()
             && *at >= waited
+            && (!matches!(failed, DialFailure::Asleep(_))
+                || *contact == self.wires.contact_version(&d.id))
         {
             return Err(failed.clone());
         }
+        let contact = self.wires.contact_version(&d.id);
         // The peer hop (round ROAD-3): a road through a third machine,
         // ready before the dial so it races from the first packet.
         if may_hop {
@@ -3542,7 +3545,7 @@ impl Node {
                     DialFailure::TimedOut => Some(msg::machine_unreachable_timeout(&d.name)),
                     DialFailure::Refused(why) => Some(msg::cant_reach_named(&d.name, why)),
                 };
-                *one = Some((std::time::Instant::now(), e.clone()));
+                *one = Some((std::time::Instant::now(), e.clone(), contact));
                 // A middle's dial for another machine is that machine's
                 // miss, not this one's (net-dial B3, `journal::By::Onward`).
                 // A machine that refused is resting, not down: left alone
@@ -3552,7 +3555,7 @@ impl Node {
                         self.wires.failed(&d.id, proto, words);
                     }
                 } else {
-                    self.wires.asleep(&d.id);
+                    self.wires.asleep_if_unchanged(&d.id, contact);
                 }
                 Err(e)
             }
@@ -3744,11 +3747,14 @@ impl Node {
         if self.wires.live(&d.id, wires::Proto::Main).is_some() {
             return Early::NotTaken;
         }
-        if let Some((at, failed)) = one.as_ref()
+        if let Some((at, failed, contact)) = one.as_ref()
             && *at >= waited
+            && (!matches!(failed, DialFailure::Asleep(_))
+                || *contact == self.wires.contact_version(&d.id))
         {
             return Early::Failed(failed.clone());
         }
+        let contact = self.wires.contact_version(&d.id);
         if crate::deadline::wait(by, self.hop_ahead(ep, d))
             .await
             .is_err()
@@ -3925,16 +3931,16 @@ impl Node {
                     DialFailure::Refused(why) => Some(msg::cant_reach_named(&d.name, why)),
                     DialFailure::TimedOut => Some(msg::cant_reach_named(&d.name, "")),
                 };
-                *one = Some((std::time::Instant::now(), e.clone()));
+                *one = Some((std::time::Instant::now(), e.clone(), contact));
                 if let Some(words) = failure {
                     self.wires.failed(&d.id, wires::Proto::Main, words);
                 } else {
-                    self.wires.asleep(&d.id);
+                    self.wires.asleep_if_unchanged(&d.id, contact);
                 }
                 Early::Failed(e)
             }
             Err(_) => {
-                *one = Some((std::time::Instant::now(), DialFailure::TimedOut));
+                *one = Some((std::time::Instant::now(), DialFailure::TimedOut, contact));
                 self.wires.failed(
                     &d.id,
                     wires::Proto::Main,
