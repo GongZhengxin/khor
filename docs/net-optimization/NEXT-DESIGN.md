@@ -582,3 +582,5 @@ close_offer原整个文件保持70af完整前缀，只尾附queued_close模块�
 2026-11-10T15:55:07.266891+00:00：99d8ec5c Linux1446794a全12/hop36绿，Mac42849256788同源待结果；并行/未登记scope仅候选。新增successor fixture在旧pending完成→清理决策间真实gate，先完成后新建同peer lease并保持实际未登记carried TLS；确认旧watcher决策已执行后再echo，含无successor释放控制。7810仅测试点，下一步先取真实红，再把pending准入与精确serial撤回放到同锁原子检查；其余0RTT/Asleep/候选新鲜度/full N0–N5继续。
 
 2026-11-10T15:58:10.645955+00:00：静态确认cached-first缺口：road_for_hop在无live road且未down时回退mine历史Road，middles_with_cost统一按两腿ms排序，未知ms=u16::MAX；因此两个历史低RTT候选可能挤掉当前唯一live neighbor（TRIES=2）。下一独立合同必须用真实两个未admit的cached endpoints与实际live Tunnel验证选择，不只测试排序函数；恢复按当前可达性与速度估计排序，健康路性能比较保持实测gain，不能偷换成Direct优先。当前尚未写fixture或改排序。
+
+2026-11-10T16:17:29.340928+00:00：2cb56/06d07ccd actual hop39全绿，full/Mac待结果。读取路径仍ask_early串行hop_ahead，新增actual ask_on Sessions cold与TLS-resumed两例：原1秒caller、真实未admit middle、真实IP server返回SessionRows，服务端is_0rtt与真实计数（1 optional warm+1 actual），原race whole逐byte为prefix。先取旧行为红，后让准备与原early handshake合作poll；必须adopt先于准备Drop，已accepted response owner/STOP/不重放原合同保持。普通握手早失败→hop后成功、0RTT失败阶段与无隐式重放、相同绝对dial budget/journal起点的完整fallback仍需独立合同，不能假定一个好IP例覆盖。

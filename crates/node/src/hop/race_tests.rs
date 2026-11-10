@@ -129,3 +129,6 @@ async fn a_middle_waiting_for_admission_cannot_hold_the_fast_direct_wire() {
         "the available IP wire must win inside the caller's budget while the middle is still unadmitted: won={won}, echoed={echoed}"
     );
 }
+
+#[path = "early_race_tests.rs"]
+mod early;
