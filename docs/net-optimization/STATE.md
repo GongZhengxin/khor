@@ -37,6 +37,9 @@
 
 ## 当前任务与下一步
 
+18:40 UTC：056dea初候选f301d401仅格式43.816秒/10files/group空/identity核，无行为结论。已应用远端Road构造格式；入站排序在去重后固定一次RTT key，避免排序时读变化中的统计。原fixture不改，新candidate待登记；不要重发已完成6da/f301。
+
+
 最新覆盖（18:38 UTC）：6da35a6a已终态采核52项51/1；unused两候选与closed-incoming负控、原48均过，只有真实入站first-leg未获准入。196.406秒/11files/group空/identity核，incoming freeze baseline true、candidate false。当前新候选：只读选最近收到过包/原Patience内的live incoming，按RTT遍历，只接纳实际selected Direct/Relay（Unknown/Carried不猜）；仍建立原协议Tunnel而非反向复用。Recovery live分组复用同事实。无UI/暂停信任/单hop/TRIES/原budget或后台task/timer改变；尚未验证。
 
 下方6da句柄已完成，不再运行；新candidate回执待登记，恢复查ledger。

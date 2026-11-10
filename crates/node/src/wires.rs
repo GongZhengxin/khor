@@ -820,8 +820,9 @@ impl Wires {
                 .then_some(conn)
             })
             .collect();
-        conns.sort_unstable_by_key(rtt_of);
+        conns.sort_unstable_by_key(Connection::stable_id);
         conns.dedup_by_key(|conn| conn.stable_id());
+        conns.sort_by_cached_key(rtt_of);
         conns
     }
 

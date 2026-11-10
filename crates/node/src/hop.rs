@@ -450,7 +450,12 @@ impl Node {
             let ms = crate::wires::rtt_of(&conn)
                 .as_millis()
                 .min(u128::from(u16::MAX)) as u16;
-            return Some(Road::own(b, kind, khor_net::path::relay_name(&conn), Some(ms)));
+            return Some(Road::own(
+                b,
+                kind,
+                khor_net::path::relay_name(&conn),
+                Some(ms),
+            ));
         }
         if r.down.is_some() {
             return None;
