@@ -757,9 +757,7 @@ impl Node {
                         let current_road = wires.link(&id).road;
                         let current_comparison = wires.compare_carrier(&id);
                         if current_road == road && current_comparison == comparison {
-                            release_hop(
-                                &links, &id, peer, via, attachment, road, held, comparison,
-                            );
+                            release_hop(&links, &id, peer, via, attachment, road, held, comparison);
                         }
                     });
                     // A pending consumer or a changed measurement starts
