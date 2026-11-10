@@ -526,3 +526,10 @@ a35/95e/c74已双OS全12组绿，完成已登记selected-carried与完整准备�
 
 
 13:29UTC incoming旧行为实测：a2ed/19ed/f118在07e04308 hop22/1红，真实TLS/echo/仅Custom无selected及对侧Carried/独立outgoing IP前置均达成；取消后kept=false/owned=false/echoed=false，但独立IP echo仍成功。正常incoming控制与原21全过，198.966秒/11artifact/identity核/group空。候选仅carrier_in_use扩展非空all-custom事实，不把空snapshot当作使用、不改comparison/时钟/fixture。先原完整net-node同source双OS；after-offer载体保留不等于所有新旧offer代际已验证。
+
+
+## 13:37UTC：late-close/new-offer独立合同（先复现）
+
+当前incoming候选69a6在Linux4c316093全12绿/hop23，Mac42825268619已出artifact待身份与原门核，不预记接受。下一原源码行为不变，仅cfg(test)单次gate在真实let_path_go检查links无连接之后、读取ears/发送close之前。独立scratch Node当前ears为真实Endpoint；A/B先实际IP握手/echo，再通过duplex frame流开真实Custom路径且有测量；断旧stream并join两端Attached后暂停old-close。replacement控制先建立新stream并实际offer同Custom tuple，随后release旧close。真实remote_info对同actor作队列处理barrier，观察Custom Closed事件/当前paths与仍可用IP echo。无replacement负控应真实关闭Custom且IP继续。原gate不进生产，不使用GUI/store或个人身份，不把内存流声称实际SSH/两腿/WAN。
+
+若旧行为真实红，后续修复需处理完整顺序：新offer已完成时迟来的旧close不能赢；close已发但Noq Abandoned未回时的新offer不能被“已开着”吞掉；pending Opened旧完成和换ears也需合同。单独在异步close前再check一次links或只包应用层mutex不足以关闭这些矩阵。候选可考虑以Links单一所有者产生每peer单调revision，Iroh actor接收带revision的desired custom状态，并在实际路径事件后继续收敛；这是提议，不是已实现或已验证，不能新增无界task/probe或把网络epoch和remote Asleep混为一层。

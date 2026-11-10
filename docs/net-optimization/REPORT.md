@@ -273,3 +273,10 @@ Turing稳定源码缓存首/复用同快照206/207均fmt/net66+1ignored绿，bui
 首候选921/06db/23db两端新增hop21/0绿，但Turing a1b1dbe9及Mac42821367661原leased IPC32均栈溢出/SIGABRT，后续profile未执行，该source不接受且原件保留。仅在两个实际cold open_hop调用处Box::pin，原线程栈、fixture、时钟与业务语义不改。最终a35/95e/c74/control68在Linux1952febb（265.399秒、21artifact、原group空）和Mac42822434248（exact artifact13766619208、20files、11controlblobs）同canonical全部12组绿，hop21、wires15、budget30Linux/26Mac；原IPC32、remote32、32明确STOP、resume与canonical caller均通过。
 
 原offer整个c071前缀、新prepare/published whole、原hop/wires测试尾及前几轮fixtures逐byte保持，详两freeze JSON和boxed-fixture-audit。此证据只接受这些合同，未覆盖incoming-only无selected标记、late-close/new-offer/pending Noq、ears/network/address epochs、并行寻路、WAN/真机自动恢复或能耗；没有安装到手机。高host load下普通功能回归不作p99性能数据。
+
+
+## 2026-11-10 13:39UTC：incoming-only共享载体使用事实
+
+旧a2ed/19ed/f118在07e04308实际hop22/1红：同peer独立outgoing真实IP连接继续echo，incoming真实TLS/echo且仅Custom无selected标记，客户端实际Carried；取消post-offer准备者后kept=false/owned=false/echoed=false。正常incoming与此前21例通过，198.966秒/11artifact/identity核/group空；52310a20仅格式失败不算运行红。新incoming whole冻结，原published文件准确前缀、prepare whole、原hop/wires tests等均保持。
+
+候选仅carrier_in_use扩展为selected-carried或非空且全custom的registered live连接；空snapshot不当作使用，原compare评分不改，无新生产timer/task/probe。69a6/tree8536/snapshotbb754/control68在Linux4c316093（249.068秒、21artifact、原group空）与Mac42825268619（exact13768467392、20files、11controlblobs）同canonical全12组绿，hop23、wires15、budget30Linux/26Mac，原1 ignored保持。hop-incoming-fixture-freeze.json仅该scope true，field_phone_issue_resolved=false。之后的late-close/new-offer/pending Noq/ears/network/address epoch及并行仍未闭合。

@@ -285,3 +285,6 @@ mod prepare_budget;
 
 #[path = "published_tests.rs"]
 mod published;
+
+#[path = "close_offer_tests.rs"]
+mod close_offer;
