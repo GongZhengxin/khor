@@ -1,6 +1,6 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-10 06:23 UTC。用户授权继续完整N0–N5，尚未完成。速度/体验优先，可信个人设备网；无main合并、发布、中继采购/生产部署授权。root串行、无子智能体。完整计划/硬要求/验收以[PLAN](PLAN.md)、[REQUIREMENTS](REQUIREMENTS.md)、[ACCEPTANCE](ACCEPTANCE.md)为准。旧状态逐字保存在[本轮历史](HISTORY-20261110-before-ping-delivery-investigation.md)与其历史链。
+更新：2026-11-10 06:33 UTC。用户授权继续完整N0–N5，尚未完成。速度/体验优先，可信个人设备网；无main合并、发布、中继采购/生产部署授权。root串行、无子智能体。完整计划/硬要求/验收以[PLAN](PLAN.md)、[REQUIREMENTS](REQUIREMENTS.md)、[ACCEPTANCE](ACCEPTANCE.md)为准。旧状态逐字保存在[本轮历史](HISTORY-20261110-before-ping-delivery-investigation.md)与其历史链。
 
 ## 恢复先核实际句柄
 
@@ -55,3 +55,7 @@
 SSH BatchMode/ForwardAgent=no/StrictHostKeyChecking=yes；无个人key/PAT/agent/签名/模型凭据给workers，不重设HOME/CODEX_HOME。临时WAN capability只私管道/一次secret，禁止日志正文/票据。GitHub本机SSH上传不改worker认证。不确定timeout先查receipt/GH/proc/PGID，已有bundle/run先recover不重发。stage/launch显式完整source/control、前驱终态/组空/锁核；exec返回session不等于完成，commit hook结束后才snapshot。ledger避免并发writer。
 
 图谱先，缺vendor覆盖才定向读；不自建.codegraph。旧baseline/control WIP不reset；只终态+所有权/hash核后清本次临时资料。`verify-*-record.py`仅核identity，必须读行为日志分fmt/编译/fixture/执行器/产品红。证据根`/Volumes/disk0/Khor/evidence/net`，source-refs审计最近329项（39ops），新增逐条pin，稳定后刷新全量。旧goal服务paused不是用户暂停，不因此停止；无子智能体/merge/release/deploy授权。
+
+用户真机补充（2026-11-10 06:32UTC）：iPhone在手边，可切换Wi-Fi/蜂窝，已确认纳入P真机验收，不再问设备可用性。已异步询问当前khor安装/与A(macserver)、B(Turing)配对状态，以决定具体短操作；真实App/binary/source/cohort、IPv4/v6实际候选、首个成功业务/选路恢复/稳定与成本须分别留证，不能仅据网络名称推断地址族。手机答复期间服务器开发继续。
+
+Mac新resume合同：42768368485仅workspace fmt一处assert换行失败，未编译/未执行行为，source/control/11blobs/9artifacts核。精确remote format.patch已inspect、whitespace-only应用4b7e87ee；新运行42769067590，request5d5db3d5c9b04c0b844af8b02133e51f，source4b7/tree751e2978/snapshotca77b24d/control68cadb，待实际行为红。生产准入尚未改；不得把fmt红当行为红。原wire_tests从struct Server到EOF整段与a00逐byte相同，旧canonical/local32及新STOP/QUIC32整fixture保持，见resume-admission-fixture-freeze.json。
