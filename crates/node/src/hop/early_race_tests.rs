@@ -61,12 +61,17 @@ async fn observe(warm: bool) {
         let ep = direct.clone();
         let requests = requests.clone();
         async move {
-            let answer = crate::proto::encode(&crate::proto::Response::SessionRows { rows: vec![] }).unwrap();
+            let answer =
+                crate::proto::encode(&crate::proto::Response::SessionRows { rows: vec![] })
+                    .unwrap();
             if warm {
                 let conn = ep.accept().await.unwrap().accept().unwrap().await.unwrap();
                 let (mut send, mut recv) = conn.accept_bi().await.unwrap();
                 let bytes = recv.read_to_end(crate::proto::MAX_FRAME).await.unwrap();
-                assert!(matches!(crate::proto::question(&bytes).unwrap(), crate::proto::Request::Sessions));
+                assert!(matches!(
+                    crate::proto::question(&bytes).unwrap(),
+                    crate::proto::Request::Sessions
+                ));
                 requests.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
                 send.write_all(&answer).await.unwrap();
                 send.finish().unwrap();
@@ -77,7 +82,10 @@ async fn observe(warm: bool) {
             let (mut send, mut recv) = incoming.accept_bi().await.unwrap();
             let early = recv.is_0rtt();
             let bytes = recv.read_to_end(crate::proto::MAX_FRAME).await.unwrap();
-            assert!(matches!(crate::proto::question(&bytes).unwrap(), crate::proto::Request::Sessions));
+            assert!(matches!(
+                crate::proto::question(&bytes).unwrap(),
+                crate::proto::Request::Sessions
+            ));
             requests.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
             let conn = incoming.handshake_completed().await.unwrap();
             observed_early.send(early).unwrap();
@@ -87,13 +95,23 @@ async fn observe(warm: bool) {
         }
     })));
     if warm {
-        let conn = tokio::time::timeout(Duration::from_secs(2), f.ep.connect(direct.addr(), INNER_ALPN))
-            .await.unwrap().unwrap();
+        let conn = tokio::time::timeout(
+            Duration::from_secs(2),
+            f.ep.connect(direct.addr(), INNER_ALPN),
+        )
+        .await
+        .unwrap()
+        .unwrap();
         let (mut send, mut recv) = conn.open_bi().await.unwrap();
-        send.write_all(&crate::proto::encode(&crate::proto::Request::Sessions).unwrap()).await.unwrap();
+        send.write_all(&crate::proto::encode(&crate::proto::Request::Sessions).unwrap())
+            .await
+            .unwrap();
         send.finish().unwrap();
         let bytes = recv.read_to_end(crate::proto::MAX_FRAME).await.unwrap();
-        assert!(matches!(crate::proto::answer(&bytes).unwrap(), crate::proto::Response::SessionRows { .. }));
+        assert!(matches!(
+            crate::proto::answer(&bytes).unwrap(),
+            crate::proto::Response::SessionRows { .. }
+        ));
         conn.close(0u32.into(), b"warm request complete");
     }
     let by = Instant::now() + Duration::from_secs(1);
@@ -117,7 +135,10 @@ async fn observe(warm: bool) {
     let won = result.is_ok();
     let answered = matches!(&result, Ok(crate::proto::Response::SessionRows { .. }));
     let actual_early = was_early.try_recv().ok();
-    let held_direct = f.node.wires.live(&f.target.id, Proto::Main)
+    let held_direct = f
+        .node
+        .wires
+        .live(&f.target.id, Proto::Main)
         .is_some_and(|conn| khor_net::path::classify(&conn) == khor_net::path::PathKind::Direct);
     let total = requests.load(std::sync::atomic::Ordering::SeqCst);
     let stopped = matches!(
@@ -132,10 +153,16 @@ async fn observe(warm: bool) {
     direct.close().await;
 
     assert!(stopped && outer_open && !orphaned);
-    assert!(won && answered && held_direct,
-        "the actual reading must finish inside the original caller budget while the middle is unadmitted: warm={warm}, won={won}, answered={answered}, held_direct={held_direct}, requests={total}");
+    assert!(
+        won && answered && held_direct,
+        "the actual reading must finish inside the original caller budget while the middle is unadmitted: warm={warm}, won={won}, answered={answered}, held_direct={held_direct}, requests={total}"
+    );
     assert_eq!(actual_early, Some(warm));
-    assert_eq!(total, usize::from(warm) + 1, "no accepted reading may be replayed");
+    assert_eq!(
+        total,
+        usize::from(warm) + 1,
+        "no accepted reading may be replayed"
+    );
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
