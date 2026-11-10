@@ -1090,6 +1090,22 @@ mod tests {
         );
     }
 
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn an_ipc_call_keeps_its_callers_shorter_deadline() {
+        let (mute, server) = mute_serve().await;
+        let by = tokio::time::Instant::now() + std::time::Duration::from_millis(40);
+        let outcome = tokio::time::timeout(
+            std::time::Duration::from_millis(250),
+            crate::deadline::scope(by, call(mute, "c", Op::Hops)),
+        )
+        .await;
+        server.abort();
+        let _ = server.await;
+        let reply = outcome.expect("IPC must not replace the caller's deadline with the op's full budget");
+        let why = reply.expect_err("a mute resident did not answer");
+        assert!(why.contains(Op::Hops.name()), "the deadline error names its operation: {why}");
+    }
+
     #[tokio::test]
     async fn a_refused_old_port_refreshes_before_sending_exactly_once() {
         let live = tokio::net::TcpListener::bind(("127.0.0.1", 0))

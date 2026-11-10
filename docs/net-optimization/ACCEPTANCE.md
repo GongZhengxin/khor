@@ -495,3 +495,10 @@ Mac-only net-wan-lifetime可通过既有GH installed guard通道执行上面三�
 源码scripts/netlab-peer-selection.py及物理fixture hash在peer-recovery-four-seconds-red-green.json冻结。原267/272数据已在策略修改前取得此额外门真实红；可达124/124及reported Carried最终hold仍是绿，两者分开保留。目标给原2秒新鲜确认及两腿恢复留预算；约4秒的无新往返等待须有界处理，不能用旧包ACK直接证明新网可用。
 
 下一候选还须每peer/road/已判故障epoch至多一份有回包提示后启动的fresh recovery PING，无hint/健康/首次未建不发送，重复hint不重发；保持2秒/两fresh observation ticks、收益门、现有PTO/静默/重hold和所有者规则。单元覆盖触发、重复、仍silent/无hint、真正新往返、独立下一故障与发送失败，物理路径/计数和原CPU短停顿/稳定性/黑洞须另验。此处不是已实现或已通过证据。
+
+
+## N2 IPC调用方剩余期限合同（客户端修改前冻结）
+
+新增真实loopback单元an_ipc_call_keeps_its_callers_shorter_deadline：resident接收连接后保持静默，调用方task-local截止40ms、原Op::Hops档位保留；250ms独立观察窗口内必须结束并给出带操作名的错误，不能重新获得Op完整预算。结束时取消/join本次fake listener。此项先远端取红；它只验证客户端截止点，不把caller future结束当server/remote执行已经停止。既有拒绝TCP才刷新、已发送不重放、正常half-close和长档合同继续保留。
+
+control在net-node便携合同追加ipc::tests串行过滤器，无新编译profile/并行负载。新的leased IPC握手/服务端取消仍只是单独设计，不能据此单元绿声称跨进程已全部完成。
