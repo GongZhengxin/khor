@@ -30,7 +30,7 @@
 
 ## 固定物理对照：已完成，N1仍失败
 
-**当前无重型任务。** 以下6次均终态/采集/identity/group空，source ledger pending=false。Mac重型也全部结束。无第七次盲重跑。
+**下列六次均已结束；新的流诊断Node检查见下一节。** 以下6次均终态/采集/identity/group空，source ledger pending=false。Mac重型也全部结束。无第七次盲重跑。
 
 预先登记recovery-known-quality-physical-pair-plan.json，C-B,B-C,C-B共三组；C=1c847229，B=c7750419b272716381d2b650627d5992943d58c2/treef21b4a140903f3c1a1e6a7b8a800c3a52c53bc3e/snapshot7ca5901194a7d5c4823c87e140393deecbcd8949（有同五合同/同显式DEBUG，旧行为）。全部control68cad、原20ms腿、真实middle IPv4 replug、原10秒holds、各124业务、原两个四秒门不改。
 
@@ -95,3 +95,5 @@ refs最近只读审计191453Z为457refs/64control/363explicit receipts+94legacy�
 21:01 UTC：新增stream_trace诊断94d3241a，只在KHOR_NET_DIAGNOSTICS开启时对三位置actual Noq Send/Recv加Tap，按poll真实read/write/flush/shutdown状态及累计偏移记录（pending重复抑制、无payload）；绑定stream/wire/attachment身份。中间仍原双copy/select/finish，关闭时调用逐字未改的normal splice和原Links.attach/Noq IO类型，无hot-path Tap。原5秒outer look另读实际conn/path stats。写入/flush ready不是ACK/远端交付，read ready0不自动当EOF。新诊断尚未类型/行为验证；c801首check仅fmt失败43.803秒/10files/group空/identity，已apply经check的远端4920byte格式patch，无本机formatter。旧源/失败保留，准备格式后重提Node。
 
 21:04 UTC：db9cb1c3 stream诊断beb35913已终态81.964秒/11files/group空/identity；fmt及net67（原1ignored）绿，Node编译两处E0308：incoming_wire为Option<usize>。已修诊断身份为Option，X真实outer用Some、中间incoming/receiver允许None，不unwrap/不伪造0；缺ID不能作跨端精确关联。尚无Node/物理通过结论。无额外heavy，准备v3准确源。
+
+21:07 UTC当前唯一重型：turing-20261110T210521Z-3e49bad9（net-node诊断v4），PID2895702，21:05:42 UTC启动；fd92b2ac177a4054aad1e96f3ca30fe16d1e75ea/tree45ddec136ba973a32fd0dbae93d3ed590e8b6559/snapshotbaa0800f51609169c6a0d59258ca8002272df31b/control68cad。尚在Node编译/回归，未提交新的物理。v3 5d99仅修Option后未提交，v4只手工换行105字符构造签名，保留独立source JSON。normal splice与1c逐字hash核，diagnostic source audit已存；没有行为通过声明。Mac本轮尚无新任务。
