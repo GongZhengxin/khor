@@ -54,8 +54,7 @@ impl Epoch {
             r#"{"relays":[{"url":"http://127.0.0.1:9"}],"only_mine":true}"#,
         )
         .unwrap();
-        let node =
-            Arc::new(Node::open_hosting(root.path().to_path_buf(), "epoch", false).unwrap());
+        let node = Arc::new(Node::open_hosting(root.path().to_path_buf(), "epoch", false).unwrap());
         let ep = bound(node.key.clone(), &node.carry).await;
         let key = iroh::SecretKey::generate();
         let other = Links::new(key.public());
@@ -113,7 +112,9 @@ impl Epoch {
         let (nr, nw) = tokio::io::split(near);
         let (fr, fw) = tokio::io::split(far);
         self.stream = Some((
-            self.node.carry.attach(self.remote.id(), Carrier::Ssh, nr, nw),
+            self.node
+                .carry
+                .attach(self.remote.id(), Carrier::Ssh, nr, nw),
             self.other.attach(self.ep.id(), Carrier::Ssh, fr, fw),
         ));
         self.ep
@@ -167,11 +168,7 @@ async fn observe_close(replacement: bool) {
     f.end_stream().await;
     let (entered, release) = f.node.wires.gate_carried_close_for_test();
     let mut closing = Owned(Some(tokio::spawn({
-        let (node, links, peer) = (
-            Arc::downgrade(&f.node),
-            f.node.carry.clone(),
-            f.remote.id(),
-        );
+        let (node, links, peer) = (Arc::downgrade(&f.node), f.node.carry.clone(), f.remote.id());
         async move { crate::carry::let_path_go(&node, &links, peer).await }
     })));
     ready(entered).await;
