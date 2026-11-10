@@ -493,3 +493,16 @@ c071/eda/dfc已Linux147ab8a0+Mac42812850230同source全部12项绿，hop15、wir
 候选使用入口冻结的一个绝对by=min(原3秒,caller)，前段tries和后段gate/offer都等待同一个by，不因阶段重置总预算。保留实际middle尝试失败的MISSED/原退避；caller先到期时不把它计作middle失败，admit后本机offer未完成亦不记“没有middle可达”。已有PendingHop+watcher负责超时清理，不新增无主任务或永久timer。hop_ahead入口前的同步设备表/文件IO不被这个异步期限虚假宣称可抢占，仍属N3调度/IO工作。
 
 之后继续late close/new offer、pending Noq open/ears epoch的真实合同；这些与总体3秒门未证明前不并行寻路。不能以新deadline测试替代手机自动恢复或路径快慢选择。
+
+
+## 2026-11-10 12:39UTC：先保护已在使用的载体，再收紧完整准备期限
+
+8475/ffd/ceaa在Turing9484048e真实hop16pass/3fail：原15+正常短caller控制绿，gate内完整3秒及caller1秒两用例分别3.3016/1.3014秒仍未返回；真实新Incoming保持不admit时，caller1秒到期被记MISSED。123.098秒/11artifact/group空核，旧whole/prefix不变；原0b仅格式。完整by修复尚未写。
+
+先补一个此前gate未覆盖的所有权边界：offer已返回而准备future尚未handoff时，另一个真实连接可能已使用该carrier；随后等待者取消不应拆掉共享路。否则收紧post-admission deadline或未来select普通dial先赢时，可能取消正被赢家使用的载体。现在是源码推断，需实际业务链路回归，不据此宣称现场原因。
+
+拟新增post-offer cfg(test)单次gate，位置为实际ep.offer_addrs返回后/handoff前。独立真端点fixture使用owned Node身份key（不导出）、A的Links Custom transport、实际A↔scratch-middle Tunnel QUIC stream和B的Custom-only endpoint；middle只适配已接纳stream到B Links，不声称两个跨机腿或真实WAN。先让A→B真实TLS handshake、固定字节echo、path=Carried并adopt该live wire，再取消准备owner；载体/Asking应交给既有watcher、同wire第二次echo继续，正常handoff作负向控制。原整个offer文件仍是准确前缀，新prepare whole不改，先真实红。
+
+候选方向是由实际live wire使用事实决定缓存所有权：PendingHop可持Asking/handoff sender，在取消时若Main/Tunnel/served真实live连接选中carried，则交既有watcher保留；没有使用者仍撤自己serial，保持原pre-offer取消合同。Wires连接收集与compare_carrier共用，字段读取不探测/不读磁盘/不新增timer；取消旧serial不得影响替代。并行实现以后必须先登记成功连接的事实，再取消其可能依赖的hop准备，caller过期仍不能交付/重放操作。此方向在新回归前不是已实现或已接受；如果实测否定则重新设计。
+
+该保护完成后再合完整by和正确MISSED记账，之后仍需late-close/new-offer/pending-Noq-open/ears epoch合同，不能直接以一个tokio::select结束准备。
