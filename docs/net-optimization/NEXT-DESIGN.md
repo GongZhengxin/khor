@@ -338,3 +338,16 @@ N2本机期限/取消的具体兼容提议见[IPC-LEASE-DESIGN](IPC-LEASE-DESIGN
 ### 已证实恢复无PTO等待与有界候选（2026-11-10）
 
 002954诊断124/124可达且reported Carried最终hold；实际70条缺新往返快照均PTO0/unacked None，外层Go+1187/+1253ms，内层开始确认+5302/+5313ms、Go+7552/+7562ms。旧ACK清PTO后的等待假设已获实际stats支持，不能删除mark_silent的sent>judged保护。由于最早hint早于外层稳定，前文一次PING提议由ACCEPTANCE中的最多3次/250ms间隔/2秒有限窗口替代，尚未实施。状态归既有actor的Measured所有，不spawn任务/持强Connection/新永久timer；路已关/新epoch/已有Moving/足够自然样本必须有明确回收与合并。Noq12现代对照stalls现有门均绿，但候选worst约1秒、16轮punch高于baseline539.2ms/13轮；保留该负面观测并做matched repeats，不能称整体性能成功。
+
+
+## Iroh39首轮后的时限与采样副本接续（2026-11-10，下一策略实施前）
+
+fa99准确ba7源/ef0b，124/124可达、原采样请求四秒门51/51；但业务窗口先AB后BA，不能据此称双方四秒恢复。实际完整日志x/y内层Go为+4060.292/+5799.202ms；同版本c397 baseline为+7674.436/+7913.427ms。新增独立scripts/netlab-peer-decision.py在改下一策略前冻结：原物理/原采样checker字节保持，结合原请求门，要求两端实际Relay→Carried Go均<=4000ms；缺事件不自动绿。两旧run均真实红，证据peer-recovery-decision-four-seconds-red-green.json。
+
+真实probe日志在report/netlab/*/diagnostics，不能只搜scenarios.log（那里仅有诊断路径提示）。fa99 x三次同copy，约+1060/+1310/+1560ms；y约+1050/+1550/+2049ms，copy A→B→A，均PTO0/Ok。y在+1299ms已新往返解除silence、无当前silent copy；中间两次预期250ms槽未发，原strict now<last+250ms门会因微小调度抖动跳过一整tick。副本交替还使Reading每copy的近期中位数难以积累3次新样本。x确认从+1809ms到+4060ms，2秒窗口也被250ms轮询跨边界拖慢。此处是实际日志与现有控制流的解释，未量得线程栈/future字节数。
+
+下一Iroh40候选：同一有限恢复episode优先保持已选live copy，同PTO时不随latest received切换，关闭或更低PTO健康copy可接替；只存ID，零持久强连接。保留3次/2秒/至少250ms实际预约节奏、sent>judged、收益门、2秒与两fresh观察。由既有actor的MaybeFuture为待处理恢复预约和Moving的2/4秒边界设置有限sleep；没有pending decision时None，无新永久timer/后台task。早到的普通tick不取消随后准确due；仍silent/已足够自然样本/合并/用尽/过期时disarm，不能让past-due制造busy loop。到期醒来重新读取真实stats并走原选择规则，不能把timer本身当新样本或Go证据。
+
+纯合同先覆盖copy粘附/降级failover、250ms边界微抖动不漏预约、无pending无deadline、silent/expired disarm、2/4秒确认仍需fresh与原gain。vendor绿后仍须原物理与两个四秒门至少3轮、实际probe预算、原CPU/黑洞/成本。为隔离新IPC v2，物理候选在15f45e6b的独立source worktree构造，再把同一代码补丁带回feat/net；不能把它当最终分支整源全验收。此处尚未实施，不能预记通过。
+
+Noq12稳定性诊断用现成netlab-diagnostic，准确旧a42源（无Iroh39/新IPC）、原p1s600秒/20次尖峰+f4s，role=diagnostic；全样本有观测开销，不能替代quiet p1s红或quiet最终验收。

@@ -525,3 +525,8 @@ leased_ipc_callers_release_all_held_response_permits_when_dropped使用现有Nod
 
 
 IPC真实TCP兼容补充：新增client_tests覆盖cap0/1保持legacy EOF、cap2及向下兼容max3使用v2并保持写方向打开、拒绝TCP后端口/cookie/版本一起刷新、v2失回复零重放、独立receiver任务未继承caller task-local但收到<=500ms剩余预算。均为真实loopback/helper server，不替代真实Node32回复或独立process验收。whole wire fixture保持SHA945c22aa；此次仅追加客户端合同及应用上一轮精确remote formatting，未放宽原资源回收门。
+
+
+### 双方恢复决策四秒门（Iroh40实施前补充）
+
+原四秒采样门只约束实际请求窗口，原文件/hash不变。新增scripts/netlab-peer-decision.py结合原门，要求固定peer replug病例两端完整诊断中实际Relay→Custom恢复Go均不晚于middle_replug_finished+4000ms，缺事实不能绿；这是决策时刻门，不外推任意WAN/逐包hard deadline。c397 baseline 7674/7913ms及ba7初候选4060/5799ms已实际红。至少3次同源physical与两门共同绿；probe3次/2秒/250ms、原新鲜往返/2秒两fresh/gain均保持。有限due wake与稳定采样copy是下一候选，未改原物理/原请求负载/10秒holds/全部124 outcomes。
