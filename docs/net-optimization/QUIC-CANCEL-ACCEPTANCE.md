@@ -9,3 +9,5 @@
 此层两Node为真实QUIC、同一test process，不声明跨主机网络/手机或远端磁盘已被中断。若后续需要更强的same-wire/STOP证据，独立新增，不用资源回收代替其证明。
 
 实际进展：Mac42754190117仅formatter失败，c5ba3d25应用精确patch；42754548807实跑上述32合同红（远端回收5秒超时），原fixture已完整冻结，非编译/准备红。17d11fb3监听stopped候选的42755165540只test-build E0425，不能记回收绿；757e013f修复原测试hook作用域并保留response到最终write，待同源Mac/Linux行为验收。原始whole fixtures与现有canonical显式ContentCancel/阻塞IO所有权用例保持，不因新取消实现改断言。
+
+757e013f/tree2d218d48/snapshot3f0c7ea6在Mac42755640884、Turing042313-d964同canonical source实际全绿：新远端32、原canonical忙IO/显式ContentCancel整例、本机32、独立process、IPC18与便携均绿。两整个fixtures在Git红/绿source与当前字节相同；quic-response-owner-32-red-green.json verified限资源/真实QUIC层，尚未以事件记录严格same-wire/STOP或accepted写job证明。
