@@ -1,6 +1,6 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-10 21:44 UTC（新加坡11月11日凌晨）。当前事实以本页为准。此前STATE逐字保存在[最近历史](HISTORY-20261111-before-carrier-stream-diagnosis.md)，其链含after-scope55及更早历史；失败/旧源/fixture不删。历史运行句柄不当当前。
+更新：2026-11-10 21:58 UTC（新加坡11月11日凌晨）。当前事实以本页为准。此前STATE逐字保存在[最近历史](HISTORY-20261111-before-carrier-stream-diagnosis.md)，其链含after-scope55及更早历史；失败/旧源/fixture不删。历史运行句柄不当当前。
 
 ## 授权与位置
 
@@ -14,7 +14,7 @@
 
 ## 当前实现候选与接受边界
 
-当前产品行为候选1c8472299b1c94e2c7813d4356d0412cf34a8fc4 / tree90f62f507b7546cf0a2eb3313db602238671d928 / snapshot4c18fa477f91b913726069f661dd265c06c2d1fb。其后加入流诊断fd92b2ac与计数输出校准ef0bfa7e（正常策略未改），实际HEAD ef0bfa7e086e3652f6e50db1d8f364f8445ce601、feat/net、clean。当前源码/验证见下文。
+当前产品候选 **2892a8c0c3cdc016de51203b60c5aaa10f946e50 / tree909ecc440a129f94d9b99cd816f500cc9651c2d0 / snapshotf3a3fc92acb03ce918b76078f00bec6d7c21e233**。含原1c847恢复候选、ef0b流计数诊断及Noq13显式path PING及时确认；Noq13协议scope在33bc9584已443/55/11绿，双OS全12仍在跑、物理未开始。原1c847/tree90f62/snapshot4c18的固定六次N1失败不由新单元绿覆盖。实际HEAD/status另核；证据按准确源，不按文档提交HEAD猜测。
 
 **Iroh46候选仅单元/便携scope通过，物理恢复验收失败，不能当最终方案。** 主vendor55含候选46（Iroh1–41/45/46、Noq1–12），42–44仍隔离。46在已有有限恢复episode，真实post-episode样本重返实测pre-fault质量时仅首次刷新quality窗口；历史值不当新样本/可达/收益证据。原3probe（失败/合并也消耗）、250ms、2秒采样、Moving/gain、新packet epoch与重hold均保持。
 
@@ -116,3 +116,9 @@ v5 ef0bfa7e/tree d635e42951140ed36ca0e41f586bfc9569940cb1/snapshot31e10e49c71361
 21:52 UTC：v2旧efb2/treeb1e95/snapshotef151在8a4a7521终态35.709秒/12files/group空/identity，fmt/原439与三负控（含真实accepted0RTT+实际early STREAM逐字交付）绿，仅explicit probe一RTT时无新样本失败，442pass/1fail。已准备Noq13候选：Established+Data+peer支持时同一次pending PING附IMMEDIATE_ACK，普通ping/保活不动，无新任务/计时器/重试；ACK可能更早额外单包须计量。主vendor候选56，隔离42–44未动；whole v2e057与原multipath/parent还原SHA再核相同。当前未编译，准备原net-vendor执行；不把此独立缺陷当6aa定因。
 
 21:54 UTC：候选4e0/673dd20b终态27.678秒/12files/group空/identity，fmt绿但Noq编译E0308，highest_space实际SpaceKind而非SpaceId；未执行任何行为测试，原源/结果留存。已按声明及既有1079检查修成SpaceKind::Data，测试whole v2e057不变后重提；没有扩大功能/门。
+
+21:57 UTC：Noq13候选2892a8c0c3cdc016de51203b60c5aaa10f946e50/tree909ecc440a129f94d9b99cd816f500cc9651c2d0/snapshotf3a3fc92acb03ce918b76078f00bec6d7c21e233在33bc9584已终态59.799秒/14files/group空/identity，fmt/Noq443/irohpath55/home11全绿；wholetest v2e057旧442/1红→候选443绿。仅协议及时性scope，原6aa/N1/phone仍红或未验。source audit核connection/mod.rs只ping_path变、普通ping/保活与其余全文件逐字一致，原测试SHA不变，图谱不覆盖vendor。
+
+当前唯一Turing重型 **turing-20261110T215546Z-ea5f7a11**（net-node），PID2952660，21:56:07 UTC启动，准确2892/tree909e/f3a/control68cad。Mac同源net-node正经既有dev提交，request f66c4cbd4c4e41a4bdfd8eb61a9ebd96，尚未收回最终run ID，不重提；exec session98379须先poll。待双OS原全12通过且Macheavy结束再做timedphysical。path-probe-prompt-ack-physical-plan-v1.json已前瞻登记C-B,B-C最多4、0重试，原门/hold/预算/observer保持；首真实换址后单向非推进/无Go或连续两次准备失败即停作定位，固定集合不完整仍如实保留。ACKcost v2另存旧helper，加入ACK/PATH_ACK/IMMEDIATE_ACK实际counter，缺界unknown。尚未开始物理。
+
+21:58 UTC：Mac提交已收回run **42909901676**，request f66c、准确2892/tree909e/f3a、control68cad，已注册ledger（484条）；workflow in_progress。先前session98379已终态退出，不再poll/重提。当前仅Turing ea5f Node +Mac429099 Node在跑，无物理/phone任务。
