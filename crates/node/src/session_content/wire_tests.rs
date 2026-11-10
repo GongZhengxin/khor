@@ -337,6 +337,84 @@ async fn cancel_held_responses(
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn leased_ipc_callers_release_all_held_response_permits_when_dropped() {
+    let root = crate::testdir::TempTree::fresh("content-ipc-caller-lease");
+    util::hermetic(&root);
+    let mut server = Server::start(&root, "lease-home").await;
+    let node = Arc::new(Node::open_as(root.path(), "lease-home").unwrap());
+    let id = "01a17c1a-a542-7822-b01d-82a832a158e6";
+    let history: Vec<_> = (0..500)
+        .flat_map(|n| message(&format!("lease-{n}")))
+        .collect();
+    std::fs::write(source(&root, id), history).unwrap();
+    let observation = ObservationRef {
+        owner: node.device(),
+        home: node.device(),
+        namespace: ObservationNamespace::Native,
+        agent: "codex".into(),
+        native_id: id.into(),
+        imported_at: Millis(1),
+        updated_at: None,
+    };
+    let locator =
+        ContentLocator::observed(SessionId("observe/ipc-lease".into()), &observation).unwrap();
+    let Reply::Resolved(Resolution::Available { binding, .. }) =
+        node.content_read(Action::Resolve { locator }).await.unwrap()
+    else {
+        panic!("private source must resolve through its resident");
+    };
+    let held = HoldWork::install(&root, Stage::Response);
+    let mut reads = Vec::new();
+    let mut tasks = Vec::new();
+    for _ in 0..crate::link::CONTENT_RESPONSES {
+        let key = node.content_begin(&binding).await.unwrap();
+        let read = ClientRead::claim(&root, binding.clone(), &key).unwrap();
+        let (caller, request) = (node.clone(), read.clone());
+        tasks.push(tokio::spawn(async move {
+            caller.content_page(&request, None, false).await
+        }));
+        reads.push(read);
+    }
+    held.entered(crate::link::CONTENT_RESPONSES).await;
+    assert_eq!(
+        server.responses.available_permits(),
+        0,
+        "all real encoded replies retain their owner"
+    );
+    for task in tasks {
+        task.abort();
+        let _ = task.await;
+    }
+    settled_responses(&[&server]).await;
+    assert!(
+        !*held.1.released.lock().unwrap(),
+        "caller loss must release owners without unblocking replies"
+    );
+    assert_eq!(
+        held.1.count.load(Ordering::Acquire),
+        crate::link::CONTENT_RESPONSES
+    );
+    let endpoint: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(root.join(".khor/endpoint.json")).unwrap()).unwrap();
+    let reply = crate::ipc::call(
+        endpoint["ipc_port"].as_u64().unwrap() as u16,
+        endpoint["ipc_cookie"].as_str().unwrap(),
+        crate::ipc::Op::Hops,
+    )
+    .await
+    .unwrap();
+    assert!(
+        matches!(reply, crate::ipc::Reply::Hops { .. }),
+        "legacy half-close still works after caller cancellations"
+    );
+    held.release();
+    assert_eq!(page(&node, &binding, None, false).await.events.len(), 128);
+    drop(reads);
+    drop(held);
+    server.stop().await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn canonical_content_routes_without_metadata_owner_and_cancels_through_busy_real_wires() {
     let root_a = crate::testdir::TempTree::fresh("content-wire-reader");
     let root_b = crate::testdir::TempTree::fresh("content-wire-home");

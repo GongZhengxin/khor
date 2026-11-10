@@ -514,3 +514,8 @@ control在net-node便携合同追加ipc::tests串行过滤器，无新编译prof
 ## IPC v2 helpers层合同（真实路径启用前）
 
 先远端验证合法legacy正常half-close、v2长度结束无half-close、body等候不得重置header预算、坏magic/未知版本/零/超长/截断拒绝、过期header零发送；caller EOF/额外输入应在work首次poll前取消，blocked reply的buffer/owner随取消或deadline释放。预认证完整framing沿已有5秒local门，解码后cookie仍单独核，不把helper的decode成功写为认证或业务执行成功。EndpointFile/via_serve尚未接入；本层绿不是全IPC/32content permits/独立process/QUIC执行取消证明。
+
+
+## 真实resident 32份回复所有者取消（新路径接入前冻结）
+
+leased_ipc_callers_release_all_held_response_permits_when_dropped使用现有Node content API、真实resident TCP与实际32个content response permits；每个Window已编码后停在既有Response barrier，先核available=0和32次进入。abort/join全部caller任务后，不释放barrier，5秒内必须全部permit回到32；这证明caller loss释放实际响应所有者，不以手动放行旧工作替代。随后同resident公开legacy ipc::call(Op::Hops)仍答复，放行barrier后新page仍读128条。source fixtures/原permit常量/5秒门与取消前准备条件全部固定；先实际远端取红，helpers或格式绿不能代替。独立process/QUIC远端取消仍需另外验收。
