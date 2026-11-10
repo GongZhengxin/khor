@@ -392,6 +392,7 @@ fn bytes_of(conn: &Connection) -> (u64, u64) {
 pub(crate) struct Wires {
     slots: Mutex<HashMap<(String, Proto), Slot>>,
     dialing: Mutex<HashMap<(String, Proto), DialLock>>,
+    pending_dials: Mutex<HashMap<String, std::sync::Weak<PendingDialState>>>,
     /// A network change not yet judged: wires not heard since it are
     /// retired once their [`Patience::after_change`] has passed.
     changed: Mutex<Option<Instant>>,
@@ -480,6 +481,17 @@ struct Served {
     rx: u64,
     heard: Instant,
     rtt: Duration,
+}
+
+/// The owner of a finite dial, through registration of its winning wire.
+/// The existing hop watcher can wait for all such owners without keeping
+/// them alive or creating a cleanup task or timer.
+pub(crate) struct PendingDial {
+    _state: Arc<PendingDialState>,
+}
+
+struct PendingDialState {
+    done: tokio::sync::watch::Sender<()>,
 }
 
 /// A hop riding a machine's wire ([`Wires::hop_held`]); dropping it
@@ -638,6 +650,27 @@ pub(crate) struct Reading {
 }
 
 impl Wires {
+    pub(crate) fn pending_dial(&self, id: &str) -> PendingDial {
+        let mut pending = self.pending_dials.lock().unwrap_or_else(|p| p.into_inner());
+        pending.retain(|_, state| state.strong_count() != 0);
+        let state = pending.get(id).and_then(std::sync::Weak::upgrade).unwrap_or_else(|| {
+            let (done, _) = tokio::sync::watch::channel(());
+            let state = Arc::new(PendingDialState { done });
+            pending.insert(id.to_owned(), Arc::downgrade(&state));
+            state
+        });
+        PendingDial { _state: state }
+    }
+
+    pub(crate) fn pending_dial_done(&self, id: &str) -> Option<tokio::sync::watch::Receiver<()>> {
+        self.pending_dials
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .get(id)
+            .and_then(std::sync::Weak::upgrade)
+            .map(|state| state.done.subscribe())
+    }
+
     /// One line in the connection journal, when this node keeps one.
     pub(crate) fn note(&self, peer: Option<&str>, what: crate::journal::What) {
         if let Some(j) = self.journal.get() {

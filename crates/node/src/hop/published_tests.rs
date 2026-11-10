@@ -270,3 +270,6 @@ mod sole_peer;
 
 #[path = "race_tests.rs"]
 mod race;
+
+#[path = "pending_use_tests.rs"]
+mod pending_use;
