@@ -245,19 +245,23 @@ impl PendingHop {
         let (Some(handoff), Some(asked)) = (self.handoff.take(), self.asked.take()) else {
             return false;
         };
-        self.committed = handoff.send(HopHandoff {
-            asked,
-            pending: self.wires.pending_dial_done(&self.id),
-            cancelled,
-        }).is_ok();
+        self.committed = handoff
+            .send(HopHandoff {
+                asked,
+                pending: self.wires.pending_dial_done(&self.id),
+                cancelled,
+            })
+            .is_ok();
         self.committed
     }
 }
 
 impl Drop for PendingHop {
     fn drop(&mut self) {
-        if !self.committed && (self.wires.carrier_in_use(&self.id)
-            || self.wires.pending_dial_done(&self.id).is_some()) {
+        if !self.committed
+            && (self.wires.carrier_in_use(&self.id)
+                || self.wires.pending_dial_done(&self.id).is_some())
+        {
             self.hand_off(true);
         }
         if !self.committed {

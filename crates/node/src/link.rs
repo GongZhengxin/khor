@@ -945,8 +945,7 @@ const DIAL_TIMEOUT: Duration = Duration::from_secs(10);
 /// every dial to turing while it was stuck, from every machine.
 const DIAL_MOST: Duration = Duration::from_secs(25);
 
-type HopPreparation<'a> =
-    std::pin::Pin<&'a mut (dyn std::future::Future<Output = ()> + Send + 'a)>;
+type HopPreparation<'a> = std::pin::Pin<&'a mut (dyn std::future::Future<Output = ()> + Send + 'a)>;
 
 struct DialWindow {
     within: Duration,
@@ -3524,9 +3523,19 @@ impl Node {
         let preparation: Option<HopPreparation<'_>> =
             if may_hop { Some(hop.as_mut()) } else { None };
         let outcome = if may_hop {
-            self.dial_preparing(ep, &d.id, &d.addrs, proto.alpn(), by, DIAL_MOST, preparation).await
+            self.dial_preparing(
+                ep,
+                &d.id,
+                &d.addrs,
+                proto.alpn(),
+                by,
+                DIAL_MOST,
+                preparation,
+            )
+            .await
         } else {
-            self.dial(ep, &d.id, &d.addrs, proto.alpn(), by, DIAL_MOST).await
+            self.dial(ep, &d.id, &d.addrs, proto.alpn(), by, DIAL_MOST)
+                .await
         };
         match outcome {
             // Gone to the background while it dialled (net-dial B6): the
@@ -13353,7 +13362,8 @@ impl Node {
         alpn: &[u8],
         window: DialWindow,
     ) -> Result<iroh::endpoint::Connection, DialFailure> {
-        self.dial_with_preparation(ep, id, direct, relays, alpn, window, None).await
+        self.dial_with_preparation(ep, id, direct, relays, alpn, window, None)
+            .await
     }
 
     async fn dial_with_preparation(
@@ -13424,7 +13434,10 @@ impl Node {
         }
         let tunnel = alpn == khor_net::endpoint::TUNNEL_ALPN;
         let origin = crate::journal::by_now();
-        let note = |won: Option<crate::journal::Won>, error: Option<String>, asleep: bool, carried: bool| {
+        let note = |won: Option<crate::journal::Won>,
+                    error: Option<String>,
+                    asleep: bool,
+                    carried: bool| {
             // A failure's backoff is the one its caller is about to count
             // (`Node::line_to_inner`); a pairing dial counts none, nor a
             // middle's for another machine, nor one the far side refused.
@@ -13483,7 +13496,12 @@ impl Node {
                 return Err(DialFailure::CallerExpired);
             }
             if deadline.is_elapsed() {
-                note(None, refused.map(|why| crate::journal::scrub(&why)), false, offered_carried);
+                note(
+                    None,
+                    refused.map(|why| crate::journal::scrub(&why)),
+                    false,
+                    offered_carried,
+                );
                 return Err(DialFailure::TimedOut);
             }
             if roads.is_empty() && preparation.is_none() {
@@ -13491,7 +13509,9 @@ impl Node {
                 // iroh. If both original attempts already failed, give this
                 // newly prepared road one attempt in the SAME dial window.
                 // There are never more than the original two active dials.
-                if preparing_hop && !already_carried && !carried_retry
+                if preparing_hop
+                    && !already_carried
+                    && !carried_retry
                     && let Some(carried) = self.carried_addr(id)
                 {
                     carried_retry = true;
@@ -13505,7 +13525,12 @@ impl Node {
                         (crate::journal::Won::Direct, connected)
                     });
                 } else {
-                    note(None, refused.as_deref().map(crate::journal::scrub), false, offered_carried);
+                    note(
+                        None,
+                        refused.as_deref().map(crate::journal::scrub),
+                        false,
+                        offered_carried,
+                    );
                     return Err(match refused {
                         Some(why) => DialFailure::Refused(why),
                         None => DialFailure::TimedOut,
@@ -13563,7 +13588,8 @@ impl Node {
         by: Option<tokio::time::Instant>,
         most: Duration,
     ) -> Result<iroh::endpoint::Connection, DialFailure> {
-        self.dial_preparing(ep, id, direct, alpn, by, most, None).await
+        self.dial_preparing(ep, id, direct, alpn, by, most, None)
+            .await
     }
 
     async fn dial_preparing(
