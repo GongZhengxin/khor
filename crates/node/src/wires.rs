@@ -739,12 +739,14 @@ impl Wires {
         conns
     }
 
-    /// A registered live wire already rides the published carrier.
+    /// A registered live wire rides the carrier or has no other open path.
+    /// An incoming carried-only wire can lack a selected marker when the
+    /// peer's common selected tuple belongs to another connection.
     pub(crate) fn carrier_in_use(&self, id: &str) -> bool {
         self.live_connections(id).iter().any(|conn| {
-            khor_net::path::path_facts(conn)
-                .iter()
-                .any(|path| path.selected && path.carried)
+            let paths = khor_net::path::path_facts(conn);
+            paths.iter().any(|path| path.selected && path.carried)
+                || (!paths.is_empty() && paths.iter().all(|path| path.carried))
         })
     }
 

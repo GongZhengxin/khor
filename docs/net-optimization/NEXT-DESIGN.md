@@ -523,3 +523,6 @@ a75/a038/871在56d2ca30实际hop17pass/4fail；真实TLS、首个固定echo和Ca
 a35/95e/c74已双OS全12组绿，完成已登记selected-carried与完整准备期限合同，但源码中已有whole Wires真实fixture证明：同peer的一条outgoing Direct可作为公共selected tuple，而另一incoming只开Custom，后者snapshot无selected标记。它仍真实收发carried数据，不能被新Drop误当无人使用。需独立真实回归，不能改原whole Wires测试。
 
 在既有published fixture尾附incoming子模块，保留当前整个文件准确前缀：同一个fresh B身份分别绑定IP-only和Custom-only端点；A先持实际outgoing IP wire，再完成真实hop、B→A Custom TLS/echo，A登记serving incoming且assert仅Custom、无selected，B客户端selected Carried，A outgoing仍selected IP。取消post-offer准备者后carried echo必须继续，Direct也继续；正常handoff作控制。所有身份仅scratch，原deadline/whole fixtures不改。旧行为真实红后，最小扩展使用事实为selected custom或非空且全部custom的live wire，空/未知snapshot不臆测使用，主compare逻辑仍不改。之后再close/new-offer代际，不以这个合同关闭其他边界。
+
+
+13:29UTC incoming旧行为实测：a2ed/19ed/f118在07e04308 hop22/1红，真实TLS/echo/仅Custom无selected及对侧Carried/独立outgoing IP前置均达成；取消后kept=false/owned=false/echoed=false，但独立IP echo仍成功。正常incoming控制与原21全过，198.966秒/11artifact/identity核/group空。候选仅carrier_in_use扩展非空all-custom事实，不把空snapshot当作使用、不改comparison/时钟/fixture。先原完整net-node同source双OS；after-offer载体保留不等于所有新旧offer代际已验证。
