@@ -151,11 +151,14 @@ async fn observe(early: bool, contact: Contact) {
     let backoff = node.wires.backing_off(&peer.id);
     drop(queued);
     drop(contact_wires);
+    serving.0.as_ref().unwrap().abort();
+    match serving.0.as_mut().unwrap().await {
+        Ok(()) => {}
+        Err(error) => assert!(error.is_cancelled(), "the scratch server must not panic"),
+    }
     ep.close().await;
     server.close().await;
     other.close().await;
-    serving.0.as_ref().unwrap().abort();
-    let _ = serving.0.as_mut().unwrap().await;
 
     assert!(!owner_answered, "the old caller keeps its actual refusal");
     assert_eq!(down, None);
