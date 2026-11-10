@@ -70,5 +70,8 @@ async fn incoming_reachability_uses_the_real_packet_age_without_waiting_for_a_ti
     tokio::join!(a.close(), b.close());
     assert!(wire_open);
     assert!(fresh_without_tick, "real new packets need no reactor tick");
-    assert!(expired_packet_rejected, "changed counters do not make an old packet recent");
+    assert!(
+        expired_packet_rejected,
+        "changed counters do not make an old packet recent"
+    );
 }
