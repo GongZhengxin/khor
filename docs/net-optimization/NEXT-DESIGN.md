@@ -329,4 +329,4 @@ Noq12修复后的267：外层Relay→Direct约+1.244/+1.287s，inner Custom在+5
 
 ## N4目录基线后的正文校验扩展（2026-11-10）
 
-263是实际paired-warm目录list，仅核marker名/类型/大小。dev-only WAN worker增加read_content：复用真实resident IPC→Node::read_all/FetchPath，固定读取对方fresh fixture的wan-<run>.txt，cap等于已知26-byte标记并逐byte核对total/cut/正文，控制回复仅公开ID/时间/字节数/verified布尔，不把正文、票据或私钥放artifact。它不改产品Node API、不创建新peer连接/协议、不称大文件吞吐。先Mac远端build-only，Linux与双向实际正文验收待独占槽；263原目录结果不回填为正文绿。
+263是实际paired-warm目录list，仅核marker名/类型/大小。dev-only WAN worker增加read_content：复用真实resident IPC→Node::read_all/FetchPath，固定读取对方fresh fixture的wan-<run>.txt，cap等于已知29-byte标记并逐byte核对total/cut/正文，控制回复仅公开ID/时间/字节数/verified布尔，不把正文、票据或私钥放artifact。它不改产品Node API、不创建新peer连接/协议、不称大文件吞吐。先Mac远端build-only，Linux与双向实际正文验收待独占槽；263原目录结果不回填为正文绿。

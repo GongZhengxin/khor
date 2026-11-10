@@ -123,8 +123,10 @@ mod unix {
                 if cut || total != CONTENT.len() as u64 || bytes.as_slice() != CONTENT {
                     return Err("the isolated peer marker content differs".to_owned());
                 }
-                Ok(json!({"peer": expected, "elapsed_us": began.elapsed().as_micros(),
-                    "marker_content_verified": true, "bytes": bytes.len()}))
+                Ok(
+                    json!({"peer": expected, "elapsed_us": began.elapsed().as_micros(),
+                    "marker_content_verified": true, "bytes": bytes.len()}),
+                )
             }
             _ => Err("unsupported probe operation".to_owned()),
         }
