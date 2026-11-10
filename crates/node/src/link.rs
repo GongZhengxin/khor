@@ -3865,7 +3865,8 @@ impl Node {
         drop(attempt);
         #[cfg(test)]
         if let Ok(Err(failed)) = &outcome {
-            self.wires.note_early_failure_for_test(format!("{failed:?}"));
+            self.wires
+                .note_early_failure_for_test(format!("{failed:?}"));
         }
         if crate::deadline::expired(by) {
             if let Ok(Ok((conn, _))) = &outcome {

@@ -25,10 +25,15 @@ async fn observe(permit: bool) {
         .await
         .unwrap();
     assert_ne!(wrong.id(), f.target_ep.id());
-    f.target.addrs = wrong.addr().addrs.iter().filter_map(|addr| match addr {
-        iroh::TransportAddr::Ip(addr) => Some(addr.to_string()),
-        _ => None,
-    }).collect();
+    f.target.addrs = wrong
+        .addr()
+        .addrs
+        .iter()
+        .filter_map(|addr| match addr {
+            iroh::TransportAddr::Ip(addr) => Some(addr.to_string()),
+            _ => None,
+        })
+        .collect();
     assert!(!f.target.addrs.is_empty());
     let requests = Arc::new(std::sync::atomic::AtomicUsize::new(0));
     f.echo_task = Owned(Some(tokio::spawn({
@@ -37,11 +42,20 @@ async fn observe(permit: bool) {
         async move {
             let conn = ep.accept().await.unwrap().accept().unwrap().await.unwrap();
             while let Ok((mut send, mut recv)) = conn.accept_bi().await {
-                let Ok(bytes) = recv.read_to_end(crate::proto::MAX_FRAME).await else { break };
-                assert!(matches!(crate::proto::question(&bytes).unwrap(), crate::proto::Request::Sessions));
+                let Ok(bytes) = recv.read_to_end(crate::proto::MAX_FRAME).await else {
+                    break;
+                };
+                assert!(matches!(
+                    crate::proto::question(&bytes).unwrap(),
+                    crate::proto::Request::Sessions
+                ));
                 requests.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                let answer = crate::proto::encode(&crate::proto::Response::SessionRows { rows: vec![] }).unwrap();
-                if send.write_all(&answer).await.is_err() { break; }
+                let answer =
+                    crate::proto::encode(&crate::proto::Response::SessionRows { rows: vec![] })
+                        .unwrap();
+                if send.write_all(&answer).await.is_err() {
+                    break;
+                }
                 let _ = send.finish();
             }
         }
@@ -54,7 +68,10 @@ async fn observe(permit: bool) {
         let (me, via, target) = (f.ep.id(), f.middle_ep.id(), f.target_ep.id());
         async move {
             let (mut send, mut recv) = conn.accept_bi().await.unwrap();
-            assert_eq!(crate::tunnel::read_target(&mut recv).await.unwrap(), Ask::To(target).words());
+            assert_eq!(
+                crate::tunnel::read_target(&mut recv).await.unwrap(),
+                Ask::To(target).words()
+            );
             entered.send(()).unwrap();
             if admission.await.unwrap_or(false) {
                 if send.write_all(&[crate::tunnel::OK]).await.is_ok() {
@@ -86,12 +103,19 @@ async fn observe(permit: bool) {
     let mut calling = tokio::spawn({
         let (node, ep, target) = (f.node.clone(), f.ep.clone(), f.target.clone());
         async move {
-            crate::deadline::scope(by, node.ask_on(&ep, &target, &crate::proto::Request::Sessions)).await
+            crate::deadline::scope(
+                by,
+                node.ask_on(&ep, &target, &crate::proto::Request::Sessions),
+            )
+            .await
         }
     });
     tokio::time::timeout_at(by, arrived).await.unwrap().unwrap();
     allow_wrong.send(()).unwrap();
-    let failure = tokio::time::timeout_at(by, failed).await.ok().and_then(Result::ok);
+    let failure = tokio::time::timeout_at(by, failed)
+        .await
+        .ok()
+        .and_then(Result::ok);
     // A client-side, completed identity failure precedes the middle's answer.
     let _ = admit.send(permit);
     let mut serial = 0;
@@ -112,16 +136,28 @@ async fn observe(permit: bool) {
     }
     drop(release);
     let answered = matches!(result, Some(Ok(crate::proto::Response::SessionRows { .. })));
-    let carried = f.node.wires.live(&f.target.id, Proto::Main)
+    let carried = f
+        .node
+        .wires
+        .live(&f.target.id, Proto::Main)
         .is_some_and(|conn| khor_net::path::classify(&conn) == khor_net::path::PathKind::Carried);
     let total = requests.load(std::sync::atomic::Ordering::SeqCst);
-    let outer_open = f.outer_local.close_reason().is_none() && f.outer_remote.close_reason().is_none();
+    let outer_open =
+        f.outer_local.close_reason().is_none() && f.outer_remote.close_reason().is_none();
     stop(&mut wrong_task).await;
     f.close(serial).await;
     wrong.close().await;
     assert!(outer_open);
-    assert!(failure.as_ref().is_some_and(|why| why.starts_with("Refused")), "a real client identity failure must precede admission: {failure:?}");
-    assert_eq!(answered, permit, "one stale address must leave the same caller a chance to use its trusted middle: permit={permit}, answered={answered}, carried={carried}, requests={total}");
+    assert!(
+        failure
+            .as_ref()
+            .is_some_and(|why| why.starts_with("Refused")),
+        "a real client identity failure must precede admission: {failure:?}"
+    );
+    assert_eq!(
+        answered, permit,
+        "one stale address must leave the same caller a chance to use its trusted middle: permit={permit}, answered={answered}, carried={carried}, requests={total}"
+    );
     assert_eq!(carried, permit);
     assert_eq!(total, usize::from(permit));
 }
