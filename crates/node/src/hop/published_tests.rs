@@ -273,3 +273,6 @@ mod race;
 
 #[path = "pending_use_tests.rs"]
 mod pending_use;
+
+#[path = "fresh_middle_tests.rs"]
+mod fresh_middle;
