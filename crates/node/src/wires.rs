@@ -803,6 +803,28 @@ impl Wires {
             .filter(|c| c.close_reason().is_none())
     }
 
+    /// Incoming traffic can prove a first leg even without an outgoing
+    /// slot. This is reachability evidence, not protocol-stream reuse.
+    pub(crate) fn incoming_for_hop(&self, id: &str) -> Vec<Connection> {
+        let now = Instant::now();
+        let mut conns: Vec<_> = self
+            .served
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .iter()
+            .filter(|w| w.id == id)
+            .filter_map(|w| {
+                let conn = w.conn.upgrade()?;
+                (conn.close_reason().is_none()
+                    && (heard_count(&conn) != w.rx || heard_lately(Some(w.heard), w.rtt, now)))
+                .then_some(conn)
+            })
+            .collect();
+        conns.sort_unstable_by_key(rtt_of);
+        conns.dedup_by_key(|conn| conn.stable_id());
+        conns
+    }
+
     fn live_connections(&self, id: &str) -> Vec<Connection> {
         let mut conns: Vec<_> = [Proto::Main, Proto::Tunnel]
             .into_iter()

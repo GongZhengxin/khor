@@ -438,7 +438,21 @@ impl Node {
             Some(khor_net::path::PathKind::Carried) => return None,
             _ => {}
         }
-        if r.down.is_some() || self.carry.carrier(&b.parse().ok()?).is_some() {
+        if self.carry.carrier(&b.parse().ok()?).is_some() {
+            return None;
+        }
+        for conn in self.wires.incoming_for_hop(b) {
+            let kind = match khor_net::path::classify(&conn) {
+                khor_net::path::PathKind::Direct => RoadKind::Direct,
+                khor_net::path::PathKind::Relay => RoadKind::Relay,
+                _ => continue,
+            };
+            let ms = crate::wires::rtt_of(&conn)
+                .as_millis()
+                .min(u128::from(u16::MAX)) as u16;
+            return Some(Road::own(b, kind, khor_net::path::relay_name(&conn), Some(ms)));
+        }
+        if r.down.is_some() {
             return None;
         }
         mine.iter().find(|w| w.to == b).cloned()
@@ -539,7 +553,7 @@ impl Node {
                 // attempts on cached reachability. Stable sorting keeps the
                 // existing latency order inside each group; a live relay
                 // gets the same admission preference as a live IP wire.
-                picked.sort_by_key(|b| self.wires.link(b).road.is_none());
+                picked.sort_by_key(|b| self.road_for_hop(b, &[]).is_none());
             }
             // Keep the cold preparation state out of every enclosing dial and
             // resident request's future, including requests that need no hop.

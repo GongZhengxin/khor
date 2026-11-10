@@ -600,3 +600,5 @@ close_offer原整个文件保持70af完整前缀，只尾附queued_close模块�
 2. **本机网络代际与旧完成事件**：Wake::Network(Addrs)目前只forgive_all，其余Path/Wake/resume调用network_changed；hop的MISSED/LOST与这些状态分离。先真实建立一次NO_ROUTE/miss，再在未满原冷却时发实际换网入口/恢复事件、让同一middle许可，要求新尝试能成功；同时在旧尝试仍未完成时换网，旧失败不得在新网重新写冷却。不是无条件清空所有全局表，也不能让每个普通ACK刷新代际而取消后台退避。
 3. **peer/middle IPv4与IPv6改变**：身份保持，区分地址变化、仅来源标签改变和网络变化，按实际候选/可信地址世代失效；需要单独v4、v6、同时变化、同地址来源改变控制。Iroh45的本地source时间边界只解决一次idle cold失败，不是签名地址世代，不把重新发现的旧IP当作永久禁用。
 4. **正常watcher成本与更广admission**：两个新pending合同只覆盖有限调用owner。无pending的入站登记、正常准备完成但未使用carrier、unknown path snapshot与旧比较结果需各自实际合同；必要时扩同一个明确owner/admission边界，不能靠新常驻task、无限lease或减短LOOK让问题消失。仍测原N3字节/唤醒/能耗。
+
+构建加速只读复核（18:36 UTC）：固定control68cad的network-ssh-runner.cached_source已用独占锁内stable checkout并保留未变路径/mtime，核tree/clean后复用target；并非每run重铺所有源码。维持jobs16与冻结test-threads/网络观察窗；当前以同source连续验证相关合同减少重复编译，不因CPU强而并发计时物理netlab。不改guard/control，未取得编译阶段更细profiling时不编造缓存瓶颈或性能收益。

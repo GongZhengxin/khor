@@ -37,6 +37,14 @@
 
 ## 当前任务与下一步
 
+最新覆盖（18:38 UTC）：6da35a6a已终态采核52项51/1；unused两候选与closed-incoming负控、原48均过，只有真实入站first-leg未获准入。196.406秒/11files/group空/identity核，incoming freeze baseline true、candidate false。当前新候选：只读选最近收到过包/原Patience内的live incoming，按RTT遍历，只接纳实际selected Direct/Relay（Unknown/Carried不猜）；仍建立原协议Tunnel而非反向复用。Recovery live分组复用同事实。无UI/暂停信任/单hop/TRIES/原budget或后台task/timer改变；尚未验证。
+
+下方6da句柄已完成，不再运行；新candidate回执待登记，恢复查ledger。
+
+
+**当前唯一重型任务** `turing-20261110T183321Z-6da35a6a`，PID2723734，18:33:43 UTC启动，net-node；source fd8a6dad/tree4d22178c/snapshotd849a325，JSON `unused-candidate-incoming-middle-formatted-baseline-source.json`。同时测unused候选与incoming-only旧行为，预期后者独立红，尚未接受两个scope。前a16f92b9仅格式43.755秒/10files/group空/identity已核，远端patch已应用，无行为结论。不要重发run。
+
+
 最新覆盖（18:30 UTC）：unused旧行为8c10db13/tree690fdf65/snapshot016103d4，Linux8196d388已真实50项48/2红，pending期间保留控制过，但无owner和owner结束后都仍留carrier；原48全过，190.355秒/11files/group空/identity核。当前候选仅将normal comparison对所有live连接执行，不再把无outgoing road一律视作Needed；原pending admission/unknown保守/两5秒观察/exact serial仍保留，未测不接受。
 
 另新增incoming-middle旧行为两项合同：真实middle→本机Tunnel及往返字节、只serving而无outgoing slot/无middle公告IP；节点须用已知入站路建立实际新Tunnel，再carried TLS/echo；closed incoming负控。first-leg准入/rank产品仍旧。下一run兼测unused候选与incoming旧行为，不能将预期混合红称整组绿。两个freeze独立留证。
@@ -45,7 +53,7 @@
 最新WIP（18:26 UTC）：新增unused prepared carrier两项真实合同与cfg(test)只读post-look observer；生产comparison仍旧。先正常publication，再让实际主IP连接关闭；原两次5秒观察后，无owner应释放，新pending应保留且结束后再按原两次观察释放。freeze保留normal-release原whole为prefix，尚未运行/接受。下一baseline回执以ledger为准。
 
 
-截至18:23 UTC，本批所有已提交Mac/Turing任务已终态采核，无运行中的采样/重型任务；恢复先查ledger是否后来新增，不重发旧run。当前仅NEXT-DESIGN文档改动，核git实际WIP。
+18:23 UTC里程碑时此前任务均已终态采核；之后新任务以上方唯一句柄/ledger为准，不按这条历史重发。核git实际WIP。
 
 下一合同：正常publication完成后，原主连接消失且无人使用的prepared carrier必须释放；有新有限pending或实际incoming carried-only使用者时保留，owner结束后重新判断。不缩LOOK=5秒/两次观察，不加常驻task/timer，先真实旧红再修，仍保留exact serial与原所有连接比较。
 
