@@ -1676,6 +1676,10 @@ impl Slot {
 }
 
 #[cfg(test)]
+#[path = "wires/wake_epoch_tests.rs"]
+mod tests_wake_epoch;
+
+#[cfg(test)]
 mod tests {
     /// A carrier belongs to the peer, while measurements belong to each
     /// connection. A direct outgoing wire cannot release the stream under
