@@ -19,7 +19,7 @@
 - vendor5c2e4ff2：Noq439/path55/home11，45.781秒/14files；旧eec09ec1 path53/2实际红，新whole五合同及旧50尾相同。
 - LinuxNode dc23e338：315.188秒/21files/group空/identity；Mac42892759864 exactartifact13799886372（zip30923c27…）/20files/11control；同canonical全12组，hop55/wires16/budget30Linux26Mac/resume1。
 - 新Iroh46只允许已知路的首次有限恢复quality窗口在真实新sample重返pre-fault实测水平时刷新；历史不作新样本/切换证据。原3probe/250ms/2秒、gain/Moving、packet epoch及重hold不改。主vendor55含候选46，42–44仍隔离。仅单元/便携scope，不宣告N1或手机修复。
-- 当前唯一重型physical run5/pair03 candidate：**turing-20261110T203817Z-6aa2fe4e**，PID2864417，20:38:39 UTC启动，精确1c847/tree90f62/snapshot4c18/control68cad。前四次均采核：pair1候选较慢且Y4068ms红，pair2候选X3851/Y3821ms绿、旧Y5469ms红；完整集合未完，不删失败/不合并成已通过。按预登记共6次，无重发。Mac重型结束，计时中不派其他重型。
+- 当前唯一重型physical run6/pair03 baseline：**turing-20261110T204400Z-2135d831**，PID2873797，20:44:21 UTC启动，精确c775/treef21b/snapshot7ca590/control68cad。前五次均采核；run5 candidate6aa可用124/124但warm52/52坏/双端无Go，不能验收。此次为预定第六次，结束后固定集合即止，不盲加第七轮。Mac重型结束，计时中不派其他重型。
 - 三轮旧main55固定集合仍2绿1红，详下节；诊断55d1为独立机制观察，不并成第四轮验收。物理对照还没结果。
 
 ## 最新已验证分项：923baaeb
@@ -111,3 +111,5 @@ MacLab与Turing同LAN；构建macserver为另一台，异网来自用户报告�
 20:35 UTC：第二组baseline3266终态174.330秒/16files/group空/identity，124/124、warm51/51绿，但X3751.098/Y5469.355ms独立decision红；6预约2episode预算与4Custom副本两个成本窗完整。原样保留；known-quality-physical-pairs-through-3.json是描述性部分结果，非显著性/p99。run4 71eab46c对应candidate在跑，之后run5C/run6B。期间源码实现/fixture/门未改。
 
 20:40 UTC：pair02候选71eab46c已核216.512秒/16files/group空/identity，124/124、warm51/51及decision全绿X3851.354/Y3820.801ms；6预约2episode、4Custom副本两成本窗完整。对应旧3266的X差+100.256ms/Y差-1648.554ms；只是原始成对差值，不是显著性/p99。known-quality-physical-pairs-through-4.json保留；当前run5 6aa2fe4e，之后只剩run6 baseline，原代码/门不变。
+
+20:46 UTC：候选6aa已终态222.660秒/16files/group空/identity，availability124/124但optimal_road_observed=false，warm52/52失败、双端Go=None。4预约2episode预算绿；4Custom副本四秒成本界完整，至reads_finished的enclosing有缺边界，保持unknown不补0。无postfault quality刷新/answered事件；quality_steps0/quality_sinceNone，X两copy计数48/53不再增长但少量last_received更新，Y计数48/49/收包时刻都停在故障前，PTO增长。故旧“质量重启压住”假设不适用于这次，尚不能归因46。outer实际绑定两腿+6s显示IP选中，middle onward质量年龄3.526s；无tuple mismatch，仅是快照，需实际流/包证据定位单向承载停顿。原失败完整保留。
