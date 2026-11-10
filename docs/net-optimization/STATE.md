@@ -19,7 +19,7 @@
 - vendor5c2e4ff2：Noq439/path55/home11，45.781秒/14files；旧eec09ec1 path53/2实际红，新whole五合同及旧50尾相同。
 - LinuxNode dc23e338：315.188秒/21files/group空/identity；Mac42892759864 exactartifact13799886372（zip30923c27…）/20files/11control；同canonical全12组，hop55/wires16/budget30Linux26Mac/resume1。
 - 新Iroh46只允许已知路的首次有限恢复quality窗口在真实新sample重返pre-fault实测水平时刷新；历史不作新样本/切换证据。原3probe/250ms/2秒、gain/Moving、packet epoch及重hold不改。主vendor55含候选46，42–44仍隔离。仅单元/便携scope，不宣告N1或手机修复。
-- 当前唯一重型physical pair01 candidate：**turing-20261110T201812Z-9cb240b7**，PID2832419，20:18:34 UTC启动，精确1c同source/control68cad。按预登记C-B,B-C,C-B共6次，无重发。Mac所有本轮任务已终态，计时中不派其他重型。
+- 当前唯一重型physical run2/pair01 baseline：**turing-20261110T202344Z-f79d5c08**，PID2840901，20:24:06 UTC启动，精确c775/treef21b4a14/snapshot7ca59011/control68cad。run1候选9cb已采核、decision红，详末；按预登记C-B,B-C,C-B共6次，无重发。Mac所有本轮任务已终态，计时中不派其他重型。
 - 三轮旧main55固定集合仍2绿1红，详下节；诊断55d1为独立机制观察，不并成第四轮验收。物理对照还没结果。
 
 ## 最新已验证分项：923baaeb
@@ -103,3 +103,5 @@ MacLab与Turing同LAN；构建macserver为另一台，异网来自用户报告�
 20:13 UTC：Iroh46候选1c847229/tree90f62f50/snapshot4c18fa47在5c2e4ff2已终态45.781秒/14files/group空/identity，Noq439/path55/home11均绿；同whole五项ae62与原50 tail不变，仅unit scope。当前普通重型LinuxNode dc23e338/PID2825686和Mac42892759864（exact receipt8ce74d28，control68cad）同canonical运行，未进物理。已预登记recovery-known-quality-physical-pair-plan.json：三组/六次C-B,B-C,C-B，无盲重跑/删失败、原门与profile不改。须两端Node终态且Mac重型结束后才按序开物理，不与单元重叠。
 
 20:23 UTC：pair01候选9cb240b7已终态220.572秒/16files/group空/identity核，124/124、原warm51/51绿；独立双端decision仍红，X3855.026/Y4068.484ms。原4秒不放宽；6预约/2episode预算绿，innerCustom两窗口实际counter bounds完整，非outer字节/手机能耗。按预登记继续baseline对应轮，不改策略/丢失败；N1仍红，不能按sampled warm通过关闭。
+
+20:26 UTC机制核：首候选X84.047959ms相对previous84.218146ms、Y84.573961相对111.680773ms均不满足原25%向下重置，却实际restart，结合精确1c源guard可推为新46一次return分支触发。Y+1568ms清silence、+2068ms Moving开始、+4068ms Go，仍超四秒；这只是机制观察，不是统计/成本收益归因。known-quality-branch-observation.json保留。当前f79 baseline在跑，不重发。
