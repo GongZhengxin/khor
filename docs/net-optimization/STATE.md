@@ -1,10 +1,13 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-10T16:18:45.212841+00:00。**完整N0–N5仍未完成，用户已授权持续实施；不得因分项绿、旧goal paused或compact停下。** 速度/体验优先、个人可信设备网。root串行，无子智能体；没有main合并、发布、采购、生产部署或改已装App/store的授权。长期范围见[PLAN](PLAN.md)、[REQUIREMENTS](REQUIREMENTS.md)、[ACCEPTANCE](ACCEPTANCE.md)、[NEXT-DESIGN](NEXT-DESIGN.md)。上版STATE完整逐字保存在[历史](HISTORY-20261110-before-peer-contact-state.md)，含更早历史链；本页替代旧段落的当前状态，不删历史失败或矩阵。
+更新：2026-11-10T16:22:20.883968+00:00。**完整N0–N5仍未完成，用户已授权持续实施；不得因分项绿、旧goal paused或compact停下。** 速度/体验优先、个人可信设备网。root串行，无子智能体；没有main合并、发布、采购、生产部署或改已装App/store的授权。长期范围见[PLAN](PLAN.md)、[REQUIREMENTS](REQUIREMENTS.md)、[ACCEPTANCE](ACCEPTANCE.md)、[NEXT-DESIGN](NEXT-DESIGN.md)。上版STATE完整逐字保存在[历史](HISTORY-20261110-before-peer-contact-state.md)，含更早历史链；本页替代旧段落的当前状态，不删历史失败或矩阵。
 
 ## 恢复先核实际句柄
 
 ### 最新覆盖状态（优先于下方历史段落）
+
+- **读取race当前baseline95bec358/treeee8d6f2d/snapshotbc291930**，Linux新run以ledger为准，正在执行；首04612f40仅远端格式（45.771秒/10files/group空已核），不作行为红。Mac rank42853193309此前register API EOF在写ledger前失败，已确认run存在/control68且无row/ref/folder，再仅恢复登记原run成功；没有重发构建。
+- **用户最新状态询问答复（2026-11-10约16:20 UTC）**：下一份可评审候选约2–4工程小时；完整N0–N5及真机/换网/能耗仍3–5天量级。此前4–6小时是原下一批候选（原锚约13:00 UTC），新复现交接与缓存排序使候选慢于原估；已经向用户说明口径不清，不能再次无声重置时钟。不是完成保证，手机App仍未修改。继续执行，不因状态问句或compact停下。
 
 - **当前HEAD9995114c**仅新增actual ask_on cold/TLS-resumed Sessions fixture与race尾声明；产品仍2cb56。两个读取合同尚未运行，早期路径仍serial，不冒称全部入口已并行。新源46dc5a58/snapshot3d00bede送Linux（ledger最新cold/resumed baseline），尚无行为结论。
 - **2cb56ccedbba642876dc3e9efc2fa7fc5e62fc23/treeb9bd9865/snapshotb8610837** Linux06d07ccd **全12/hop39/wires15/budget30/resume1**，256.639秒/21files/group空/identity与全部summaries核；Mac **42853193309**同canonical待结果。fresh-middle freeze仍false，不将Linux绿代替双OS。cbf3 successor已双OS闭合其scope；当前无phone/timed physical任务。主vendor仍原53（本轮Node未新增vendor修改）。
