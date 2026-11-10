@@ -540,6 +540,8 @@ impl Node {
         );
         let attached = self.carry.attach(peer, Carrier::Hop { via }, recv, send);
         let attachment = attached.serial();
+        #[cfg(test)]
+        self.wires.hold_hop_offer_for_test(attachment).await;
         khor_net::carry::observe_lifecycle(&y.id, "hop_outer_bound", || {
             serde_json::json!({
                 "role": "initiator", "attachment": attachment,
@@ -876,6 +878,10 @@ async fn splice(a: (SendStream, RecvStream), b: (SendStream, RecvStream)) {
         () = back => {}
     }
 }
+
+#[cfg(test)]
+#[path = "hop/offer_tests.rs"]
+mod tests_offer;
 
 #[cfg(test)]
 mod tests {

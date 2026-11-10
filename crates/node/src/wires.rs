@@ -422,6 +422,14 @@ pub(crate) struct Wires {
     retirement_test_gate: Mutex<Option<RetirementTestGate>>,
     #[cfg(test)]
     asleep_dial_test_gate: Mutex<Option<AsleepDialTestGate>>,
+    #[cfg(test)]
+    hop_offer_test_gate: Mutex<Option<HopOfferTestGate>>,
+}
+
+#[cfg(test)]
+struct HopOfferTestGate {
+    entered: tokio::sync::oneshot::Sender<u64>,
+    release: tokio::sync::oneshot::Receiver<()>,
 }
 
 #[derive(Default)]
@@ -801,6 +809,38 @@ impl Wires {
             .take();
         if let Some(gate) = gate {
             let _ = gate.entered.send(());
+            let _ = gate.release.await;
+        }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn gate_hop_offer_for_test(
+        &self,
+    ) -> (
+        tokio::sync::oneshot::Receiver<u64>,
+        tokio::sync::oneshot::Sender<()>,
+    ) {
+        let (entered, ready) = tokio::sync::oneshot::channel();
+        let (release, released) = tokio::sync::oneshot::channel();
+        *self
+            .hop_offer_test_gate
+            .lock()
+            .unwrap_or_else(|p| p.into_inner()) = Some(HopOfferTestGate {
+            entered,
+            release: released,
+        });
+        (ready, release)
+    }
+
+    #[cfg(test)]
+    pub(crate) async fn hold_hop_offer_for_test(&self, attachment: u64) {
+        let gate = self
+            .hop_offer_test_gate
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .take();
+        if let Some(gate) = gate {
+            let _ = gate.entered.send(attachment);
             let _ = gate.release.await;
         }
     }
