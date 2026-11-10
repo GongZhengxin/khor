@@ -360,3 +360,9 @@ fc435ccd准确c673源：124/124可达，但原采样门48/51（3次AB仍Relay）
 下一Iroh41候选在已记录的有限故障恢复episode内识别显著向下质量变化：新包必须在本恢复采样开始之后发送，真实新RTT至少比先前质量低25%，才为该road的副本开启新的质量窗口；每episode最多3次，后续重启还须较上次重启值再降25%，避免高低抖动反复清坏样本。复制窗口epoch到同road各Reading，迟到的epoch之前packet只保留真实传输计数/时间，不进入新质量窗口；新copy继承已有epoch。健康/初始/无hint路不触发，不增加PING或定时器。原可用性sent>judged、2秒持续候选确认/决定后两fresh样本、收益门、3probe/2秒/250ms保持；一次偶发快样本后变慢应在原确认前撤候选，不能直接Go。
 
 纯状态先覆盖两次慢恢复样本后快样本、健康对照不重启、epoch前晚ACK不污染、各copy与新copy继承、单次快脉冲及重复摆动不无限重启、原ACK计数/changed与时间不伪造。仍须两门同源物理至少3轮、原quiet stalls/黑洞和成本。当前只提议，未实现或预记通过。
+
+## 2026-11-10：Iroh42提议——恢复与确认复用同一个copy优先规则
+
+诊断8c90acc0准确5a39a39b/tree0cd3fe0c/snapshot82976112只加诊断，不改Iroh41策略，原124/124、请求51/51仍绿，决策X3565ms/Y7549ms红。Y在1549ms于conn140618974140672取得84.038303ms并开始Moving，1550ms普通confirmation实际选择conn140619108789456（PTO0）；1799ms后一copy的101.627832ms单样本成为同road代表，低于25%收益门而取消Moving，5299ms才重新开始。另一copy的同刻PTO未记录，不把它武断归为错误故障判定；已静态确认recovery与confirmation在相同PTO时使用不同tie规则。
+
+下一最小候选：普通candidate confirmation复用已有recovery_copy_rank（低PTO优先，同PTO优先已开始恢复的copy）；current探测仍选最高PTO的可疑copy。只在现有RecoveryCheck仍存续时有偏好，不增连接强owner、不改采样新鲜性/收益/2秒确认/4秒兜底/3恢复probe预算/250ms节奏。已关闭或更高PTO的旧copy不能凭偏好胜出。已有rank真实状态单元保持；以未修改完整物理/两个四秒门、实际copy与packet预算验前后，不以新诊断源凑三次性能绿。若延伸到正常无恢复的confirm copy稳定性或持久Moving偏好，应独立设计，不在此最小修正偷带。
