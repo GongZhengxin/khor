@@ -824,9 +824,10 @@ impl Wires {
                 let recent = conn.paths().iter().any(|path| {
                     path.is_selected()
                         && (path.is_ip() || path.is_relay())
-                        && path.stats().last_received.is_some_and(|at| {
-                            now.saturating_duration_since(at) < patience
-                        })
+                        && path
+                            .stats()
+                            .last_received
+                            .is_some_and(|at| now.saturating_duration_since(at) < patience)
                 });
                 (conn.close_reason().is_none() && recent).then_some(conn)
             })
