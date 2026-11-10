@@ -47,7 +47,7 @@ async fn echo(client: &Connection, server: &Connection) {
         )
     })
     .await
-    .expect("the new connection answers actual stream data")
+    .expect("the new connection answers actual stream data");
 }
 
 async fn suspended(client: &Connection, server: &Connection) {
