@@ -473,3 +473,12 @@ actual carrier repeat2 4dc22c7e并未进入replug：首目录10,033,849us超时�
 候选guard须以Links.detach_attached现有serial匹配撤回，不能改公共Attached的Drop破坏其他使用者，watcher接手后明确disarm。不添加无归属清理task。**offer开始后/已送actor但await未返回**的窗口仍要单独证明：移除Links不自动证明iroh已关闭公布的Custom path，不能以offer前用例关闭整个close-vs-offer矩阵；需追现有let_path_go/transport闭路事件与替代代际保护。
 
 上述所有权完成后，再建立“慢middle正在实际准备、普通可用路径不能被它挡住”的端到端Node回归（非注入假拨号），再设计有界并行。原普通dial最多两候选、hop两middle总3秒、原caller总deadline/取消优先/输者收尾/accepted早期读取与写job不重放全部保持；正常路径先成功时，未交付的hop准备必须被回收，已交付且仍有用的hop须有明确Node owner。MISSED/LOST本地网络/两腿测量epoch另做失效合同，不因每个包或一次Wi-Fi通知清空远端休眠及所有冷却。
+
+
+## 2026-11-10 11:50UTC：hop准备取消真实红后的最小所有权候选
+
+0fb7/f42/f954在Turing5ea56c46原net-node实际hop14pass/1fail：取消gate内真实open_hop后orphaned=true、stopped=false，原12和正常watcher交付/同middle新serial保护两负向绿；134.349秒/11artifact/原group空核。前一538仅3处远端格式，不算运行红。整个新fixture与原hop/wires whole冻结，先有真实红。
+
+候选同时安排流和路径的既有owner，避免只在Drop里删Links而不通知底层：attach后、任何可取消await前建立serial匹配的PendingHop guard，并把**既有一个watcher**提前启动，先只等attachment ended或handoff channel，不启动LOOK计时。准备future仍持Asking，offer返回后才经oneshot交给watcher并解除guard；取消时guard只撤自己serial，Asking同步Drop、handoff关闭，I/O ended由该watcher沿既有let_path_go撤路径。正常交付后的原比较/间隔/弱Node所有权不变；没有额外cleanup task、新timer、协议或探针，不能改公共Attached的Drop。cfg(test) gate仍是attach后/offer前，新增不可中断的owner登记必须在该gate之前，反映生产首个await前建立所有权的真实修复。
+
+这使取消期间也有既有watcher接收stream结束并请求close_carried；并不证明既有let_path_go“check links.has然后await close”与新offer的所有并发均安全。已核resolve_remote经RemoteMap发送ResolveRemote到同peer actor，actor同步登记/open_path；CloseCustom是另一消息；pending Noq open、late close/new replacement、重绑ears仍须实际代际/offer后合同。先同whole上述三例和原全net-node双OS，再补这些窗口，未证明前不并行普通拨号与hop准备，也不声称完整field接管已修复。
