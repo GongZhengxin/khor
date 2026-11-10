@@ -314,3 +314,14 @@ N4真跨网可优先用公开Node::serve在隔离测试进程内启动resident�
 拟以dev-only Rust example运行Node::serve与本进程公开stop_serving，另open_as只通过该resident IPC发操作。控制走owned root内Unix socket、JSON request ID及固定命令白名单：ready(public ID/fixture path)、mint(私有ticket)、pair(只接临时ticket)、devices(核expected ID)、read(只读对方新fixture)、links、stop。私有ticket只经两个可信SSH控制器内存转交，不打印/保存普通artifact；日志仅ID/hash/请求outcomes，pair后票按原规则烧毁，不扩15分钟。首次pair后的读取明确不是冷建连。
 
 Python lease supervisor持有Unix socket端，每次controller EOF/绝对期限/自身错误关闭lease，Rust看到EOF即stop_serving并真正等待serve JoinHandle；进程kill时kernel自动关闭lease也触发相同清理。选择可取消的Unix socket读取，避免tokio::io::stdin的不可取消blocking线程拖住runtime退出。Rust本身也有不依赖controller的绝对资源期限；正常/EOF/受控kill supervisor分别做合同，完成需核子PGID空、resident已join、只本次owned root/socket生命周期结束。未知目录/UID/旧owner保留并拒绝，不以state文件消失冒称进程已停。此节是执行前设计，未创建resident或开始跨网验收。
+
+
+## 267实际内层恢复等待的接续诊断（2026-11-10，尚未新改策略）
+
+所有相对时间统一以原middle_replug_finished phase，不能用result.after（它是读完后的地址快照）。原误标timeline保留原字节，修正结果outer-copy-timeline-replug-reference.json。
+
+Noq12修复后的267：外层Relay→Direct约+1.244/+1.287s，inner Custom在+5.317/+5.326s才解除silent可用性并开始确认，+7.326/+7.567s Go。inner-recovery-hold-timeline.json显示两端rehold=false、answered当tick即解除（immediate=true）；所以中间约4秒**不是SILENT_HOLD**（实际1秒，也未启用），之后约2秒才是现有确认。mark_silent已经要求样本packet sent>最后judged，旧ACK不能直接清可用性，不能误修掉这项保护。
+
+下一先核Noq在外层恢复后是否收到了旧packet的ACK并清PTO，却还没有新的post-judgment packet：既有wake仅处理pto_count>0的copy，mark_silent对新样本的正确要求可能让已无PTO的恢复路等下一个keepalive。此为待证假设，不能据时间相近就改5/15秒保活或缩短2秒确认。
+
+若原始stats/实际actor合同证实，候选设计是每个已判silent的恢复epoch，在收到判定之后的真实回包提示、当前无silent copy且尚未取得post-judgment往返时，只安排一次新的恢复确认PING；保留原total budget、发包归属、stale owner防护、未应答继续silent、原2秒/两fresh observation ticks及收益门。重复hint不重复发包；无hint/健康路/首次未建立不探测，独立下一真实故障才可重新申请。不得让旧包本身确认新网，也不加永久轮询timer或每tick全peer探测。具体API/红例/发送失败与已存在在飞probe计量仍须审计/冻结后实施；还要原p1s/短停顿/黑洞与探测字节成本证明，不能只追单次恢复速度。

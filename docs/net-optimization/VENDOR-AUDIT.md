@@ -1,6 +1,6 @@
 # Vendor 补丁覆盖与退出审计
 
-2026-11-09，进行中。当前编号为iroh 1–38、Noq 1–12；原48项保留，新增Iroh38被动tuple同步已取得247红→249物理绿/250vendor绿，Noq12 ACK-floor候选单元红后待绿，当前50项。
+2026-11-09，进行中。当前编号为iroh 1–38、Noq 1–12；原48项保留，新增Iroh38被动tuple同步已取得247红→249物理绿/250vendor绿，Noq12 ACK-floor已270单元红→271完整vendor绿/267单轮物理绿，当前50项。
 覆盖盘点不等于行为验收或上游等价性验证，缺口保持未完成。
 本地行为源截至a087e1c5；最新42543928044已绿（437Noq/35iroh路径/9选家、根格式）。
 可选CLI已实际编译/诊断，但日志模式不作SLO；普通p3与f4s仍有红项，准确源见STATE/RUNS。历史大套件通过只证明该套件，不自动证明每个补丁的专属回归齐全。
@@ -29,7 +29,7 @@ Noq4另补真实虚拟连接专项a_backup_probe_is_acked_when_the_responders_da
 | 10 | 每份样本携带包发送/ACK处理时刻，读取stats不刷新年龄 | khor_sample_times_belong_to_the_ack_not_a_later_stats_read比较原传输数学，435绿；iroh积压旧包/延迟读取/初始估计回归也有红绿记录 | 1.4公开PathStats/构造函数均无对应采样时刻；内部qlog也不能替代，当前driver同样不提供内核收包时刻。等价接口须保持旧包不能确认新路况，不用读stats时刻冒充采样时刻 |
 | 11 | 先移路、后满足不应答时，在既有Backup PTO重新检查 | a_backup_that_fails_after_the_path_move_releases_its_in_flight_data已434/1红→435绿；额外验证<300ms不重排、虚拟<1秒释放及新路收完整流。最新p3三轮<656ms，但不证明旧15秒全部定因 | 1.4恢复入口已静态核对，普通PTO/重传存在但未证明与本地主动重检行为等价；必须同时保留故障前/后移路两时序、健康同速与短停顿对照，不能只证明set_path_status时重排 |
 
-| 12 | 近min RTT的有效ACK-delay不污染独立选路质量，夹至实测floor | 266实际438绿/1红；whole paths tests模块hash冻结。264/265物理准备失败及265八个质量值纳秒关联留证，候选绿/稳定性待核。原过量delay/首次采样语义保留 | 本轮尚未核新的上游等价行为；不动传输RFC数学，以近floor/无样本/过量delay和peer relay/稳定性/黑洞完整合同复验后退出 |
+| 12 | 近min RTT的有效ACK-delay不污染独立选路质量，夹至实测floor | 266实际438绿/1红；whole paths tests模块hash冻结。264/265物理准备失败及265八个质量值纳秒关联留证，271完整439/36/9绿与267单轮物理绿；稳定性/重复待核。原过量delay/首次采样语义保留 | 本轮尚未核新的上游等价行为；不动传输RFC数学，以近floor/无样本/过量delay和peer relay/稳定性/黑洞完整合同复验后退出 |
 
 源码入口：[本地补丁账本](../../vendor/noq-proto/KHOR.md)、
 [1.4固定connection/mod.rs](https://github.com/n0-computer/noq/blob/34f75c49f93de5e2ff943483cabc5b6d0c5df918/noq-proto/src/connection/mod.rs)、

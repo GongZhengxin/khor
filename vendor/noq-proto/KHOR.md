@@ -16,7 +16,7 @@
 
 264/265实际peer-relay准备失败，四端outer均Direct约41–42ms，而inner quality约109ms/public Relay约131ms，既有25%收益门不足，两look后回收。265全部8个Custom比较值按纳秒与同resident此前唯一Noq样本相等：如raw109.520837ms/delay25ms/min85.622430ms/sample109.520837ms。原样本的raw-delay略低于min，传输RFC估计器保留raw，选路也把25ms确认等待全记作网络延迟。此为数值关联；原Noq日志无conn/path ID，不冒称逐包绑定或唯一移动根因。
 
-新增单元42722555246真实438绿/1红：实测85ms后raw109ms/ACK-delay25ms，选路原109ms而合同要求85ms。候选仅在已有实测且0<raw-delay<min时，将独立选路latest_sample夹至已测min；正常校正、首次无样本及delay>=raw仍保守。传输adjusted_rtt/SRTT/方差/PTO/拥塞/线上协议不变，25%收益门和确认不改；整个Noq paths tests模块字节不变。候选vendor/物理复验待真实结果，不能先记通过。
+新增单元42722555246真实438绿/1红：实测85ms后raw109ms/ACK-delay25ms，选路原109ms而合同要求85ms。候选仅在已有实测且0<raw-delay<min时，将独立选路latest_sample夹至已测min；正常校正、首次无样本及delay>=raw仍保守。传输adjusted_rtt/SRTT/方差/PTO/拥塞/线上协议不变，25%收益门和确认不改；整个Noq paths tests模块字节不变。后续270（旧质量）/271（候选）采用同actual-latency fixture及相同paths tests模块，全部Rust diff只本段质量修正；270仍438绿/仅floor1红，271 fmt/439Noq/36iroh path/9home全绿。267原physical fixture 124/124ok、reported Carried再hold；单轮不能代替原稳定性/完整移动与手机能耗验收。
 
 本地未提上游；上游具备独立、保守的ACK-delay路径质量语义后，以近下界/过量ACK-delay/首次样本、完整vendor与peer-relay/稳定性/黑洞场景复验后退出，不凭同名字段删除。
 
