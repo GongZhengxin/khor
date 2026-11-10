@@ -297,3 +297,7 @@ Iroh13加法close_carried_if在实际RemoteStateActor执行之前检查最新Lin
 ## 2026-11-10 pending successor清理分项
 
 cbf3a8d4/tree38430683/snapshotff8e3735同source在Linux47439bfb（252.734秒/21files/group空）与Mac42851130886（exact13779833868/20files/11controls）全12组绿，hop38。旧58e0/42fc5e3e真实37/1红，旧owner结束且watcher已暂停后，新owner入场仍被旧清理拆carrier；无successor控制正常释放。现将最后检查与精确serial撤回放入pending admission同锁，新owner则原watcher订阅后再检查；不加task/timer，不改正常publication两LOOK。仅这个取消清理scope验证，不覆盖initial PendingHop Drop、normal watcher释放、Noq opened/abandoned或network/address epochs，更不证明phone现场解决。
+
+## 2026-11-10 held middle恢复排序分项
+
+2cb56cce/treeb9bd9865/snapshotb8610837在Linux06d07ccd及Mac42853193309同source全12组/hop39绿，wires15/budget30（Mac26）。旧8d0328/4e280e8e实际38/1红：两个cached1ms peer保持真实Incoming未admit，实际live Tunnel被排到有限TRIES外，caller2秒内won=false/echo=false/tried_cached=true，cleanup完成。现只Legs::Recovery先稳定分组当前held road，再沿原两腿cost顺序；不将Direct排在Relay前，不改期限/TRIES/单跳/策略。incoming-only first leg、假live僵尸与NoRelay其他策略/epoch仍独立未证。

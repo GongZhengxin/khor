@@ -1,10 +1,14 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-10T16:31:46.029581+00:00。**完整N0–N5仍未完成，用户已授权持续实施；不得因分项绿、旧goal paused或compact停下。** 速度/体验优先、个人可信设备网。root串行，无子智能体；没有main合并、发布、采购、生产部署或改已装App/store的授权。长期范围见[PLAN](PLAN.md)、[REQUIREMENTS](REQUIREMENTS.md)、[ACCEPTANCE](ACCEPTANCE.md)、[NEXT-DESIGN](NEXT-DESIGN.md)。上版STATE完整逐字保存在[历史](HISTORY-20261110-before-peer-contact-state.md)，含更早历史链；本页替代旧段落的当前状态，不删历史失败或矩阵。
+更新：2026-11-10T16:38:12.106561+00:00。**完整N0–N5仍未完成，用户已授权持续实施；不得因分项绿、旧goal paused或compact停下。** 速度/体验优先、个人可信设备网。root串行，无子智能体；没有main合并、发布、采购、生产部署或改已装App/store的授权。长期范围见[PLAN](PLAN.md)、[REQUIREMENTS](REQUIREMENTS.md)、[ACCEPTANCE](ACCEPTANCE.md)、[NEXT-DESIGN](NEXT-DESIGN.md)。上版STATE完整逐字保存在[历史](HISTORY-20261110-before-peer-contact-state.md)，含更早历史链；本页替代旧段落的当前状态，不删历史失败或矩阵。
 
 ## 恢复先核实际句柄
 
 ### 最新覆盖状态（优先于下方历史段落）
+
+- **当前主HEADb1542107**：产品仍462 early并行候选，加cfg(test)实际TLS结果observer与v2 fixture格式，未接受。隔离`/Volumes/disk0/Khor/worktrees/current/khor-net-early-race-baseline` detached **9b680476769888c2bfa8cfc20b3a4bbaf1212124**，tree9480da50/snapshot49c2e1c9；仅early调度复原串行，observer/v2 fixture与主逐byte相同。baseline pin `refs/khor/net-baselines/early-serial-calibrated-v2`。新run在ledger（v2 formatted serial baseline）执行中；首a09e0451仅格式43.761秒/10files/group空已核并同patch应用两wt，不能计行为红。此baseline未清理，保留所有WIP/refs。
+- **最新已验证分项2cb56cce/treeb9bd9865/snapshotb8610837已双OS闭合live-vs-cached scope**：Linux06d07ccd全12/hop39/wires15/budget30/resume1（256.639秒/21files/group空核），Mac42853193309同canonical全12/hop39/wires15/budget26/resume1，exact13781781897/20files/11control blobs核，fresh-middle freeze仅scope true/field false。0RTT/ordinary先失败→后hop成功/initial Drop/normal release/address epochs仍未闭合。
+- 本轮已用review-changes技能进行图谱审阅并定向源diff，结果`REVIEW-20261111.md`。图谱flows0、Drop tests_for0及metadata落后不是安全/覆盖证明。高风险条目保持进行中，不因一批绿或用户状态问句停工。
 
 - **读取462初候选0f8a81d0已终态采核，41项40/1，不接受**：cold与warm实际读取均在原1秒成功，计数断言过；warm在服务端accept时is_0rtt=false，未证明TLS恢复。138.256秒/11files/group空；原失败保留。**解释勘误**：原accepted-answer fixture已明确Noq该marker在accept时计算，快速握手完成可使其false，不能据此断言根本没有resumption。当前v2 fixture改用真实client ZeroRttStatus::Accepted/no-session/Rejected的cfg(test) one-shot观察，无wait/协议改变，原deadline/业务/ownership/count不变。v1 whole/hash/运行均保留，准备新旧同v2重新红绿；不直接弱化断言或拿v1绿声称0RTT接受。
 
