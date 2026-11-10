@@ -949,9 +949,7 @@ pub(crate) async fn call_refreshing(
     let seconds = budget.as_secs() + u64::from(budget.subsec_nanos() != 0);
     let timed_out = || msg::serve_op_timed_out(name, seconds);
     let attempt = async {
-        let until = by.min(
-            tokio::time::Instant::now() + std::time::Duration::from_millis(500),
-        );
+        let until = by.min(tokio::time::Instant::now() + std::time::Duration::from_millis(500));
         let (mut port, mut cookie) = (port, cookie.to_owned());
         let stream = loop {
             if crate::deadline::expired(Some(by)) {
