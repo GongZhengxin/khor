@@ -17,7 +17,13 @@ struct Tap<T> {
 }
 
 impl<T> Tap<T> {
-    fn new(inner: T, peer: EndpointId, role: &'static str, wire: Option<usize>, stream: String) -> Self {
+    fn new(
+        inner: T,
+        peer: EndpointId,
+        role: &'static str,
+        wire: Option<usize>,
+        stream: String,
+    ) -> Self {
         Self {
             inner,
             peer,
