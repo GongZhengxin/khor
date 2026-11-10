@@ -2982,7 +2982,7 @@ impl Measured {
 
     fn representative(&self, road: &transports::FourTuple) -> Option<&Reading> {
         self.rtts.values().filter(|r| r.road == *road)
-            .max_by_key(|r| (r.changed.len(), r.at))
+            .max_by_key(|r| (r.recent.len(), r.at))
     }
 
     fn observation(&self, road: &transports::FourTuple) -> Option<PathMeasurement> {
