@@ -356,8 +356,9 @@ pub(crate) fn middles_with_cost(
                 | (RoadKind::Relay, RoadKind::Ssh) => true,
                 (RoadKind::Direct, RoadKind::Relay) if legs == Legs::NoRelay => true,
                 (RoadKind::Relay, RoadKind::Direct) if legs == Legs::ToNoRelay => true,
-                (RoadKind::Direct | RoadKind::Relay, RoadKind::None)
-                    if legs == Legs::Recovery => true,
+                (RoadKind::Direct | RoadKind::Relay, RoadKind::None) if legs == Legs::Recovery => {
+                    true
+                }
                 (RoadKind::Direct | RoadKind::Relay, RoadKind::Direct | RoadKind::Relay) => {
                     matches!(legs, Legs::Measured | Legs::Recovery)
                 }
