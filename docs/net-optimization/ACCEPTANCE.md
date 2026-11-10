@@ -519,3 +519,6 @@ control在net-node便携合同追加ipc::tests串行过滤器，无新编译prof
 ## 真实resident 32份回复所有者取消（新路径接入前冻结）
 
 leased_ipc_callers_release_all_held_response_permits_when_dropped使用现有Node content API、真实resident TCP与实际32个content response permits；每个Window已编码后停在既有Response barrier，先核available=0和32次进入。abort/join全部caller任务后，不释放barrier，5秒内必须全部permit回到32；这证明caller loss释放实际响应所有者，不以手动放行旧工作替代。随后同resident公开legacy ipc::call(Op::Hops)仍答复，放行barrier后新page仍读128条。source fixtures/原permit常量/5秒门与取消前准备条件全部固定；先实际远端取红，helpers或格式绿不能代替。独立process/QUIC远端取消仍需另外验收。
+
+
+32回复fixture接线校正（取行为红之前）：42735757244仅格式失败，无Rust行为结果。静态复核发现同home的Node::content_page有意直读，不能证明resident IPC；所以Window改用已有content_on_resident真实API显式通过同一TCP listener，操作/32席位/原barrier/5秒回收门不变，恢复后再用该API读Window并核reply与action，另保留128事件控制。原GH/source/patch保留，不把格式红或尚未执行的接线误称取消故障红。helpers也补header接收时刻锚定的原Op上限及更早本地父期限合同，未启用新协议。

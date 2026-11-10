@@ -358,10 +358,12 @@ async fn leased_ipc_callers_release_all_held_response_permits_when_dropped() {
     };
     let locator =
         ContentLocator::observed(SessionId("observe/ipc-lease".into()), &observation).unwrap();
-    let Reply::Resolved(Resolution::Available { binding, .. }) =
-        node.content_read(Action::Resolve { locator }).await.unwrap()
+    let Reply::Resolved(Resolution::Available { binding, .. }) = node
+        .content_read(Action::Resolve { locator })
+        .await
+        .unwrap()
     else {
-        panic!("private source must resolve through its resident");
+        panic!("private source must resolve");
     };
     let held = HoldWork::install(&root, Stage::Response);
     let mut reads = Vec::new();
@@ -369,9 +371,15 @@ async fn leased_ipc_callers_release_all_held_response_permits_when_dropped() {
     for _ in 0..crate::link::CONTENT_RESPONSES {
         let key = node.content_begin(&binding).await.unwrap();
         let read = ClientRead::claim(&root, binding.clone(), &key).unwrap();
-        let (caller, request) = (node.clone(), read.clone());
+        let caller_root = root.path().to_path_buf();
+        let action = Action::Window {
+            binding: binding.clone(),
+            request: key,
+            cursor: None,
+            newer: false,
+        };
         tasks.push(tokio::spawn(async move {
-            caller.content_page(&request, None, false).await
+            crate::link::content_on_resident(&caller_root, action).await
         }));
         reads.push(read);
     }
@@ -408,6 +416,18 @@ async fn leased_ipc_callers_release_all_held_response_permits_when_dropped() {
         "legacy half-close still works after caller cancellations"
     );
     held.release();
+    let key = node.content_begin(&binding).await.unwrap();
+    let read = ClientRead::claim(&root, binding.clone(), &key).unwrap();
+    let action = Action::Window {
+        binding: binding.clone(),
+        request: key,
+        cursor: None,
+        newer: false,
+    };
+    let reply = crate::link::content_on_resident(&root, action.clone()).await.unwrap();
+    reply.validate_for(&action).unwrap();
+    assert!(matches!(reply, Reply::Window { .. }));
+    drop(read);
     assert_eq!(page(&node, &binding, None, false).await.events.len(), 128);
     drop(reads);
     drop(held);

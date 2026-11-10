@@ -47,7 +47,7 @@ pub(crate) async fn read(reader: &mut (impl AsyncRead + Unpin)) -> Result<Reques
     let framing_by = deadline::earlier(Some(Instant::now() + super::DEADLINE_LOCAL));
     let request = async {
         let first = reader.read_u8().await.map_err(|e| e.to_string())?;
-        let (bytes, by) = if first == MAGIC[0] {
+        let (bytes, budget) = if first == MAGIC[0] {
             let mut encoded = [0; HEADER_BYTES];
             encoded[0] = first;
             reader
@@ -62,7 +62,8 @@ pub(crate) async fn read(reader: &mut (impl AsyncRead + Unpin)) -> Result<Reques
             if length == 0 || length > MAX_FRAME || micros == 0 {
                 return Err("invalid IPC length or budget".into());
             }
-            let by = Instant::now()
+            let arrived = Instant::now();
+            let by = arrived
                 .checked_add(Duration::from_micros(micros))
                 .ok_or("IPC budget is too large")?;
             let mut bytes = vec![0; length];
@@ -70,7 +71,7 @@ pub(crate) async fn read(reader: &mut (impl AsyncRead + Unpin)) -> Result<Reques
                 .await
                 .map_err(|_| "IPC caller deadline expired")?
                 .map_err(|e| e.to_string())?;
-            (bytes, Some(by))
+            (bytes, Some((by, arrived)))
         } else {
             let mut bytes = vec![first];
             (&mut *reader)
@@ -85,6 +86,7 @@ pub(crate) async fn read(reader: &mut (impl AsyncRead + Unpin)) -> Result<Reques
         };
         let handoff = proto::decode::<Handoff>(&bytes)?;
         validate_handoff(&handoff, bytes.len())?;
+        let by = budget.map(|(by, arrived)| by.min(arrived + handoff.op.deadline()));
         if deadline::expired(by) {
             return Err("IPC caller deadline expired".into());
         }
@@ -103,6 +105,7 @@ pub(crate) async fn within<T>(
     operation: impl Future<Output = Result<T, String>>,
 ) -> Result<T, String> {
     let Some(by) = by else { return operation.await };
+    let by = deadline::earlier(Some(by)).expect("a lease supplies its deadline");
     deadline::scope(by, async {
         tokio::select! {
             biased;
@@ -192,6 +195,33 @@ mod tests {
             request.is_err(),
             "the body never arrived but its header budget elapsed"
         );
+        drop(writer);
+    }
+
+    #[tokio::test]
+    async fn advertised_budget_cannot_extend_the_operations_safety_cap() {
+        let (mut writer, mut reader) = tokio::io::duplex(4096);
+        let bytes = payload();
+        writer
+            .write_all(&header(bytes.len(), Instant::now() + Duration::from_secs(86400)).unwrap())
+            .await
+            .unwrap();
+        writer.write_all(&bytes).await.unwrap();
+        let request = read(&mut reader).await.unwrap();
+        assert!(request.by.unwrap() <= Instant::now() + request.handoff.op.deadline());
+        drop(writer);
+    }
+
+    #[tokio::test]
+    async fn a_local_parent_deadline_also_bounds_the_entire_lease() {
+        let (writer, mut reader) = tokio::io::duplex(4096);
+        let by = Instant::now() + Duration::from_secs(10);
+        let parent = Instant::now() + Duration::from_millis(60);
+        let result = tokio::time::timeout(
+            Duration::from_millis(500),
+            deadline::scope(parent, within(&mut reader, Some(by), std::future::pending::<Result<(), String>>())),
+        ).await.expect("the helper must not ignore its earlier local owner");
+        assert!(result.is_err());
         drop(writer);
     }
 
