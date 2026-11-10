@@ -29,15 +29,10 @@ async fn leased_ipc_cancellation_releases_all_remote_encoded_replies() {
         imported_at: Millis(1),
         updated_at: None,
     };
-    let locator = ContentLocator::observed(
-        SessionId("observe/quic-cancel".into()),
-        &observation,
-    )
-    .unwrap();
-    let Reply::Resolved(Resolution::Available { binding, .. }) = a
-        .content_read(Action::Resolve { locator })
-        .await
-        .unwrap()
+    let locator =
+        ContentLocator::observed(SessionId("observe/quic-cancel".into()), &observation).unwrap();
+    let Reply::Resolved(Resolution::Available { binding, .. }) =
+        a.content_read(Action::Resolve { locator }).await.unwrap()
     else {
         panic!("remote private source must resolve");
     };
