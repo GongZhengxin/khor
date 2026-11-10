@@ -447,6 +447,17 @@ impl RemoteStateActor {
                 None => MaybeFuture::None,
             };
             n0_future::pin!(scheduled_hp);
+            // khor patch 40: only pending decisions own a timer. A tick just
+            // before an exact boundary must not defer it another full tick.
+            let next_selection = [
+                self.state.moving.deadline(Instant::now()),
+                self.state.measured.recovery_deadline(),
+            ].into_iter().flatten().min();
+            let scheduled_selection = match next_selection {
+                Some(when) => MaybeFuture::Some(time::sleep_until(when)),
+                None => MaybeFuture::None,
+            };
+            n0_future::pin!(scheduled_selection);
             if !self.is_idle(&inbox) {
                 idle_timeout
                     .as_mut()
@@ -459,6 +470,9 @@ impl RemoteStateActor {
                 _ = shutdown_token.cancelled() => {
                     trace!("actor cancelled");
                     break;
+                }
+                _ = &mut scheduled_selection, if !self.connections.is_empty() => {
+                    self.reselect();
                 }
                 msg = inbox.recv() => {
                     match msg {
@@ -1144,16 +1158,18 @@ impl RemoteStateActor {
     /// khor patch 39: a receipt can reset PTO without sampling a packet sent
     /// after the silence judgment. Confirm that known road within a bounded
     /// episode instead of waiting for its next idle keepalive.
-    fn probe_recovering(&self, probes: Vec<RecoveryProbe>) {
+    fn probe_recovering(&mut self, probes: Vec<RecoveryProbe>) {
         for probe in probes {
             let road = &probe.road;
             let selected = self.state.selected_path.as_ref() == Some(road);
             let confirming = self.state.moving.to().is_some_and(|to| to == road || selected);
             let available = !self.state.measured.silent.contains_key(road);
             if confirming || selected && available {
-                debug!(target: "khor_net_samples", ?probe, "recovery probe merged with selection");
+                debug!(target: "khor_net_samples", road = ?probe.road, epoch = ?probe.epoch,
+                    reserved = ?probe.at, attempt = probe.attempt, "recovery probe merged with selection");
                 continue;
             }
+            let preferred = self.state.measured.recovery.get(road).and_then(|check| check.copy);
             let copy = self.connections.iter().flat_map(|(conn_id, c)| {
                 c.paths.iter().filter_map(move |(path_id, tuple)| {
                     if tuple != road {
@@ -1164,12 +1180,21 @@ impl RemoteStateActor {
                     Some((stats.pto_count, stats.last_received, *conn_id, *path_id, conn.path(*path_id)?))
                 })
             }).min_by(|a, b| {
-                a.0.cmp(&b.0).then_with(|| b.1.cmp(&a.1)).then_with(|| a.2.0.cmp(&b.2.0))
+                recovery_copy_rank(preferred, (a.2, a.3), a.0)
+                    .cmp(&recovery_copy_rank(preferred, (b.2, b.3), b.0))
+                    .then_with(|| b.1.cmp(&a.1)).then_with(|| a.2.0.cmp(&b.2.0))
             });
             if let Some((pto_count, _, conn_id, path_id, path)) = copy {
+                if let Some(check) = self.state.measured.recovery.get_mut(road) {
+                    check.copy = Some((conn_id, path_id));
+                }
                 let result = path.ping();
-                debug!(target: "khor_net_samples", ?probe, ?conn_id, ?path_id, pto_count, ?result,
+                debug!(target: "khor_net_samples", road = ?probe.road, epoch = ?probe.epoch,
+                    reserved = ?probe.at, attempt = probe.attempt, ?conn_id, ?path_id, pto_count, ?result,
                     "recovery confirmation probe");
+            } else {
+                debug!(target: "khor_net_samples", road = ?probe.road, epoch = ?probe.epoch,
+                    reserved = ?probe.at, attempt = probe.attempt, "recovery probe unavailable");
             }
         }
     }
@@ -2436,6 +2461,13 @@ enum Step {
 }
 
 impl Moving {
+    /// Wake at a finite confirmation boundary, without a timer at rest. A wake
+    /// only re-reads evidence; elapsed time alone never supplies a sample.
+    fn deadline(&self, now: Instant) -> Option<Instant> {
+        let (_, since) = self.to.as_ref()?;
+        [*since + CONFIRM_FOR, *since + CONFIRM_MAX].into_iter().find(|at| now < *at)
+    }
+
     /// One tick of the selection wanting to leave a path that stopped answering at `began` for
     /// `to`: a sample after `began` proves a backup answered during the fault. If another
     /// current copy is still receiving, first probe the suspect copy and obtain a backup
@@ -2597,6 +2629,8 @@ struct RecoveryCheck {
     began: Instant,
     attempts: u8,
     last: Option<Instant>,
+    next: Option<Instant>,
+    copy: Option<(ConnId, PathId)>,
 }
 
 #[derive(Debug)]
@@ -2604,9 +2638,19 @@ struct RecoveryProbe {
     road: transports::FourTuple,
     epoch: Instant,
     attempt: u8,
+    at: Instant,
 }
 
 const RECOVERY_PROBES: u8 = 3;
+
+/// Rebuild one copy's median; switch copies if the old one closes or backs off.
+fn recovery_copy_rank(
+    preferred: Option<(ConnId, PathId)>,
+    copy: (ConnId, PathId),
+    pto_count: u32,
+) -> (u32, bool) {
+    (pto_count, preferred != Some(copy))
+}
 
 /// khor patch 17/35: a road that stopped answering ([`unanswered_for`]), until a new round
 /// trip; a repeated fault additionally waits [`SILENT_HOLD`].
@@ -2726,6 +2770,9 @@ impl Reading {
 }
 
 impl Measured {
+    fn recovery_deadline(&self) -> Option<Instant> {
+        self.recovery.values().filter_map(|check| check.next).min()
+    }
     /// Requests, including failures or merging with an existing confirmation,
     /// consume the episode's budget. No extra timer or connection owner is kept.
     fn recovery_probes(
@@ -2756,6 +2803,8 @@ impl Measured {
                 began: now,
                 attempts: 0,
                 last: None,
+                next: None,
+                copy: None,
             });
         }
         let roads: Vec<_> = self.recovery.keys().cloned().collect();
@@ -2764,19 +2813,28 @@ impl Measured {
             let began = self.recovery[&road].began;
             let sampled = self.samples_after(&road, began) >= usize::from(RECOVERY_PROBES);
             let check = self.recovery.get_mut(&road).expect("known recovery episode");
+            check.next = None;
             if sampled {
                 check.attempts = RECOVERY_PROBES;
             }
             if check.attempts >= RECOVERY_PROBES
                 || now >= check.began + CONFIRM_FOR
-                || check.last.is_some_and(|last| now < last + RESELECT_INTERVAL)
                 || silent_now.iter().any(|(t, _)| t == &road)
             {
                 continue;
             }
+            if let Some(next) = check.last.map(|last| last + RESELECT_INTERVAL)
+                .filter(|next| now < *next)
+            {
+                check.next = (next < check.began + CONFIRM_FOR).then_some(next);
+                continue;
+            }
             check.attempts += 1;
             check.last = Some(now);
-            probes.push(RecoveryProbe { road, epoch: check.epoch, attempt: check.attempts });
+            if check.attempts < RECOVERY_PROBES && now + RESELECT_INTERVAL < check.began + CONFIRM_FOR {
+                check.next = Some(now + RESELECT_INTERVAL);
+            }
+            probes.push(RecoveryProbe { road, epoch: check.epoch, attempt: check.attempts, at: now });
         }
         probes
     }
@@ -3602,6 +3660,69 @@ mod tests {
         m.rtts.insert((ConnId(0), PathId::ZERO), old);
         m.mark_silent(t, &[(road.clone(), t - MS(300))], |_| true);
         (m, road)
+    }
+
+    #[test]
+    fn an_early_measurement_tick_preserves_the_exact_pending_recovery_deadline() {
+        let t = Instant::now();
+        let (mut m, road) = recovery_case(t);
+        let heard = [(road.clone(), (t + MS(1)).into_std())];
+        assert!(m.recovery_deadline().is_none());
+        assert_eq!(m.recovery_probes(t + MS(250), &[], &heard, |_| true).len(), 1);
+        assert_eq!(m.recovery_deadline(), Some(t + MS(500)));
+        let early = t + MS(500) - Duration::from_nanos(1);
+        assert!(m.recovery_probes(early, &[], &heard, |_| true).is_empty());
+        assert_eq!(m.recovery_deadline(), Some(t + MS(500)), "do not wait a further interval");
+        assert_eq!(m.recovery_probes(t + MS(500), &[], &heard, |_| true).len(), 1);
+        assert_eq!(m.recovery_deadline(), Some(t + MS(750)));
+        assert_eq!(m.recovery_probes(t + MS(750), &[], &heard, |_| true).len(), 1);
+        assert!(m.recovery_deadline().is_none(), "a spent episode has no timer");
+    }
+
+    #[test]
+    fn silent_closed_and_expired_recovery_episodes_disarm_their_due_wake() {
+        let t = Instant::now();
+        for condition in 0..3 {
+            let (mut m, road) = recovery_case(t);
+            let heard = [(road.clone(), (t + MS(1)).into_std())];
+            assert_eq!(m.recovery_probes(t + MS(250), &[], &heard, |_| true).len(), 1);
+            let (now, silent_now) = if condition == 0 {
+                (t + MS(500), vec![(road, t)])
+            } else if condition == 1 {
+                (t + MS(500), Vec::new())
+            } else {
+                (t + MS(250) + CONFIRM_FOR, Vec::new())
+            };
+            assert!(m.recovery_probes(now, &silent_now, &heard, |_| condition != 1).is_empty());
+            assert!(m.recovery_deadline().is_none(), "past-due wakes cannot spin while ineligible");
+        }
+    }
+
+    #[test]
+    fn recovery_samples_stay_on_one_live_copy_unless_another_has_less_backoff() {
+        let a = (ConnId(0), PathId::ZERO);
+        let b = (ConnId(1), PathId::ZERO);
+        assert!(recovery_copy_rank(Some(a), a, 0) < recovery_copy_rank(Some(a), b, 0));
+        assert!(recovery_copy_rank(Some(a), b, 0) < recovery_copy_rank(Some(a), a, 1));
+        assert_eq!(recovery_copy_rank(None, a, 0), recovery_copy_rank(None, b, 0));
+    }
+
+    #[test]
+    fn confirmation_deadlines_keep_the_window_and_fresh_sample_requirements() {
+        let t = Instant::now();
+        let road = addr(2);
+        let mut moving = Moving::default();
+        assert!(moving.deadline(t).is_none());
+        assert!(matches!(moving.step(&road, t, MS(100), MS(60), |_| true, |_| true), Step::Hold { .. }));
+        let early = t + CONFIRM_FOR - Duration::from_nanos(1);
+        assert_eq!(moving.deadline(early), Some(t + CONFIRM_FOR));
+        assert!(matches!(moving.step(&road, early, MS(100), MS(60), |_| true, |_| true), Step::Hold { .. }));
+        assert!(matches!(moving.step(&road, t + CONFIRM_FOR, MS(100), MS(60), |_| false, |_| false), Step::Hold { .. }));
+        assert_eq!(moving.deadline(t + CONFIRM_FOR), Some(t + CONFIRM_MAX));
+        assert_eq!(moving.step(&road, t + CONFIRM_FOR, MS(100), MS(60), |_| true, |_| true), Step::Go);
+        assert!(moving.deadline(t + CONFIRM_FOR).is_none());
+        moving.to = Some((road, t));
+        assert!(moving.deadline(t + CONFIRM_MAX).is_none(), "no immediate past-due wake loop");
     }
 
     #[test]

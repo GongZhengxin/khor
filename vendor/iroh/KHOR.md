@@ -12,6 +12,14 @@
 
 ## 补丁
 
+### 40. 恢复采样保留同一live副本，有限决策到期精确唤醒（2026-11-10，feat/net候选）
+
+Iroh39的fa99首轮124/124和原采样四秒门51/51，但两端实际恢复Go约4060/5799ms。y的3次探测相隔约500ms且copy A→B→A；Reading质量按copy取中位数，混用延迟健康样本积累。严格250ms预约遇到略早的普通tick会再等250ms；2秒确认也可能跨下一tick。新独立双端决策门在下一代码修改前取得c397/ba7真实红，原物理/采样checker字节不变。
+
+同PTO优先已用的live copy，关闭或更低PTO可换，只存conn/path ID。既有actor用MaybeFuture为待发恢复预约及Moving的2/4秒边界持有限sleep；无pending为None，无永久新timer/task/强连接。仍silent/用尽/自然样本足够/过期时disarm防past-due spin。醒来重新读真实stats，保留3次/2秒/至少250ms、sent>judged、2秒两fresh与原gain；timer不充当样本或Go证据。日志追加预约Instant/attempt/epoch以核真实节奏与合并/无copy消耗，不记正文或票据。
+
+新增4个纯状态合同，尚未远端验证；必须两四秒门同源至少3轮、实际probe预算、原stalls/黑洞及成本合验。上游等价到期调度与副本采样策略尚未核；同协议/行为/成本及所有者覆盖齐全后再退出。本条不是已验收或新增永久轮询的许可。
+
 ### 39. 已知路收到恢复提示但PTO已清时，有界确认新的往返（2026-11-10，feat/net）
 
 002954真实peer relay移动的70条conn/path快照显示last_received>judged，但latest_rtt_sent<=judged、PTO0/unacked None；旧copy wake不会发送新包，内层直到约5.3秒才取得新往返。原267/272在冻结四秒业务选路合同为红，原可达/最终hold绿不替代此门。最早hint还在外层恢复前，故不能用一次旧ACK或一次过早慢样本确认新网。
