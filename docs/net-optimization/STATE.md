@@ -1,10 +1,14 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-10T16:38:12.106561+00:00。**完整N0–N5仍未完成，用户已授权持续实施；不得因分项绿、旧goal paused或compact停下。** 速度/体验优先、个人可信设备网。root串行，无子智能体；没有main合并、发布、采购、生产部署或改已装App/store的授权。长期范围见[PLAN](PLAN.md)、[REQUIREMENTS](REQUIREMENTS.md)、[ACCEPTANCE](ACCEPTANCE.md)、[NEXT-DESIGN](NEXT-DESIGN.md)。上版STATE完整逐字保存在[历史](HISTORY-20261110-before-peer-contact-state.md)，含更早历史链；本页替代旧段落的当前状态，不删历史失败或矩阵。
+更新：2026-11-10T16:52:36.268732+00:00。**完整N0–N5仍未完成，用户已授权持续实施；不得因分项绿、旧goal paused或compact停下。** 速度/体验优先、个人可信设备网。root串行，无子智能体；没有main合并、发布、采购、生产部署或改已装App/store的授权。长期范围见[PLAN](PLAN.md)、[REQUIREMENTS](REQUIREMENTS.md)、[ACCEPTANCE](ACCEPTANCE.md)、[NEXT-DESIGN](NEXT-DESIGN.md)。上版STATE完整逐字保存在[历史](HISTORY-20261110-before-peer-contact-state.md)，含更早历史链；本页替代旧段落的当前状态，不删历史失败或矩阵。
 
 ## 恢复先核实际句柄
 
 ### 最新覆盖状态（优先于下方历史段落）
+
+- **最新已验证分项c88653f9/tree4c7c81cd/snapshot6448871c**：calibrated v2 actual cold/resumed readings同canonical Linux2b3b076e全12/hop41/wires15/budget30/resume1（256.985秒/21files/group空核），Mac42857032142全12/hop41/wires15/budget26/resume1，exact13782014733/20files/11control blobs核。v2 client实际Accepted断言warm=true/cold=false、RPC总数warm2含预热/cold1、两者原1秒caller，scope freeze true/field false。旧v1 false marker解释和全部失败保留，不覆盖。
+- **当前主HEAD97a5aaa0只加下一actual stale-IP fallback fixture与只读cfg(test) client失败事件**，无fallback产品修复。snapshot8236d82b/tree75625a0a，新Linux formatted baseline正在跑（receipt以ledger最新为准）；首dc54afb6仅格式43.789秒/10files/group空核。不同EndpointId在旧IP持续接纳新握手，client真实Err后才许可middle；permit和NO_ROUTE两个控制，实际Sessions/单次count/原2秒caller与cleanup。不要先认定失败归因或放宽时钟。
+- **calibrated临时baseline worktree已清理**：原9b680476 clean/仅本轮graph和Python3个ignored文件，逐一SHA/大小留证后非force git worktree remove，main WIP未动；pin `refs/khor/net-baselines/early-serial-calibrated-v2`仍9b、所有source/run snapshots保持。`early-serial-calibrated-v2-worktree-cleanup.json`已核。不要按下方旧记录重建或清理不存在路径。
 
 - **当前主HEADb1542107**：产品仍462 early并行候选，加cfg(test)实际TLS结果observer与v2 fixture格式，未接受。隔离`/Volumes/disk0/Khor/worktrees/current/khor-net-early-race-baseline` detached **9b680476769888c2bfa8cfc20b3a4bbaf1212124**，tree9480da50/snapshot49c2e1c9；仅early调度复原串行，observer/v2 fixture与主逐byte相同。baseline pin `refs/khor/net-baselines/early-serial-calibrated-v2`。新run在ledger（v2 formatted serial baseline）执行中；首a09e0451仅格式43.761秒/10files/group空已核并同patch应用两wt，不能计行为红。此baseline未清理，保留所有WIP/refs。
 - **最新已验证分项2cb56cce/treeb9bd9865/snapshotb8610837已双OS闭合live-vs-cached scope**：Linux06d07ccd全12/hop39/wires15/budget30/resume1（256.639秒/21files/group空核），Mac42853193309同canonical全12/hop39/wires15/budget26/resume1，exact13781781897/20files/11control blobs核，fresh-middle freeze仅scope true/field false。0RTT/ordinary先失败→后hop成功/initial Drop/normal release/address epochs仍未闭合。

@@ -301,3 +301,11 @@ cbf3a8d4/tree38430683/snapshotff8e3735同source在Linux47439bfb（252.734秒/21f
 ## 2026-11-10 held middle恢复排序分项
 
 2cb56cce/treeb9bd9865/snapshotb8610837在Linux06d07ccd及Mac42853193309同source全12组/hop39绿，wires15/budget30（Mac26）。旧8d0328/4e280e8e实际38/1红：两个cached1ms peer保持真实Incoming未admit，实际live Tunnel被排到有限TRIES外，caller2秒内won=false/echo=false/tried_cached=true，cleanup完成。现只Legs::Recovery先稳定分组当前held road，再沿原两腿cost顺序；不将Direct排在Relay前，不改期限/TRIES/单跳/策略。incoming-only first leg、假live僵尸与NoRelay其他策略/epoch仍独立未证。
+
+## 2026-11-10 cold/resumed读取准备并行分项
+
+c88653f9/tree4c7c81cd/snapshot6448871c两端同source通过12组/hop41（Linux2b3b076e 256.985秒/21files/group空；Mac42857032142 exact13782014733/20files/11controls）。旧serial+同v2 fixture9b680/b08656c7真实39/2红，cold实际请求0、warm只有预热1。现原early握手/回复task与hop准备合作poll，同一个timeout，adopt后即drop准备和pending lease，accepted response owner与原STOP/取消/预算合同通过。没有新增业务尝试、探针或生产timer。
+
+v1曾在0f8a81d0两读取都成功却warm server is_0rtt=false，40/1失败保留；该marker在accept时评估，快速完成握手可清false，不能由此推出没恢复TLS。v2用真实client ZeroRttStatus::Accepted/普通握手/Rejected分支的cfg(test) one-shot，只观察不阻塞；warm Accepted=true/cold=false，RPC总数warm2（含1预热）/cold1和原1秒caller均断言通过。v1/v2 whole/旧serial与candidate各source单独冻结。初始串行校准临时wt已clean后非force移除，固定引用与全部原件保留。
+
+尚未覆盖普通早失败→后中继成功、旧Asleep提前返回、initial Drop/normal publication release原子性、NoRelay其他策略、地址/网络epochs、真实两腿/手机换网/能耗。主53 vendor不变，完整N0–N5继续；没有安装App、合并或发布。
