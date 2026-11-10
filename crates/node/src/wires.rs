@@ -1479,11 +1479,13 @@ impl Wires {
             settle(slot, road_now(&conn));
         }
         drop(slots);
-        for id in heard {
-            self.back(&id);
-        }
         for id in resting {
             self.asleep(&id);
+        }
+        // A live connection's fresh reception outranks a different
+        // connection's delayed resting close observed in the same tick.
+        for id in heard {
+            self.back(&id);
         }
         for id in dead {
             self.let_go_served_by(&id, Retired::Silent);

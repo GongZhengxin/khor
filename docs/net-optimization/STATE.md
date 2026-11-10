@@ -4,7 +4,7 @@
 
 ## 先核真实句柄
 
-- 主 `/Volumes/disk0/Khor/worktrees/current/khor-net`，feat/net。生产行为HEAD **ba28fc03**（之后文档/注释）；主53vendor、Iroh41。Mac42770379226+Linux4bcfad82同source全部net-node已绿，见下。不把doc-only HEAD误当已测试二进制源。
+- 主 `/Volumes/disk0/Khor/worktrees/current/khor-net`，feat/net。生产行为HEAD **ba28fc03**（之后文档/注释）；主53vendor、Iroh41；当前HEAD85d1054c仅增wake tests及helper返回修正，生产tick仍旧顺序。Mac42770379226+Linux4bcfad82同source全部net-node已绿，见下。不把doc-only HEAD误当已测试二进制源。
 - 隔离 `/Volumes/disk0/Khor/worktrees/current/khor-net-recovery-deadlines` detached **2ef6bee5**，treef1da6579/snapshot48e9e24b（b4行为仅追加actual carrier与connect阶段诊断，e819已实际编译执行）；无IPC v2，Iroh42/43/44未合主。Iroh43实际vendor绿但物理f2b仍红。Iroh44基线d7/tree937/snapshot714在fe3实际54/2红；当前b4只保留有限稀疏测量，重新合格或新故障重启确认时钟，原whole50+epoch+sampling fixtures不变；待同源vendor与物理验证。
 - 控制 `/Volumes/disk0/Khor/worktrees/current/khor-build-net` feat/net HEAD **68cadb57a0ed72d40a4ca9a843e86b9c6797bf34**已推。net-node仅在原remoteQUIC32之后/canonical之前加resume合同；3个source-only stub控制测试实际绿。
 - Turing与Mac均无本轮heavy/phone sampler。**优先追真实手机→MacLab自动接管失败**：用户回Wi-Fi后Turing/hinton/lecun可通、MacLab不通；反复关闭/重开iPhone App后才某次经Turing peer relay成功。不是自动恢复成功。手机无需继续操作。新session090200三phase均已结束，采样方向是Turing→phone，不能代替phone→MacLab；全部mixed installed cohort，App重启时点未控，busy/paused归属未证。MacLabpublic id449aed、local endpoint pid87295已只读核实，其他GUI进程是_host/_ghost/agent子角色，未杀/未当作重复resident故障。正只读采集MacLab/Turing指定peer network journals，MacLab已归档220条，Turing SSH采集本地exec8976须恢复核句柄；不重复启动。
@@ -87,3 +87,7 @@ SSH BatchMode/ForwardAgent=no/StrictHostKeyChecking=yes；无个人key/PAT/agent
 09:08手机新session090200：纯前台Wi-Fi基线30calls18ok/12state_busy（归属未证）；随后用户确认已关Wi-Fi使用蜂窝，cellular_transition90秒10calls8ok/2busy，前3个成功调用耗时27916/29285/19093ms，随后成功约687–1844ms。不能把这些CLI总耗时称RTT或准确换网恢复时刻，但真长尾保留。当前wifi_return_transition已启动90秒，本地exec91517/remotePID2051242，remote09:08:06UTC；已发回Wi-Fi确认题，待用户回复。新sampler不并发、无原始journal正文输出，不启动heavy。
 
 09:23新核心事实：用户强调relay/peer relay未及时接管，后明确恢复依赖反复关开App。manual-app-restart-erratum.json撤回“正常自动接管”解释。MacLab手机journal可见08:46/08:51 pump10s失败/300s退避、数次carried↔relay切换与retire、09:08 retire后至09:15新inbound存在空窗，09:06 hop曾via hinton而非Turing；需核完整原因/实际绑定，不能先猜根因或假定整个窗口backup可用。MacLab/Turing clock bracket：Turing快约18.603–18.644秒，跨主机时间线要校正。当前pmset断言防idle sleep15h、当前MacLab进程存在，只是当前状态，不冒称证明故障时无休眠。生产App/所有resident未重启或改配置。
+
+09:38：wake fixture首55d sourcebb21/treec112在ccf95c98实际E0308 helper tuple编译失败，100.176秒/11artifacts/原group空，不计行为红；85d只补discard分号，原测试断言全不改，新whole hash已修订留初版历史。source85d/treeda15/snapshot80cc的新net-node baseline已launch，实际句柄查source-refs/receipt（本地stageexec4050已返回后更新）；需要真实tick断言红才改生产顺序。旧wholewires SHA18acdf83冻结。SDK已只读help核0.1.15支持journal --on，并真实missing-target非busy拒绝，先前busy control为不确定；phone command controls已存，未再采手机。
+
+09:41：85d/7da54d78实际runtime wires12pass/1fresh-newwire FAIL，原11+新all-suspended负向绿，hop12/net/fmt绿，144.211秒/12artifacts/原group空核；其余net-node未执行。首ccf仅helper返回tuple compile错已留，85d只补分号，测试whole冻结。最小候选仅tick末尾先旧resting再新heard，使同批live新收包最后清gone；after_retirement并发与现场根因仍未关闭，原wires whole18ac与新whole不改。接下来同whole完整net-node双OS；不部署生产或重启用户App。
