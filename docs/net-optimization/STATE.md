@@ -1,23 +1,22 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-10 07:56 UTC。完整N0–N5仍未完成，用户授权继续。速度/体验优先，可信个人设备网；无main合并、发布、采购/生产部署授权。root串行、无子智能体。长期[PLAN](PLAN.md)/[REQUIREMENTS](REQUIREMENTS.md)/[ACCEPTANCE](ACCEPTANCE.md)不缩减。上一状态逐字在[历史](HISTORY-20261110-before-natural-recovery-epoch.md)，保留更早历史链。不要因旧goal服务paused停止。
+更新：2026-11-10 08:13 UTC。完整N0–N5仍未完成，用户授权继续。速度/体验优先，可信个人设备网；无main合并、发布、采购/生产部署授权。root串行、无子智能体。长期[PLAN](PLAN.md)/[REQUIREMENTS](REQUIREMENTS.md)/[ACCEPTANCE](ACCEPTANCE.md)不缩减。上一状态逐字在[历史](HISTORY-20261110-before-natural-recovery-epoch.md)，保留更早历史链。不要因旧goal服务paused停止。
 
 ## 先核真实句柄
 
 - 主 `/Volumes/disk0/Khor/worktrees/current/khor-net`，feat/net。生产行为HEAD **ba28fc03**（之后文档/注释）；主53vendor、Iroh41。Mac42770379226+Linux4bcfad82同source全部net-node已绿，见下。不把doc-only HEAD误当已测试二进制源。
-- 隔离 `/Volumes/disk0/Khor/worktrees/current/khor-net-recovery-deadlines` detached **4ec3ec08**，source tree5cb081e1/snapshot0555b9f0；无IPC v2、Iroh42未合主。f0a5db0e含Noq3诊断fields，1a6371d7含actualPING两模型；4ec只引入相同旧顺序helper与3个独立回归，**尚未实现Iroh43修复**。旧50tests完整SHA5c4da4b4不动。
+- 隔离 `/Volumes/disk0/Khor/worktrees/current/khor-net-recovery-deadlines` detached **b4e4d232**，tree94851b41/snapshot932897e2；无IPC v2，Iroh42/43/44未合主。Iroh43实际vendor绿但物理f2b仍红。Iroh44基线d7/tree937/snapshot714在fe3实际54/2红；当前b4只保留有限稀疏测量，重新合格或新故障重启确认时钟，原whole50+epoch+sampling fixtures不变；待同源vendor与物理验证。
 - 控制 `/Volumes/disk0/Khor/worktrees/current/khor-build-net` feat/net HEAD **68cadb57a0ed72d40a4ca9a843e86b9c6797bf34**已推。net-node仅在原remoteQUIC32之后/canonical之前加resume合同；3个source-only stub控制测试实际绿。
-- Turing目前无已知heavy。9bf已真实52/1单元红并采证；43候选1cb/tree237/snapshot4584的9cf已441/53/9绿，f2b832dc原物理124/124但请求11bad/GoX7728/Y3470红，全部已terminal/sourcecontrolbundle/原group空核。接下来Iroh44先旧行为helper独立状态红，再同whole绿；具体设计见NEXT-DESIGN/ACCEPTANCE 07:56。不盲刷物理、不放宽4秒门。
-- Mac无已知heavy在跑。macserver SSH早已恢复成功；A=macserver/B=Turing天然异网，P=iPhone。源提交经本机GitHub SSH，worker仍原API bundle/guard，无个人凭据给worker。
+- Turing当前Iroh44候选net-vendor **turing-20261110T081323Z-47bd0154/PID1961743**，source b4/tree948/snapshot932/control68，08:13:46UTC已launch；前驱fe3已terminal采证原group空。不得重复提交或并行heavy，先recover已有receipt。不盲刷物理、不放宽4秒门。
+- Mac无已知heavy在跑。macserver SSH已恢复；用户最新明确“Mac turing是在一个局域网内的哦”，撤回此前天然异网推断。A=构建macserver/B=Turing，MacLab与macserver的设备映射待澄清，P=iPhone；公共Relay不能证明两端异网。源提交经本机GitHub SSH，worker仍原API bundle/guard，无个人凭据给worker。
 - 用户已确认：**iPhone在手边，可切Wi-Fi/蜂窝；已装khor并已与Macserver/Turing配对**。两次可用性/安装配对问题均已答，不重复问。真机具体采样窗口尚未开始；先核实际版本/cohort/可观测API并准备短操作，不假称手机已通过或要求改生产store。
 
-## 当前关键因果：自然恢复先清故障，漏建采样epoch
+## 当前关键因果：稀疏恢复质量中断补测
 
-- **新真实红7bf72701**：f0a5db0e/tree1cfb126a/snapshot92afa1e5/control ef0b，原124/124、请求门绿，decision/state为X3658.183ms/Y7404.281ms红；预算仅X3预约/1episode绿。source/control/bundle16artifacts/228.574秒/原group空核。
-- Y judge=1778813.572639，第一合法post-judge sample sent=.574443（晚约1.8ms），RTT485.855ms；随后263.720ms。read_paths先mark_silent恢复可达并移除Silence，再recovery_probes迭代剩余Silence，故没有RecoveryCheck。+1.4秒后pendingPING=false、inflight0、cwnd约28k、globalOther=false，直至+5.4秒自然keepalive得83.794ms才开始2秒Moving，+7.404秒Go。**此Y不是观测到的cwnd阻塞**；旧2c9d X缺样本仍为另一个未证分支。
-- 已在099c3c6b先写NEXT-DESIGN/ACCEPTANCE：新增actor真正调用的recovery_tick，旧顺序保持；独立新fixture验证首个合法但慢的自然RTT恢复可达时仍保留有限epoch，随后post-epoch快样本按原25%规则更新quality。无故障/closed/旧packet负向及旧50不改。当前4ec基线待实际红。
-- **红后拟最小修复**：recovery episode登记先于mark_silent清除故障；不把第一次ACK当优路、不放宽sent>judged/gain/两fresh/Moving2秒/四秒门，不增3预约/250ms/2秒预算、永久timer或强owner。selected+available/已有Moving仍合并，充分自然样本仍停额外PING。先单元真实红→同whole新fixture绿，再原物理两门至少3次、quiet/黑洞/成本；不能预记修复了7.4或旧5.8。
-- 新fixture `vendor/iroh/src/socket/remote_map/remote_state/recovery_epoch_tests.rs`，module tests_recovery_epoch明确被原`remote_state::tests`前缀filter涵盖。3case；预计旧50+新3。natural-recovery-epoch-red-source.json/fixture-proof.json冻新whole与原whole5c4da4b4。
+- f0a实际7bf72701物理原124/124、请求门绿，但Y7404ms。首post-judge合法慢RTT恢复可达，旧mark_silent先删Silence，后recovery_probes漏建epoch；当时无pending/inflight/cwnd阻塞，等待keepalive。Iroh43仅交换联合bookkeeping顺序；新同whole回归9bf实际52/1红→9cf实际Noq441/Iroh53/home9绿，原whole50不改。
+- Iroh43 first physical f2b832dc仍红：原124/124但请求11bad，GoX7728.243/Y3469.794ms。X实际PING/ACK/RTT工作；85→112ms两点上中位数撤销收益、清Moving、停止补测，等待keepalive后才重新确认。预算6预约/2episode绿，不是确认总包/能耗证明。旧2c X缺RTT仍独立未证。
+- Iroh44设计先以cdf8018d冻结，再d7保持旧clear-on-stay helper建立独立状态合同，fe3cf29e实际fmt/Noq441绿、Iroh54pass/2新正向fail（旧53+新负向绿）、home未执行；56.055秒/13artifacts/sourcecontrolbundle/原group空核。完整whole50 SHA5c4da4b4、epoch3c547c63、samplingefed1fbc冻结。
+- b4e4d232最小候选：只允许既有pending候选在原两秒内继续稀疏恢复测量；要求RecoveryCheck存活、open非silent且质量不足三点，仍走原confirmation probe入口。采样不算连续合格时间；再次符合收益或新故障须重新开始正常确认。不改sent>judged/25%gain/两fresh/2秒确认/4秒门/原3预约250ms2秒、不增加强owner/永久timer。先同whole实际vendor绿，再原物理≥3次、quiet/黑洞/实际总包与CPU/能耗；不能预记已修复7.7或旧5.8。
 
 ## N1已有证据边界
 
@@ -39,9 +38,9 @@
 - 原remoteQUIC32 Mac427545真实5秒回收红→757保resp/frame至finalwrite、仅Resolve/Window/Record可取消，Mac427556+Linuxd964同source3f0全部net-node绿；whole两个原fixtures/red-green命令前缀核。quic-response-owner-32-red-green.json。Begin/Cancel/写job/Watch语义保持。
 - caller短期427298真实红→427332原whole块绿；本机32旧427371真实红/whole945c→首次lease427389 SIGABRT保留→Box::pin后427399旧fixture绿。独立process427531约1006ms预算/真实Node join/child reap、坏cookie/额外字节无副作用、legacy halfclose绿。相关proof锚原sources，不拿新增module后whole hash倒填。
 
-## N4当前真跨网与手机
+## N4真实双机与手机（异网尚未验收）
 
-- 当前已执行WAN cohort仍 **757/tree2d218/snapshot3f0/controlccd**：coordinator4cee410c97601afe/Mac42757732776，Mac↔Turing各30目录+30固定29B正文逐byte验证，120/120全部ok，两端fresh配对ID相符。MacbinarySHAcd9be1a8/Linux0e063201。实际公共Relay101.200.80.77:3340，不是Direct/peer/v6/mobile/p99/吞吐/手机能耗；也非与旧ff608匹配性能比较。
+- 当前已执行双机 cohort（保留历史WAN任务名）仍 **757/tree2d218/snapshot3f0/controlccd**：coordinator4cee410c97601afe/Mac42757732776，Mac↔Turing各30目录+30固定29B正文逐byte验证，120/120全部ok，两端fresh配对ID相符。MacbinarySHAcd9be1a8/Linux0e063201。实际公共Relay101.200.80.77:3340；120/120只证明双机业务及该Relay可用，不证明跨LAN、公网NAT穿透。最新用户报告Mac/Turing同LAN，具体Mac映射待确认。不是Direct/peer/v6/mobile/p99/吞吐/手机能耗；也非与旧ff608匹配性能比较。
 - worker_us最近秩p50/p95/max：Mac→Linux目录55382/58815/76133、正文61322/64630/66470；Linux→Mac目录59527/64622/65616、正文55671/58949/59727。caller另存proof。wan-current-directory-body-proof.json。
 - 同cohort Mac3/3+Linux3/3 stop/EOF/kill真实Node join/worker0/owned空/锁释放；最初两observer IndentationError留原并readonly恢复不计pass，然后新六轮绿。两个business fresh identities与8lifetime copies直接验证清理、一次GH secret已删。manifest current3f0/旧ff608备份，误directory_v1 ledger label保留并actual_v2+erratum补正。
 - iPhone可手动Wi-Fi/蜂窝且已装/已配A/B。准备实际版本/cohort与现有可观测API后，给短、明确采样窗口，记录全outcomes/首成功/选路/实际v4v6。尚无手机观测，不混称当前candidate已在手机执行。
@@ -55,7 +54,7 @@
 | N2 | accepted写job所有权、两middle总3秒、输者/晚候选、地址epoch/重启/jitter/quiet epoch/close-vs-offer、写不重放/legacy；真实WAN取消 |
 | N3 | Custom1024帧/256KiB外层队列、SSH/hop混合公平/共享vs分连接、1/3/5设备CPU/字节/唤醒/手机能耗；Noq704请求模型不能替代 |
 | N4 | U12 v4/v6独立/同时/切族、peer移动、Mac/Turing/iPhone冷暖不对称、登记/出口/整机故障域；布局容量运维数据，不采购部署 |
-| N5 | 主53/隔离42及后续43逐项vendor coverage/上游等价/退出、Noq1/5缺口、最终源可信Quality/nativeApp/代理/多机/手机能耗；证据前不升级删补丁 |
+| N5 | 主53/隔离42/43/44逐项vendor coverage/上游等价/退出、Noq1/5缺口、最终源可信Quality/nativeApp/代理/多机/手机能耗；证据前不升级删补丁 |
 
 ## 执行硬约束
 
@@ -66,3 +65,5 @@ SSH BatchMode/ForwardAgent=no/StrictHostKeyChecking=yes；无个人key/PAT/agent
 图谱先，缺vendor覆盖才定向读；无.codegraph不自建，无子智能体授权。旧baseline/control WIP保留不reset；终态+owner/hash核后只清本次资源。verify工具只核identity，必须分fmt/compile/fixture/executor/product行为。证据根`/Volumes/disk0/Khor/evidence/net`，source-refs每次pin、最近全审329refs/39ops，后续新增逐条pin，稳定后刷新全量。恢复先核上方句柄，持续完整目标，不因分项绿或旧goal paused停下。
 
 07:56新事实：43排序修复已在同whole新fixture真实52/1红→53绿，Noq441/home9均绿（proof vendor_candidate_verified=true），但first physical f2b832dc失败，candidate_verified仍false。X85→112稀疏质量造成Moving清除、停止补测，new44只分开有限采样/连续迁移确认，原radio总成本仍要验。phone-readonly-preflight-20261110.json保留Turing0.1.15混合cohort：首次devices本地document transfer busy，重试读取成功；对已确认手机localhost只读journal0minute一次360ms/valid空JSON成功，CLI总耗时非网络RTT；未开始受控换网/能耗。macserver只找到KhorDeveloperLab模拟器、标准路径无已装CLI/App，不能拿MacLab生产设备条目当macserver同身份。用户手机测试暂缓，不影响服务器目标。
+
+08:13更正：用户最新同LAN说明优先于旧U10异网表述；所有历史WAN文件名/cohort保留，跨网/NAT验收撤回。手机已确认localhost，用户“是，稍后再测”，不启动换网/能耗采样；待用户恢复。Iroh44基线d7d4557e/tree937/snapshot714：Turing fe3cf29e实际fmt/Noq441绿，Iroh54pass/2新正向fail（旧53及新负向绿），home未执行，56.055秒/13artifacts/原group空核；接下来同wholefixture修复。
