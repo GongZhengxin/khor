@@ -7,7 +7,7 @@
 - 主 `/Volumes/disk0/Khor/worktrees/current/khor-net`，feat/net。生产行为HEAD **ba28fc03**（之后文档/注释）；主53vendor、Iroh41。Mac42770379226+Linux4bcfad82同source全部net-node已绿，见下。不把doc-only HEAD误当已测试二进制源。
 - 隔离 `/Volumes/disk0/Khor/worktrees/current/khor-net-recovery-deadlines` detached **2ef6bee5**，treef1da6579/snapshot48e9e24b（b4行为仅追加actual carrier与connect阶段诊断，e819已实际编译执行）；无IPC v2，Iroh42/43/44未合主。Iroh43实际vendor绿但物理f2b仍红。Iroh44基线d7/tree937/snapshot714在fe3实际54/2红；当前b4只保留有限稀疏测量，重新合格或新故障重启确认时钟，原whole50+epoch+sampling fixtures不变；待同源vendor与物理验证。
 - 控制 `/Volumes/disk0/Khor/worktrees/current/khor-build-net` feat/net HEAD **68cadb57a0ed72d40a4ca9a843e86b9c6797bf34**已推。net-node仅在原remoteQUIC32之后/canonical之前加resume合同；3个source-only stub控制测试实际绿。
-- Turing当前net-vendor **turing-20261110T084604Z-f89fe221/PID2010457**，source2ef/treef1da/snapshot48e9/control68、08:46:27UTC已launch（连接阶段诊断）；e819实际carrier repeat2 **4dc22c7e**已真实冷启动红：首目录10,033,849us超时，x→y dial10002ms、已给Relay hint但无hop bound/splice、未进入replug。1started/1finished error，56.019秒/16artifacts/原group空核；不计四秒恢复重复。停止重复转查cold dial，旧cold独立红保留。前驱e0 actual四流完整且恢复3223/3227ms绿只作正常时序参照。
+- Turing当前full物理阶段诊断 **turing-20261110T084820Z-bf6105dd/PID2013314**，source2ef/treef1da/snapshot48e9/control ef0b、08:48:41UTC已launch；前驱f89fe221实际fmt/441/56/9绿、64.012秒/14artifacts/原group空；e819实际carrier repeat2 **4dc22c7e**已真实冷启动红：首目录10,033,849us超时，x→y dial10002ms、已给Relay hint但无hop bound/splice、未进入replug。1started/1finished error，56.019秒/16artifacts/原group空核；不计四秒恢复重复。停止重复转查cold dial，旧cold独立红保留。前驱e0 actual四流完整且恢复3223/3227ms绿只作正常时序参照。
 - Mac无已知heavy在跑。macserver SSH已恢复；用户最新明确“Mac turing是在一个局域网内的哦”，撤回此前天然异网推断。A=构建macserver/B=Turing，MacLab与macserver的设备映射待澄清，P=iPhone；公共Relay不能证明两端异网。源提交经本机GitHub SSH，worker仍原API bundle/guard，无个人凭据给worker。
 - 用户已确认：**iPhone在手边，可切Wi-Fi/蜂窝；已装khor并已与Macserver/Turing配对**。两次可用性/安装配对问题均已答，不重复问。真机具体采样窗口尚未开始；先核实际版本/cohort/可观测API并准备短操作，不假称手机已通过或要求改生产store。
 
@@ -79,3 +79,5 @@ SSH BatchMode/ForwardAgent=no/StrictHostKeyChecking=yes；无个人key/PAT/agent
 08:43：当前优先复查cold-start，4dc与旧040407/042825同10秒首次连接超时类。源e819不再改行为；从dial_with→Endpoint.connect的实际入口追踪address resolution/known-hint连接与延迟identity候选，已知Relay hint不等于已发包/握手，当前日志没有目标y的selector观测，不能先猜网络不可达或CC阻塞。未新增重试、超时或放宽fixture。
 
 08:46：2ef6bee5只对vendor/iroh/endpoint.rs加start/connecting-ready/handshake-finished bool阶段诊断，attempt仅DEBUG enabled时取本地单调时间；无新await/timer/task/probe、不打印请求/票据/完整error。connect-stages-source-audit.json冻e819后唯一diff，net-vendor f89fe221/PID2010457 source48e9/treef1da/control68已launch，查source-refs/receipt再恢复，禁重提交。netlab resident stderr直写serve.log文件（lab.rs272），不是未消费pipe；仍不以此排除诊断CPU/IO扰动。
+
+08:49当前connect stage source2ef已vendor库实际编译、原fmt/441/56/9绿；bf6105dd原物理正在运行，成功和cold红都保留，不因缺replug失败创建假四秒结果。connect-stages-source-audit.json保留同e819后单文件诊断diff。
