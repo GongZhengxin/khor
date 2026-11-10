@@ -1814,13 +1814,21 @@ impl Wires {
     /// A weak token dies when this network's routing waits are forgiven;
     /// it neither holds this Wires alive nor creates a timer or task.
     pub(crate) fn hop_epoch(&self) -> std::sync::Weak<()> {
-        Arc::downgrade(&self.hop_generation.lock().unwrap_or_else(|p| p.into_inner()))
+        Arc::downgrade(
+            &self
+                .hop_generation
+                .lock()
+                .unwrap_or_else(|p| p.into_inner()),
+        )
     }
 
     /// Every wait the pump was keeping is forgiven: the dials that failed
     /// may have failed on the old network.
     pub(crate) fn forgive_all(&self) {
-        *self.hop_generation.lock().unwrap_or_else(|p| p.into_inner()) = Arc::new(());
+        *self
+            .hop_generation
+            .lock()
+            .unwrap_or_else(|p| p.into_inner()) = Arc::new(());
         for slot in self
             .slots
             .lock()
