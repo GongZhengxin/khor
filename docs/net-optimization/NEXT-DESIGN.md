@@ -325,3 +325,8 @@ Noq12修复后的267：外层Relay→Direct约+1.244/+1.287s，inner Custom在+5
 下一先核Noq在外层恢复后是否收到了旧packet的ACK并清PTO，却还没有新的post-judgment packet：既有wake仅处理pto_count>0的copy，mark_silent对新样本的正确要求可能让已无PTO的恢复路等下一个keepalive。此为待证假设，不能据时间相近就改5/15秒保活或缩短2秒确认。
 
 若原始stats/实际actor合同证实，候选设计是每个已判silent的恢复epoch，在收到判定之后的真实回包提示、当前无silent copy且尚未取得post-judgment往返时，只安排一次新的恢复确认PING；保留原total budget、发包归属、stale owner防护、未应答继续silent、原2秒/两fresh observation ticks及收益门。重复hint不重复发包；无hint/健康路/首次未建立不探测，独立下一真实故障才可重新申请。不得让旧包本身确认新网，也不加永久轮询timer或每tick全peer探测。具体API/红例/发送失败与已存在在飞probe计量仍须审计/冻结后实施；还要原p1s/短停顿/黑洞与探测字节成本证明，不能只追单次恢复速度。
+
+
+## N4目录基线后的正文校验扩展（2026-11-10）
+
+263是实际paired-warm目录list，仅核marker名/类型/大小。dev-only WAN worker增加read_content：复用真实resident IPC→Node::read_all/FetchPath，固定读取对方fresh fixture的wan-<run>.txt，cap等于已知26-byte标记并逐byte核对total/cut/正文，控制回复仅公开ID/时间/字节数/verified布尔，不把正文、票据或私钥放artifact。它不改产品Node API、不创建新peer连接/协议、不称大文件吞吐。先Mac远端build-only，Linux与双向实际正文验收待独占槽；263原目录结果不回填为正文绿。

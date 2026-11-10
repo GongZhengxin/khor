@@ -99,6 +99,33 @@ mod unix {
                     json!({"peer": expected, "elapsed_us": began.elapsed().as_micros(), "marker_verified": true}),
                 )
             }
+            "read_content" => {
+                let expected = field(command, "expected_id")?;
+                let machine = peer(node, expected)?;
+                if field(command, "machine")? != machine {
+                    return Err("fixture machine does not match the expected identity".to_owned());
+                }
+                let fixture = Path::new(field(command, "fixture")?);
+                if !fixture.is_absolute()
+                    || fixture.file_name().and_then(|v| v.to_str()) != Some("fixture")
+                {
+                    return Err("only an isolated peer fixture may be read".to_owned());
+                }
+                let path = fixture.join(format!("wan-{run}.txt"));
+                let path = path.to_str().ok_or("fixture path is not UTF-8")?;
+                let began = Instant::now();
+                let (total, _, bytes, cut) = timeout(
+                    Duration::from_secs(30),
+                    node.read_all(&machine, path, CONTENT.len() as u64),
+                )
+                .await
+                .map_err(|_| "fixture content deadline".to_owned())??;
+                if cut || total != CONTENT.len() as u64 || bytes.as_slice() != CONTENT {
+                    return Err("the isolated peer marker content differs".to_owned());
+                }
+                Ok(json!({"peer": expected, "elapsed_us": began.elapsed().as_micros(),
+                    "marker_content_verified": true, "bytes": bytes.len()}))
+            }
             _ => Err("unsupported probe operation".to_owned()),
         }
     }
