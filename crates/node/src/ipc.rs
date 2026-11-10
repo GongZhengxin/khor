@@ -15,6 +15,8 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 use crate::proto::{self, MAX_FRAME};
 
+#[cfg(test)]
+mod client_tests;
 pub(crate) mod lease;
 
 /// Read atomically from one endpoint file, including during refused-connect refresh.
@@ -1039,7 +1041,10 @@ async fn exchange(
     }
     if leased {
         let header = lease::header(frame.len(), by)?;
-        stream.write_all(&header).await.map_err(msg::handoff_failed)?;
+        stream
+            .write_all(&header)
+            .await
+            .map_err(msg::handoff_failed)?;
     }
     stream
         .write_all(&frame)

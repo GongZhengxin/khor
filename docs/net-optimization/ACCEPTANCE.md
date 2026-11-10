@@ -522,3 +522,6 @@ leased_ipc_callers_release_all_held_response_permits_when_dropped使用现有Nod
 
 
 32回复fixture接线校正（取行为红之前）：42735757244仅格式失败，无Rust行为结果。静态复核发现同home的Node::content_page有意直读，不能证明resident IPC；所以Window改用已有content_on_resident真实API显式通过同一TCP listener，操作/32席位/原barrier/5秒回收门不变，恢复后再用该API读Window并核reply与action，另保留128事件控制。原GH/source/patch保留，不把格式红或尚未执行的接线误称取消故障红。helpers也补header接收时刻锚定的原Op上限及更早本地父期限合同，未启用新协议。
+
+
+IPC真实TCP兼容补充：新增client_tests覆盖cap0/1保持legacy EOF、cap2及向下兼容max3使用v2并保持写方向打开、拒绝TCP后端口/cookie/版本一起刷新、v2失回复零重放、独立receiver任务未继承caller task-local但收到<=500ms剩余预算。均为真实loopback/helper server，不替代真实Node32回复或独立process验收。whole wire fixture保持SHA945c22aa；此次仅追加客户端合同及应用上一轮精确remote formatting，未放宽原资源回收门。
