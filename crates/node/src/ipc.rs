@@ -942,10 +942,21 @@ pub(crate) async fn call_refreshing(
     mut refresh: impl FnMut() -> Option<(u16, String)>,
 ) -> Result<Reply, String> {
     let (name, deadline) = (op.name(), op.deadline());
+    let began = tokio::time::Instant::now();
+    let by = crate::deadline::earlier(Some(began + deadline))
+        .expect("an IPC operation supplies its deadline");
+    let budget = by.saturating_duration_since(began);
+    let seconds = budget.as_secs() + u64::from(budget.subsec_nanos() != 0);
+    let timed_out = || msg::serve_op_timed_out(name, seconds);
     let attempt = async {
-        let until = tokio::time::Instant::now() + std::time::Duration::from_millis(500);
+        let until = by.min(
+            tokio::time::Instant::now() + std::time::Duration::from_millis(500),
+        );
         let (mut port, mut cookie) = (port, cookie.to_owned());
         let stream = loop {
+            if crate::deadline::expired(Some(by)) {
+                return Err(timed_out());
+            }
             match tokio::net::TcpStream::connect(("127.0.0.1", port)).await {
                 Ok(stream) => break stream,
                 Err(error) => {
@@ -970,11 +981,11 @@ pub(crate) async fn call_refreshing(
                 }
             }
         };
-        exchange(stream, &cookie, op).await
+        exchange(stream, &cookie, op, by, timed_out).await
     };
-    match tokio::time::timeout(deadline, attempt).await {
+    match crate::deadline::wait(Some(by), attempt).await {
         Ok(r) => r,
-        Err(_) => Err(msg::serve_op_timed_out(name, deadline.as_secs())),
+        Err(_) => Err(timed_out()),
     }
 }
 
@@ -982,6 +993,8 @@ async fn exchange(
     mut stream: tokio::net::TcpStream,
     cookie: &str,
     op: Op,
+    by: tokio::time::Instant,
+    timed_out: impl FnOnce() -> String,
 ) -> Result<Reply, String> {
     let handoff = Handoff {
         cookie: cookie.to_owned(),
@@ -989,6 +1002,9 @@ async fn exchange(
     };
     let frame = proto::encode(&handoff)?;
     validate_handoff(&handoff, frame.len())?;
+    if crate::deadline::expired(Some(by)) {
+        return Err(timed_out());
+    }
     stream
         .write_all(&frame)
         .await
