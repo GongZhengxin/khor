@@ -423,3 +423,10 @@ Iroh44同whole单元54/2红→56绿、Noq441/home9绿，但first physical a4ed77
 
 
 08:38诊断首轮e0d70376：原124/124及request/decision/state全绿，X3222.682/Y3227.305ms。actual4 carrier事件完整，41ms IP选择于826/861/926/969ms；inner Moving sampling_only始终false，不能当44采样保持的实际覆盖。相同e819/tree2e52/snapshot2a10/control ef0b的4dc22c7e在跑，用于观察慢分支。下一实现按证据分岔：若实际carrier恢复晚，先追承载地址恢复与测量epoch的先后；若四实际carrier早已快而inner RTT慢，核ACK/测量copy与quality；若API排队但未发，则核真实pending/inflight/cwnd/传输条件。不得根据一轮绿撤销a4红，也不提前选择增加探针或缩短确认。
+
+
+## 2026-11-10 08:46：cold dial阶段诊断先于修复
+
+actual carrier repeat2 4dc22c7e并未进入replug：首目录10,033,849us超时，Node x→y Ask拨号10002ms、offered direct3及Relay198.18.1.2:3340、failures1/retry5；无hop bound/splice、仅1error outcome。source e819/tree2e52/snapshot2a10/control ef0b、56.019秒/16artifacts/原group空核。属于既有10秒cold-start独立红，不能作四秒恢复重测或丢弃。诊断模式下的实际业务失败，尚未证明无诊断时同样复现。
+
+源码dial_with最多两ep.connect候选，known hints候选立即、identity候选headstart后；Endpoint.connect先await connect_with_opts（内含before_connect hook与resolve_remote），再await Noq Connecting握手。当前日志只见总dial，目标y在selector诊断零出现，无法区分解析/actor排队与Noq握手，不以offer有Relay当已发包。下一仅在已有khor_net_samples debug target添加connect start（目标身份/ALPN及offer计数）、connect_with_opts完成和handshake完成阶段/结果；不改变await顺序、错误传播、超时、并发、重试、探针、协议或fixture，不记录票据/请求正文。root格式/vendor原回归后原物理运行；若再次cold红，先按阶段定位。成功轮仍只作参照，无诊断性能与原stalls/成本最后另验。
