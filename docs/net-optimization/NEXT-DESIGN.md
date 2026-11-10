@@ -460,3 +460,16 @@ actual carrier repeat2 4dc22c7e并未进入replug：首目录10,033,849us超时�
 
 
 10:53 N1诊断补充（不改变策略）：bf6105dd的actual-carrier-path-events已由原冻结auditor验证，四条实际绑定outer在+1092/1176/1197/1274ms选IP，窗口无lag/end。X真实inner RTT为174.598534→103.166817→89.551779ms，明确日志“recovery quality window restarted”在103.166817处重开；随后最新89.55而reading quality仍103.17，至+3502ms仍未Moving，+3752ms才见Moving，原Go5505.782ms红保留。不能简写成始终三点median：重开后recent不足三点，44又没有既有pending因此未进入sampling_only。carrier-quality-restart-correlation.json锚实际raw/数据SHA与10行证据。这提供了“从未先合格时的有限新测量”设计问题；先独立合同和总包成本，不直接增加原3预约、删质量样本、缩短确认或据此猜手机根因。
+
+
+## 2026-11-10 11:21UTC：先证明半成品hop的取消所有权，再并行寻路
+
+第三Asleep修复959旧fixture已Linux全12绿；Mac setup问题只改fixture，两端显式loopback/原5秒期限。portable旧行为543/e07/d16在Mac42806129212实际24pass/2状态红，四负向与全部setup通过；候选fccc/714/2b5在Turing99534d56执行，Mac候选提交本地exec99550需取实际receipt，不重发。新旧whole冻结，phone手动恢复仍不算自动恢复。
+
+相邻N2静态事实：line_to_inner先await hop_ahead，再开始普通dial；ask_early亦然。中间设备准备慢可能耗尽前台预算，即使其他路径本来可用。单纯select并行会放大已有取消窗口：open_hop在Links.attach提交后await ep.offer_addrs，之后才spawn watcher；Attached本身只有serial和ended receiver，drop不撤回Links条目，而attach已有自持Links的I/O task。取消准备future可能留下尚未交付watcher的attachment。该窗口需真实回归，不直接认定现场因果。
+
+下一先冻独立hop::tests前缀fixture，经原net-node自动运行：实际Node::open_hop、真实loopback Tunnel QUIC流完成Ask::To响应、cfg(test)一次gate在attach后/offer前，记录serial后abort/join真实准备owner；应撤回仅自己那代attachment、stream真正停止而Tunnel连接保持、ASKING归零。负向覆盖正常交付watcher不被提前撤回、取消旧准备不能删掉同peer/同middle的新serial。新gate不进生产，原hop whole/旧所有fixture保持；先旧行为真实红，再最小所有权guard。
+
+候选guard须以Links.detach_attached现有serial匹配撤回，不能改公共Attached的Drop破坏其他使用者，watcher接手后明确disarm。不添加无归属清理task。**offer开始后/已送actor但await未返回**的窗口仍要单独证明：移除Links不自动证明iroh已关闭公布的Custom path，不能以offer前用例关闭整个close-vs-offer矩阵；需追现有let_path_go/transport闭路事件与替代代际保护。
+
+上述所有权完成后，再建立“慢middle正在实际准备、普通可用路径不能被它挡住”的端到端Node回归（非注入假拨号），再设计有界并行。原普通dial最多两候选、hop两middle总3秒、原caller总deadline/取消优先/输者收尾/accepted早期读取与写job不重放全部保持；正常路径先成功时，未交付的hop准备必须被回收，已交付且仍有用的hop须有明确Node owner。MISSED/LOST本地网络/两腿测量epoch另做失效合同，不因每个包或一次Wi-Fi通知清空远端休眠及所有冷却。
