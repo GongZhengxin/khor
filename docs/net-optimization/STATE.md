@@ -14,6 +14,15 @@
 
 ## 最新已验证分项
 
+最新分项 **48947721c339c4ac75a15c4f2dd609bff2f38773**，tree **5b55b4c550c3bd1836e39d5a98588d63c3eb3d98**，snapshot **f78b389a051c5f7091815bddb6738279d97648b8**。
+
+- Linux95f8da6b全12/hop52/wires15/budget30/resume1，313.106秒/21files/group空/identity与实际summaries核；Mac42878663761同canonical全12/hop52/wires15/budget26/resume1，exact13792758066/20files/11control blobs核。
+- 只闭合unused prepared carrier在原两5秒观察后释放、有限pending期间保留/结束后释放，以及真实incoming-only第一腿→实际新Tunnel→carried TLS/echo。closed incoming负控/此前48全过。unused与incoming两个freeze仅scope true/field false，旧8196d388 48/2、6da35a6a 51/1红及fmt尝试保留。
+- **新鲜度仍有限制**：incoming helper接纳原Patience内或自上次tick字节数变化，后者不提供准确收包时间，进程停顿后不能等同刚收包。尚未单独验证入站live对两条低RTT缓存的排序；网络epochs/NoRelay未知第二腿/所有入站登记竞争/N1–N5未闭合，不称整包接受。
+
+下列为之前已验证分项及完整旧证据，不替代上面最新source：
+
+
 **`801dff9e71b610a205fb6253a8502ae8182e0b15`**，tree `9ba7af025b8856d19a537bcd54696ea97c08192b`，snapshot `7bbffc722697f90feb4f8756979520cae9e2846d`。
 
 - Linux `turing-20261110T181408Z-aa81601a`：全12组，hop48/wires15/budget30/resume1；278.840秒、21files、group空、identity及实际summaries核。
@@ -36,6 +45,11 @@
 此前已闭合的窄范围仍保留：sole-peer Recovery准入、慢middle不挡快普通拨号、有限pending lease、cancelled watcher successor、live middle先于两条旧低RTT缓存、cold/resumed读取并行；以及取消/响应owner/STOP/peer contact/actor conditional carried close。具体红绿源、双OS回执与限制见历史及对应freeze，不能升级成全部入口/所有代际已安全。
 
 ## 当前任务与下一步
+
+**当前活动：hop-miss旧行为baseline** `turing-20261110T185034Z-98b997de`，PID2740089，18:50:56 UTC启动；6f611cf2/tree4356aa33/snapshot2bae21a5（hop-miss-epoch-baseline-source.json），新增3项预期2正向红/无变化控制绿，未测不猜。MISSED/LOST产品不变。除该run外，之前Mac/Turing任务均终态采核。先取实际结果再设计epoch，不重发旧52 candidate。
+
+此前运行段落为历史更新，以上唯一活动句柄与ledger优先：
+
 
 18:48 UTC：48947721/tree5b55b4c5/snapshotf78b389a，Linux95f8da6b实际hop52已全绿（含incoming准入/closed负控与unused两项），全12其余组仍在收尾；Mac42878663761同canonical已提交，尚未接受这两个scope。新WIP只追加miss_epoch三项真实合同，MISSED/LOST产品不变，尚未编译/跑。实际NO_ROUTE在网络标记前/后完成的新网重试正向 + 无变化原冷却/实际ask计数负控；freeze保留sole_peer旧whole为prefix。勿把新合同混为已测。
 
