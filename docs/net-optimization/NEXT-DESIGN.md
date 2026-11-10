@@ -567,3 +567,12 @@ close_offer原整个文件保持70af完整前缀，只尾附queued_close模块�
 102b/4d6512/f7d794在fe6ce1de实际32项29/3红：Relay提示、缺第二腿、历史Direct均admitted=false/echoed=false，真实已知Direct正控、递归拒绝负控和原27全过，140.253秒/11artifact/identity核/group空。原whole新旧fixture冻结。
 
 候选新增Legs::Recovery：目标当前无live road时不以历史Direct否决；两端声明Relay不等于当前可用，因此允许可达Direct/Relay首段接Direct/Relay/SSH第二段；缺少/None第二腿提示可在原两middle/同一个3秒及更早caller预算内实际准入，仍拒绝via递归和paused/satellite等原门。实际连通目标已有road时保留原Dial，Measured比较不变；NoRelay/ToNoRelay原配置约束仍保持。旧MISSED/LOST/两条候选及所有时钟不改，无新timer/probe/task，不能宣称epoch已修。**此片只修准入，当前hop准备仍在普通拨号之前，须补并行寻路合同以避免扩展准入拖慢可用快路；未部署。** first-live与旧缓存候选排序、第二腿真实Relay数据面、网络变化使旧失败失效仍独立待验。
+
+
+## 并行寻路的下一合同与所有权边界（15:19UTC，提议待实测）
+
+先真Node.line_to_inner：唯一middle的真实Tunnel已读Ask但故意不回OK，目标另有真实可用IP endpoint；普通Main握手的accept在middle实际到达后放行，原caller1秒内应能返回Direct并固定echo，不能等middle或caller到期。取消输掉的准备必须观察真实STOP、外层Tunnel不关闭、ASKING/未交付carrier清理，原目标和middle身份均scratch。之后反向覆盖普通路失败但middle后来可用，原2个活跃普通候选与总预算不被阶段重置，无写/accepted早数据重放。
+
+实现设计需让准备future留到成功连接被adopt之后再Drop；网络连接已完成但尚未adopt的窗口应有pending-use lease，而不是只查看已登记wire。可用per-peer弱lease＋关闭通知供既有hop watcher等候使用者结束；Caller取消且无wire即撤本serial，实际wire存在才交既有比较逻辑，不新增清理task/永久timer。跨Noq未登记使用事实、pending Opened/Abandoned和ears仍需各自合同，不凭已修条件close推定全部安全。
+
+普通dial可把新carrier作为一次有界候选更新：复用同一个DialWindow和journal起点，最多2个活跃连接尝试，新carrier到达时回收/替换一个待定候选；全失败先等有限准备结果，peer Asleep/failed只在最终失败提交。原直接/identity两个候选可有一个新carrier重试（生命周期总次数需显式记录，不能把2活跃冒充2总次数）；没有业务帧时的重握手与已接受early请求的禁止重放必须分开。0-RTT路径仍须独立处理和验证，不复用普通连接重试去重发accepted操作。

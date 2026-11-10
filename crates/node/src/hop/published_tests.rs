@@ -267,3 +267,6 @@ mod incoming;
 
 #[path = "sole_peer_tests.rs"]
 mod sole_peer;
+
+#[path = "race_tests.rs"]
+mod race;

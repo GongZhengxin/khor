@@ -1,8 +1,16 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-10 15:17 UTC。**完整N0–N5仍未完成，用户已授权持续实施；不得因分项绿、旧goal paused或compact停下。** 速度/体验优先、个人可信设备网。root串行，无子智能体；没有main合并、发布、采购、生产部署或改已装App/store的授权。长期范围见[PLAN](PLAN.md)、[REQUIREMENTS](REQUIREMENTS.md)、[ACCEPTANCE](ACCEPTANCE.md)、[NEXT-DESIGN](NEXT-DESIGN.md)。上版STATE完整逐字保存在[历史](HISTORY-20261110-before-peer-contact-state.md)，含更早历史链；本页替代旧段落的当前状态，不删历史失败或矩阵。
+更新：2026-11-10T15:31:12.135392+00:00 UTC。**完整N0–N5仍未完成，用户已授权持续实施；不得因分项绿、旧goal paused或compact停下。** 速度/体验优先、个人可信设备网。root串行，无子智能体；没有main合并、发布、采购、生产部署或改已装App/store的授权。长期范围见[PLAN](PLAN.md)、[REQUIREMENTS](REQUIREMENTS.md)、[ACCEPTANCE](ACCEPTANCE.md)、[NEXT-DESIGN](NEXT-DESIGN.md)。上版STATE完整逐字保存在[历史](HISTORY-20261110-before-peer-contact-state.md)，含更早历史链；本页替代旧段落的当前状态，不删历史失败或矩阵。
 
 ## 恢复先核实际句柄
+
+### 最新覆盖状态（优先于下方历史段落）
+
+- 主HEAD **b1ac8637f3f2d050fe980e13636843ae0f9238b9**，tree9802f550/snapshot32d7f3d1，Recovery有限准入候选；尚未接受或部署。此前最新接受分项仍47aaa3b9。
+- Linux **854aa6ce**已完成、采证并核identity：246.623秒/19artifact/group空，hop32全绿；原resume用例在line17 `a.pair`准备阶段返回 **transfer owner or quota gate is busy**，未到暂停恢复断言。保留失败，不称偶发或已排除关联。静态定位精确文本属于khor_sync::transfer::Error::Busy（同transfer owner或OS quota gate竞争），与node metadata的另一Busy文本不同；具体触发点未证。
+- Mac **42843187359**同canonical已完整12组绿，hop32/wires15/budget26/resume1；exact artifact **13776438600**，20files/11control blobs逐项核，无format.patch。Mac成功不能抵消Linux失败。两端ledger均已终态，无活动heavy。
+- WIP新增真实Node slow-middle/fast-IP竞争用例 `hop/race_tests.rs`，原published whole逐byte保持为前缀；尚未远端编译/运行。当前仍串行hop_ahead→dial；尚未实现pending-use lease和并行策略，不能把Recovery准入单独部署后称完成。
+
 
 - 主：`/Volumes/disk0/Khor/worktrees/current/khor-net`，branch **feat/net**。最新已接受分项源码 **47aaa3b9bb16cf2c11326ed6def1d9b51437d4d7**，tree **4a4055196af13894f9a71b582285119434373c96**、snapshot **a61643ae2027086bb845bdb16d7087c4b7b0eb71**。双OS同canonical全12节点绿/hop27，加Linux原vendor439/50/9绿，主53补丁不变，未部署。当前HEAD a462只再加sole-peer fixture与U17文档，产品准入尚未修。
 - **无活动heavy/Mac/phone/物理计时任务**。Recovery候选fd278首4142d303与Mac42837886233均格式阶段失败，Linux43.767秒/10artifact/group空、一个match-arm格式hunk，无行为结果；已只应用远端格式patch，Mac原artifact待采。sole-peer旧准入fe6ce1de已真实32项29/3红：Relay第二腿、缺第二腿、历史Direct均不admit/不echo，Direct正控/recursive负控/原27全过；140.253秒/11artifact/identity核/group空。当前仅写Recovery准入候选，尚未运行：无当前target road时允许有限真实尝试，不让历史Direct、配置Relay或缺hint封死；原NoRelay/单跳/信任/paused/两middle/总by/MISSED等保持，无新增任务/定时器。并行普通拨号与epoch仍未做，不能部署此片即报最优。首02f32be2仅六处远端格式，43.707秒/10artifact/group空原件保留。U17产品准入仍未修。
