@@ -3775,8 +3775,10 @@ impl Node {
             return Early::NotTaken;
         };
         // A road this machine carries itself, as `dial_with` adds it.
-        addr.addrs.extend(self.carried_addr(&d.id));
-        let tried = crate::journal::offered(&addr);
+        let carried_at_start = self.carried_addr(&d.id);
+        let had_carried = carried_at_start.is_some();
+        addr.addrs.extend(carried_at_start);
+        let mut tried = crate::journal::offered(&addr);
         let Ok(frame) = proto::encode(req) else {
             return Early::NotTaken;
         };
@@ -3789,6 +3791,8 @@ impl Node {
             by,
         );
         let started = std::time::Instant::now();
+        let dial_by = tokio::time::Instant::now() + within;
+        let mut early_data = false;
         let attempt = async {
             if crate::deadline::expired(by) {
                 return Err(DialFailure::CallerExpired);
@@ -3822,6 +3826,7 @@ impl Node {
             // timed out, or a handshake that failed, used to leave this task
             // running with its clone of the connection — an orphan wire that
             // nobody held, answered by the far side until its idle timeout.
+            early_data = true;
             let asked = Aborts(Some({
                 let (early, frame, budget) = (early.clone(), frame.clone(), req.budget());
                 tokio::spawn(async move {
@@ -3853,9 +3858,9 @@ impl Node {
         // One original handshake and one original budget. Preparing a hop
         // cooperatively cannot delay a usable ordinary road or duplicate
         // the early request's task. Keep the preparation until adoption.
-        let mut attempt = Box::pin(tokio::time::timeout(within, attempt));
+        let mut attempt = Box::pin(tokio::time::timeout_at(dial_by, attempt));
         let mut preparing = true;
-        let outcome = loop {
+        let mut outcome = loop {
             tokio::select! {
                 biased;
                 outcome = &mut attempt => break outcome,
@@ -3872,6 +3877,42 @@ impl Node {
                 DialFailure::CallerExpired => "CallerExpired".to_owned(),
             };
             self.wires.note_early_failure_for_test(why);
+        }
+        // No early request could have escaped a cold failed handshake.
+        // Give a newly prepared carrier one ordinary handshake, still inside
+        // the original absolute window. A prior carrier, resting refusal or
+        // failure after starting the early task never enters this fallback.
+        if !early_data
+            && !had_carried
+            && matches!(outcome, Ok(Err(DialFailure::Refused(_))))
+            && !crate::deadline::expired(by)
+            && tokio::time::Instant::now() < dial_by
+        {
+            let ready = if preparing {
+                tokio::time::timeout_at(dial_by, &mut hop).await
+            } else {
+                Ok(())
+            };
+            match ready {
+                Err(elapsed) => outcome = Err(elapsed),
+                Ok(()) => {
+                    if !crate::deadline::expired(by)
+                        && tokio::time::Instant::now() < dial_by
+                        && let Some(carried) = self.carried_addr(&d.id)
+                        && let Ok(mut addr) = endpoint::dial_addr(&d.id, &[], &[])
+                    {
+                        addr.addrs.insert(carried);
+                        tried.2 = true;
+                        outcome = tokio::time::timeout_at(dial_by, async {
+                            ep.connect(addr, ALPN)
+                                .await
+                                .map(|conn| (conn, None))
+                                .map_err(|error| DialFailure::of_connect(&error))
+                        })
+                        .await;
+                    }
+                }
+            }
         }
         if crate::deadline::expired(by) {
             if let Ok(Ok((conn, _))) = &outcome {

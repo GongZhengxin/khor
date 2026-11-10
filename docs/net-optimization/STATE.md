@@ -1,10 +1,14 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-10T16:52:36.268732+00:00。**完整N0–N5仍未完成，用户已授权持续实施；不得因分项绿、旧goal paused或compact停下。** 速度/体验优先、个人可信设备网。root串行，无子智能体；没有main合并、发布、采购、生产部署或改已装App/store的授权。长期范围见[PLAN](PLAN.md)、[REQUIREMENTS](REQUIREMENTS.md)、[ACCEPTANCE](ACCEPTANCE.md)、[NEXT-DESIGN](NEXT-DESIGN.md)。上版STATE完整逐字保存在[历史](HISTORY-20261110-before-peer-contact-state.md)，含更早历史链；本页替代旧段落的当前状态，不删历史失败或矩阵。
+更新：2026-11-10T17:02:19.068858+00:00。**完整N0–N5仍未完成，用户已授权持续实施；不得因分项绿、旧goal paused或compact停下。** 速度/体验优先、个人可信设备网。root串行，无子智能体；没有main合并、发布、采购、生产部署或改已装App/store的授权。长期范围见[PLAN](PLAN.md)、[REQUIREMENTS](REQUIREMENTS.md)、[ACCEPTANCE](ACCEPTANCE.md)、[NEXT-DESIGN](NEXT-DESIGN.md)。上版STATE完整逐字保存在[历史](HISTORY-20261110-before-peer-contact-state.md)，含更早历史链；本页替代旧段落的当前状态，不删历史失败或矩阵。
 
 ## 恢复先核实际句柄
 
 ### 最新覆盖状态（优先于下方历史段落）
+
+- **stale-IP fallback已实际43项42/1红**：151dc0f0/treefd1d3896/snapshot424ebf65，Linux263e5ce8，client真实Refused在middle许可前已发生，positive answered=false/carried=false/requests0；NO_ROUTE负控与原41全过，cleanup完成，138.314秒/11files/group空/identity核。此前bfdc441a仅cfg(test)观察点Debug编译失败（81.901秒/11files），已改显式variant分类；dc54仅fmt，均保留。
+- 当前cold-fallback候选WIP：首次addr无carrier、尚未启动任何early请求task且原attempt仅Refused时，等已并行的hop准备，再给新carrier**至多一个普通握手**。共用同一dial_by绝对窗与journal started；每个握手串行，最多2 lifetime（原cold+新carrier），既有ordinary两候选另计不偷混。Asleep、已有carrier、已可能发early数据、已到caller/dial deadline都不进入。原response owner/adopt-before-Drop与只读请求retry规则保持。本版未编译/测，不先宣布成功。
+- **source refs只读审计**：source-refs-audit-20261110T165639Z.json核429 snapshot refs/tree、64 control labels、45 ops SHA、335显式receipt文件存在；94历史row无submitted_receipt字段，原样保留；旧9135b6d唯一解析完整commit，不改label。ledger前后SHA不变，仅当时263e pending。审计不等于artifact/行为核或产品接受。
 
 - **最新已验证分项c88653f9/tree4c7c81cd/snapshot6448871c**：calibrated v2 actual cold/resumed readings同canonical Linux2b3b076e全12/hop41/wires15/budget30/resume1（256.985秒/21files/group空核），Mac42857032142全12/hop41/wires15/budget26/resume1，exact13782014733/20files/11control blobs核。v2 client实际Accepted断言warm=true/cold=false、RPC总数warm2含预热/cold1、两者原1秒caller，scope freeze true/field false。旧v1 false marker解释和全部失败保留，不覆盖。
 - **当前主HEAD97a5aaa0只加下一actual stale-IP fallback fixture与只读cfg(test) client失败事件**，无fallback产品修复。snapshot8236d82b/tree75625a0a，新Linux formatted baseline正在跑（receipt以ledger最新为准）；首dc54afb6仅格式43.789秒/10files/group空核。不同EndpointId在旧IP持续接纳新握手，client真实Err后才许可middle；permit和NO_ROUTE两个控制，实际Sessions/单次count/原2秒caller与cleanup。不要先认定失败归因或放宽时钟。
