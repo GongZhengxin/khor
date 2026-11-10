@@ -42,17 +42,18 @@ async fn observe_incoming(cancelled: bool) {
         .await
         .unwrap();
     let (outgoing, direct_incoming) = tokio::time::timeout(Duration::from_secs(5), async {
-        tokio::join!(
-            f.ep.connect(direct.addr(), INNER_ALPN),
-            async { direct.accept().await.unwrap().accept().unwrap().await }
-        )
+        tokio::join!(f.ep.connect(direct.addr(), INNER_ALPN), async {
+            direct.accept().await.unwrap().accept().unwrap().await
+        })
     })
     .await
     .unwrap();
     let (outgoing, direct_incoming) = (outgoing.unwrap(), direct_incoming.unwrap());
     let mut direct_answer = answering(direct_incoming);
     assert!(echo(&outgoing).await);
-    f.node.wires.adopt(&f.target.id, Proto::Main, outgoing.clone());
+    f.node
+        .wires
+        .adopt(&f.target.id, Proto::Main, outgoing.clone());
     assert_eq!(
         khor_net::path::classify(&outgoing),
         khor_net::path::PathKind::Direct
