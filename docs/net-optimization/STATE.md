@@ -1,12 +1,12 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-10 05:59 UTC。用户授权继续完整N0–N5，尚未完成。速度/体验优先，可信个人设备网；无main合并、发布、中继采购/生产部署授权。root串行、无子智能体。完整计划/硬要求/验收以[PLAN](PLAN.md)、[REQUIREMENTS](REQUIREMENTS.md)、[ACCEPTANCE](ACCEPTANCE.md)为准。旧状态逐字保存在[本轮历史](HISTORY-20261110-before-ping-delivery-investigation.md)与其历史链。
+更新：2026-11-10 06:02 UTC。用户授权继续完整N0–N5，尚未完成。速度/体验优先，可信个人设备网；无main合并、发布、中继采购/生产部署授权。root串行、无子智能体。完整计划/硬要求/验收以[PLAN](PLAN.md)、[REQUIREMENTS](REQUIREMENTS.md)、[ACCEPTANCE](ACCEPTANCE.md)为准。旧状态逐字保存在[本轮历史](HISTORY-20261110-before-ping-delivery-investigation.md)与其历史链。
 
 ## 恢复先核实际句柄
 
 - 主worktree `/Volumes/disk0/Khor/worktrees/current/khor-net`，feat/net，生产行为757e013f；a00c9554此后新增cfg(test)显式STOP/同wire合同，原53 vendor。控制 `khor-build-net` feat/net HEAD69d72afb495da9d7dd88f098407949f74fc7887e已推。
 - 隔离候选 `khor-net-recovery-deadlines` detached8d91e1ec/treebbaf802b/snapshot894ed4e，无IPC v2；新增Iroh42，未合主。不把隔离候选称最终整源验收。
-- **Turing唯一重型任务：turing-20261110T054132Z-da82e2b8**，PID1751540，05:41:53 UTC启动，netlab-stalls/control4eeeea986e28e0afe211e6ecbef03b893dcea7cd。上述Iroh42精确同源，quiet原600秒/20×300ms+原p5；预计约19分钟，实际终态先查receipt/进程/原group/lock再collect，禁止计时期间编译或其他重负载。先核句柄，不盲重发。
+- Turing前驱 **turing-20261110T054132Z-da82e2b8** 已完成/采证，原group空，1142.731秒/rc0，quiet原p1s600秒20×300ms+p5全绿。新full-counter诊断 **turing-20261110T060223Z-6d83f431** 已启动，PID1783148，06:02:44 UTC，先核receipt/PID，不能盲重发；source1a6371d7/tree80a1f9a0/snapshotd2f17c01/control ef0b，role diagnostic。禁止在计时期间叠编译或其他重负载。
 - Mac没有已知重型在跑。诊断源1a6371d7/tree80a1f9a0/snapshotd2f17c01已在Mac42765006984 fmt/Noq441/iroh50/home9实际全绿（两新PING正负控制含在441），source/control/11blobs/13artifacts核；仅诊断未合主。原whole multipath/物理/paths tests保持，carried-ping-fixture-identity.json。42761341395新STOP合同实际绿，source/control/11blobs/19artifacts已核并terminal登记。macserver SSH已实际恢复（03:54与04:37后均成功），A=Mac/B=Turing天然异网，P=iPhone，不重复要求另找两电脑。
 - 当前N1优先：**trace实际PING发送→ACK→RTT sample**。Iroh42第二轮仍双端约5.8秒红；API ping Ok不是实际发送/往返证明。不盲调250ms节奏/2秒确认/4秒门。
 
@@ -19,7 +19,7 @@
 - Iroh42物理1：turing051404-4f2d591b，原124/124、请求50/50绿，XGo3262ms；Y从未离开同wire Custom，首post stream14ms/首业务成功762ms，全32post请求同wire且选carried、无targetpeer重拨/路径变动。原严格decision因缺Go仍红，不能单凭缺事件记绿。新增补充continuity合同后回溯绿只算探索，不计prospective repeat。
 - **Iroh42物理2：turing052323-2c9d5898**，原124/124但请求门52个post4s仍Relay、XGo5825/Y5870ms，原decision与新state均红。X实际三次ping调用Ok在1073/1324/1574ms、同copy、PTO0；但直至2323ms RTT count/timestamps仍旧值49/1.1646s，另一copy也没新样本。Y没有RecoveryCheck观测episode，稍后自然样本才开始Moving。已读exact noq1.3.0 Path::ping：lock_and_wake→proto.ping_path，只置pending_ping。下一追发包/阻塞/ACK，而非猜测调参。
 - 新`scripts/netlab-peer-state.py`不改原物理/selection/decision：只有full logs+原请求门绿、真实pre/post同wire carried、首业务≤4秒、无postpeer Go/reset/path/dial/retire且hash核，才允许“始终保留好路”补充。18个复制数据正负控制全部符合预期（17负），回溯9真实run所有旧慢恢复红保留。详peer-state-negative-calibration.json与peer-state-retrospective-calibration.json；冻结后才允许未来prospective≥3轮，不回填旧验收。
-- Noq12 selection-only ACKfloor不改transportSRTT/PTO/CC，真实红266/270→271单元439绿、旧fixture纠错/whole hash保留。但quiet modern matched baseline两轮零move/worst539/635ms，candidate1/2moves、约1s/719ms，第二原at-most-one红。Iroh40 quiet71aa原p1s/p5绿但1move/worst1.3s，不是整体性能接受。当前Iroh42 quiet试验p1s已原20×300ms/600秒绿，两端0move、worst671.7ms、6punch/3362pkt/1325754B；p5与终态/全outcomes/CPU审计仍待。不能据live中间摘要当整个任务完成。
+- Noq12 selection-only ACKfloor不改transportSRTT/PTO/CC，真实红266/270→271单元439绿、旧fixture纠错/whole hash保留。但quiet modern matched baseline两轮零move/worst539/635ms，candidate1/2moves、约1s/719ms，第二原at-most-one红。Iroh40 quiet71aa原p1s/p5绿但1move/worst1.3s，不是整体性能接受。当前Iroh42 quiet试验p1s已原20×300ms/600秒绿，两端0move、worst671.7ms、6punch/3362pkt/1325754B；p5全部三个停顿档也绿、全32outcomes ok；22CPUmarkers、全部live线程CPU64/2hogs/end610845ms/11artifact/source/control/bundle已核、原group空。quiet-stalls-audit-v2.json并入原比较，单轮不算matched重复接受。
 - 040407-e3bf/042825-2a7fe04f有初连10.032秒超时未replug，保留cold-start独立红；不是恢复时序。Noq1/5专门coverage/上游等价仍缺，不凭成功样本删保护。
 
 ## N2：期限、回复所有权与实际STOP
@@ -54,4 +54,4 @@
 
 SSH BatchMode/ForwardAgent=no/StrictHostKeyChecking=yes；无个人key/PAT/agent/签名/模型凭据给workers，不重设HOME/CODEX_HOME。临时WAN capability只私管道/一次secret，禁止日志正文/票据。GitHub本机SSH上传不改worker认证。不确定timeout先查receipt/GH/proc/PGID，已有bundle/run先recover不重发。stage/launch显式完整source/control、前驱终态/组空/锁核；exec返回session不等于完成，commit hook结束后才snapshot。ledger避免并发writer。
 
-图谱先，缺vendor覆盖才定向读；不自建.codegraph。旧baseline/control WIP不reset；只终态+所有权/hash核后清本次临时资料。`verify-*-record.py`仅核identity，必须读行为日志分fmt/编译/fixture/执行器/产品红。证据根`/Volumes/disk0/Khor/evidence/net`，source-refs审计最近325项（37ops），新增逐条pin，稳定后刷新全量。旧goal服务paused不是用户暂停，不因此停止；无子智能体/merge/release/deploy授权。
+图谱先，缺vendor覆盖才定向读；不自建.codegraph。旧baseline/control WIP不reset；只终态+所有权/hash核后清本次临时资料。`verify-*-record.py`仅核identity，必须读行为日志分fmt/编译/fixture/执行器/产品红。证据根`/Volumes/disk0/Khor/evidence/net`，source-refs审计最近329项（39ops），新增逐条pin，稳定后刷新全量。旧goal服务paused不是用户暂停，不因此停止；无子智能体/merge/release/deploy授权。
