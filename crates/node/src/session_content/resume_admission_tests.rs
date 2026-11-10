@@ -31,18 +31,22 @@ async fn local_resume_accepts_a_new_connection_before_the_next_pause_poll() {
     // wires. Keep the next poll blocked rather than racing a 500ms timer.
     crate::pause::set_on(&root_b, false).unwrap();
     assert!(!b.paused());
-    let restored = timeout(
-        Duration::from_secs(3),
-        a.ls_of("resume-home", directory),
-    )
-    .await
-    .expect("local resume must accept a new connection within the existing call budget")
-    .expect("a completed local resume must not retain the old paused admission");
+    let restored = timeout(Duration::from_secs(3), a.ls_of("resume-home", directory))
+        .await
+        .expect("local resume must accept a new connection within the existing call budget")
+        .expect("a completed local resume must not retain the old paused admission");
     assert!(!*held.1.released.lock().unwrap());
     assert!(!restored.2);
-    assert!(restored.1.iter().any(|entry| entry.name == "resume-marker.txt"));
+    assert!(
+        restored
+            .1
+            .iter()
+            .any(|entry| entry.name == "resume-marker.txt")
+    );
     held.release();
     serve_a.stop().await;
     serve_b.stop().await;
-    eprintln!("[resume-admission] local_resume=true next_poll_held=true real_directory_verified=true");
+    eprintln!(
+        "[resume-admission] local_resume=true next_poll_held=true real_directory_verified=true"
+    );
 }
