@@ -105,3 +105,5 @@ SSH BatchMode/ForwardAgent=no/StrictHostKeyChecking=yes；无个人key/PAT/agent
 10:31：Macf9失败明确为GitHub API blob JSONDecodeError before materialization，64MiB raw/128MiB+JSON cap足够18.347MB bundle，非大小门产品失败，先同run retry一次。第一失败artifact未含source.json，verify identity不可能完成，已保留未误记通过。phone历史journal单次抓取因state busy失败、零手机侧历史，不做更多主动采样；Turing/MacLab被动日志留。用户“关开App”没有独立证明force-quit/OS进程PID变化，仍记manual reopen，不能写成受控进程重启。下一需核stale dial result与fresh positive proof：先清晰建模正向证据版本；不把它等同IPv4v6 network epoch或重置所有LOST/MISSED，不加重放/竞速写入。
 
 10:44更新：f9退役竞态已同source双OS全net-node绿，retirement-epoch-fixture-freeze.json仅该scope candidate_verified=true、field_phone_issue_resolved=false。当前无heavy/phone sampler。下一按NEXT-DESIGN新鲜peer接触版本合同，先真实Asleep旧拨号/排队共享红，不先改生产或假称手机根因。
+
+10:50实际句柄：第三合同only-test 653a源在82adb5aa仅单assert格式红、54.097秒/10artifact/原group空核，未compile/不计行为红；dce413de只应用远端format.patch，runnable red sourcec1cf/snapshot1b44。Turing97c96cff/PID2187034已launch原net-node/control68，收据/source-refs已pin；先核终态再collect，不重复提交。新增peer_contact whole SHA见peer-contact-fixture-freeze.json；旧wires whole+旧dial_budget whole（只去新mod声明）与wake/retirement/probe/wire逐byte核验不变。无Mac活动任务。

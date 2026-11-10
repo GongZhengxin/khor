@@ -35,6 +35,8 @@
 | U14 | “为什么停下里” | 用户已明确继续，不能因目标服务paused或阶段完成结束当前工作；持续推进完整计划，按实际必要的信息/阻塞处理，不把后台调度状态当权限或停止门 |
 | U15 | “Mac turing是在一个局域网内的哦” | 用户后续明确同LAN的Mac为“MacLab 本地电脑”，构建macserver是另一台；U10 macserver/Turing用户异网报告保留。120/120使用macserver/Turing，不把MacLab同LAN映射到该cohort；NAT/Direct穿透仍待验。用户现已恢复localhost iPhone测试，前台Wi-Fi→蜂窝→Wi-Fi依确认执行 |
 
+| U16 | 回Wi-Fi后MacLab不通而Turing/hinton/lecun可达；Relay/peer relay未及时接管，反复关开iPhone App后某次才经Turing恢复 | 记录自动恢复失败与人工恢复；不把最终成功或LAN归因替代故障切换验收。关闭/打开并未独立证明OS进程重启；不扩称全部Relay当时可用。 |
+
 下列是计划中的设计提议，尚需测量或实验确定：评分/切换参数、探测频率、缓存有效期、交互与批量是否拆连接、是否双家、Linux 执行器部署方式、中继新增位置与数量。不能在交接中把它们写成用户已批准的具体参数或部署。
 
 ## 3. 目标、边界与完成定义

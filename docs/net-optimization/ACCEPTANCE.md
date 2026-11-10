@@ -563,3 +563,10 @@ f2b832dc真实X7728ms红作基线：85→112 sparse median使测量与决定一�
 ## 2026-11-10：真实retire与新adopt之间的旧休眠提交合同
 
 cfg(test) gate仅停实际retire释放slots后尚未after_retirement的边界，新adopt发布并真实echo后，旧retire结束不得重新标设备休眠。负向无新连接时，真实suspended退役仍应left_alone且不记不可达。全旧fixtures和前一wake whole逐byte冻结，新fixture实际红绿同whole，生产构建无测试gate；不覆盖直接dial Asleep、地址epoch或现场全部自动failover。
+
+
+### 2026-11-10：fresh peer contact与迟到Asleep拨号
+
+原net-node的link::dial_budget filter新增独立peer_contact子模块，不改旧fixture/参数。真实Incoming CONNECTION_REFUSED产生Asleep，owner在cfg(test)单次gate持原锁，queued caller真实poll等待；同peer真实反向握手与echo后再释放旧结果。普通及ask_early入口都要求旧caller仍返回实际拒绝，但不再left_alone，queued caller不复用旧Asleep并实际重拨/echo。无新接触、仅另一peer接触两类负向仍共享拒绝、保持安静，原deadline/暂停/退避/写语义不变。
+
+这是旧状态提交/共享缓存回归，不能替代IPv4/IPv6 network epoch、真实peer relay选路、手机自动恢复或能耗验收。先旧行为真实红，冻结整个新fixture，再同whole候选绿与原net-node双OS；格式/编译失败与运行行为分开保留。
