@@ -307,6 +307,10 @@ pub(crate) enum Legs {
     /// presumed no better than the relay to `to`: one more try before
     /// every dial for a guess.
     Dial,
+    /// No live road to the target: a configured relay is no evidence it
+    /// answers here. Any non-recursive two-leg road may restore access,
+    /// and a missing second-leg hint may be checked by bounded admission.
+    Recovery,
     /// **Against the relay in use** ([`Node::compare_roads`]): either leg
     /// may be the relay — `to`'s home may be a far relay where the
     /// middle's is near (hinton on aps1, 10-20). The legs' sum is held
@@ -341,15 +345,21 @@ pub(crate) fn middles_with_cost(
         .iter()
         .filter(|(id, sat, paused)| id != me && id != to && !sat && !paused)
         .filter_map(|(b, _, _)| {
-            let second = theirs(b).filter(|r| r.via.is_none())?;
             let first = mine(b).filter(|r| r.via.is_none())?;
+            let second = match theirs(b) {
+                Some(second) if second.via.is_none() => second,
+                None if legs == Legs::Recovery => Road::own(to, RoadKind::None, None, None),
+                _ => return None,
+            };
             let usable = match (first.road, second.road) {
                 (RoadKind::Direct, RoadKind::Direct | RoadKind::Ssh)
                 | (RoadKind::Relay, RoadKind::Ssh) => true,
                 (RoadKind::Direct, RoadKind::Relay) if legs == Legs::NoRelay => true,
                 (RoadKind::Relay, RoadKind::Direct) if legs == Legs::ToNoRelay => true,
+                (RoadKind::Direct | RoadKind::Relay, RoadKind::None)
+                    if legs == Legs::Recovery => true,
                 (RoadKind::Direct | RoadKind::Relay, RoadKind::Direct | RoadKind::Relay) => {
-                    legs == Legs::Measured
+                    matches!(legs, Legs::Measured | Legs::Recovery)
                 }
                 _ => false,
             };
@@ -431,7 +441,7 @@ impl Node {
         let r = self.wires.link(&y.id);
         // No relay here, or none there (C7): every road but a direct
         // one is a hop's.
-        if r.down.is_some() || self.no_relay() || y.no_relay {
+        if r.road.is_none() || r.down.is_some() || self.no_relay() || y.no_relay {
             return true;
         }
         let direct = |k: Option<RoadKind>| k == Some(RoadKind::Direct);
@@ -479,6 +489,7 @@ impl Node {
         let legs = match (self.no_relay(), y.no_relay) {
             (true, _) => Legs::NoRelay,
             (false, true) => Legs::ToNoRelay,
+            (false, false) if self.wires.link(&y.id).road.is_none() => Legs::Recovery,
             (false, false) => Legs::Dial,
         };
         let picked: Vec<String> = middles_with_cost(

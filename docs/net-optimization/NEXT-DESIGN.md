@@ -560,3 +560,10 @@ close_offer原整个文件保持70af完整前缀，只尾附queued_close模块�
 ## U17/NET-16 第一片：真实hop_ahead准入合同（14:29UTC）
 
 新增published子模块sole_peer_tests，旧published整个文件保留为前缀。fresh Node仅一个实际Direct Tunnel邻居，目标无当前Main/Tunnel/Custom；两端仍声明有Relay配置，复现配置存在不等于可达。分别写middle第二腿Relay提示、不写提示、目标历史Direct提示，调用真实Node.hop_ahead，经实际offer gate/admission/inner TLS/固定echo判断是否尝试。已知Direct第二腿为正控、已被其他peer转发的第二腿为单跳拒绝负控，原27继续。中间stream到目标由既有fixture脚本适配，**不声称第二段真经过公共Relay**；真实两腿Relay场景仍属NET-16/N4。先实际旧红，再设计“没有当前目标可用线”的Recovery准入，健康已连通时的Measured性能比较保持；第二腿未知只允许有限真实准入，不信任其旧样本当作当前数据面证据。旧MISSED/LOST随候选/本地网络/地址epoch正确失效仍独立待做，不能靠每个包或全局清空来绕过quiet。
+
+
+### 14:45UTC U17第一片实际29/3红后候选
+
+102b/4d6512/f7d794在fe6ce1de实际32项29/3红：Relay提示、缺第二腿、历史Direct均admitted=false/echoed=false，真实已知Direct正控、递归拒绝负控和原27全过，140.253秒/11artifact/identity核/group空。原whole新旧fixture冻结。
+
+候选新增Legs::Recovery：目标当前无live road时不以历史Direct否决；两端声明Relay不等于当前可用，因此允许可达Direct/Relay首段接Direct/Relay/SSH第二段；缺少/None第二腿提示可在原两middle/同一个3秒及更早caller预算内实际准入，仍拒绝via递归和paused/satellite等原门。实际连通目标已有road时保留原Dial，Measured比较不变；NoRelay/ToNoRelay原配置约束仍保持。旧MISSED/LOST/两条候选及所有时钟不改，无新timer/probe/task，不能宣称epoch已修。**此片只修准入，当前hop准备仍在普通拨号之前，须补并行寻路合同以避免扩展准入拖慢可用快路；未部署。** first-live与旧缓存候选排序、第二腿真实Relay数据面、网络变化使旧失败失效仍独立待验。
