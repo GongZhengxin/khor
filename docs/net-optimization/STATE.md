@@ -14,7 +14,7 @@
 
 ## 当前实现候选与接受边界
 
-当前产品行为候选1c8472299b1c94e2c7813d4356d0412cf34a8fc4 / tree90f62f507b7546cf0a2eb3313db602238671d928 / snapshot4c18fa477f91b913726069f661dd265c06c2d1fb。此后只有文档，实际HEAD另核。
+当前产品行为候选1c8472299b1c94e2c7813d4356d0412cf34a8fc4 / tree90f62f507b7546cf0a2eb3313db602238671d928 / snapshot4c18fa477f91b913726069f661dd265c06c2d1fb。其后加入流诊断fd92b2ac（正常策略未改），当前源码/验证见下文，实际HEAD另核。
 
 **Iroh46候选仅单元/便携scope通过，物理恢复验收失败，不能当最终方案。** 主vendor55含候选46（Iroh1–41/45/46、Noq1–12），42–44仍隔离。46在已有有限恢复episode，真实post-episode样本重返实测pre-fault质量时仅首次刷新quality窗口；历史值不当新样本/可达/收益证据。原3probe（失败/合并也消耗）、250ms、2秒采样、Moving/gain、新packet epoch与重hold均保持。
 
@@ -49,7 +49,7 @@
 
 ## 下一步：定位run5真实承载流单向停顿
 
-先用实际绑定carrier的收发进度/外层Noq stats补诊断，源与门冻结后再有限运行，不能第七次原源盲重跑。**尚未写新的流进度诊断或改策略**；下面是证据/计划，非实现。
+先用实际绑定carrier的收发进度/外层Noq stats补诊断，源与门冻结后再有限运行，不能第七次原源盲重跑。**流诊断已实现并通过LinuxNode全12，首物理诊断在跑；策略未改**。以下先列原失败证据，准确当前句柄见本节末。
 
 run5 6aa：quality_since=None、quality_steps0，没有postfault质量刷新或answered，不能把此前质量窗口问题当此轮根因。X两Custom copy的RTT计数48/53不增长但last_received偶尔更新；Y两copy计数48/49及收包时刻停在故障前、PTO增长。两个方向无内层Go，载体约21秒后结束；4预约2episode预算绿。这表明单向数据面仍有缺口，尚不能定因Noq/转发/46。
 
@@ -97,3 +97,5 @@ refs最近只读审计191453Z为457refs/64control/363explicit receipts+94legacy�
 21:04 UTC：db9cb1c3 stream诊断beb35913已终态81.964秒/11files/group空/identity；fmt及net67（原1ignored）绿，Node编译两处E0308：incoming_wire为Option<usize>。已修诊断身份为Option，X真实outer用Some、中间incoming/receiver允许None，不unwrap/不伪造0；缺ID不能作跨端精确关联。尚无Node/物理通过结论。无额外heavy，准备v3准确源。
 
 21:07 UTC当前唯一重型：turing-20261110T210521Z-3e49bad9（net-node诊断v4），PID2895702，21:05:42 UTC启动；fd92b2ac177a4054aad1e96f3ca30fe16d1e75ea/tree45ddec136ba973a32fd0dbae93d3ed590e8b6559/snapshotbaa0800f51609169c6a0d59258ca8002272df31b/control68cad。尚在Node编译/回归，未提交新的物理。v3 5d99仅修Option后未提交，v4只手工换行105字符构造签名，保留独立source JSON。normal splice与1c逐字hash核，diagnostic source audit已存；没有行为通过声明。Mac本轮尚无新任务。
+
+21:15 UTC：流诊断v4 fd92b2ac/tree45ddec13/snapshotbaa0800f在Linux3e49bad9已终态315.140秒/21files/group空/identity核，fmt/net67（原1ignored）及全12组/hop55/wires16/budget30/resume1绿、STOP32/32，正常分支回归通过。Mac流诊断版未单独执行；不作跨OS/性能声明。当前唯一重型 **turing-20261110T211143Z-d1113762**，PID2902304，21:12:05 UTC启动，原physical profile+stream Tap，精确v4/control68cad。新plan carrier-stream-progress-diagnostic-plan-v1.json在首物理前登记，最多3次、0重试，首次重现且定位或3次后停止；全部结果保留，不并入旧六次验收。解析器记录每端wire/stream/方向的真实偏移及last OBSERVED state，pending不当持续阻塞/活任务证据，必须关联结束与对端read。21:15仍running，未采集，不重发。Mac/其他Turing重型无并发。
