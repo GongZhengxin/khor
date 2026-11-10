@@ -134,3 +134,11 @@ v5 ef0bfa7e/tree d635e42951140ed36ca0e41f586bfc9569940cb1/snapshot31e10e49c71361
 22:19 UTC：第三baseline fe3f8fcb已终态168.293秒/16files/group空/identity，原124/124、warm51/51、独立X3386.396/Y3596.237ms全绿，probe/ACKcost/stream各原审计保留。固定集合未完成，不当总体改善。第四candidate提交中（exec session97585须先poll），仍固定2892/tree909e/f3a；当前新加测试不进入该已冻结snapshot。
 
 新source-only独立确认身份合同：vendor/iroh/src/socket/remote_map/remote_state/confirmation_identity_tests.rs三项whole SHA395341c56e7c3024505be5a838d8f1fa298e63066d33de1c237a0793b9a02b43。quality/age选一个代表，但samples_after当前取任意copy的最大新观察数，可能借另一copy确认旧质量；两负控分别0/1代表新样本不应借其他copy的2、正控代表改变后使用新代表自己的4。仅通过真实Reading::observe的有效PathStats输入，不直接写recent/changed，不改生产；原baseline whole ae62与原测试字节不变，无Iroh47。尚未提交远端，第四物理结束后先取旧行为红；不是f8/6aa定因，仍欠实际performance/稳定性验证。
+
+22:19 UTC第四物理已明确启动：**turing-20261110T221818Z-e712a6f2**，PID2984471，22:18:40 UTC，固定最后candidate2892/tree909e/f3a/control68cad；无第五次。当前唯一重型，Mac无heavy。新增确认身份三合同已提交source-only41c2ca987e5ddfbfe4278da88dceb0e047a51bf7/tree6b0262dae35fabd834bac6a317bceb016c1dac90/snapshot6b307dce542ea16b8f804df78a848e6e1f8bfffc，未改变行为、未远端验证；后续old-source-v1 JSON已存，必须等e712结束后再原net-vendor取旧红，不并发计时实验。
+
+22:24 UTC固定四次全部完成，未额外重跑：末候选e712a6f2终态226.594秒/16files/group空/identity，原124/124、warm51/51、独立X3703.047/Y3670.630ms均绿。全集C1绿1红（7.307秒），B1绿、1次独立双向约5.4秒红且尾诊断缺口，496/496业务全成功不替代两四秒门。全部identity、终态与source ledger核，完整集合path-probe-prompt-ack-physical-fixed-four-result.json，Noq13仅协议及时性scope、不接受为N1物理方案、不重现或解决6aa。首对独立原时间差C相对B为X+1870.119/Y-1884.024ms（B正式warm/cost未知）；次对X+316.651/Y+74.393ms，描述值不作显著性/p99。3份完整实际计数各4copies，第二对reads_finished enclosing C353/B313 innerTx datagrams、C47/B16 IMMEDIATE_ACK，负载/切换时序/ACK合并不同，不把差额全归因补丁，不推outer/手机能耗。
+
+当前唯一重型 **turing-20261110T222346Z-b0146293**，PID2992930，22:24:08 UTC启动，原net-vendor旧行为测试，source-only41c2/tree6b0262/snapshot6b307d/control68cad，包含三确认身份合同、原策略未改。待终态取实际红绿；无Mac重型、无phone。19:52 UTC锚原N1 2–4小时窗口仍到23:52，目前已用约2小时半，不保证到点关闭硬红；完整N0–N5原3–5工程日量级保留非承诺，手机/IPv6/能耗欠验。
+
+22:26 UTC旧确认身份 b0146293终态59.867秒/13files/group空/identity、fmt/Noq443绿，iroh56pass/2FAIL：两个旧行为确实以其他copy的2覆盖代表自身0/1，原55及代表改变控制绿，home未跑。修正候选Iroh47只samples_after取同一代表，4处调用（Moving/首恢复/退化/自然停止）统一证据，原window/时限/门/3次预算保留，实际可能使用更多原预算，须量测。全57patch候选、42–44隔离，whole395341与原ae62不变。未编译/物理未验，不作f8或6aa定因。

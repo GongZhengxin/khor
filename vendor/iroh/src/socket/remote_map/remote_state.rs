@@ -3053,11 +3053,10 @@ impl Measured {
     /// separate observation ticks of packets sent after the move began;
     /// a backlogged ACK must not confirm a post-stall round trip.
     fn samples_after(&self, road: &transports::FourTuple, after: Instant) -> usize {
-        self.rtts.values()
-            .filter(|r| r.road == *road)
-            .map(|r| r.changed.iter().filter(|(sent, _)| *sent > after).count())
-            .max()
-            .unwrap_or_default()
+        // khor patch 47: confirmation belongs to the same copy as road quality.
+        // A different copy's ACKs cannot make the representative's old quality fresh.
+        self.representative(road)
+            .map_or(0, |r| r.changed.iter().filter(|(sent, _)| *sent > after).count())
     }
 }
 
