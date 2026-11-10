@@ -99,3 +99,5 @@ SSH BatchMode/ForwardAgent=no/StrictHostKeyChecking=yes；无个人key/PAT/agent
 09:59：第二回归6ba仅新增cfg(test)Wires实例gate+独立retirement2tests，production无gate/新锁/等待；新fixturewhole freeze见retirement-epoch-fixture-freeze.json，原whole11与wake2不改。先真实retire released-slot→新adopt+echo→旧finish的旧Asleep提交红，之后才移提交；Turing任务可能先有fmt/setup失败，须据实际日志分类，不伪称运行时红。
 
 10:06当前源码LEFT_ALONE_FOR600秒，只抑制后台pump；前台请求不因backoff被直接拒绝，但仍须核gone-short-dial与cached dial failure/epoch等入口。第二退役gate 13d仅fmt红，2e修assert_eq排版后新whole已重冻，业务断言不变。当前root元数据358refs/64controls/45ops全核，09a唯一pending。不要将首次fmt当runtime红；收集/verify完成后据wires-unit实际assert判定。
+
+10:10：09a/2e46实际runtime wires14/1红（replacement真实echo后，旧retire结束再次left_alone），原11+wake2+current-suspended负向绿，116.311秒/12artifacts/原group空；其余node未执行。候选只将Asleep标记移至retire_slot持槽锁阶段，after_retirement不再迟写；现有slot→gone顺序已审，无持gone再取slot路径，adopt发布后back清除。所有原/new whole不改，cfgtest gate不进生产；新serving并发/直接DialFailureAsleep/地址epoch仍未覆盖，不能称现场全修。

@@ -973,13 +973,15 @@ impl Wires {
             // adopted next clears it after publishing its own connection.
             self.went_down(id);
         }
+        if why == Retired::Asleep {
+            // Commit under the old slot's ownership. A later adoption
+            // publishes its replacement before clearing this old state.
+            self.asleep(id);
+        }
         self.counts.retired(why);
     }
 
     fn after_retirement(&self, id: &str, why: Retired) {
-        if why == Retired::Asleep {
-            self.asleep(id);
-        }
         if matches!(why, Retired::Unanswered | Retired::Silent) {
             self.let_go_served_by(id, why);
         }
