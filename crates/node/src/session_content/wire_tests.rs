@@ -23,6 +23,9 @@ mod util;
 #[path = "ipc_process_tests.rs"]
 mod process_contracts;
 
+#[path = "quic_cancel_tests.rs"]
+mod quic_cancel_contracts;
+
 #[derive(Default)]
 struct Gate {
     count: AtomicUsize,
