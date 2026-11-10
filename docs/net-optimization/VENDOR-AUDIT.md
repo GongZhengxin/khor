@@ -128,3 +128,8 @@ Noq1/5缺少专门行为覆盖的状态不变。没有升级、删补丁或发�
 ## Iroh45 cold IP hint候选
 
 新的公共API只送既有actor，执行时重读live连接；拟只撤掉失败前的IP来源，不撤Relay/Custom和更新的地址。当前scaffold不改地址簿。证据锚3a7424b7（prepare完成1985ms仍UnknownIssuer），新state/live guard合同先红再实现，原439/50/9保持。首次失败边界不是完整network/address epoch，不替代N4/手机；42–44编号仍由隔离试验占用。
+
+
+## Iroh46候选：已知故障前水平的首次恢复刷新
+
+主vendor55（Iroh1–41/45/46、Noq1–12），42–44仍隔离；新增46未全面验收。原c775/eec09ec1 Noq439/path53pass2FAIL（旧50及3负控过）→1c847229/5c2e4ff2 Noq439/path55/home11绿，同whole ae62和旧测试尾。首个pre-fault真实Reading作为恢复期触发提示，真实新样本回到其水平只准首次重建质量窗口；不能把旧值当新样本/可达/收益证据。原3probe/250ms/2秒、Moving与gain/新包epoch/重hold保持，无新task/map/timer/强conn。详KHOR46及fixture freeze。双OSNode在跑，物理三组前瞻对照/quiet成本/动态/手机待，不升格unit结论。上游等价有限epoch/实测历史确认尚未核，不删除其他补丁或依赖。
