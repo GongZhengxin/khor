@@ -477,55 +477,63 @@ impl Node {
     /// middle when the roadbook names one. Quietly nothing when no hop is
     /// wanted, none can be had, or it takes past [`HOP_WITHIN`]: the dial
     /// goes on without it.
-    pub(crate) async fn hop_ahead(&self, ep: &iroh::Endpoint, y: &crate::DeviceInfo) {
-        // The cheap answers first: this runs before every dial.
-        if !self.hop_on() || y.id.parse().is_ok_and(|p| self.carry.has(&p)) {
-            return;
-        }
-        let Ok(all) = self.devices() else { return };
-        let me = self.device_str().to_owned();
-        let mine = all
-            .iter()
-            .find(|d| d.id == me)
-            .map(|d| self.roads_of(d))
-            .unwrap_or_default();
-        if !self.wants_hop(y, &mine) || missed_lately(&me, &y.id) {
-            return;
-        }
-        let rows: Vec<(String, bool, bool)> = all
-            .iter()
-            .map(|d| {
-                (
-                    d.id.clone(),
-                    d.sponsor.is_some(),
-                    crate::pause::peer_on(self.root(), &d.id),
-                )
-            })
+    pub(crate) fn hop_ahead<'a>(
+        &'a self,
+        ep: &'a iroh::Endpoint,
+        y: &'a crate::DeviceInfo,
+    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send + 'a>> {
+        // This explicit cold-path boundary also breaks Send inference through
+        // hop -> middle dial -> hop, while held-wire requests stay unboxed.
+        Box::pin(async move {
+            // The cheap answers first: this runs before every dial.
+            if !self.hop_on() || y.id.parse().is_ok_and(|p| self.carry.has(&p)) {
+                return;
+            }
+            let Ok(all) = self.devices() else { return };
+            let me = self.device_str().to_owned();
+            let mine = all
+                .iter()
+                .find(|d| d.id == me)
+                .map(|d| self.roads_of(d))
+                .unwrap_or_default();
+            if !self.wants_hop(y, &mine) || missed_lately(&me, &y.id) {
+                return;
+            }
+            let rows: Vec<(String, bool, bool)> = all
+                .iter()
+                .map(|d| {
+                    (
+                        d.id.clone(),
+                        d.sponsor.is_some(),
+                        crate::pause::peer_on(self.root(), &d.id),
+                    )
+                })
+                .collect();
+            let legs = match (self.no_relay(), y.no_relay) {
+                (true, _) => Legs::NoRelay,
+                (false, true) => Legs::ToNoRelay,
+                (false, false) if self.wires.link(&y.id).road.is_none() => Legs::Recovery,
+                (false, false) => Legs::Dial,
+            };
+            let picked: Vec<String> = middles_with_cost(
+                &me,
+                &y.id,
+                &rows,
+                |b| self.road_for_hop(b, &mine),
+                |b| {
+                    all.iter()
+                        .find(|d| d.id == b)
+                        .and_then(|d| self.roads_of(d).into_iter().find(|r| r.to == y.id))
+                },
+                legs,
+            )
+            .into_iter()
+            .map(|(b, _)| b)
             .collect();
-        let legs = match (self.no_relay(), y.no_relay) {
-            (true, _) => Legs::NoRelay,
-            (false, true) => Legs::ToNoRelay,
-            (false, false) if self.wires.link(&y.id).road.is_none() => Legs::Recovery,
-            (false, false) => Legs::Dial,
-        };
-        let picked: Vec<String> = middles_with_cost(
-            &me,
-            &y.id,
-            &rows,
-            |b| self.road_for_hop(b, &mine),
-            |b| {
-                all.iter()
-                    .find(|d| d.id == b)
-                    .and_then(|d| self.roads_of(d).into_iter().find(|r| r.to == y.id))
-            },
-            legs,
-        )
-        .into_iter()
-        .map(|(b, _)| b)
-        .collect();
-        // Keep the cold preparation state out of every enclosing dial and
-        // resident request's future, including requests that need no hop.
-        Box::pin(self.open_hop(ep, y, &all, &picked)).await;
+            // Keep the cold preparation state out of every enclosing dial and
+            // resident request's future, including requests that need no hop.
+            Box::pin(self.open_hop(ep, y, &all, &picked)).await;
+        })
     }
 
     /// **Opens a hop to `y` through the first of `picked` that answers**

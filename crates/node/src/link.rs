@@ -3519,7 +3519,7 @@ impl Node {
         // and finite usage lease through adoption, so dropping a losing
         // preparation cannot withdraw the winner's carried stream.
         let _using = self.wires.pending_dial(&d.id);
-        let mut hop = Box::pin(self.hop_ahead(ep, d));
+        let mut hop = self.hop_ahead(ep, d);
         let preparation: Option<HopPreparation<'_>> =
             if may_hop { Some(hop.as_mut()) } else { None };
         let outcome = if may_hop {
