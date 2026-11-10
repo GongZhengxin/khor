@@ -253,3 +253,12 @@ Turing稳定源码缓存首/复用同快照206/207均fmt/net66+1ignored绿，bui
 
 
 215进一步取得物理前置：fresh双栈namespace真实IPv6同/64换址，三阶段内核记录确认旧址退出、新址存在且可达，IPv4地址及连通性保持；8packet正反控制全过。该校准为后续Node迁移实验建立注入几何，不冒充业务恢复或手机体验；IPv4/NAT映射、IPv6前缀变化、peer-relay移动、实际macserver↔Turing与iPhone仍未完成。执行器format错误路径也经小Git/stub合同红→绿，避免formatter污染稳定源码缓存；后续新mobility Linux任务自行先格式检查，减少不必要跨机往返。
+
+
+## 2026-11-10：手机自动接管失败与三个休眠状态竞态
+
+用户回Wi-Fi后MacLab不通而Turing/hinton/lecun可达，并明确中继/peer relay未及时接管；恢复依赖反复关开iPhone App，某次才经Turing成功。记为**自动恢复失败/人工恢复**，并未独立证明OS process restart。已装混合版本采样与CLI总耗时不能替代phone→MacLab准确恢复SLO、当前候选或能耗验收。
+
+源码找到并各自真实红绿验证三个有限问题：同tick旧suspended关闭覆盖新wire已收包；旧retire释放slot后迟到Asleep覆盖新adopt；旧拨号Asleep提交/排队失败复用覆盖同peer真实反向连接。前两项3a3及f9各自同source双OS全net-node绿；第三项fccc/tree714/snapshot2b5/control68，Mac旧543/42806129212实际24/2红→42806745387的26绿，Linux61121d16的30绿，双方全部12 profile绿，原whole tests与新whole fixture保持。peer-contact-fixture-freeze.json仅该scope true，field_phone_issue_resolved=false。修复无生产timer/probe/重放，120/600秒安静与原退避/总期限保留；没有安装到手机或改生产进程。
+
+所有负面记录保留：最初fixture格式、cleanup panic、pulse字段编译遗漏、Mac反向握手setup超时与portable fixture修订；Linux99534d56原remote32在private-node pairing准备60秒超时，观察过Cargo DN等待但因果未证。原源码/控制/fixture/期限复测611全绿不抹去该失败，也不关闭独立pairing稳定性。下一正验证取消半成品peer relay的所有权，之后才实施并行寻路与网络/地址epoch缓存失效；这些尚未接受。
