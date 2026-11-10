@@ -282,3 +282,6 @@ mod early_fallback;
 
 #[path = "pending_drop_tests.rs"]
 mod pending_drop;
+
+#[path = "normal_release_tests.rs"]
+mod normal_release;

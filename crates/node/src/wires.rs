@@ -434,6 +434,8 @@ pub(crate) struct Wires {
     #[cfg(test)]
     pending_drop_test_gate: Mutex<Option<PendingDropTestGate>>,
     #[cfg(test)]
+    normal_release_test_gate: Mutex<Option<PendingCarrierTestGate>>,
+    #[cfg(test)]
     early_dial_observer: Mutex<Option<tokio::sync::oneshot::Sender<bool>>>,
     #[cfg(test)]
     early_failure_observer: Mutex<Option<tokio::sync::oneshot::Sender<String>>>,
@@ -1004,6 +1006,47 @@ impl Wires {
         if let Some(gate) = gate {
             let _ = gate.entered.send(0);
             let _ = gate.release.await;
+        }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn gate_normal_release_for_test(
+        &self,
+    ) -> (
+        tokio::sync::oneshot::Receiver<u64>,
+        tokio::sync::oneshot::Sender<()>,
+        tokio::sync::oneshot::Receiver<()>,
+    ) {
+        let (entered, ready) = tokio::sync::oneshot::channel();
+        let (release, released) = tokio::sync::oneshot::channel();
+        let (reviewed, completed) = tokio::sync::oneshot::channel();
+        *self
+            .normal_release_test_gate
+            .lock()
+            .unwrap_or_else(|p| p.into_inner()) = Some(PendingCarrierTestGate {
+            entered,
+            release: released,
+            reviewed,
+        });
+        (ready, release, completed)
+    }
+
+    #[cfg(test)]
+    pub(crate) async fn hold_normal_release_for_test(
+        &self,
+        attachment: u64,
+    ) -> Option<tokio::sync::oneshot::Sender<()>> {
+        let gate = self
+            .normal_release_test_gate
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .take();
+        if let Some(gate) = gate {
+            let _ = gate.entered.send(attachment);
+            let _ = gate.release.await;
+            Some(gate.reviewed)
+        } else {
+            None
         }
     }
 

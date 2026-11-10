@@ -6,6 +6,10 @@
 
 ### 最新覆盖状态（优先于下方历史段落）
 
+- **最新分项153263c2/treeee002acd/snapshotf4c5f390已双OS闭合cold stale-IP scope**：Linux8adb26d3全12/hop44/wires15/budget30/resume1（256.669秒/21files/group空/identity核），Mac42869844599同canonical全12/hop44/wires15/budget26/resume1，exact13790105312/20files/11control blobs核。vendor1e1264ef Noq439/path50/home11绿。两freeze仅scope true/field false；不是完整epoch/手机恢复或N0–N5接受。
+- **initial Drop真实红已采核**：e4eb1357/tree01ae0d83/snapshot9fa1bf91，Linux9bb7adf7实际46项45/1，新pending+真实TLS/echo进入后carrier被旧Drop拆；无successor及原44全过，142.192秒/11files/group空/identity核。a98仅格式另存。当前Drop候选复用原pending admission锁+live检查+exact serial撤回，需保留时交给既有watcher，无新生产task/timer；未测不接受。
+- 新增normal-release旧行为合同/cfg(test)暂停点，实际原两次LOOK_EVERY=5秒后新pending与未登记incoming carried-only TLS/echo进入，保留独立IP/outer和无消费者释放控制；生产normal release仍旧。下一run兼测Drop候选/normal旧行为，不把整组预期红记为全绿。
+
 - **cold fallback同canonical Linux8adb26d3实际hop44已绿**：旧IP身份握手失败后新carrier成功读Sessions、NO_ROUTE无业务请求、live-wire hint撤回负控均过；全12组尚在执行，不先接受。Mac已提交相同source（回执以ledger/dev runs为准），未部署手机。
 - 当前仅新增下一合同pending-drop fixture/cfg(test)同步暂停点：旧opening Drop观察无人使用后、实际detach前，让新有限pending lease与真实未登记carried TLS/echo进入；另有无successor正常清理控制。未改Drop产品行为，先取旧红。freeze保留published旧whole为prefix；未验证，不与cancelled-watcher分支的已接受scope混淆。
 

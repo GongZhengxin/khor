@@ -258,17 +258,19 @@ impl PendingHop {
 
 impl Drop for PendingHop {
     fn drop(&mut self) {
-        if !self.committed
-            && (self.wires.carrier_in_use(&self.id)
-                || self.wires.pending_dial_done(&self.id).is_some())
-        {
-            self.hand_off(true);
-        }
         if !self.committed {
             #[cfg(test)]
             self.wires.hold_pending_drop_for_test(self.attachment);
-            self.links
-                .detach_attached(&self.peer, Carrier::Hop { via: self.via }, self.attachment);
+            let withdrawn = self.wires.withdraw_carrier_if_idle(&self.id, || {
+                self.links.detach_attached(
+                    &self.peer,
+                    Carrier::Hop { via: self.via },
+                    self.attachment,
+                );
+            });
+            if !matches!(withdrawn, Ok(true)) {
+                self.hand_off(true);
+            }
         }
     }
 }
@@ -749,7 +751,13 @@ impl Node {
                     0
                 };
                 if held >= 2 {
+                    #[cfg(test)]
+                    let reviewed = wires.hold_normal_release_for_test(attachment).await;
                     release_hop(&links, &id, peer, via, attachment, road, held, comparison);
+                    #[cfg(test)]
+                    if let Some(reviewed) = reviewed {
+                        let _ = reviewed.send(());
+                    }
                 }
             }
         });
