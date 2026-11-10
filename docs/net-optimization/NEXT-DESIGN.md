@@ -590,3 +590,13 @@ close_offer原整个文件保持70af完整前缀，只尾附queued_close模块�
 2026-11-10T16:44:04.567291+00:00：后续early fallback合同优先用真实换址case：目标旧IP现属另一个EndpointId（正确ALPN、不同新key），客户端必须真正收到身份校验失败（不能只看server事件）；收到client失败只读test one-shot后，才放唯一可信middle的转发许可。用实际Sessions响应/单次count、同一绝对caller budget和无route拒绝负控；原middle Ask在首失败前已实际进入。优先stale-IP/wrong-identity，避免把有意resting/paused的CONNECTION_REFUSED当可绕过。若Noq仍记旧IP妨碍新carried握手，保留真实红并按地址/epoch修，不把错误地址改为恰好静默或放大期限。cfg(test)失败事件只观察真实Err、不等待/替代错误。此fixture/helper尚未写。
 
 2026-11-10T17:02:19.073476+00:00：stale-IP client真Refused→middle准入的旧263e5ce8实际42/1红，negative和原41绿。候选只对未曾发early task的cold Refused和初始无carrier补1次新carried普通握手；先等待已有hop准备，都沿同一dial_by，而不是重新调用dial重开10/25秒预算或另起两个ordinary候选。原started/journal一次；early_data在spawn前保守置true，之后失败不走fallback。当前常量DIAL_TIMEOUT=10s、DIAL_MOST=25s，以源码为准，早文档5/25只是错误口径，已不再用。若candidate仍被旧IP选择影响，保留红再查实际Noq路径，不放宽原2秒caller。
+
+
+## 2026-11-11：当前批之后的恢复合同
+
+153263c2的cold错误身份→peer relay接管已在同canonical双OS全12/hop44验证；801dff9e的initial Drop/normal release消费者保护仍候选，实际回执查STATE。以下是下一合同，不写成已实施或手机事故根因。
+
+1. **仅入站可达的middle**：Wires::link/live只查看本机adopt的outgoing slots；serving单独保留incoming weak handle。road_for_hop和Recovery live排序因此可能只看到旧roadbook。真实fixture先只建立middle→本机的认证连接、登记serving且不adopt，保持实际字节往返，再让本机在原总预算中经该middle救通目标；另留incoming carried/recursive、关闭/陈旧和错误ALPN控制。不能把任意incoming连接直接充当客户端Tunnel：出站端未必运行接收请求的serve_tunnel。可利用已验证的入站路径事实选候选，再建立原协议要求的有限Tunnel；只有实际双向服务合同成立才复用连接。按实际测量排成本，不恢复Direct硬优先。
+2. **本机网络代际与旧完成事件**：Wake::Network(Addrs)目前只forgive_all，其余Path/Wake/resume调用network_changed；hop的MISSED/LOST与这些状态分离。先真实建立一次NO_ROUTE/miss，再在未满原冷却时发实际换网入口/恢复事件、让同一middle许可，要求新尝试能成功；同时在旧尝试仍未完成时换网，旧失败不得在新网重新写冷却。不是无条件清空所有全局表，也不能让每个普通ACK刷新代际而取消后台退避。
+3. **peer/middle IPv4与IPv6改变**：身份保持，区分地址变化、仅来源标签改变和网络变化，按实际候选/可信地址世代失效；需要单独v4、v6、同时变化、同地址来源改变控制。Iroh45的本地source时间边界只解决一次idle cold失败，不是签名地址世代，不把重新发现的旧IP当作永久禁用。
+4. **正常watcher成本与更广admission**：两个新pending合同只覆盖有限调用owner。无pending的入站登记、正常准备完成但未使用carrier、unknown path snapshot与旧比较结果需各自实际合同；必要时扩同一个明确owner/admission边界，不能靠新常驻task、无限lease或减短LOOK让问题消失。仍测原N3字节/唤醒/能耗。

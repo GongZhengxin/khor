@@ -1,6 +1,6 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-10 18:08 UTC（新加坡 11 月 11 日凌晨）。本页只记录当前状态；全部此前段落逐字保存在 [历史](HISTORY-20261111-before-current-state-compaction.md)，历史内部还有更早链。不得删除历史失败、用新绿覆盖旧红，或将历史中的运行句柄误当当前。
+更新：2026-11-10 18:23 UTC（新加坡 11 月 11 日凌晨）。本页只记录当前状态；全部此前段落逐字保存在 [历史](HISTORY-20261111-before-current-state-compaction.md)，历史内部还有更早链。不得删除历史失败、用新绿覆盖旧红，或将历史中的运行句柄误当当前。
 
 ## 授权、范围与工作位置
 
@@ -14,6 +14,16 @@
 
 ## 最新已验证分项
 
+**`801dff9e71b610a205fb6253a8502ae8182e0b15`**，tree `9ba7af025b8856d19a537bcd54696ea97c08192b`，snapshot `7bbffc722697f90feb4f8756979520cae9e2846d`。
+
+- Linux `turing-20261110T181408Z-aa81601a`：全12组，hop48/wires15/budget30/resume1；278.840秒、21files、group空、identity及实际summaries核。
+- Mac `42873590614`：同canonical全12组，hop48/wires15/budget26/resume1；exact artifact `13790762470`、20files、11control blobs核。目录 `mac-42873590614-hop-withdrawal-two-owners-v1`。
+- 只闭合两个有限pending消费者合同：initial PendingHop::drop撤回与新pending准入同一决定；normal watcher在同admission锁内检查新pending/live使用并复核当前road/all-live comparison，一致才撤自己exact serial，否则原两LOOK从0重看。无新生产task/timer/延长预算。无消费者仍释放的两个控制也过。
+- `pending-drop-fixture-freeze.json` / `normal-release-fixture-freeze.json` candidate true / field false；更广无pending入站登记、unused carrier生命周期和网络epochs未闭合。原9bb7adf7 45/1、74d8633c 47/1红保留。c188/61511a4c与Mac42872979659仅格式，后者exact13789109409/9files/11control blobs核，均无行为结果。
+- vendor代码与下列153分项相同，仅账本文档更新；没有为无代码变化重复跑vendor。图谱+定向diff审阅仍标剩余边界，不能称整包完成。
+
+### 上一cold stale-IP分项
+
 **`153263c2df33d73f652a4d42691fba0307f873d4`**，tree `ee002acdb61286aec395dae2a54cef2418e18566`，snapshot `f4c5f39034e9493cba57bc942f134fc7415819f5`。
 
 - Linux `turing-20261110T175147Z-8adb26d3`：全12组，hop44/wires15/budget30/resume1；256.669秒、21files、group空、identity与实际summaries核。
@@ -25,25 +35,15 @@
 
 此前已闭合的窄范围仍保留：sole-peer Recovery准入、慢middle不挡快普通拨号、有限pending lease、cancelled watcher successor、live middle先于两条旧低RTT缓存、cold/resumed读取并行；以及取消/响应owner/STOP/peer contact/actor conditional carried close。具体红绿源、双OS回执与限制见历史及对应freeze，不能升级成全部入口/所有代际已安全。
 
-## 当前候选与正在跑的任务
+## 当前任务与下一步
 
-最新覆盖（18:11 UTC）：74d8633c已终态采核，48项47/1，只有normal新pending消费者被旧释放误拆；其无消费者控制、initial Drop候选两项及原44全过，162.286秒/11files/group空/identity核。两处baseline freeze true；候选仍不接受。当前normal产品WIP：同pending admission锁内再核当前road与所有live连接comparison，只有与两LOOK结论一致才撤自己serial；有pending/实际carried使用/事实变化均保留，held重新从0开始沿原5秒周期观察。无新生产task/timer，未改LOOK/测量收益/信任/总预算。
+截至18:23 UTC，本批所有已提交Mac/Turing任务已终态采核，无运行中的采样/重型任务；恢复先查ledger是否后来新增，不重发旧run。当前仅NEXT-DESIGN文档改动，核git实际WIP。
 
-下列56eb为已采核旧normal源，74d8633c不再运行；新candidate回执待登记，恢复先查ledger。
+下一合同：正常publication完成后，原主连接消失且无人使用的prepared carrier必须释放；有新有限pending或实际incoming carried-only使用者时保留，owner结束后重新判断。不缩LOOK=5秒/两次观察，不加常驻task/timer，先真实旧红再修，仍保留exact serial与原所有连接比较。
 
-最新提交（核实际git）：`56eb822a40f1caca20163ddd9659357d4792c591`，tree `76d617b48297eac5f0ff131adc6d70956865da42`，snapshot `3b992170a63a2fdce192b4c41ed5ffc3c1d7338a`。
+随后继续：incoming-only首腿、NoRelay/ToNoRelay缺失提示；MISSED/LOST冷却和IPv4/IPv6/本机与peer/middle网络代际、旧完成事件不能污染新网；accepted写job/晚到loser/N1物理恢复/N3成本/N4/N5。下一合同的具体方案在NEXT-DESIGN新增章节，不是已实施承诺。
 
-1. **initial PendingHop::drop 候选未接受**：复用 pending admission 锁，在同一决策内检查新pending/live使用并撤自己exact serial；有消费者交既有watcher，无新生产task/timer。旧行为已真实红：`e4eb1357` / Linux `turing-20261110T175953Z-9bb7adf7` 46项45/1，新pending+真实未登记carried TLS/echo进入后carrier被旧Drop拆；无successor与原44全过，142.192秒/11files/group空/identity核。格式首 `a98e1b6d` 保留。
-2. **normal publication watcher仍旧产品行为**：新增真实两次原LOOK_EVERY=5秒后、新pending+未登记incoming carried-only TLS/echo进入的合同；独立IP/outer仍应可用，无消费者仍应释放。cfg(test)暂停点不改变正式版时序。
-3. 已采核的 Turing baseline **`turing-20261110T180659Z-74d8633c`**，PID2698867，18:07:21 UTC启动，task net-node，source为上列56eb。回执 `evidence/net/<run>/receipt.json`；本轮兼测Drop候选/normal旧行为，预期即使normal红也不能称全组绿。不得重复提交。前 `60cfd819` 仅格式43.722秒/10files/group空，已采核并应用远端patch；没有行为结论。
-4. `pending-drop-fixture-freeze.json` baseline true/candidate false；`normal-release-fixture-freeze.json` baseline/candidate均false。原published whole保留为prefix，新合同原时间/字节/清理不削弱。
-
-## 下一步（连续推进）
-
-- 74d8633c已采核47/1；现在验证两个释放候选同canonical双OS，不重复收/重提交旧run。
-- 若normal实际正向红而无消费者控制及原46绿，再最小修normal释放：pending admission保护撤回，同时复核当前所有连接/比较，不能拿旧comparison误拆新owner，也不绕过原两LOOK测量规则。保持相同fixture和原预算；随后同canonical双OS全12与必要vendor，才接受两个新scope。
-- 如果是fixture/格式/编译失败，保留该attempt并分类，不当行为红/候选绿，不盲重跑。
-- 之后继续：incoming-only首腿、NoRelay/ToNoRelay缺失提示；MISSED/LOST冷却和IPv4/IPv6/本机与peer/middle网络代际、旧完成事件不能污染新网；accepted写job/晚到loser/unused carrier成本。不能仅清缓存就宣称完整epoch。
+新合同旧源/候选/fixture/hash分别留证，不能拿fmt/compile失败当行为红，不能拿分组绿当全量绿。原始initial Drop与normal旧行为回执均已采核，不重复收集覆盖。
 
 ## 完整范围的未完成项
 
@@ -79,4 +79,4 @@
 
 ## 对用户的估时口径
 
-16:20 UTC已告知：下一份可评审候选约2–4工程小时（原锚点18:20–20:20 UTC），完整N0–N5含真机/换网/能耗仍3–5工程日量级。原13:00 UTC的4–6小时只指下一批，已向用户解释此前口径不清及新增缺陷造成延后。不得每次compact或状态询问无声重置起点；这些是工作量估计，不是完成保证。用户现在询问进度，已简答并持续执行。
+16:20 UTC已告知：下一份可评审候选约2–4工程小时（原锚点18:20–20:20 UTC），完整N0–N5含真机/换网/能耗仍3–5工程日量级。原13:00 UTC的4–6小时只指下一批，已向用户解释此前口径不清及新增缺陷造成延后。不得每次compact或状态询问无声重置起点；这些是工作量估计，不是完成保证。18:23 UTC本批可评审候选已双OS全12/hop48闭合其scope，在原预计区间内；完整计划仍未完成，继续执行。
