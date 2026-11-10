@@ -13,6 +13,9 @@ struct Tap<T> {
     stream: String,
     read: u64,
     written: u64,
+    last_read_at: Option<u64>,
+    last_write_at: Option<u64>,
+    flushed_written: Option<u64>,
     pending: [bool; 4],
 }
 
@@ -32,25 +35,46 @@ impl<T> Tap<T> {
             stream,
             read: 0,
             written: 0,
+            last_read_at: None,
+            last_write_at: None,
+            flushed_written: None,
             pending: [false; 4],
         }
     }
 
     fn record(&mut self, index: usize, operation: &str, state: &str, bytes: usize) {
-        if state == "pending" && self.pending[index] {
+        let was_pending = self.pending[index];
+        if state == "pending" && was_pending {
             return;
         }
         self.pending[index] = state == "pending";
-        if index == 0 {
-            self.read = self.read.saturating_add(bytes as u64);
-        } else if index == 1 {
-            self.written = self.written.saturating_add(bytes as u64);
+        if bytes > 0 {
+            let at = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map_or(0, |d| d.as_millis() as u64);
+            if index == 0 {
+                self.read = self.read.saturating_add(bytes as u64);
+                self.last_read_at = Some(at);
+            } else if index == 1 {
+                self.written = self.written.saturating_add(bytes as u64);
+                self.last_write_at = Some(at);
+            }
+            // Keep exact counters without serializing every successful I/O.
+            // A subsequent wait/flush/end reports the accumulated progress.
+            return;
+        }
+        if operation == "flush" && state == "ready" {
+            if self.flushed_written == Some(self.written) && !was_pending {
+                return;
+            }
+            self.flushed_written = Some(self.written);
         }
         khor_net::carry::observe_lifecycle(self.peer, "hop_stream_io", || {
             serde_json::json!({
                 "role": self.role, "wire": self.wire, "stream": self.stream,
                 "operation": operation, "state": state, "bytes": bytes,
                 "read": self.read, "written": self.written,
+                "last_read_at": self.last_read_at, "last_write_at": self.last_write_at,
             })
         });
     }
