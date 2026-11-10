@@ -3882,7 +3882,9 @@ impl Node {
         if matches!(outcome, Ok(Err(DialFailure::Refused(_)))) {
             eprintln!(
                 "[early-fallback-stage] refused early_data={early_data} had_carried={had_carried} preparing={preparing} remaining_ms={}",
-                dial_by.saturating_duration_since(tokio::time::Instant::now()).as_millis()
+                dial_by
+                    .saturating_duration_since(tokio::time::Instant::now())
+                    .as_millis()
             );
         }
         // No early request could have escaped a cold failed handshake.
@@ -3903,8 +3905,12 @@ impl Node {
             #[cfg(test)]
             eprintln!(
                 "[early-fallback-stage] prepared={} carrier={} caller_expired={} remaining_ms={}",
-                ready.is_ok(), self.carried_addr(&d.id).is_some(), crate::deadline::expired(by),
-                dial_by.saturating_duration_since(tokio::time::Instant::now()).as_millis()
+                ready.is_ok(),
+                self.carried_addr(&d.id).is_some(),
+                crate::deadline::expired(by),
+                dial_by
+                    .saturating_duration_since(tokio::time::Instant::now())
+                    .as_millis()
             );
             match ready {
                 Err(elapsed) => outcome = Err(elapsed),
