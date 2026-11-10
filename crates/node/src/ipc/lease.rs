@@ -3,10 +3,16 @@
 
 use std::{future::Future, time::Duration};
 
-use tokio::{io::{AsyncRead, AsyncReadExt}, time::Instant};
+use tokio::{
+    io::{AsyncRead, AsyncReadExt},
+    time::Instant,
+};
 
 use super::{Handoff, validate_handoff};
-use crate::{deadline, proto::{self, MAX_FRAME}};
+use crate::{
+    deadline,
+    proto::{self, MAX_FRAME},
+};
 
 pub(crate) const VERSION: u8 = 2;
 const MAGIC: &[u8; 9] = b"\xffKHORIPC2";
@@ -44,7 +50,10 @@ pub(crate) async fn read(reader: &mut (impl AsyncRead + Unpin)) -> Result<Reques
         let (bytes, by) = if first == MAGIC[0] {
             let mut encoded = [0; HEADER_BYTES];
             encoded[0] = first;
-            reader.read_exact(&mut encoded[1..]).await.map_err(|e| e.to_string())?;
+            reader
+                .read_exact(&mut encoded[1..])
+                .await
+                .map_err(|e| e.to_string())?;
             if &encoded[..MAGIC.len()] != MAGIC {
                 return Err("unsupported IPC lease frame".into());
             }
@@ -53,16 +62,21 @@ pub(crate) async fn read(reader: &mut (impl AsyncRead + Unpin)) -> Result<Reques
             if length == 0 || length > MAX_FRAME || micros == 0 {
                 return Err("invalid IPC length or budget".into());
             }
-            let by = Instant::now().checked_add(Duration::from_micros(micros))
+            let by = Instant::now()
+                .checked_add(Duration::from_micros(micros))
                 .ok_or("IPC budget is too large")?;
             let mut bytes = vec![0; length];
-            deadline::wait(Some(by), reader.read_exact(&mut bytes)).await
+            deadline::wait(Some(by), reader.read_exact(&mut bytes))
+                .await
                 .map_err(|_| "IPC caller deadline expired")?
                 .map_err(|e| e.to_string())?;
             (bytes, Some(by))
         } else {
             let mut bytes = vec![first];
-            (&mut *reader).take(MAX_FRAME as u64).read_to_end(&mut bytes).await
+            (&mut *reader)
+                .take(MAX_FRAME as u64)
+                .read_to_end(&mut bytes)
+                .await
                 .map_err(|e| e.to_string())?;
             if bytes.len() > MAX_FRAME {
                 return Err("IPC payload exceeds its wire budget".into());
@@ -76,7 +90,9 @@ pub(crate) async fn read(reader: &mut (impl AsyncRead + Unpin)) -> Result<Reques
         }
         Ok(Request { handoff, by })
     };
-    deadline::wait(framing_by, request).await.map_err(|_| "IPC frame deadline expired")?
+    deadline::wait(framing_by, request)
+        .await
+        .map_err(|_| "IPC frame deadline expired")?
 }
 
 /// One future owns work, response buffers and permits through the final write.
@@ -95,24 +111,35 @@ pub(crate) async fn within<T>(
                 result.map_err(|_| "IPC caller deadline expired")?
             }
         }
-    }).await
+    })
+    .await
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::{Arc, atomic::{AtomicBool, Ordering}};
+    use std::sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    };
     use tokio::io::AsyncWriteExt;
 
     fn payload() -> Vec<u8> {
-        proto::encode(&Handoff { cookie: "cookie".into(), op: super::super::Op::Hops }).unwrap()
+        proto::encode(&Handoff {
+            cookie: "cookie".into(),
+            op: super::super::Op::Hops,
+        })
+        .unwrap()
     }
 
     #[tokio::test]
     async fn legacy_half_close_remains_a_request_boundary() {
         let (mut writer, mut reader) = tokio::io::duplex(4096);
         let bytes = payload();
-        assert_ne!(bytes[0], MAGIC[0], "a Handoff is an array or map, never negative integer -1");
+        assert_ne!(
+            bytes[0], MAGIC[0],
+            "a Handoff is an array or map, never negative integer -1"
+        );
         writer.write_all(&bytes).await.unwrap();
         writer.shutdown().await.unwrap();
         let request = read(&mut reader).await.unwrap();
@@ -125,32 +152,68 @@ mod tests {
     async fn leased_payload_finishes_without_half_close() {
         let (mut writer, mut reader) = tokio::io::duplex(4096);
         let bytes = payload();
-        writer.write_all(&header(bytes.len(), Instant::now() + Duration::from_secs(1)).unwrap()).await.unwrap();
+        writer
+            .write_all(&header(bytes.len(), Instant::now() + Duration::from_secs(1)).unwrap())
+            .await
+            .unwrap();
         writer.write_all(&bytes).await.unwrap();
-        let request = tokio::time::timeout(Duration::from_millis(200), read(&mut reader)).await.unwrap().unwrap();
+        let request = tokio::time::timeout(Duration::from_millis(200), read(&mut reader))
+            .await
+            .unwrap()
+            .unwrap();
         assert_eq!(request.handoff.cookie, "cookie");
-        assert!(request.by.is_some_and(|by| by <= Instant::now() + Duration::from_secs(1)));
-        assert_eq!(within(&mut reader, request.by, async { Ok(9) }).await.unwrap(), 9);
+        assert!(
+            request
+                .by
+                .is_some_and(|by| by <= Instant::now() + Duration::from_secs(1))
+        );
+        assert_eq!(
+            within(&mut reader, request.by, async { Ok(9) })
+                .await
+                .unwrap(),
+            9
+        );
         drop(writer);
     }
 
     #[tokio::test]
     async fn body_wait_cannot_remint_the_received_budget() {
         let (mut writer, mut reader) = tokio::io::duplex(4096);
-        writer.write_all(&header(payload().len(), Instant::now() + Duration::from_millis(60)).unwrap()).await.unwrap();
-        let request = tokio::time::timeout(Duration::from_millis(500), read(&mut reader)).await.unwrap();
-        assert!(request.is_err(), "the body never arrived but its header budget elapsed");
+        writer
+            .write_all(
+                &header(payload().len(), Instant::now() + Duration::from_millis(60)).unwrap(),
+            )
+            .await
+            .unwrap();
+        let request = tokio::time::timeout(Duration::from_millis(500), read(&mut reader))
+            .await
+            .unwrap();
+        assert!(
+            request.is_err(),
+            "the body never arrived but its header budget elapsed"
+        );
         drop(writer);
     }
 
     #[tokio::test]
     async fn malformed_or_truncated_frames_never_decode_a_handoff() {
         let good = header(payload().len(), Instant::now() + Duration::from_secs(1)).unwrap();
-        let mut bad_magic = good; bad_magic[8] = b'3';
-        let mut too_large = good; too_large[9..13].copy_from_slice(&((MAX_FRAME + 1) as u32).to_be_bytes());
-        let mut zero_budget = good; zero_budget[13..].fill(0);
-        let mut zero_length = good; zero_length[9..13].fill(0);
-        for bytes in [bad_magic.to_vec(), too_large.to_vec(), zero_budget.to_vec(), zero_length.to_vec(), good[..10].to_vec(), good.to_vec()] {
+        let mut bad_magic = good;
+        bad_magic[8] = b'3';
+        let mut too_large = good;
+        too_large[9..13].copy_from_slice(&((MAX_FRAME + 1) as u32).to_be_bytes());
+        let mut zero_budget = good;
+        zero_budget[13..].fill(0);
+        let mut zero_length = good;
+        zero_length[9..13].fill(0);
+        for bytes in [
+            bad_magic.to_vec(),
+            too_large.to_vec(),
+            zero_budget.to_vec(),
+            zero_length.to_vec(),
+            good[..10].to_vec(),
+            good.to_vec(),
+        ] {
             let (mut writer, mut reader) = tokio::io::duplex(4096);
             writer.write_all(&bytes).await.unwrap();
             writer.shutdown().await.unwrap();
@@ -162,14 +225,20 @@ mod tests {
 
     struct Released(Arc<AtomicBool>);
     impl Drop for Released {
-        fn drop(&mut self) { self.0.store(true, Ordering::SeqCst); }
+        fn drop(&mut self) {
+            self.0.store(true, Ordering::SeqCst);
+        }
     }
 
     #[tokio::test]
     async fn lease_end_and_extra_input_drop_unpolled_work_and_its_owner() {
         for extra in [false, true] {
             let (mut writer, mut reader) = tokio::io::duplex(4096);
-            if extra { writer.write_all(&[0]).await.unwrap(); } else { writer.shutdown().await.unwrap(); }
+            if extra {
+                writer.write_all(&[0]).await.unwrap();
+            } else {
+                writer.shutdown().await.unwrap();
+            }
             let released = Arc::new(AtomicBool::new(false));
             let owner = Released(released.clone());
             let began = Arc::new(AtomicBool::new(false));
@@ -179,7 +248,15 @@ mod tests {
                 started.store(true, Ordering::SeqCst);
                 std::future::pending::<Result<(), String>>().await
             };
-            assert!(within(&mut reader, Some(Instant::now() + Duration::from_secs(1)), work).await.is_err());
+            assert!(
+                within(
+                    &mut reader,
+                    Some(Instant::now() + Duration::from_secs(1)),
+                    work
+                )
+                .await
+                .is_err()
+            );
             assert!(!began.load(Ordering::SeqCst));
             assert!(released.load(Ordering::SeqCst));
         }
