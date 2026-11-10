@@ -335,3 +335,6 @@ v1曾在0f8a81d0两读取都成功却warm server is_0rtt=false，40/1失败保�
 预登记C-B,B-C,C-B六次全完成，无第七次或丢失败，control68cad、原topology/20ms/holds/124请求/两个四秒门保持。C=1c847229，B=c7750419，同显式DEBUG。C结果9cb3855.026/4068.484ms红、71ea3851.354/3820.801绿、6aa双向无Go且未观察到carried红；B为f793557.596/3732.647绿、32663751.098/5469.355红、21353521.250/3484.977绿。744业务全成功不替代恢复门，C1绿2红/B2绿1红；known-quality-physical-pairs-through-6.json保留全部源和原始差值。样本少、copy数4/6与随机时序不同，不宣称显著收益/p99。
 
 6aa质量epoch未刷新、steps0，X仅零星收到Custom包而Y未见故障后收包或新RTT。四端实际绑定outer快照曾选41–42ms IP且未关闭，middle onward质量年龄3.526秒；0tuple mismatch。仅据此不能定因46/Noq/应用转发。载体约21秒后结束，接下来补真实stream/frame推进诊断。探测预约合同全保留；inner Custom实际计数按两个窗口给上下界，6aa长窗口缺边界保留unknown，不能补0或算手机/outer能耗。单元439/55/11及双OSNode全12仍仅对应窄scope；候选不作为最终N1方案接受。
+
+
+21:46 UTC诊断校准审阅：v4两次原prepare超150秒、未replug，已停止原max3计划，不以额外重跑掩盖；v5 ef0b单次883原124/124、warm51/51与decision3435.866/3412.927ms通过。独立v2 counter解析使用累计偏移与实际last progress，8个方向均单调且换址后继续推进；最终两端/中间匹配42752与43072字节。Ready事件bytes=0不能作无IO证据；写/flush不是ACK/交付。此次未重现6aa，不证明同步诊断输出导致旧准备失败，不作为N1接受。未新增正常策略/Noq补丁/探针。下一步测显式path PING在ACK延迟下的真实及时性，先独立合同，不能以推测冒充6aa根因。

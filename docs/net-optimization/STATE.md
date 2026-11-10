@@ -1,6 +1,6 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-10 20:53 UTC（新加坡11月11日凌晨）。当前事实以本页为准。此前STATE逐字保存在[最近历史](HISTORY-20261111-before-carrier-stream-diagnosis.md)，其链含after-scope55及更早历史；失败/旧源/fixture不删。历史运行句柄不当当前。
+更新：2026-11-10 21:44 UTC（新加坡11月11日凌晨）。当前事实以本页为准。此前STATE逐字保存在[最近历史](HISTORY-20261111-before-carrier-stream-diagnosis.md)，其链含after-scope55及更早历史；失败/旧源/fixture不删。历史运行句柄不当当前。
 
 ## 授权与位置
 
@@ -14,7 +14,7 @@
 
 ## 当前实现候选与接受边界
 
-当前产品行为候选1c8472299b1c94e2c7813d4356d0412cf34a8fc4 / tree90f62f507b7546cf0a2eb3313db602238671d928 / snapshot4c18fa477f91b913726069f661dd265c06c2d1fb。其后加入流诊断fd92b2ac（正常策略未改），当前源码/验证见下文，实际HEAD另核。
+当前产品行为候选1c8472299b1c94e2c7813d4356d0412cf34a8fc4 / tree90f62f507b7546cf0a2eb3313db602238671d928 / snapshot4c18fa477f91b913726069f661dd265c06c2d1fb。其后加入流诊断fd92b2ac与计数输出校准ef0bfa7e（正常策略未改），实际HEAD ef0bfa7e086e3652f6e50db1d8f364f8445ce601、feat/net、clean。当前源码/验证见下文。
 
 **Iroh46候选仅单元/便携scope通过，物理恢复验收失败，不能当最终方案。** 主vendor55含候选46（Iroh1–41/45/46、Noq1–12），42–44仍隔离。46在已有有限恢复episode，真实post-episode样本重返实测pre-fault质量时仅首次刷新quality窗口；历史值不当新样本/可达/收益证据。原3probe（失败/合并也消耗）、250ms、2秒采样、Moving/gain、新packet epoch与重hold均保持。
 
@@ -49,13 +49,13 @@
 
 ## 下一步：定位run5真实承载流单向停顿
 
-先用实际绑定carrier的收发进度/外层Noq stats补诊断，源与门冻结后再有限运行，不能第七次原源盲重跑。**流诊断已实现并通过LinuxNode全12，首物理诊断在跑；策略未改**。以下先列原失败证据，准确当前句柄见本节末。
+先用实际绑定carrier的收发进度/外层Noq stats补诊断，源与门冻结后再有限运行，不能第七次原源盲重跑。**流诊断v4通过LinuxNode全12；两次物理诊断均在换址前准备失败，旧计划已停止；v5降低输出后的单次校准通过，策略未改**。以下先列原失败证据，准确当前句柄见本节末。
 
 run5 6aa：quality_since=None、quality_steps0，没有postfault质量刷新或answered，不能把此前质量窗口问题当此轮根因。X两Custom copy的RTT计数48/53不增长但last_received偶尔更新；Y两copy计数48/49及收包时刻停在故障前、PTO增长。两个方向无内层Go，载体约21秒后结束；4预约2episode预算绿。这表明单向数据面仍有缺口，尚不能定因Noq/转发/46。
 
 实际carrier outer快照+6秒四端选IP约41–42ms、连接未关闭，但middle onward质量年龄约3.526秒；0条tuple mismatch。低RTT/未关闭不证明流字节推进，也不证明每包路径。证据run5 failed-recovery-copy-observations.json、recovery-mechanism-events.json、outer-copy-timeline-replug-reference.json及原日志。
 
-已知代码：Node hop.rs::splice用两次tokio::io::copy+select，任一结束结束整hop；正常分支不可因诊断改半关闭/取消/finish语义。Links attach→read_frames/write_frames，后者256KiB BufWriter、队列drain后flush。拟仅显式KHOR_NET_DIAGNOSTICS下观察真实carrier serial、流方向/累计字节、read/write/flush pending与完成；沿原5秒look输出，无新timer/task/探针/正文。需要同时分清X写入、middle前后两流与Y读帧/交给iroh，逐段定位。正常日志关闭时保持原热路径。此方案尚未实现/编译，先用图谱定位（不足再定向读），不先扩大budget或缩确认时间。
+已知代码：Node hop.rs::splice用两次tokio::io::copy+select，任一结束结束整hop；正常分支不可因诊断改半关闭/取消/finish语义。Links attach→read_frames/write_frames，后者256KiB BufWriter、队列drain后flush。拟仅显式KHOR_NET_DIAGNOSTICS下观察真实carrier serial、流方向/累计字节、read/write/flush pending与完成；沿原5秒look输出，无新timer/task/探针/正文。需要同时分清X写入、middle前后两流与Y读帧/交给iroh，逐段定位。正常日志关闭时保持原热路径。此诊断已实现/编译；v4与v5及其准确验证边界见本页末，不扩大budget或缩确认时间。
 
 原netlab-dynamic（三轮p2/p3/p7）、netlab-stability（一轮p1/p1j/p1s/p5）仍待；当前先处理N1物理硬红。trusted runner/network.sh都允许stability，ops submit-turing.py本地stage白名单尚漏该现有task，后续若用须准确补本地allowlist，不改control/guard。计时任务与Mac/其他Turing重型不重叠。
 
@@ -101,3 +101,12 @@ refs最近只读审计191453Z为457refs/64control/363explicit receipts+94legacy�
 21:15 UTC：流诊断v4 fd92b2ac/tree45ddec13/snapshotbaa0800f在Linux3e49bad9已终态315.140秒/21files/group空/identity核，fmt/net67（原1ignored）及全12组/hop55/wires16/budget30/resume1绿、STOP32/32，正常分支回归通过。Mac流诊断版未单独执行；不作跨OS/性能声明。当前唯一重型 **turing-20261110T211143Z-d1113762**，PID2902304，21:12:05 UTC启动，原physical profile+stream Tap，精确v4/control68cad。新plan carrier-stream-progress-diagnostic-plan-v1.json在首物理前登记，最多3次、0重试，首次重现且定位或3次后停止；全部结果保留，不并入旧六次验收。解析器记录每端wire/stream/方向的真实偏移及last OBSERVED state，pending不当持续阻塞/活任务证据，必须关联结束与对端read。21:15仍running，未采集，不重发。Mac/其他Turing重型无并发。
 
 21:31 UTC：流诊断attempt2 0e2f0e2d已终态194.445秒/16files/group空/identity，和attempt1一样prepare exceeded150s、仅2setup业务ok，无replug。载体正常转发后两look按Outperformed释放，Custom约100–105ms/PublicRelay131–132ms未满足原25%收益；不能定因观察器、Noq或配置。两个失败保留，停止该旧观察器计划于2/最多3次；不继续第三次同源等待准备。准备降低观察器每successfulIO序列化：所有真实字节仍累计并记last-progress时间，只在wait/flush/end等边界输出、重复empty flush抑制。未改Noq/选路/准备期限/门，观察器开销假设仍需新source校准。当前无重型，正在改诊断源码。
+
+
+21:44 UTC接续：当前没有运行中的重型任务；source ledger全体pending=false（本次逐项核883为completed_verified）。v4物理d1113762与0e2f0e2d分别244.746/194.445秒、各16files/group空/identity，均原prepare超过150秒，仅2次setup业务成功、未执行replug；两次流进度均保留，不能算移动恢复失败重现。两份comparison表明Custom约100–105ms、Relay约130–132ms，未满足原25%收益而释放，已转发对应全部累计字节；不能由此证明日志为因。旧max3计划在两次同类准备失败后显式停止，不盲跑第三次。
+
+v5 ef0bfa7e/tree d635e42951140ed36ca0e41f586bfc9569940cb1/snapshot31e10e49c71361cfe7c87153bf4f3b3bc7668489仅减少成功read/write的同步序列化，累计计数及真实last_read/write_at保留，在pending/flush/error/end输出。关闭诊断原IO类型/正常splice不变。单次校准883d38e1已终态216.656秒/16files/group空/identity：原124/124业务、两个10秒hold、warm51/51及独立decision X3435.866/Y3412.927ms全绿，预约6次/2episodes预算绿。one-run计划已complete，无额外retry。此结果不证明此前准备失败由输出引起、不重现6aa单向停顿、不接受N1；全12Node仍只对v4准确源成立。v5流分析须使用累计read/written与last_read_at/last_write_at，不能用正bytes Ready事件数量（成功IO已延后输出）判断是否推进。
+
+下一步先完成883流偏移及身份/end关联分析，然后用独立协议合同核对显式path PING的采样及时性；此时Noq13只是提议，未写测试/行为、未计数。6aa真实单向停顿仍未闭环，fixed6红全部保留。
+
+21:48 UTC：新增vendor/noq-proto/src/tests/path_probe.rs三项真实虚拟网络合同（whole SHA348a5fc8571e136d7144f18668fe6b779ea3a110b1db7bf7189b6398f79bb1bd），母文件仅新增module声明且可逐字还原，原multipath SHAfff96ca12a2c3ed53ea85e6a4241998cd56573cc873fefed49644c2f8fb81077不变。现先在旧ping_path行为上执行，不称Noq13/6aa根因或策略修复。counter分析883共有8组双向累计偏移单调、全部故障后有推进，最终42752/43072匹配；v2 helper/metadata错误与hash manifest保留，未重跑profile。
