@@ -182,3 +182,6 @@ async fn a_second_leg_already_forwarded_by_another_peer_stays_ineligible() {
 
 #[path = "incoming_middle_tests.rs"]
 mod incoming_middle;
+
+#[path = "miss_epoch_tests.rs"]
+mod miss_epoch;

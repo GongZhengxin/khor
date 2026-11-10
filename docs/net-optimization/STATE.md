@@ -37,6 +37,9 @@
 
 ## 当前任务与下一步
 
+18:48 UTC：48947721/tree5b55b4c5/snapshotf78b389a，Linux95f8da6b实际hop52已全绿（含incoming准入/closed负控与unused两项），全12其余组仍在收尾；Mac42878663761同canonical已提交，尚未接受这两个scope。新WIP只追加miss_epoch三项真实合同，MISSED/LOST产品不变，尚未编译/跑。实际NO_ROUTE在网络标记前/后完成的新网重试正向 + 无变化原冷却/实际ask计数负控；freeze保留sole_peer旧whole为prefix。勿把新合同混为已测。
+
+
 18:40 UTC：056dea初候选f301d401仅格式43.816秒/10files/group空/identity核，无行为结论。已应用远端Road构造格式；入站排序在去重后固定一次RTT key，避免排序时读变化中的统计。原fixture不改，新candidate待登记；不要重发已完成6da/f301。
 
 

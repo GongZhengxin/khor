@@ -602,3 +602,14 @@ close_offer原整个文件保持70af完整前缀，只尾附queued_close模块�
 4. **正常watcher成本与更广admission**：两个新pending合同只覆盖有限调用owner。无pending的入站登记、正常准备完成但未使用carrier、unknown path snapshot与旧比较结果需各自实际合同；必要时扩同一个明确owner/admission边界，不能靠新常驻task、无限lease或减短LOOK让问题消失。仍测原N3字节/唤醒/能耗。
 
 构建加速只读复核（18:36 UTC）：固定control68cad的network-ssh-runner.cached_source已用独占锁内stable checkout并保留未变路径/mtime，核tree/clean后复用target；并非每run重铺所有源码。维持jobs16与冻结test-threads/网络观察窗；当前以同source连续验证相关合同减少重复编译，不因CPU强而并发计时物理netlab。不改guard/control，未取得编译阶段更细profiling时不编造缓存瓶颈或性能收益。
+
+
+### 冷却代际：下一真实红与设计约束（提议，未实施）
+
+先补三个真实Tunnel合同：第一次Ask::To由middle回NO_ROUTE并真实计数；(a)无变化时原冷却仍挡第二次，保持成本控制；(b)第一次拒绝后调用Addrs分支所用forgive_all，原冷却内应可再次准备并carried echo；(c)第一Ask已进入但尚未回复时调用Path/resume所用network_changed，再允许旧NO_ROUTE完成，旧完成不得阻挡新网的下一次准备。用原3秒hop/2秒观察和owned cleanup，不能先清表再称旧完成安全。这里只验证实际核心入口，OS信号、独立IPv4/IPv6及手机仍归N4。
+
+实现选择尚待上述证据：冷却context至少区分本机路由失效版本、peer有效新联系/地址信息、可用middle集合，并有一次尝试的顺序标记。RTT抖动、地址仅来源标签变化、普通ACK不应让冷却每轮失效。新middle从缓存变为真实可达可触发一次重新判断；不能永远等原30秒或每RPC重新广播探测。
+
+若复用现全局MISSED，应将context与entry同锁比较，context持弱owner，不能让cache留住Node；旧失败/成功不能覆盖或清掉更晚context，实际写入前复核本次context仍有效。网络版本与尝试顺序是不同值，不能把每个新尝试序号放进相等判断而自动绕过退避。cache键和值均须有界，不能按每次换网永久增加一份记录。若移至每Node/Wires owner，应继续让原纯状态测试覆盖同一生产核心，不为保留旧测试建立无生产调用的平行shim。
+
+LOST当前按(to,via)全局保存，未带本机身份，也与换网/候选变化分离；下一设计须同时明确其owner与何时重新比较。先闭合真实MISSED合同不等于LOST/全部地址代际已完成，禁止静默放宽原收益/确认和十分钟抑制规则。
