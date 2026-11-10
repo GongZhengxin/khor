@@ -3410,6 +3410,10 @@ async fn maybe_next<S: Stream + Unpin>(maybe_stream: Option<&mut S>) -> Option<O
 }
 
 #[cfg(test)]
+#[path = "remote_state/recovery_baseline_tests.rs"]
+mod tests_recovery_baseline;
+
+#[cfg(test)]
 mod tests {
     use std::net::SocketAddr;
 
