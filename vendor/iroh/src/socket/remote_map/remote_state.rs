@@ -2684,6 +2684,8 @@ struct RecoveryCheck {
     copy: Option<(ConnId, PathId)>,
     quality_steps: u8,
     quality_best: Option<Duration>,
+    /// Last observed quality before this fault, never an initial RTT estimate.
+    prior_quality: Option<Duration>,
 }
 
 #[derive(Debug)]
@@ -2719,6 +2721,8 @@ struct Silence {
     /// carry (10-23): it went silent within [`REHOLD`] of last being back, so it waits out
     /// [`SILENT_HOLD`] however fast it reads.
     rehold: bool,
+    /// A pre-fault observation, held only by this existing silence episode.
+    prior_quality: Option<Duration>,
 }
 
 impl Silence {
@@ -2860,9 +2864,14 @@ impl Measured {
         let Some(sent) = reading.sent else { return };
         let road = reading.road.clone();
         let Some(check) = self.recovery.get_mut(&road) else { return };
+        // khor patch 46: returning to an actually observed pre-fault regime
+        // starts one fresh window even if the transient median is less than
+        // 25% slower. This supplies no time or samples to Moving confirmation.
+        let returned = check.quality_steps == 0 && sample < previous
+            && check.prior_quality.is_some_and(|prior| sample <= prior);
         if now >= check.began + CONFIRM_FOR || sent <= check.began
             || check.quality_steps >= RECOVERY_PROBES
-            || sample.saturating_mul(4) > previous.saturating_mul(3)
+            || !returned && sample.saturating_mul(4) > previous.saturating_mul(3)
             || check.quality_best.is_some_and(|best| sample.saturating_mul(4) > best.saturating_mul(3))
         {
             return;
@@ -2913,6 +2922,7 @@ impl Measured {
                 copy: None,
                 quality_steps: 0,
                 quality_best: None,
+                prior_quality: silence.prior_quality,
             });
         }
         let roads: Vec<_> = self.recovery.keys().cloned().collect();
@@ -2966,11 +2976,18 @@ impl Measured {
         self.back.retain(|_, at| now < *at + REHOLD);
         for (tuple, began) in silent_now {
             let rehold = self.back.contains_key(tuple);
+            // Do not save a transient post-fault sample as the old regime.
+            // Use the same active-copy priority as ordinary road measurements.
+            let prior_quality = self.rtts.values()
+                .filter(|r| r.road == *tuple && r.samples > 0 && r.sent.is_some() && r.at <= *began)
+                .max_by_key(|r| (r.recent.len(), r.at))
+                .map(|r| r.quality);
             let silence = self.silent.entry(tuple.clone()).or_insert(Silence {
                 began: *began,
                 judged: now,
                 answered: None,
                 rehold,
+                prior_quality,
             });
             silence.judged = now;
             silence.answered = None;
