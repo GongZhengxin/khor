@@ -1,15 +1,18 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-10 01:36 UTC。root串行，无子智能体。完整N0–N5尚未完成，用户已授权继续；不因goal服务paused或阶段通过停止。速度/体验优先，可信个人设备网；无main合并、发布、中继采购/生产部署授权。
+更新：2026-11-10 02:04 UTC。root串行，无子智能体。完整N0–N5尚未完成，用户已授权继续；不因goal服务paused或阶段通过停止。速度/体验优先，可信个人设备网；无main合并、发布、中继采购/生产部署授权。
 
 重写前逐字状态在[HISTORY-20261110-before-ipc-lease-integration](HISTORY-20261110-before-ipc-lease-integration.md)及其历史链；旧失败与时间参照勘误均保留。计划/硬要求/验收以[PLAN](PLAN.md)、[REQUIREMENTS](REQUIREMENTS.md)、[ACCEPTANCE](ACCEPTANCE.md)为准。
 
 ## 当前句柄与接续
 
-- 先核Git/receipt/GH/真实PID再动作，禁止盲重发。产品HEAD343d1481：Iroh39已实现但物理未测；IPC v2仅private helpers/测试，未发布能力/接入真实Node请求。控制HEAD4bf7e6eb（已推）：net-node含ipc::全部helpers及32回复实际用例，WAN v2每方向30目录+30正文。原50 vendor＋新Iroh39候选共51项。
-- **Turing唯一重型任务为第二轮matched candidate turing-20261110T012832Z-5e8674ab，PID1443515，01:29:44UTC已启动**，准确a42b5b64/tree48b907da/control4eeeea9，只有Noq12，不能夹Turing编译/其他重负载。前驱baseline2 turing-20261110T010548Z-d234b36c已1195.123s/rc0/原group空；原p1s/p5绿，最慢635.3ms、零move、9punch/3618包/1471863B，22CPU markers逐线程亲和核。首对baseline539.2ms/零move/13punch/4035包 vs candidate约1s/一次move/16punch/4788包已保留；matched repeats仍未收齐，不能性能验收。
-- **IPC caller期限真红绿已闭合此分项**：42729827780实际IPC5绿1红（40ms caller被旧Op上限覆盖、250ms observer超时）；42733228660准确3ad3851a/tree9d7de9ef/controlce02实际fmt/IPC6/net67/hop12/wires11/journal30/budget20绿。实际红/绿整个测试块原始SHA10838747相同；先前a40fbc31抽取法未复现，原hash保留并明确勘误，不伪造其验证。只证明client，不证明server或remote取消。
-- **IPC helpers与真实32回复red准备中**：dc1aa1d8引入lease framing/within但未接入真实Node；ace46921只应用42735177894远端formatter。6bee9944原32用例的42735757244仅格式失败；随后静态发现self-home content_page绕过IPC，343d1481明确改用已有content_on_resident(Window)保持32/原barrier/5秒门，兼补helpers Op安全cap与更早parent。新42736367611/request8ddfd3dc5c4144e59808ac0a01bbbbc5/source46560a8c/treebd6c4fc6/control4bf7e6eb：attempt1在bootstrap下载Git blob JSON截断，尚未导入源码/启动driver，3份partial artifacts与trace保留在artifact-attempt-1-bootstrap。确认终态prebuild后已重跑同一run的attempt2；必须核run_attempt/原hash与日志后分类，不用执行器/格式失败冒充32资源红。未见helpers或32行为绿，不接真实新协议。
+- 先核Git/receipt/GH/真实PID再动作，禁止盲重发。产品功能HEAD00d88f3b：Iroh39已实现，IPC v2双协议/EndpointFile能力/Target原子刷新/服务端租约也已接入开发源，仍待实际32资源绿；未部署生产。控制HEAD4bf7e6eb（已推），net-node含IPC所有18项及真实32回复用例。共51 vendor（Iroh39新候选）。
+- **Turing唯一重型任务是第一轮Iroh39真实移动候选turing-20261110T015757Z-fa99fcb7，PID1487754，02:00:43UTC已启动**，准确15f45e6b/tree144025c2/snapshotba7bcefb/controlef0b；它刻意隔离在新IPC v2接入前，不冒充最终分支整源。先采证、原group空、独立calibration+冻结四秒checker与实际probe预算再判定；须同源至少3轮，当前尚无候选物理绿。
+- **现代恢复匹配baseline已可达绿/四秒红**：turing-20261110T015157Z-53aa567e准确5a5ed51a/treeace0f8ee/snapshotc3977924/同ef0b，124/124/最终hold10秒与独立calibration绿、终态rc0/原group空；四秒后51请求41通过/10仍Relay，inner Go+7674/+7913ms。与ba7候选全部Rust diff只有Iroh39实现和6个单元，物理fixture不改。隔离控制worktree khor-net-recovery-control detached5a5ed51a干净，source JSON/patch已留证。
+- **Noq12现代CPU对照四轮已全采证，存在未解稳定性红**：两baseline 000645-a87d2f92/010548-d234b36c原p1s/p5绿、零move，worst539.2/635.3ms、punch13/9；两candidate 003612-b78c04a7/012832-5e8674ab分别1/2次move，worst约1s/719.0ms。第二candidate原at-most-one门实际红（Relay305s→LAN367s），p5绿、32/32请求ok/零retired/零network changes，1191.007s/rc101/原group空。四轮均原600秒/20×300ms与22 CPU markers逐线程亲和核，全部Rust diff仅Noq12质量9行。ack-floor-controlled-stalls-comparison.json保留全结果，不能性能/稳定性验收，也不放宽旧门。下一用现成netlab-diagnostic保留原p1s窗口+f4s取完整统计，仅诊断不作quiet SLO；local stage allowlist已补现有后端支持的diagnostic两项，旧ops副本保存。
+- **IPC caller40ms实际红→绿分项不变**：42729827780旧IPC5+1红→42733228660准确3ad3851a/controlce02 IPC6与便携全绿，整个原测试块原始SHA10838747一致。先前a40fbc31抽取法未复现，旧hash/勘误保留。只证明client；新lease详[IPC-LEASE-DESIGN](IPC-LEASE-DESIGN.md)。
+- **真实32回复新红/候选栈溢出均保留**：42737166916准确e80fa2c1/treeb6d853dc/snapshotf466d990/control4bf7e6eb，fmt/IPC14/portable全绿，实际32编码回复barrier全进入/permit0、所有caller abort/join后5秒内仍未归还，真实行为红。whole wire_tests.rs SHA945c22aa冻结。85403344接入lease，494e5241追加四项真实TCP兼容合同和前次formatter；42738965522准确1b22a3b0/tree8afa1dc2/control4bf，fmt/IPC18/net67/hop12/wires11/journal30/budget20全绿，但原32用例worker stack overflow/SIGABRT，非资源绿。00d88f3b只Box::pin大型run_handoff_within future，保持所有权/取消和whole fixture；Mac42739923461/requestc98e79a4b9f54691a88bd6f2b1c8dc43/source76adf825/treeb3af5eb0/control4bf在途，先采证分类。
+- **此前执行器与格式失败单列**：42736367611 attempt1源blob JSON截断（尚无源码导入/driver），确认终态后重跑同run attempt2仅格式失败；两份partial/trace分开保留，attempt2 source/11blobs/hash核。42738040751也仅格式失败，精确patch后续494已应用；原资料未覆盖、不当业务红。
 - **Iroh39 vendor/portable已真绿，物理仍待**：42734017374准确ba7bcefb/tree144025c2/controlce02 fmt/Noq439/paths42/home9（含6个新预算单元）；42734610668同完整source/control9992254 portable67/12/11/30/20/IPC6全绿。source/control/11blobs/所有artifact hash已核。下一仍须原peer物理至少3轮/冻结4秒门/实际新增probe计数、原stalls与黑洞成本，不能把单元绿当四秒达标。
 - **恢复缺新往返已实证**：turing-20261110T002954Z-cabd9725准确3013038a/tree4e9a79a3/snapshot8f483819/controlef0b，124/124、终态rc0/原group空，70条实际conn/path快照均PTO0/unacked None、received>judged而sample.sent<=judged。outer Go+1187/+1253ms，inner考虑+5302/+5313ms、Go+7552/+7562ms。不是SILENT_HOLD，不能弱化sent>judged。Mac275(42726616050)同source fmt/Noq439/iroh36/home9绿。候选最多3个PING申请的策略与限制已在ACCEPTANCE实施前修订；四秒checker/原物理fixture不动。
 - **四秒门已有真实红**：267/272原数据，warm deadline后51次分别42/40选对、9/11仍Relay。scripts/netlab-peer-selection.py与whole physical hash冻结在peer-recovery-four-seconds-red-green.json；至少3独立physical重复。旧可达/rehold10秒绿不能替代此门。
@@ -27,7 +30,7 @@ A=macserver、B=Turing天然异网，P=iPhone，不再询问另找两电脑。�
 
 ## N2进度边界
 
-237blocked writer真实红→239Mac/240Linux同整fixture绿；189 stale owner红→193/194绿；178共享消费者红→179/180绿；F8/F9/F10已有分项真红绿。IPC caller短期限实际红绿见上；[IPC-LEASE-DESIGN](IPC-LEASE-DESIGN.md)已有private framing/within helpers及候选tests，真实server/EndpointFile/via_serve尚未接入或启用。正常legacy半关闭不能作取消，不因client结束宣称server/remote停止。
+237blocked writer真实红→239Mac/240Linux同整fixture绿；189 stale owner红→193/194绿；178共享消费者红→179/180绿；F8/F9/F10已有分项真红绿。IPC caller短期限实际红绿见上；lease framing/within/Target与server实际接入已写，源码声明max2向下兼容能力，真实32资源尚待绿。正常legacy半关闭不能作取消，不因client结束宣称server/remote停止。
 
 ## 完整剩余范围，不得缩减
 
@@ -56,3 +59,5 @@ A=macserver、B=Turing天然异网，P=iPhone，不再询问另找两电脑。�
 继续完整N0–N5。最终源可信Quality、Mac App/多机/iPhone/能耗以及上表缺口仍须闭合。
 
 证据新增：source-refs-audit-20261110-287.json逐核287源refs/tree/control与25个ops hash；后续逐条pin，待终态再全量更新。register-mac-run.py仅锚GH实际控制HEAD/源码/refs，不分类行为。当前CPU重复比较在ack-floor-controlled-stalls-comparison.json。继续N0–N5，不在阶段绿后停工。
+
+N2下一仍需独立process/真实server收到的预算、caller EOF/额外输入/坏cookie无副作用、IO未完成时owner留存、QUIC远端执行停止及32远端回复回收。当前Mac18项只含独立任务的TCP预算，不是独立process证明。N1下一保留4秒及原stalls两门，原日志定位后再改策略，不凭推测调高收益门或缩短确认。
