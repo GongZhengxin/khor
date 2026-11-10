@@ -91,7 +91,10 @@ async fn retiring_old_wire_cannot_mark_a_published_replacement_asleep() {
         !wires.left_alone(&peer),
         "finishing old retirement must not undo a published live replacement"
     );
-    assert_eq!(wires.live(&peer, Proto::Main).unwrap().stable_id(), new_server.stable_id());
+    assert_eq!(
+        wires.live(&peer, Proto::Main).unwrap().stable_id(),
+        new_server.stable_id()
+    );
     echo(&new_client, &new_server).await;
     near.close().await;
     far.close().await;
