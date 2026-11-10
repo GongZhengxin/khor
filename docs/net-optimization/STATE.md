@@ -6,8 +6,8 @@
 
 ## 当前句柄与接续
 
-- 先核Git/receipt/GH/真实PID再动作，禁止盲重发。product feat/net最后功能2d7d4f07（IPC caller deadline），3b37a06c仅remote formatter；control feat/net ce02cab。原50 vendor（Iroh38+Noq12），新有界恢复尚未实施。
-- **Turing当前没有未采证重型任务**：turing-20261110T003612Z-b78c04a7已1190.833s/rc0/原group空；准确a42 snapshot/tree48b907da/control4eeeea9，只隔离Noq12。与baseline turing-20261110T000645Z-a87d2f92相比，两者原p1s/p5门均绿，但候选p1s一次move/16punch/4788包/约1s最慢，baseline零move/13punch/4035包/539.2ms最慢。22 CPU markers逐线程亲和核。ack-floor-controlled-stalls-comparison.json留全部结果与负面限制；下一matched重复在stage，实际新receipt优先于此句。不得称性能验收完成。
+- 先核Git/receipt/GH/真实PID再动作，禁止盲重发。product feat/net最后功能2d7d4f07（IPC caller deadline），3b37a06c仅remote formatter；control feat/net ce02cab。原50 vendor＋新Iroh39候选共51项；有界恢复实现/单元已写，尚未验证。
+- **Turing唯一重型任务为matched baseline重复turing-20261110T010548Z-d234b36c，PID1410338，01:08:01UTC已启动**，准确9c8fa9d4/control4eeeea9，不能夹Turing编译。其前候选：turing-20261110T003612Z-b78c04a7已1190.833s/rc0/原group空；准确a42 snapshot/tree48b907da/control4eeeea9，只隔离Noq12。与baseline turing-20261110T000645Z-a87d2f92相比，两者原p1s/p5门均绿，但候选p1s一次move/16punch/4788包/约1s最慢，baseline零move/13punch/4035包/539.2ms最慢。22 CPU markers逐线程亲和核。ack-floor-controlled-stalls-comparison.json留全部结果与负面限制；下一matched重复在stage，实际新receipt优先于此句。不得称性能验收完成。
 - **Mac caller期限待实际绿**：42729827780（2d6870af/tree0a325aad/snapshot7141fcf1/controlce02）真实IPC5绿1红，40ms caller被旧Op上限覆盖，250ms observer超时；便携其余全绿。2d7d4f07修复仅client同一绝对by、serialize后到期检查、拒绝刷新不重放规则保留。42732241829格式失败而未测行为，准确remote patch已3b37a06c；新Mac42733228660/requestf81baeedba454658905b798de68f582b/tree9d7de9ef/snapshot3ad3851a/controlce02在途，原whole IPC tests hash不变。需采证/11 control blobs再分类。
 - **恢复缺新往返已实证**：turing-20261110T002954Z-cabd9725准确3013038a/tree4e9a79a3/snapshot8f483819/controlef0b，124/124、终态rc0/原group空，70条实际conn/path快照均PTO0/unacked None、received>judged而sample.sent<=judged。outer Go+1187/+1253ms，inner考虑+5302/+5313ms、Go+7552/+7562ms。不是SILENT_HOLD，不能弱化sent>judged。Mac275(42726616050)同source fmt/Noq439/iroh36/home9绿。候选最多3个PING申请的策略与限制已在ACCEPTANCE实施前修订；四秒checker/原物理fixture不动。
 - **四秒门已有真实红**：267/272原数据，warm deadline后51次分别42/40选对、9/11仍Relay。scripts/netlab-peer-selection.py与whole physical hash冻结在peer-recovery-four-seconds-red-green.json；至少3独立physical重复。旧可达/rehold10秒绿不能替代此门。
@@ -36,7 +36,7 @@ A=macserver、B=Turing天然异网，P=iPhone，不再询问另找两电脑。�
 | N2 | IPC剩余预算/取消贯通、长多阶段/两middle合计3秒、输者与晚候选、近期地址/重启/jitter合并/quiet epoch/close-vs-offer；写不重放/正常half-close不取消 |
 | N3 | 真实Node32席位/content32、Custom1024帧/256KiB外层队列、SSH/hop混合公平/共享vs分连接、1/3/5设备CPU/字节/唤醒/手机能耗；Noq FIFO_v2低层704请求不能替代 |
 | N4 | U12完整移动矩阵、Mac↔Turing↔iPhone真跨网、冷暖/双端不对称、登记/出口/整机故障域、布局容量运维；不是采购部署 |
-| N5 | 原48＋新增38候选，共50 vendor补丁（Iroh38+Noq12候选）逐项覆盖/上游等价/退出、Noq1/5缺口、准确最终源可信Quality、Mac原生App/代理/多机/手机/能耗；证据前不升级/删补丁 |
+| N5 | 原48＋新增Iroh38/39和Noq12，共51 vendor补丁（Iroh39候选）逐项覆盖/上游等价/退出、Noq1/5缺口、准确最终源可信Quality、Mac原生App/代理/多机/手机/能耗；证据前不升级/删补丁 |
 
 ## 执行与证据规矩
 

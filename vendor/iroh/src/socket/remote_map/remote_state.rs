@@ -1133,11 +1133,45 @@ impl RemoteStateActor {
     /// silent or slowing down, then runs the selector on the paths' stats as they are now.
     fn reselect(&mut self) {
         let tuples_changed = self.refresh_path_tuples();
-        let (sample, waiting) = self.read_paths();
+        let (sample, waiting, recovery) = self.read_paths();
         self.watch_selected(sample);
         self.probe_others(waiting);
         self.refresh_candidates();
         self.select_path_on(!tuples_changed);
+        self.probe_recovering(recovery);
+    }
+
+    /// khor patch 39: a receipt can reset PTO without sampling a packet sent
+    /// after the silence judgment. Confirm that known road within a bounded
+    /// episode instead of waiting for its next idle keepalive.
+    fn probe_recovering(&self, probes: Vec<RecoveryProbe>) {
+        for probe in probes {
+            let road = &probe.road;
+            let selected = self.state.selected_path.as_ref() == Some(road);
+            let confirming = self.state.moving.to().is_some_and(|to| to == road || selected);
+            let available = !self.state.measured.silent.contains_key(road);
+            if confirming || selected && available {
+                debug!(target: "khor_net_samples", ?probe, "recovery probe merged with selection");
+                continue;
+            }
+            let copy = self.connections.iter().flat_map(|(conn_id, c)| {
+                c.paths.iter().filter_map(move |(path_id, tuple)| {
+                    if tuple != road {
+                        return None;
+                    }
+                    let conn = c.handle.upgrade()?;
+                    let stats = conn.path_stats(*path_id)?;
+                    Some((stats.pto_count, stats.last_received, *conn_id, *path_id, conn.path(*path_id)?))
+                })
+            }).min_by(|a, b| {
+                a.0.cmp(&b.0).then_with(|| b.1.cmp(&a.1)).then_with(|| a.2.0.cmp(&b.2.0))
+            });
+            if let Some((pto_count, _, conn_id, path_id, path)) = copy {
+                let result = path.ping();
+                debug!(target: "khor_net_samples", ?probe, ?conn_id, ?path_id, pto_count, ?result,
+                    "recovery confirmation probe");
+            }
+        }
     }
 
     /// A passive QUIC migration can change a path's tuple without opening a
@@ -1252,7 +1286,7 @@ impl RemoteStateActor {
     ///
     /// Also returns how long the selected road has kept a packet waiting, if it has after a
     /// probe timeout ([`Self::probe_others`]).
-    fn read_paths(&mut self) -> (Duration, Option<Duration>) {
+    fn read_paths(&mut self) -> (Duration, Option<Duration>, Vec<RecoveryProbe>) {
         let now = Instant::now();
         let diagnose_tuples = std::env::var_os("KHOR_NET_DIAGNOSTICS").is_some();
         let selected = self.state.selected_path.as_ref();
@@ -1352,15 +1386,15 @@ impl RemoteStateActor {
                 wake_allowed = off_direct, "road recovery inputs");
         }
         let connections = &self.connections;
-        measured.mark_silent(
-            now,
-            &silent_now,
-            |tuple| connections.values().any(|c| c.paths.values().any(|t| t == tuple)),
-        );
+        let open = |tuple: &transports::FourTuple| {
+            connections.values().any(|c| c.paths.values().any(|t| t == tuple))
+        };
+        measured.mark_silent(now, &silent_now, &open);
+        let recovery = measured.recovery_probes(now, &silent_now, &heard, open);
         if off_direct {
             self.wake(&backed_off, &heard);
         }
-        (sample, waiting)
+        (sample, waiting, recovery)
     }
 
     /// carry (10-23): pings every copy of a road that is in a probe timeout's backoff while the
@@ -2552,7 +2586,27 @@ struct Measured {
     silent: FxHashMap<transports::FourTuple, Silence>,
     /// carry (10-23): when each road last answered again after a silence, for [`REHOLD`].
     back: FxHashMap<transports::FourTuple, Instant>,
+    /// khor patch 39: bounded recovery episodes; spent entries prevent a new
+    /// receipt from minting another budget for the same unresolved silence.
+    recovery: FxHashMap<transports::FourTuple, RecoveryCheck>,
 }
+
+#[derive(Debug)]
+struct RecoveryCheck {
+    epoch: Instant,
+    began: Instant,
+    attempts: u8,
+    last: Option<Instant>,
+}
+
+#[derive(Debug)]
+struct RecoveryProbe {
+    road: transports::FourTuple,
+    epoch: Instant,
+    attempt: u8,
+}
+
+const RECOVERY_PROBES: u8 = 3;
 
 /// khor patch 17/35: a road that stopped answering ([`unanswered_for`]), until a new round
 /// trip; a repeated fault additionally waits [`SILENT_HOLD`].
@@ -2672,6 +2726,61 @@ impl Reading {
 }
 
 impl Measured {
+    /// Requests, including failures or merging with an existing confirmation,
+    /// consume the episode's budget. No extra timer or connection owner is kept.
+    fn recovery_probes(
+        &mut self,
+        now: Instant,
+        silent_now: &[(transports::FourTuple, Instant)],
+        heard: &[(transports::FourTuple, std::time::Instant)],
+        open: impl Fn(&transports::FourTuple) -> bool,
+    ) -> Vec<RecoveryProbe> {
+        let silent = &self.silent;
+        self.recovery.retain(|road, check| {
+            open(road) && match silent.get(road) {
+                Some(silence) => silence.began == check.epoch,
+                None => now < check.began + CONFIRM_FOR,
+            }
+        });
+        for (road, silence) in &self.silent {
+            if silence.answered.is_some()
+                || silent_now.iter().any(|(t, _)| t == road)
+                || !heard.iter().any(|(t, at)| t == road && *at > silence.judged.into_std())
+                || !self.rtts.values().any(|r| r.road == *road && r.samples > 0 && r.sent.is_some())
+                || !open(road)
+            {
+                continue;
+            }
+            self.recovery.entry(road.clone()).or_insert(RecoveryCheck {
+                epoch: silence.began,
+                began: now,
+                attempts: 0,
+                last: None,
+            });
+        }
+        let roads: Vec<_> = self.recovery.keys().cloned().collect();
+        let mut probes = Vec::new();
+        for road in roads {
+            let began = self.recovery[&road].began;
+            let sampled = self.samples_after(&road, began) >= usize::from(RECOVERY_PROBES);
+            let check = self.recovery.get_mut(&road).expect("known recovery episode");
+            if sampled {
+                check.attempts = RECOVERY_PROBES;
+            }
+            if check.attempts >= RECOVERY_PROBES
+                || now >= check.began + CONFIRM_FOR
+                || check.last.is_some_and(|last| now < last + RESELECT_INTERVAL)
+                || silent_now.iter().any(|(t, _)| t == &road)
+            {
+                continue;
+            }
+            check.attempts += 1;
+            check.last = Some(now);
+            probes.push(RecoveryProbe { road, epoch: check.epoch, attempt: check.attempts });
+        }
+        probes
+    }
+
     /// khor patch 17: one tick's silences: `silent_now` the roads a copy of which does not
     /// answer, each with when the packet it left waiting went out; `open` whether a road is
     /// still a path on some connection.  A road no connection has any more is forgotten; one
@@ -3483,6 +3592,117 @@ mod tests {
             sent: Some(at),
             at,
         }
+    }
+
+    fn recovery_case(t: Instant) -> (Measured, transports::FourTuple) {
+        let road = addr(1);
+        let mut m = Measured::default();
+        let mut old = reading(&road, t - MS(500));
+        old.samples = 1;
+        m.rtts.insert((ConnId(0), PathId::ZERO), old);
+        m.mark_silent(t, &[(road.clone(), t - MS(300))], |_| true);
+        (m, road)
+    }
+
+    #[test]
+    fn recovery_probes_need_a_known_road_and_a_hint_after_judgment() {
+        let t = Instant::now();
+        let (mut m, road) = recovery_case(t);
+        assert!(m.recovery_probes(t, &[], &[], |_| true).is_empty());
+        assert!(m.recovery_probes(t, &[], &[(road.clone(), t.into_std())], |_| true).is_empty());
+        let heard = [(road.clone(), (t + MS(1)).into_std())];
+        assert!(m.recovery_probes(t + MS(250), &[(road.clone(), t)], &heard, |_| true).is_empty());
+        m.rtts.get_mut(&(ConnId(0), PathId::ZERO)).unwrap().samples = 0;
+        assert!(m.recovery_probes(t + MS(250), &[], &heard, |_| true).is_empty());
+        m.rtts.get_mut(&(ConnId(0), PathId::ZERO)).unwrap().samples = 1;
+        let probes = m.recovery_probes(t + MS(250), &[], &heard, |_| true);
+        assert_eq!(probes.len(), 1);
+        assert_eq!(probes[0].road, road);
+        assert_eq!(probes[0].epoch, t - MS(300));
+        assert_eq!(probes[0].attempt, 1);
+        assert!(m.silent.contains_key(&road), "the hint itself never establishes reachability");
+        let mut healthy = Measured::default();
+        healthy.rtts = m.rtts;
+        assert!(healthy.recovery_probes(t + MS(250), &[], &heard, |_| true).is_empty());
+    }
+
+    #[test]
+    fn recovery_probe_requests_are_paced_and_cannot_refill_the_same_epoch() {
+        let t = Instant::now();
+        let (mut m, road) = recovery_case(t);
+        let heard = [(road.clone(), (t + MS(1)).into_std())];
+        for attempt in 1..=RECOVERY_PROBES {
+            let now = t + MS(250 * u64::from(attempt));
+            let probes = m.recovery_probes(now, &[], &heard, |_| true);
+            assert_eq!(probes.len(), 1);
+            assert_eq!(probes[0].attempt, attempt);
+            // No send result is reported: failures and merging consume the same budget.
+            assert!(m.recovery_probes(now + MS(1), &[], &heard, |_| true).is_empty());
+        }
+        let later_hint = [(road.clone(), (t + MS(5000)).into_std())];
+        assert!(m.recovery_probes(t + MS(5000), &[], &later_hint, |_| true).is_empty());
+        assert_eq!(m.recovery[&road].attempts, RECOVERY_PROBES);
+        assert!(m.silent.contains_key(&road), "unanswered probes cannot clear the fault");
+    }
+
+    #[test]
+    fn recovery_probing_has_a_finite_window_even_with_budget_remaining() {
+        let t = Instant::now();
+        let (mut m, road) = recovery_case(t);
+        let heard = [(road.clone(), (t + MS(1)).into_std())];
+        assert_eq!(m.recovery_probes(t + MS(250), &[], &heard, |_| true).len(), 1);
+        assert!(m.recovery_probes(t + MS(250) + CONFIRM_FOR, &[], &heard, |_| true).is_empty());
+        assert!(m.recovery_probes(t + MS(4000), &[], &heard, |_| true).is_empty());
+        assert_eq!(m.recovery[&road].attempts, 1, "an expired silence retains a spent tombstone");
+    }
+
+    #[test]
+    fn a_new_round_trip_can_end_silence_without_discarding_the_probe_budget() {
+        let t = Instant::now();
+        let (mut m, road) = recovery_case(t);
+        let heard = [(road.clone(), (t + MS(1)).into_std())];
+        assert_eq!(m.recovery_probes(t + MS(250), &[], &heard, |_| true).len(), 1);
+        let mut fresh = reading(&road, t + MS(300));
+        fresh.samples = 2;
+        m.rtts.insert((ConnId(0), PathId::ZERO), fresh);
+        m.mark_silent(t + MS(500), &[], |_| true);
+        assert!(!m.silent.contains_key(&road));
+        assert_eq!(m.recovery_probes(t + MS(500), &[], &heard, |_| true).len(), 1);
+        assert_eq!(m.recovery_probes(t + MS(750), &[], &heard, |_| true).len(), 1);
+        assert!(m.recovery_probes(t + MS(1000), &[], &heard, |_| true).is_empty());
+        assert!(m.recovery_probes(t + MS(2500), &[], &heard, |_| true).is_empty());
+        assert!(m.recovery.is_empty(), "recovered episodes release their state after the window");
+    }
+
+    #[test]
+    fn natural_fresh_samples_cancel_remaining_recovery_probes() {
+        let t = Instant::now();
+        let (mut m, road) = recovery_case(t);
+        let heard = [(road.clone(), (t + MS(1)).into_std())];
+        assert_eq!(m.recovery_probes(t + MS(250), &[], &heard, |_| true).len(), 1);
+        let r = m.rtts.get_mut(&(ConnId(0), PathId::ZERO)).unwrap();
+        for ms in [300, 350, 400] {
+            r.changed.push_back((t + MS(ms), t + MS(ms)));
+        }
+        assert!(m.recovery_probes(t + MS(500), &[], &heard, |_| true).is_empty());
+        assert_eq!(m.recovery[&road].attempts, RECOVERY_PROBES);
+    }
+
+    #[test]
+    fn closed_roads_drop_recovery_state_and_an_independent_fault_gets_a_new_epoch() {
+        let t = Instant::now();
+        let (mut m, road) = recovery_case(t);
+        let heard = [(road.clone(), (t + MS(1)).into_std())];
+        assert_eq!(m.recovery_probes(t + MS(250), &[], &heard, |_| true).len(), 1);
+        assert!(m.recovery_probes(t + MS(500), &[], &heard, |_| false).is_empty());
+        assert!(m.recovery.is_empty());
+        m.mark_silent(t + MS(500), &[], |_| false);
+        m.mark_silent(t + MS(1000), &[(road.clone(), t + MS(600))], |_| true);
+        let heard = [(road.clone(), (t + MS(1001)).into_std())];
+        let probes = m.recovery_probes(t + MS(1250), &[], &heard, |_| true);
+        assert_eq!(probes.len(), 1);
+        assert_eq!(probes[0].epoch, t + MS(600));
+        assert_eq!(probes[0].attempt, 1);
     }
 
     #[test]

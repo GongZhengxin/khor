@@ -12,6 +12,14 @@
 
 ## 补丁
 
+### 39. 已知路收到恢复提示但PTO已清时，有界确认新的往返（2026-11-10，feat/net）
+
+002954真实peer relay移动的70条conn/path快照显示last_received>judged，但latest_rtt_sent<=judged、PTO0/unacked None；旧copy wake不会发送新包，内层直到约5.3秒才取得新往返。原267/272在冻结四秒业务选路合同为红，原可达/最终hold绿不替代此门。最早hint还在外层恢复前，故不能用一次旧ACK或一次过早慢样本确认新网。
+
+Measured按peer/road/实际silence.began持有有限episode，需真实历史样本、判定后回包hint、当前无silent copy才申请。两秒内最多3次、至少250ms间隔，失败/合并也消耗预算；重复hint/同一未解故障不续费，无hint黑洞/健康闲置/首次未建立不触发。自然3次新观测可停止；与现有Moving或已选可用路合并。选择低PTO、较新收包的已有弱连接copy发PING，无新timer/task/强Connection owner；关闭路或已恢复窗口结束回收。
+
+保留sent>judged、原2秒/两fresh ticks、收益门、PTO/重hold/现有copy-waking规则；所有transport同规则，无Direct优先。新单元只是预算/生命周期合同，原四秒物理至少3次、CPU短停顿/黑洞/探测包成本、准确源vendor/portable均待远端。当前不是已通过/性能完成；上游等价恢复提示与有界确认及同一行为/成本证据齐全后退出，本条尚未向上游提交。
+
 ### 38. 被动地址迁移后按真实FourTuple更新缓存与测量归属（2026-11-09，feat/net）
 
 247在真实NAT端口重绑中124/124请求可达，但慢方向约123ms（另一方向约21ms）；同一Noq conn/path1实际remote已从:50001迁到:50002，iroh缓存仍指旧:50001，69次不一致。独立数据合同warm_remote_requests_select_the_rebound_tuple_v1在原整fixture上30次warm remote请求0次选中新tuple，journal也没有新selected；输入/原文/身份与合同哈希见net优化证据账本。

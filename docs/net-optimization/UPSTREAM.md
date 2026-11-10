@@ -123,3 +123,6 @@ PacketNumberSpace::sent本身有非ACK-eliciting尾部记录回收，说明“�
 
 
 本地补丁Noq2新增reporting始终启用恢复测试已由42555870179 Mac实际通过（438Noq全绿）；没有执行固定1.4.0上游同一用例，不能据此宣称上游行为红或直接升级。准确源/平台见RUNS。
+
+
+Iroh39新候选是恢复回包hint与新往返之间的有界探测，原因/预算/退出见vendor/iroh/KHOR.md与VENDOR-AUDIT。尚未核查固定上游等价实现或执行其行为/成本，不据命名或普通keepalive存在就删本地候选。总编号现为Iroh1–39/Noq1–12（51项），新增项验证仍在途。
