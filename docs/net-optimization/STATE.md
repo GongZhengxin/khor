@@ -6,6 +6,10 @@
 
 ### 最新覆盖状态（优先于下方历史段落）
 
+- **当前HEAD7810dc1e仅追加successor fixture与cfg(test)交接暂停点**，tree2a5f1fa6/snapshot475fbb6c；已送Turing新baseline（receipt以ledger为准），无产品行为改动。两个successor/无successor控制尚未运行。
+- 产品候选 **99d8ec5ceec86a822ad9e5661bcecbb40939ff2b**，tree7f6c0b7b/snapshotef1ef86b，Linux **1446794a全12组绿/hop36/wires15/budget30/resume1**，254.742秒/21artifact/group空且identity已核。三项真实红已在该source通过；Mac **42849256788**同canonical运行中，尚未接受此scope。854的原pair Busy保留未归因，本轮resume通过不将其关闭。
+- 前一14ea/178a/b6c2因递归future Send约束编译失败：Linux3862d094 81.904秒/11artifact/group空；Mac42848083023 exact13778782806/10files/11control blobs核，同编译错误，无行为结果。99只在hop_ahead冷路径显式box+Send返回边界打断类型推导，不改期限/fixture/协议。格式216e另存。
+
 - **当前推进覆盖**：839885b4/39595ce3/96eff693的Linux085ea57e真36项33/3红：未登记握手echo失败、同peer pending保留失败、快IP被慢middle占满caller失败；另一peer负控和原32通过，136.168秒/11artifact/group空/identity核。此前f51/0e9314a5实际33项32/1快IP红（STOP/outer-open/no-orphan过），136.148秒/11artifact核。所有格式尝试另存。
 - 之后WIP普通拨号与hop准备共享单一dial window并行；原普通两项都失败后，新carrier至多再补一次、最多两项活动握手。获胜连接先adopt再drop准备；短期pending凭据交给现有watcher等待，仅取消且无live使用时回收自己的serial，无新任务/计时器。**未编译/未测/未接受**；0RTT仍串行，Asleep终止语义、pending状态跨操作换代原子性仍须独立合同，不能称NET16/整体完成。core-transfer pairing Busy854仍未归因。
 

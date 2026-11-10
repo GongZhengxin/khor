@@ -578,3 +578,5 @@ close_offer原整个文件保持70af完整前缀，只尾附queued_close模块�
 普通dial可把新carrier作为一次有界候选更新：复用同一个DialWindow和journal起点，最多2个活跃连接尝试，新carrier到达时回收/替换一个待定候选；全失败先等有限准备结果，peer Asleep/failed只在最终失败提交。原直接/identity两个候选可有一个新carrier重试（生命周期总次数需显式记录，不能把2活跃冒充2总次数）；没有业务帧时的重握手与已接受early请求的禁止重放必须分开。0-RTT路径仍须独立处理和验证，不复用普通连接重试去重发accepted操作。
 
 2026-11-10T15:44:10.421147+00:00：ordinary并行候选WIP已按33/3真实红实现，仍须远端fmt/compile/合同/全回归。原2活动握手，允许所有普通尝试失败后新carrier补1次（总lifetime最多3，绝不能写2total）；原caller/dial window不重置。使用weak pending owner+watch关闭通知，现有hop watcher接交接，成功adopt在准备future Drop前。0RTT、旧Asleep先返回、pending state最后释放→新operation准入→旧watcher回收之间的原子性、freshness/address/network epochs仍未闭合；不得把本candidate当整包最优或可部署。
+
+2026-11-10T15:55:07.266891+00:00：99d8ec5c Linux1446794a全12/hop36绿，Mac42849256788同源待结果；并行/未登记scope仅候选。新增successor fixture在旧pending完成→清理决策间真实gate，先完成后新建同peer lease并保持实际未登记carried TLS；确认旧watcher决策已执行后再echo，含无successor释放控制。7810仅测试点，下一步先取真实红，再把pending准入与精确serial撤回放到同锁原子检查；其余0RTT/Asleep/候选新鲜度/full N0–N5继续。
