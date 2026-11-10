@@ -233,7 +233,7 @@ Accepted前置42566727617未成立，不能算取消行为红。为让本地调�
 
 ## 真机验收设备组合（用户确认）
 
-历史用户表述曾将macserver/Turing视作异网；2026-11-10最新明确“Mac turing是在一个局域网内的哦”，以最新说明为准。P=iPhone、A=构建macserver（Mac）、B=Turing（Linux）；生产设备MacLab与构建macserver的映射待澄清，不能擅自等同。现有120/120只验真实双机业务与公共Relay路径，不能充当异网或公网NAT穿透通过。先按同LAN/具体拓扑待核记录；iPhone蜂窝可提供明确异网场景，但用户已要求稍后再测，当前不启动手机采样。
+历史用户表述曾将macserver/Turing视作异网；2026-11-10最新明确“Mac turing是在一个局域网内的哦”，随后用户明确同LAN的Mac为“MacLab 本地电脑”。P=iPhone、A=构建macserver（Mac）、B=Turing（Linux）、C=MacLab本地参照；C/B同LAN，A/B沿U10用户报告异网。120/120的实际Mac为A，不把C/B拓扑套给A/B，也不把公共Relay通过当公网Direct/NAT穿透通过。用户现已恢复iPhone测试，按前台Wi-Fi基线→连续采样并手动切蜂窝→切回Wi-Fi执行；旧锁屏混杂轮保留，新轮每阶段需网络/前台确认。手动切换时间不精确、CLI耗时含本地初始化与RPC，不能冒称网络RTT/精确恢复SLO或能耗通过。
 
 先用准确源码、可信构建与隔离测试身份/数据执行A↔B真实双机双向冷/暖连接、前台交互与批量共存、断连/进程重启恢复及空闲开销，保留实际端到端路径和全部失败。随后补P↔A、P↔B及iPhone支持的换网/休眠恢复、后台能耗。设备确认和测试准备不代表已执行或通过；不得以同机namespace、Mac loopback或Noq模型替代真实跨网结果。
 
@@ -553,3 +553,8 @@ Iroh42首轮4f2d591b原请求50/50与X Go3262ms绿，Y原decision checker因没�
 ### Iroh44：有限恢复采样不冒充持续迁移确认（07:56UTC，实施前冻结）
 
 f2b832dc真实X7728ms红作基线：85→112 sparse median使测量与决定一起停止。新独立fixture走actor同helper：known有限recovery且live nonsilent候选1–2质量样本时，选择器留当前路只继续原有限采样；到期/healthy/closed/silent/充分3样本均停止。回到candidate后连续2秒确认时钟重启，旧fresh与gain不放宽；不允许sampling elapsed直接Go。原额外3预约预算/节奏/窗口及旧50+43三case whole不改。先原行为helper基线真红、再同whole绿，后完整固定物理/quiet/packet成本。普通confirmation补测成本单独计，不能用新称呼绕过总流量与能耗验收。
+
+
+## 2026-11-10：前台新wire与旧休眠关闭冲突合同
+
+先用真实两条独立QUIC连接、相同peer身份及真实stream收包，复现Wires::tick同批heard/back被旧resting/asleep覆盖；不得仅调用back/asleep模拟结论。新live wire实际可答时left_alone必须false且继续可请求；两条均真实suspended关闭时必须保留休眠与不记不可达语义。原wires whole fixture不改，新whole红绿同源冻结，原net-node/cancellation/pause恢复全部仍需通过。该合同只解决同tick证据优先顺序，其他after_retirement并发和现场iOS生命周期/IPv4v6地址epoch不能由它代替。

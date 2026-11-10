@@ -1,14 +1,14 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-10 08:46 UTC。完整N0–N5仍未完成，用户授权继续。速度/体验优先，可信个人设备网；无main合并、发布、采购/生产部署授权。root串行、无子智能体。长期[PLAN](PLAN.md)/[REQUIREMENTS](REQUIREMENTS.md)/[ACCEPTANCE](ACCEPTANCE.md)不缩减。上一状态逐字在[历史](HISTORY-20261110-before-natural-recovery-epoch.md)，保留更早历史链。不要因旧goal服务paused停止。
+更新：2026-11-10 09:23 UTC。完整N0–N5仍未完成，用户授权继续。速度/体验优先，可信个人设备网；无main合并、发布、采购/生产部署授权。root串行、无子智能体。长期[PLAN](PLAN.md)/[REQUIREMENTS](REQUIREMENTS.md)/[ACCEPTANCE](ACCEPTANCE.md)不缩减。上一状态逐字在[历史](HISTORY-20261110-before-natural-recovery-epoch.md)，保留更早历史链。不要因旧goal服务paused停止。
 
 ## 先核真实句柄
 
 - 主 `/Volumes/disk0/Khor/worktrees/current/khor-net`，feat/net。生产行为HEAD **ba28fc03**（之后文档/注释）；主53vendor、Iroh41。Mac42770379226+Linux4bcfad82同source全部net-node已绿，见下。不把doc-only HEAD误当已测试二进制源。
 - 隔离 `/Volumes/disk0/Khor/worktrees/current/khor-net-recovery-deadlines` detached **2ef6bee5**，treef1da6579/snapshot48e9e24b（b4行为仅追加actual carrier与connect阶段诊断，e819已实际编译执行）；无IPC v2，Iroh42/43/44未合主。Iroh43实际vendor绿但物理f2b仍红。Iroh44基线d7/tree937/snapshot714在fe3实际54/2红；当前b4只保留有限稀疏测量，重新合格或新故障重启确认时钟，原whole50+epoch+sampling fixtures不变；待同源vendor与物理验证。
 - 控制 `/Volumes/disk0/Khor/worktrees/current/khor-build-net` feat/net HEAD **68cadb57a0ed72d40a4ca9a843e86b9c6797bf34**已推。net-node仅在原remoteQUIC32之后/canonical之前加resume合同；3个source-only stub控制测试实际绿。
-- Turing当前full物理阶段诊断 **turing-20261110T084820Z-bf6105dd/PID2013314**，source2ef/treef1da/snapshot48e9/control ef0b、08:48:41UTC已launch；前驱f89fe221实际fmt/441/56/9绿、64.012秒/14artifacts/原group空；e819实际carrier repeat2 **4dc22c7e**已真实冷启动红：首目录10,033,849us超时，x→y dial10002ms、已给Relay hint但无hop bound/splice、未进入replug。1started/1finished error，56.019秒/16artifacts/原group空核；不计四秒恢复重复。停止重复转查cold dial，旧cold独立红保留。前驱e0 actual四流完整且恢复3223/3227ms绿只作正常时序参照。
-- Mac无已知heavy在跑。macserver SSH已恢复；用户最新明确“Mac turing是在一个局域网内的哦”，撤回此前天然异网推断。A=构建macserver/B=Turing，MacLab与macserver的设备映射待澄清，P=iPhone；公共Relay不能证明两端异网。源提交经本机GitHub SSH，worker仍原API bundle/guard，无个人凭据给worker。
+- Turing与Mac均无本轮heavy/phone sampler。**优先追真实手机→MacLab自动接管失败**：用户回Wi-Fi后Turing/hinton/lecun可通、MacLab不通；反复关闭/重开iPhone App后才某次经Turing peer relay成功。不是自动恢复成功。手机无需继续操作。新session090200三phase均已结束，采样方向是Turing→phone，不能代替phone→MacLab；全部mixed installed cohort，App重启时点未控，busy/paused归属未证。MacLabpublic id449aed、local endpoint pid87295已只读核实，其他GUI进程是_host/_ghost/agent子角色，未杀/未当作重复resident故障。正只读采集MacLab/Turing指定peer network journals，MacLab已归档220条，Turing SSH采集本地exec8976须恢复核句柄；不重复启动。
+- Mac无已知heavy在跑。macserver SSH已恢复；用户已澄清同LAN为MacLab本地电脑↔Turing；构建macserver为另一台。A=macserver/B=Turing沿用U10用户异网说明，C=MacLab同LAN参照，P=iPhone；公共Relay自身不证明NAT穿透。源提交经本机GitHub SSH，worker仍原API bundle/guard，无个人凭据给worker。
 - 用户已确认：**iPhone在手边，可切Wi-Fi/蜂窝；已装khor并已与Macserver/Turing配对**。两次可用性/安装配对问题均已答，不重复问。真机具体采样窗口尚未开始；先核实际版本/cohort/可观测API并准备短操作，不假称手机已通过或要求改生产store。
 
 ## 当前关键因果：稀疏恢复质量中断补测
@@ -40,7 +40,7 @@
 
 ## N4真实双机与手机（异网尚未验收）
 
-- 当前已执行双机 cohort（保留历史WAN任务名）仍 **757/tree2d218/snapshot3f0/controlccd**：coordinator4cee410c97601afe/Mac42757732776，Mac↔Turing各30目录+30固定29B正文逐byte验证，120/120全部ok，两端fresh配对ID相符。MacbinarySHAcd9be1a8/Linux0e063201。实际公共Relay101.200.80.77:3340；120/120只证明双机业务及该Relay可用，不证明跨LAN、公网NAT穿透。最新用户报告Mac/Turing同LAN，具体Mac映射待确认。不是Direct/peer/v6/mobile/p99/吞吐/手机能耗；也非与旧ff608匹配性能比较。
+- 当前已执行双机 cohort（保留历史WAN任务名）仍 **757/tree2d218/snapshot3f0/controlccd**：coordinator4cee410c97601afe/Mac42757732776，Mac↔Turing各30目录+30固定29B正文逐byte验证，120/120全部ok，两端fresh配对ID相符。MacbinarySHAcd9be1a8/Linux0e063201。实际公共Relay101.200.80.77:3340；120/120只证明双机业务及该Relay可用，不证明跨LAN、公网NAT穿透。最新设备映射已确认：同LAN为MacLab↔Turing，cohort使用另一台构建macserver；A/B异网依用户报告，独立网络/NAT测量未完成。不是Direct/peer/v6/mobile/p99/吞吐/手机能耗；也非与旧ff608匹配性能比较。
 - worker_us最近秩p50/p95/max：Mac→Linux目录55382/58815/76133、正文61322/64630/66470；Linux→Mac目录59527/64622/65616、正文55671/58949/59727。caller另存proof。wan-current-directory-body-proof.json。
 - 同cohort Mac3/3+Linux3/3 stop/EOF/kill真实Node join/worker0/owned空/锁释放；最初两observer IndentationError留原并readonly恢复不计pass，然后新六轮绿。两个business fresh identities与8lifetime copies直接验证清理、一次GH secret已删。manifest current3f0/旧ff608备份，误directory_v1 ledger label保留并actual_v2+erratum补正。
 - iPhone可手动Wi-Fi/蜂窝且已装/已配A/B。准备实际版本/cohort与现有可观测API后，给短、明确采样窗口，记录全outcomes/首成功/选路/实际v4v6。尚无手机观测，不混称当前candidate已在手机执行。
@@ -81,3 +81,9 @@ SSH BatchMode/ForwardAgent=no/StrictHostKeyChecking=yes；无个人key/PAT/agent
 08:46：2ef6bee5只对vendor/iroh/endpoint.rs加start/connecting-ready/handshake-finished bool阶段诊断，attempt仅DEBUG enabled时取本地单调时间；无新await/timer/task/probe、不打印请求/票据/完整error。connect-stages-source-audit.json冻e819后唯一diff，net-vendor f89fe221/PID2010457 source48e9/treef1da/control68已launch，查source-refs/receipt再恢复，禁重提交。netlab resident stderr直写serve.log文件（lab.rs272），不是未消费pipe；仍不以此排除诊断CPU/IO扰动。
 
 08:49当前connect stage source2ef已vendor库实际编译、原fmt/441/56/9绿；bf6105dd原物理正在运行，成功和cold红都保留，不因缺replug失败创建假四秒结果。connect-stages-source-audit.json保留同e819后单文件诊断diff。
+
+09:04用户最新两项：同LAN的Mac明确为MacLab本地电脑，构建macserver为另一台；旧U10 macserver/Turing用户异网说明仍适用，独立拓扑测量未做且公共Relay不等于NAT穿透。用户已恢复iPhone测试：首次session085800 Wi-Fi30calls26ok/4busy但用户报告曾锁屏，不能作纯前台基线，旧cellular_transition尚未发切换指令已自然结束（PID2037262确已退出，无任何kill信号）。新session090200用户再次确认已解锁/Wi-Fi/khor前台，现一分钟baseline，之后须先启动连续transition sampler，再发切蜂窝指令并等用户确认，再回Wi-Fi。v1将busy笼统标local，归属未证，原数据保留并erratum按state_busy解释；v2不再假定本地归属。collector ops/phone-rpc-sample.py，旧v1备份、protocol json与每phase receipt冻hash；30s外部CLI timeout即停止而不累积旧版本未确认回收的RPC。当前installed Turing0.1.15/phone0.2.0，非candidate或能耗/逐包验收。
+
+09:08手机新session090200：纯前台Wi-Fi基线30calls18ok/12state_busy（归属未证）；随后用户确认已关Wi-Fi使用蜂窝，cellular_transition90秒10calls8ok/2busy，前3个成功调用耗时27916/29285/19093ms，随后成功约687–1844ms。不能把这些CLI总耗时称RTT或准确换网恢复时刻，但真长尾保留。当前wifi_return_transition已启动90秒，本地exec91517/remotePID2051242，remote09:08:06UTC；已发回Wi-Fi确认题，待用户回复。新sampler不并发、无原始journal正文输出，不启动heavy。
+
+09:23新核心事实：用户强调relay/peer relay未及时接管，后明确恢复依赖反复关开App。manual-app-restart-erratum.json撤回“正常自动接管”解释。MacLab手机journal可见08:46/08:51 pump10s失败/300s退避、数次carried↔relay切换与retire、09:08 retire后至09:15新inbound存在空窗，09:06 hop曾via hinton而非Turing；需核完整原因/实际绑定，不能先猜根因或假定整个窗口backup可用。MacLab/Turing clock bracket：Turing快约18.603–18.644秒，跨主机时间线要校正。当前pmset断言防idle sleep15h、当前MacLab进程存在，只是当前状态，不冒称证明故障时无休眠。生产App/所有resident未重启或改配置。

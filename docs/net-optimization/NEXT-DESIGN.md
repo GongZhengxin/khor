@@ -430,3 +430,12 @@ Iroh44同whole单元54/2红→56绿、Noq441/home9绿，但first physical a4ed77
 actual carrier repeat2 4dc22c7e并未进入replug：首目录10,033,849us超时，Node x→y Ask拨号10002ms、offered direct3及Relay198.18.1.2:3340、failures1/retry5；无hop bound/splice、仅1error outcome。source e819/tree2e52/snapshot2a10/control ef0b、56.019秒/16artifacts/原group空核。属于既有10秒cold-start独立红，不能作四秒恢复重测或丢弃。诊断模式下的实际业务失败，尚未证明无诊断时同样复现。
 
 源码dial_with最多两ep.connect候选，known hints候选立即、identity候选headstart后；Endpoint.connect先await connect_with_opts（内含before_connect hook与resolve_remote），再await Noq Connecting握手。当前日志只见总dial，目标y在selector诊断零出现，无法区分解析/actor排队与Noq握手，不以offer有Relay当已发包。下一仅在已有khor_net_samples debug target添加connect start（目标身份/ALPN及offer计数）、connect_with_opts完成和handshake完成阶段/结果；不改变await顺序、错误传播、超时、并发、重试、探针、协议或fixture，不记录票据/请求正文。root格式/vendor原回归后原物理运行；若再次cold红，先按阶段定位。成功轮仍只作参照，无诊断性能与原stalls/成本最后另验。
+
+
+## 2026-11-10 09:33：新连接已收包，旧关闭却重新标休眠（先真实回归）
+
+现场用户已明确：回Wi-Fi后能通Turing/hinton/lecun但MacLab不通，Relay/peer relay未及时接管，反复关开iPhone App后某次才经Turing成功。不是自动恢复通过。MacLab被动phone journal有多次why=asleep退役、carried/relay切换及连接空窗；所有生产进程/配置未改。CLI采样是Turing→localhost、混合已装版本，App重启时点未控、busy/paused归属未证，不能替代phone→MacLab或精确恢复SLO。
+
+当前源码Wires::tick分别收集heard与resting，末尾先back(heard)再asleep(resting)。同一peer旧连接晚到suspended关闭、另一条较新live连接已经收到真实新数据时，后处理旧休眠可覆盖刚确认的新可达，恢复背景pump又被left_alone抑制。这是静态可见候选，并未证明就是现场唯一根因；after_retirement并发、新地址epoch、LOST/MISSED候选冷却、远端resume准入等另查，不能靠此单项关闭整案。
+
+先新增独立tests_wake_epoch真实loopback Noq fixture，原wires tests whole逐byte冻结。两个不同稳定wire、同peer身份：先注册old/new incoming，再关闭old为suspended，确保new实际收一条新stream数据，调用真实tick后仍应不left_alone、new可继续echo。负向两条都suspended时必须仍被left_alone，不变暂停/耗电语义。新模块以tests前缀由原net-node wires::tests filter自动覆盖，控制68不改。先旧行为真实红，源/whole新fixture冻结；然后仅纠正同tick冲突的证据顺序，原net-node全回归双OS、late-close/epoch独立覆盖后再评估，现场手机根因仍需时间线与准确源码验证。

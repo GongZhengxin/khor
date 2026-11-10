@@ -28,12 +28,12 @@
 | U7 | 活动目标“完成计划” | 授权按计划实施和验证，取代旧的仅规划状态 |
 | U8 | 真机验收可用“iPhone＋两台处于不同网络的电脑” | 已确认设备组合；型号、OS版本和具体网络条件在验收前采集 |
 | U9 | “可以在我的turing服务器跑的, 更快” | 用户明确授权并优先Turing执行Linux netlab；Mac VZ能力作为备用，Mac原生构建继续macserver |
-| U10 | “macserver、linux就是天然的不是一个网络的设备”；“linux指turing” | 历史表述，已被最新U15修正；A=构建macserver、B=Turing，双机业务可继续，具体Mac映射和异网拓扑不能从Relay反推 |
+| U10 | “macserver、linux就是天然的不是一个网络的设备”；“linux指turing” | A=构建macserver、B=Turing按用户报告异网；U15澄清同LAN的是另一台MacLab与Turing。公共Relay结果不独立证明网络拓扑或NAT穿透 |
 | U11 | “khor有peer relay的机制，要纳入最优连接的考虑” | Peer relay是与Direct IPv4/IPv6、公共Relay、SSH承载共同竞争的实测候选；测完整两腿和双向业务表现，覆盖多个middle、middle换网/失效，不能把公共Relay当唯一中继 |
 | U12 | “真实移动网设备会随时变真实地址，IPv4和IPv6都可能随时变” | 将IPv4/NAT映射与IPv6地址/前缀分别变化、同时变化、Wi-Fi↔移动网及对端/peer-relay移动列为硬验收；身份不变、旧地址/旧完成事件不污染新网、原总期限/写入语义不变 |
 | U13 | “turing的计算能力很强，可以思考怎么加速开发” | 在独占计时和资源边界内利用Turing：测编译关键路径、复用普通/诊断缓存、批量准备/分析；编译并行度与测试并行度分开，优化构建不缩短网络观察/防抖门，不默认派发子智能体 |
 | U14 | “为什么停下里” | 用户已明确继续，不能因目标服务paused或阶段完成结束当前工作；持续推进完整计划，按实际必要的信息/阻塞处理，不把后台调度状态当权限或停止门 |
-| U15 | “Mac turing是在一个局域网内的哦” | 最新拓扑说明优先：按Mac/Turing同LAN记录，撤回此前已完成异网验证的推断；MacLab/构建macserver映射待澄清。双机120/120与公共Relay事实保留，异网/公网穿透待明确拓扑重验；iPhone蜂窝提供后续明确异网场景，用户已暂缓手机采样 |
+| U15 | “Mac turing是在一个局域网内的哦” | 用户后续明确同LAN的Mac为“MacLab 本地电脑”，构建macserver是另一台；U10 macserver/Turing用户异网报告保留。120/120使用macserver/Turing，不把MacLab同LAN映射到该cohort；NAT/Direct穿透仍待验。用户现已恢复localhost iPhone测试，前台Wi-Fi→蜂窝→Wi-Fi依确认执行 |
 
 下列是计划中的设计提议，尚需测量或实验确定：评分/切换参数、探测频率、缓存有效期、交互与批量是否拆连接、是否双家、Linux 执行器部署方式、中继新增位置与数量。不能在交接中把它们写成用户已批准的具体参数或部署。
 
