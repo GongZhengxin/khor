@@ -550,3 +550,8 @@ a35/95e/c74已双OS全12组绿，完成已登记selected-carried与完整准备�
 8048/73ff/5e19在761c4291真实hop24/1红：新frame stream实际offer、Custom有测量后，旧close仍导致真实Closed、carried=false；无replacement确实关闭Custom且IP继续的负控与此前23全过，126.109秒/11artifact/identity核/group空。原fixture全部冻结。
 
 第一候选先把条件检查放在实际RemoteStateActor执行关闭的点：新增close_carried_if携带仅检查共享Links的同步guard，既有close_carried保持无条件，复用同一个CloseCustom消息；actor执行前读最新has，变为存在则不关。guard只活到有界消息被处理，不新增task/timer/probe/版本表或IO，信任/关闭最后一条path原语义不变；按既有Iroh13扩展记录，不与隔离42–44编号冲突。这个最小合同尚未验证，且**不能凭它关闭“已排队的close之后才有新carrier”、pending Noq open/Abandoned、ears与网络epoch矩阵**；要再用真实actor排队窗口合同决定是否升级revision设计。前一revision备忘保留为提议，不提前落入实现。
+
+
+### 14:02UTC 真实actor排队合同（测试已写，尚未运行）
+
+close_offer原整个文件保持70af完整前缀，只尾附queued_close模块；新模块用scratch endpoint的透明RoadOrder wrapper一次同步暂停真实RemoteStateActor，其他选择/测量不变，RAII始终释放。旧frame结束后暂停actor，真实Node let_path_go已将close入队并join，而actor仍停在回调；随后才attach替代frame流，再释放actor/实际offer、用同actor barrier和真实Closed/paths/echo观察。无replacement控制应仍关闭。该gate不进入生产、不注入测量/时钟、不重放业务。为证明执行点guard而非提前check有效，需独立scratch baseline仅把Node调用恢复到原无条件close_carried，Iroh候选加法API保留但不使用；两份源新whole测试一致、原API None分支即旧关闭行为，先真实红再候选绿，不伪装成旧完整Git提交。原25全部继续覆盖。

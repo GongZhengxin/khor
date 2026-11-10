@@ -234,3 +234,6 @@ async fn a_late_close_preserves_an_already_offered_replacement() {
 async fn a_close_without_replacement_retires_custom_and_keeps_the_ip_wire() {
     observe_close(false).await;
 }
+
+#[path = "queued_close_tests.rs"]
+mod queued_close;
