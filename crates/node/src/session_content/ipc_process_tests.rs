@@ -86,7 +86,7 @@ impl Resident {
             .open(root.join("ipc-child.log")).unwrap();
         let mut command = Command::new(std::env::current_exe().unwrap());
         command.args([CHILD_TEST, "--exact", "--nocapture", "--test-threads=1"])
-            .env_clear().env(ROOT_ENV, root).env("HOME", root)
+            .env_clear().env(ROOT_ENV, root)
             .stdin(Stdio::from(OwnedFd::from(child_control)))
             .stdout(Stdio::null()).stderr(Stdio::from(stderr));
         for name in ["PATH", "LD_LIBRARY_PATH", "DYLD_LIBRARY_PATH", "DYLD_FALLBACK_LIBRARY_PATH"] {
