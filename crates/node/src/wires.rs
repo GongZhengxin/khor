@@ -641,7 +641,7 @@ impl Wires {
         drop(self.dialing.lock().unwrap_or_else(|p| p.into_inner()));
         drop(self.changed.lock().unwrap_or_else(|p| p.into_inner()));
         drop(self.served.lock().unwrap_or_else(|p| p.into_inner()));
-        drop(self.gone.lock().unwrap_or_else(|p| p.into_inner()));
+        drop(self.presence.lock().unwrap_or_else(|p| p.into_inner()));
         drop(self.down.lock().unwrap_or_else(|p| p.into_inner()));
         drop(self.hops.lock().unwrap_or_else(|p| p.into_inner()));
     }
