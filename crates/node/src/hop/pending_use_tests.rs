@@ -4,21 +4,33 @@ use super::*;
 
 async fn observe_pending(register: bool, other_peer: bool) {
     let mut f = Publication::new().await;
-    let peer = if other_peer { f.middle.id.clone() } else { f.target.id.clone() };
+    let peer = if other_peer {
+        f.middle.id.clone()
+    } else {
+        f.target.id.clone()
+    };
     let pending = f.node.wires.pending_dial(&peer);
     let (entered, release) = f.node.wires.gate_hop_offered_for_test();
     let mut opening = f.opening();
     let serial = ready(entered).await;
     let remote = tokio::time::timeout(Duration::from_secs(2), &mut f.attached_target)
-        .await.unwrap().unwrap();
+        .await
+        .unwrap()
+        .unwrap();
     let conn = if register {
         let conn = tokio::time::timeout(
             Duration::from_secs(2),
             f.ep.connect(
-                iroh::EndpointAddr::from_parts(f.target_ep.id(), [transport_addr(&f.target_ep.id())]),
+                iroh::EndpointAddr::from_parts(
+                    f.target_ep.id(),
+                    [transport_addr(&f.target_ep.id())],
+                ),
                 INNER_ALPN,
             ),
-        ).await.unwrap().unwrap();
+        )
+        .await
+        .unwrap()
+        .unwrap();
         assert!(echo(&conn).await);
         assert!(f.node.wires.live(&f.target.id, Proto::Main).is_none());
         Some(conn)
@@ -43,13 +55,21 @@ async fn observe_pending(register: bool, other_peer: bool) {
             while f.node.carry.has(&f.target_ep.id()) || asking(f.node.device_str(), &f.target.id) {
                 tokio::task::yield_now().await;
             }
-        }).await.unwrap();
+        })
+        .await
+        .unwrap();
     }
-    let outer_open = f.outer_local.close_reason().is_none() && f.outer_remote.close_reason().is_none();
+    let outer_open =
+        f.outer_local.close_reason().is_none() && f.outer_remote.close_reason().is_none();
     f.close(serial).await;
-    tokio::time::timeout(Duration::from_secs(2), remote.ended()).await.unwrap();
+    tokio::time::timeout(Duration::from_secs(2), remote.ended())
+        .await
+        .unwrap();
     assert!(outer_open);
-    assert!(answered, "the completed handshake must survive until its caller adopts it");
+    assert!(
+        answered,
+        "the completed handshake must survive until its caller adopts it"
+    );
     assert_eq!(kept_while_pending, !other_peer);
     assert_eq!(owned_while_pending, !other_peer);
 }

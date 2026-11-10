@@ -653,12 +653,15 @@ impl Wires {
     pub(crate) fn pending_dial(&self, id: &str) -> PendingDial {
         let mut pending = self.pending_dials.lock().unwrap_or_else(|p| p.into_inner());
         pending.retain(|_, state| state.strong_count() != 0);
-        let state = pending.get(id).and_then(std::sync::Weak::upgrade).unwrap_or_else(|| {
-            let (done, _) = tokio::sync::watch::channel(());
-            let state = Arc::new(PendingDialState { done });
-            pending.insert(id.to_owned(), Arc::downgrade(&state));
-            state
-        });
+        let state = pending
+            .get(id)
+            .and_then(std::sync::Weak::upgrade)
+            .unwrap_or_else(|| {
+                let (done, _) = tokio::sync::watch::channel(());
+                let state = Arc::new(PendingDialState { done });
+                pending.insert(id.to_owned(), Arc::downgrade(&state));
+                state
+            });
         PendingDial { _state: state }
     }
 
