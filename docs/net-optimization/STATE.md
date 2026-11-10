@@ -1,13 +1,13 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-10 09:53 UTC。完整N0–N5仍未完成，用户授权继续。速度/体验优先，可信个人设备网；无main合并、发布、采购/生产部署授权。root串行、无子智能体。长期[PLAN](PLAN.md)/[REQUIREMENTS](REQUIREMENTS.md)/[ACCEPTANCE](ACCEPTANCE.md)不缩减。上一状态逐字在[历史](HISTORY-20261110-before-natural-recovery-epoch.md)，保留更早历史链。不要因旧goal服务paused停止。
+更新：2026-11-10 10:06 UTC。完整N0–N5仍未完成，用户授权继续。速度/体验优先，可信个人设备网；无main合并、发布、采购/生产部署授权。root串行、无子智能体。长期[PLAN](PLAN.md)/[REQUIREMENTS](REQUIREMENTS.md)/[ACCEPTANCE](ACCEPTANCE.md)不缩减。上一状态逐字在[历史](HISTORY-20261110-before-natural-recovery-epoch.md)，保留更早历史链。不要因旧goal服务paused停止。
 
 ## 先核真实句柄
 
-- 主 `/Volumes/disk0/Khor/worktrees/current/khor-net`，feat/net。当前HEAD **6ba99632**：3a3同tick修复上只加retirement cfg(test) gate与独立2回归，生产Asleep仍旧after-unlock；主53vendor/Iroh41不改，尚未双OS绿，不是已部署源。Mac42770379226+Linux4bcfad82同source全部net-node已绿，见下。不把doc-only HEAD误当已测试二进制源。
+- 主 `/Volumes/disk0/Khor/worktrees/current/khor-net`，feat/net。当前HEAD **2e46900b**（6ba的独立fixture仅远端格式反馈修正）：3a3同tick修复上只加retirement cfg(test) gate与独立2回归，生产Asleep仍旧after-unlock；主53vendor/Iroh41不改，尚未双OS绿，不是已部署源。Mac42770379226+Linux4bcfad82同source全部net-node已绿，见下。不把doc-only HEAD误当已测试二进制源。
 - 隔离 `/Volumes/disk0/Khor/worktrees/current/khor-net-recovery-deadlines` detached **2ef6bee5**，treef1da6579/snapshot48e9e24b（b4行为仅追加actual carrier与connect阶段诊断，e819已实际编译执行）；无IPC v2，Iroh42/43/44未合主。Iroh43实际vendor绿但物理f2b仍红。Iroh44基线d7/tree937/snapshot714在fe3实际54/2红；当前b4只保留有限稀疏测量，重新合格或新故障重启确认时钟，原whole50+epoch+sampling fixtures不变；待同源vendor与物理验证。
 - 控制 `/Volumes/disk0/Khor/worktrees/current/khor-build-net` feat/net HEAD **68cadb57a0ed72d40a4ca9a843e86b9c6797bf34**已推。net-node仅在原remoteQUIC32之后/canonical之前加resume合同；3个source-only stub控制测试实际绿。
-- Turing当前retirement baseline正在原net-node执行，source6ba/tree3f45/snapshotec51/control68，实际句柄以最新receipt/source-refs为准（stageexec13881）；Mac/phone无本轮active。**3a3a29ec同source双OS已全net-node绿**：Turing1ea89122（238.877秒/21artifacts/原group空）+Mac42793316303（11control blobs/20artifacts），tree9c527/snapshot7f1/control68。wires13含原11+新2、resume/canonical/STOP32/remote32/IPC均绿；red7da为12/1、samewhole。wake-epoch-fixture-freeze.json candidate_verified=true仅限same-tick顺序缺陷，field_phone_issue_resolved=false，无部署。下一查retire槽释放后after_retirement旧asleep覆盖新adopt，先真实barrier回归，不把双OS绿当手机整体问题已完。
+- Turing当前retirement runnable baseline **turing-20261110T100314Z-09a93c9e/PID2124709**，source2e46/tree52ef/snapshot6b1d/control68，10:03:35UTC已launch；前驱13d77b6b仅rootfmt一assert包装失败，54.638秒/10artifacts/原group空，不计runtime红。Mac/phone均无本轮active。**3a3同source双OS全node绿** Turing1ea89122+Mac42793316303，whole原11/wake2与source/control对齐；field_phone_issue_resolved=false，无部署。下一必须先09a真实旧Asleep提交红再改retire_slot。
 - Mac本轮42793316303已terminal采证；无已知本轮heavy。macserver SSH已恢复；用户已澄清同LAN为MacLab本地电脑↔Turing；构建macserver为另一台。A=macserver/B=Turing沿用U10用户异网说明，C=MacLab同LAN参照，P=iPhone；公共Relay自身不证明NAT穿透。源提交经本机GitHub SSH，worker仍原API bundle/guard，无个人凭据给worker。
 - 用户已确认：**iPhone在手边，可切Wi-Fi/蜂窝；已装khor并已与Macserver/Turing配对**。两次可用性/安装配对问题均已答，不重复问。真机具体采样窗口尚未开始；先核实际版本/cohort/可观测API并准备短操作，不假称手机已通过或要求改生产store。
 
@@ -62,7 +62,7 @@
 
 SSH BatchMode/ForwardAgent=no/StrictHostKeyChecking=yes；无个人key/PAT/agent/签名/模型凭据给workers，不重设HOME/CODEX_HOME。WAN能力只私管道/一次secret，禁止普通artifact/日志/聊天票据。超时先查receipt/GH/proc/PGID，已有bundle/run先recover不重发。stage/launch显式完整source/control、前驱terminal采证/原group空/锁核；exec session不是结束，commit hook完成后才snapshot；ledger禁止并发writer。
 
-图谱先，缺vendor覆盖才定向读；无.codegraph不自建，无子智能体授权。旧baseline/control WIP保留不reset；终态+owner/hash核后只清本次资源。verify工具只核identity，必须分fmt/compile/fixture/executor/product行为。证据根`/Volumes/disk0/Khor/evidence/net`，source-refs每次pin、最近全审346refs/41ops，后续新增逐条pin，稳定后刷新全量。恢复先核上方句柄，持续完整目标，不因分项绿或旧goal paused停下。
+图谱先，缺vendor覆盖才定向读；无.codegraph不自建，无子智能体授权。旧baseline/control WIP保留不reset；终态+owner/hash核后只清本次资源。verify工具只核identity，必须分fmt/compile/fixture/executor/product行为。证据根`/Volumes/disk0/Khor/evidence/net`，source-refs每次pin、最近全审358refs/45ops，后续新增逐条pin，稳定后刷新全量。恢复先核上方句柄，持续完整目标，不因分项绿或旧goal paused停下。
 
 07:56新事实：43排序修复已在同whole新fixture真实52/1红→53绿，Noq441/home9均绿（proof vendor_candidate_verified=true），但first physical f2b832dc失败，candidate_verified仍false。X85→112稀疏质量造成Moving清除、停止补测，new44只分开有限采样/连续迁移确认，原radio总成本仍要验。phone-readonly-preflight-20261110.json保留Turing0.1.15混合cohort：首次devices本地document transfer busy，重试读取成功；对已确认手机localhost只读journal0minute一次360ms/valid空JSON成功，CLI总耗时非网络RTT；未开始受控换网/能耗。macserver只找到KhorDeveloperLab模拟器、标准路径无已装CLI/App，不能拿MacLab生产设备条目当macserver同身份。用户手机测试暂缓，不影响服务器目标。
 
@@ -97,3 +97,5 @@ SSH BatchMode/ForwardAgent=no/StrictHostKeyChecking=yes；无个人key/PAT/agent
 09:53分项闭合：wake same-tick修复双OS实际13/0，原背景全suspended负向绿，准确source3a3；原canonical2.23s/Macresume1.69s/STOP1.50s等完整profile绿。after_retirement现仍在slots锁释放后写asleep，是相邻未测并发窗口；下一单独cfg(test) barrier在真实retire API停于该窗口，新adopt+真实echo后放行，先红再移asleep到槽所有权内提交。原wholewires18ac与wake fixture不改，原暂停/重试/既有node合同不缩减。
 
 09:59：第二回归6ba仅新增cfg(test)Wires实例gate+独立retirement2tests，production无gate/新锁/等待；新fixturewhole freeze见retirement-epoch-fixture-freeze.json，原whole11与wake2不改。先真实retire released-slot→新adopt+echo→旧finish的旧Asleep提交红，之后才移提交；Turing任务可能先有fmt/setup失败，须据实际日志分类，不伪称运行时红。
+
+10:06当前源码LEFT_ALONE_FOR600秒，只抑制后台pump；前台请求不因backoff被直接拒绝，但仍须核gone-short-dial与cached dial failure/epoch等入口。第二退役gate 13d仅fmt红，2e修assert_eq排版后新whole已重冻，业务断言不变。当前root元数据358refs/64controls/45ops全核，09a唯一pending。不要将首次fmt当runtime红；收集/verify完成后据wires-unit实际assert判定。
