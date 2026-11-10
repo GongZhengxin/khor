@@ -538,3 +538,8 @@ Iroh42首轮4f2d591b原请求50/50与X Go3262ms绿，Y原decision checker因没�
 原netlab-peer-selection.py、netlab-peer-decision.py、整个physical fixture及4秒门逐字保留。新增独立数据checker仅补充有完整full-sample日志的持续状态分支：原calibration/请求门必须通过；对应peer的最后pivot前Go及path journal均为carried；第一post-pivot开流与成功完成均在4秒内、选中carried；全部该peer前后开流同wire且post全选carried；pivot后该peer不得出现Go、无当前路重选、path/新dial/关闭或retire，日志不得lagged。任一缺口不算持续；明确晚Go仍红。沿用30s请求预算/原10s holds/全部outcomes，不扩成任意WAN/逐包连续性。
 
 新checker要对旧baseline/Iroh39/40/41真实红与正向源重新校准并留表，原checker结果同时报告。42首轮与freeze前的repeat2仅探索，不凑前瞻验收；正式需要freeze后同一candidate三次独立完整physical，原稳定性/成本门另外通过。保持历史缺失事件失败，不追改原数据或脚本来变绿。
+
+
+### 本地解除暂停不受旧接收门阻挡（2026-11-10 06:18UTC，实施前冻结）
+
+来源c2ec实际canonical在set_on(false)后立刻Cancel失败（731行），不修改旧函数或添加等待。新增独立真实Node合同：配对A/B，B真正poll观察pause=true并完成原清线动作后，用cfg(test)owned-root barrier阻止下一轮poll；本进程set_on(false)返回后缓存false，同时原接收门保持旧true。A resident IPC向真实B的新连接list私有marker，必须3秒内成功/内容正确，且barrier始终持有。无重放写/新peer能力/磁盘热路径。真实旧实现红、同whole新fixture候选绿，再原canonical/pause负向/32/STOP/全部net-node；不得仅用helper镜像实现测试代替。

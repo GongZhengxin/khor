@@ -375,3 +375,12 @@ fc435ccd准确c673源：124/124可达，但原采样门48/51（3次AB仍Relay）
 下一只补诊断：full-debug模式对每条Custom copy记录同一原子PathStats（PING/ACK/PATH_ACK的tx/rx、datagram、PTO/last_received/unacked、RTT计数与sample timestamps/cwnd）以及对应Reading、silence/recovery/Moving状态；普通模式不采日志，不增加PING/计时/新owner。固定旧tests与物理门。先新增独立Noq模型合同，确认健康backup的PING确实发送、原路ACK并使新packet RTT样本前进；黑洞负向则API可Ok、tx前进却样本不得假刷新。新文件单独登记，不改旧multipath whole fixture。
 
 Mac可在Turing原quiet计时期间独立做net-vendor；Turing不夹编译。diagnostic源只用于因果定位，不算quiet性能或prospective三轮接受。之后依据实际tx/rx/ACK事实才设计最小修复；不先调250ms/2秒/4秒或去掉largest-newly-acked保护。
+
+
+## 2026-11-10 06:18UTC：两次诊断未复现与暂停恢复红
+
+full-counter同源1a两轮6d83/ff132实际124/124、双端3585/3578及3285/3518ms，两门/state/probe预算绿；前次2c9d的5825/5870ms红仍未解释，不能用两轮正常counter反推旧失败。不盲刷第三诊断。Turing先用5a39/Iroh41与既有8d/Iroh42 quiet原stalls建立同一小补丁前后对照（同4eeee控制、原600秒/20尖峰+p5），期间Mac推进独立恢复回归；这不关闭PING缺失诊断。
+
+Linux c2ec同Mac已绿源a00，原busy-wire在主动pause→resume后立刻content_cancel失败，主I/O/cancel早已完成；STOP层未执行。静态事实：pause::set_on同步更新POLLED，但serve接收门另用半秒poll维护的AtomicBool，存在本地resume后旧门仍拒绝的窗口；poll旧磁盘读覆盖本地新写亦是另一未证竞态。先独立合同冻结实际旧门窗口，不能改旧731行加sleep/重试。
+
+拟测试仅加cfg(test)poll发布后的可控暂停点：B实际观察on并更新接收门后阻止下轮poll，set_on(false)立即更新真实缓存，再经原A resident IPC向真实B发送只读list，3秒内应成功且barrier未释放；当前旧接收门应真实Refused红。原canonical整个函数/新STOP整fixture保持。取得红后最小候选仅让接收准入读既有已初始化缓存（无accept loop磁盘I/O、无新轮询/重拨/放宽暂停），再验旧pause拒绝与原canonical/STOP/portable。任何poll发布generation保护或更广单一缓存重构需单独证明，不偷带。
