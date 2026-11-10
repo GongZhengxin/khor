@@ -433,6 +433,8 @@ pub(crate) struct Wires {
     pending_carrier_test_gate: Mutex<Option<PendingCarrierTestGate>>,
     #[cfg(test)]
     early_dial_observer: Mutex<Option<tokio::sync::oneshot::Sender<bool>>>,
+    #[cfg(test)]
+    early_failure_observer: Mutex<Option<tokio::sync::oneshot::Sender<String>>>,
 }
 
 #[cfg(test)]
@@ -1057,6 +1059,28 @@ impl Wires {
             .take();
         if let Some(observed) = observed {
             let _ = observed.send(accepted);
+        }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn observe_early_failure_for_test(&self) -> tokio::sync::oneshot::Receiver<String> {
+        let (observed, ready) = tokio::sync::oneshot::channel();
+        *self
+            .early_failure_observer
+            .lock()
+            .unwrap_or_else(|p| p.into_inner()) = Some(observed);
+        ready
+    }
+
+    #[cfg(test)]
+    pub(crate) fn note_early_failure_for_test(&self, why: String) {
+        let observed = self
+            .early_failure_observer
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .take();
+        if let Some(observed) = observed {
+            let _ = observed.send(why);
         }
     }
 

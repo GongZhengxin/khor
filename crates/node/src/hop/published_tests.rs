@@ -276,3 +276,6 @@ mod pending_use;
 
 #[path = "fresh_middle_tests.rs"]
 mod fresh_middle;
+
+#[path = "early_fallback_tests.rs"]
+mod early_fallback;

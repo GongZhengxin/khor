@@ -3863,6 +3863,10 @@ impl Node {
             }
         };
         drop(attempt);
+        #[cfg(test)]
+        if let Ok(Err(failed)) = &outcome {
+            self.wires.note_early_failure_for_test(format!("{failed:?}"));
+        }
         if crate::deadline::expired(by) {
             if let Ok(Ok((conn, _))) = &outcome {
                 conn.close(0u32.into(), b"caller deadline");
