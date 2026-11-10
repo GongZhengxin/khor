@@ -431,6 +431,8 @@ pub(crate) struct Wires {
     carried_close_test_gate: Mutex<Option<HopOfferTestGate>>,
     #[cfg(test)]
     pending_carrier_test_gate: Mutex<Option<PendingCarrierTestGate>>,
+    #[cfg(test)]
+    early_dial_observer: Mutex<Option<tokio::sync::oneshot::Sender<bool>>>,
 }
 
 #[cfg(test)]
@@ -1033,6 +1035,21 @@ impl Wires {
             Some(gate.reviewed)
         } else {
             None
+        }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn observe_early_dial_for_test(&self) -> tokio::sync::oneshot::Receiver<bool> {
+        let (observed, ready) = tokio::sync::oneshot::channel();
+        *self.early_dial_observer.lock().unwrap_or_else(|p| p.into_inner()) = Some(observed);
+        ready
+    }
+
+    #[cfg(test)]
+    pub(crate) fn note_early_dial_for_test(&self, accepted: bool) {
+        let observed = self.early_dial_observer.lock().unwrap_or_else(|p| p.into_inner()).take();
+        if let Some(observed) = observed {
+            let _ = observed.send(accepted);
         }
     }
 

@@ -1,10 +1,12 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-10T16:24:40.760668+00:00。**完整N0–N5仍未完成，用户已授权持续实施；不得因分项绿、旧goal paused或compact停下。** 速度/体验优先、个人可信设备网。root串行，无子智能体；没有main合并、发布、采购、生产部署或改已装App/store的授权。长期范围见[PLAN](PLAN.md)、[REQUIREMENTS](REQUIREMENTS.md)、[ACCEPTANCE](ACCEPTANCE.md)、[NEXT-DESIGN](NEXT-DESIGN.md)。上版STATE完整逐字保存在[历史](HISTORY-20261110-before-peer-contact-state.md)，含更早历史链；本页替代旧段落的当前状态，不删历史失败或矩阵。
+更新：2026-11-10T16:31:46.029581+00:00。**完整N0–N5仍未完成，用户已授权持续实施；不得因分项绿、旧goal paused或compact停下。** 速度/体验优先、个人可信设备网。root串行，无子智能体；没有main合并、发布、采购、生产部署或改已装App/store的授权。长期范围见[PLAN](PLAN.md)、[REQUIREMENTS](REQUIREMENTS.md)、[ACCEPTANCE](ACCEPTANCE.md)、[NEXT-DESIGN](NEXT-DESIGN.md)。上版STATE完整逐字保存在[历史](HISTORY-20261110-before-peer-contact-state.md)，含更早历史链；本页替代旧段落的当前状态，不删历史失败或矩阵。
 
 ## 恢复先核实际句柄
 
 ### 最新覆盖状态（优先于下方历史段落）
+
+- **读取462初候选0f8a81d0已终态采核，41项40/1，不接受**：cold与warm实际读取均在原1秒成功，计数断言过；warm在服务端accept时is_0rtt=false，未证明TLS恢复。138.256秒/11files/group空；原失败保留。**解释勘误**：原accepted-answer fixture已明确Noq该marker在accept时计算，快速握手完成可使其false，不能据此断言根本没有resumption。当前v2 fixture改用真实client ZeroRttStatus::Accepted/no-session/Rejected的cfg(test) one-shot观察，无wait/协议改变，原deadline/业务/ownership/count不变。v1 whole/hash/运行均保留，准备新旧同v2重新红绿；不直接弱化断言或拿v1绿声称0RTT接受。
 
 - **读取路径真实红已取**：95bec358/treeee8d6f2d/snapshotbc291930，Linux957e798f真41项39/2红；cold实际请求0、warm只预热1，两个都won/answered/heldDirect=false，STOP/outer-open/no-orphan cleanup过，138.193秒/11files/group空/identity核。原39全过。当前读取候选WIP仅将原early attempt+原timeout与boxed hop准备select合作poll；原encode/0RTT/accepted回复task完全保留，不增加业务尝试；adopt后即drop hop+pending lease，再等原response。无普通早失败→新hop补握手的fallback修改，此分支仍需独立合同。本候选未验证。
 

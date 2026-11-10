@@ -114,6 +114,7 @@ async fn observe(warm: bool) {
         ));
         conn.close(0u32.into(), b"warm request complete");
     }
+    let mut resumption = f.node.wires.observe_early_dial_for_test();
     let by = Instant::now() + Duration::from_secs(1);
     let mut calling = Owned(Some(tokio::spawn({
         let (node, ep, target) = (f.node.clone(), f.ep.clone(), f.target.clone());
@@ -134,7 +135,11 @@ async fn observe(warm: bool) {
             .unwrap();
     let won = result.is_ok();
     let answered = matches!(&result, Ok(crate::proto::Response::SessionRows { .. }));
-    let actual_early = was_early.try_recv().ok();
+    let actual_early = resumption.try_recv().ok();
+    // is_0rtt at accept time can already be false on a completed fast
+    // handshake. The client TLS Accepted result is the resumption witness.
+    let server_marker = was_early.try_recv().ok();
+    eprintln!("early calibration: warm={warm}, accepted={actual_early:?}, server_marker={server_marker:?}");
     let held_direct = f
         .node
         .wires

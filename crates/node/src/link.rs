@@ -3809,6 +3809,8 @@ impl Node {
                 // as usual on the wire it made.
                 Err(connecting) => {
                     let conn = connecting.await.map_err(of_connecting)?;
+                    #[cfg(test)]
+                    self.wires.note_early_dial_for_test(false);
                     return Ok((conn, None));
                 }
             };
@@ -3834,10 +3836,18 @@ impl Node {
                 })
             }));
             match early.handshake_completed().await.map_err(of_connecting)? {
-                iroh::endpoint::ZeroRttStatus::Accepted(conn) => Ok((conn, Some(asked))),
+                iroh::endpoint::ZeroRttStatus::Accepted(conn) => {
+                    #[cfg(test)]
+                    self.wires.note_early_dial_for_test(true);
+                    Ok((conn, Some(asked)))
+                }
                 // Rejected: the far side kept nothing of it; asked again
                 // on the wire, which is up. (`asked` aborts as it drops.)
-                iroh::endpoint::ZeroRttStatus::Rejected(conn) => Ok((conn, None)),
+                iroh::endpoint::ZeroRttStatus::Rejected(conn) => {
+                    #[cfg(test)]
+                    self.wires.note_early_dial_for_test(false);
+                    Ok((conn, None))
+                }
             }
         };
         // One original handshake and one original budget. Preparing a hop
