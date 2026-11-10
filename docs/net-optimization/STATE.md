@@ -7,7 +7,7 @@
 - 主 `/Volumes/disk0/Khor/worktrees/current/khor-net`，feat/net。生产行为HEAD **ba28fc03**（之后文档/注释）；主53vendor、Iroh41。Mac42770379226+Linux4bcfad82同source全部net-node已绿，见下。不把doc-only HEAD误当已测试二进制源。
 - 隔离 `/Volumes/disk0/Khor/worktrees/current/khor-net-recovery-deadlines` detached **e8195e18**，tree2e52b5c9/snapshot2a1060e5（b4行为仅追加actual carrier opt-in事件诊断，远端格式反馈已应用）；无IPC v2，Iroh42/43/44未合主。Iroh43实际vendor绿但物理f2b仍红。Iroh44基线d7/tree937/snapshot714在fe3实际54/2红；当前b4只保留有限稀疏测量，重新合格或新故障重启确认时钟，原whole50+epoch+sampling fixtures不变；待同源vendor与物理验证。
 - 控制 `/Volumes/disk0/Khor/worktrees/current/khor-build-net` feat/net HEAD **68cadb57a0ed72d40a4ca9a843e86b9c6797bf34**已推。net-node仅在原remoteQUIC32之后/canonical之前加resume合同；3个source-only stub控制测试实际绿。
-- Turing当前actual carrier原物理诊断 **turing-20261110T083158Z-e0d70376/PID1988153**，source e819/tree2e52/snapshot2a10/control ef0b，08:32:19UTC已launch；75be0284仅root格式失败，b66d6e46同格式修正源fmt/441/56/9绿、50.406秒/14artifacts/原group空。此vendor任务未编译新node helper，原物理会编译并执行三角色；不假称诊断已产出/新行为已修复。
+- Turing当前actual carrier诊断repeat2 **turing-20261110T083708Z-4dc22c7e/PID1998583**，精确source e819/tree2e52/snapshot2a10/control ef0b，08:37:30UTC已launch；前驱e0d70376已完成237.055秒/16artifacts/原group空核。首诊断原124/124、请求/decision/state绿X3222.682/Y3227.305ms，四actual carrier事件齐无lag/end/drop，选41ms IP时间826/861/926/969ms；原6预约2episodes绿，sampling_only=0，故不称44采样保持已实网覆盖或a4红已修复。下一同源轮用于捕获有实际outer事件的慢分支，不增加并行heavy。
 - Mac无已知heavy在跑。macserver SSH已恢复；用户最新明确“Mac turing是在一个局域网内的哦”，撤回此前天然异网推断。A=构建macserver/B=Turing，MacLab与macserver的设备映射待澄清，P=iPhone；公共Relay不能证明两端异网。源提交经本机GitHub SSH，worker仍原API bundle/guard，无个人凭据给worker。
 - 用户已确认：**iPhone在手边，可切Wi-Fi/蜂窝；已装khor并已与Macserver/Turing配对**。两次可用性/安装配对问题均已答，不重复问。真机具体采样窗口尚未开始；先核实际版本/cohort/可观测API并准备短操作，不假称手机已通过或要求改生产store。
 
@@ -73,3 +73,5 @@ SSH BatchMode/ForwardAgent=no/StrictHostKeyChecking=yes；无个人key/PAT/agent
 08:27因果方向：44 first physical两端从未进入Moving，三次恢复RTT约130ms时实际outer legs仍在变化；需订阅实际hop绑定的四个outer wire事件并关联内层测量，先诊断、再决定跨层epoch，不能把其他copy已Direct当actualcarrier已恢复。见NEXT-DESIGN 08:27；暂无新行为修复或已启动任务。
 
 08:29实际承载事件诊断77433e5d仅改node/hop.rs：4个actual weak carrier事件stream，原hop生命周期select内拥有，关闭stream后pending直至原owner结束；仅诊断开关时订阅，新增无spawn/timer/路由/探测。源审计actual-carrier-events-source-audit.json；graph覆盖缺3函数测试映射，不声称图谱证明安全，下一原物理将执行三角色全部真实入口。原物理fixture不变，vendor回归/根格式先核。
+
+08:38：e819实际Node helper已由e0完整编译/三角色执行，actual-carrier-path-events.json四流覆盖绿；此前b66仅vendor任务未编译helper的边界保留。auditor 76f4361d在首数据分析前冻结，原三checker SHA bf7883/7075a4/bfd8b7未变。现同源repeat2 4dc正在运行，最多先此轮，遇红立即分析，不盲刷。

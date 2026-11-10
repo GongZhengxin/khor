@@ -420,3 +420,6 @@ Iroh44同whole单元54/2红→56绿、Noq441/home9绿，但first physical a4ed77
 实际attachment1指明x receiver outer wire140179679991456、y initiator140183035096736；middle splice incoming139900775062032/onward139900842190912。+1206ms x actualouter快IP存在但无selected；+1226ms middle actualincoming仍Relay、onward为Direct；+1277ms y actualouter Direct。journal显示x与middle又有其他copy的选择事件，不能据此推断实际承载wire已切换。约130ms与混合两腿一致，但尚非逐packet证明。旧44及43物理红完整保留，不再盲重刷同profile。
 
 下一步只加opt-in诊断：在hop生命周期内订阅这四个实际outer weak handle的PathEventStream，事件驱动记录选择/开关/lag及当前PathFacts；不持有新强Connection、不增常驻task或timer，生产关闭诊断时无订阅，不改变路由/probe/协议/原fixture/4秒门。先对实际outer事件与inner PING/ACK/RTT/quality/Moving时序做同hash关联，再决定是否需承载path epoch通知或其他最小修复；目前不实施跨层协议、反复refill恢复预算或缩短迁移防抖。若需要新测量epoch，必须明确去重/有限总成本/旧packet隔离、两端及middle不对称/闭合所有权，不能仅用本端leg事件假称两腿均已恢复。
+
+
+08:38诊断首轮e0d70376：原124/124及request/decision/state全绿，X3222.682/Y3227.305ms。actual4 carrier事件完整，41ms IP选择于826/861/926/969ms；inner Moving sampling_only始终false，不能当44采样保持的实际覆盖。相同e819/tree2e52/snapshot2a10/control ef0b的4dc22c7e在跑，用于观察慢分支。下一实现按证据分岔：若实际carrier恢复晚，先追承载地址恢复与测量epoch的先后；若四实际carrier早已快而inner RTT慢，核ACK/测量copy与quality；若API排队但未发，则核真实pending/inflight/cwnd/传输条件。不得根据一轮绿撤销a4红，也不提前选择增加探针或缩短确认。
