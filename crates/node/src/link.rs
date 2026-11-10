@@ -1573,7 +1573,11 @@ impl Node {
         // and this file's own rule about the loop). So a task of its
         // own does the reading, on a beat a person cannot feel, and the
         // two arms below consult a bit.
-        let paused = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(node.paused()));
+        // Initialize the shared reading before accepting connections. Local
+        // pause/resume updates it synchronously, without accept-loop disk I/O.
+        let paused = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(crate::pause::poll(
+            node.root(),
+        )));
         {
             let flag = paused.clone();
             let root = node.root().clone();
@@ -1712,7 +1716,7 @@ impl Node {
                     // learns at once that this machine is not taking
                     // connections, rather than waiting out its dial.
                     // Not silence: that would be `Incoming::ignore`.
-                    if paused.load(std::sync::atomic::Ordering::Relaxed) { continue }
+                    if node.paused() { continue }
                     if resting.load(std::sync::atomic::Ordering::Relaxed) { continue }
                     let n = node.clone();
                     let e = ep.clone();
