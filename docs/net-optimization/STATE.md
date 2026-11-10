@@ -1,6 +1,6 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-10 19:27 UTC（新加坡11月11日凌晨）。本页记录当前状态，完整此前段落逐字保存在[历史](HISTORY-20261111-after-scope55.md)，其中链接到[上一历史](HISTORY-20261111-before-current-state-compaction.md)及更早记录。失败、旧源、fixture与审计不覆盖、不删。历史中的运行句柄不当当前。
+更新：2026-11-10 19:34 UTC（新加坡11月11日凌晨）。本页记录当前状态，完整此前段落逐字保存在[历史](HISTORY-20261111-after-scope55.md)，其中链接到[上一历史](HISTORY-20261111-before-current-state-compaction.md)及更早记录。失败、旧源、fixture与审计不覆盖、不删。历史中的运行句柄不当当前。
 
 ## 授权与工作位置
 
@@ -32,6 +32,11 @@
 - 更早sole-peer Recovery准入、ordinary与cold/resumed读取并行、pending lease/cancelled watcher successor、live胜旧cached排序、取消/响应owner/STOP/contact/actor conditional carried-close等按各freeze保留，不能升级成全部入口/代际安全。
 
 ## 当前唯一重型任务与下一步
+
+最新覆盖（19:34 UTC）：第一轮0aeceb60已终态采核，228.871秒/16files/group空/identity核；物理IPv4从198.18.2.2换198.18.3.2，原10秒holds核，124/124全业务成功；原四秒warm合同50个请求全通过，首请求在replug结束后发起，AB594472us/BA584202us（不是fault-start恢复或p99）。main55未含42–44，不作单patch因果结论；旧隔离红保留。
+
+已预先登记两轮额外重复：main55-peer-mobility-repeatability-plan.json，三轮总数/相同source+control+profile/原门全保留，失败也完成固定集合后再改策略，无盲重跑。**当前唯一运行repeat2of3：turing-20261110T193252Z-1cb99869，PID2781710，19:33:14 UTC启动**；同923 canonical。第三轮尚未提交，须等本轮终态采核/group空。不派Mac重型。下方0aec为已完成第一轮，不再运行/重发。
+
 
 **`turing-20261110T192533Z-0aeceb60`**，PID2771745，19:25:55 UTC启动，task **netlab-peer-mobility-samples**，revision `main55_verified_unit_peer_relay_replug_checkpoint_v1`，role baseline。**准确复用上述923同canonical**，control68cad；receipt见证据根该run。Mac job已完成后才启动，计时期间不派Mac重型。不要重复提交。
 

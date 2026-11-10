@@ -309,3 +309,10 @@ c88653f9/tree4c7c81cd/snapshot6448871c两端同source通过12组/hop41（Linux2b
 v1曾在0f8a81d0两读取都成功却warm server is_0rtt=false，40/1失败保留；该marker在accept时评估，快速完成握手可清false，不能由此推出没恢复TLS。v2用真实client ZeroRttStatus::Accepted/普通握手/Rejected分支的cfg(test) one-shot，只观察不阻塞；warm Accepted=true/cold=false，RPC总数warm2（含1预热）/cold1和原1秒caller均断言通过。v1/v2 whole/旧serial与candidate各source单独冻结。初始串行校准临时wt已clean后非force移除，固定引用与全部原件保留。
 
 尚未覆盖普通早失败→后中继成功、旧Asleep提前返回、initial Drop/normal publication release原子性、NoRelay其他策略、地址/网络epochs、真实两腿/手机换网/能耗。主53 vendor不变，完整N0–N5继续；没有安装App、合并或发布。
+
+
+## 2026-11-11 main55 peer relay物理换网checkpoint（单轮）
+
+923baaeb/treee8893d45/snapshot37d77b42同canonical先通过Linux828ae604和Mac42883511676全12组/hop55/wires16；main vendor54，不含隔离42–44。随后Mac重型结束，Turing0aeceb60在control68cad下按原netlab-peer-mobility-samples/profile运行，228.871秒/16files/group空与identity核；真实中间节点IPv4 replug、原20ms腿和两次10秒hold均核。
+
+124/124业务全成功，replug结束后首AB/BA请求分别594472/584202us；独立原peer_relay_replug_warm_selection_within_four_seconds_v1合同50个warm请求全选carried，0失败。该记录不是手机/p99/每包路由，也不是从故障开始计时；旧隔离2ef四秒与cold-start红不改。预先登记再做两轮同源重复，未得到重复结果前只称单轮checkpoint，不归因某个补丁或宣布N1/N0–N5完成。
