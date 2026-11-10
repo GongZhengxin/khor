@@ -4068,7 +4068,8 @@ impl Node {
                 // **A watch keeps its stream** (`crate::watch`): answered
                 // as it goes, not once — through the same gate as every
                 // other request.
-                if let Ok(Request::Watch { scope }) = proto::question(&bytes) {
+                let question = proto::question(&bytes);
+                if let Ok(Request::Watch { scope }) = question {
                     if early && *done.borrow() != Some(true) {
                         while done.borrow().is_none() {
                             if done.changed().await.is_err() {
@@ -4100,63 +4101,87 @@ impl Node {
                 }
                 #[cfg(test)]
                 let wire_tag = documents::flow_tests::FrameTag::new(node.root(), &remote);
-                let resp = match proto::question(&bytes) {
-                    Ok(req) => {
-                        if early && !req.rides_early() {
-                            while done.borrow().is_none() {
-                                if done.changed().await.is_err() {
-                                    return;
+                // A request FIN is normal. Only the reader abandoning its reply
+                // stops disposable content work; accepted controls and jobs keep
+                // their existing execution semantics.
+                let interruptible = matches!(
+                    &question,
+                    Ok(Request::ContentRead {
+                        action: crate::session_content::remote::Action::Resolve { .. }
+                            | crate::session_content::remote::Action::Window { .. }
+                            | crate::session_content::remote::Action::Record { .. }
+                    })
+                );
+                let prepare = async {
+                    let resp = match question {
+                        Ok(req) => {
+                            if early && !req.rides_early() {
+                                while done.borrow().is_none() {
+                                    if done.changed().await.is_err() {
+                                        return None;
+                                    }
+                                }
+                                if *done.borrow() != Some(true) {
+                                    return None;
                                 }
                             }
-                            if *done.borrow() != Some(true) {
-                                return;
+                            let admission = if matches!(
+                                &req,
+                                Request::ContentRead {
+                                    action: crate::session_content::remote::Action::Window { .. }
+                                        | crate::session_content::remote::Action::Record { .. }
+                                }
+                            ) && node.admit(&remote).is_ok()
+                            {
+                                node.content_response_permit().map(|permit| {
+                                    content_response = Some(permit);
+                                    drop(seat.take());
+                                })
+                            } else {
+                                Ok(())
+                            };
+                            match admission {
+                                Err(why) => Response::Refused { why },
+                                Ok(()) => {
+                                    #[cfg(test)]
+                                    let response = node
+                                        .dispatch_wire(
+                                            &remote,
+                                            req,
+                                            &ep,
+                                            &wire_tag,
+                                            content_response.clone(),
+                                        )
+                                        .await;
+                                    #[cfg(not(test))]
+                                    let response = node
+                                        .dispatch(&remote, req, &ep, content_response.clone())
+                                        .await;
+                                    response
+                                }
                             }
                         }
-                        let admission = if matches!(
-                            &req,
-                            Request::ContentRead {
-                                action: crate::session_content::remote::Action::Window { .. }
-                                    | crate::session_content::remote::Action::Record { .. }
-                            }
-                        ) && node.admit(&remote).is_ok()
-                        {
-                            node.content_response_permit().map(|permit| {
-                                content_response = Some(permit);
-                                drop(seat.take());
-                            })
-                        } else {
-                            Ok(())
-                        };
-                        match admission {
-                            Err(why) => Response::Refused { why },
-                            Ok(()) => {
-                                #[cfg(test)]
-                                let response = node
-                                    .dispatch_wire(
-                                        &remote,
-                                        req,
-                                        &ep,
-                                        &wire_tag,
-                                        content_response.clone(),
-                                    )
-                                    .await;
-                                #[cfg(not(test))]
-                                let response = node
-                                    .dispatch(&remote, req, &ep, content_response.clone())
-                                    .await;
-                                response
-                            }
-                        }
+                        Err(e) => Response::Refused { why: e },
+                    };
+                    let Ok(frame) = proto::encode_response(&resp) else {
+                        return None;
+                    };
+                    #[cfg(test)]
+                    if content_response.is_some() {
+                        crate::session_content::wire_tests::pause_response(node.root()).await;
                     }
-                    Err(e) => Response::Refused { why: e },
+                    Some(frame)
                 };
-                let Ok(frame) = proto::encode_response(&resp) else {
-                    return;
+                let frame = if interruptible {
+                    tokio::select! {
+                        biased;
+                        _ = send.stopped() => return,
+                        frame = Box::pin(prepare) => frame,
+                    }
+                } else {
+                    prepare.await
                 };
-                #[cfg(test)]
-                if content_response.is_some() {
-                    crate::session_content::wire_tests::pause_response(node.root()).await;
-                }
+                let Some(frame) = frame else { return };
                 if send.write_all(&frame).await.is_ok() {
                     #[cfg(test)]
                     documents::flow_tests::reply_written(&wire_tag, &resp);
