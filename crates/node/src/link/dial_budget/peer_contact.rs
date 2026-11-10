@@ -16,7 +16,7 @@ enum Contact {
 }
 
 async fn endpoint() -> iroh::Endpoint {
-    iroh::Endpoint::builder(iroh::endpoint::presets::Minimal)
+    let ep = iroh::Endpoint::builder(iroh::endpoint::presets::Minimal)
         .relay_mode(iroh::RelayMode::Disabled)
         .alpns(vec![ALPN.to_vec()])
         .clear_ip_transports()
@@ -24,7 +24,14 @@ async fn endpoint() -> iroh::Endpoint {
         .unwrap()
         .bind()
         .await
-        .unwrap()
+        .unwrap();
+    let addr = ep.addr();
+    assert!(!addr.addrs.is_empty());
+    assert!(addr.addrs.iter().all(|addr| match addr {
+        iroh::TransportAddr::Ip(addr) => addr.ip().is_loopback(),
+        _ => false,
+    }));
+    ep
 }
 
 async fn echo(conn: &iroh::endpoint::Connection) {
@@ -66,7 +73,9 @@ async fn ask(node: &Node, ep: &iroh::Endpoint, peer: &DeviceInfo, early: bool) -
 async fn observe(early: bool, contact: Contact) {
     let server = endpoint().await;
     let other = endpoint().await;
-    let (_root, node, mut peer, ep) = fixture_for(server.id().to_string()).await;
+    let (_root, node, mut peer, initial_ep) = fixture_for(server.id().to_string()).await;
+    initial_ep.close().await;
+    let ep = endpoint().await;
     peer.addrs = server
         .addr()
         .addrs
