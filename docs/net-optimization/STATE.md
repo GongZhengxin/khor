@@ -1,13 +1,13 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-10 08:13 UTC。完整N0–N5仍未完成，用户授权继续。速度/体验优先，可信个人设备网；无main合并、发布、采购/生产部署授权。root串行、无子智能体。长期[PLAN](PLAN.md)/[REQUIREMENTS](REQUIREMENTS.md)/[ACCEPTANCE](ACCEPTANCE.md)不缩减。上一状态逐字在[历史](HISTORY-20261110-before-natural-recovery-epoch.md)，保留更早历史链。不要因旧goal服务paused停止。
+更新：2026-11-10 08:19 UTC。完整N0–N5仍未完成，用户授权继续。速度/体验优先，可信个人设备网；无main合并、发布、采购/生产部署授权。root串行、无子智能体。长期[PLAN](PLAN.md)/[REQUIREMENTS](REQUIREMENTS.md)/[ACCEPTANCE](ACCEPTANCE.md)不缩减。上一状态逐字在[历史](HISTORY-20261110-before-natural-recovery-epoch.md)，保留更早历史链。不要因旧goal服务paused停止。
 
 ## 先核真实句柄
 
 - 主 `/Volumes/disk0/Khor/worktrees/current/khor-net`，feat/net。生产行为HEAD **ba28fc03**（之后文档/注释）；主53vendor、Iroh41。Mac42770379226+Linux4bcfad82同source全部net-node已绿，见下。不把doc-only HEAD误当已测试二进制源。
 - 隔离 `/Volumes/disk0/Khor/worktrees/current/khor-net-recovery-deadlines` detached **b4e4d232**，tree94851b41/snapshot932897e2；无IPC v2，Iroh42/43/44未合主。Iroh43实际vendor绿但物理f2b仍红。Iroh44基线d7/tree937/snapshot714在fe3实际54/2红；当前b4只保留有限稀疏测量，重新合格或新故障重启确认时钟，原whole50+epoch+sampling fixtures不变；待同源vendor与物理验证。
 - 控制 `/Volumes/disk0/Khor/worktrees/current/khor-build-net` feat/net HEAD **68cadb57a0ed72d40a4ca9a843e86b9c6797bf34**已推。net-node仅在原remoteQUIC32之后/canonical之前加resume合同；3个source-only stub控制测试实际绿。
-- Turing当前Iroh44候选net-vendor **turing-20261110T081323Z-47bd0154/PID1961743**，source b4/tree948/snapshot932/control68，08:13:46UTC已launch；前驱fe3已terminal采证原group空。不得重复提交或并行heavy，先recover已有receipt。不盲刷物理、不放宽4秒门。
+- Turing当前Iroh44首个物理采样 **turing-20261110T081545Z-a4ed770d/PID1964828**，source b4/tree948/snapshot932/control ef0b，08:16:06UTC已launch；前一47bd0154同源vendor实际fmt/441/56/9绿、63.296秒/14artifacts/原group空核；前驱fe3已terminal采证原group空。不得重复提交或并行heavy，先recover已有receipt。不盲刷物理、不放宽4秒门。
 - Mac无已知heavy在跑。macserver SSH已恢复；用户最新明确“Mac turing是在一个局域网内的哦”，撤回此前天然异网推断。A=构建macserver/B=Turing，MacLab与macserver的设备映射待澄清，P=iPhone；公共Relay不能证明两端异网。源提交经本机GitHub SSH，worker仍原API bundle/guard，无个人凭据给worker。
 - 用户已确认：**iPhone在手边，可切Wi-Fi/蜂窝；已装khor并已与Macserver/Turing配对**。两次可用性/安装配对问题均已答，不重复问。真机具体采样窗口尚未开始；先核实际版本/cohort/可观测API并准备短操作，不假称手机已通过或要求改生产store。
 
@@ -62,8 +62,10 @@
 
 SSH BatchMode/ForwardAgent=no/StrictHostKeyChecking=yes；无个人key/PAT/agent/签名/模型凭据给workers，不重设HOME/CODEX_HOME。WAN能力只私管道/一次secret，禁止普通artifact/日志/聊天票据。超时先查receipt/GH/proc/PGID，已有bundle/run先recover不重发。stage/launch显式完整source/control、前驱terminal采证/原group空/锁核；exec session不是结束，commit hook完成后才snapshot；ledger禁止并发writer。
 
-图谱先，缺vendor覆盖才定向读；无.codegraph不自建，无子智能体授权。旧baseline/control WIP保留不reset；终态+owner/hash核后只清本次资源。verify工具只核identity，必须分fmt/compile/fixture/executor/product行为。证据根`/Volumes/disk0/Khor/evidence/net`，source-refs每次pin、最近全审329refs/39ops，后续新增逐条pin，稳定后刷新全量。恢复先核上方句柄，持续完整目标，不因分项绿或旧goal paused停下。
+图谱先，缺vendor覆盖才定向读；无.codegraph不自建，无子智能体授权。旧baseline/control WIP保留不reset；终态+owner/hash核后只清本次资源。verify工具只核identity，必须分fmt/compile/fixture/executor/product行为。证据根`/Volumes/disk0/Khor/evidence/net`，source-refs每次pin、最近全审346refs/41ops，后续新增逐条pin，稳定后刷新全量。恢复先核上方句柄，持续完整目标，不因分项绿或旧goal paused停下。
 
 07:56新事实：43排序修复已在同whole新fixture真实52/1红→53绿，Noq441/home9均绿（proof vendor_candidate_verified=true），但first physical f2b832dc失败，candidate_verified仍false。X85→112稀疏质量造成Moving清除、停止补测，new44只分开有限采样/连续迁移确认，原radio总成本仍要验。phone-readonly-preflight-20261110.json保留Turing0.1.15混合cohort：首次devices本地document transfer busy，重试读取成功；对已确认手机localhost只读journal0minute一次360ms/valid空JSON成功，CLI总耗时非网络RTT；未开始受控换网/能耗。macserver只找到KhorDeveloperLab模拟器、标准路径无已装CLI/App，不能拿MacLab生产设备条目当macserver同身份。用户手机测试暂缓，不影响服务器目标。
 
 08:13更正：用户最新同LAN说明优先于旧U10异网表述；所有历史WAN文件名/cohort保留，跨网/NAT验收撤回。手机已确认localhost，用户“是，稍后再测”，不启动换网/能耗采样；待用户恢复。Iroh44基线d7d4557e/tree937/snapshot714：Turing fe3cf29e实际fmt/Noq441绿，Iroh54pass/2新正向fail（旧53及新负向绿），home未执行，56.055秒/13artifacts/原group空核；接下来同wholefixture修复。
+
+08:19更新：Iroh44 samewhole实际vendor 47bd0154为fmt/Noq441/Iroh56/home9绿，63.296秒/14artifacts/原group空；baseline54/2红与green56的实际tree中原whole50/epoch/sampling逐byte核验，proof vendor_candidate_verified=true、candidate_verified=false。首物理a4ed770d/PID1964828正在原ef0b控制执行，具体source b4/tree948/snapshot932。346refs/64controls/41ops元数据全审；首断言误要求历史短control全40位，9135b6d唯一解析后通过，原标签保留，非产品红。
