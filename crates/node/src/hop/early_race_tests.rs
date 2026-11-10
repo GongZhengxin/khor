@@ -139,7 +139,9 @@ async fn observe(warm: bool) {
     // is_0rtt at accept time can already be false on a completed fast
     // handshake. The client TLS Accepted result is the resumption witness.
     let server_marker = was_early.try_recv().ok();
-    eprintln!("early calibration: warm={warm}, accepted={actual_early:?}, server_marker={server_marker:?}");
+    eprintln!(
+        "early calibration: warm={warm}, accepted={actual_early:?}, server_marker={server_marker:?}"
+    );
     let held_direct = f
         .node
         .wires

@@ -1041,13 +1041,20 @@ impl Wires {
     #[cfg(test)]
     pub(crate) fn observe_early_dial_for_test(&self) -> tokio::sync::oneshot::Receiver<bool> {
         let (observed, ready) = tokio::sync::oneshot::channel();
-        *self.early_dial_observer.lock().unwrap_or_else(|p| p.into_inner()) = Some(observed);
+        *self
+            .early_dial_observer
+            .lock()
+            .unwrap_or_else(|p| p.into_inner()) = Some(observed);
         ready
     }
 
     #[cfg(test)]
     pub(crate) fn note_early_dial_for_test(&self, accepted: bool) {
-        let observed = self.early_dial_observer.lock().unwrap_or_else(|p| p.into_inner()).take();
+        let observed = self
+            .early_dial_observer
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .take();
         if let Some(observed) = observed {
             let _ = observed.send(accepted);
         }
