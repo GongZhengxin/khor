@@ -37,6 +37,11 @@
 
 ## 当前任务与下一步
 
+最新覆盖（18:30 UTC）：unused旧行为8c10db13/tree690fdf65/snapshot016103d4，Linux8196d388已真实50项48/2红，pending期间保留控制过，但无owner和owner结束后都仍留carrier；原48全过，190.355秒/11files/group空/identity核。当前候选仅将normal comparison对所有live连接执行，不再把无outgoing road一律视作Needed；原pending admission/unknown保守/两5秒观察/exact serial仍保留，未测不接受。
+
+另新增incoming-middle旧行为两项合同：真实middle→本机Tunnel及往返字节、只serving而无outgoing slot/无middle公告IP；节点须用已知入站路建立实际新Tunnel，再carried TLS/echo；closed incoming负控。first-leg准入/rank产品仍旧。下一run兼测unused候选与incoming旧行为，不能将预期混合红称整组绿。两个freeze独立留证。
+
+
 最新WIP（18:26 UTC）：新增unused prepared carrier两项真实合同与cfg(test)只读post-look observer；生产comparison仍旧。先正常publication，再让实际主IP连接关闭；原两次5秒观察后，无owner应释放，新pending应保留且结束后再按原两次观察释放。freeze保留normal-release原whole为prefix，尚未运行/接受。下一baseline回执以ledger为准。
 
 

@@ -179,3 +179,6 @@ async fn a_known_direct_second_leg_still_connects_and_echoes() {
 async fn a_second_leg_already_forwarded_by_another_peer_stays_ineligible() {
     observe_hint(Some(RoadKind::Direct), false, true).await;
 }
+
+#[path = "incoming_middle_tests.rs"]
+mod incoming_middle;

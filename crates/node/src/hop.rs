@@ -739,12 +739,10 @@ impl Node {
                     || serde_json::json!({"role": "initiator", "attachment": attachment, "outer": outer_facts(&outer)}),
                 );
                 let road = wires.link(&id).road;
-                let comparison = match road {
-                    Some(khor_net::path::PathKind::Direct | khor_net::path::PathKind::Relay) => {
-                        wires.compare_carrier(&id)
-                    }
-                    _ => CarrierComparison::Needed,
-                };
+                // No outgoing selected road can also mean the last
+                // consumer closed. Incoming wires and unknown path facts
+                // still participate in this same conservative comparison.
+                let comparison = wires.compare_carrier(&id);
                 held = if comparison != CarrierComparison::Needed {
                     held + 1
                 } else {
