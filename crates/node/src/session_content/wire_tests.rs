@@ -424,7 +424,9 @@ async fn leased_ipc_callers_release_all_held_response_permits_when_dropped() {
         cursor: None,
         newer: false,
     };
-    let reply = crate::link::content_on_resident(&root, action.clone()).await.unwrap();
+    let reply = crate::link::content_on_resident(&root, action.clone())
+        .await
+        .unwrap();
     reply.validate_for(&action).unwrap();
     assert!(matches!(reply, Reply::Window { .. }));
     drop(read);

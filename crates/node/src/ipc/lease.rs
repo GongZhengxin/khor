@@ -219,8 +219,17 @@ mod tests {
         let parent = Instant::now() + Duration::from_millis(60);
         let result = tokio::time::timeout(
             Duration::from_millis(500),
-            deadline::scope(parent, within(&mut reader, Some(by), std::future::pending::<Result<(), String>>())),
-        ).await.expect("the helper must not ignore its earlier local owner");
+            deadline::scope(
+                parent,
+                within(
+                    &mut reader,
+                    Some(by),
+                    std::future::pending::<Result<(), String>>(),
+                ),
+            ),
+        )
+        .await
+        .expect("the helper must not ignore its earlier local owner");
         assert!(result.is_err());
         drop(writer);
     }
