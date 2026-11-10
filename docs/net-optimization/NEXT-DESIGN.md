@@ -516,3 +516,10 @@ a75/a038/871在56d2ca30实际hop17pass/4fail；真实TLS、首个固定echo和Ca
 ### 13:09UTC 首候选保留的栈溢出回归
 
 921/06db/23db在Turing a1b1dbe9新增hop21/0全部绿，整套继续到原leased IPC32出现tokio worker stack overflow/SIGABRT，248.432秒，原group空/identity核，后续profile未执行；不能接受该source。Mac42821367661同source仍在执行，不盲重发或提前视为绿。原fixture与原栈配置不改，先在hop_ahead与compare_roads两个实际冷准备调用边界Box::pin open_hop，避免把完整准备状态嵌进每个上层dial/resident请求future；不加task、不改栈限制或时钟。以原完整net-node原场景复验，尚未证明修好，不把此失败丢弃。
+
+
+## 13:22UTC：incoming-only使用事实与selected标记不是同义
+
+a35/95e/c74已双OS全12组绿，完成已登记selected-carried与完整准备期限合同，但源码中已有whole Wires真实fixture证明：同peer的一条outgoing Direct可作为公共selected tuple，而另一incoming只开Custom，后者snapshot无selected标记。它仍真实收发carried数据，不能被新Drop误当无人使用。需独立真实回归，不能改原whole Wires测试。
+
+在既有published fixture尾附incoming子模块，保留当前整个文件准确前缀：同一个fresh B身份分别绑定IP-only和Custom-only端点；A先持实际outgoing IP wire，再完成真实hop、B→A Custom TLS/echo，A登记serving incoming且assert仅Custom、无selected，B客户端selected Carried，A outgoing仍selected IP。取消post-offer准备者后carried echo必须继续，Direct也继续；正常handoff作控制。所有身份仅scratch，原deadline/whole fixtures不改。旧行为真实红后，最小扩展使用事实为selected custom或非空且全部custom的live wire，空/未知snapshot不臆测使用，主compare逻辑仍不改。之后再close/new-offer代际，不以这个合同关闭其他边界。

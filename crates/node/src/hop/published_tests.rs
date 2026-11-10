@@ -261,3 +261,6 @@ async fn cancelling_a_publisher_preserves_the_actual_connection_using_its_carrie
 async fn normal_publication_keeps_the_same_actual_carried_connection() {
     observe(false).await;
 }
+
+#[path = "incoming_tests.rs"]
+mod incoming;
