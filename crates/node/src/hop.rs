@@ -220,18 +220,35 @@ impl Drop for Asking {
     }
 }
 
-/// A prepared stream still belongs to its opening future until the
-/// watcher accepts the handoff. Cancellation removes only this generation.
+/// A prepared stream belongs to its opening future until the watcher
+/// accepts it. A live wire using the offer also transfers that ownership.
 struct PendingHop {
     links: khor_net::carry::Links,
+    wires: std::sync::Arc<crate::wires::Wires>,
+    id: String,
     peer: EndpointId,
     via: EndpointId,
     attachment: u64,
+    asked: Option<Asking>,
+    handoff: Option<tokio::sync::oneshot::Sender<Asking>>,
     committed: bool,
+}
+
+impl PendingHop {
+    fn hand_off(&mut self) -> bool {
+        let (Some(handoff), Some(asked)) = (self.handoff.take(), self.asked.take()) else {
+            return false;
+        };
+        self.committed = handoff.send(asked).is_ok();
+        self.committed
+    }
 }
 
 impl Drop for PendingHop {
     fn drop(&mut self) {
+        if !self.committed && self.wires.carrier_in_use(&self.id) {
+            self.hand_off();
+        }
         if !self.committed {
             self.links
                 .detach_attached(&self.peer, Carrier::Hop { via: self.via }, self.attachment);
@@ -495,6 +512,12 @@ impl Node {
         all: &[crate::DeviceInfo],
         picked: &[String],
     ) -> bool {
+        let caller = crate::deadline::current();
+        let hop_by = tokio::time::Instant::now() + HOP_WITHIN;
+        let by = caller.map_or(hop_by, |caller| caller.min(hop_by));
+        if crate::deadline::expired(Some(by)) {
+            return false;
+        }
         let Ok(peer) = y.id.parse::<EndpointId>() else {
             return false;
         };
@@ -532,9 +555,9 @@ impl Node {
         };
         let tried = u32::try_from(picked.len().min(TRIES)).unwrap_or(u32::MAX);
         let Ok(Some((via, outer_wire, outer, send, recv))) =
-            tokio::time::timeout(HOP_WITHIN, tries).await
+            crate::deadline::wait(Some(by), crate::deadline::scope(by, tries)).await
         else {
-            if tried > 0 {
+            if tried > 0 && !crate::deadline::expired(caller) {
                 self.wires
                     .note(Some(&y.id), crate::journal::What::Hop { via: None, tried });
                 missed(&me, &y.id);
@@ -559,11 +582,16 @@ impl Node {
         );
         let attached = self.carry.attach(peer, Carrier::Hop { via }, recv, send);
         let attachment = attached.serial();
+        let (handoff, handed) = tokio::sync::oneshot::channel::<Asking>();
         let mut pending = PendingHop {
             links: self.carry.clone(),
+            wires: self.wires.clone(),
+            id: y.id.clone(),
             peer,
             via,
             attachment,
+            asked: Some(asked),
+            handoff: Some(handoff),
             committed: false,
         };
         khor_net::carry::observe_lifecycle(&y.id, "hop_outer_bound", || {
@@ -581,7 +609,6 @@ impl Node {
         // The wire to the middle is judged on a hop's patience while the
         // hop lives (`wires::HOP_SILENT`): a frozen middle hands back sooner.
         let riding = wires.hop_held(&via.to_string());
-        let (handoff, handed) = tokio::sync::oneshot::channel::<Asking>();
         tokio::spawn(async move {
             let _riding = riding;
             let ended = attached.ended();
@@ -647,19 +674,20 @@ impl Node {
                 }
             }
         });
-        #[cfg(test)]
-        self.wires.hold_hop_offer_for_test(attachment).await;
-        if let Some(addr) = self.carried_addr(&y.id) {
-            ep.offer_addrs(iroh::EndpointAddr::from_parts(peer, [addr]))
-                .await;
-        }
-        #[cfg(test)]
-        self.wires.hold_hop_offered_for_test(attachment).await;
-        if handoff.send(asked).is_err() {
+        let offer = async {
+            #[cfg(test)]
+            self.wires.hold_hop_offer_for_test(attachment).await;
+            if let Some(addr) = self.carried_addr(&y.id) {
+                ep.offer_addrs(iroh::EndpointAddr::from_parts(peer, [addr]))
+                    .await;
+            }
+            #[cfg(test)]
+            self.wires.hold_hop_offered_for_test(attachment).await;
+        };
+        if crate::deadline::wait(Some(by), offer).await.is_err() {
             return false;
         }
-        pending.committed = true;
-        true
+        pending.hand_off()
     }
 
     /// **The road choice by measured legs** (NET-DIRECT step 4), every

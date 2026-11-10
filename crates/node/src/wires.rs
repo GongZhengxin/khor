@@ -719,13 +719,7 @@ impl Wires {
             .filter(|c| c.close_reason().is_none())
     }
 
-    /// Whether every live connection to `id` can let the peer's carrier go.
-    /// Main, tunnel and incoming wires share the stream, but can have
-    /// different open paths. One wire's faster road cannot withdraw a
-    /// carried-only road another still uses. Connections without a custom
-    /// path need no carrier; unknown snapshots keep it. Where both roads
-    /// exist, use the selector's measured gain. No live wires: unused.
-    pub(crate) fn compare_carrier(&self, id: &str) -> CarrierComparison {
+    fn live_connections(&self, id: &str) -> Vec<Connection> {
         let mut conns: Vec<_> = [Proto::Main, Proto::Tunnel]
             .into_iter()
             .filter_map(|proto| self.live(id, proto))
@@ -742,6 +736,26 @@ impl Wires {
         }
         conns.sort_unstable_by_key(Connection::stable_id);
         conns.dedup_by_key(|c| c.stable_id());
+        conns
+    }
+
+    /// A registered live wire already rides the published carrier.
+    pub(crate) fn carrier_in_use(&self, id: &str) -> bool {
+        self.live_connections(id).iter().any(|conn| {
+            khor_net::path::path_facts(conn)
+                .iter()
+                .any(|path| path.selected && path.carried)
+        })
+    }
+
+    /// Whether every live connection to `id` can let the peer's carrier go.
+    /// Main, tunnel and incoming wires share the stream, but can have
+    /// different open paths. One wire's faster road cannot withdraw a
+    /// carried-only road another still uses. Connections without a custom
+    /// path need no carrier; unknown snapshots keep it. Where both roads
+    /// exist, use the selector's measured gain. No live wires: unused.
+    pub(crate) fn compare_carrier(&self, id: &str) -> CarrierComparison {
+        let conns = self.live_connections(id);
         let facts: Vec<_> = conns
             .iter()
             .map(|c| (c.stable_id(), khor_net::path::path_facts(c)))

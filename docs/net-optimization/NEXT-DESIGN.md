@@ -506,3 +506,8 @@ c071/eda/dfc已Linux147ab8a0+Mac42812850230同source全部12项绿，hop15、wir
 候选方向是由实际live wire使用事实决定缓存所有权：PendingHop可持Asking/handoff sender，在取消时若Main/Tunnel/served真实live连接选中carried，则交既有watcher保留；没有使用者仍撤自己serial，保持原pre-offer取消合同。Wires连接收集与compare_carrier共用，字段读取不探测/不读磁盘/不新增timer；取消旧serial不得影响替代。并行实现以后必须先登记成功连接的事实，再取消其可能依赖的hop准备，caller过期仍不能交付/重放操作。此方向在新回归前不是已实现或已接受；如果实测否定则重新设计。
 
 该保护完成后再合完整by和正确MISSED记账，之后仍需late-close/new-offer/pending-Noq-open/ears epoch合同，不能直接以一个tokio::select结束准备。
+
+
+### 13:02UTC 已使用载体旧行为实测
+
+a75/a038/871在56d2ca30实际hop17pass/4fail；真实TLS、首个固定echo和Carried断言均到达，取消后kept=false/owned=false/echoed=false，正常publication控制与原15通过，三个已知prepare期限红原样保留。126.342秒/11artifact/identity核/原group空。下一最小PendingHop持Asking与handoff sender，正常交付或Drop发现真实live selected-carried使用者时都把所有权交既有watcher；无人使用时仅撤本serial。随后同一批补单绝对期限，不改冻结wholefixture，完整net-node双OS。不是现场手机唯一根因证明。
