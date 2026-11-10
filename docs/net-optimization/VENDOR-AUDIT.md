@@ -58,7 +58,7 @@ Noq4另补真实虚拟连接专项a_backup_probe_is_acked_when_the_responders_da
 | 10 | PeerObserved提供非QAD公网地址，限制来源/数量/有效期 | 需直连才接受、Relay/Custom不接受、回环/未指定地址拒绝、8条/10分钟淘汰及网络变化；当前没有明确专属通过证据 |
 | 11 | 增量报告没量到当前家时不无故换家 | relay_https历史；需增量保留/完整报告失效/全断后重连，避免为防抖长期留死家；和24/25一起核对 |
 | 12 | 活连接收到后来的Custom地址能当场开路 | f4i及hop比较集成；需重复offer不重复开路、actor/路径预算、取消/关闭释放，不能把最终未选Custom等同未开路 |
-| 13 | 承载断开及时关闭对应Custom路径 | 原node hop9及CLI hop历史保留。2026-11-10真实late-close旧行为761c4291为hop24/1红，replacement已offer仍Closed；候选新增actual-actor同步条件guard，原无条件close保持。需同source node双OS与vendor全回归；actor排队/pending Noq/ears仍独立待验，不将该合同升级成整个代际矩阵通过。 |
+| 13 | 承载断开及时关闭对应Custom路径 | 原node hop9及CLI hop历史保留。2026-11-10真实late-close旧行为761c4291为hop24/1红，replacement已offer仍Closed；候选新增actual-actor同步条件guard，原无条件close保持。47aaa/4a4055/a61643同source node双OS全12/hop27及Linuxvendor439/50/9绿，真实actor已入队后replacement与无replacement合同也闭合；证据见两carried-close freeze。pending Noq/ears仍独立待验，不将该合同升级成整个代际矩阵通过。 |
 | 14 | 完整net report等待HTTP-only中继的必要测量 | relay_https与混合QAD报告；需慢/不答QAD、IPv4/IPv6部分完成及总期限，不能无限等探测 |
 | 15 | 每个Relay actor独立，发送/close不堵全局；慢Pong不误断 | relay_qad/relay_https历史集成；需TCP接通却不转数据、close不返回、一端不通及慢而可用路线；N4仍缺当前源完整故障证据 |
 | 16 | 应用前台恢复可明确触发major network change | N2真实睡眠/回前台场景待齐；需重绑/重探合并、有界并发、不重复应用写；不能只测方法调用 |

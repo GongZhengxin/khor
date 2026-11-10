@@ -28,7 +28,11 @@ async fn observe_hint(kind: Option<RoadKind>, historical_direct: bool, recursive
             }
             loaded
                 .doc
-                .set_road(&f.middle.id, &f.target.id, &serde_json::to_string(&road).unwrap())
+                .set_road(
+                    &f.middle.id,
+                    &f.target.id,
+                    &serde_json::to_string(&road).unwrap(),
+                )
                 .unwrap();
         }
         if historical_direct {
@@ -77,7 +81,10 @@ async fn observe_hint(kind: Option<RoadKind>, historical_direct: bool, recursive
         let conn = tokio::time::timeout(
             Duration::from_secs(5),
             f.ep.connect(
-                iroh::EndpointAddr::from_parts(f.target_ep.id(), [transport_addr(&f.target_ep.id())]),
+                iroh::EndpointAddr::from_parts(
+                    f.target_ep.id(),
+                    [transport_addr(&f.target_ep.id())],
+                ),
                 INNER_ALPN,
             ),
         )
@@ -85,7 +92,10 @@ async fn observe_hint(kind: Option<RoadKind>, historical_direct: bool, recursive
         .unwrap()
         .unwrap();
         answered = echo(&conn).await;
-        assert_eq!(khor_net::path::classify(&conn), khor_net::path::PathKind::Carried);
+        assert_eq!(
+            khor_net::path::classify(&conn),
+            khor_net::path::PathKind::Carried
+        );
         f.node.wires.adopt(&f.target.id, Proto::Main, conn.clone());
         inner = Some(conn);
     } else {
@@ -105,13 +115,17 @@ async fn observe_hint(kind: Option<RoadKind>, historical_direct: bool, recursive
     if let Some(serial) = serial {
         f.node.carry.detach_attached(
             &f.target_ep.id(),
-            Carrier::Hop { via: f.middle_ep.id() },
+            Carrier::Hop {
+                via: f.middle_ep.id(),
+            },
             serial,
         );
     }
     f.target_links.detach(
         &f.ep.id(),
-        Carrier::Hop { via: f.middle_ep.id() },
+        Carrier::Hop {
+            via: f.middle_ep.id(),
+        },
     );
     if let Some(attached) = admitted {
         tokio::time::timeout(Duration::from_secs(2), attached.ended())
@@ -128,7 +142,10 @@ async fn observe_hint(kind: Option<RoadKind>, historical_direct: bool, recursive
     tokio::join!(f.ep.close(), f.target_ep.close(), f.middle_ep.close());
 
     if recursive {
-        assert!(serial.is_none() && !answered, "a recursive second leg is ineligible");
+        assert!(
+            serial.is_none() && !answered,
+            "a recursive second leg is ineligible"
+        );
     } else {
         assert!(
             serial.is_some() && answered,

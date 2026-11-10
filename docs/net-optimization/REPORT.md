@@ -280,3 +280,10 @@ Turing稳定源码缓存首/复用同快照206/207均fmt/net66+1ignored绿，bui
 旧a2ed/19ed/f118在07e04308实际hop22/1红：同peer独立outgoing真实IP连接继续echo，incoming真实TLS/echo且仅Custom无selected标记，客户端实际Carried；取消post-offer准备者后kept=false/owned=false/echoed=false。正常incoming与此前21例通过，198.966秒/11artifact/identity核/group空；52310a20仅格式失败不算运行红。新incoming whole冻结，原published文件准确前缀、prepare whole、原hop/wires tests等均保持。
 
 候选仅carrier_in_use扩展为selected-carried或非空且全custom的registered live连接；空snapshot不当作使用，原compare评分不改，无新生产timer/task/probe。69a6/tree8536/snapshotbb754/control68在Linux4c316093（249.068秒、21artifact、原group空）与Mac42825268619（exact13768467392、20files、11controlblobs）同canonical全12组绿，hop23、wires15、budget30Linux/26Mac，原1 ignored保持。hop-incoming-fixture-freeze.json仅该scope true，field_phone_issue_resolved=false。之后的late-close/new-offer/pending Noq/ears/network/address epoch及并行仍未闭合。
+
+
+## 实际actor关闭guard：排队顺序与原vendor验证
+
+Iroh13加法close_carried_if在实际RemoteStateActor执行之前检查最新Links.has，原无条件close_carried语义保持。旧8048/73ff/5e19的761c4291真实hop24/1红；独立baseline仅恢复实际旧Node无条件调用，其余加法API未使用，817a/35e9/036a在2cf6b5ef实际27项25/2红：late和已入队后新stream两个场景都Closed=true/carried=false。真实actor暂停、Node已enqueue/join、后续实际replacement与两无replacement关闭控制均到达，126.082秒/11artifact/group空，初格式失败保留。新旧whole queued及原close完整前缀保持。
+
+最终47aaa/tree4a4055/snapshota61643/control68在Linuxb9f10cb1（250.769秒/21artifact/group空）与Mac42833751584（exact13772163647/20files/11controlblobs）同canonical全部12节点组绿/hop27；同source Linuxvendor99315801全Noq439/Iroh路径50/home9绿，61.826秒/14artifact/group空。原vendor测试尾逐byte未改，两个freeze仅actual late/queued关闭scope true，field false。pending Noq开/关/Abandoned、ears/网络地址epoch、N1稳定性和手机验收未被这些证明替代。
