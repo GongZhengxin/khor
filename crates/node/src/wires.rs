@@ -418,6 +418,14 @@ pub(crate) struct Wires {
     /// The connection journal, set by the resident only
     /// (`crate::journal`: one writer per home).
     pub(crate) journal: std::sync::OnceLock<Arc<crate::journal::Journal>>,
+    #[cfg(test)]
+    retirement_test_gate: Mutex<Option<RetirementTestGate>>,
+}
+
+#[cfg(test)]
+struct RetirementTestGate {
+    entered: tokio::sync::oneshot::Sender<()>,
+    release: std::sync::mpsc::Receiver<()>,
 }
 
 /// How long a relay's word that a machine left counts, unheard since.
@@ -977,6 +985,19 @@ impl Wires {
         }
     }
 
+    #[cfg(test)]
+    fn hold_retirement_for_test(&self) {
+        let gate = self
+            .retirement_test_gate
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .take();
+        if let Some(gate) = gate {
+            let _ = gate.entered.send(());
+            let _ = gate.release.recv();
+        }
+    }
+
     /// Retires `conn` if it is still the wire this key holds: closed,
     /// forgotten, counted. Answers whether it was.
     pub(crate) fn retire(&self, id: &str, proto: Proto, conn: &Connection, why: Retired) -> bool {
@@ -993,6 +1014,8 @@ impl Wires {
         }
         self.retire_slot(id, proto, slot, why);
         drop(slots);
+        #[cfg(test)]
+        self.hold_retirement_for_test();
         self.after_retirement(id, why);
         true
     }
@@ -1680,6 +1703,10 @@ impl Slot {
 #[cfg(test)]
 #[path = "wires/wake_epoch_tests.rs"]
 mod tests_wake_epoch;
+
+#[cfg(test)]
+#[path = "wires/retirement_epoch_tests.rs"]
+mod tests_retirement_epoch;
 
 #[cfg(test)]
 mod tests {
