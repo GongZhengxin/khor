@@ -687,6 +687,7 @@ impl Wires {
     pub(crate) fn pulse(&self) {
         drop(self.slots.lock().unwrap_or_else(|p| p.into_inner()));
         drop(self.dialing.lock().unwrap_or_else(|p| p.into_inner()));
+        drop(self.pending_dials.lock().unwrap_or_else(|p| p.into_inner()));
         drop(self.changed.lock().unwrap_or_else(|p| p.into_inner()));
         drop(self.served.lock().unwrap_or_else(|p| p.into_inner()));
         drop(self.presence.lock().unwrap_or_else(|p| p.into_inner()));

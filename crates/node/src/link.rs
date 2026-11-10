@@ -945,6 +945,9 @@ const DIAL_TIMEOUT: Duration = Duration::from_secs(10);
 /// every dial to turing while it was stuck, from every machine.
 const DIAL_MOST: Duration = Duration::from_secs(25);
 
+type HopPreparation<'a> =
+    std::pin::Pin<&'a mut (dyn std::future::Future<Output = ()> + Send + 'a)>;
+
 struct DialWindow {
     within: Duration,
     by: Option<tokio::time::Instant>,
@@ -3513,17 +3516,19 @@ impl Node {
             return Err(failed.clone());
         }
         let contact = self.wires.contact_version(&d.id);
-        // The peer hop (round ROAD-3): a road through a third machine,
-        // ready before the dial so it races from the first packet.
-        if may_hop {
-            crate::deadline::wait(by, self.hop_ahead(ep, d))
-                .await
-                .map_err(|_| DialFailure::CallerExpired)?;
-        }
-        match self
-            .dial(ep, &d.id, &d.addrs, proto.alpn(), by, DIAL_MOST)
-            .await
-        {
+        // Prepare a peer hop beside the ordinary dial. Keep the future
+        // and finite usage lease through adoption, so dropping a losing
+        // preparation cannot withdraw the winner's carried stream.
+        let _using = self.wires.pending_dial(&d.id);
+        let mut hop = Box::pin(self.hop_ahead(ep, d));
+        let preparation: Option<HopPreparation<'_>> =
+            if may_hop { Some(hop.as_mut()) } else { None };
+        let outcome = if may_hop {
+            self.dial_preparing(ep, &d.id, &d.addrs, proto.alpn(), by, DIAL_MOST, preparation).await
+        } else {
+            self.dial(ep, &d.id, &d.addrs, proto.alpn(), by, DIAL_MOST).await
+        };
+        match outcome {
             // Gone to the background while it dialled (net-dial B6): the
             // suspension let every wire go and this one is not taken up.
             Ok(conn) if self.resting.load(std::sync::atomic::Ordering::Relaxed) => {
@@ -3755,6 +3760,7 @@ impl Node {
             return Early::Failed(failed.clone());
         }
         let contact = self.wires.contact_version(&d.id);
+        let _using = self.wires.pending_dial(&d.id);
         if crate::deadline::wait(by, self.hop_ahead(ep, d))
             .await
             .is_err()
@@ -13347,6 +13353,19 @@ impl Node {
         alpn: &[u8],
         window: DialWindow,
     ) -> Result<iroh::endpoint::Connection, DialFailure> {
+        self.dial_with_preparation(ep, id, direct, relays, alpn, window, None).await
+    }
+
+    async fn dial_with_preparation(
+        &self,
+        ep: &iroh::Endpoint,
+        id: &str,
+        direct: &[String],
+        relays: &[String],
+        alpn: &[u8],
+        window: DialWindow,
+        mut preparation: Option<HopPreparation<'_>>,
+    ) -> Result<iroh::endpoint::Connection, DialFailure> {
         let by = crate::deadline::earlier(window.by);
         if crate::deadline::expired(by) {
             return Err(DialFailure::CallerExpired);
@@ -13363,12 +13382,14 @@ impl Node {
         // 首包时间 starts here, before either road is tried: what a
         // person waits through is the whole dial, head start included.
         let started = std::time::Instant::now();
+        let preparing_hop = preparation.is_some();
         let mut roads = tokio::task::JoinSet::new();
         // A road this machine carries itself (round ROAD-2): a candidate
         // beside the direct ones, so it races them from the first packet
         // (`khor_net::carry::RoadOrder` then keeps the owner's order).
         let carried = self.carried_addr(id);
-        let ahead = !direct.is_empty() || carried.is_some();
+        let already_carried = carried.is_some();
+        let ahead = !direct.is_empty() || already_carried;
         // What this dial offered, for the journal (`crate::journal`).
         let mut tried = (0, Vec::new(), false);
         if ahead {
@@ -13403,7 +13424,7 @@ impl Node {
         }
         let tunnel = alpn == khor_net::endpoint::TUNNEL_ALPN;
         let origin = crate::journal::by_now();
-        let note = |won: Option<crate::journal::Won>, error: Option<String>, asleep: bool| {
+        let note = |won: Option<crate::journal::Won>, error: Option<String>, asleep: bool, carried: bool| {
             // A failure's backoff is the one its caller is about to count
             // (`Node::line_to_inner`); a pairing dial counts none, nor a
             // middle's for another machine, nor one the far side refused.
@@ -13432,7 +13453,7 @@ impl Node {
                     ms: crate::journal::ms(started.elapsed()),
                     direct: tried.0,
                     relays: tried.1.clone(),
-                    carried: tried.2,
+                    carried,
                     won,
                     error,
                     failures,
@@ -13455,17 +13476,52 @@ impl Node {
         // other one does too, so one dead direct address cannot decide
         // the answer while the relay is still walking.
         let mut refused: Option<String> = None;
+        let mut carried_retry = false;
+        let mut offered_carried = tried.2;
         loop {
+            if crate::deadline::expired(by) {
+                return Err(DialFailure::CallerExpired);
+            }
+            if deadline.is_elapsed() {
+                note(None, refused.map(|why| crate::journal::scrub(&why)), false, offered_carried);
+                return Err(DialFailure::TimedOut);
+            }
+            if roads.is_empty() && preparation.is_none() {
+                // An offered carrier joins any still-running handshake in
+                // iroh. If both original attempts already failed, give this
+                // newly prepared road one attempt in the SAME dial window.
+                // There are never more than the original two active dials.
+                if preparing_hop && !already_carried && !carried_retry
+                    && let Some(carried) = self.carried_addr(id)
+                {
+                    carried_retry = true;
+                    offered_carried = true;
+                    let addr = endpoint::dial_addr(id, &[], &[]).map_err(bare)?;
+                    let mut addr = addr;
+                    addr.addrs.insert(carried);
+                    let (ep, alpn) = (ep.clone(), alpn.to_vec());
+                    roads.spawn(async move {
+                        let connected = crate::deadline::wait(by, ep.connect(addr, &alpn)).await;
+                        (crate::journal::Won::Direct, connected)
+                    });
+                } else {
+                    note(None, refused.as_deref().map(crate::journal::scrub), false, offered_carried);
+                    return Err(match refused {
+                        Some(why) => DialFailure::Refused(why),
+                        None => DialFailure::TimedOut,
+                    });
+                }
+            }
             tokio::select! {
                 biased;
                 () = &mut caller => return Err(DialFailure::CallerExpired),
                 () = &mut deadline => {
-                    note(None, refused.map(|why| crate::journal::scrub(&why)), false);
+                    note(None, refused.map(|why| crate::journal::scrub(&why)), false, offered_carried);
                     return Err(DialFailure::TimedOut);
                 }
-                joined = roads.join_next() => match joined {
+                joined = roads.join_next(), if !roads.is_empty() => match joined {
                     Some(Ok((won, Ok(Ok(conn))))) => {
-                        note(Some(won), None, false);
+                        note(Some(won), None, false, offered_carried);
                         crate::roads::replied(&self.roads, id, started.elapsed());
                         crate::roads::watch(&self.roads, id, &conn, self.wires.journal.get().cloned(), &self.carry);
                         return Ok(conn);
@@ -13476,19 +13532,22 @@ impl Node {
                     Some(Ok((_, Err(_)))) => return Err(DialFailure::CallerExpired),
                     Some(Ok((_, Ok(Err(e))))) => match DialFailure::of_connect(&e) {
                         DialFailure::Asleep(why) => {
-                            note(None, Some(why.clone()), true);
+                            note(None, Some(why.clone()), true, offered_carried);
                             return Err(DialFailure::Asleep(why));
                         }
                         _ => refused = Some(e.to_string()),
                     },
                     Some(Err(_)) => {}
-                    None => {
-                        note(None, refused.as_deref().map(crate::journal::scrub), false);
-                        return Err(match refused {
-                            Some(why) => DialFailure::Refused(why),
-                            None => DialFailure::TimedOut,
-                        });
+                    None => {}
+                },
+                () = async {
+                    match preparation.as_mut() {
+                        Some(preparing) => preparing.as_mut().await,
+                        None => std::future::pending::<()>().await,
                     }
+                }, if preparation.is_some() => {
+                    preparation = None;
+                    offered_carried |= self.carried_addr(id).is_some();
                 },
             }
         }
@@ -13503,6 +13562,19 @@ impl Node {
         alpn: &[u8],
         by: Option<tokio::time::Instant>,
         most: Duration,
+    ) -> Result<iroh::endpoint::Connection, DialFailure> {
+        self.dial_preparing(ep, id, direct, alpn, by, most, None).await
+    }
+
+    async fn dial_preparing(
+        &self,
+        ep: &iroh::Endpoint,
+        id: &str,
+        direct: &[String],
+        alpn: &[u8],
+        by: Option<tokio::time::Instant>,
+        most: Duration,
+        preparation: Option<HopPreparation<'_>>,
     ) -> Result<iroh::endpoint::Connection, DialFailure> {
         // A machine last seen behind a slow road is given that road's time
         // to answer a handshake (`wires::Patience`); one never measured, or
@@ -13522,13 +13594,14 @@ impl Node {
         // This machine's own home among the relays tried (net-f): two
         // machines homed on the same public relay meet there even while
         // each one's row still names only its own list.
-        self.dial_with(
+        self.dial_with_preparation(
             ep,
             id,
             direct,
             &self.published_relays(ep),
             alpn,
             DialWindow { within, by },
+            preparation,
         )
         .await
     }

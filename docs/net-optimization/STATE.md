@@ -6,6 +6,9 @@
 
 ### 最新覆盖状态（优先于下方历史段落）
 
+- **当前推进覆盖**：839885b4/39595ce3/96eff693的Linux085ea57e真36项33/3红：未登记握手echo失败、同peer pending保留失败、快IP被慢middle占满caller失败；另一peer负控和原32通过，136.168秒/11artifact/group空/identity核。此前f51/0e9314a5实际33项32/1快IP红（STOP/outer-open/no-orphan过），136.148秒/11artifact核。所有格式尝试另存。
+- 之后WIP普通拨号与hop准备共享单一dial window并行；原普通两项都失败后，新carrier至多再补一次、最多两项活动握手。获胜连接先adopt再drop准备；短期pending凭据交给现有watcher等待，仅取消且无live使用时回收自己的serial，无新任务/计时器。**未编译/未测/未接受**；0RTT仍串行，Asleep终止语义、pending状态跨操作换代原子性仍须独立合同，不能称NET16/整体完成。core-transfer pairing Busy854仍未归因。
+
 - 主HEAD **b1ac8637f3f2d050fe980e13636843ae0f9238b9**，tree9802f550/snapshot32d7f3d1，Recovery有限准入候选；尚未接受或部署。此前最新接受分项仍47aaa3b9。
 - Linux **854aa6ce**已完成、采证并核identity：246.623秒/19artifact/group空，hop32全绿；原resume用例在line17 `a.pair`准备阶段返回 **transfer owner or quota gate is busy**，未到暂停恢复断言。保留失败，不称偶发或已排除关联。静态定位精确文本属于khor_sync::transfer::Error::Busy（同transfer owner或OS quota gate竞争），与node metadata的另一Busy文本不同；具体触发点未证。
 - Mac **42843187359**同canonical已完整12组绿，hop32/wires15/budget26/resume1；exact artifact **13776438600**，20files/11control blobs逐项核，无format.patch。Mac成功不能抵消Linux失败。两端ledger均已终态，无活动heavy。

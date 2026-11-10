@@ -230,24 +230,35 @@ struct PendingHop {
     via: EndpointId,
     attachment: u64,
     asked: Option<Asking>,
-    handoff: Option<tokio::sync::oneshot::Sender<Asking>>,
+    handoff: Option<tokio::sync::oneshot::Sender<HopHandoff>>,
     committed: bool,
 }
 
+struct HopHandoff {
+    asked: Asking,
+    pending: Option<tokio::sync::watch::Receiver<()>>,
+    cancelled: bool,
+}
+
 impl PendingHop {
-    fn hand_off(&mut self) -> bool {
+    fn hand_off(&mut self, cancelled: bool) -> bool {
         let (Some(handoff), Some(asked)) = (self.handoff.take(), self.asked.take()) else {
             return false;
         };
-        self.committed = handoff.send(asked).is_ok();
+        self.committed = handoff.send(HopHandoff {
+            asked,
+            pending: self.wires.pending_dial_done(&self.id),
+            cancelled,
+        }).is_ok();
         self.committed
     }
 }
 
 impl Drop for PendingHop {
     fn drop(&mut self) {
-        if !self.committed && self.wires.carrier_in_use(&self.id) {
-            self.hand_off();
+        if !self.committed && (self.wires.carrier_in_use(&self.id)
+            || self.wires.pending_dial_done(&self.id).is_some()) {
+            self.hand_off(true);
         }
         if !self.committed {
             self.links
@@ -596,7 +607,7 @@ impl Node {
         );
         let attached = self.carry.attach(peer, Carrier::Hop { via }, recv, send);
         let attachment = attached.serial();
-        let (handoff, handed) = tokio::sync::oneshot::channel::<Asking>();
+        let (handoff, handed) = tokio::sync::oneshot::channel::<HopHandoff>();
         let mut pending = PendingHop {
             links: self.carry.clone(),
             wires: self.wires.clone(),
@@ -637,12 +648,26 @@ impl Node {
                 }
                 received = handed => received.ok(),
             };
-            let Some(asked) = handed else {
+            let Some(handoff) = handed else {
                 ended.await;
                 crate::carry::let_path_go(&node, &links, peer).await;
                 return;
             };
-            let _asked = asked;
+            let _asked = handoff.asked;
+            if let Some(mut pending) = handoff.pending {
+                tokio::select! {
+                    () = &mut ended => {
+                        crate::carry::let_path_go(&node, &links, peer).await;
+                        return;
+                    }
+                    _ = pending.changed() => {}
+                }
+            }
+            if handoff.cancelled && !wires.carrier_in_use(&id) {
+                links.detach_attached(&peer, Carrier::Hop { via }, attachment);
+                crate::carry::let_path_go(&node, &links, peer).await;
+                return;
+            }
             let mut held = 0u8;
             loop {
                 tokio::select! {
@@ -701,7 +726,7 @@ impl Node {
         if crate::deadline::wait(Some(by), offer).await.is_err() {
             return false;
         }
-        pending.hand_off()
+        pending.hand_off(false)
     }
 
     /// **The road choice by measured legs** (NET-DIRECT step 4), every
