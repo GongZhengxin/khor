@@ -1,6 +1,6 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-10 10:44 UTC。完整N0–N5仍未完成，用户授权继续。速度/体验优先，可信个人设备网；无main合并、发布、采购/生产部署授权。root串行、无子智能体。长期[PLAN](PLAN.md)/[REQUIREMENTS](REQUIREMENTS.md)/[ACCEPTANCE](ACCEPTANCE.md)不缩减。上一状态逐字在[历史](HISTORY-20261110-before-natural-recovery-epoch.md)，保留更早历史链。不要因旧goal服务paused停止。
+更新：2026-11-10 11:00 UTC。完整N0–N5仍未完成，用户授权继续。速度/体验优先，可信个人设备网；无main合并、发布、采购/生产部署授权。root串行、无子智能体。长期[PLAN](PLAN.md)/[REQUIREMENTS](REQUIREMENTS.md)/[ACCEPTANCE](ACCEPTANCE.md)不缩减。上一状态逐字在[历史](HISTORY-20261110-before-natural-recovery-epoch.md)，保留更早历史链。不要因旧goal服务paused停止。
 
 ## 先核真实句柄
 
@@ -109,3 +109,5 @@ SSH BatchMode/ForwardAgent=no/StrictHostKeyChecking=yes；无个人key/PAT/agent
 10:50实际句柄：第三合同only-test 653a源在82adb5aa仅单assert格式红、54.097秒/10artifact/原group空核，未compile/不计行为红；dce413de只应用远端format.patch，runnable red sourcec1cf/snapshot1b44。Turing97c96cff/PID2187034已launch原net-node/control68，收据/source-refs已pin；先核终态再collect，不重复提交。新增peer_contact whole SHA见peer-contact-fixture-freeze.json；旧wires whole+旧dial_budget whole（只去新mod声明）与wake/retirement/probe/wire逐byte核验不变。无Mac活动任务。
 
 10:53 N1 bf6105实际carrier auditor已补齐：四绑定outer最晚1274ms选IP，X质量窗口在103.17ms重开，后89.55ms不立即改变reading quality/无pending采样，+3752才Moving、原5505.782ms红；新correlation留raw/SHA，不丢4秒失败、不改参数。手机相关97c96cff正在原dial_budget30项，先等真实红。
+
+11:00第三竞态因果：旧97c96cff原24+4负向绿、2fresh-contact实际红，265.423秒/14artifacts/group空；初版scratch accept在关闭端点时先醒None造成清理task panic，原错误和断言均保留。f475只改先abort/join并验证不panic，clean baseline0e62a55f同whole实际28/2红、无清理panic，96.48秒budget，sourcebdae/snapshotfd88/control68核。之后才生产候选0e0b83e5：gone与正向contact版本同锁、旧Asleep只按开始版本提交/复用；非Asleep、计时/退避/请求语义不改，旧所有whole fixture不变。candidate source4f6a/snapshot1c3f已save，Turing提交本地exec83085需先取终态/receipt再恢复，禁盲重发；Mac未发。现场phone仍未部署/未验。
