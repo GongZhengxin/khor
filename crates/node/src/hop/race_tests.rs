@@ -87,18 +87,20 @@ async fn a_middle_waiting_for_admission_cannot_hold_the_fast_direct_wire() {
     let mut calling = Owned(Some(tokio::spawn({
         let (node, ep, target) = (f.node.clone(), f.ep.clone(), f.target.clone());
         async move {
-            crate::deadline::scope(by, node.line_to_inner(&ep, &target, Proto::Main, None, true)).await
+            crate::deadline::scope(
+                by,
+                node.line_to_inner(&ep, &target, Proto::Main, None, true),
+            )
+            .await
         }
     })));
     tokio::time::timeout_at(by, arrived).await.unwrap().unwrap();
     allow_direct.send(()).unwrap();
-    let result = tokio::time::timeout_at(
-        by + Duration::from_millis(300),
-        calling.0.take().unwrap(),
-    )
-    .await
-    .unwrap()
-    .unwrap();
+    let result =
+        tokio::time::timeout_at(by + Duration::from_millis(300), calling.0.take().unwrap())
+            .await
+            .unwrap()
+            .unwrap();
     let won = result.is_ok();
     let echoed = match &result {
         Ok(line) => {
@@ -116,12 +118,14 @@ async fn a_middle_waiting_for_admission_cannot_hold_the_fast_direct_wire() {
     );
     let outer_open =
         f.outer_local.close_reason().is_none() && f.outer_remote.close_reason().is_none();
-    let orphaned =
-        f.node.carry.has(&f.target_ep.id()) || asking(f.node.device_str(), &f.target.id);
+    let orphaned = f.node.carry.has(&f.target_ep.id()) || asking(f.node.device_str(), &f.target.id);
     stop(&mut direct_task).await;
     f.close(0).await;
     direct.close().await;
 
     assert!(stopped && outer_open && !orphaned);
-    assert!(won && echoed, "the available IP wire must win inside the caller's budget while the middle is still unadmitted: won={won}, echoed={echoed}");
+    assert!(
+        won && echoed,
+        "the available IP wire must win inside the caller's budget while the middle is still unadmitted: won={won}, echoed={echoed}"
+    );
 }
