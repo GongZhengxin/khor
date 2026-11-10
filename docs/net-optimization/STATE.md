@@ -107,3 +107,5 @@ SSH BatchMode/ForwardAgent=no/StrictHostKeyChecking=yes；无个人key/PAT/agent
 10:44更新：f9退役竞态已同source双OS全net-node绿，retirement-epoch-fixture-freeze.json仅该scope candidate_verified=true、field_phone_issue_resolved=false。当前无heavy/phone sampler。下一按NEXT-DESIGN新鲜peer接触版本合同，先真实Asleep旧拨号/排队共享红，不先改生产或假称手机根因。
 
 10:50实际句柄：第三合同only-test 653a源在82adb5aa仅单assert格式红、54.097秒/10artifact/原group空核，未compile/不计行为红；dce413de只应用远端format.patch，runnable red sourcec1cf/snapshot1b44。Turing97c96cff/PID2187034已launch原net-node/control68，收据/source-refs已pin；先核终态再collect，不重复提交。新增peer_contact whole SHA见peer-contact-fixture-freeze.json；旧wires whole+旧dial_budget whole（只去新mod声明）与wake/retirement/probe/wire逐byte核验不变。无Mac活动任务。
+
+10:53 N1 bf6105实际carrier auditor已补齐：四绑定outer最晚1274ms选IP，X质量窗口在103.17ms重开，后89.55ms不立即改变reading quality/无pending采样，+3752才Moving、原5505.782ms红；新correlation留raw/SHA，不丢4秒失败、不改参数。手机相关97c96cff正在原dial_budget30项，先等真实红。

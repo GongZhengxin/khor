@@ -457,3 +457,6 @@ actual carrier repeat2 4dc22c7e并未进入replug：首目录10,033,849us超时�
 先只加cfg(test)实例级、单次异步gate，在真实Asleep结果提交前暂停（owner仍持原dial lock，无生产等待/任务/字段）；新增dial_budget子模块自动走原net-node预算filter。真实loopback peer以实际Incoming拒绝/关闭产生Asleep，排队者实际poll到互斥等待，随后同peer真实反向握手/echo并serving；释放旧结果后不能再left_alone，排队者应重新实际拨号且可echo。负向：无新接触或只有另一peer接触时仍共享原Asleep/保持休眠、不额外拨号。两个实际拨号入口分别覆盖，先冻whole/旧行为红，再改生产。
 
 候选限每peer正向接触版本：与gone标记同一锁，back清休眠并递增；持拨号锁开始尝试时捕获版本，Asleep只在版本未变时提交，缓存同带开始版本且Asleep复用要求版本相同。旧owner仍返回它实际收到的失败，不重放请求；非Asleep失败/计时/退避语义暂保持。无新timer/probe/常驻task，原120/600秒安静、5–300秒backoff、两候选上限、总deadline/取消、暂停/信任/accepted写jobs不改。正向版本不当作IPv4/IPv6网络epoch，也不能据此抹除所有LOST/MISSED或关闭所有相邻竞态。原whole wires、wake、retirement与旧dial_budget测试保持，修后原net-node双OS同source。
+
+
+10:53 N1诊断补充（不改变策略）：bf6105dd的actual-carrier-path-events已由原冻结auditor验证，四条实际绑定outer在+1092/1176/1197/1274ms选IP，窗口无lag/end。X真实inner RTT为174.598534→103.166817→89.551779ms，明确日志“recovery quality window restarted”在103.166817处重开；随后最新89.55而reading quality仍103.17，至+3502ms仍未Moving，+3752ms才见Moving，原Go5505.782ms红保留。不能简写成始终三点median：重开后recent不足三点，44又没有既有pending因此未进入sampling_only。carrier-quality-restart-correlation.json锚实际raw/数据SHA与10行证据。这提供了“从未先合格时的有限新测量”设计问题；先独立合同和总包成本，不直接增加原3预约、删质量样本、缩短确认或据此猜手机根因。
