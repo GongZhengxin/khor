@@ -1565,9 +1565,9 @@ impl Node {
             services.spawn(async move { n.cpu_recorder().await });
         }
         // 暂停 (docs/MORE.md), read **off this loop**. The file stays the
-        // one truth — `khor pause` writes it from another process and
-        // nothing here caches a decision — but the accept arm may not
-        // touch a disk: a `read_to_string` per connection put the
+        // one truth — `khor pause` can write it from another process,
+        // while a resident shares the polled reading — but the accept
+        // arm may not touch a disk: a `read_to_string` per connection put the
         // reactor over its second under load (2026-09-20,
         // `crates/node/tests/load.rs`, which is the gate that said so,
         // and this file's own rule about the loop). So a task of its

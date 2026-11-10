@@ -1960,10 +1960,10 @@ impl Node {
             .unwrap_or_else(|| self.name.clone())
     }
 
-    /// Whether this machine is paused (docs/MORE.md 暂停) — read from
-    /// the file every time, never cached, so a resident serve and a
-    /// `khor pause` in another terminal cannot disagree about it
-    /// (`crate::pause` has the whole of that reasoning).
+    /// Whether this machine is paused (docs/MORE.md 暂停). A resident
+    /// uses its shared polled reading; local pause/resume updates it
+    /// immediately. Without a resident reading, consult the file.
+    /// See [`crate::pause`] for cross-process polling and ownership.
     pub fn paused(&self) -> bool {
         crate::pause::is_on(&self.root)
     }
