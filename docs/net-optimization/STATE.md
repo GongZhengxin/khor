@@ -8,6 +8,8 @@
 
 ## 先核当前句柄，禁止盲重发
 
+- **恢复等待接续只加观测，尚未新发probe**：scripts/netlab-peer-selection.py固定four-second物理合同已用267/272原数据取红（51个deadline后warm requests分别42/40选对，9/11仍Relay），checker/fixture hash在peer-recovery-four-seconds-red-green.json。新增gated full-samples诊断只读实际conn/path统计：last_received>judged但latest_rtt_sent<=judged时记PTO/unacked/sent/received，用于确认“旧ACK清PTO后等keepalive”的假设；默认无新probe/timer。274长回归仍沿旧准确source，不混当前WIP。
+
 - **274 Turing唯一重型长回归在途**：turing-20261110T000645Z-a87d2f92，PID以receipt核，netlab-stalls；现代Noq12特定对照baseline：660483fb＋actual-latency测试fixture，tree d25e828d/snapshot9c8fa9d4/control4eeeea9。实际p1s 600秒/20次300ms/checked affinity原负载＋原p5全部150/300/600ms×4周期，不缩时/不改门/不夹别的Turing编译。其后候选必须沿相同control/模式准确a42 source执行，结果全部保留。该baseline只隔离Noq12，不冒充原6485整个feat/net baseline。
 - **272/273均终态采证绿**：272 168.291s/rc0/原group空，124/124ok/reported Carried再hold10秒，原physical fixture；准确同271/273 fullsource0c6ab3ea/tree48b907da/snapshota42b5b64。按正确phase outer Go+1131/+1289ms，inner开始考虑Custom+5451/+5709ms、Go+7701/+7959ms，复现恢复等待而非全完成。273 Mac42724807967 fmt/net67+1ignored/hop12/wires11/journal30/budget20（49.92s）全绿，11control blobs/source/transport/hash核。
 

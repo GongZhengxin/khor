@@ -1284,6 +1284,17 @@ impl RemoteStateActor {
                         self.state.endpoint_id, conn_id, path_id, tuple, actual,
                     );
                 }
+                if diagnose_tuples
+                    && let Some(silence) = measured.silent.get(tuple)
+                    && stats.last_received.is_some_and(|at| at > silence.judged.into_std())
+                    && stats.latest_rtt_sent.is_none_or(|sent| sent <= silence.judged.into_std())
+                {
+                    debug!(target: "khor_net_samples", ?conn_id, ?path_id, ?tuple, ?now,
+                        ?silence, pto_count = stats.pto_count, last_received = ?stats.last_received,
+                        unacked_since = ?stats.unacked_since, latest_rtt_sent = ?stats.latest_rtt_sent,
+                        latest_rtt_received = ?stats.latest_rtt_received,
+                        "recovery lacks a post-judgment round trip");
+                }
                 let key = (*conn_id, *path_id);
                 present.push(key);
                 if let Some(waited) = unanswered_for(&stats, now.into_std()) {

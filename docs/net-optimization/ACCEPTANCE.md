@@ -486,3 +486,12 @@ Mac-only net-wan-lifetime可通过既有GH installed guard通道执行上面三�
 268候选新增ACK-floor单元通过，但旧`a_backup_that_fails_after_the_path_move_releases_its_in_flight_data`在虚拟97ms失败：trace显示96ms首次PTO即由`resend_off_backups`重排47B原stream包。此时不足300ms/2PTO，按原代码只能是far_slower分支，不是unanswered门；新的selection latest_sample仅发布PathStats，无Noq内部运输消费者，SRTT/var不改。旧fixture把两路估计都手设20ms，但`ManyToManyRouting::simple_symmetric`实际每腿1ms，下一ACK可把活路估计拉回远快值，因而并不持续保证“同速”；不把旧失败抹去或笼统叫flaky。
 
 下一fixture保持真正两路各10ms单程（20ms RTT），包括屏蔽首路时新建routing也设相同latency；保留fake20ms起点但不再让后续网络是2ms。循环显式核未进far_slower准备条件，再检查原300ms内零提前lost、至少350ms且2PTO后释放、<1秒恢复和原完整stream字节。收尾推进20ms仅让新设10ms单程包实际送达，不放宽上述恢复截止点。新几何分别在旧Noq质量源和新候选取完整vendor对照；新ACK-floor paths tests模块保持不变。原268失败继续保留，不用改断言隐藏真实传输回归。
+
+
+## Peer relay已知路恢复后的四秒合同（恢复探测策略修改前冻结）
+
+原peer_relay_replug_v1整个physical fixture、20ms设备腿、双向/remote-first负载、10秒holds和全部124 outcomes保持。将warm请求的实际opening selection作为额外门：middle_replug_finished后起始时间>=4000ms的每个after-ab/after-ba请求，真实业务peer的每个reading stream必须唯一selected Carried；缺事实不能绿，公共Relay仍可提供故障瞬间可用性。此四秒只约束这个已配对/已知middle/固定几何的受控恢复病例，不外推任意Internet或p99。至少3个独立Lab重复，不因候选失败放宽。
+
+源码scripts/netlab-peer-selection.py及物理fixture hash在peer-recovery-four-seconds-red-green.json冻结。原267/272数据已在策略修改前取得此额外门真实红；可达124/124及reported Carried最终hold仍是绿，两者分开保留。目标给原2秒新鲜确认及两腿恢复留预算；约4秒的无新往返等待须有界处理，不能用旧包ACK直接证明新网可用。
+
+下一候选还须每peer/road/已判故障epoch至多一份有回包提示后启动的fresh recovery PING，无hint/健康/首次未建不发送，重复hint不重发；保持2秒/两fresh observation ticks、收益门、现有PTO/静默/重hold和所有者规则。单元覆盖触发、重复、仍silent/无hint、真正新往返、独立下一故障与发送失败，物理路径/计数和原CPU短停顿/稳定性/黑洞须另验。此处不是已实现或已通过证据。
