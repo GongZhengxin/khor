@@ -393,6 +393,8 @@ pub(crate) struct Wires {
     slots: Mutex<HashMap<(String, Proto), Slot>>,
     dialing: Mutex<HashMap<(String, Proto), DialLock>>,
     pending_dials: Mutex<HashMap<String, std::sync::Weak<PendingDialState>>>,
+    /// Replaced when all old-network dial waits are forgiven.
+    hop_generation: Mutex<Arc<()>>,
     /// A network change not yet judged: wires not heard since it are
     /// retired once their [`Patience::after_change`] has passed.
     changed: Mutex<Option<Instant>>,
@@ -1809,9 +1811,16 @@ impl Wires {
         n
     }
 
+    /// A weak token dies when this network's routing waits are forgiven;
+    /// it neither holds this Wires alive nor creates a timer or task.
+    pub(crate) fn hop_epoch(&self) -> std::sync::Weak<()> {
+        Arc::downgrade(&self.hop_generation.lock().unwrap_or_else(|p| p.into_inner()))
+    }
+
     /// Every wait the pump was keeping is forgiven: the dials that failed
     /// may have failed on the old network.
     pub(crate) fn forgive_all(&self) {
+        *self.hop_generation.lock().unwrap_or_else(|p| p.into_inner()) = Arc::new(());
         for slot in self
             .slots
             .lock()

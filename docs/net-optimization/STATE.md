@@ -46,6 +46,11 @@
 
 ## 当前任务与下一步
 
+最新覆盖（18:59 UTC）：98b997de已终态采核55项53/2，网络标记在真实NO_ROUTE前/后两个正向均失败；无变化原冷却和此前52过，200.482秒/11files/group空/identity核，hop-miss freeze baseline true。当前候选用Wires持有Arc<()> epoch、操作/cache只存Weak；forgive_all原入口替换token，open_hop首await前捕获，MISSED同锁校验epoch才写/清、读取只用当前epoch。仍每(me,to)一项、不按换网增加key，不留Node活；原纯退避测试通过tokenless入口调用同生产核心，不改原测试body。未测不接受。只本机all-waits-forgiven/MISSED，LOST/peer与middle地址context仍未完成。
+
+下方98句柄已完成，新的candidate回执待登记，查ledger。
+
+
 **当前活动：hop-miss旧行为baseline** `turing-20261110T185034Z-98b997de`，PID2740089，18:50:56 UTC启动；6f611cf2/tree4356aa33/snapshot2bae21a5（hop-miss-epoch-baseline-source.json），新增3项预期2正向红/无变化控制绿，未测不猜。MISSED/LOST产品不变。除该run外，之前Mac/Turing任务均终态采核。先取实际结果再设计epoch，不重发旧52 candidate。
 
 此前运行段落为历史更新，以上唯一活动句柄与ledger优先：

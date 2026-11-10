@@ -91,8 +91,11 @@ const MISSED_FIRST: Duration = Duration::from_secs(30);
 
 /// Per (this machine, far machine): hops that found no middle in a row,
 /// and when the last did.
+type MissEpoch = std::sync::Weak<()>;
+type HopMiss = (u32, std::time::Instant, Option<MissEpoch>);
+
 static MISSED: std::sync::LazyLock<
-    std::sync::Mutex<std::collections::HashMap<(String, String), (u32, std::time::Instant)>>,
+    std::sync::Mutex<std::collections::HashMap<(String, String), HopMiss>>,
 > = std::sync::LazyLock::new(Default::default);
 
 /// How long after `n` misses in a row a hop is not asked for again.
@@ -102,29 +105,74 @@ fn missed_wait(n: u32) -> Duration {
         .min(LOST_FOR)
 }
 
-fn missed(me: &str, to: &str) {
+fn same_miss_epoch(a: Option<&MissEpoch>, b: Option<&MissEpoch>) -> bool {
+    match (a, b) {
+        (Some(a), Some(b)) => a.ptr_eq(b),
+        (None, None) => true,
+        _ => false,
+    }
+}
+
+fn current_miss_epoch(epoch: Option<&MissEpoch>) -> bool {
+    epoch.is_none_or(|epoch| epoch.strong_count() != 0)
+}
+
+fn missed_in_epoch(me: &str, to: &str, epoch: Option<MissEpoch>) {
     let mut all = MISSED.lock().unwrap_or_else(|p| p.into_inner());
+    // Check under the same lock as the write. An old completion cannot
+    // overwrite a new epoch's miss after the network forgave its token.
+    if !current_miss_epoch(epoch.as_ref()) {
+        return;
+    }
+    let now = std::time::Instant::now();
     let e = all
         .entry((me.to_owned(), to.to_owned()))
-        .or_insert((0, std::time::Instant::now()));
-    *e = (e.0.saturating_add(1), std::time::Instant::now());
+        .or_insert((0, now, epoch.clone()));
+    if !same_miss_epoch(e.2.as_ref(), epoch.as_ref()) {
+        *e = (0, now, epoch);
+    }
+    e.0 = e.0.saturating_add(1);
+    e.1 = now;
 }
 
+fn made_in_epoch(me: &str, to: &str, epoch: Option<&MissEpoch>) {
+    let mut all = MISSED.lock().unwrap_or_else(|p| p.into_inner());
+    let key = (me.to_owned(), to.to_owned());
+    if current_miss_epoch(epoch)
+        && all
+            .get(&key)
+            .is_some_and(|e| same_miss_epoch(e.2.as_ref(), epoch))
+    {
+        all.remove(&key);
+    }
+}
+
+/// The unchanged backoff applies only to the context that observed it.
+fn missed_lately_in_epoch(me: &str, to: &str, epoch: Option<&MissEpoch>) -> bool {
+    let all = MISSED.lock().unwrap_or_else(|p| p.into_inner());
+    current_miss_epoch(epoch)
+        && all
+            .get(&(me.to_owned(), to.to_owned()))
+            .is_some_and(|(n, at, stored)| {
+                same_miss_epoch(stored.as_ref(), epoch) && at.elapsed() < missed_wait(*n)
+            })
+}
+
+// The original pure backoff contract exercises the same production core
+// without a Wires owner. Actual Node tests exercise owned network epochs.
+#[cfg(test)]
+fn missed(me: &str, to: &str) {
+    missed_in_epoch(me, to, None);
+}
+
+#[cfg(test)]
 fn made(me: &str, to: &str) {
-    MISSED
-        .lock()
-        .unwrap_or_else(|p| p.into_inner())
-        .remove(&(me.to_owned(), to.to_owned()));
+    made_in_epoch(me, to, None);
 }
 
-/// Whether a hop from `me` to `to` missed lately enough not to be asked
-/// for before this dial.
+#[cfg(test)]
 fn missed_lately(me: &str, to: &str) -> bool {
-    MISSED
-        .lock()
-        .unwrap_or_else(|p| p.into_inner())
-        .get(&(me.to_owned(), to.to_owned()))
-        .is_some_and(|(n, at)| at.elapsed() < missed_wait(*n))
+    missed_lately_in_epoch(me, to, None)
 }
 
 /// Per (machine, middle): when a hop through it lost to the relay.
@@ -519,7 +567,9 @@ impl Node {
                 .find(|d| d.id == me)
                 .map(|d| self.roads_of(d))
                 .unwrap_or_default();
-            if !self.wants_hop(y, &mine) || missed_lately(&me, &y.id) {
+            if !self.wants_hop(y, &mine)
+                || missed_lately_in_epoch(&me, &y.id, Some(&self.wires.hop_epoch()))
+            {
                 return;
             }
             let rows: Vec<(String, bool, bool)> = all
@@ -589,6 +639,7 @@ impl Node {
             return false;
         };
         let me = self.device_str().to_owned();
+        let epoch = self.wires.hop_epoch();
         let asked = Asking::new(&me, &y.id);
         let tries = async {
             for b in picked.iter().take(TRIES) {
@@ -627,11 +678,11 @@ impl Node {
             if tried > 0 && !crate::deadline::expired(caller) {
                 self.wires
                     .note(Some(&y.id), crate::journal::What::Hop { via: None, tried });
-                missed(&me, &y.id);
+                missed_in_epoch(&me, &y.id, Some(epoch));
             }
             return false;
         };
-        made(&me, &y.id);
+        made_in_epoch(&me, &y.id, Some(&epoch));
         // A link came in while this one opened: ssh, which a hop never
         // replaces, or the far end's own hop, which stands when the far
         // end's id is the lower ([`Asking`]).
