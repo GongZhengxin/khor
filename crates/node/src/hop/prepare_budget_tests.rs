@@ -60,7 +60,10 @@ async fn observe_held_offer(caller: Option<Duration>) {
     );
     assert!(!orphaned && !still_asking && stopped && gate_cancelled);
     assert!(wire_open, "expiry stops the stream, not the middle's wire");
-    assert!(!charged, "post-admission expiry is not an unreachable middle");
+    assert!(
+        !charged,
+        "post-admission expiry is not an unreachable middle"
+    );
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -122,13 +125,11 @@ async fn a_caller_expiring_before_admission_is_not_a_middle_miss() {
         .await
         .unwrap()
         .unwrap();
-    let answer = tokio::time::timeout_at(
-        by + Duration::from_millis(300),
-        opening.0.as_mut().unwrap(),
-    )
-    .await
-    .unwrap()
-    .unwrap();
+    let answer =
+        tokio::time::timeout_at(by + Duration::from_millis(300), opening.0.as_mut().unwrap())
+            .await
+            .unwrap()
+            .unwrap();
     let charged = missed_lately(f.node.device_str(), &f.target.id);
     let down = f.node.wires.link(&f.middle.id).down;
     release.send(()).unwrap();
@@ -140,5 +141,8 @@ async fn a_caller_expiring_before_admission_is_not_a_middle_miss() {
 
     assert!(!answer);
     assert_eq!(down, None);
-    assert!(!charged, "a caller's deadline must not suppress this middle");
+    assert!(
+        !charged,
+        "a caller's deadline must not suppress this middle"
+    );
 }
