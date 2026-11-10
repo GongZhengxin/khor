@@ -515,7 +515,7 @@ impl Node {
                 (false, false) if self.wires.link(&y.id).road.is_none() => Legs::Recovery,
                 (false, false) => Legs::Dial,
             };
-            let picked: Vec<String> = middles_with_cost(
+            let mut picked: Vec<String> = middles_with_cost(
                 &me,
                 &y.id,
                 &rows,
@@ -530,6 +530,13 @@ impl Node {
             .into_iter()
             .map(|(b, _)| b)
             .collect();
+            if legs == Legs::Recovery {
+                // Recovery uses a road we hold before spending its finite
+                // attempts on cached reachability. Stable sorting keeps the
+                // existing latency order inside each group; a live relay
+                // gets the same admission preference as a live IP wire.
+                picked.sort_by_key(|b| self.wires.link(b).road.is_none());
+            }
             // Keep the cold preparation state out of every enclosing dial and
             // resident request's future, including requests that need no hop.
             Box::pin(self.open_hop(ep, y, &all, &picked)).await;

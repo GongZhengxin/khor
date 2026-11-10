@@ -1,10 +1,12 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-10T15:31:12.135392+00:00 UTC。**完整N0–N5仍未完成，用户已授权持续实施；不得因分项绿、旧goal paused或compact停下。** 速度/体验优先、个人可信设备网。root串行，无子智能体；没有main合并、发布、采购、生产部署或改已装App/store的授权。长期范围见[PLAN](PLAN.md)、[REQUIREMENTS](REQUIREMENTS.md)、[ACCEPTANCE](ACCEPTANCE.md)、[NEXT-DESIGN](NEXT-DESIGN.md)。上版STATE完整逐字保存在[历史](HISTORY-20261110-before-peer-contact-state.md)，含更早历史链；本页替代旧段落的当前状态，不删历史失败或矩阵。
+更新：2026-11-10T16:12:27.108801+00:00。**完整N0–N5仍未完成，用户已授权持续实施；不得因分项绿、旧goal paused或compact停下。** 速度/体验优先、个人可信设备网。root串行，无子智能体；没有main合并、发布、采购、生产部署或改已装App/store的授权。长期范围见[PLAN](PLAN.md)、[REQUIREMENTS](REQUIREMENTS.md)、[ACCEPTANCE](ACCEPTANCE.md)、[NEXT-DESIGN](NEXT-DESIGN.md)。上版STATE完整逐字保存在[历史](HISTORY-20261110-before-peer-contact-state.md)，含更早历史链；本页替代旧段落的当前状态，不删历史失败或矩阵。
 
 ## 恢复先核实际句柄
 
 ### 最新覆盖状态（优先于下方历史段落）
+
+- **live-vs-cached实际红已采核**：8d0328c5/treed84b7764/snapshot92bff6ca，Linux4e280e8e实际39项38/1红，won=false/echo=false/tried_cached=true，140.244秒/11artifact/group空；原38和所有owned cleanup均过。排序候选只在Legs::Recovery稳定分组：当前held road在cached road之前，同组仍原cost顺序；Direct/Relay不另分高低，未改TRIES=2/原3秒或caller2秒/信任/单hop。仅此fixture证明的缺口，未涵盖incoming-only first wire/假live僵尸/地址epoch/NoRelay其他策略。本版尚未验证，准备送远端。
 
 - **最新已验证分项cbf3a8d4/tree38430683/snapshotff8e3735**：Linux47439bfb全12/hop38/wires15/budget30/resume1，252.734秒/21artifact/group空核；Mac42851130886同canonical全12/hop38/wires15/budget26/resume1，exact13779833868/20files/11control blobs核。pending-successor freeze仅scope true、field false，原38红37/1与无successor清理控制保留。没有新vendor/task/timer/探针。
 - 当前HEAD8d0328c5只追加live-vs-cached fixture（此前7e067）和远端格式，产品rank仍旧。Linux4e280e8e实际正在跑；格式首1da5c964保留。两个cached low-RTT endpoints实际保持Incoming不admit，唯一live Tunnel应在同2秒caller内救通，正常普通拨号并行、已有gate/cleanup保持。尚未接受排序候选/NET16。下一步以该真实红决定rank修改；0RTT、Asleep、MISSED/地址族/epoch仍继续。
