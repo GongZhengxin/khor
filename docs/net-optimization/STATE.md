@@ -101,3 +101,5 @@ MacLab与Turing同LAN；构建macserver为另一台，异网来自用户报告�
 20:08 UTC：eec09ec1旧行为实际41.799秒/13files/group空/identity；Noq439绿，路径53pass/2新FAIL，原50及三个新负控过，home未跑。原whole ae62ab38与旧50测试尾完整冻结。现实现Iroh46候选（主55项），只为首次恢复重返实测pre-fault水平刷新quality epoch，未改probe/切换门/确认；尚未构建验证，不称通过。42–44仍不合主。
 
 20:13 UTC：Iroh46候选1c847229/tree90f62f50/snapshot4c18fa47在5c2e4ff2已终态45.781秒/14files/group空/identity，Noq439/path55/home11均绿；同whole五项ae62与原50 tail不变，仅unit scope。当前普通重型LinuxNode dc23e338/PID2825686和Mac42892759864（exact receipt8ce74d28，control68cad）同canonical运行，未进物理。已预登记recovery-known-quality-physical-pair-plan.json：三组/六次C-B,B-C,C-B，无盲重跑/删失败、原门与profile不改。须两端Node终态且Mac重型结束后才按序开物理，不与单元重叠。
+
+20:23 UTC：pair01候选9cb240b7已终态220.572秒/16files/group空/identity核，124/124、原warm51/51绿；独立双端decision仍红，X3855.026/Y4068.484ms。原4秒不放宽；6预约/2episode预算绿，innerCustom两窗口实际counter bounds完整，非outer字节/手机能耗。按预登记继续baseline对应轮，不改策略/丢失败；N1仍红，不能按sampled warm通过关闭。

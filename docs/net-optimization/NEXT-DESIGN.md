@@ -620,3 +620,10 @@ LOST当前按(to,via)全局保存，未带本机身份，也与换网/候选变�
 packet-age下一合同已加入：真实认证/echo使rx计数确实改变，只有cached reactor heard回拨；显式now快照仍应可达、显式future年龄过期则应不可达。旧谓词未改，先取红；这是快照年龄模型，不冒充OS暂停。现有Iroh Path.stats().last_received可直接读取真实Noq时间，拟只按当前选中IP/Relay路径的实际收包年龄与原Patience判断，避免把“自上次tick计数不同”当作刚收包。网络切换后的路径世代、OS睡眠时钟与用户手机仍独立待验，不以年龄模型覆盖。
 
 真机候选构建入口复核：REMOTE-DEVELOPMENT明确便携Mac executor不运行native，开发机不生成正式iOS签名包，iPhone继续用可信GitHub TestFlight。现阶段无iOS安装/发布，未为测试修改该边界。可提前准备原生/iOS检查与准确源记录；最终TestFlight分发仍需届时明确授权及可信Quality，不能把网络unit绿当App产物。
+
+
+## 20:24 UTC N2候选变化缓存：继续设计、未实现
+
+当前hop_ahead在构造picked前检查MISSED，只有本机Wires hop_epoch变化会使旧miss无效。新live middle而自身网络未变仍可能被30秒门挡住；此为静态缺口，尚未有新真实红。下一合同必须先实际NO_ROUTE，再改变候选实际可达性、建立新Tunnel/carried TLS/echo；无变化/Rtt-only噪声不能解除原退避，旧候选未完成的失败不能覆盖新候选上下文。
+
+设计倾向是按目标持有稳定的候选context，以eligible ID集合/确实可用的首腿/地址事实区分变化，排除排序与每个ACK/RTT变化；真实网络epoch仍保留。不能直接在所有adopt、正向RPC或每个routebook更新调用forgive_all，这会让在线middle对睡眠目标不断NO_ROUTE。新context由Wires唯一持强token，操作/缓存只Weak的方案仍需对目标数量、删除、并发和late完成取证；尚未添加字段或map，不是已批准的最终实现。LOST还缺本机identity namespace与地址context，不能把MISSED局部修复当整个缓存完成。
