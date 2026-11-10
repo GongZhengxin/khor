@@ -12,9 +12,9 @@
 
 ## 补丁
 
-### 45. 无live连接时按失败边界撤回旧IP提示（2026-11-11，候选scaffold）
+### 45. 无live连接时按失败边界撤回旧IP提示（2026-11-11，候选）
 
-42–44在隔离worktree试验，编号预留且未合主。本条是主分支第54项（Iroh1–41/45、Noq1–12），尚未实现/接受；初始discard函数返回0，先取新状态合同的真实红。
+42–44在隔离worktree试验，编号预留且未合主。本条是主分支第54项（Iroh1–41/45、Noq1–12），尚未接受。初始discard函数返回0，cf2352f7实际Noq439/path50绿、home10/1红；新来源控制过，旧IP应撤1实际0。当前实现按source时间过滤，原whole fixture保持；Node只在cold未发early数据且新carrier已就绪时调用，仍在同一绝对dial_by内。
 
 3a7424b7的真实stale-IP不同身份场景：可信middle准备完还剩1985ms，新carried握手仍收UnknownIssuer。Socket将地址加入共同RemotePathState，传carried-only不等于撤回旧IP。拟只在actor执行时没有任何live连接的条件下，移除所有来源时间均不晚于首次失败边界的IP提示；之后新提示及Relay/Custom保留，当前连接不被关闭。无安全校验放宽、探针/任务/永久timer；重新输入地址可再学习，不是永久blacklist。
 

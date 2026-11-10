@@ -179,9 +179,18 @@ impl RemotePathState {
     }
 
     /// Discard old IP hints before a cold retry, preserving newer sources.
-    pub(super) fn discard_ip_hints_before(&mut self, _before: Instant) -> usize {
-        // Baseline scaffold: retains the old address book for a real red.
-        0
+    pub(super) fn discard_ip_hints_before(&mut self, before: Instant) -> usize {
+        let count = self.paths.len();
+        let metrics = self.metrics.clone();
+        self.paths.retain(|addr, state| {
+            let stale = matches!(addr, transports::Addr::Ip(_))
+                && state.sources.values().all(|at| *at <= before);
+            if stale && matches!(state.status, PathStatus::Open) {
+                metrics.transport_ip_paths_removed.inc();
+            }
+            !stale
+        });
+        count - self.paths.len()
     }
 
     /// Returns an iterator over the addresses of all paths.
