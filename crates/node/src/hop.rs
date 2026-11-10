@@ -702,7 +702,12 @@ impl Node {
             },
         );
         let attached = stream_trace::attach(
-            &self.carry, peer, Carrier::Hop { via }, outer_wire, "initiator", (send, recv),
+            &self.carry,
+            peer,
+            Carrier::Hop { via },
+            outer_wire,
+            "initiator",
+            (send, recv),
         );
         let attachment = attached.serial();
         let (handoff, handed) = tokio::sync::oneshot::channel::<HopHandoff>();
@@ -1019,7 +1024,12 @@ impl Node {
                     })
                 });
                 let _riding = (self.wires.hop_held(from), self.wires.hop_held(&y));
-                let copying = stream_trace::splice((send, recv), (ys, yr), from_id, (incoming_wire, onward_wire));
+                let copying = stream_trace::splice(
+                    (send, recv),
+                    (ys, yr),
+                    from_id,
+                    (incoming_wire, onward_wire),
+                );
                 if std::env::var_os("KHOR_NET_DIAGNOSTICS").is_some() {
                     tokio::pin!(copying);
                     let mut look = tokio::time::interval(LOOK_EVERY);
@@ -1058,8 +1068,12 @@ impl Node {
                     return;
                 }
                 let attached = stream_trace::attach(
-                    &self.carry, x, Carrier::Hop { via: from_id }, incoming_wire,
-                    "receiver", (send, recv),
+                    &self.carry,
+                    x,
+                    Carrier::Hop { via: from_id },
+                    incoming_wire,
+                    "receiver",
+                    (send, recv),
                 );
                 khor_net::carry::observe_lifecycle(&asker, "hop_outer_bound", || {
                     serde_json::json!({

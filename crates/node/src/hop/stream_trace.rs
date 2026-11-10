@@ -18,7 +18,16 @@ struct Tap<T> {
 
 impl<T> Tap<T> {
     fn new(inner: T, peer: EndpointId, role: &'static str, wire: usize, stream: String) -> Self {
-        Self { inner, peer, role, wire, stream, read: 0, written: 0, pending: [false; 4] }
+        Self {
+            inner,
+            peer,
+            role,
+            wire,
+            stream,
+            read: 0,
+            written: 0,
+            pending: [false; 4],
+        }
     }
 
     fn record(&mut self, index: usize, operation: &str, state: &str, bytes: usize) {
@@ -42,7 +51,11 @@ impl<T> Tap<T> {
 }
 
 impl<T: AsyncRead + Unpin> AsyncRead for Tap<T> {
-    fn poll_read(mut self: Pin<&mut Self>, cx: &mut Context<'_>, buf: &mut ReadBuf<'_>) -> Poll<io::Result<()>> {
+    fn poll_read(
+        mut self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+        buf: &mut ReadBuf<'_>,
+    ) -> Poll<io::Result<()>> {
         let before = buf.filled().len();
         let result = Pin::new(&mut self.inner).poll_read(cx, buf);
         match &result {
@@ -55,7 +68,11 @@ impl<T: AsyncRead + Unpin> AsyncRead for Tap<T> {
 }
 
 impl<T: AsyncWrite + Unpin> AsyncWrite for Tap<T> {
-    fn poll_write(mut self: Pin<&mut Self>, cx: &mut Context<'_>, bytes: &[u8]) -> Poll<io::Result<usize>> {
+    fn poll_write(
+        mut self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+        bytes: &[u8],
+    ) -> Poll<io::Result<usize>> {
         let result = Pin::new(&mut self.inner).poll_write(cx, bytes);
         match &result {
             Poll::Pending => self.record(1, "write", "pending", 0),
@@ -102,7 +119,8 @@ pub(super) fn attach(
     let send_id = format!("{:?}", send.id());
     let recv_id = format!("{:?}", recv.id());
     let attached = links.attach(
-        peer, carrier,
+        peer,
+        carrier,
         Tap::new(recv, peer, role, wire, recv_id.clone()),
         Tap::new(send, peer, role, wire, send_id.clone()),
     );
@@ -132,8 +150,14 @@ pub(super) async fn splice(
         Tap::new(stream, peer, role, wire, id)
     };
     let ((a_send, a_recv), (b_send, b_recv)) = (a, b);
-    let (mut a_send, mut a_recv) = (tap_send(a_send, "middle_in", wires.0), tap_recv(a_recv, "middle_in", wires.0));
-    let (mut b_send, mut b_recv) = (tap_send(b_send, "middle_out", wires.1), tap_recv(b_recv, "middle_out", wires.1));
+    let (mut a_send, mut a_recv) = (
+        tap_send(a_send, "middle_in", wires.0),
+        tap_recv(a_recv, "middle_in", wires.0),
+    );
+    let (mut b_send, mut b_recv) = (
+        tap_send(b_send, "middle_out", wires.1),
+        tap_recv(b_recv, "middle_out", wires.1),
+    );
     let there = async {
         let _ = tokio::io::copy(&mut a_recv, &mut b_send).await;
         let _ = b_send.inner.finish();
