@@ -808,7 +808,10 @@ impl Wires {
     /// Incoming traffic can prove a first leg even without an outgoing
     /// slot. This is reachability evidence, not protocol-stream reuse.
     pub(crate) fn incoming_for_hop(&self, id: &str) -> Vec<Connection> {
-        let now = Instant::now();
+        self.incoming_for_hop_at(id, Instant::now())
+    }
+
+    fn incoming_for_hop_at(&self, id: &str, now: Instant) -> Vec<Connection> {
         let mut conns: Vec<_> = self
             .served
             .lock()
@@ -2660,3 +2663,7 @@ mod tests {
         assert!(!w.out_of_reach("y"), "heard from since");
     }
 }
+
+#[cfg(test)]
+#[path = "wires/incoming_freshness_tests.rs"]
+mod tests_freshness;

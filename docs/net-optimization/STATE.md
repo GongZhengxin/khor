@@ -46,7 +46,10 @@
 
 ## 当前任务与下一步
 
-最新覆盖（18:59 UTC）：98b997de已终态采核55项53/2，网络标记在真实NO_ROUTE前/后两个正向均失败；无变化原冷却和此前52过，200.482秒/11files/group空/identity核，hop-miss freeze baseline true。当前候选用Wires持有Arc<()> epoch、操作/cache只存Weak；forgive_all原入口替换token，open_hop首await前捕获，MISSED同锁校验epoch才写/清、读取只用当前epoch。仍每(me,to)一项、不按换网增加key，不留Node活；原纯退避测试通过tokenless入口调用同生产核心，不改原测试body。未测不接受。只本机all-waits-forgiven/MISSED，LOST/peer与middle地址context仍未完成。
+19:03 UTC WIP：31ca9aed仅fmt45.842秒/10files/group空/identity核，已应用远端epoch锁格式。新增incoming packet-age真实握手/echo + 显式now/future快照年龄合同；仅回拨节点cached heard，真实Noq last_received未改，不称真实OS暂停。incoming生产谓词仍旧，只抽显式clock边界；原Wires tests whole tail逐byte保留。下一baseline兼测epoch候选与packet-age旧行为，两个scope尚未接受；查ledger新句柄，不重发旧任务。
+
+
+最新覆盖（18:57 UTC）：98b997de已终态采核55项53/2，网络标记在真实NO_ROUTE前/后两个正向均失败；无变化原冷却和此前52过，200.482秒/11files/group空/identity核，hop-miss freeze baseline true。当前候选用Wires持有Arc<()> epoch、操作/cache只存Weak；forgive_all原入口替换token，open_hop首await前捕获，MISSED同锁校验epoch才写/清、读取只用当前epoch。仍每(me,to)一项、不按换网增加key，不留Node活；原纯退避测试通过tokenless入口调用同生产核心，不改原测试body。未测不接受。只本机all-waits-forgiven/MISSED，LOST/peer与middle地址context仍未完成。
 
 下方98句柄已完成，新的candidate回执待登记，查ledger。
 
