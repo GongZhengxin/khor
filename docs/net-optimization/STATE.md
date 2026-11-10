@@ -46,6 +46,13 @@
 
 ## 当前任务与下一步
 
+19:10 UTC：7bb0e664已终态采核，hop55全绿（3项epoch均过）但wires16中15/1，只有过期packet仍被计数当新包失败；fresh无需tick、原15、实际wire仍开与cleanup过。196.500秒/12files/group空/identity核，packet-age freeze baseline true；epoch候选只有Linux分组绿，全套仍红，不接受。
+
+当前freshness产品候选改为：原Patience内当前selected IP/Relay路径Noq last_received的实际年龄，Unknown/Custom/缺timestamp不猜；同一显式now快照，不依赖节点tick新鲜度或计数变化。无新vendor/API/探针/task/timer，未验证。forgive_all额外调用者egress.saw只在本机出口状态变化时调用，确认这是routing-wait context更新，不是每个普通ACK失效。
+
+下方7bb已完成；新候选待登记，恢复看ledger。
+
+
 当前唯一运行baseline `turing-20261110T190521Z-7bb0e664`，PID2753086，19:05:43 UTC启动；17333cb3/tree04a5e998/snapshotc8cebad0，JSON epoch-candidate-packet-age-formatted-baseline-source.json。兼测MISSED弱epoch候选与incoming计数旧年龄逻辑；已过fmt，尚在编译/测试，不先接受。713f5795仅fmt43.754秒/10files/group空/identity核，远端patch已应用。下方旧run均已完成，不重发。
 
 

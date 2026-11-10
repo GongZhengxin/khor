@@ -820,9 +820,15 @@ impl Wires {
             .filter(|w| w.id == id)
             .filter_map(|w| {
                 let conn = w.conn.upgrade()?;
-                (conn.close_reason().is_none()
-                    && (heard_count(&conn) != w.rx || heard_lately(Some(w.heard), w.rtt, now)))
-                .then_some(conn)
+                let patience = Patience::for_rtt(w.rtt).keepalive_missed;
+                let recent = conn.paths().iter().any(|path| {
+                    path.is_selected()
+                        && (path.is_ip() || path.is_relay())
+                        && path.stats().last_received.is_some_and(|at| {
+                            now.saturating_duration_since(at) < patience
+                        })
+                });
+                (conn.close_reason().is_none() && recent).then_some(conn)
             })
             .collect();
         conns.sort_unstable_by_key(Connection::stable_id);
