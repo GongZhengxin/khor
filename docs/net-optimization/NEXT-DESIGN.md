@@ -366,3 +366,12 @@ fc435ccd准确c673源：124/124可达，但原采样门48/51（3次AB仍Relay）
 诊断8c90acc0准确5a39a39b/tree0cd3fe0c/snapshot82976112只加诊断，不改Iroh41策略，原124/124、请求51/51仍绿，决策X3565ms/Y7549ms红。Y在1549ms于conn140618974140672取得84.038303ms并开始Moving，1550ms普通confirmation实际选择conn140619108789456（PTO0）；1799ms后一copy的101.627832ms单样本成为同road代表，低于25%收益门而取消Moving，5299ms才重新开始。另一copy的同刻PTO未记录，不把它武断归为错误故障判定；已静态确认recovery与confirmation在相同PTO时使用不同tie规则。
 
 下一最小候选：普通candidate confirmation复用已有recovery_copy_rank（低PTO优先，同PTO优先已开始恢复的copy）；current探测仍选最高PTO的可疑copy。只在现有RecoveryCheck仍存续时有偏好，不增连接强owner、不改采样新鲜性/收益/2秒确认/4秒兜底/3恢复probe预算/250ms节奏。已关闭或更高PTO的旧copy不能凭偏好胜出。已有rank真实状态单元保持；以未修改完整物理/两个四秒门、实际copy与packet预算验前后，不以新诊断源凑三次性能绿。若延伸到正常无恢复的confirm copy稳定性或持久Moving偏好，应独立设计，不在此最小修正偷带。
+
+
+## 2026-11-10：Iroh42失败后先证明实际PING链路（策略不变）
+
+2c9d5898实际X三次API成功后RTT count/timestamps不变；精确缓存noq1.3.0 Path::ping只lock_and_wake并设置proto pending_ping。proto发送还会经过space/scheduling/pacing/congestion；ACK只有largest新确认且包含eliciting才更新sample。这是源码事实，尚不能指认哪个环节失败。Y无RecoveryCheck也未被原局部观测覆盖。
+
+下一只补诊断：full-debug模式对每条Custom copy记录同一原子PathStats（PING/ACK/PATH_ACK的tx/rx、datagram、PTO/last_received/unacked、RTT计数与sample timestamps/cwnd）以及对应Reading、silence/recovery/Moving状态；普通模式不采日志，不增加PING/计时/新owner。固定旧tests与物理门。先新增独立Noq模型合同，确认健康backup的PING确实发送、原路ACK并使新packet RTT样本前进；黑洞负向则API可Ok、tx前进却样本不得假刷新。新文件单独登记，不改旧multipath whole fixture。
+
+Mac可在Turing原quiet计时期间独立做net-vendor；Turing不夹编译。diagnostic源只用于因果定位，不算quiet性能或prospective三轮接受。之后依据实际tx/rx/ACK事实才设计最小修复；不先调250ms/2秒/4秒或去掉largest-newly-acked保护。
