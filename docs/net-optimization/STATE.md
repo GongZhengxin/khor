@@ -1,15 +1,15 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-10 10:31 UTC。完整N0–N5仍未完成，用户授权继续。速度/体验优先，可信个人设备网；无main合并、发布、采购/生产部署授权。root串行、无子智能体。长期[PLAN](PLAN.md)/[REQUIREMENTS](REQUIREMENTS.md)/[ACCEPTANCE](ACCEPTANCE.md)不缩减。上一状态逐字在[历史](HISTORY-20261110-before-natural-recovery-epoch.md)，保留更早历史链。不要因旧goal服务paused停止。
+更新：2026-11-10 10:44 UTC。完整N0–N5仍未完成，用户授权继续。速度/体验优先，可信个人设备网；无main合并、发布、采购/生产部署授权。root串行、无子智能体。长期[PLAN](PLAN.md)/[REQUIREMENTS](REQUIREMENTS.md)/[ACCEPTANCE](ACCEPTANCE.md)不缩减。上一状态逐字在[历史](HISTORY-20261110-before-natural-recovery-epoch.md)，保留更早历史链。不要因旧goal服务paused停止。
 
 ## 先核真实句柄
 
-- 主 `/Volumes/disk0/Khor/worktrees/current/khor-net`，feat/net。当前候选HEAD **f9ced4ad**：3a3同tick修复上再将Asleep旧退役提交移入持槽阶段；retirement gate仅cfg(test)，主53vendor/Iroh41未动；主53vendor/Iroh41不改，尚未双OS绿，不是已部署源。Mac42770379226+Linux4bcfad82同source全部net-node已绿，见下。不把doc-only HEAD误当已测试二进制源。
+- 主 `/Volumes/disk0/Khor/worktrees/current/khor-net`，feat/net。当前候选HEAD **f9ced4ad**：3a3同tick修复上再将Asleep旧退役提交移入持槽阶段；retirement gate仅cfg(test)，主53vendor/Iroh41未动；主53vendor/Iroh41不改，已双OS全net-node绿（Linux61aa、Mac42798075914 attempt2），不是已部署源。Mac42770379226+Linux4bcfad82同source全部net-node已绿，见下。不把doc-only HEAD误当已测试二进制源。
 - 隔离 `/Volumes/disk0/Khor/worktrees/current/khor-net-recovery-deadlines` detached **2ef6bee5**，treef1da6579/snapshot48e9e24b（b4行为仅追加actual carrier与connect阶段诊断，e819已实际编译执行）；无IPC v2，Iroh42/43/44未合主。Iroh43实际vendor绿但物理f2b仍红。Iroh44基线d7/tree937/snapshot714在fe3实际54/2红；当前b4只保留有限稀疏测量，重新合格或新故障重启确认时钟，原whole50+epoch+sampling fixtures不变；待同源vendor与物理验证。
 - 控制 `/Volumes/disk0/Khor/worktrees/current/khor-build-net` feat/net HEAD **68cadb57a0ed72d40a4ca9a843e86b9c6797bf34**已推。net-node仅在原remoteQUIC32之后/canonical之前加resume合同；3个source-only stub控制测试实际绿。
-- Turing当前无本轮heavy，**f9 source0666/snapshot764/control68 的61aa0e2b已全net-node绿**，wires15、全IPC/32STOP/remote32/resume/预算等绿，339.284秒/21artifacts/原group空核。09a原行为14/1实际红、whole原11+wake2+retirement2逐byte同。Mac同source42798075914 attempt1在bootstrap GitHub API截断JSON失败，未还原源/无compile/test，artifact-attempt1与失败证明保留；同一workflow已授权例行重跑failed，attempt2状态待核，禁当产品红/再盲发。request a056239e8193417da93238233b10e77b，当前本地CLI rerunexec12707已完成，状态exec23603需取。
-- Mac前一42793316303同tick source3a3已terminal全绿；当前f9的42798075914 attempt2按上方句柄继续。macserver SSH已恢复；用户已澄清同LAN为MacLab本地电脑↔Turing；构建macserver为另一台。A=macserver/B=Turing沿用U10用户异网说明，C=MacLab同LAN参照，P=iPhone；公共Relay自身不证明NAT穿透。源提交经本机GitHub SSH，worker仍原API bundle/guard，无个人凭据给worker。
-- 用户已确认：**iPhone在手边，可切Wi-Fi/蜂窝；已装khor并已与Macserver/Turing配对**。两次可用性/安装配对问题均已答，不重复问。真机具体采样窗口尚未开始；先核实际版本/cohort/可观测API并准备短操作，不假称手机已通过或要求改生产store。
+- Turing当前无本轮heavy，**f9 source0666/snapshot764/control68 的61aa0e2b已全net-node绿**，wires15、全IPC/32STOP/remote32/resume/预算等绿，339.284秒/21artifacts/原group空核。09a原行为14/1实际红、whole原11+wake2+retirement2逐byte同。Mac同source42798075914 attempt1在bootstrap GitHub API截断JSON失败，未还原源/无compile/test，artifact-attempt1与失败证明保留；同一workflow attempt2已全12项绿/wires15，20artifacts/11controlblobs与exact f9 source/tree/snapshot已核。name下载首次选到attempt1旧产物，逐byte确认后另存，后按artifact13754344749精确下载attempt2，双方原件保留；不是产品失败或新调度。request a056239e8193417da93238233b10e77b，所有本地会话已结束。
+- Mac前一42793316303同tick source3a3已terminal全绿；当前f9的42798075914 attempt2已同source全绿，无活动Mac job。macserver SSH已恢复；用户已澄清同LAN为MacLab本地电脑↔Turing；构建macserver为另一台。A=macserver/B=Turing沿用U10用户异网说明，C=MacLab同LAN参照，P=iPhone；公共Relay自身不证明NAT穿透。源提交经本机GitHub SSH，worker仍原API bundle/guard，无个人凭据给worker。
+- 用户已确认：**iPhone在手边，可切Wi-Fi/蜂窝；已装khor并已与Macserver/Turing配对**。两次可用性/安装配对问题均已答，不重复问。真机采样已结束；Wi-Fi/蜂窝/回Wi-Fi全部outcomes保留。用户明确反复关开App后才某次经Turing peer relay恢复，自动接管失败，未部署候选或验收手机；不再要求保持前台。
 
 ## 当前关键因果：稀疏恢复质量中断补测
 
@@ -43,7 +43,7 @@
 - 当前已执行双机 cohort（保留历史WAN任务名）仍 **757/tree2d218/snapshot3f0/controlccd**：coordinator4cee410c97601afe/Mac42757732776，Mac↔Turing各30目录+30固定29B正文逐byte验证，120/120全部ok，两端fresh配对ID相符。MacbinarySHAcd9be1a8/Linux0e063201。实际公共Relay101.200.80.77:3340；120/120只证明双机业务及该Relay可用，不证明跨LAN、公网NAT穿透。最新设备映射已确认：同LAN为MacLab↔Turing，cohort使用另一台构建macserver；A/B异网依用户报告，独立网络/NAT测量未完成。不是Direct/peer/v6/mobile/p99/吞吐/手机能耗；也非与旧ff608匹配性能比较。
 - worker_us最近秩p50/p95/max：Mac→Linux目录55382/58815/76133、正文61322/64630/66470；Linux→Mac目录59527/64622/65616、正文55671/58949/59727。caller另存proof。wan-current-directory-body-proof.json。
 - 同cohort Mac3/3+Linux3/3 stop/EOF/kill真实Node join/worker0/owned空/锁释放；最初两observer IndentationError留原并readonly恢复不计pass，然后新六轮绿。两个business fresh identities与8lifetime copies直接验证清理、一次GH secret已删。manifest current3f0/旧ff608备份，误directory_v1 ledger label保留并actual_v2+erratum补正。
-- iPhone可手动Wi-Fi/蜂窝且已装/已配A/B。准备实际版本/cohort与现有可观测API后，给短、明确采样窗口，记录全outcomes/首成功/选路/实际v4v6。尚无手机观测，不混称当前candidate已在手机执行。
+- iPhone可手动Wi-Fi/蜂窝且已装/已配A/B。准备实际版本/cohort与现有可观测API后，给短、明确采样窗口，记录全outcomes/首成功/选路/实际v4v6。本日已有混合已装版本手机采样与手动关开恢复事实，见下方09:23记录；未执行当前candidate或能耗验收。
 
 ## 全范围仍要完成
 
@@ -103,3 +103,5 @@ SSH BatchMode/ForwardAgent=no/StrictHostKeyChecking=yes；无个人key/PAT/agent
 10:10：09a/2e46实际runtime wires14/1红（replacement真实echo后，旧retire结束再次left_alone），原11+wake2+current-suspended负向绿，116.311秒/12artifacts/原group空；其余node未执行。候选只将Asleep标记移至retire_slot持槽锁阶段，after_retirement不再迟写；现有slot→gone顺序已审，无持gone再取slot路径，adopt发布后back清除。所有原/new whole不改，cfgtest gate不进生产；新serving并发/直接DialFailureAsleep/地址epoch仍未覆盖，不能称现场全修。
 
 10:31：Macf9失败明确为GitHub API blob JSONDecodeError before materialization，64MiB raw/128MiB+JSON cap足够18.347MB bundle，非大小门产品失败，先同run retry一次。第一失败artifact未含source.json，verify identity不可能完成，已保留未误记通过。phone历史journal单次抓取因state busy失败、零手机侧历史，不做更多主动采样；Turing/MacLab被动日志留。用户“关开App”没有独立证明force-quit/OS进程PID变化，仍记manual reopen，不能写成受控进程重启。下一需核stale dial result与fresh positive proof：先清晰建模正向证据版本；不把它等同IPv4v6 network epoch或重置所有LOST/MISSED，不加重放/竞速写入。
+
+10:44更新：f9退役竞态已同source双OS全net-node绿，retirement-epoch-fixture-freeze.json仅该scope candidate_verified=true、field_phone_issue_resolved=false。当前无heavy/phone sampler。下一按NEXT-DESIGN新鲜peer接触版本合同，先真实Asleep旧拨号/排队共享红，不先改生产或假称手机根因。

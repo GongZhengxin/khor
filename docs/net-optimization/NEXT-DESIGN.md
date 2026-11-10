@@ -446,3 +446,14 @@ actual carrier repeat2 4dc22c7e并未进入replug：首目录10,033,849us超时�
 3a3 same-tick已实际85d/7da wires12/1红→Turing1ea+Mac42793316303同source13绿/full net-node绿；仅此分项，现场自动恢复仍失败。相邻源码窗口：retire在slot所有权检查后retire_slot、释放slots锁，再after_retirement(asleep)。其间新adopt可发布新wire并back清旧状态，随后旧after_retirement又写asleep。原Unanswered已在retire_slot内提交失败，注释明确新adopt应在后清除；Asleep同样需要一致提交顺序。
 
 先只加cfg(test)单次gate：真实Wires::retire在释放slots后/after_retirement前暂停，gate属于该Wires实例，阻塞只在测试spawn_blocking内，生产编译无字段/锁/等待。独立新fixture：真实old suspended close，retire进入gate后真实新wire adopt并echo，再放旧retire，不能重新left_alone；没有新wire时真实paused退役仍应留下休眠。原wires whole、新wake whole不改，new模块tests前缀走原net-node过滤。先旧行为实际红/新fixture冻whole，再只将Asleep提交放入retire_slot持槽锁阶段，after_retirement不再写迟到asleep；确认无反向锁顺序，原全node双OS继续。直接DialFailure::Asleep、新地址epoch与MISSED/LOST仍需各自因果验证，不将此测试扩称整体根因。
+
+
+## 2026-11-10 10:44UTC：新鲜对端接触不能被旧休眠拨号撤销（修复前）
+
+用户明确恢复依赖反复关开App，仍是自动恢复失败。f9旧退役提交修复已Linux61aa与Mac42798075914 attempt2同source全12项绿、wires15，首Mac attempt1 API截断失败原产物保留；仅关闭该退役竞态，未部署、未证明现场根因。
+
+下一静态窗口是line_to_inner与ask_early：持拨号互斥的旧尝试得到Asleep后，无条件缓存失败并asleep；期间另一条真实incoming已serving/back，也会被旧结果重盖。等同一次拨号的排队者只按失败完成时刻复用，不检查期间是否有该peer的新鲜正向接触，可能把已恢复机器继续视作休眠。该假设需真实旧行为红，不扩大成所有地址/进程epoch问题。
+
+先只加cfg(test)实例级、单次异步gate，在真实Asleep结果提交前暂停（owner仍持原dial lock，无生产等待/任务/字段）；新增dial_budget子模块自动走原net-node预算filter。真实loopback peer以实际Incoming拒绝/关闭产生Asleep，排队者实际poll到互斥等待，随后同peer真实反向握手/echo并serving；释放旧结果后不能再left_alone，排队者应重新实际拨号且可echo。负向：无新接触或只有另一peer接触时仍共享原Asleep/保持休眠、不额外拨号。两个实际拨号入口分别覆盖，先冻whole/旧行为红，再改生产。
+
+候选限每peer正向接触版本：与gone标记同一锁，back清休眠并递增；持拨号锁开始尝试时捕获版本，Asleep只在版本未变时提交，缓存同带开始版本且Asleep复用要求版本相同。旧owner仍返回它实际收到的失败，不重放请求；非Asleep失败/计时/退避语义暂保持。无新timer/probe/常驻task，原120/600秒安静、5–300秒backoff、两候选上限、总deadline/取消、暂停/信任/accepted写jobs不改。正向版本不当作IPv4/IPv6网络epoch，也不能据此抹除所有LOST/MISSED或关闭所有相邻竞态。原whole wires、wake、retirement与旧dial_budget测试保持，修后原net-node双OS同source。
