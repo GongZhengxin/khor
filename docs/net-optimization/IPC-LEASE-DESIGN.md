@@ -72,3 +72,6 @@ within helper仅对有by的新帧监测读取方向EOF/额外字节/错误，并
 42737166916准确f466d990/treeb6d853dc/control4bf7e6eb已取得helpers+legacy客户端14绿与其他便携全绿；真实32回复在预条件后等待5秒不能归还permits，行为红。整个wire_tests.rs SHA945c22aa在修改真实路径前冻结。此前42736367611 attempt1源下载截断/attempt2格式失败分开保留，不计行为红。
 
 开始接入同listener双协议：新EndpointFile公开ipc_max_version=2，缺省0仍legacy，字段语义为向下兼容最大版本，双方选择已知v2（max>=2）；旧公开ipc::call(port,cookie)继续legacy，新Node端口/cookie/版本作为Target原子刷新，只有拒绝TCP才可刷新。request长度结束后v2 client不half-close，原caller绝对期限仍覆盖全部交换。server用既有helper读取、先核cookie，再在within内持有执行/编码/阻塞写/所有response permits；legacy正常EOF继续执行。按header接收时刻锚remaining与Op上限，run_handoff_within原500ms工作余量继续取早，不对短caller预算另减500ms。原wire fixture逐字不改；候选未远端验证，不把它称已取消QUIC远端执行或跨process预算已验收。
+
+
+首次真实候选结果：42738040751仅格式失败，精确remote patch随后494e5241已应用；42738965522（snapshot1b22a3b0/tree8afa1dc2/control4bf7e6eb）fmt、IPC18及便携全绿，但原32回复用例在tokio worker栈溢出SIGABRT，不能记资源绿。候选将大型run_handoff_within分派future在进入lease组合器前Box::pin，所有权/取消仍归同future；这是待原整fixture验证的最小修正假设，不增加线程栈或改变32/5秒/barrier。错误与whole SHA945c22aa保持。

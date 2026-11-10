@@ -2316,8 +2316,9 @@ impl Node {
             };
             let reply = match (handoff, &content_response) {
                 (Ok(handoff), Ok(permit)) => {
-                    self.run_handoff_within(ep, handoff.op, permit.clone())
-                        .await
+                    // Keep the large operation-dispatch future out of the lease
+                    // combinators' inline state and the worker's polling stack.
+                    Box::pin(self.run_handoff_within(ep, handoff.op, permit.clone())).await
                 }
                 (Err(why), _) => ipc::Reply::Refused { why },
                 (_, Err(why)) => ipc::Reply::Refused { why: why.clone() },
