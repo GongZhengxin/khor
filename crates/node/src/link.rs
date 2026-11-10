@@ -4170,7 +4170,7 @@ impl Node {
                     if content_response.is_some() {
                         crate::session_content::wire_tests::pause_response(node.root()).await;
                     }
-                    Some(frame)
+                    Some((frame, resp))
                 };
                 let frame = if interruptible {
                     tokio::select! {
@@ -4181,10 +4181,10 @@ impl Node {
                 } else {
                     prepare.await
                 };
-                let Some(frame) = frame else { return };
+                let Some((frame, _resp)) = frame else { return };
                 if send.write_all(&frame).await.is_ok() {
                     #[cfg(test)]
-                    documents::flow_tests::reply_written(&wire_tag, &resp);
+                    documents::flow_tests::reply_written(&wire_tag, &_resp);
                     let _ = send.finish();
                 }
             });
