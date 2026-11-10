@@ -78,8 +78,7 @@ impl Fixture {
         .await
         .unwrap();
         let (local, remote) = (local.unwrap(), remote.unwrap());
-        node.wires
-            .adopt(&middle.id, Proto::Tunnel, local.clone());
+        node.wires.adopt(&middle.id, Proto::Tunnel, local.clone());
         let (stop_server, mut stop) = tokio::sync::oneshot::channel();
         let (first_stopped, stopped) = tokio::sync::oneshot::channel();
         let serving = Owned(Some(tokio::spawn({
@@ -116,7 +115,10 @@ impl Fixture {
                 tasks.abort_all();
                 while let Some(joined) = tasks.join_next().await {
                     if let Err(error) = joined {
-                        assert!(error.is_cancelled(), "scratch tunnel handler must not panic");
+                        assert!(
+                            error.is_cancelled(),
+                            "scratch tunnel handler must not panic"
+                        );
                     }
                 }
             }
@@ -212,7 +214,10 @@ async fn cancelling_before_offer_reclaims_the_actual_hop_stream() {
     let wire_open = f.local.close_reason().is_none() && f.remote.close_reason().is_none();
     f.close().await;
     assert!(!still_asking);
-    assert!(wire_open, "stream cancellation keeps the middle's connection");
+    assert!(
+        wire_open,
+        "stream cancellation keeps the middle's connection"
+    );
     assert!(
         !orphaned && stopped,
         "cancelled pre-offer owner must reclaim its attachment and stream: orphaned={orphaned}, stopped={stopped}"
