@@ -411,3 +411,12 @@ Linux c2ec同Mac已绿源a00，原busy-wire在主动pause→resume后立刻conte
 下一先做旧行为不变的helper/探测代码抽取及独立状态红。候选设计仅在已有RecoveryCheck有限窗口、原pending候选仍open/可达、current quality recent只有1或2样本、选择器暂留当前路时，保留**采样模式**至原pending开始+2秒内，沿既有confirmation双路probe规则补足median证据；不批准迁移。>=3样本仍无收益、关闭/再次silent、无恢复episode、过期即按原清除；健康场景不延长。恢复额外3预约/250ms/2秒不变、不补预算，合并规则不变；补测使用已有有限confirmation探测途径，原quiet/实际packet成本必须重验，不能以通过预约门替代总成本。
 
 Moving新增私有sampling_only模式，Road/原since仍是值、不持强connection；现有MaybeFuture在采样模式只守2秒边界，无永久timer。**候选重新被选择时必须重启原连续2秒确认**，不得把不合格期间算入确认；旧2fresh/收益/2秒/4秒上限不变。重新失败、另一候选、rest或fault leave均不得复用旧sampling时钟。actor真实调用与新单元同helper；独立fixture覆盖稀疏噪声保采样、>=3慢样本/健康/关闭/silent/过期负向、不能越过连续确认和fresh要求。旧50及43新3整fixture保持，旧红与控制不覆盖。单位红绿后原两四秒门至少3轮/quiet/黑洞/成本仍待，不预记成功。
+
+
+## 2026-11-10 08:27：恢复采样发生在承载层仍在换路时（先验证假设）
+
+Iroh44同whole单元54/2红→56绿、Noq441/home9绿，但first physical a4ed770d仍124/124且X7663.773/Y7774.490ms、请求10bad。两端初三次恢复RTT约280/131/130及219/129/129ms，均未满足相对132ms Relay的原收益，因此从未进入Moving，44采样保持没有被行使；之后等待5秒keepalive才出现85ms。原总9预约3groups中一组为准备Relay，replug Custom仍6预约2episodes，不能混称重插增加预算。
+
+实际attachment1指明x receiver outer wire140179679991456、y initiator140183035096736；middle splice incoming139900775062032/onward139900842190912。+1206ms x actualouter快IP存在但无selected；+1226ms middle actualincoming仍Relay、onward为Direct；+1277ms y actualouter Direct。journal显示x与middle又有其他copy的选择事件，不能据此推断实际承载wire已切换。约130ms与混合两腿一致，但尚非逐packet证明。旧44及43物理红完整保留，不再盲重刷同profile。
+
+下一步只加opt-in诊断：在hop生命周期内订阅这四个实际outer weak handle的PathEventStream，事件驱动记录选择/开关/lag及当前PathFacts；不持有新强Connection、不增常驻task或timer，生产关闭诊断时无订阅，不改变路由/probe/协议/原fixture/4秒门。先对实际outer事件与inner PING/ACK/RTT/quality/Moving时序做同hash关联，再决定是否需承载path epoch通知或其他最小修复；目前不实施跨层协议、反复refill恢复预算或缩短迁移防抖。若需要新测量epoch，必须明确去重/有限总成本/旧packet隔离、两端及middle不对称/闭合所有权，不能仅用本端leg事件假称两腿均已恢复。

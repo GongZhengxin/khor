@@ -7,7 +7,7 @@
 - 主 `/Volumes/disk0/Khor/worktrees/current/khor-net`，feat/net。生产行为HEAD **ba28fc03**（之后文档/注释）；主53vendor、Iroh41。Mac42770379226+Linux4bcfad82同source全部net-node已绿，见下。不把doc-only HEAD误当已测试二进制源。
 - 隔离 `/Volumes/disk0/Khor/worktrees/current/khor-net-recovery-deadlines` detached **b4e4d232**，tree94851b41/snapshot932897e2；无IPC v2，Iroh42/43/44未合主。Iroh43实际vendor绿但物理f2b仍红。Iroh44基线d7/tree937/snapshot714在fe3实际54/2红；当前b4只保留有限稀疏测量，重新合格或新故障重启确认时钟，原whole50+epoch+sampling fixtures不变；待同源vendor与物理验证。
 - 控制 `/Volumes/disk0/Khor/worktrees/current/khor-build-net` feat/net HEAD **68cadb57a0ed72d40a4ca9a843e86b9c6797bf34**已推。net-node仅在原remoteQUIC32之后/canonical之前加resume合同；3个source-only stub控制测试实际绿。
-- Turing当前Iroh44首个物理采样 **turing-20261110T081545Z-a4ed770d/PID1964828**，source b4/tree948/snapshot932/control ef0b，08:16:06UTC已launch；前一47bd0154同源vendor实际fmt/441/56/9绿、63.296秒/14artifacts/原group空核；前驱fe3已terminal采证原group空。不得重复提交或并行heavy，先recover已有receipt。不盲刷物理、不放宽4秒门。
+- Turing当前无已知heavy；Iroh44物理a4ed770d已terminal采证，原124/124但请求10bad、GoX7664/Y7774ms红，253.824秒/16artifacts/原group空核。前一47bd0154同源vendor实际fmt/441/56/9绿。不得重复提交或并行heavy，先recover已有receipt。不盲刷物理、不放宽4秒门。
 - Mac无已知heavy在跑。macserver SSH已恢复；用户最新明确“Mac turing是在一个局域网内的哦”，撤回此前天然异网推断。A=构建macserver/B=Turing，MacLab与macserver的设备映射待澄清，P=iPhone；公共Relay不能证明两端异网。源提交经本机GitHub SSH，worker仍原API bundle/guard，无个人凭据给worker。
 - 用户已确认：**iPhone在手边，可切Wi-Fi/蜂窝；已装khor并已与Macserver/Turing配对**。两次可用性/安装配对问题均已答，不重复问。真机具体采样窗口尚未开始；先核实际版本/cohort/可观测API并准备短操作，不假称手机已通过或要求改生产store。
 
@@ -69,3 +69,5 @@ SSH BatchMode/ForwardAgent=no/StrictHostKeyChecking=yes；无个人key/PAT/agent
 08:13更正：用户最新同LAN说明优先于旧U10异网表述；所有历史WAN文件名/cohort保留，跨网/NAT验收撤回。手机已确认localhost，用户“是，稍后再测”，不启动换网/能耗采样；待用户恢复。Iroh44基线d7d4557e/tree937/snapshot714：Turing fe3cf29e实际fmt/Noq441绿，Iroh54pass/2新正向fail（旧53及新负向绿），home未执行，56.055秒/13artifacts/原group空核；接下来同wholefixture修复。
 
 08:19更新：Iroh44 samewhole实际vendor 47bd0154为fmt/Noq441/Iroh56/home9绿，63.296秒/14artifacts/原group空；baseline54/2红与green56的实际tree中原whole50/epoch/sampling逐byte核验，proof vendor_candidate_verified=true、candidate_verified=false。首物理a4ed770d/PID1964828正在原ef0b控制执行，具体source b4/tree948/snapshot932。346refs/64controls/41ops元数据全审；首断言误要求历史短control全40位，9135b6d唯一解析后通过，原标签保留，非产品红。
+
+08:27因果方向：44 first physical两端从未进入Moving，三次恢复RTT约130ms时实际outer legs仍在变化；需订阅实际hop绑定的四个outer wire事件并关联内层测量，先诊断、再决定跨层epoch，不能把其他copy已Direct当actualcarrier已恢复。见NEXT-DESIGN 08:27；暂无新行为修复或已启动任务。
