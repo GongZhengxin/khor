@@ -753,7 +753,18 @@ impl Node {
                 if held >= 2 {
                     #[cfg(test)]
                     let reviewed = wires.hold_normal_release_for_test(attachment).await;
-                    release_hop(&links, &id, peer, via, attachment, road, held, comparison);
+                    let _ = wires.withdraw_carrier_if_idle(&id, || {
+                        let current_road = wires.link(&id).road;
+                        let current_comparison = wires.compare_carrier(&id);
+                        if current_road == road && current_comparison == comparison {
+                            release_hop(
+                                &links, &id, peer, via, attachment, road, held, comparison,
+                            );
+                        }
+                    });
+                    // A pending consumer or a changed measurement starts
+                    // the existing two-look comparison again after it ends.
+                    held = 0;
                     #[cfg(test)]
                     if let Some(reviewed) = reviewed {
                         let _ = reviewed.send(());

@@ -27,16 +27,20 @@
 
 ## 当前候选与正在跑的任务
 
+最新覆盖（18:11 UTC）：74d8633c已终态采核，48项47/1，只有normal新pending消费者被旧释放误拆；其无消费者控制、initial Drop候选两项及原44全过，162.286秒/11files/group空/identity核。两处baseline freeze true；候选仍不接受。当前normal产品WIP：同pending admission锁内再核当前road与所有live连接comparison，只有与两LOOK结论一致才撤自己serial；有pending/实际carried使用/事实变化均保留，held重新从0开始沿原5秒周期观察。无新生产task/timer，未改LOOK/测量收益/信任/总预算。
+
+下列56eb为已采核旧normal源，74d8633c不再运行；新candidate回执待登记，恢复先查ledger。
+
 最新提交（核实际git）：`56eb822a40f1caca20163ddd9659357d4792c591`，tree `76d617b48297eac5f0ff131adc6d70956865da42`，snapshot `3b992170a63a2fdce192b4c41ed5ffc3c1d7338a`。
 
 1. **initial PendingHop::drop 候选未接受**：复用 pending admission 锁，在同一决策内检查新pending/live使用并撤自己exact serial；有消费者交既有watcher，无新生产task/timer。旧行为已真实红：`e4eb1357` / Linux `turing-20261110T175953Z-9bb7adf7` 46项45/1，新pending+真实未登记carried TLS/echo进入后carrier被旧Drop拆；无successor与原44全过，142.192秒/11files/group空/identity核。格式首 `a98e1b6d` 保留。
 2. **normal publication watcher仍旧产品行为**：新增真实两次原LOOK_EVERY=5秒后、新pending+未登记incoming carried-only TLS/echo进入的合同；独立IP/outer仍应可用，无消费者仍应释放。cfg(test)暂停点不改变正式版时序。
-3. 正在 Turing 跑 **`turing-20261110T180659Z-74d8633c`**，PID2698867，18:07:21 UTC启动，task net-node，source为上列56eb。回执 `evidence/net/<run>/receipt.json`；本轮兼测Drop候选/normal旧行为，预期即使normal红也不能称全组绿。不得重复提交。前 `60cfd819` 仅格式43.722秒/10files/group空，已采核并应用远端patch；没有行为结论。
+3. 已采核的 Turing baseline **`turing-20261110T180659Z-74d8633c`**，PID2698867，18:07:21 UTC启动，task net-node，source为上列56eb。回执 `evidence/net/<run>/receipt.json`；本轮兼测Drop候选/normal旧行为，预期即使normal红也不能称全组绿。不得重复提交。前 `60cfd819` 仅格式43.722秒/10files/group空，已采核并应用远端patch；没有行为结论。
 4. `pending-drop-fixture-freeze.json` baseline true/candidate false；`normal-release-fixture-freeze.json` baseline/candidate均false。原published whole保留为prefix，新合同原时间/字节/清理不削弱。
 
 ## 下一步（连续推进）
 
-- 先收74d8633c实际结果，终态且group空才collect，核identity后读fmt/compile/真实测试。
+- 74d8633c已采核47/1；现在验证两个释放候选同canonical双OS，不重复收/重提交旧run。
 - 若normal实际正向红而无消费者控制及原46绿，再最小修normal释放：pending admission保护撤回，同时复核当前所有连接/比较，不能拿旧comparison误拆新owner，也不绕过原两LOOK测量规则。保持相同fixture和原预算；随后同canonical双OS全12与必要vendor，才接受两个新scope。
 - 如果是fixture/格式/编译失败，保留该attempt并分类，不当行为红/候选绿，不盲重跑。
 - 之后继续：incoming-only首腿、NoRelay/ToNoRelay缺失提示；MISSED/LOST冷却和IPv4/IPv6/本机与peer/middle网络代际、旧完成事件不能污染新网；accepted写job/晚到loser/unused carrier成本。不能仅清缓存就宣称完整epoch。
