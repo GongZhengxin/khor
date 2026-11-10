@@ -316,3 +316,10 @@ v1曾在0f8a81d0两读取都成功却warm server is_0rtt=false，40/1失败保�
 923baaeb/treee8893d45/snapshot37d77b42同canonical先通过Linux828ae604和Mac42883511676全12组/hop55/wires16；main vendor54，不含隔离42–44。随后Mac重型结束，Turing0aeceb60在control68cad下按原netlab-peer-mobility-samples/profile运行，228.871秒/16files/group空与identity核；真实中间节点IPv4 replug、原20ms腿和两次10秒hold均核。
 
 124/124业务全成功，replug结束后首AB/BA请求分别594472/584202us；独立原peer_relay_replug_warm_selection_within_four_seconds_v1合同50个warm请求全选carried，0失败。该记录不是手机/p99/每包路由，也不是从故障开始计时；旧隔离2ef四秒与cold-start红不改。预先登记再做两轮同源重复，未得到重复结果前只称单轮checkpoint，不归因某个补丁或宣布N1/N0–N5完成。
+
+
+## 2026-11-11 main55物理重复性：固定三轮2绿1红
+
+预先登记的main55-peer-mobility-repeatability-plan.json固定三轮均已完成，无丢弃/第四次重跑。准确923/control68cad/原profile与物理hold，0aeceb60与1cb99869原四秒合同50/50、51/51通过；b158e418原51个warm请求中4个失败，AB内层切回5514.252ms、BA3668.365ms。三轮各124业务全成功，共372，但N1时限仍红。所有identity/终态/group空及原合同核，结果main55-peer-mobility-repeatability-result.json保留。没有归因某个补丁、宣告手机已修或N0–N5完成。
+
+第三轮慢方向+1514.299ms answered、+1514.370ms immediate hold ended，rehold=false；+3513ms初次Moving Hold、+5514ms Go，原2秒确认。quality_since=None，无recovery质量重启；重复故障hold假设被实际日志排除。99.688431ms与Relay131.830007ms不达原25%收益、另copy85.178119ms达标；代表copy由近期样本数优先选，是否等样本过期后才获选尚待证，不能写成已定位原因。没有改原期限、收益门或样本合同。

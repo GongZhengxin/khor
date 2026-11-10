@@ -1425,6 +1425,17 @@ impl RemoteStateActor {
                 if observed && let Some(previous) = previous_quality {
                     measured.recovery_quality_step(key, stats.latest_rtt, previous, now);
                 }
+                // Opt-in diagnosis: a successful PING request does not show
+                // which copy supplied the road's subsequent quality sample.
+                if tracing::enabled!(target: "khor_net_samples", tracing::Level::DEBUG)
+                    && !tuple.is_ip() && !tuple.is_relay()
+                {
+                    debug!(target: "khor_net_samples", ?conn_id, ?path_id, ?tuple, ?now,
+                        ?stats, observed, reading = ?measured.rtts.get(&key),
+                        recovery = ?measured.recovery.get(tuple),
+                        moving = ?self.state.moving,
+                        "carried recovery copy measurement");
+                }
             }
         }
         measured.rtts.retain(|key, r| {
@@ -2909,6 +2920,9 @@ impl Measured {
         for road in roads {
             let began = self.recovery[&road].began;
             let sampled = self.samples_after(&road, began) >= usize::from(RECOVERY_PROBES);
+            debug!(target: "khor_net_samples", ?road, ?now, ?began, sampled,
+                representative = ?self.representative(&road),
+                check = ?self.recovery.get(&road), "recovery road measurement");
             let check = self.recovery.get_mut(&road).expect("known recovery episode");
             check.next = None;
             if sampled {

@@ -22,6 +22,8 @@
 
 ### 41. 恢复中的显著向下变化开启新质量窗口，旧packet不得刷新新窗口（2026-11-10，feat/net候选）
 
+2026-11-11诊断扩展：主923固定三轮2绿1红，慢方向5514.252ms且quality_since=None，旧isolated重启假设不适用。仅在显式khor_net_samples DEBUG下记录Custom真实stats/Reading/recovery/Moving及恢复期代表copy，核对探测结果归属和近期中位数/过期；不改变探测、排序、计时、预算或确认。该诊断不是新行为补丁或四秒已修证明，原失败保留。
+
 40的fc435ccd预约已满足3次/250ms/2秒，但两次探测早于外层Direct恢复，近期中位数把早期慢结果保留2秒，再等正常2秒确认，实际Go5392/5630ms，原采样门48/51。原物理、两个四秒checker及失败保留。
 
 只在已有hint且有历史的有限recovery episode里，新sample的packet sent必须在本轮采样开始之后；新RTT较当前road质量至少低25%才重启质量窗口，后续重启还必须较上次重启值再低25%，最多3次且限原2秒采样窗口。把新窗口的packet-send epoch带给该road各copy及新copy，epoch之前晚ACK不改质量/年龄或fresh计数；真实Noq ACK总计数与transport SRTT照读，不改Noq运输数学。单个快脉冲后慢数据仍进入中位数；新旧包不能重复制造fresh observation。

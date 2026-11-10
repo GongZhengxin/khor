@@ -1,6 +1,6 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-10 19:34 UTC（新加坡11月11日凌晨）。本页记录当前状态，完整此前段落逐字保存在[历史](HISTORY-20261111-after-scope55.md)，其中链接到[上一历史](HISTORY-20261111-before-current-state-compaction.md)及更早记录。失败、旧源、fixture与审计不覆盖、不删。历史中的运行句柄不当当前。
+更新：2026-11-10 19:54 UTC（新加坡11月11日凌晨）。本页记录当前状态，完整此前段落逐字保存在[历史](HISTORY-20261111-after-scope55.md)，其中链接到[上一历史](HISTORY-20261111-before-current-state-compaction.md)及更早记录。失败、旧源、fixture与审计不覆盖、不删。历史中的运行句柄不当当前。
 
 ## 授权与工作位置
 
@@ -31,33 +31,28 @@
 - 主vendor总54（Iroh1–41/45、Noq1–12），42–44隔离未合主；45只在无live连接且旧来源时间<=首次失败边界撤旧IP，新来源/Relay/Custom保留，不是完整地址epoch或永久blacklist。923相对此vendor代码未再变，无无因重复vendor运行。
 - 更早sole-peer Recovery准入、ordinary与cold/resumed读取并行、pending lease/cancelled watcher successor、live胜旧cached排序、取消/响应owner/STOP/contact/actor conditional carried-close等按各freeze保留，不能升级成全部入口/代际安全。
 
-## 当前唯一重型任务与下一步
+## 当前执行状态与下一步
 
-19:38 UTC覆盖：repeat2 1cb99869已终态采核170.305秒/16files/group空/identity，124/124且原四秒合同51/51绿；**当前唯一repeat3of3 turing-20261110T193636Z-b158e418，PID2788543，19:36:58 UTC启动**，同923 source/control/profile。原计划3轮，第三轮在跑、不重发；完成后再合并三轮报告，不以两轮绿提前关闭重复性。
+三轮固定集合已全部终态、采集并核identity/group空，当前没有重型任务。三轮准确复用923 source/control68cad/原profile、20ms腿、两次10秒hold及124业务请求，无第四次同源盲重跑。
 
-后续仍按相同已验证主源跑已有netlab-dynamic（原p2/p3/p7三轮）与netlab-stability（原p1/p1j/p1s/p5），不改原门；若仍红先取实际诊断，考虑N1隔离42–44是否应整合/替代，不能先猜其收益。没有Mac重型并发。
+| Turing运行 | 业务 | 原四秒warm合同 | 内层Relay→Carried AB/BA |
+| --- | --- | --- | --- |
+| 192533Z-0aeceb60 | 124/124 | 50/50通过 | 3450.867/3667.913ms |
+| 193252Z-1cb99869 | 124/124 | 51/51通过 | 3665.036/3373.595ms |
+| 193636Z-b158e418 | 124/124 | 47/51通过、4失败 | **5514.252**/3668.365ms |
 
+**N1物理四秒重复性仍红**；372业务成功不替代选路时限。原固定方案及完整结果见证据根main55-peer-mobility-repeatability-{plan,result}.json，各run的peer-selection-contract/peer-decision-contract与校准保留。第三轮168.332秒/16files，首AB/BA恢复后RPC870273/808771us，不能当故障起点恢复或p99。没有丢弃失败或放宽四秒。
 
-最新覆盖（19:34 UTC）：第一轮0aeceb60已终态采核，228.871秒/16files/group空/identity核；物理IPv4从198.18.2.2换198.18.3.2，原10秒holds核，124/124全业务成功；原四秒warm合同50个请求全通过，首请求在replug结束后发起，AB594472us/BA584202us（不是fault-start恢复或p99）。main55未含42–44，不作单patch因果结论；旧隔离红保留。
+当前先诊断第三轮：慢方向在+1514ms已清silence，rehold=false/immediate=true；+3513ms才开始Moving，+5514ms Go。quality_since始终None，无quality-window restart。已排除重复故障三秒hold和该quality重启机制。多copy近期样本数决定representative，约99.688ms与Relay131.830ms刚好不达25%收益，另copy85.178ms达标；是否因样本过期后代表copy改变仍为待证假设，不当结论。证据main55-red-rehold-correlation.json及第三轮outer-copy-timeline-replug-reference.json保留。
 
-已预先登记两轮额外重复：main55-peer-mobility-repeatability-plan.json，三轮总数/相同source+control+profile/原门全保留，失败也完成固定集合后再改策略，无盲重跑。**当前唯一运行repeat2of3：turing-20261110T193252Z-1cb99869，PID2781710，19:33:14 UTC启动**；同923 canonical。第三轮尚未提交，须等本轮终态采核/group空。不派Mac重型。下方0aec为已完成第一轮，不再运行/重发。
-
-
-**`turing-20261110T192533Z-0aeceb60`**，PID2771745，19:25:55 UTC启动，task **netlab-peer-mobility-samples**，revision `main55_verified_unit_peer_relay_replug_checkpoint_v1`，role baseline。**准确复用上述923同canonical**，control68cad；receipt见证据根该run。Mac job已完成后才启动，计时期间不派Mac重型。不要重复提交。
-
-这是main55新checkpoint，**不包含隔离42–44**。按原`peer_relay_replug_v1`真实middle IPv4 replug、20ms腿、原两次10秒hold、124个业务结果及原四秒warm request选择合同。full samples诊断与旧隔离profile一致；但source/诊断字段不同，不能作已校准paired因果结论。可用性124/124不等于选路四秒通过，更不是p99/真手机。
-
-1. 先只读核execution/task tail；重型profile无重叠。终态且group空才collect，不重收既有report。
-2. 核identity和实际fmt/compile/scenario。`ops/calibrate-peer-mobility.py FOLDER`核身份/物理地址/hold/124结果，之后产品脚本`scripts/netlab-peer-selection.py FOLDER`独立原四秒合同；诊断可用`netlab-peer-state.py`、`netlab-peer-decision.py`及ops/peer-outer-timeline.py。先读各接口，不猜参数。
-3. 若红，保留全部失败，按本准确源生命周期/路径证据定位，再决定是否整合或替代隔离42–44；不直接把旧隔离结论当main当前表现，不盲重跑/放宽期限。
-4. 同时继续完整范围：incoming live对两cached竞争、NoRelay/ToNoRelay未知第二腿、MISSED的peer/middle候选/地址context、LOST owner与失效、无pending入站登记竞争、静默黑洞下新carrier接管、accepted写jobs/late losers。下一设计见NEXT-DESIGN，不把提议写成实施。
+后续先建立准确诊断/合同再决定修正，不盲合隔离42–44。原netlab-dynamic/stability保持待做，计时任务无Mac重型重叠。其他N2候选/地址context、incoming admission、静默黑洞、accepted jobs/late losers继续按NEXT-DESIGN，不能以分项绿停工。
 
 ## 全计划仍欠的完成条件
 
 | 包 | 未闭合 |
 | --- | --- |
 | N0 | 最终体验SLO/容差/采样量与前瞻paired校准、足量p99，失败/超时不删分布 |
-| N1 | 原物理恢复/quiet成本/全矩阵；隔离2ef bf6105dd虽124/124仍5bad，X5505.782/Y3496.330ms；quality确认窗重启及cold start红保留。main55正在新checkpoint，不称通过 |
+| N1 | 原物理恢复/quiet成本/全矩阵；隔离2ef bf6105dd虽124/124仍5bad，X5505.782/Y3496.330ms；quality确认窗重启及cold start红保留。main55固定三轮2绿1红，最慢5514.252ms，不称通过 |
 | N2 | 上述更多admission、所有地址/network contexts、全部入口ownership；当前仅各自实测scope |
 | N3 | Custom1024frames/256KiB公平性，SSH/hop混合、shared/separate 1/3/5，交互/CPU/字节/唤醒与手机能耗 |
 | N4 | 实际两腿Relay/唯一middle/断腿/多middle，独立v4/v6/同时变址、Wi-Fi↔蜂窝与peer/middle移动，手机自动恢复和拓扑验真 |
@@ -84,3 +79,7 @@ MacLab与Turing同LAN；构建macserver为另一台，异网来自用户报告�
 ## 估时口径
 
 16:20 UTC告知下一可评审候选2–4工程小时（原锚18:20–20:20），完整N0–N5含真机/换网/能耗3–5工程日量级。18:23已交代本批48窄scope双OS通过，19:25又闭合55/16；在原预计区间内。原13:00 UTC的4–6小时只指下一批，已解释新增缺陷导致延后与口径不清；不得每次compact/状态问句无声重置起点。完整计划未完成，继续执行，不承诺已解决手机现场。
+
+2026-11-10 19:52 UTC状态答复：原2–4小时候选窗口已产出双OS55/16窄范围候选，真实重复性仍失败。新估当前N1修正及复验另需2–4工程小时；完整N0–N5仍3–5工程日量级，含真机/能耗，不能无声重置原窗口。
+
+19:57 UTC诊断准备：从实际RPC记录可见1807–3255ms的Custom质量101.117762ms/2样本，3620ms变85.178119ms/1样本；足以证明近期中位数遮挡与过期相关，仍非所有tick/样本归属证明。新增显式DEBUG下逐Custom copy stats/Reading及恢复road代表copy日志，行为不变；下一次物理运行是针对该缺口的诊断，不是第四次同源重试，不混入固定三轮的验收集合。
