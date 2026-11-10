@@ -666,29 +666,38 @@ impl Node {
                 return;
             };
             let _asked = handoff.asked;
-            if let Some(mut pending) = handoff.pending {
-                tokio::select! {
-                    () = &mut ended => {
-                        crate::carry::let_path_go(&node, &links, peer).await;
-                        return;
+            let mut pending = handoff.pending;
+            loop {
+                if let Some(mut waiting) = pending.take() {
+                    tokio::select! {
+                        () = &mut ended => {
+                            crate::carry::let_path_go(&node, &links, peer).await;
+                            return;
+                        }
+                        _ = waiting.changed() => {}
                     }
-                    _ = pending.changed() => {}
                 }
-            }
-            #[cfg(test)]
-            let reviewed = wires.hold_pending_carrier_for_test(attachment).await;
-            if handoff.cancelled && !wires.carrier_in_use(&id) {
-                links.detach_attached(&peer, Carrier::Hop { via }, attachment);
+                #[cfg(test)]
+                let reviewed = wires.hold_pending_carrier_for_test(attachment).await;
+                let withdrawn = if handoff.cancelled {
+                    wires.withdraw_carrier_if_idle(&id, || {
+                        links.detach_attached(&peer, Carrier::Hop { via }, attachment);
+                    })
+                } else {
+                    Ok(false)
+                };
                 #[cfg(test)]
                 if let Some(reviewed) = reviewed {
                     let _ = reviewed.send(());
                 }
-                crate::carry::let_path_go(&node, &links, peer).await;
-                return;
-            }
-            #[cfg(test)]
-            if let Some(reviewed) = reviewed {
-                let _ = reviewed.send(());
+                match withdrawn {
+                    Err(successor) => pending = Some(successor),
+                    Ok(true) => {
+                        crate::carry::let_path_go(&node, &links, peer).await;
+                        return;
+                    }
+                    Ok(false) => break,
+                }
             }
             let mut held = 0u8;
             loop {

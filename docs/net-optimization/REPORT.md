@@ -287,3 +287,9 @@ Turing稳定源码缓存首/复用同快照206/207均fmt/net66+1ignored绿，bui
 Iroh13加法close_carried_if在实际RemoteStateActor执行之前检查最新Links.has，原无条件close_carried语义保持。旧8048/73ff/5e19的761c4291真实hop24/1红；独立baseline仅恢复实际旧Node无条件调用，其余加法API未使用，817a/35e9/036a在2cf6b5ef实际27项25/2红：late和已入队后新stream两个场景都Closed=true/carried=false。真实actor暂停、Node已enqueue/join、后续实际replacement与两无replacement关闭控制均到达，126.082秒/11artifact/group空，初格式失败保留。新旧whole queued及原close完整前缀保持。
 
 最终47aaa/tree4a4055/snapshota61643/control68在Linuxb9f10cb1（250.769秒/21artifact/group空）与Mac42833751584（exact13772163647/20files/11controlblobs）同canonical全部12节点组绿/hop27；同source Linuxvendor99315801全Noq439/Iroh路径50/home9绿，61.826秒/14artifact/group空。原vendor测试尾逐byte未改，两个freeze仅actual late/queued关闭scope true，field false。pending Noq开/关/Abandoned、ears/网络地址epoch、N1稳定性和手机验收未被这些证明替代。
+
+## 2026-11-10 ordinary并行与pending消费者分项
+
+99d8ec5c/tree7f6c0b7b/snapshotef1ef86b在Turing1446794a和Mac42849256788同canonical通过全部12组，hop36/wires15/budget30（Mac26），没有安装或发布。旧f51/0e9314a5快IP真实32/1红，旧839/085ea57e未登记/pending真实33/3红，fixture原样通过。hop准备与普通拨号共用一个期限，原两项均失败后可补一次新carrier握手（最多2活动、3 lifetime），普通成功先adopt后drop准备；pending消费者交给原watcher等待并在取消后回收。Iroh/Noq未加新补丁/任务/探针。
+
+此分项不含后来42fc5e3e已复现的successor新owner清理竞态（37/1红）、0RTT并行、旧Asleep提前返回、cached候选新鲜度、network/address epochs、真实第二publicRelay或phone换网/能耗；原854 core transfer Busy保留未归因。14ea初版Send编译失败两端原件保留，99以cold hop显式boxed Send边界解决，不放宽栈/期限/测试。

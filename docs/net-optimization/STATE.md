@@ -6,6 +6,10 @@
 
 ### 最新覆盖状态（优先于下方历史段落）
 
+- **最新已接受分项99d8ec5c/7f6c0b7b/ef1ef86b**：Linux1446794a全12/hop36/wires15/budget30与Mac42849256788同canonical全12/hop36/wires15/budget26；exact13780730056/20files/11control blobs已核。sole-peer准入、慢middle不挡快IP、已握手未登记lease三个freeze仅各scope true，field false；不表示NET16/整包/手机完成。原854 pairing core Busy仍未归因。
+- **successor真实红**：58e0d00f/tree7700f891/snapshot567573c5，Linux42fc5e3e 38项37/1红，新lease在旧owner结束且旧watcher决策前真实进入，carrier却被拆；无successor释放控制/此前36全过，136.162秒/11artifact/group空/identity核。首4a65f8d0格式-only另存。
+- 当前successor候选WIP：复用同weak lease与原watcher；pending准入锁内查最新owner与live使用，再撤自己serial。有successor则订阅新owner结束，继续同watcher，不另起task/timer。不改变正常publication的两LOOK comparison。本版尚未编译/测，initial PendingHop Drop与normal watcher释放之间更广epoch仍不冒称闭合。
+
 - **当前HEAD7810dc1e仅追加successor fixture与cfg(test)交接暂停点**，tree2a5f1fa6/snapshot475fbb6c；已送Turing新baseline（receipt以ledger为准），无产品行为改动。两个successor/无successor控制尚未运行。
 - 产品候选 **99d8ec5ceec86a822ad9e5661bcecbb40939ff2b**，tree7f6c0b7b/snapshotef1ef86b，Linux **1446794a全12组绿/hop36/wires15/budget30/resume1**，254.742秒/21artifact/group空且identity已核。三项真实红已在该source通过；Mac **42849256788**同canonical运行中，尚未接受此scope。854的原pair Busy保留未归因，本轮resume通过不将其关闭。
 - 前一14ea/178a/b6c2因递归future Send约束编译失败：Linux3862d094 81.904秒/11artifact/group空；Mac42848083023 exact13778782806/10files/11control blobs核，同编译错误，无行为结果。99只在hop_ahead冷路径显式box+Send返回边界打断类型推导，不改期限/fixture/协议。格式216e另存。

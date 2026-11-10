@@ -683,6 +683,26 @@ impl Wires {
             .map(|state| state.done.subscribe())
     }
 
+    /// Hold pending-dial admission through this exact withdrawal decision.
+    /// A successor either already owns a lease and is waited for, or starts
+    /// after withdrawal and sees no carrier to borrow. Lock order is pending
+    /// admission, then the live-wire registry; the callback must not await.
+    pub(crate) fn withdraw_carrier_if_idle(
+        &self,
+        id: &str,
+        withdraw: impl FnOnce(),
+    ) -> Result<bool, tokio::sync::watch::Receiver<()>> {
+        let pending = self.pending_dials.lock().unwrap_or_else(|p| p.into_inner());
+        if let Some(state) = pending.get(id).and_then(std::sync::Weak::upgrade) {
+            return Err(state.done.subscribe());
+        }
+        if self.carrier_in_use(id) {
+            return Ok(false);
+        }
+        withdraw();
+        Ok(true)
+    }
+
     /// One line in the connection journal, when this node keeps one.
     pub(crate) fn note(&self, peer: Option<&str>, what: crate::journal::What) {
         if let Some(j) = self.journal.get() {
