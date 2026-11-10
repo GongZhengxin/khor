@@ -3532,6 +3532,10 @@ impl Node {
                 Ok(line(conn))
             }
             Err(e) => {
+                #[cfg(test)]
+                if matches!(e, DialFailure::Asleep(_)) {
+                    self.wires.hold_asleep_dial_for_test().await;
+                }
                 let failure = match &e {
                     DialFailure::CallerExpired => return Err(e),
                     DialFailure::Asleep(_) => None,
@@ -3911,6 +3915,10 @@ impl Node {
                 }
             }
             Ok(Err(e)) => {
+                #[cfg(test)]
+                if matches!(e, DialFailure::Asleep(_)) {
+                    self.wires.hold_asleep_dial_for_test().await;
+                }
                 let failure = match &e {
                     DialFailure::CallerExpired => return Early::Failed(e),
                     DialFailure::Asleep(_) => None,
@@ -13524,6 +13532,7 @@ impl Node {
 mod dial_budget {
     use super::*;
 
+    mod peer_contact;
     mod probe;
     mod wire;
 

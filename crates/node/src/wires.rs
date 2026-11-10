@@ -420,6 +420,14 @@ pub(crate) struct Wires {
     pub(crate) journal: std::sync::OnceLock<Arc<crate::journal::Journal>>,
     #[cfg(test)]
     retirement_test_gate: Mutex<Option<RetirementTestGate>>,
+    #[cfg(test)]
+    asleep_dial_test_gate: Mutex<Option<AsleepDialTestGate>>,
+}
+
+#[cfg(test)]
+struct AsleepDialTestGate {
+    entered: tokio::sync::oneshot::Sender<()>,
+    release: tokio::sync::oneshot::Receiver<()>,
 }
 
 #[cfg(test)]
@@ -755,6 +763,38 @@ impl Wires {
             .entry((id.to_owned(), proto))
             .or_default()
             .clone()
+    }
+
+    #[cfg(test)]
+    pub(crate) fn gate_asleep_dial_for_test(
+        &self,
+    ) -> (
+        tokio::sync::oneshot::Receiver<()>,
+        tokio::sync::oneshot::Sender<()>,
+    ) {
+        let (entered, ready) = tokio::sync::oneshot::channel();
+        let (release, released) = tokio::sync::oneshot::channel();
+        *self
+            .asleep_dial_test_gate
+            .lock()
+            .unwrap_or_else(|p| p.into_inner()) = Some(AsleepDialTestGate {
+            entered,
+            release: released,
+        });
+        (ready, release)
+    }
+
+    #[cfg(test)]
+    pub(crate) async fn hold_asleep_dial_for_test(&self) {
+        let gate = self
+            .asleep_dial_test_gate
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .take();
+        if let Some(gate) = gate {
+            let _ = gate.entered.send(());
+            let _ = gate.release.await;
+        }
     }
 
     /// A freshly dialled wire becomes the one this key holds.
