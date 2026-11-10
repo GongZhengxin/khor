@@ -21,7 +21,11 @@ async fn local_resume_accepts_a_new_connection_before_the_next_pause_poll() {
     let directory = directory.to_str().unwrap();
     let (_, entries, truncated) = a.ls_of("resume-home", directory).await.unwrap();
     assert!(!truncated);
-    assert!(entries.iter().any(|entry| entry.name == "resume-marker.txt"));
+    assert!(
+        entries
+            .iter()
+            .any(|entry| entry.name == "resume-marker.txt")
+    );
 
     let held = HoldWork::install(&root_b, Stage::PausePoll);
     crate::pause::set_on(&root_b, true).unwrap();
