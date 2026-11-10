@@ -3427,6 +3427,10 @@ async fn maybe_next<S: Stream + Unpin>(maybe_stream: Option<&mut S>) -> Option<O
 }
 
 #[cfg(test)]
+#[path = "remote_state/confirmation_identity_tests.rs"]
+mod tests_confirmation_identity;
+
+#[cfg(test)]
 #[path = "remote_state/recovery_baseline_tests.rs"]
 mod tests_recovery_baseline;
 

@@ -122,3 +122,15 @@ v5 ef0bfa7e/tree d635e42951140ed36ca0e41f586bfc9569940cb1/snapshot31e10e49c71361
 当前唯一Turing重型 **turing-20261110T215546Z-ea5f7a11**（net-node），PID2952660，21:56:07 UTC启动，准确2892/tree909e/f3a/control68cad。Mac同源net-node正经既有dev提交，request f66c4cbd4c4e41a4bdfd8eb61a9ebd96，尚未收回最终run ID，不重提；exec session98379须先poll。待双OS原全12通过且Macheavy结束再做timedphysical。path-probe-prompt-ack-physical-plan-v1.json已前瞻登记C-B,B-C最多4、0重试，原门/hold/预算/observer保持；首真实换址后单向非推进/无Go或连续两次准备失败即停作定位，固定集合不完整仍如实保留。ACKcost v2另存旧helper，加入ACK/PATH_ACK/IMMEDIATE_ACK实际counter，缺界unknown。尚未开始物理。
 
 21:58 UTC：Mac提交已收回run **42909901676**，request f66c、准确2892/tree909e/f3a、control68cad，已注册ledger（484条）；workflow in_progress。先前session98379已终态退出，不再poll/重提。当前仅Turing ea5f Node +Mac429099 Node在跑，无物理/phone任务。
+
+22:03 UTC：准确2892/tree909e/f3a/control68cad在Linux ea5f7a11终态329.181秒/21files/group空/identity，全12/hop55/wires16/budget30/resume1及fmt/net67+原1ignored绿；Mac42909901676终态SUCCESS、exact artifact13806019480、zipSHAee8957540905be46f47000b495ecfaaef64a73b7b54174e40a0fc50ee26a796e、20files/11control blobs核，全12/hop55/wires16/budget26/resume1绿。两个ledger pendingfalse；非native/phone/物理结论。当前唯一重型 **turing-20261110T220247Z-f8d3ff73**，PID2959961，22:03:09 UTC启动，固定C-B,B-C计划首候选、准确2892源/control68cad，物理未结束，无额外Mac重型。
+
+22:16 UTC物理fixed4已完成前两次：候选f8d3ff73终态226.663秒/16files/group空/identity，124/124业务但warm10/51失败，独立X7307.560ms/Y3517.794ms；全8流方向故障后持续推进且单调，无NoGo/oneway stoptrigger。X收到选定probe copy90.352797ms后，另一copy100.024814ms作为代表；原3预约全用尽，跨copy原始观测12条与hash另存。只是原因候选，尚未改代表策略。
+
+第二baseline8f3bfdc7终态224.742秒/16files/group空/identity，原可用性校准脚本在lifecycle前逐字prefix全部检查通过：124/124、10秒hold、replug274ms。随后严格JSON解析失败，x诊断末条hop_stream_io在+31.279秒被截断至null、无结尾；raw不修、不删，不作完整原checker通过。availability-pre-tail-audit与helper/prefixSHA留存；独立完整Go行X5437.441/Y5401.818ms均晚，warm/cost/flow正式合同未知。该次计入原固定4，不补跑。
+
+当前唯一重型第三baseline **turing-20261110T221432Z-fe3f8fcb**，PID2977592，22:14:53 UTC启动，准确old efb2/treeb1e95/snapshotef151/control68cad，前两运行ledger已收口；Mac无重型。第四candidate仍预定，无额外次数。成本v2解析在既有883元数据校准发现首field ACK前导空格，旧helper bytes+修正SHA288630d440eaa8aa1a4097f3f83e0353aa8f238e78e9f5119c22956591fa509f与理由更新plan，883两窗口各4copy完整；该校准不计本固定对照、不改任何物理/门。
+
+22:19 UTC：第三baseline fe3f8fcb已终态168.293秒/16files/group空/identity，原124/124、warm51/51、独立X3386.396/Y3596.237ms全绿，probe/ACKcost/stream各原审计保留。固定集合未完成，不当总体改善。第四candidate提交中（exec session97585须先poll），仍固定2892/tree909e/f3a；当前新加测试不进入该已冻结snapshot。
+
+新source-only独立确认身份合同：vendor/iroh/src/socket/remote_map/remote_state/confirmation_identity_tests.rs三项whole SHA395341c56e7c3024505be5a838d8f1fa298e63066d33de1c237a0793b9a02b43。quality/age选一个代表，但samples_after当前取任意copy的最大新观察数，可能借另一copy确认旧质量；两负控分别0/1代表新样本不应借其他copy的2、正控代表改变后使用新代表自己的4。仅通过真实Reading::observe的有效PathStats输入，不直接写recent/changed，不改生产；原baseline whole ae62与原测试字节不变，无Iroh47。尚未提交远端，第四物理结束后先取旧行为红；不是f8/6aa定因，仍欠实际performance/稳定性验证。
