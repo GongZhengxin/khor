@@ -65,3 +65,10 @@ caller自身绝对截止仍有效。传输/调度滞后单独记录，不能把r
 新增ipc::lease独立helpers，尚未接入EndpointFile/真实client/server，不发布v2能力。magic为9B，长度4B、剩余微秒8B，共21B头；头到达立即锚by，body消耗它。完整frame admission另取已有DEADLINE_LOCAL=5秒上限（与caller取早），包括legacy/新帧，避免未认证半个header永久占用任务；有效旧请求仍以正常EOF结束。预分配前核长度，额外1B检测legacy超长。未知magic版本、零预算/零长度、截断均拒绝；cookie仍由实际handler在执行前核，不由codec假称已认证。
 
 within helper仅对有by的新帧监测读取方向EOF/额外字节/错误，并与到期优先竞速；legacy不把EOF当取消。future持有工作/编码/写出/permit直至完成，取消整体drop；测试涵盖未poll前取消和阻塞回复owner释放。全部是helpers层，尚未取得远端结果，更未取得32席位/分process/真实Node/远端执行取消证据。只有本层远端合同绿后才接入真路径。
+
+
+## 首次真实接入候选（2026-11-10 01:44UTC）
+
+42737166916准确f466d990/treeb6d853dc/control4bf7e6eb已取得helpers+legacy客户端14绿与其他便携全绿；真实32回复在预条件后等待5秒不能归还permits，行为红。整个wire_tests.rs SHA945c22aa在修改真实路径前冻结。此前42736367611 attempt1源下载截断/attempt2格式失败分开保留，不计行为红。
+
+开始接入同listener双协议：新EndpointFile公开ipc_max_version=2，缺省0仍legacy，字段语义为向下兼容最大版本，双方选择已知v2（max>=2）；旧公开ipc::call(port,cookie)继续legacy，新Node端口/cookie/版本作为Target原子刷新，只有拒绝TCP才可刷新。request长度结束后v2 client不half-close，原caller绝对期限仍覆盖全部交换。server用既有helper读取、先核cookie，再在within内持有执行/编码/阻塞写/所有response permits；legacy正常EOF继续执行。按header接收时刻锚remaining与Op上限，run_handoff_within原500ms工作余量继续取早，不对短caller预算另减500ms。原wire fixture逐字不改；候选未远端验证，不把它称已取消QUIC远端执行或跨process预算已验收。

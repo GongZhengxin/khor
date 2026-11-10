@@ -1114,11 +1114,24 @@ struct EndpointFile {
     ipc_port: u16,
     #[serde(default)]
     ipc_cookie: String,
+    /// Maximum backwards-compatible request framing version; absence is legacy.
+    #[serde(default)]
+    ipc_max_version: u8,
     /// The resident is an app (a resumable serve — the desktop app or the
     /// phone), not a kept `khor serve`. `khor quit` stops a kept serve; it
     /// never signals an app, whose window a person closes themselves.
     #[serde(default)]
     app: bool,
+}
+
+impl EndpointFile {
+    fn ipc(&self) -> ipc::Target {
+        ipc::Target {
+            port: self.ipc_port,
+            cookie: self.ipc_cookie.clone(),
+            max_version: self.ipc_max_version,
+        }
+    }
 }
 
 /// How a [`Node::leave`] ended, per machine that was in the table.
@@ -1366,6 +1379,7 @@ impl Node {
             relays: self.published_relays(ep),
             ipc_port: handoffs.local_addr().map_err(|e| e.to_string())?.port(),
             ipc_cookie: cookie.to_owned(),
+            ipc_max_version: ipc::lease::VERSION,
             app: self.app_resident.load(std::sync::atomic::Ordering::Relaxed),
         };
         write_private(
@@ -2275,52 +2289,50 @@ impl Node {
         ep: &iroh::Endpoint,
         cookie: &str,
     ) -> Result<(), String> {
-        use tokio::io::{AsyncReadExt, AsyncWriteExt};
-        let mut bytes = Vec::new();
-        (&mut stream)
-            .take(MAX_FRAME as u64)
-            .read_to_end(&mut bytes)
-            .await
-            .map_err(msg::handoff_unreadable)?;
-        let handoff = proto::decode::<ipc::Handoff>(&bytes).and_then(|handoff| {
-            if handoff.cookie != cookie {
-                return Err(msg::handoff_wrong_cookie().into());
+        use tokio::io::AsyncWriteExt;
+        let request = ipc::lease::read(&mut stream).await?;
+        let by = request.by;
+        let (mut reader, mut writer) = stream.into_split();
+        ipc::lease::within(&mut reader, by, async {
+            let handoff: Result<_, String> = if request.handoff.cookie != cookie {
+                Err(msg::handoff_wrong_cookie().into())
+            } else {
+                Ok(request.handoff)
+            };
+            // Declared before payloads so the owner outlives their buffers on drop.
+            let content_response = match &handoff {
+                Ok(handoff)
+                    if matches!(
+                        &handoff.op,
+                        ipc::Op::ContentRead {
+                            action: crate::session_content::remote::Action::Window { .. }
+                                | crate::session_content::remote::Action::Record { .. }
+                        }
+                    ) =>
+                {
+                    self.content_response_permit().map(Some)
+                }
+                _ => Ok(None),
+            };
+            let reply = match (handoff, &content_response) {
+                (Ok(handoff), Ok(permit)) => {
+                    self.run_handoff_within(ep, handoff.op, permit.clone())
+                        .await
+                }
+                (Err(why), _) => ipc::Reply::Refused { why },
+                (_, Err(why)) => ipc::Reply::Refused { why: why.clone() },
+            };
+            let frame = proto::encode(&reply)?;
+            ipc::validate_reply(&reply, frame.len())?;
+            #[cfg(test)]
+            if matches!(&content_response, Ok(Some(_))) {
+                crate::session_content::wire_tests::pause_response(self.root()).await;
             }
-            ipc::validate_handoff(&handoff, bytes.len())?;
-            Ok(handoff)
-        });
-        // Declared before payloads so the owner outlives their buffers on drop.
-        let content_response = match &handoff {
-            Ok(handoff)
-                if matches!(
-                    &handoff.op,
-                    ipc::Op::ContentRead {
-                        action: crate::session_content::remote::Action::Window { .. }
-                            | crate::session_content::remote::Action::Record { .. }
-                    }
-                ) =>
-            {
-                self.content_response_permit().map(Some)
-            }
-            _ => Ok(None),
-        };
-        let reply = match (handoff, &content_response) {
-            (Ok(handoff), Ok(permit)) => {
-                self.run_handoff_within(ep, handoff.op, permit.clone())
-                    .await
-            }
-            (Err(why), _) => ipc::Reply::Refused { why },
-            (_, Err(why)) => ipc::Reply::Refused { why: why.clone() },
-        };
-        let frame = proto::encode(&reply)?;
-        ipc::validate_reply(&reply, frame.len())?;
-        #[cfg(test)]
-        if matches!(&content_response, Ok(Some(_))) {
-            crate::session_content::wire_tests::pause_response(self.root()).await;
-        }
-        stream.write_all(&frame).await.map_err(msg::cant_reply)?;
-        stream.shutdown().await.map_err(msg::cant_close_stream)?;
-        Ok(())
+            writer.write_all(&frame).await.map_err(msg::cant_reply)?;
+            writer.shutdown().await.map_err(msg::cant_close_stream)?;
+            Ok(())
+        })
+        .await
     }
 
     /// [`Self::run_handoff`] under the op's deadline (SHELL.md 第五轮 第 2
@@ -3944,9 +3956,9 @@ impl Node {
             return Some(Err(msg::serve_no_handoff_port(f.pid)));
         }
         Some(
-            ipc::call_refreshing(f.ipc_port, &f.ipc_cookie, op, || {
+            ipc::call_target(f.ipc(), op, || {
                 let latest = self.endpoint_file().ok().flatten()?;
-                Some((latest.ipc_port, latest.ipc_cookie))
+                Some(latest.ipc())
             })
             .await
             .map_err(|e| msg::serve_handoff_failed(f.pid, e)),
@@ -12423,15 +12435,14 @@ pub(crate) async fn content_on_resident(
     if file.ipc_port == 0 {
         return Err("content resident has no handoff port".into());
     }
-    let reply = ipc::call_refreshing(
-        file.ipc_port,
-        &file.ipc_cookie,
+    let reply = ipc::call_target(
+        file.ipc(),
         ipc::Op::ContentRead {
             action: action.clone(),
         },
         || {
             let latest = endpoint_file_at(root).ok().flatten()?;
-            Some((latest.ipc_port, latest.ipc_cookie))
+            Some(latest.ipc())
         },
     )
     .await?;
