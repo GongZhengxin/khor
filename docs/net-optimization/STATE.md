@@ -1,6 +1,6 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-10 19:54 UTC（新加坡11月11日凌晨）。本页记录当前状态，完整此前段落逐字保存在[历史](HISTORY-20261111-after-scope55.md)，其中链接到[上一历史](HISTORY-20261111-before-current-state-compaction.md)及更早记录。失败、旧源、fixture与审计不覆盖、不删。历史中的运行句柄不当当前。
+更新：2026-11-10 20:18 UTC（新加坡11月11日凌晨）。本页记录当前状态，完整此前段落逐字保存在[历史](HISTORY-20261111-after-scope55.md)，其中链接到[上一历史](HISTORY-20261111-before-current-state-compaction.md)及更早记录。失败、旧源、fixture与审计不覆盖、不删。历史中的运行句柄不当当前。
 
 ## 授权与工作位置
 
@@ -11,6 +11,16 @@
 - N1隔离：`/Volumes/disk0/Khor/worktrees/current/khor-net-recovery-deadlines`，detached `2ef6bee5a5aaf841af066f4edb5c894769d4539d`，clean，未接受。Iroh42–44在该树预留、未合主，不覆盖它。
 - 证据：`/Volumes/disk0/Khor/evidence/net`，ops在其`ops/`；`source-refs.json`单写者，实际receipt/ref/tree/control优先。
 - 完整范围：[PLAN](PLAN.md)、[REQUIREMENTS](REQUIREMENTS.md)、[ACCEPTANCE](ACCEPTANCE.md)、[NEXT-DESIGN](NEXT-DESIGN.md)、[REPORT](REPORT.md)、[VENDOR-AUDIT](VENDOR-AUDIT.md)、[审阅](REVIEW-20261111.md)。
+
+## 当前候选窄范围：1c847229（N1仍待物理验收）
+
+1c8472299b1c94e2c7813d4356d0412cf34a8fc4 / tree90f62f507b7546cf0a2eb3313db602238671d928 / snapshot4c18fa477f91b913726069f661dd265c06c2d1fb。
+
+- vendor5c2e4ff2：Noq439/path55/home11，45.781秒/14files；旧eec09ec1 path53/2实际红，新whole五合同及旧50尾相同。
+- LinuxNode dc23e338：315.188秒/21files/group空/identity；Mac42892759864 exactartifact13799886372（zip30923c27…）/20files/11control；同canonical全12组，hop55/wires16/budget30Linux26Mac/resume1。
+- 新Iroh46只允许已知路的首次有限恢复quality窗口在真实新sample重返pre-fault实测水平时刷新；历史不作新样本/切换证据。原3probe/250ms/2秒、gain/Moving、packet epoch及重hold不改。主vendor55含候选46，42–44仍隔离。仅单元/便携scope，不宣告N1或手机修复。
+- 当前唯一重型physical pair01 candidate：**turing-20261110T201812Z-9cb240b7**，PID2832419，20:18:34 UTC启动，精确1c同source/control68cad。按预登记C-B,B-C,C-B共6次，无重发。Mac所有本轮任务已终态，计时中不派其他重型。
+- 三轮旧main55固定集合仍2绿1红，详下节；诊断55d1为独立机制观察，不并成第四轮验收。物理对照还没结果。
 
 ## 最新已验证分项：923baaeb
 

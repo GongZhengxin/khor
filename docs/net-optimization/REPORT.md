@@ -323,3 +323,8 @@ v1曾在0f8a81d0两读取都成功却warm server is_0rtt=false，40/1失败保�
 预先登记的main55-peer-mobility-repeatability-plan.json固定三轮均已完成，无丢弃/第四次重跑。准确923/control68cad/原profile与物理hold，0aeceb60与1cb99869原四秒合同50/50、51/51通过；b158e418原51个warm请求中4个失败，AB内层切回5514.252ms、BA3668.365ms。三轮各124业务全成功，共372，但N1时限仍红。所有identity/终态/group空及原合同核，结果main55-peer-mobility-repeatability-result.json保留。没有归因某个补丁、宣告手机已修或N0–N5完成。
 
 第三轮慢方向+1514.299ms answered、+1514.370ms immediate hold ended，rehold=false；+3513ms初次Moving Hold、+5514ms Go，原2秒确认。quality_since=None，无recovery质量重启；重复故障hold假设被实际日志排除。99.688431ms与Relay131.830007ms不达原25%收益、另copy85.178119ms达标；代表copy由近期样本数优先选，是否等样本过期后才获选尚待证，不能写成已定位原因。没有改原期限、收益门或样本合同。
+
+
+## 2026-11-11 Iroh46单元与双OS窄范围（物理待验）
+
+1c847229/tree90f62/snapshot4c18在5c2e4ff2 vendor439/55/11通过，对应旧c775/eec09ec1路径53/2红（旧50及3负控过），冻结whole ae62及原测试尾相同。Linuxdc23e338与Mac42892759864同canonical全12组/hop55/wires16，Linux315.188秒/21files/group空，Mac exact13799886372/20files/11control均核。只确认有限首次baseline-return质量刷新与既有回归，未证明四秒/N1/phone/energy。物理三组源对照前瞻计划已登记，首9cb240b7在20:18:34 UTC启动；不覆盖旧三轮失败。
