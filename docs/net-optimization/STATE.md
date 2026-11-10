@@ -1,6 +1,6 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-10 06:45 UTC。用户授权继续完整N0–N5，尚未完成。速度/体验优先，可信个人设备网；无main合并、发布、中继采购/生产部署授权。root串行、无子智能体。完整计划/硬要求/验收以[PLAN](PLAN.md)、[REQUIREMENTS](REQUIREMENTS.md)、[ACCEPTANCE](ACCEPTANCE.md)为准。旧状态逐字保存在[本轮历史](HISTORY-20261110-before-ping-delivery-investigation.md)与其历史链。
+更新：2026-11-10 06:55 UTC。用户授权继续完整N0–N5，尚未完成。速度/体验优先，可信个人设备网；无main合并、发布、中继采购/生产部署授权。root串行、无子智能体。完整计划/硬要求/验收以[PLAN](PLAN.md)、[REQUIREMENTS](REQUIREMENTS.md)、[ACCEPTANCE](ACCEPTANCE.md)为准。旧状态逐字保存在[本轮历史](HISTORY-20261110-before-ping-delivery-investigation.md)与其历史链。
 
 ## 恢复先核实际句柄
 
@@ -61,3 +61,5 @@ SSH BatchMode/ForwardAgent=no/StrictHostKeyChecking=yes；无个人key/PAT/agent
 Mac新resume合同：42768368485仅workspace fmt一处assert换行失败，未编译/未执行行为，source/control/11blobs/9artifacts核。精确remote format.patch已inspect、whitespace-only应用4b7e87ee；新运行42769067590，request5d5db3d5c9b04c0b844af8b02133e51f，source4b7/tree751e2978/snapshotca77b24d/control68cadb，待实际行为红。生产准入尚未改；不得把fmt红当行为红。原wire_tests从struct Server到EOF整段与a00逐byte相同，旧canonical/local32及新STOP/QUIC32整fixture保持，见resume-admission-fixture-freeze.json。
 
 实际resume红与候选（06:39UTC）：42769067590准确4b7/tree751e2978/snapshotca77/control68cadb fmt/portable/IPC/remoteQUIC32绿，新真实合同在fixture41被暂停拒绝、case6.25秒；四whole fixtures/source/control/11blobs/18artifacts核。resume-admission-red-green.json保留实际红，production fix ba28只初始化既有pause cache并让incoming查该缓存；不改500ms poll/持久job/重试/期限/旧fixture。候选Mac427703+Linux4bc同canonical并行验，pending不提前标绿。
+
+06:55UTC：Mac427703与Linux4bc同ba28/treecf0b/snapshotf9ef/control68全部12项net-node实际绿。真实resume红427690→同whole四fixtures绿（case1.74/1.83秒），原canonical含pause/resume6.87/4.24秒绿，actual32STOP/samewire1.70/2.16秒绿；分别11controlblobs/20与21artifacts、Linux原group空核。resume-admission-red-green.json与quic-explicit-stop-wire-proof.json已更新同source双OS，旧Mac-only proof逐字备份。Linux f1d19b07同诊断1a已vendor441/50/9绿、14artifact/原group空核，所有当前run均terminal，无已知重型active。下一Noq3 stats发送状态补充仅观测，见NEXT-DESIGN，Iroh42仍未合主/5.8秒红仍未闭合。

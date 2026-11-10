@@ -384,3 +384,12 @@ full-counter同源1a两轮6d83/ff132实际124/124、双端3585/3578及3285/3518m
 Linux c2ec同Mac已绿源a00，原busy-wire在主动pause→resume后立刻content_cancel失败，主I/O/cancel早已完成；STOP层未执行。静态事实：pause::set_on同步更新POLLED，但serve接收门另用半秒poll维护的AtomicBool，存在本地resume后旧门仍拒绝的窗口；poll旧磁盘读覆盖本地新写亦是另一未证竞态。先独立合同冻结实际旧门窗口，不能改旧731行加sleep/重试。
 
 拟测试仅加cfg(test)poll发布后的可控暂停点：B实际观察on并更新接收门后阻止下轮poll，set_on(false)立即更新真实缓存，再经原A resident IPC向真实B发送只读list，3秒内应成功且barrier未释放；当前旧接收门应真实Refused红。原canonical整个函数/新STOP整fixture保持。取得红后最小候选仅让接收准入读既有已初始化缓存（无accept loop磁盘I/O、无新轮询/重拨/放宽暂停），再验旧pause拒绝与原canonical/STOP/portable。任何poll发布generation保护或更广单一缓存重构需单独证明，不偷带。
+
+
+## 2026-11-10 06:55UTC：发送队列诊断，先不改拥塞或恢复策略
+
+1a同source两次完整计数物理正常，旧2c9d慢恢复仍缺tx/PATH_ACK counter，不能倒推因果。旧raw另见X低PTOcopy保留旧unacked_since且近期仍收包；另一copy为PTO2但unacked None，同样近期收包。不是“两copy同PTO”的证据；当前不实施轮转、放宽gain或提前PTO。Linux+Mac现有两个PING模型441/50/9均绿。
+
+下一仅扩展Noq3既有stats观测：同一PathStats快照增加bytes_in_flight、当前space的ping_pending、global非path-specific pending_other_frames；后者不等于此path可以承载业务。既有full-debug会自动打印这些值，区分PING排队/确实发送、窗口占满、ACK/样本未更新；普通selector仍不读取新字段，不添PING/计时器/重试/强owner，不改丢包/拥塞/ACK/RFC时间计算。新模型在原两case保留所有断言并补“API后pending但tx未增、发送后pending清除”的真实传输合同；旧whole multipath/paths/物理门仍保持。先Turing单槽vendor，再一次新版完整字段物理诊断，不把正常参照当旧失败已解决。
+
+已核[标准RFC9002 §7](https://www.rfc-editor.org/rfc/rfc9002.html#section-7)：普通在飞受拥塞窗口约束，PTO到期/进入恢复有指定例外；[§6.2.4](https://www.rfc-editor.org/rfc/rfc9002.html#section-6.2.4)与[§7.5](https://www.rfc-editor.org/rfc/rfc9002.html#section-7.5)描述PTO探测。应用层path.ping成功不能直接等同PTO到期、实际发送或ACK；不得为达到4秒而一律绕过拥塞窗口。本节是协议边界与新增观测设计，不声称已证明2c9d被cwnd阻挡。
