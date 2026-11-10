@@ -543,3 +543,8 @@ Iroh42首轮4f2d591b原请求50/50与X Go3262ms绿，Y原decision checker因没�
 ### 本地解除暂停不受旧接收门阻挡（2026-11-10 06:18UTC，实施前冻结）
 
 来源c2ec实际canonical在set_on(false)后立刻Cancel失败（731行），不修改旧函数或添加等待。新增独立真实Node合同：配对A/B，B真正poll观察pause=true并完成原清线动作后，用cfg(test)owned-root barrier阻止下一轮poll；本进程set_on(false)返回后缓存false，同时原接收门保持旧true。A resident IPC向真实B的新连接list私有marker，必须3秒内成功/内容正确，且barrier始终持有。无重放写/新peer能力/磁盘热路径。真实旧实现红、同whole新fixture候选绿，再原canonical/pause负向/32/STOP/全部net-node；不得仅用helper镜像实现测试代替。
+
+
+### Iroh43：自然ACK与恢复epoch登记顺序（07:09UTC，实施前冻结）
+
+以7bf72701真实Y7404ms红为依据。新增独立actor-state合同与生产相同入口：known silent road、recent真实收包、第一post-judgment自然RTT仍慢时，可达恢复与有限恢复epoch必须同时成立；快post-episode真实样本按既有25%规则刷新质量。无故障/无新hint/仍silent/closed负向以及旧50测试继续。新独立fixture不编辑原whole tests(5c4da4b4)/physical，真实旧顺序红后只交换bookkeeping顺序。阈值/探测总预算/时限/selected合并/自然充分样本停止/所有权保持原值；后续原两四秒门及quiet成本仍是独立必要条件。

@@ -393,3 +393,12 @@ Linux c2ec同Mac已绿源a00，原busy-wire在主动pause→resume后立刻conte
 下一仅扩展Noq3既有stats观测：同一PathStats快照增加bytes_in_flight、当前space的ping_pending、global非path-specific pending_other_frames；后者不等于此path可以承载业务。既有full-debug会自动打印这些值，区分PING排队/确实发送、窗口占满、ACK/样本未更新；普通selector仍不读取新字段，不添PING/计时器/重试/强owner，不改丢包/拥塞/ACK/RFC时间计算。新模型在原两case保留所有断言并补“API后pending但tx未增、发送后pending清除”的真实传输合同；旧whole multipath/paths/物理门仍保持。先Turing单槽vendor，再一次新版完整字段物理诊断，不把正常参照当旧失败已解决。
 
 已核[标准RFC9002 §7](https://www.rfc-editor.org/rfc/rfc9002.html#section-7)：普通在飞受拥塞窗口约束，PTO到期/进入恢复有指定例外；[§6.2.4](https://www.rfc-editor.org/rfc/rfc9002.html#section-6.2.4)与[§7.5](https://www.rfc-editor.org/rfc/rfc9002.html#section-7.5)描述PTO探测。应用层path.ping成功不能直接等同PTO到期、实际发送或ACK；不得为达到4秒而一律绕过拥塞窗口。本节是协议边界与新增观测设计，不声称已证明2c9d被cwnd阻挡。
+
+
+## 2026-11-10 07:09UTC：Iroh43自然恢复epoch的具体候选（修复前）
+
+新v2 7bf72701真实124/124、请求门绿，XGo3658/Y7404ms红；sourcef0a/tree1cfb/snapshot92af/control ef0b，原group空/16artifact核。Y judge=1778813.572639，首次合法post-judge sample sent=.574443（晚约1.8ms）、ACK得到485.85ms；随后263.72ms。read_paths先mark_silent恢复可达并移除Silence，再recovery_probes迭代剩余Silence，因此没有RecoveryCheck。+1.4s后pendingPING=false/inflight0/cwnd约28k/globalOther=false，直至+5.4s自然keepalive得83.79ms，才开始原2秒Moving，+7.404s Go。此轮Y不是观测到的cwnd拥塞；旧2c9d X缺采样仍为另一未证分支。
+
+先引入actor真正调用的Measured统一bookkeeping入口，旧顺序不改，新增独立状态合同：既有故障+新合法但慢的自然RTT+judgment后真实hint，同tick应恢复可达并保留原有有限恢复episode；随后post-episode快样本才能重建质量窗口。healthy无故障不建episode，旧包不恢复，3预约/250ms/2秒、2秒Moving/两fresh/gain/4秒门全部保持，原whole tests模块5c4da4b4与物理fixture不改。取得真实单元红后，仅让episode登记先于mark_silent清除Silence，再恢复可达，不让第一次ACK直接证明优路、不放宽判断。已有episode采样充分照旧停止额外PING，selected+available或已有Moving仍合并，closed/新epoch/过期回收沿原规则。
+
+新helper避免测试在旁边镜像顺序；actor与单元使用同入口。候选必须旧50+新合同vendor绿、原同版物理两门、至少3次/原quiet成本后再评估；不预记已解决7.4秒或旧5.8秒。
