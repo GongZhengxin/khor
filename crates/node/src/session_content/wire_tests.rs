@@ -19,6 +19,10 @@ use tokio::time::timeout;
 #[path = "../../tests/util/mod.rs"]
 mod util;
 
+#[cfg(unix)]
+#[path = "ipc_process_tests.rs"]
+mod process_contracts;
+
 #[derive(Default)]
 struct Gate {
     count: AtomicUsize,
