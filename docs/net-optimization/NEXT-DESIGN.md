@@ -333,3 +333,8 @@ Noq12修复后的267：外层Relay→Direct约+1.244/+1.287s，inner Custom在+5
 
 
 N2本机期限/取消的具体兼容提议见[IPC-LEASE-DESIGN](IPC-LEASE-DESIGN.md)，源码blob/SHA在evidence/net/ipc-lease-design-20261110/inputs.json。先闭合既有客户端short caller deadline，再分批做新旧codec、caller租约、回复/permit回收及分process验收；提议尚未启用，不把caller完成当server/remote已经停止。
+
+
+### 已证实恢复无PTO等待与有界候选（2026-11-10）
+
+002954诊断124/124可达且reported Carried最终hold；实际70条缺新往返快照均PTO0/unacked None，外层Go+1187/+1253ms，内层开始确认+5302/+5313ms、Go+7552/+7562ms。旧ACK清PTO后的等待假设已获实际stats支持，不能删除mark_silent的sent>judged保护。由于最早hint早于外层稳定，前文一次PING提议由ACCEPTANCE中的最多3次/250ms间隔/2秒有限窗口替代，尚未实施。状态归既有actor的Measured所有，不spawn任务/持强Connection/新永久timer；路已关/新epoch/已有Moving/足够自然样本必须有明确回收与合并。Noq12现代对照stalls现有门均绿，但候选worst约1秒、16轮punch高于baseline539.2ms/13轮；保留该负面观测并做matched repeats，不能称整体性能成功。

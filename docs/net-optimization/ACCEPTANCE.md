@@ -502,3 +502,10 @@ Mac-only net-wan-lifetime可通过既有GH installed guard通道执行上面三�
 新增真实loopback单元an_ipc_call_keeps_its_callers_shorter_deadline：resident接收连接后保持静默，调用方task-local截止40ms、原Op::Hops档位保留；250ms独立观察窗口内必须结束并给出带操作名的错误，不能重新获得Op完整预算。结束时取消/join本次fake listener。此项先远端取红；它只验证客户端截止点，不把caller future结束当server/remote执行已经停止。既有拒绝TCP才刷新、已发送不重放、正常half-close和长档合同继续保留。
 
 control在net-node便携合同追加ipc::tests串行过滤器，无新编译profile/并行负载。新的leased IPC握手/服务端取消仍只是单独设计，不能据此单元绿声称跨进程已全部完成。
+
+
+### 恢复探测预算修订（2026-11-10，策略实施前）
+
+原“一次PING”提议未实施。诊断turing-20261110T002954Z-cabd9725已实际记录70条缺post-judgment往返的conn/path快照，PTO均为0且unacked_since均None；第一回包hint约+1062ms，外层两个Go约+1187/+1253ms。因此一次过早探测可能仍经过慢外层，单个新样本不能保证质量已恢复。候选预算改为每peer/road/故障epoch最多3次恢复PING申请，至少间隔既有250ms tick，限既有2秒确认窗口；失败或被已有确认合并也消耗申请，不因重复hint重置。该修订改变尚未实施的探测预算，不改上方四秒合同/冻结checker/物理几何、原2秒两fresh ticks/收益门/可用性新鲜证明/重hold。
+
+只有已判silent、收到judged之后的真实回包hint、当前无silent copy、已有真实往返历史才可启动；初次未建立/健康闲置/黑洞无hint不申请。恢复后最多补满本轮有限样本，若已有Moving确认或当前已选且可用则合并；正常业务已有足够新样本也停止。相同epoch用尽或到期后不能重新启动；新独立故障另起epoch，关闭路回收状态。最多3次是actor调用预算，实际UDP包数/Noq重传须另计。先单元与vendor验证，再至少3次原physical四秒门及旧stalls/黑洞/流量成本验证，未测不得标绿。
