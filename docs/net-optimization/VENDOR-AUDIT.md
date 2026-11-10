@@ -1,5 +1,7 @@
 # Vendor 补丁覆盖与退出审计
 
+当前候选盘点（21:52 UTC）：主56项=Iroh1–41/45/46、Noq1–13，42–44仍隔离；46物理固定六次未接受。Noq13仅解决独立显式路径探测ACK及时性，实际旧efb2/8a4a7521原443项442绿/1红，普通延迟ACK/Initial与真实accepted0RTT三负控及原439绿，whole fixture e057冻结。候选仅Established+Data+peer supports时附同一次PING的IMMEDIATE_ACK，无新PING/任务/计时器/重试；更早ACK可能增加独立datagram，实际成本/物理稳定性未证。当前候选尚未编译/验证，不作为6aa根因、手机或N1接受。上游未提交/未新核等价行为；以全四合同及移动/quiet成本复验退出，不能由接口同名删除。下文53/54/55和旧范围均为历史记录。
+
 2026-11-11，进行中。**主53外新增Iroh45（合计54），42–44仍隔离预留未合主。45已在153263c2实现idle actor按失败时间撤回旧IP；Linux1e1264ef Noq439/path50/home11绿，Linux8adb26d3/Mac42869844599同canonical Node全12/hop44及实际live guard/错误身份回退绿。仅该实测scope接受；完整地址epoch、所有iroh测试与N5最终矩阵仍未完成。** 旧stub cf2352f7 home10/1红及所有初始失败保留，详见STATE及两freeze。
 
 历史盘点：2026-11-10，进行中。当前53项：iroh 1–41、Noq 1–12；原48全部保留。新增Iroh38实际NAT tuple红→绿，Noq12 floor单元红→绿；Iroh39/40/41的单元已通过，但物理双端四秒、CPU稳定性/成本仍未收口，不等于完成验收。

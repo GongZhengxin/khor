@@ -2771,11 +2771,18 @@ impl Connection {
     ///
     /// Causes an ACK-eliciting packet to be transmitted on the path.
     pub fn ping_path(&mut self, path: PathId) -> Result<(), ClosedPath> {
+        // khor patch 13: explicit probes need prompt ACK evidence, not the peer's
+        // delayed-ACK timer. Ordinary ping/keepalive policy remains unchanged.
+        // Cached parameters must never enable this 1-RTT-only frame in 0-RTT.
+        let request_immediate_ack = self.state.is_established()
+            && self.highest_space == SpaceId::Data
+            && self.peer_supports_ack_frequency();
         let path_data = self.spaces[self.highest_space]
             .number_spaces
             .get_mut(&path)
             .ok_or(ClosedPath { _private: () })?;
         path_data.pending_ping = true;
+        path_data.pending_immediate_ack |= request_immediate_ack;
         Ok(())
     }
 

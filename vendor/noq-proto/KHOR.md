@@ -12,6 +12,25 @@
 以下按本地补丁编号记录。
 
 
+### 13. 显式路径PING在已协商的1-RTT上要求立即确认（2026-11-11，feat/net，候选）
+
+受控20ms实际网络往返、对端已协商30ms延迟ACK时，原ping_path只发PING，包虽收到，
+20ms时仍无新ACK样本。54c1/bfe61241真实Noq442项441绿/1红，普通connection ping延迟ACK、
+Initial握手两项负控及原439通过；新增真实TLS resumption早数据控制另行执行，未提前声称通过。
+这是测量及时性缺陷，不是此前6aa承载流单向停顿的定因或N1接受。
+
+仅在Established、Data空间且对端min_ack_delay表明支持时，沿同一个pending path probe
+附加IMMEDIATE_ACK。原PING数量/合并、普通ping、所有连接/路径保活、PTO/拥塞与RTT数学不变；
+握手和0RTT不附加，不替未协商对端开启扩展。没有新timer/task/重试/应用重放，原3次/250ms/2秒预算
+与收益25%/Moving2秒/四秒合同不改。更早ACK可能减少合并、增加实际ACK datagram，需计量成本，
+不能以PING数量不变推导总包数/能耗不变。独立path_probe模块whole fixture与旧行为结果冻结，原multipath不改。
+
+兼容依据是本地实现引用的[ack-frequency-08第3/5节](https://www.ietf.org/archive/id/draft-ietf-quic-ack-frequency-08.html#section-3)，
+这是固定历史draft，不声明当前标准版本。候选尚待全vendor/双OS Node与物理重复/稳定性/quiet成本，
+更不替代phone/energy。上游未提交、未核新的等价实现；上游提供显式path probe同等及时性后，
+以延迟ACK/普通ping/握手/真实0RTT及原移动/成本矩阵复验退出，不凭函数同名删除。
+
+
 ### 12. 选路质量在ACK-delay校正越过已测下界时夹到下界（2026-11-09，feat/net）
 
 264/265实际peer-relay准备失败，四端outer均Direct约41–42ms，而inner quality约109ms/public Relay约131ms，既有25%收益门不足，两look后回收。265全部8个Custom比较值按纳秒与同resident此前唯一Noq样本相等：如raw109.520837ms/delay25ms/min85.622430ms/sample109.520837ms。原样本的raw-delay略低于min，传输RFC估计器保留raw，选路也把25ms确认等待全记作网络延迟。此为数值关联；原Noq日志无conn/path ID，不冒称逐包绑定或唯一移动根因。
