@@ -1103,7 +1103,10 @@ mod tests {
         let _ = server.await;
         let reply = outcome.expect("IPC replaced the caller's shorter deadline");
         let why = reply.expect_err("a mute resident did not answer");
-        assert!(why.contains(Op::Hops.name()), "the deadline error names its operation: {why}");
+        assert!(
+            why.contains(Op::Hops.name()),
+            "the deadline error names its operation: {why}"
+        );
     }
 
     #[tokio::test]
