@@ -1,11 +1,11 @@
 # feat/net 当前状态与恢复入口
 
-更新：2026-11-10 14:04 UTC。**完整N0–N5仍未完成，用户已授权持续实施；不得因分项绿、旧goal paused或compact停下。** 速度/体验优先、个人可信设备网。root串行，无子智能体；没有main合并、发布、采购、生产部署或改已装App/store的授权。长期范围见[PLAN](PLAN.md)、[REQUIREMENTS](REQUIREMENTS.md)、[ACCEPTANCE](ACCEPTANCE.md)、[NEXT-DESIGN](NEXT-DESIGN.md)。上版STATE完整逐字保存在[历史](HISTORY-20261110-before-peer-contact-state.md)，含更早历史链；本页替代旧段落的当前状态，不删历史失败或矩阵。
+更新：2026-11-10 14:16 UTC。**完整N0–N5仍未完成，用户已授权持续实施；不得因分项绿、旧goal paused或compact停下。** 速度/体验优先、个人可信设备网。root串行，无子智能体；没有main合并、发布、采购、生产部署或改已装App/store的授权。长期范围见[PLAN](PLAN.md)、[REQUIREMENTS](REQUIREMENTS.md)、[ACCEPTANCE](ACCEPTANCE.md)、[NEXT-DESIGN](NEXT-DESIGN.md)。上版STATE完整逐字保存在[历史](HISTORY-20261110-before-peer-contact-state.md)，含更早历史链；本页替代旧段落的当前状态，不删历史失败或矩阵。
 
 ## 恢复先核实际句柄
 
 - 主：`/Volumes/disk0/Khor/worktrees/current/khor-net`，branch **feat/net**。最新已接受分项源码 **69a613433748c47f9a96ac9152904b4296de9c3a**，tree **8536d97dd5ce78d2a14b326b1770ca8363a5e9e7**、snapshot **bb7543b799b66acd6a7049c7bdde0e0647f9e68f**，hop-incoming-candidate-source.json。双OS同canonical全部12组绿，主53 vendor不变，未部署。70af条件关闭候选节点层双OS绿，vendor与queued合同仍待，未升级为完整接受。
-- **无活动heavy/Mac/phone/物理计时活动**。条件关闭候选 **70af26b8/tree0601b393/snapshotbdf96147/control68** 已Linux208b1759全12节点绿（hop25、wires15、budget30，317.020秒/21artifact/identity核/group空），Mac42829355463同canonical全12节点绿（hop25、wires15、budget26，exact13770422498/20files/11controlblobs核）。**仍需新真实actor排队合同与完整net-vendor，carried-close freeze尚不记candidate_verified。** 生产已双OS接受分项仍69a6。
+- **无活动heavy/Mac/phone/物理计时活动**。queued原调用baseline31718ae2仅三处远端格式，45.767秒/10artifact/identity核/group空，无compile/runtime；两worktree仅应用该patch，待新canonical再试。条件关闭候选 **70af26b8/tree0601b393/snapshotbdf96147/control68** 已Linux208b1759全12节点绿（hop25、wires15、budget30，317.020秒/21artifact/identity核/group空），Mac42829355463同canonical全12节点绿（hop25、wires15、budget26，exact13770422498/20files/11controlblobs核）。**仍需新真实actor排队合同与完整net-vendor，carried-close freeze尚不记candidate_verified。** 生产已双OS接受分项仍69a6。
 - 当前追加queued_close_tests.rs/cfg-only暂停RoadOrder wrapper和原close文件尾子模块声明，旧整个文件保持准确前缀；原行为/测量/clock不改。先在独立scratch baseline仅还原Node调用为实际旧无条件close_carried，其余新API保留但未使用，以真实actor已暂停→Node关闭已入队/join→新stream才出现→放行actor场景取红，再同fixture验证条件关闭与无replacement负控。旧原25继续覆盖。
 - close旧行为761c4291实际hop24/1红：新stream已offer/Custom有测量，旧close仍Closed=true/carried=false；无replacement真实close/IP echo负控与原23绿，126.109秒/11artifact/identity核/group空。首03a仅格式保留。Iroh13候选条件guard在实际actor读取最新Links.has，原无条件close API不变，无新task/timer/probe/版本表；不是整个epoch/Noq事件矩阵已闭合。
 - incoming-only **69a6/8536/bb754** 的同canonical原全12节点已双OS绿：Linux4c316093249.068秒/21artifact/group空，Mac42825268619 exact13768467392/20files/11controlblobs，hop23/wires15/budget30Linux26Mac。旧07e04308实际22/1、IP仍通/仅Custom无selected连接被误拆，正常incoming与原21绿；freeze仅该scope true，field false。首523仅格式保留。
@@ -23,6 +23,10 @@
 - f9退役顺序前一Mac42798075914 attempt2已全12/wires15；attempt1 bootstrap截断JSON无源/compile，原件与name误选旧artifact的逐byte核及exact artifact13754344749都保留。这不是当前活动任务。
 - 隔离：`/Volumes/disk0/Khor/worktrees/current/khor-net-recovery-deadlines` detached **2ef6bee5a5aaf841af066f4edb5c894769d4539d**，treef1da6579/snapshot48e9e24b。Iroh42–44与actual carrier/connect-stage诊断，**未接受**；无本轮IPC/Asleep修改。最近物理bf6105dd已结束采证，不重刷旧profile。
 - 控制：`/Volumes/disk0/Khor/worktrees/current/khor-build-net` feat/net **68cadb57a0ed72d40a4ca9a843e86b9c6797bf34**，已推；net-node12项自动覆盖wires::tests前缀与link::dial_budget子模块。physical peer-mobility仍用ef0b1ab021802a17710a6748e373ea12b87bf52d。原untracked两个__pycache__保留。
+
+## 最新现场 steering：U17/NET-16
+
+用户新截图（22:07、5GA）hinton UI直连29ms、MacLab/Turing/lecun等不通；认为单个可达peer应自动救通。图与SHA/字段在phone-partial-reachability-20261110-IMG_5608，右侧秒/分钟字段语义未核，不当精确故障持续时间；第二腿/策略未证，未启动phone sampler。源码已核Legs::Dial默认拒绝Direct→Relay（只有声明NoRelay/Measured才放）、要求已有第二腿道路记录，wants_hop还用历史Direct作准入。这是候选筛选缺口，不能直接证明截图命中。**优先补部分可达的有限reachability兜底及单存活middle回归，与现有健康路的性能优化分开，保留总预算/并发/信任/暂停/单跳与quiet门。** PLAN/REQUIREMENTS/ACCEPTANCE已加入U17/NET-16。先收尾queued基线真实红/候选与vendor，再推进该场景和并行寻路；完整N0–N5范围不缩减。
 
 ## 用户最新事实与手机结论（优先于旧解释）
 

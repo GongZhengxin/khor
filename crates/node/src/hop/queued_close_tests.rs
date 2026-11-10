@@ -159,9 +159,7 @@ async fn observe_queued(replacement: bool) {
         let (nr, nw) = tokio::io::split(near);
         let (fr, fw) = tokio::io::split(far);
         f.stream = Some((
-            f.node
-                .carry
-                .attach(f.remote.id(), Carrier::Ssh, nr, nw),
+            f.node.carry.attach(f.remote.id(), Carrier::Ssh, nr, nw),
             f.other.attach(f.ep.id(), Carrier::Ssh, fr, fw),
         ));
         assert!(f.node.carry.has(&f.remote.id()));
@@ -169,12 +167,11 @@ async fn observe_queued(replacement: bool) {
     let mut events = f.conn.path_events();
     paused.resume.release();
     if replacement {
-        f.ep
-            .offer_addrs(iroh::EndpointAddr::from_parts(
-                f.remote.id(),
-                [transport_addr(&f.remote.id())],
-            ))
-            .await;
+        f.ep.offer_addrs(iroh::EndpointAddr::from_parts(
+            f.remote.id(),
+            [transport_addr(&f.remote.id())],
+        ))
+        .await;
     }
     assert!(f.ep.remote_info(f.remote.id()).await.is_some());
     let closed = tokio::time::timeout(Duration::from_secs(2), async {
@@ -208,7 +205,10 @@ async fn observe_queued(replacement: bool) {
             "close was enqueued before the new stream, so the actor must recheck it: closed={closed}, carried={carried}"
         );
     } else {
-        assert!(closed && !carried, "an absent carrier still closes its path");
+        assert!(
+            closed && !carried,
+            "an absent carrier still closes its path"
+        );
     }
 }
 

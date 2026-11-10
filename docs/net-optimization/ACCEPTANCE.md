@@ -570,3 +570,10 @@ cfg(test) gate仅停实际retire释放slots后尚未after_retirement的边界，
 原net-node的link::dial_budget filter新增独立peer_contact子模块，不改旧fixture/参数。真实Incoming CONNECTION_REFUSED产生Asleep，owner在cfg(test)单次gate持原锁，queued caller真实poll等待；同peer真实反向握手与echo后再释放旧结果。普通及ask_early入口都要求旧caller仍返回实际拒绝，但不再left_alone，queued caller不复用旧Asleep并实际重拨/echo。无新接触、仅另一peer接触两类负向仍共享拒绝、保持安静，原deadline/暂停/退避/写语义不变。
 
 这是旧状态提交/共享缓存回归，不能替代IPv4/IPv6 network epoch、真实peer relay选路、手机自动恢复或能耗验收。先旧行为真实红，冻结整个新fixture，再同whole候选绿与原net-node双OS；格式/编译失败与运行行为分开保留。
+
+
+## U17／NET-16：单个存活邻居的peer relay救通
+
+用户IMG_5608现场：5GA，hinton UI直连29ms、其他若干目标不通。只证明手机到hinton首段，hinton到每目标的第二段与当时策略尚未实测，截图不能证明某个源码分支。证据在外部phone-partial-reachability-20261110-IMG_5608，原图SHA与可见字段保留；未启动phone sampler。
+
+验收须含：第一段Direct/Relay且唯一可达middle、第二段Direct/Relay/SSH；第二段记录缺失/过时、目标历史Direct/旧失败/本地或对端换址；正负控制middle能达目标、middle也不能达、暂停/未信任/递归hop均不得越权。真实两腿/端到端业务和原总期限/取消/无隐式写重放/安静能耗共同验证。候选准入不能把“声明配置了Relay”当作它当前可用，已有好路的性能比较与无路时的有限兜底应分别建模。保留原两middle和总3秒/更早caller、无全网广播和无界探测。源码已观察Legs::Dial排除Direct→Relay及要求已有两腿记录、wants_hop看历史Direct，具体改法仍需实际红与设计收敛，未记通过。
