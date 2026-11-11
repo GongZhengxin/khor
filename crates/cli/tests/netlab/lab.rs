@@ -23,8 +23,8 @@ use crate::scratch::{Reaped, Scratch, khor, scratch, serve_pid, signal};
 pub struct Relay {
     pub url: String,
     pub dev: Device,
-    pub _home: Scratch,
     pub _child: Reaped,
+    pub _home: Scratch,
 }
 
 /// A plain relay (the Beijing shape: HTTP, no QUIC address discovery) on
@@ -48,8 +48,8 @@ pub async fn relay(lab: &Lab, tag: &str, name: &str, rtt: Option<Duration>) -> R
         .arg(home.0.join("state"))
         .stdout(Stdio::piped())
         .stderr(std::fs::File::create(home.0.join("relay.log")).unwrap());
-    let mut child = dev.spawn_command_sync(cmd).unwrap();
-    let mut lines = std::io::BufReader::new(child.stdout.take().unwrap()).lines();
+    let mut child = Reaped(dev.spawn_command_sync(cmd).unwrap());
+    let mut lines = std::io::BufReader::new(child.0.stdout.take().unwrap()).lines();
     let first = lines.next().expect("a banner line").unwrap();
     let at = first.find("http://").expect("a url on the first line");
     let url = first[at..].split_whitespace().next().unwrap().to_string();
@@ -61,7 +61,7 @@ pub async fn relay(lab: &Lab, tag: &str, name: &str, rtt: Option<Duration>) -> R
         url,
         dev,
         _home: home,
-        _child: Reaped(child),
+        _child: child,
     }
 }
 
@@ -226,10 +226,12 @@ pub struct LabNode {
     pub scenario: String,
     pub name: String,
     pub id: String,
+    // Stop the keeper before removing its home or dropping the device. Own it
+    // from spawn, so startup timeout/cancellation also reaps the child.
+    pub serve: Option<Reaped>,
     client: std::sync::Arc<Node>,
     pub dev: Device,
     pub home: Scratch,
-    pub serve: Option<Reaped>,
 }
 
 /// Starts `khor serve` as `name` on `dev`, homed on `relays` only.
@@ -275,7 +277,7 @@ pub async fn node_on(
             cmd.env("KHOR_NET_DIAGNOSTICS", mode);
         }
     }
-    let child = dev.spawn_command_sync(cmd).unwrap();
+    let child = Reaped(dev.spawn_command_sync(cmd).unwrap());
     let began = Instant::now();
     while !home.0.join(".khor/endpoint.json").exists() {
         assert!(
@@ -304,7 +306,7 @@ pub async fn node_on(
         client,
         dev,
         home,
-        serve: Some(Reaped(child)),
+        serve: Some(child),
     }
 }
 
