@@ -11,6 +11,9 @@ use tokio::net::{TcpListener, TcpStream};
 use crate::lab::result;
 use crate::nat::{Net, router};
 
+#[path = "calibration_sockets.rs"]
+mod sockets;
+
 const REVISION: &str = "workload_kernel_tcp_calibration_v1";
 const SIZE: usize = 8 * 1024 * 1024;
 const WARM: usize = 4;
@@ -28,6 +31,7 @@ struct Model {
     goodput_mbit: [f64; 2],
     bulk_limit: Duration,
     condition: fn() -> patchbay::LinkCondition,
+    socket_diagnostic: bool,
 }
 
 const LOW: Model = Model {
@@ -40,6 +44,7 @@ const LOW: Model = Model {
     goodput_mbit: [6.4, 9.6],
     bulk_limit: Duration::from_secs(120),
     condition: super::condition,
+    socket_diagnostic: false,
 };
 
 const HIGH: Model = Model {
@@ -52,6 +57,14 @@ const HIGH: Model = Model {
     goodput_mbit: [40.0, 60.0],
     bulk_limit: Duration::from_secs(240),
     condition: high_condition,
+    socket_diagnostic: false,
+};
+
+const HIGH_SOCKETS: Model = Model {
+    case: "hd0",
+    revision: "workload_kernel_tcp_sockets_v1",
+    socket_diagnostic: true,
+    ..HIGH
 };
 
 fn high_condition() -> patchbay::LinkCondition {
@@ -121,36 +134,46 @@ async fn serve(mut stream: TcpStream, payload: &[u8], model: Model) -> Result<()
         .await
         .map_err(|e| e.to_string())?;
     stream.write_all(&[1]).await.map_err(|e| e.to_string())?;
-    match mode[0] {
-        b'e' => {
-            for _ in 0..WARM + ECHOES {
-                let mut bytes = [0; 64];
+    let operation = match mode[0] {
+        b'u' => "upload",
+        b'd' => "download",
+        _ => "echo",
+    };
+    let local = stream.local_addr().map_err(|e| e.to_string())?;
+    let peer = stream.peer_addr().map_err(|e| e.to_string())?;
+    let transfer = async {
+        match mode[0] {
+            b'e' => {
+                for _ in 0..WARM + ECHOES {
+                    let mut bytes = [0; 64];
+                    stream
+                        .read_exact(&mut bytes)
+                        .await
+                        .map_err(|e| e.to_string())?;
+                    stream.write_all(&bytes).await.map_err(|e| e.to_string())?;
+                }
+            }
+            b'u' => {
+                let mut received = vec![0; model.size];
                 stream
-                    .read_exact(&mut bytes)
+                    .read_exact(&mut received)
                     .await
                     .map_err(|e| e.to_string())?;
-                stream.write_all(&bytes).await.map_err(|e| e.to_string())?;
+                // A completion ack means all bytes arrived and were compared.
+                stream
+                    .write_all(&[u8::from(received == payload)])
+                    .await
+                    .map_err(|e| e.to_string())?;
+                if received != payload {
+                    return Err("upload byte mismatch".into());
+                }
             }
+            b'd' => stream.write_all(payload).await.map_err(|e| e.to_string())?,
+            _ => return Err("unexpected calibration mode".into()),
         }
-        b'u' => {
-            let mut received = vec![0; model.size];
-            stream
-                .read_exact(&mut received)
-                .await
-                .map_err(|e| e.to_string())?;
-            // A completion ack means all bytes arrived and were compared.
-            stream
-                .write_all(&[u8::from(received == payload)])
-                .await
-                .map_err(|e| e.to_string())?;
-            if received != payload {
-                return Err("upload byte mismatch".into());
-            }
-        }
-        b'd' => stream.write_all(payload).await.map_err(|e| e.to_string())?,
-        _ => return Err("unexpected calibration mode".into()),
-    }
-    stream.shutdown().await.map_err(|e| e.to_string())
+        stream.shutdown().await.map_err(|e| e.to_string())
+    };
+    sockets::observe(transfer, model, "server", operation, local, peer).await
 }
 
 async fn connect(addr: std::net::SocketAddr, mode: u8) -> Result<TcpStream, String> {
@@ -220,23 +243,28 @@ async fn client(addr: std::net::SocketAddr, payload: Arc<Vec<u8>>, model: Model)
             let mut s = tokio::time::timeout(CALLER, connect(addr, mode))
                 .await
                 .map_err(|_| "bulk connect deadline".to_owned())??;
-            if mode == b'u' {
-                s.write_all(&payload).await.map_err(|e| e.to_string())?;
-                let mut ack = [0];
-                s.read_exact(&mut ack).await.map_err(|e| e.to_string())?;
-                if ack != [1] {
-                    return Err("peer rejected upload bytes".into());
+            let local = s.local_addr().map_err(|e| e.to_string())?;
+            let peer = s.peer_addr().map_err(|e| e.to_string())?;
+            let payload_transfer = async {
+                if mode == b'u' {
+                    s.write_all(&payload).await.map_err(|e| e.to_string())?;
+                    let mut ack = [0];
+                    s.read_exact(&mut ack).await.map_err(|e| e.to_string())?;
+                    if ack != [1] {
+                        return Err("peer rejected upload bytes".into());
+                    }
+                } else {
+                    let mut received = vec![0; model.size];
+                    s.read_exact(&mut received)
+                        .await
+                        .map_err(|e| e.to_string())?;
+                    if received != *payload {
+                        return Err("download byte mismatch".into());
+                    }
                 }
-            } else {
-                let mut received = vec![0; model.size];
-                s.read_exact(&mut received)
-                    .await
-                    .map_err(|e| e.to_string())?;
-                if received != *payload {
-                    return Err("download byte mismatch".into());
-                }
-            }
-            Ok::<_, String>(())
+                Ok::<_, String>(())
+            };
+            sockets::observe(payload_transfer, model, "client", direction, local, peer).await
         };
         let (outcome, error) = match tokio::time::timeout(model.bulk_limit, transfer).await {
             Ok(Ok(())) => ("ok", None),
@@ -273,6 +301,12 @@ async fn h0_kernel_tcp_confirms_the_high_bdp_bottleneck_in_both_directions() {
     run(HIGH).await;
 }
 
+#[tokio::test(flavor = "multi_thread", worker_threads = 6)]
+#[ignore = "read-only socket diagnostics under the fixed high-BDP model"]
+async fn hd0_high_bdp_tcp_socket_windows_during_both_transfers() {
+    run(HIGH_SOCKETS).await;
+}
+
 async fn run(model: Model) {
     let lab = Lab::new().await.unwrap();
     let rx = router(&lab, "pubx", Net::Public).await;
@@ -300,6 +334,7 @@ async fn run(model: Model) {
         "echo_bytes":64,"bulk_bytes":model.size,"rtt_ms":model.rtt_ms,"mbit_each_direction":model.mbit,"queue_ms":40,
         "min_rtt_us_bounds":model.min_rtt_us,"goodput_mbit_bounds":model.goodput_mbit,
         "bulk_caller_us":model.bulk_limit.as_micros(),
+        "socket_diagnostic":model.socket_diagnostic,
         "layer":"kernel_TCP","residents":false,"slo":false,"qdisc_units_review_required":true}),
     );
     let xb = on(&x).await;

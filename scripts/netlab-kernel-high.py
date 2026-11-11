@@ -40,13 +40,13 @@ def capture(value):
                 interface_rx_bytes=iface[0]['stats64']['rx']['bytes'], interface_tx_bytes=iface[0]['stats64']['tx']['bytes'])
 
 
-def case(path):
+def case(path, revision=REVISION, allow_bounds_failure=False):
     text = path.read_text()
     marker = '[netlab-workload-calibration] '
     lines = [line for line in text.splitlines() if marker in line]
     assert lines and all(line.count(marker) == 1 for line in lines)
     rows = [json.loads(line.split(marker, 1)[1]) for line in lines]
-    assert all(r['schema'] == 1 and r['revision'] == REVISION for r in rows)
+    assert all(r['schema'] == 1 and r['revision'] == revision for r in rows)
     manifest, complete, connection = (one(rows, e) for e in ['manifest', 'complete', 'connect'])
     assert manifest['warmup'] == 4 and manifest['echoes'] == 64 and manifest['echo_bytes'] == 64
     assert manifest['bulk_bytes'] == BYTES and manifest['bulk_caller_us'] == 240000000
@@ -80,11 +80,17 @@ def case(path):
     assert complete['samples'] == 70 and complete['min_rtt_us'] == minimum and complete['goodput_mbit'] == rates
     assert complete['bounds_ok'] == bounds and complete['calibrated'] is False and complete['qdisc_units_review_required'] is True
     summaries = re.findall(r'^test result: (.*)$', text, re.M)
-    assert len(summaries) == 1 and summaries[0].startswith('ok. 1 passed; 0 failed; 0 ignored;')
-    functional = bounds and connection['ok'] is True and all(r['outcome'] == 'ok' and r['error'] is None for r in echoes+bulk)
-    functional &= all(r['exact_bytes'] is True for r in bulk)
-    functional &= all(complete[k] is True for k in ['functional_and_bounds_ok', 'server_ok', 'qdiscs_present'])
-    return dict(functional_ok=functional, min_rtt_us=minimum, goodput_mbit=rates,
+    transport_ok = connection['ok'] is True and all(r['outcome'] == 'ok' and r['error'] is None for r in echoes+bulk)
+    transport_ok &= all(r['exact_bytes'] is True for r in bulk)
+    transport_ok &= complete['server_ok'] is True and complete['qdiscs_present'] is True
+    functional = bounds and transport_ok
+    assert complete['functional_and_bounds_ok'] == functional
+    expected = 'ok. 1 passed; 0 failed; 0 ignored;'
+    if allow_bounds_failure:
+        assert transport_ok
+        if not bounds: expected = 'FAILED. 0 passed; 1 failed; 0 ignored;'
+    assert len(summaries) == 1 and summaries[0].startswith(expected)
+    return dict(functional_ok=functional, transport_ok=transport_ok, min_rtt_us=minimum, goodput_mbit=rates,
                 warmup_population=4, steady_echo_population=64, bulk_bytes_each_direction=BYTES,
                 profile_counters=counters, profile_readback_confirmed=True)
 
