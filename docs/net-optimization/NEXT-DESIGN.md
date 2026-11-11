@@ -640,3 +640,6 @@ ff743已复用已有 Recovery 分支，使目标缺可用 wire 的判断先于�
 
 
 2026-11-11 06:22 UTC：candidate context缓存的首个五合同已在1d448/Mac42968959558实际全过，但新增旧picked晚登记合同66/1红。生产6e5在roster/roadbook读取前捕获monotonic观察序号与弱网络token，原MISSED锁内拒绝旧快照覆盖；两个生产入口均携带其原观察，cfg(test) open_hop保留旧四参适配到真实core。Mac42969959757准确源6e5/tree3ac48/snapshot12ef已实际全12/hop67/wires16/budget26/resume1绿，原fixture相对1d448不改，Linux待跑。尚欠成功made删除entry后观察高水位寿命合同，同ID新Tunnel与IP/Relayhint内容变化、v4/v6独立变化和LOST本机namespace/context。DeviceInfo.addrs是hint Vec<String>，dial_addr统一解析并合并nearby；后续应按有效地址内容而非来源/排列/RTT噪声构建事实。当前bool可达性不等于地址世代。完整N0–N5保持。
+
+
+2026-11-11 06:44 UTC：6e5同源Linux52af3091实际全12/hop67/wires16/budget30/resume1过，与Mac42969959757准确同源。随后按原三轮netlab-hop矩阵1501a97c执行f4/f4s/f4i，无新参数。成功后两个旧selection合同在0a7（生产逻辑仍6e5）Mac42973738072验证中；格式only429728原件保留，fixture仅原样rustfmt修正。若实际红，候选方向是在原MISSED entry中count归零但保留最新observation，并换代candidate弱token以作废仍未完成的旧回答；纯backoff helper的None语义继续删除。不能加新map/timer或Node强持有，也不能让正常成功延续旧miss count。此为待实际结果的方案，不写成已实施/验收。还须实际覆盖同ID新wire与地址变化。

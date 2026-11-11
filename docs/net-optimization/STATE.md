@@ -1,6 +1,6 @@
 # feat/net 当前状态与接续入口
 
-更新于2026-11-11 06:32 UTC。完整N0–N5未完成，目标“完成计划”active。用户U14要求持续推进，不以调度面板paused或阶段完成作为停止条件。root串行，不派发子智能体。此前逐字STATE保存在[最近历史](HISTORY-20261111-through-snapshot-and-stability.md)，SHA `974f95530ba857f2d2e9669b91728f7210d2efc7fb1c1aad11c251d108df4a7c`，它继续链接更早历史与失败。收据、进程和实际工作树优先。
+更新于2026-11-11 06:44 UTC。完整N0–N5未完成，目标“完成计划”active。用户U14要求持续推进，不以调度面板paused或阶段完成作为停止条件。root串行，不派发子智能体。此前逐字STATE保存在[最近历史](HISTORY-20261111-through-snapshot-and-stability.md)，SHA `974f95530ba857f2d2e9669b91728f7210d2efc7fb1c1aad11c251d108df4a7c`，它继续链接更早历史与失败。收据、进程和实际工作树优先。
 
 ## 位置、授权与当前源
 
@@ -12,11 +12,11 @@
 
 ## 当前运行任务：先查同一收据
 
-**Turing turing-20261111T063108Z-52af3091**，`net-node`，PID **3483765**，06:31:30 UTC实际launch。准确6e5/tree3ac48/snapshot12ef/control68cad，与已核Mac42969959757相同源码。固定四轮物理对照已结束并收齐，当前可做Linux重型回归。先查同一PID和receipt，不重发。
+**Turing turing-20261111T064010Z-1501a97c**，`netlab-hop`，PID **3492772**，child **3492990**，06:40:32 UTC实际launch。准确6e5/tree3ac48/snapshot12ef/control68cad，原1线程/3轮/f4、f4s、f4i前缀。计划candidate-context-original-hop-plan-v1.json，retries0，不改原门/持续时间/拓扑。06:44同一PID存活，首轮进行中。观察超时不重发。
 
-**Mac42972830373**，test-only6331dd1ecb107940f9d346f12008ff61385c0c53/tree7cddaea98fc1caa906b3aba9da0c413414657b00/snapshotd70e6f9ce3ad59e0b3235e7a9ce76d5c9c68335b/control68cad，已failure终态并采集，9files/11controls/identity核，exactartifact13833962234，zipSHA ca9372be03c182d57fc766600960eed0baae65ff10ef46b79459ff7ab2ac2296。仅format.patch，未执行单元；已git apply --check后原样应用，b1ce797b仅测试格式变化。它保持6e5生产逻辑，新增两个成功后旧快照合同；原67测试正文不变。尚无新两合同的行为结果，原格式失败不算行为红。
+Mac**42973738072**验证成功后旧快照两新合同的原行为，源0a7b9385cf407ae44c863afbb414b55d501d1b9b/treef68ab13cf009706974bb306aaea111950d338731/snapshot2980990c898d361c7753d9ddcd3af9d3cb6aee29/control68cad。已实际提交并登记，先查同一run，尚无行为结论。先前42972830373为格式门9files/11controls/identity，原样应用patch后新fixture SHA37aed9428b2bafa5097f651ce4c1ca6124af111477b2a6e8435bc6b3fa9b8161；没有生产代码变化。当前无phone采样。
 
-当前无phone采样。Mac42969959757已success终态并核全12，是6e5的原67合同验证。
+6e5同源Linux **turing-20261111T063108Z-52af3091** 已327.133秒终态，21files/identity/空group，实际全12组通过：hop67、wires16、budget30、resume1。与Mac42969959757准确相同source/tree/snapshot/control，窄缓存合同现双OS通过，N2整体仍未结束。node-regression-verification-v1.json保存每组实际总结。
 
 ## 本轮取得的实际证据
 
@@ -30,7 +30,7 @@
 
 **6e5修复**在读取roster/roadbook前捕获单调observation与弱网络token，在MISSED锁内拒绝旧登记/旧网快照；两个生产入口均绑定其实际观察。原open_hop为cfg(test)适配，调用真实open_hop_in_epoch，旧测试正文保留，rustdoc指向生产函数。旧快照与候选变化fixture相对1d448原样不变。
 
-**Mac42969959757**准确6e5/tree3ac48/snapshot12ef/control68cad，exact artifact13832933221，zipSHA **54b210ac9fa7861e3fdbe7af9b2455db03053d81ac9152a53f4d202de59bf66e**，20files/11controls/identity核，实际全12组通过：hop67/0、wires16、budget26、resume1，其余原组均0failed。Linux同源待跑。fixture/source-audit的candidate-change-miss与candidate-snapshot-miss JSON保留全部源与失败。**made成功删除context后的观察高水位寿命尚待实际合同**；同ID换址/LOST context仍未解决，不能称完整N2。
+**Mac42969959757**准确6e5/tree3ac48/snapshot12ef/control68cad，exact artifact13832933221，zipSHA **54b210ac9fa7861e3fdbe7af9b2455db03053d81ac9152a53f4d202de59bf66e**，20files/11controls/identity核，实际全12组通过：hop67/0、wires16、budget26、resume1，其余原组均0failed。Linux52af3091同源全12已过。fixture/source-audit的candidate-change-miss与candidate-snapshot-miss JSON保留全部源与失败。**made成功删除context后的观察高水位寿命尚待实际合同**；同ID换址/LOST context仍未解决，不能称完整N2。
 
 ### 原动态与长稳矩阵已收齐
 
