@@ -1,6 +1,6 @@
 # feat/net 当前状态与接续入口
 
-更新于2026-11-11 10:29 UTC。完整N0–N5目标“完成计划”active，上一目标轮取得同源hint双端结果并归档，本轮取得迟到成功真实红→绿及新四节点fixture源码，属于进展。未完成、未阻塞，不派发子智能体。此前STATE逐字归档于[上一状态](HISTORY-20261111-through-hint-verification.md)，SHA `617b316640985eb22785a7d5ccf3d558355d3a1da24ed6479f1ff8224b7c54f1`，继续链接全部旧失败与历史；原始日志/准确收据优先，不凭摘要覆盖原改动。
+更新于2026-11-11 10:43 UTC。完整N0–N5目标“完成计划”active，上一目标轮取得同源hint双端结果并归档，本轮取得迟到成功真实红→绿及新四节点fixture源码，属于进展。未完成、未阻塞，不派发子智能体。此前STATE逐字归档于[上一状态](HISTORY-20261111-through-hint-verification.md)，SHA `617b316640985eb22785a7d5ccf3d558355d3a1da24ed6479f1ff8224b7c54f1`，继续链接全部旧失败与历史；原始日志/准确收据优先，不凭摘要覆盖原改动。
 
 ## 位置与授权
 
@@ -64,3 +64,14 @@ Turing **turing-20261111T102641Z-ebc3630e**，PID **3828986**，10:27:03 UTC lau
 前一物理ebc3630e已58.500秒终态1、13files/identity/空group；三次driver均因同一E0631编译错误未进入任何网络case：Option<Link>::is_some_and传入了借用Link的谓词。保存全部原编译日志，分类fixture_compile_E0631_no_network_scenarios，不是产品网络红。源码两处改为as_ref后提交 **42014586604f54a7541e0873d219332a3596743c**；candidate-prepared-physical-source-v3.json tree **5312d9cc34176feddb6e3adc3853e0b9df73abbd** /snapshot **033023d20020d0bfb4849499dff933422b38cd88**，clean/0excluded。
 
 当前唯一Turing任务 **turing-20261111T102838Z-874eb4c4**，PID **3831005**，10:28:59 UTC launch，netlab-hop-ownership/同control68cad/role diagnostic；stage exec57262已成功退出，已按同PID实际ps核在运行。prepared-physical-run-plan-v2.json保存新2case×3合同和前驱编译失败。先核同receipt/execution/PID/task.log；不要再poll/重发已终态ebc、3fa或67929双OS单位。编译/前置/业务/缺观察分开分类。任何新计时未终态前不穿插Turing构建。无Mac在途、无phone采样。下一步必须核新fixture实际编译与两middle前置，随后合同/失败归因；完整N0–N5不缩小，goal active。
+
+
+## 10:43 UTC：真实四peer旧三轮全红，pending-handshake候选在验
+
+874eb4c4已648.622秒终态101、37files/identity/空group；新f4r三轮都1.5秒超时（激活至内容1.508933/1.513711/1.508865秒均无内容），M_stopped=true、X Hop viaN/tried2，N准备约300ms但middle收发承载字节为0、目标3秒首帧lease结束，两端无新carried wire；原f4三个控制仍green（最慢业务3.4/4.2/3.6秒，第三有Relay1.8秒瞬态）。prepared-physical-old-behavior-v1.json保存全部6行、各round原日志SHA与边界；ledger已终态。该任务host load_after157.55/110.27/62.14，属于诊断校准、非普通SLO/单因果证明；不能通过放宽1.5秒把它接受。三轮冻结fixture不变。
+
+静态沿链确认iroh的Connecting完成握手后才register_connection，offer_addrs只为已注册连接打开custom；尚未认证的原QUIC连接经endpoint-id映射发送，cached selected_path可能遮住新载体。候选 **d52114ecbdd8b0780e5fb3b895120a2692b4cf7f**，tree **12b25060f89795c3d190d585ad4d73ef948121f1** /snapshot **cf9ca62b27de445e67c30b6915ee341b47d95a21**，candidate-pending-carrier-source-v1.json：显式Custom offer且没有任何活注册连接时解除selected_path，让原QUIC重传可覆盖已知路径；不删地址、不改变活连接、不加握手/业务重放/常驻资源/计时器。可选khor-pending-carrier行记录live/registered/旧selected/reset事实，不记录载荷。尚未证明是全部根因，原PTO或未退役server连接仍可能挡住；如果实测无效应撤回或改进，不能当已解决。vendor新增48候选，当前主 **58项**=Iroh1–41/45–48+Noq1–13，42–44仍隔离；此前57对应旧67929。
+
+当前Turing **turing-20261111T104128Z-9d655e7f**，PID **3863666**，10:41:51 UTC launch，netlab-hop-ownership、准确同d521源、role candidate、control68cad；exec71178已成功退出。已实际ps核运行、编译通过开始真实第一轮；不要在它活计时期间插入Turing构建/测试。与旧420 fixture逐字核同，不改门/拓扑/原三case。
+
+Mac **Actions43005910530** request7de8d1921ad448158b3b4e56c74262f0，同d521源 **net-vendor**，exec47351提交完成，登记进程按实际句柄继续核；不重复提交。它验证vendor单元，不是Node双OS或真实手机。优先核同ActionsID、Turingreceipt/PID与f4r实际结果及khor-pending-carrier事实，进一步决定解除旧选择是否足够；原早发请求/写重试门保持。无手机采样/候选安装。上一轮实际有红证据和候选实现，属于progress；完整目标继续active。
