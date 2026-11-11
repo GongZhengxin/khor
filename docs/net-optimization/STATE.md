@@ -10,9 +10,9 @@
 
 新control **5f1242f5f4d216dde60ad27be0d17a5958b7ef46**，本地未push；SSH传送准确Git控制文件，原资源/UID/flock/netns/期限门保持。source-v2另补实际启动取消回收回归：`lab::resident_ready`在未poll或等待中都持有Reaped，w3用真实sleep子进程验证两种取消后进程不存在；parser必须看到实际startup guard。fixture默认60秒启动门未动，不证明产品keeper后代或启动延迟。新metadata `test_netlab*.py` **11项1.392秒绿**，含缺startup guard/仍有残留的拒绝检查；无本地Rust/格式器/产品执行。
 
-**唯一Turing在途：turing-20261111T164701Z-a5469ffc**，PID **252606**、child **252828**，16:47:23 UTC launch，tasknetlab-workload-wires / revisionworkload_response_priority_v1-source-v2-B-readback / diagnostic / control5f1242f / 上述B。stage exec77921已终态，准确前驱bd59已收集/identity/原group空。最近同receipt观察：格式已过、正在实际netlab编译，**w3与三轮行为尚未核实**。不重发、不穿插Turing任务。
+**唯一Turing在途：turing-20261111T164701Z-a5469ffc**，PID **252606**、child **252828**，16:47:23 UTC launch，tasknetlab-workload-wires / revisionworkload_response_priority_v1-source-v2-B-readback / diagnostic / control5f1242f / 上述B。stage exec77921已终态，准确前驱bd59已收集/identity/原group空。16:49同receipt日志：格式已过、完整netlab实际编译65秒成功，w3与w3-startup两项实际绿（0.06秒，含未poll/等待中子进程回收），正在第一轮Buffered诊断。**整体仍在途，尚未collect/最终identity/三轮priority业务核实**；不把live日志当最终接受。不重发、不穿插Turing任务。
 
-Mac source-v2提交一次正在exec session **84214**；request **cd1cb21f0dcb4cdb8cd595609ccda8f0**，原builder-ref feat/net、net-node、预期实际control68cad。快照已上传，不因等待重发；先继续同exec/查本地 `.git/khor-development/runs/cd1cb21f0dcb4cdb8cd595609ccda8f0.json` 和精确workflow，获得databaseId后register。当前本段尚无已核run ID。
+Mac source-v2 **43061931813**，request **cd1cb21f0dcb4cdb8cd595609ccda8f0**，原builder-ref feat/net、net-node、实际control **68cadb57a0ed72d40a4ca9a843e86b9c6797bf34**。submit exec84214已终态、register exec24561已终态，ledger pin；准确收据 `.git/khor-development/runs/cd1cb21f0dcb4cdb8cd595609ccda8f0.json`，证据目录`mac-43061931813`。尚未核行为/终态；查同workflow，不重发。
 
 下一步：收准确v2 Mac/上述B实际priority getter/取消guard，成功后同control串行执行A真实readback；两者均满足前置后才按 **A B B A A B** 六block、每block三fresh场景做关闭诊断的计时，原完整人口/实际TC/probe/字节/期限保持。任何entry/source失败保留原件并明确新版本，不选择性重跑性能差的轮。原035九场景6绿/3失败、四残留手工回收不当自动清理绿；启动/配对根因、严重同故障fallback参照以及全部N0–N5仍待收口。
 
