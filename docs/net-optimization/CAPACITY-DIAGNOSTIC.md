@@ -42,3 +42,14 @@ Rust保留观察/容量任一失败的原退出；source-owned metadata只可证
 三个fresh的全部人口/错误/失败保留；不择优、不报p99/显著性、不混作TCP/Node策略对照。
 即使三轮UDP容量均通过，也只定位IP容量，**不自动接受模型/旧TCP门/Noq/Node/N3或完整目标**。
 后续模型/业务验收方法若需要修订，须基于证据另做明确决策，不能默默换门。
+
+
+## v2发包器时间槽修复（新运行前冻结）
+
+v1的真实run turing-20261111T213626Z-343630a3，当前已观察五个方向：发送108219–121863/计划145833，最大调度迟到1557–2449us；观察有效性false。接收窗口约48.309Mbit不构成通过。原run继续按固定三fresh收件，完整旧人口/红保留。
+
+源中实际1ms slot去重未补发跳过slots，计划供给不足；下一版将slot改为**5ms**，每slot仅36或37包，最大44400B payload小于65536B token bucket。仍按实际slot去重，不catch up。此为发包工具输入实现修复，不是降低有效性或链路验收门。
+
+新revision **workload_kernel_udp_capacity_v2**；同一uq0入口/固定三fresh任务。每方向20秒/1200B/70Mbit、145833计划序号/完整bitmap、65–75 sender窗口、≥99%成功、≤1%跳过、20ms最大迟到/>10ms≤1%、40–60 receiver窗口、所有期限/拓扑/内容与序号校验全不变。slot上限4000、每slot最多37包，manifest固定pacer_tick_us5000；不混作v1人口，也不把v1失败改绿。
+
+v2仅在上述协议保存后实现与运行；源码、control与原始结果按STATE/收据记录。
