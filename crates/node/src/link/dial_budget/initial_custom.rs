@@ -80,20 +80,30 @@ async fn a_prepared_handshake_uses_custom_path_zero_beside_a_live_ip_connection(
     .unwrap();
     let wrong = iroh::SecretKey::generate().public();
     let addr = iroh::EndpointAddr::from_parts(wrong, [transport_addr(&server.id())]);
-    let (rejected, incoming) = tokio::time::timeout(Duration::from_secs(5), async {
-        tokio::join!(connect_prepared_carrier(&client, addr, ALPN), async {
-            server.accept().await.unwrap().accept().unwrap().await
-        })
-    })
+    let mut accepting = Aborts(Some(tokio::spawn({
+        let server = server.clone();
+        async move {
+            if let Some(incoming) = server.accept().await
+                && let Ok(connecting) = incoming.accept()
+                && let Ok(conn) = connecting.await
+            {
+                conn.close(0u32.into(), b"identity control complete");
+            }
+        }
+    })));
+    let rejected = tokio::time::timeout(
+        Duration::from_secs(5),
+        connect_prepared_carrier(&client, addr, ALPN),
+    )
     .await
-    .unwrap();
-    assert!(
-        rejected.is_err(),
-        "pinning a transport cannot bypass endpoint identity"
-    );
-    if let Ok(conn) = incoming {
-        conn.close(0u32.into(), b"identity control complete");
+    .unwrap()
+    .expect_err("pinning a transport cannot bypass endpoint identity");
+    if let Some(task) = accepting.0.take() {
+        task.abort();
+        let _ = task.await;
     }
+    eprintln!("[initial-custom-identity-control] {rejected}");
+    assert!(matches!(rejected, iroh::endpoint::ConnectError::Connecting { .. }));
     assert!(warm.close_reason().is_none() && warm_remote.close_reason().is_none());
     carried.close(0u32.into(), b"initial route contract complete");
     warm.close(0u32.into(), b"warm route contract complete");
