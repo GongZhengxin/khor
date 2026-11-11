@@ -1,25 +1,35 @@
 # feat/net 当前状态与接续入口
 
-更新于2026-11-11 17:20 UTC（本地11月12日）。完整目标“完成计划”仍 **active、未完成、未阻塞**；完整范围是 [PLAN](PLAN.md) 的N0–N5，root串行，不派发子智能体。此页是唯一当前入口；历史逐字保存在 [上一状态](HISTORY-20261111-through-policy-readback-v2.md)，SHA `07431681a2838546487bace0ed68dbc314cd68469cc33f3f98bf88ada80e539b`，它继续链接此前全部证据/失败。实际worktree/收据/原始日志优先，不按摘要覆盖未提交内容。
+更新于2026-11-11 17:36 UTC（本地11月12日）。完整目标“完成计划”仍 **active、未完成、未阻塞**；完整范围是 [PLAN](PLAN.md) 的N0–N5，root串行，不派发子智能体。此页是唯一当前入口；历史逐字保存在 [上一状态](HISTORY-20261111-through-policy-readback-v2.md)，SHA `07431681a2838546487bace0ed68dbc314cd68469cc33f3f98bf88ada80e539b`，它继续链接此前全部证据/失败。实际worktree/收据/原始日志优先，不按摘要覆盖未提交内容。
 
 ## 当前在途与下一步
 
-**root串行自动流程在途：exec session90703**，运行OPS/run-remaining-response-priority-blocks-v1.py。该进程是当前**唯一source-refs/campaign写入者**；它仅依固定A B B A A B顺序观察block3–6，等原job真实completed后收件→identity→原始人口核验→终态记录→只启动一个下一block。观察/校验错误即停止，不会以超时重发。**它还活着时，不另写ledger、不手工advance、不启动其他Turing任务。**继续同exec，若句柄丢失则查本机该Python进程、campaign及automation日志，不能因旧STATE重启。自动流程只是工具串行编排，没有派发子智能体。
+**唯一Turing：turing-20261111T173405Z-3747b66c**，PID **343665** / child **343914**，17:34:26 UTC launch；task **netlab-workload-high-calibrate** / revision **workload_kernel_tcp_calibration_high_v1** / diagnostic / control **abfadd4b13b705b4c56aa0a828b9f1bf684e95c8**。stage exec44671已终态；准确前驱52f是低profile最后一组，已collect/identity/原group空。17:35同receipt观察：格式过、完整netlab实际编译13.01秒成功，正在第一个h0独立kernel场景，**尚无三轮校准终态/通过结论**。不重发，不穿插Turing构建/计时。没有Mac在途；下面的exec90703已终态，当前ledger写入权回root。
 
-本段是17:20 UTC观察快照，**实际后续句柄以campaign和同exec输出为准**。当时唯一Turing为 **turing-20261111T171702Z-d8d2a9b3**，PID **315122**，block **4/A**，launch 2026-11-11T17:17:24.253093+00:00，tasknetlab-workload-policy / revisionworkload_response_priority_v1-v3-block4-A / 同冻结source-v3与control5f1242f。最近同exec已实际确认原PID live/network-driver；整体未收终态。没有Mac在途。
+h0准确冻结源 **96ae5eb73b32b49710e885bfcbb5d4cf531774ec** / tree **dcf57e97618d55fa326819a1008e91985f4c2cf2** / snapshot **d988d415695f69bd2dc4c2651c02449144e56482**，clean/0excluded，`candidate-kernel-high-source-v1.json`。Model把原LOW的8MiB/40ms/8Mbit/120秒/4预热64echo/同condition保留，另加HIGH的96MiB/300ms/50Mbit/240秒；仅cfg(test)校准，不运行resident/Noq，不修改产品选路/请求或原低profile工作负载。LOW的运行回归仍应在当前校准结束后按准确新源执行，不能把高profile通过当LOW自动通过。
 
-campaign权威文件：`/Volumes/disk0/Khor/evidence/net/response-priority-campaign-v1.json`，automation原始输出留`response-priority-remaining-blocks-automation-v1.log`。固定六block，每block三个fresh场景、共18/每arm九轮；本次快照完成3/6，不因性能差重跑、删失败或提前选胜。读取文件只代表记录，运行/完成仍需同exec或准确原PID/execution观察。
+新source-owned `netlab-kernel-high.py`核三轮全人口/双向字节/物理区间/实际TC JSON+文本+接口和字节/丢弃增量，实际burst/limit留证，不假造零drop。高kernel校验合成21子例过；source `test_netlab*.py` **12项1.392秒绿**，control `test_network*.py` **13项14.078秒绿**（四task各成功/中途失败/首失败，high仍继续3轮/保留首非零），bash/diff过。零本地Rust/格式器/产品执行。OPS单task allowlist变化审计`control-kernel-high-helper-audit-v1.json`；原UID/锁/namespace/资源/期限门不变。
 
-已终态、原件/source/control/identity/原group空与原始人口均核实：
-- block1/A **turing-20261111T170059Z-b3de4646**：269.363秒0、19files，三场景2160全ok、三份16MiB一致。
-- block2/B **turing-20261111T170751Z-4fd7ab02**：252.048秒0、19files，三场景2160全ok、三份16MiB一致。
-- block3/B **turing-20261111T171328Z-3abf2108**：同campaign proof已核三场景2160全ok，原始文件与准确时间见该run execution/identity。
+接续：查同3747 receipt/PID。等真实completed且collect终态后才verify-turing-record，随后逐原件复核3个h0的64稳态+4预热、两个96MiB方向、全部实际TC单位/计数及物理门；保留任何原红/失败人口，不事后改270–420ms/40–60Mbit区间。原report calibrated:false仍保留，独立核实另写proof。完成后root写ledger终态，再按同源执行原LOW kernel校准回归，之后实现高profileNode混合场景。它不是Noq/Node策略吞吐、手机或完整N3接受。
 
-三组均两个真实guard、实际TC/probe、日志关闭、source-owned contract与逐原始人口/条件分布复算过；policy-block-verification-v1.json/ledger/campaign已终态。合计9场景6480全ok，**尚无完整策略收益结论**。后续即使功能绿也不自动接受N3或最优设计。
+## 已完成的低profile优先级对照
 
-编排正常结束后再独立复核六份真实block proof与完整manifest，然后运行OPS/summarize-response-priority-campaign-v1.py；它核固定顺序/源/全部12960人口，保留全phase/实际transfer区间、九对场景差值、完整文件时间及条件payload率，不自动选胜或报p99。该summary目前只语法检查，尚未执行/接受。编排若异常，先查同receipt/原PID/automation log与已生成proof，不能把观察超时当终态或盲目重发。
+root串行自动编排 **exec90703已正常终态**，全部六block均原退出0、collect/identity/原group空、逐原始人口核验与ledger/campaign终态。**不要再运行该编排或advance这些组。** 权威campaign `response-priority-campaign-v1.json` 保持预定A B B A A B和每block三fresh，共18场景/每arm九轮；全部12960请求ok、零缺失/重复，18份16MiB一致。六份proof/identity及114个原始文件的hash/source/control已独立交叉核，`response-priority-comparison-v1.json`已实际生成并核。
 
-下一工作包的预注册已保存[HIGH-BDP](HIGH-BDP.md)：300ms/50Mbit、96MiB、400ms操作计划、独立kernel双向校准及独立prefetch1/2/8顺序。**未实现、未运行**；不修改原低profile v4/2秒/120秒门，也不在当前Turing计时中穿插编译/新矩阵。完整N0–N5及全部历史失败仍在下文。
+| block | arm | 准确run |
+| --- | --- | --- |
+| 1 | A | turing-20261111T170059Z-b3de4646 |
+| 2 | B | turing-20261111T170751Z-4fd7ab02 |
+| 3 | B | turing-20261111T171328Z-3abf2108 |
+| 4 | A | turing-20261111T171702Z-d8d2a9b3 |
+| 5 | A | turing-20261111T172209Z-0f937684 |
+| 6 | B | turing-20261111T172555Z-52fcee21 |
+
+完整18行表/全部范围与限制见 [SCHEDULING](SCHEDULING.md)。每轮bulk目录/终端各120个均完整落在文件实际传输区间；不是组成变化。九个对应位置B−A目录p95全负，**改善6.725–15.628ms**；A108.931–114.527ms，B97.230–105.405ms。完整文件差值−1.035至+0.857秒，九对中5对B更慢、4对更快，**没有一致文件完成收益**。
+
+A/block1/场景2终端p95 **416.984ms** 原样保留，其余A78.819–83.736ms，B79.896–83.922ms。原因未证；终端在另一Tunnel，不能由一个异常推定同Main优先级对终端的直接因果效果或CPU/I/O原因。全phase/实际transfer区间/九对差值/条件成功分布/完整失败分母/文件时间及payload率均保留。仅小链路目录局部方向性收益，不报p99/显著性、不自动选胜；严格优先级仍是实验候选，公平/前台完整文件/背压/成本和全部N0–N5未闭。
+
+[HIGH-BDP](HIGH-BDP.md)保持预注册：300ms/50Mbit、96MiB、400ms计划、先独立kernel校准，再Node策略及独立prefetch1/2/8。目前仅h0校准实现/入口已编译并启动，**高profileNode混合场景及prefetch矩阵尚未实现/运行**。不改变原v4/2秒/120秒门，不混用cohort，也不把本次局部结果当最终设计。
 
 ## 冻结源码与前置证据
 
