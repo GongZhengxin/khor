@@ -1,6 +1,15 @@
 # feat/net 当前状态与接续入口
 
-更新于2026-11-11 11:36 UTC。完整N0–N5目标“完成计划”active，上一目标轮取得同源hint双端结果并归档，本轮取得迟到成功真实红→绿及新四节点fixture源码，属于进展。未完成、未阻塞，不派发子智能体。此前STATE逐字归档于[上一状态](HISTORY-20261111-through-hint-verification.md)，SHA `617b316640985eb22785a7d5ccf3d558355d3a1da24ed6479f1ff8224b7c54f1`，继续链接全部旧失败与历史；原始日志/准确收据优先，不凭摘要覆盖原改动。
+更新于2026-11-11 11:43 UTC。完整N0–N5目标“完成计划”active，上一目标轮取得同源hint双端结果并归档，本轮取得迟到成功真实红→绿及新四节点fixture源码，属于进展。未完成、未阻塞，不派发子智能体。此前STATE逐字归档于[上一状态](HISTORY-20261111-through-hint-verification.md)，SHA `617b316640985eb22785a7d5ccf3d558355d3a1da24ed6479f1ff8224b7c54f1`，继续链接全部旧失败与历史；原始日志/准确收据优先，不凭摘要覆盖原改动。
+
+## 接续只查这两个新任务（11:43 UTC）
+
+上一节11:36的“唯一在途3fc”现已终态/收齐/identity/全部12绿，不再poll。最新已冻结 **b1a57db97943d07b33ca040aa69180c6bb237d87**，tree **0651fe376493b9825405b8c0b449e538e4cadd27** /snapshot **75536ca3a37ba0883eace011523d28a7b5a198ec**，candidate-business-continuity-source-v2.json，clean/0excluded；只增业务完成诊断与更强f4r测量，原三case正文/门不变。新源尚未通过，旧963同源双OS节点全12和Mac vendor只是上一源证据。
+
+- 唯一Turing **turing-20261111T114210Z-2f2a53e1**，PID **3971490**、child3971705，11:42:32 UTC launch，netlab-hop-ownership，role diagnostic/control68cad；stage exec41651成功退出，仅提交一次，11:42:58实际ps活/进入CLI build。新两case×三轮6项诊断，不用原9项checker，不穿插其他Turing编译/测试。
+- Mac **Actions43014256036** request **12756fd6b30d45a1a05a0ed01319763a**，同b1a source-v2 net-node/control68cad；submit exec79186成功终态，登记进程以实际返回句柄收尾，不重发。macserver独立可与Turing并行。
+
+下一步先核同receipt/PID与ActionsID的格式/编译，再看31实际完成收据是否双方matching streams/每端同wire/outer serial不替换、每次响应carried；原1.5秒、>=10秒和>=30请求不放宽。原a653的新f4r三项缺连续性证据红、旧f4两红5.2/4.9秒长等待全部保留，不能把新测量当修复或回写旧绿。待当前物理结果后继续已有carrier初始路径缺口、真实业务恢复、完整N0–N5，goal active，无外部阻塞。无候选安装/手机采样。用户估期仍全验收3–5天、低置信。
 
 ## 当前结论与唯一在途任务（11:36 UTC）
 
