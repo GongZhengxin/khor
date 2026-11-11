@@ -41,3 +41,21 @@ LAN侧由Device的Ingress构造器确定后实际读回；不硬编码动态veth
   原HIGH失败不改绿，不把B两轮当三轮，也不替代N1/N2/N4/N5、完整公平/预览/成本/手机验收。
 
 新source/control、收据、前置失败、实际执行及原始结果只按STATE和外部证据记录；本协议本身不是完成证据。
+
+
+## 实际四轮结果
+
+准确source-v2 1f4d90dc7c31aaf7c315727cc66105ac6f1c8f9f / tree a0c19bc7c976f2b631b556b5a3001bcdabd76e5e / snapshot384dec5a7233307d778e116e337ab28b0a621b63；control dde989632732550725f163a1511b0e5ba7d7511b。turing-20261111T210442Z-80ceec22已329.214秒101，19files/identity/原group空。
+
+| 固定顺序 | upload Mbit/s | download Mbit/s |
+| --- | --- | --- |
+| A combined | 35.368370 | 28.599077 |
+| B separated | 35.399825 | 34.485373 |
+| B separated | 35.406192 | 34.532369 |
+| A combined | 35.383369 | 28.088189 |
+
+全部272echo与八份96MiB字节/server完整。B各八读回及两router实际流量路径均通过：endpoint无整形，root TBF/根netem在ix和v7/v9不同接口；rate/delay/lat/burst/limit正确且前后不漂移。B两轮的rate drops为79/80与80/78，两个传播netem均0drop，完整分层计数保留、不相加。**四轮全部未达40–60，不接受模型或N3**。元数据观察完整性true不改原Rust101。完整kernel-queues-verification-v1.json、source-owned contract、identity与ledger已终态。
+
+初版47ae仅格式布局红、零业务，原件保留；准确单文件空白patch应用1f4d90dc，修正版才有上述行为人口。分离并非足以解决缺口，不能据此确定CUBIC/速率队列/CPU唯一根因。
+
+下一项先区分链路容量与TCP单流行为。[RFC6349](https://www.rfc-editor.org/rfc/rfc6349.html)的接近瓶颈带宽结论以equilibrium为前提，并明确不预测slow start瞬态；[RFC9438](https://www.rfc-editor.org/rfc/rfc9438.html)描述CUBIC拥塞窗口随时间/拥塞变化。这是增加独立paced UDP容量诊断的依据，不是放宽原TCP门或声明通过的理由。UDP输入、pacer有效性、接收端本地稳态窗、全部sequence/缺失/内容/byte/drop证明与总期限/重复数仍待预注册；未实现/提交，Node高profile仍未开始。
