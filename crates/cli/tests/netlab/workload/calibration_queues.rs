@@ -30,24 +30,14 @@ pub(super) async fn configure(x: &Device, y: &Device, rx: &Router, ry: &Router, 
                     serde_json::from_str(before["stdout"].as_str().unwrap()).unwrap();
                 assert!(!rows.iter().any(|r| r["kind"] == "tbf"));
                 assert_eq!(rows.iter().filter(|r| r["kind"] == "netem").count(), 1);
-                assert!(rows.iter().any(|r| {
-                    r["dev"] == name && r["kind"] == "noqueue" && r["root"] == true
-                }));
+                assert!(
+                    rows.iter().any(|r| {
+                        r["dev"] == name && r["kind"] == "noqueue" && r["root"] == true
+                    })
+                );
                 let args: Vec<String> = [
-                    "qdisc",
-                    "replace",
-                    "dev",
-                    &name,
-                    "root",
-                    "handle",
-                    "10:",
-                    "tbf",
-                    "rate",
-                    "50mbit",
-                    "burst",
-                    "65536",
-                    "latency",
-                    "40ms",
+                    "qdisc", "replace", "dev", &name, "root", "handle", "10:", "tbf", "rate",
+                    "50mbit", "burst", "65536", "latency", "40ms",
                 ]
                 .into_iter()
                 .map(str::to_owned)
