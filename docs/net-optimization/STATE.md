@@ -1,24 +1,24 @@
 # feat/net 当前状态与恢复入口
 
-更新于 2026-11-11 05:26 UTC。此前逐字状态在 [最近历史](HISTORY-20261111-through-original-dynamic.md)，SHA 9d789f1ac24504e3d56c813a9858272219b62e95326ffa1839a183717088113b。历史内继续链接更早状态和失败记录。当前句柄、收据和实际工作树优先。
+更新于 2026-11-11 05:46 UTC。此前逐字状态在 [最近历史](HISTORY-20261111-through-original-dynamic.md)，SHA 9d789f1ac24504e3d56c813a9858272219b62e95326ffa1839a183717088113b。历史内继续链接更早状态和失败记录。当前句柄、收据和实际工作树优先。
 
 ## 当前目标与位置
 
 完整 N0–N5 持续实施，活动目标为“完成计划”。用户 U14 明确要求持续推进。上次误将目标调度面板状态作为停止条件，本轮已纠正并推进原矩阵。root 串行，不派发子智能体。速度、体验和个人可信设备网为范围，peer relay、IPv4/IPv6 变址为必验项。
 
-产品位于 `/Volumes/disk0/Khor/worktrees/current/khor-net`，branch `feat/net`。最新生产候选为 `ff743edae9b6e258fbd9f0a49af852ddc33f80d8`，tree `154e8f42ee7822f8064dc5c10af93fe4657210a0`，snapshot `a06a546f7d4258bc90fc0a46df0b6914e04e448a`。其后文档提交须另核 HEAD/diff。
+产品位于 `/Volumes/disk0/Khor/worktrees/current/khor-net`，branch `feat/net`。最新生产候选为 `17346a1366ee76a519cb872aebf8dd5d60976f2e`，tree `6c0bbe6974e8a089d7639eb45e501f0730b34eed`，snapshot `0fa8e675b3f10f564208c0c484314dfbf8233d55`。此前NoRelay模式顺序修复为ff743。其后文档提交须另核 HEAD/diff。
 
 控制位于 `/Volumes/disk0/Khor/worktrees/current/khor-build-net`，固定 `68cadb57a0ed72d40a4ca9a843e86b9c6797bf34`，原两个 untracked pycache 保留。原 N1 隔离位于 `/Volumes/disk0/Khor/worktrees/current/khor-net-recovery-deadlines`，detached `2ef6bee5a5aaf841af066f4edb5c894769d4539d`，Iroh42–44仍隔离。
 
 证据根为 `/Volumes/disk0/Khor/evidence/net`，ops 在其 `ops/`。`source-refs.json` 由 root 单写。完整范围与授权见 PLAN、REQUIREMENTS、ACCEPTANCE、NEXT-DESIGN、REPORT、VENDOR-AUDIT。main 合并、发布、采购、生产部署及已安装 App/config/store/resident 的修改仍需对应授权。
 
-## 当前唯一重型任务
+## 当前运行中的重型任务
 
-**Turing `turing-20261111T052125Z-088e00f9` 正在执行 `netlab-stability`**。PID3381428，子进程组3381653。05:21:47 UTC 启动。05:24已实核 PID、bash、cargo、netlab 和 khor 子进程存活，execution 仍 running。先查同一运行，避免重复提交。
+**Turing `turing-20261111T052125Z-088e00f9` 正在执行 `netlab-stability`**。PID3381428，子进程组3381653。05:21:47 UTC 启动。05:41实核同一PID已运行19分41秒，execution仍running。原p1的600秒已完成、0切路0退役，p1j仍执行；这不是整个长稳通过。先查同一运行，避免重复提交。
 
 此任务冻结源码为 Iroh47候选 `8cd58f8ea707991f23b10ac05d6c8388a61dd519`，tree `4c4d7be8de2c615c35de9b5ca6f3db0cce47a78c`，snapshot `4e900db337c5c4356cb4b27b0de2880210bcf67f`，control68cad。原 p1/p1j/p1s/p5 前缀、单线程、一轮，原持续时间和故障注入保留。计划 `confirmation-copy-identity-original-matrix-plan-v1.json` 已登记两项任务，动态已终态，此稳定性尚在跑。
 
-Mac42964365563已结束并采集。独立 macserver 可穿插便携构建，依据 ACCEPTANCE 的开发加速规则，Turing 本机计时保持独占。此前过度保守的“所有Mac重型均等待”条件已在矩阵计划中纠正。
+Mac42964365563已结束并采集。最新候选Mac42967869816（net-node，source17346/tree6c0b/snapshot0fa8/control68cad）已实际提交；先查同一run，未验证，不能重复提交。旧行为Mac42966906265已采集并核身份，hop63/2红。独立 macserver 可穿插便携构建，依据 ACCEPTANCE 的开发加速规则，Turing 本机计时保持独占。此前过度保守的“所有Mac重型均等待”条件已在矩阵计划中纠正。
 
 ## 本轮完成的证据
 
@@ -61,7 +61,7 @@ f8记录某probe副本回到90.353ms后，另副本100.025ms代表，原预算�
 ## 下一步与全计划缺口
 
 1. 先监控当前stability088e00f9，终态后collect、核identity/空进程组、原测量模式、每个原case及波动/探测/CPU结果。原矩阵源保持8cd。随后安排最新NoRelay源码的Linux回归。
-2. N2补真实候选变化合同。当前hop_ahead在picked前查MISSED，仅本机网络epoch改变可失效。实际NO_ROUTE后新增可达middle、本机网未变的情况须验证。对照保持原候选或仅RTT变化时仍冷却。还须验证旧pending失败晚于新候选出现、以及较晚旧完成不会覆盖新上下文。当前没有写这组新fixture或生产context修改。
+2. N2真实候选变化合同已写并取得旧行为红；17346缓存候选在Mac42967869816验证中。先采集实际结果和格式/编译证据，保持原五fixture不变，随后同源Linux。候选事实仅IDs与实际首腿可达性；同ID地址变化、LOST namespace/address context仍未覆盖，不能由此宣告完整N2。
 3. ASKING为计数而非互斥，不能据它假定open_hop串行。候选context须排除每ACK/RTT排序噪声、覆盖真实可达性与地址变化、保护late完成，保持有界和弱所有权。LOST还缺本机identity namespace及地址context。
 4. 继续N1 peer-relay四秒/单向停顿、原quiet/stalls/成本矩阵，按证据决定下一策略，失败保留。N0最终SLO/样本量/p99仍欠。
 5. N3保留交互与批量共享/分连接比较、背压公平、1/3/5设备、CPU/字节/唤醒/手机能耗。N4覆盖真实两腿Relay/唯一middle/断腿/多middle、独立IPv4/IPv6及同时变址、Wi-Fi↔蜂窝和自动恢复。N5完成全部vendor审计、最终Quality/native/proxy/多设备/phone。
@@ -81,3 +81,11 @@ stage helper仅新增已被固定control允许的stability条目，SHA `ff09d4ef
 原19:52 UTC的N1两至四小时窗口已经过去，不能在接续时重置为新的完成承诺。完整N0–N5原3–5工程日是量级估计，当前故障及真机/能耗验证仍影响结束时间。目标保持active，完整验收依据PLAN和ACCEPTANCE。
 
 2026-11-11 05:36 UTC 已补五个候选变化合同，candidate_change_tests.rs，真实NO_ROUTE、新实际TLS middle、内层carried echo，且断言本机hop_epoch相同。覆盖拒绝后新增、旧请求pending时新增、无变化与仅cost变化的冷却控制、较新上下文失败先完成后旧拒绝晚回的控制。原miss_epoch测试正文逐字前缀保留，旧NoRelay fixture未改。尚未修改生产缓存，先用macserver验证旧行为。Turing088e稳定性仍在跑。
+
+## 2026-11-11 05:46 UTC：候选变化缓存修复待验证
+
+五fixture的test-only基线92c530/tree281337/snapshot8a568在Mac42966906265实际63pass/2FAIL。两红为真实NO_ROUTE后新增middle，以及旧请求pending时新增middle；60旧测试和3新控制全过。原fixture SHA510b70e6f0b7b6f91ff17ae1d549db99cfe172fb9e2953b5052dd82e20e4696b未改。exact artifact13830614574，zip SHA2afb0759faa8fe24a09ca8edadca443deb9d01479ea1f7f938ed6b6d9af42a9b，10files/11controls/identity核。format及net67+1ignored过，hop91.85秒；后续组未跑，不算全12。
+
+生产17346只改hop.rs：MISSED在构建候选后按规范化middle ID集合及真实首腿可达bool登记context；RTT与排序不改变context。原MISSED表持有唯一candidate Arc，操作仅弱token，网络owner仍Wires弱token。替换context/成功移除使旧完成失效，读写均在原MISSED锁核代际；不增新表、常驻task、timer或Node/Connection强所有权。已死亡网络条目在登记时回收。原30秒起指数退避/10分钟上限、TRIES2、HOP_WITHIN3秒、caller期限及信任/暂停/单跳门均保留。compare_roads保持原近期miss旁路，只捕获明确context传入open_hop。没有把RTT噪声当新路。
+
+此为候选，尚不能声称修复验收通过。源审计candidate-change-miss-source-audit-v1.json、fixture与旧证据在证据根。除晚完成之外，旧候选快照在多线程登记时的观察顺序还需独立审查；同ID地址变化/实际两腿/手机/成本矩阵仍未收口。用户问“做完了？”已明确答未完成，并说明原动态27绿、恢复四秒门仍有失败。没有新的精确完成时点承诺。

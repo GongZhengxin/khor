@@ -634,3 +634,6 @@ packet-age下一合同已加入：真实认证/echo使rx计数确实改变，只
 当前 no_relay 是 Egress 对中继可达性的观测标志。hop_ahead 先按本端或对端标志选 NoRelay/ToNoRelay，只有两端均未置位才按目标缺 live wire 选 Recovery。前两分支在 roadbook 没有第二腿记录时筛掉候选。五个新回归从真实入口验证三个标志组合的缺提示情况、已知 Direct 正控和递归拒绝控制，正在 macserver 执行。
 
 ff743已复用已有 Recovery 分支，使目标缺可用 wire 的判断先于中继观测标志。已有分支负责未知第二腿的有限准入及 live middle 排序，实际第二腿由中间节点验证。现有 hop 开关、可信设备、暂停、单跳、两候选和总预算继续负责准入。同一五项fixture已在原行为57/3红后于Mac候选60/0及全12组通过，Linux结果待验。完整两腿 Relay 与移动换网仍由 N4 实际网络场景验证。
+
+
+2026-11-11 05:46 UTC：五个真实候选变化合同已在92c530旧行为取得63/2红，原60与无变化/成本变化/旧失败晚回三控制通过。17346候选将候选context合入同一MISSED表，表唯一拥有Arc token，操作只持弱引用；不另加Presence字段/全局map或定时任务。候选ID集合+实际首腿可达性排序规范化，不含RTT和尝试顺序。原网络弱epoch继续独立保护本机换网；旧完成只可写其仍有效的context，成功删除同时使旧操作token过期。Mac42967869816实际验证待核。该窄合同不包括同ID新地址、LOST namespace/地址context与实际第二腿；还需审查多线程旧候选快照的登记顺序。原fixture未改，源审计与行为证据见STATE。
