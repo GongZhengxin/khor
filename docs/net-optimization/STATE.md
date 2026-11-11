@@ -2,6 +2,19 @@
 
 更新于2026-11-11 12:08 UTC。完整N0–N5目标“完成计划”**active**，本轮有新真实物理证据、Mac同源12组验证与新四个已有carrier合同；未完成、未阻塞，root串行，不派发子智能体。上份STATE逐字归档到[业务连续性v2以前](HISTORY-20261111-through-business-continuity-v2.md)，SHA **909d6598e60cb5fa05fd66d4a998682f0dd79f443c3fd301cbdfbefe4d23ab0a**，它继续链接hint、comparison和全部更早失败。原始日志/准确收据优先，不能按摘要覆盖工作树。
 
+## 当前只查49候选eb72两任务（12:29 UTC）
+
+产品已提交/核clean（HEAD可能另有随后docs-only），准确候选 **eb72d463198dbe040275e8203ef8860dae9b9687** /tree **221869bc172d75ca63ff44948b1bcb7c17721e16** /snapshot **46e7cfc29b3b3e383be10253e5758185a20949de**，candidate-effective-route-source-v1.json。主vendor现在59=Iroh1–41/45–49+Noq1–13，42–44隔离。Node生产与166逐字相同，四完整TLS/业务/快Direct/原1秒合同文件与旧573逐字相同，SHA与不变量在effective-route-observation-audit-v1.json。
+
+- 唯一Turing **turing-20261111T122730Z-e660ae7e**，PID **4038708**、child4038934，12:27:52 UTC launch，net-node/role candidate/control68cad。stage exec61716终态；12:29:13实际ps活、格式通过进入编译。先核同receipt/execution/PID与四新合同/全12；不要穿插Turing构建或物理计时。
+- Mac **Actions43020688582** request **41d326c0d4ce4bc19492ba3a5a447030**，同eb72源net-node/control68cad；submit exec32643终态，登记按真实句柄收尾，不重发。
+
+49只在共享preferred不在本conn且只有一条established/open path时报告该Noq实际fallback；空/多条仍Unknown。Noq无Available时Backup发送，actor新connection select_path(tick=false)会apply/记录；四原断言不改。这个候选尚未编译/单位接受，不能说标签/四peer已解决。rtt_of/Patience会读到实际路RTT，必须全回归和物理/quiet成本，不能称纯显示无影响。
+
+166的两端完整原件均已收齐/identity/精确分类：Linux9dccad92 budget34pass/2FAIL，Mac43019072595 budget30pass/2FAIL，**两项answered=true、pathSome(Unknown)、requests1**。业务已在原caller内成功，但same final route门仍红；后7组未跑，不称全12。源573两端相同最终业务门answeredfalse/requests0为旧真实红。均有per-run proof/ledger终态，无需再poll。3a64两端旧format-only也已精确收齐/分类，不重发。
+
+下一步：核eb72四合同及全12真实结果；若仍红按实际失败分解，不放宽原route/业务/time门。通过后单独同源vendor59筛选并重跑四peer采证（新Link快照/held累计false不变），验证首内容、31流/同wire、outer不替换、两端状态；再继续旧f4尾巴/严重stall、移动与N3/N4/N5全范围。没有候选App安装或phone采样，没有外部阻塞，goal active。以下此前“当前/草稿/待验”只按其时点保留，不覆盖本节。
+
 ## 当前只查候选166这两个任务（12:18 UTC）
 
 工作树已提交/核clean，候选 **166a4afb2b2d87c062f259a84ba8ea09398df995** /tree **0b3d6ece1d87300ed7a7e6b5aec0e8c8a0067514** /snapshot **898c8132966fb5fc7a3de11e030c95ff65a403d6**，candidate-installed-carrier-source-v2.json。前述两文件root草稿已在3a64实现、166远端格式修正；**不再是未提交改动**，四新合同逐字保持573。尚未验证候选，不称修复接受。
