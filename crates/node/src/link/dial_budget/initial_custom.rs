@@ -149,7 +149,10 @@ async fn an_initial_custom_address_must_be_explicit_in_the_dial() {
 async fn answer_sessions(conn: &iroh::endpoint::Connection) {
     let (mut send, mut recv) = conn.accept_bi().await.unwrap();
     let bytes = recv.read_to_end(MAX_FRAME).await.unwrap();
-    assert!(matches!(proto::question(&bytes).unwrap(), Request::Sessions));
+    assert!(matches!(
+        proto::question(&bytes).unwrap(),
+        Request::Sessions
+    ));
     send.write_all(&proto::encode(&Response::SessionRows { rows: vec![] }).unwrap())
         .await
         .unwrap();
@@ -287,7 +290,10 @@ async fn observe_installed(early: bool, direct_answers: bool) {
     tokio::join!(ep.close(), direct.close(), carried.close());
     serving.0.as_ref().unwrap().abort();
     if let Err(error) = serving.0.as_mut().unwrap().await {
-        assert!(error.is_cancelled(), "scratch response owner must not panic");
+        assert!(
+            error.is_cancelled(),
+            "scratch response owner must not panic"
+        );
     }
     let expected = if direct_answers {
         khor_net::path::PathKind::Direct
@@ -300,7 +306,8 @@ async fn observe_installed(early: bool, direct_answers: bool) {
     );
     assert!(
         answered && path == Some(expected),
-        "the usable initial route must win within the original caller window: early={early}, direct_answers={direct_answers}, answered={answered}, path={path:?}, requests={total}");
+        "the usable initial route must win within the original caller window: early={early}, direct_answers={direct_answers}, answered={answered}, path={path:?}, requests={total}"
+    );
     assert_eq!(total, 1, "the successful reading is not replayed");
 }
 
