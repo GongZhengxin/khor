@@ -93,7 +93,7 @@ async fn direction(sender: &Device, receiver: &Device, name: &str, tag: u64) -> 
     let capacity = (40.0..=60.0).contains(&rate);
     emit(
         json!({"schema":1,"revision":REVISION,"event":"udp_direction","direction":name,
-        "tag":tag,"sender":sent,"receiver":received,"observations_ok":valid,
+        "tag":tag,"sender":sent.record(),"receiver":received.record(),"observations_ok":valid,
         "sent_packets":sent_count,"unique_packets":unique,"missing_packets":sent_count.saturating_sub(unique),
         "unique_payload_bytes":unique*datagrams::SIZE as u64,
         "receiver_steady_mbit":rate,"capacity_bounds_ok":capacity}),

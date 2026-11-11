@@ -2,7 +2,7 @@
 use std::net::{Ipv4Addr, SocketAddr};
 use std::time::Duration;
 
-use serde::Serialize;
+use serde_json::{Value, json};
 use tokio::net::UdpSocket;
 use tokio::time::{Instant, MissedTickBehavior};
 
@@ -11,7 +11,6 @@ pub(super) const RATE: u64 = 70_000_000;
 pub(super) const PACKETS: usize = (20 * RATE / (SIZE as u64 * 8)) as usize;
 const WORDS: usize = PACKETS.div_ceil(64);
 
-#[derive(Serialize)]
 pub(super) struct Sent {
     pub local: SocketAddr,
     pub peer: SocketAddr,
@@ -25,7 +24,6 @@ pub(super) struct Sent {
     pub first_error: Option<String>,
 }
 
-#[derive(Serialize)]
 pub(super) struct Received {
     pub local: SocketAddr,
     pub peer: Option<SocketAddr>,
@@ -38,6 +36,24 @@ pub(super) struct Received {
     pub malformed: u64,
     pub foreign: u64,
     pub out_of_range: u64,
+}
+
+impl Sent {
+    pub(super) fn record(&self) -> Value {
+        json!({"local":self.local,"peer":self.peer,"elapsed_us":self.elapsed_us,
+            "sent":self.sent,"failed":self.failed,"by_second":self.by_second,
+            "ticks":self.ticks,"max_lateness_us":self.max_lateness_us,
+            "late_over_10ms":self.late_over_10ms,"first_error":self.first_error})
+    }
+}
+
+impl Received {
+    pub(super) fn record(&self) -> Value {
+        json!({"local":self.local,"peer":self.peer,"elapsed_us":self.elapsed_us,
+            "first_after_us":self.first_after_us,"received":self.received,"by_second":self.by_second,
+            "datagrams":self.datagrams,"duplicates":self.duplicates,"malformed":self.malformed,
+            "foreign":self.foreign,"out_of_range":self.out_of_range})
+    }
 }
 
 pub(super) fn population(words: &[u64]) -> u64 {
