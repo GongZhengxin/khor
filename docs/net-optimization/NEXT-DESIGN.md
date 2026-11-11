@@ -643,3 +643,6 @@ ff743已复用已有 Recovery 分支，使目标缺可用 wire 的判断先于�
 
 
 2026-11-11 06:44 UTC：6e5同源Linux52af3091实际全12/hop67/wires16/budget30/resume1过，与Mac42969959757准确同源。随后按原三轮netlab-hop矩阵1501a97c执行f4/f4s/f4i，无新参数。成功后两个旧selection合同在0a7（生产逻辑仍6e5）Mac42973738072验证中；格式only429728原件保留，fixture仅原样rustfmt修正。若实际红，候选方向是在原MISSED entry中count归零但保留最新observation，并换代candidate弱token以作废仍未完成的旧回答；纯backoff helper的None语义继续删除。不能加新map/timer或Node强持有，也不能让正常成功延续旧miss count。此为待实际结果的方案，不写成已实施/验收。还须实际覆盖同ID新wire与地址变化。
+
+
+2026-11-11 06:58 UTC：成功后旧selection两实际合同在0a7/Mac42973738072为67/2红，均额外问旧middle一次；287仅made保留最新observation/candidates、count置0、原entry换candidate Arc使旧回答过期，None纯helper仍删除。相同whole37aed942在Mac42975178687实际69/0、全12绿，latest Linux待原netlab-hop三轮计时后跑。零count metadata按活网络peer-pair保留、弱网络过期后下一次注册清理，无新map/timer/task/Node强引用。接下来同ID真实新Tunnel、IPv4/IPv6有效地址内容/来源/顺序控制，以及LOST本机identity和相关context；不能由成功寿命窄绿关闭这些问题。f4i原17.7/31.6秒是中间节点重新可达后回peer的路径收敛，先已走Relay；后续补首个有效业务响应与收敛分解，原first-road日志oracle不作性能SLO。

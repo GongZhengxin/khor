@@ -1,10 +1,10 @@
 # feat/net 当前状态与接续入口
 
-更新于2026-11-11 06:49 UTC。完整N0–N5未完成，目标“完成计划”active。用户U14要求持续推进，不以调度面板paused或阶段完成作为停止条件。root串行，不派发子智能体。此前逐字STATE保存在[最近历史](HISTORY-20261111-through-snapshot-and-stability.md)，SHA `974f95530ba857f2d2e9669b91728f7210d2efc7fb1c1aad11c251d108df4a7c`，它继续链接更早历史与失败。收据、进程和实际工作树优先。
+更新于2026-11-11 06:58 UTC。完整N0–N5未完成，目标“完成计划”active。用户U14要求持续推进，不以调度面板paused或阶段完成作为停止条件。root串行，不派发子智能体。此前逐字STATE保存在[最近历史](HISTORY-20261111-through-snapshot-and-stability.md)，SHA `974f95530ba857f2d2e9669b91728f7210d2efc7fb1c1aad11c251d108df4a7c`，它继续链接更早历史与失败。收据、进程和实际工作树优先。
 
 ## 位置、授权与当前源
 
-产品 `/Volumes/disk0/Khor/worktrees/current/khor-net`，branch `feat/net`。最新生产候选 **2874985e90c1523a6db1b4171a48de085718552d**，tree **2780ffe007956ec655bb4475b1a2c57b1853bb7e**，snapshot **8cdc87e0040c5a813e40c70197ea6d40dcf237c7**。最新已核双OS全12源仍6e5/tree3ac48/snapshot12ef；287仅made成功保留观察的修复候选，尚未验证。后续文档提交另核HEAD/diff。
+产品 `/Volumes/disk0/Khor/worktrees/current/khor-net`，branch `feat/net`。最新生产候选 **2874985e90c1523a6db1b4171a48de085718552d**，tree **2780ffe007956ec655bb4475b1a2c57b1853bb7e**，snapshot **8cdc87e0040c5a813e40c70197ea6d40dcf237c7**。最新已核双OS全12源仍6e5/tree3ac48/snapshot12ef；287仅made成功保留观察的修复，Mac42975178687准确同源全12/hop69已过，最新Linux待跑。后续文档提交另核HEAD/diff。
 
 控制 `/Volumes/disk0/Khor/worktrees/current/khor-build-net`，固定 **68cadb57a0ed72d40a4ca9a843e86b9c6797bf34**，原两个untracked pycache保留。原N1隔离树 `/Volumes/disk0/Khor/worktrees/current/khor-net-recovery-deadlines`，detached2ef6bee5a5aaf841af066f4edb5c894769d4539d，Iroh42–44仍隔离。
 
@@ -14,7 +14,9 @@
 
 **Turing turing-20261111T064010Z-1501a97c**，`netlab-hop`，PID **3492772**，child **3492990**，06:40:32 UTC实际launch。准确6e5/tree3ac48/snapshot12ef/control68cad，原1线程/3轮/f4、f4s、f4i前缀。计划candidate-context-original-hop-plan-v1.json，retries0，不改原门/持续时间/拓扑。06:44同一PID存活，首轮进行中。观察超时不重发。
 
-Mac**42973738072**验证成功后旧快照两新合同的原行为，源0a7b9385cf407ae44c863afbb414b55d501d1b9b/treef68ab13cf009706974bb306aaea111950d338731/snapshot2980990c898d361c7753d9ddcd3af9d3cb6aee29/control68cad。已实际提交并登记，先查同一run，尚无行为结论。先前42972830373为格式门9files/11controls/identity，原样应用patch后新fixture SHA37aed9428b2bafa5097f651ce4c1ca6124af111477b2a6e8435bc6b3fa9b8161；没有生产代码变化。当前无phone采样。
+Mac**42975178687**准确287/tree2780/snapshot8cdc/control68cad，已success终态、采集并核实际全12组：hop69、wires16、budget26、resume1。exactartifact13835396432，zipSHA6b34b08ec3f76bfc92613e2018549c204547b68b17aef1718a7e51cef94ed5e0，20files/11controls核。首次identity verifier的GH只读请求EOF，重查同一run后成功；没有重跑产品。当前无Mac待核构建、无phone采样。
+
+成功后原行为Mac42973738072已真实67/2红并收齐，修复287的whole成功fixture37aed942不改。Linux最新287需等Turing原三轮netlab-hop1501a97c终态、collect/空group后提交，使用已冻结candidate-success-miss-candidate-source-v1.json；不要把6e5的Linux绿外推给287。
 
 6e5同源Linux **turing-20261111T063108Z-52af3091** 已327.133秒终态，21files/identity/空group，实际全12组通过：hop67、wires16、budget30、resume1。与Mac42969959757准确相同source/tree/snapshot/control，窄缓存合同现双OS通过，N2整体仍未结束。node-regression-verification-v1.json保存每组实际总结。
 
@@ -30,7 +32,7 @@ Mac**42973738072**验证成功后旧快照两新合同的原行为，源0a7b9385
 
 **6e5修复**在读取roster/roadbook前捕获单调observation与弱网络token，在MISSED锁内拒绝旧登记/旧网快照；两个生产入口均绑定其实际观察。原open_hop为cfg(test)适配，调用真实open_hop_in_epoch，旧测试正文保留，rustdoc指向生产函数。旧快照与候选变化fixture相对1d448原样不变。
 
-**Mac42969959757**准确6e5/tree3ac48/snapshot12ef/control68cad，exact artifact13832933221，zipSHA **54b210ac9fa7861e3fdbe7af9b2455db03053d81ac9152a53f4d202de59bf66e**，20files/11controls/identity核，实际全12组通过：hop67/0、wires16、budget26、resume1，其余原组均0failed。Linux52af3091同源全12已过。fixture/source-audit的candidate-change-miss与candidate-snapshot-miss JSON保留全部源与失败。**made成功删除context后的观察高水位寿命尚待实际合同**；同ID换址/LOST context仍未解决，不能称完整N2。
+**Mac42969959757**准确6e5/tree3ac48/snapshot12ef/control68cad，exact artifact13832933221，zipSHA **54b210ac9fa7861e3fdbe7af9b2455db03053d81ac9152a53f4d202de59bf66e**，20files/11controls/identity核，实际全12组通过：hop67/0、wires16、budget26、resume1，其余原组均0failed。Linux52af3091同源全12已过。fixture/source-audit的candidate-change-miss与candidate-snapshot-miss JSON保留全部源与失败。6e5成功删除context的后续旧快照问题已取得67/2真实红，287修复后Mac69/0、全12通过（见顶部），最新Linux待；同ID换址/LOST context仍未解决，不能称完整N2。
 
 ### 原动态与长稳矩阵已收齐
 
@@ -63,8 +65,8 @@ C=8cd、B=2892。原20ms双腿、真实middle IPv4 replug、150秒prepare/10秒h
 ## 下一步与完整范围
 
 1. 固定四项已结束，完整结果confirmation-copy-identity-physical-fixed-four-result.json已核，原C-B/B-C/retries0。保留B1初始失败、B2恢复红，不追加第5次；后续按独立新问题/原矩阵推进。当前先采集Mac42972830373实际合同，再跟踪同源Linux52af3091。
-2. Turing计时集合结束后跑**最新6e5同源Linux net-node**；Mac全12已过。保留NoRelay与7个候选/快照合同。不要在活计时期间穿插Turing构建。
-3. N2先补**新context成功后旧selection晚登记**的真实合同；当前made删除表项会使观察高水位寿命变短，不能仅凭67绿断言此边界。再覆盖同ID真实新Tunnel/IPv4/IPv6地址变化、LOST本机identity namespace及相关地址context。DeviceInfo.addrs是拨号hint Vec<String>（sync/devices.rs315）；net/endpoint.rs963的dial_addr统一解析IP/Relay并合并nearby，地址相同而来源/顺序不同不应取消冷却。实际live bool不覆盖同wire换地址。
+2. 6e5双OS全12已经收齐；Turing1501a97c三轮计时结束并核空group后跑**最新287同源Linux net-node**，冻结source文件candidate-success-miss-candidate-source-v1.json，Mac42975178687已同源全12/hop69。不要在活计时期间穿插Turing构建。
+3. N2成功后旧selection两真实合同已67/2红→287的Mac69/0绿，保持fixture不改并补最新Linux。接着覆盖同ID真实新Tunnel/IPv4/IPv6地址变化、LOST本机identity namespace及相关地址context。DeviceInfo.addrs是拨号hint Vec<String>（sync/devices.rs315）；net/endpoint.rs963的dial_addr统一解析IP/Relay并合并nearby，地址相同而来源/顺序不同不应取消冷却。实际live bool不覆盖同wire换地址。
 4. N1继续peer-relay4秒稳定性/单向stall、quiet/stalls与成本原矩阵，按证据收敛机制；N0最终体验目标/足够样本p99与完整前后对照未收齐。
 5. N3交互/批量共享与分连接、背压公平、1/3/5设备、CPU/字节/唤醒/手机能耗。N4实际两腿Relay、唯一/多middle、断腿，独立v4/v6及同时变址、Wi-Fi↔蜂窝、自动恢复，测完整两腿而非首腿。N5全vendor审计、最终Quality/native/proxy/多设备/phone。完整计划不缩减。
 
@@ -91,3 +93,11 @@ stage-launch只一次，结束exec session后做依赖动作。记录exact收据
 Turing1501a97c同一PID3492772在06:49实核已运行8分32秒，首轮f4原green（回carried3.8秒、middle leg听到后0.3秒、最慢echo3.4秒）；f4i原green但闲置后恢复17.7秒，仍是体验长尾，不能由现有断言绿称最佳设计。首轮f4s仍在跑。只监控同一任务，完整三轮与原失败都保留。
 
 Mac archive采集新增ops/collect-mac-archive-v1.py，SHA7caaea2bb16610072d79e84dbf7129cc9fd6a17736b1b75e5cb1080c206f3d19，只读ledger/GH，核exactartifact/run/control与API.digest，拒绝覆盖、路径逃逸与symlink，安全解包；从不执行归档内容，也不分类产品行为。已用于42973738072精确归档，archive-verification.json保留脚本SHA。之后仍必须verify-mac-record与实际日志判合同。
+
+
+2026-11-11 06:55 UTC 原f4i指标语义补核：crates/cli/tests/netlab/hop.rs799先让两端let_go、切断x→relay及x→middle75秒；先恢复relay、visit并等到Relay连接，之后才恢复middle并启动back=until(Forwarded)。因此报告17.7秒是middle重新可达后回到peer relay的路径收敛时间，不能当作首个业务响应/整个请求断连时长。先前“闲置重连17.7秒”的口径需按此限定。其assert主验first road started而非move语义，120秒回peer仅可达门，不是最终体验SLO。后续分别测首个有效响应与路径收敛，旧case门不改。
+
+
+2026-11-11 06:58 UTC：287候选Mac42975178687已实际全12绿/hop69，旧67与成功使用中/正常释放后两合同全过。wholefixture37aed942保持。candidate-success-miss-fixture-v1.json状态mac_behavior_verified_linux_pending，source-refs已终态分类；最新287 Linux在Turing计时后跑。身份校验首次只读GH请求EOF，原artifact已精确hash保存，第二次同run校验成功，verification-transport-note.json说明，没有产品重跑。
+
+原netlab-hop1501a97c同一PID3492772在06:57实核running、17分25秒。前两轮各3/0（479.50、491.36秒），第三轮f4刚开始。第二轮f4i回peer31.6秒（已先在公共Relay可用），路径收敛长尾保留；第二轮f4s Y没有记录切出/切回，case仍green、最长echo9.4秒，X见relay6.2s→carried9.2s。此原oracle只验证其特定路径/日志语义，不能把never/0.0s当作实际瞬时恢复。后续按N0分解真实故障持续、首响应、fallback/收敛和指标覆盖，而非由三个green概括极致体验。完整三轮源6e5，非287。
