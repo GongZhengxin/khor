@@ -30,6 +30,13 @@ use crate::nat::{Net, router};
 mod mobility;
 #[path = "hop/reference.rs"]
 mod reference;
+#[path = "hop/prepared_physical.rs"]
+mod prepared_physical;
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 6)]
+async fn f4_a_prepared_second_middle_serves_before_the_first_middle_resumes() {
+    prepared_physical::run().await;
+}
 
 /// Each machine's own link: 10 ms each way, so the legs are measurable.
 const LEG: Duration = Duration::from_millis(20);

@@ -68,11 +68,12 @@ N1可用性补充（候选）：首次决定后新往返证明路重新可达，
 
 | 事实/资源 | 所有者与寿命 | 更新及失效规则 |
 | --- | --- | --- |
-| 本机网络上下文 | Wires拥有强token，操作/缓存只持弱token | 换网/恢复事件更新；旧操作不能在新网络写回失败 |
+| 本机网络上下文 | Wires拥有强token，操作/缓存只持弱token | 换网/恢复事件更新；旧操作不能在新网络写回失败或发布成功 |
 | 路由观察顺序 | 读取roster/roadbook前捕获单调序号 | 在同一MISSED锁内拒绝晚登记的旧快照；成功也保留最新观察 |
 | peer relay失败 | 原MISSED表中每middle的count/at | 只有实际尝试过的middle退避；未试第三个仍可进入下一轮，不新增另一张失败表 |
 | 候选事实 | 规范化设备ID、实际可达、首腿连接身份/实际IP或Relay地址、弱连接handle | 成本、排序、重复读取不刷新；同网络同活wire才延续该middle失败，新实际wire/地址不继承旧拒绝 |
-| 在飞完成 | 只持弱candidate token | 新上下文和成功替换token，旧拒绝/旧快照不能撤回更新的结果 |
+| 在飞完成 | 只持弱candidate token | 新上下文和成功替换token，旧拒绝/旧快照/旧成功不能改变更新的结果 |
+| 发起端提交 | 原network-generation → MISSED → Links锁，均为同步短操作 | 当前network/candidate、原期限与现有承载策略核对通过才挂载；实际接受后才清失败并替换token，不新增提交表 |
 | 本地carrier发布 | 原PendingHop与handoff watcher，attachment serial | 放弃者撤回自身offer；实际消费者可接管所有权；旧watcher不能关闭后继attachment |
 | 目标端carrier提交 | 单个入站流的准备future，完整首帧后原Links表 | OK只表示准备，不先替换现有peer；只有赢家发送的完整承载帧才提交，输家取消不影响活路 |
 
@@ -82,9 +83,13 @@ c2b候选在此之上增加最多两个借用父操作的prepared future，并�
 
 目标端在原线上帧格式内等待一份完整u16长度承载帧，最多65537字节；然后把前缀原样送入现有transport，内层仍是端到端加密。未提交的准入有有限等待，不增加常驻map、独立后台timer或第二套健康判断。提交前复核现有hop、成员、SSH和双端竞争门。初始化协议与承载字节不写日志；诊断只保留计数、时间与所有权事实。
 
-c2b的三个新增实际TLS/echo合同在Turing均通过（总hop79），覆盖首个prepared status挂起、两个Ready只有一次数据提交/输家STOP_SENDING，以及过期hint被真实拒绝后legacy救通；全部12组与Mac同源尚在收齐，完整物理两腿尚未接受。
+c2b的三个新增实际TLS/echo合同在Mac/Turing同源全部12组通过（总hop79），覆盖首个prepared status挂起、两个Ready只有一次数据提交/输家STOP_SENDING，以及过期hint被真实拒绝后legacy救通；完整物理两腿竞争尚未接受。
 
-仍需完成：同一connection上的真实IPv4/IPv6迁移、目标有效拨号hint变化、LOST本机身份/上下文、取消后迟到成功的完整组合、多节点同时恢复、公平与探测成本。准备/receiver等待预算必须继续测高RTT与调度停顿，不能把3秒或预算分割直接当作最优设计。对实际partial/uncommitted帧、旧版本混合和完整双腿还需接受。保留原读写重试/0-RTT安全边界；非幂等操作结果未知时不得自动重放。
+0d1c对目标和middle的有效拨号hint按现有dial_addr（含nearby）解析后排序去重，IPv4/IPv6实际hint变化使对应旧失败失效，顺序/重复/无效项不取消冷却。四个独立真实endpoint身份/地址族probe加carried TLS/echo合同在旧源失败，同合同候选双OS全部12组/hop87通过；这不是完整物理第二腿或同connection移动验收。
+
+迟到成功的原逻辑在976d4源实测hop88通过/1失败：新消费者已成功并释放后，旧Ask在原3秒期限内收到OK仍重新挂载。453399→格式67929候选将网络代次、候选所有者、原期限与现有SSH/双端竞争策略的核对和挂载放入上述同步提交边界。Links的条件挂载在同一注册表锁内检查当前carrier并插入；拒绝时保留现有serial、实际I/O及last_carrier，不写成功journal、不清当前失败。锁内无await/文档I/O；Wires其他generation方法不在持锁时回调MISSED，Links回调不再进入其自身表，无逆序获取路径。候选正在双OS同源远端验证，不能提前声称旧红已修复。目标端首帧后的策略检查仍有独立边界，完整并发/撤销与物理验收继续跟踪。
+
+仍需完成：同一connection上的真实IPv4/IPv6迁移、有效hint变化后的完整物理第二腿、LOST本机身份/上下文、取消后迟到成功的完整组合、多节点同时恢复、公平与探测成本。准备/receiver等待预算必须继续测高RTT与调度停顿，不能把3秒或预算分割直接当作最优设计。对实际partial/uncommitted帧、旧版本混合和完整双腿还需接受。保留原读写重试/0-RTT安全边界；非幂等操作结果未知时不得自动重放。
 
 ### 混合负载（N3）
 
