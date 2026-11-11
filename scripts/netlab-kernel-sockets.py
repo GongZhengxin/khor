@@ -11,11 +11,13 @@ high = importlib.util.module_from_spec(spec); spec.loader.exec_module(high)
 REVISION = 'workload_kernel_tcp_sockets_v1'
 
 
-def sockets(path):
+def sockets(path, planned_seconds=(3, 8, 15, 25)):
     marker = '[netlab-workload-calibration] '
     rows = [json.loads(s.split(marker, 1)[1]) for s in path.read_text().splitlines() if marker in s]
     manifest = high.one(rows, 'manifest')
     assert manifest['socket_diagnostic'] is True
+    if 'socket_plan_seconds' in manifest:
+        assert manifest['socket_plan_seconds'] == list(planned_seconds)
     samples = [r for r in rows if r['event'] == 'tcp_snapshot']
     groups = {}
     for side in ['client', 'server']:
@@ -24,7 +26,7 @@ def sockets(path):
             assert rs and len({r['planned_after_us'] for r in rs}) == len(rs)
             counts = Counter(r['planned_after_us'] for r in rs)
             assert counts[3000000] == counts[8000000] == 1
-            assert set(counts) <= {3000000, 8000000, 15000000, 25000000}
+            assert set(counts) <= {v*1000000 for v in planned_seconds}
             assert len({(r['local'], r['peer']) for r in rs}) == 1
             for r in rs:
                 assert r['clock_origin'] == 'local_payload_start'
@@ -42,9 +44,9 @@ def sockets(path):
     return groups
 
 
-def verify(report):
+def verify(report, revision=REVISION, bulk_bytes=high.BYTES, planned_seconds=(3, 8, 15, 25), repeats=3):
     report = Path(report)
-    result = dict(schema=1, revision=REVISION, source=json.loads((report/'source.json').read_text()),
+    result = dict(schema=1, revision=revision, source=json.loads((report/'source.json').read_text()),
                   results=[], observations_verified=False, physical_calibration_accepted=False, slo=False, full_N3_accepted=False,
                   limits=['Read-only diagnostic overhead retained, not a policy benchmark',
                           'Valid socket observations do not make failed frozen physical bounds pass',
@@ -53,13 +55,13 @@ def verify(report):
     for path in paths:
         row = dict(log=str(path.relative_to(report)), sha256=hashlib.sha256(path.read_bytes()).hexdigest(), valid=False)
         try:
-            row['calibration'] = high.case(path, revision=REVISION, allow_bounds_failure=True)
-            row['sockets'] = sockets(path)
+            row['calibration'] = high.case(path, revision=revision, allow_bounds_failure=True, bulk_bytes=bulk_bytes)
+            row['sockets'] = sockets(path, planned_seconds)
             row['valid'] = True
         except (AssertionError, ValueError, KeyError, TypeError, IndexError, ZeroDivisionError) as error:
             row['error'] = type(error).__name__+': '+str(error)
         result['results'].append(row)
-    result['observations_verified'] = len(paths) == 3 and all(r['valid'] for r in result['results'])
+    result['observations_verified'] = len(paths) == repeats and all(r['valid'] for r in result['results'])
     result['physical_bounds_met'] = result['observations_verified'] and all(r['calibration']['functional_ok'] for r in result['results'])
     return result
 

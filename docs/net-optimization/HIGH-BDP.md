@@ -95,3 +95,31 @@ TBF实际burst均4093B；x三轮TBF drops增量287/252/211，gateway236/227/241�
 不混入旧h0或Node策略计时，不改变原物理失败门或改写旧report。
 须先看这两端事实再决定是否需要单因素burst/队列/窗口对照；任何后续模型变化另冻版本、重新校准。
 此节是已冻结的诊断计划，**尚未实现或运行**。
+
+## 窗口诊断原件与长度单因素对照（2026-11-11 18:19 UTC）
+
+上述窗口诊断已实现并实际运行：source-v2 31d30ed8/control d4752d05，
+`turing-20261111T180530Z-c21b02bc`已300.255秒、原退出101、17files/identity/原group空。
+三轮48份双端/双向/四时点实际tuple匹配快照全通过完整性校验，204echo和六份96MiB完整，
+但三轮物理平均吞吐仍约25.2/26.0Mbit，原门/红状态保留。kernel-sockets-verification-v1.json独立留证。
+初始source-v1 02b仅格式门失败、零运行样本，准确patch已31d30ed8应用，原件保留。
+
+三轮upload发送端8秒时cwnd原值544–547、unacked544–546、notsent约1.87–1.93MB，
+reported pacing_rate约25.1–25.3Mbit、delivery_rate约20.8–21.0Mbit；
+25秒时cwnd760–768、unacked759–767、notsent1.67–2.22MB，仍持续有待发数据，
+reported pacing_rate约34.7–35.3Mbit、delivery_rate约28.6–28.7Mbit；同时有重传计数增长。
+这是拥塞状态随流龄变化的事实，**不是TBF/接收窗口/CPU的唯一根因证明**。
+尤其rcv_space不能充当对端advertised window；旧内核/工具未报告的字段仍记未知。
+
+下一cohort只扩展文件长度，检查冷启动与较长流龄：
+
+- 同300ms/50Mbit/40ms/原32kbit burst、原TCP算法/窗口配置，不改任何网络参数。
+- 每方向384MiB同seed完整内容，仍一个TCP连接；连接/echo2秒、每方向整个传输240秒，不能分段重置。
+- 只执行**一个fresh诊断场景**，保留全部4预热/64稳态echo与双向完整payload，不作为充分校准重复或N3接受。
+- 两端快照计划为3/8/15/25/50/80秒；3/8必须完整，后四个仅在实际payload仍pending时采样。
+  增加后期只读观察时间会有开销，明确诊断cohort，不混入旧96MiB或Node计时。
+- 本对照只问长期窗口/交付率是否继续爬升。即使长文件平均达到40–60，也不能把旧96MiB失败改绿，
+  或自动接受高profile；据新事实再判断校准方法/模型，任何修改另冻版本。
+- 预计峰值内存保守按约1.2GiB安排，执行前确认Turing MemAvailable至少8GiB，仍走原UID/资源/锁/netns/期限门。
+
+该长度对照在任何新运行结果前保存；**未实现/未运行**。

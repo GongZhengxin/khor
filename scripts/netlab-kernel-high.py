@@ -40,7 +40,7 @@ def capture(value):
                 interface_rx_bytes=iface[0]['stats64']['rx']['bytes'], interface_tx_bytes=iface[0]['stats64']['tx']['bytes'])
 
 
-def case(path, revision=REVISION, allow_bounds_failure=False):
+def case(path, revision=REVISION, allow_bounds_failure=False, bulk_bytes=BYTES):
     text = path.read_text()
     marker = '[netlab-workload-calibration] '
     lines = [line for line in text.splitlines() if marker in line]
@@ -49,7 +49,7 @@ def case(path, revision=REVISION, allow_bounds_failure=False):
     assert all(r['schema'] == 1 and r['revision'] == revision for r in rows)
     manifest, complete, connection = (one(rows, e) for e in ['manifest', 'complete', 'connect'])
     assert manifest['warmup'] == 4 and manifest['echoes'] == 64 and manifest['echo_bytes'] == 64
-    assert manifest['bulk_bytes'] == BYTES and manifest['bulk_caller_us'] == 240000000
+    assert manifest['bulk_bytes'] == bulk_bytes and manifest['bulk_caller_us'] == 240000000
     assert manifest['rtt_ms'] == 300 and manifest['mbit_each_direction'] == 50 and manifest['queue_ms'] == 40
     assert manifest['min_rtt_us_bounds'] == [270000, 420000] and manifest['goodput_mbit_bounds'] == [40.0, 60.0]
     assert manifest['layer'] == 'kernel_TCP' and manifest['residents'] is False and manifest['slo'] is False
@@ -60,7 +60,7 @@ def case(path, revision=REVISION, allow_bounds_failure=False):
     assert len(echoes) == 68 and {r['index'] for r in echoes} == set(range(68))
     assert all(r['warmup'] == (r['index'] < 4) and r['bytes'] == 64 for r in echoes)
     assert len(bulk) == 2 and {r['direction'] for r in bulk} == {'upload', 'download'}
-    assert all(r['bytes'] == BYTES for r in bulk)
+    assert all(r['bytes'] == bulk_bytes for r in bulk)
     assert all(r['ended_us'] >= r['started_us'] and r['elapsed_us'] == r['ended_us']-r['started_us'] for r in echoes+bulk)
     assert all(r['elapsed_us'] > 0 for r in bulk)
     assert len(captures) == 4 and {r['name'] for r in captures} == {'x_before', 'gateway_before', 'x_after', 'gateway_after'}
@@ -70,12 +70,12 @@ def case(path, revision=REVISION, allow_bounds_failure=False):
         before, after = reads[side+'_before'], reads[side+'_after']
         assert all(before[k] == after[k] for k in ['interface', 'actual_burst_bytes', 'actual_netem_limit'])
         delta = {k:after[k]-before[k] for k in ['netem_bytes', 'netem_drops', 'tbf_bytes', 'tbf_drops', 'interface_rx_bytes', 'interface_tx_bytes']}
-        assert all(v >= 0 for v in delta.values()) and delta['netem_bytes'] >= BYTES
-        assert delta['interface_rx_bytes'] >= BYTES and delta['interface_tx_bytes'] >= BYTES
+        assert all(v >= 0 for v in delta.values()) and delta['netem_bytes'] >= bulk_bytes
+        assert delta['interface_rx_bytes'] >= bulk_bytes and delta['interface_tx_bytes'] >= bulk_bytes
         counters[side] = dict(before=before, after=after, delta=delta)
     successful = [r['elapsed_us'] for r in echoes if not r['warmup'] and r['outcome'] == 'ok']
     minimum = min(successful) if successful else None
-    rates = [BYTES*8/r['elapsed_us'] for r in bulk]
+    rates = [bulk_bytes*8/r['elapsed_us'] for r in bulk]
     bounds = minimum is not None and 270000 <= minimum <= 420000 and all(40 <= v <= 60 for v in rates)
     assert complete['samples'] == 70 and complete['min_rtt_us'] == minimum and complete['goodput_mbit'] == rates
     assert complete['bounds_ok'] == bounds and complete['calibrated'] is False and complete['qdisc_units_review_required'] is True
@@ -91,7 +91,7 @@ def case(path, revision=REVISION, allow_bounds_failure=False):
         if not bounds: expected = 'FAILED. 0 passed; 1 failed; 0 ignored;'
     assert len(summaries) == 1 and summaries[0].startswith(expected)
     return dict(functional_ok=functional, transport_ok=transport_ok, min_rtt_us=minimum, goodput_mbit=rates,
-                warmup_population=4, steady_echo_population=64, bulk_bytes_each_direction=BYTES,
+                warmup_population=4, steady_echo_population=64, bulk_bytes_each_direction=bulk_bytes,
                 profile_counters=counters, profile_readback_confirmed=True)
 
 

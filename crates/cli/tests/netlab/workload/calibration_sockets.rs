@@ -20,7 +20,7 @@ pub(super) async fn observe<F: Future>(
     }
     let began = Instant::now();
     let observations = async {
-        for second in [3, 8, 15, 25] {
+        for &second in model.socket_plan {
             tokio::time::sleep_until((began + Duration::from_secs(second)).into()).await;
             let started_us = began.elapsed().as_micros();
             let mut command = tokio::process::Command::new("ss");

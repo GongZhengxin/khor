@@ -32,6 +32,7 @@ struct Model {
     bulk_limit: Duration,
     condition: fn() -> patchbay::LinkCondition,
     socket_diagnostic: bool,
+    socket_plan: &'static [u64],
 }
 
 const LOW: Model = Model {
@@ -45,6 +46,7 @@ const LOW: Model = Model {
     bulk_limit: Duration::from_secs(120),
     condition: super::condition,
     socket_diagnostic: false,
+    socket_plan: &[3, 8, 15, 25],
 };
 
 const HIGH: Model = Model {
@@ -58,6 +60,7 @@ const HIGH: Model = Model {
     bulk_limit: Duration::from_secs(240),
     condition: high_condition,
     socket_diagnostic: false,
+    socket_plan: &[3, 8, 15, 25],
 };
 
 const HIGH_SOCKETS: Model = Model {
@@ -65,6 +68,14 @@ const HIGH_SOCKETS: Model = Model {
     revision: "workload_kernel_tcp_sockets_v1",
     socket_diagnostic: true,
     ..HIGH
+};
+
+const HIGH_LONG: Model = Model {
+    case: "hl0",
+    revision: "workload_kernel_tcp_long_v1",
+    size: 384 * 1024 * 1024,
+    socket_plan: &[3, 8, 15, 25, 50, 80],
+    ..HIGH_SOCKETS
 };
 
 fn high_condition() -> patchbay::LinkCondition {
@@ -307,6 +318,12 @@ async fn hd0_high_bdp_tcp_socket_windows_during_both_transfers() {
     run(HIGH_SOCKETS).await;
 }
 
+#[tokio::test(flavor = "multi_thread", worker_threads = 6)]
+#[ignore = "one extended TCP diagnostic; not ordinary high-profile acceptance"]
+async fn hl0_high_bdp_extended_transfer_retains_late_socket_observations() {
+    run(HIGH_LONG).await;
+}
+
 async fn run(model: Model) {
     let lab = Lab::new().await.unwrap();
     let rx = router(&lab, "pubx", Net::Public).await;
@@ -335,6 +352,7 @@ async fn run(model: Model) {
         "min_rtt_us_bounds":model.min_rtt_us,"goodput_mbit_bounds":model.goodput_mbit,
         "bulk_caller_us":model.bulk_limit.as_micros(),
         "socket_diagnostic":model.socket_diagnostic,
+        "socket_plan_seconds":model.socket_plan,
         "layer":"kernel_TCP","residents":false,"slo":false,"qdisc_units_review_required":true}),
     );
     let xb = on(&x).await;
