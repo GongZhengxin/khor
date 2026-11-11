@@ -2,6 +2,18 @@
 
 更新于2026-11-11 13:38 UTC。完整N0–N5目标“完成计划”仍 **active、未完成、未阻塞**，root串行，不派发子智能体。上份STATE逐字保存在[完整历史](HISTORY-20261111-through-workload-startup-v2.md)，SHA `76e0dbfb6c8dd23f58ffad064ca745290818a0dac42723a2c6a35506e0755971`，它继续链接旧原件/所有失败记录。历史里的“当前/待验”只代表当时；原始收据/日志和实际worktree优先，不按摘要覆盖未提交内容。
 
+## 14:05 UTC当前入口：恢复三轮已收齐，独立kernel校准bd7在途
+
+生产候选3de的恢复 **turing-20261111T134417Z-ce3b1222** 已 **568.791秒0**，15files/identity/原group空，p2/p3各三轮 **全6绿**。p3黑洞后228/225/227次真实Node目录RPC，worst644.5/664.6/590.5ms，零失败/零retired；p2约2.0秒/947.8ms/962.2ms离开慢路（可用Relay或Direct均允许），原30post样本/无退役门保持。`recovery-result-v1.json`另核原始每个logical attempt恰有started/finished、list成功/无error、所有p3真实elapsed≤原1秒。它是目录RPC，不是PTY或完整N1稳定/严重stall/成本接受；proof/ledger已终态，不重发。
+
+唯一Turing现在为 **turing-20261111T140243Z-bd7e5f6c**，PID **4165925** / child4166154，14:03:05 UTC launch；`netlab-workload-calibrate` / revision `workload-kernel-calibration-v2` / baseline / control **d77c38c0975b6d23505df1c954b36863ede9b32f**。stage exec55237终态；14:04:17实际ps活、编译/首轮已执行绿，第二轮执行中。首轮minRTT40250us、upload/download7.5199/7.5528Mbit/s；实际x eth0及gateway v7均有netem.delay.delay0.02、tbf.rate1000000/burst4096/lat40000。只是暂时原始读回，**尚未全三轮或正式单位复核**，不称已校准。只查同receipt/execution/PID，不另起Turing工作。
+
+准确源 **df5b3f6a0ac26aa02dc92a5593735fef35048adf** / tree **a315f0e280e0766b68b48f5c8b15b6f5c2e06aa6** / snapshot **97386eb2d87102dc7d14619ef929447385ed677a**，`candidate-workload-calibration-source-v2.json`，冻结clean/0excluded。新代码仅ignored校准和共享测试condition，无Node/net/vendor/Cargo生产diff。w0独立kernelTCP无resident/Noq，父调用拥有一个server/三个socket，4预热+64echo+两8MiB方向；前后x和gateway各留TC JSON/文本及接口计数，**连接/echo2秒、传输120秒**，模型minRTT35–80ms与双向6.4–9.6Mbit/s门已在首次运行前冻结，详见WORKLOAD；不是用户SLO。原自动report保持calibrated:false/units_review_required:true，须原始JSON与文本单位相互核对另存proof才接受kernel模型，不能直接接受N3性能。
+
+其首源 **e7939f3d** / tree8aebed0b5b04493540e9f5a64efc7e8744cd994d 在 **turing-20261111T140042Z-e6e3d424** 48.105秒1、10files/identity/空group，仅root格式/0样本；准确patch已check/apply到df5，format-only proof/ledger终态。控制新task仅固定允许列表+独立分支/原始数据验证，full/physical旧68cad不改；控制stub **12项8.550秒绿**（新增1项11个缺失/伪造/提前接受反例），bash语法/diff过，零本地Rust/产品执行；`control-workload-calibration-tests-v1.json`及helper前后SHA收据已保存。原两pycache保留。
+
+上一节所有“唯一ce3/2aff”均被本节终态替代。下一步收bd7准确三轮/identity/原始TC单位与物理门；然后实现独立观察器定时探针和记录开销对照，关联真实wire/许可/队列后再选策略。全N0–N5、最新严重stall/quiet与长稳/手机等缺项不变，目标active，无外部阻塞。
+
 ## 13:46 UTC当前入口：混合负载已收三轮功能绿，唯一在途为恢复ce3b
 
 前述N3 **turing-20261111T133630Z-2aff8ae2** 已216.845秒0、17files/identity/原group空，三轮各720、共 **2160成功/0错误/0超时/0blocked**；三份16MiB逐字节一致，每类每轮120样本全在实际bulk区间，close_API accepted。完整功能proof/独立latency分解/ledger终态，**不是完整N3性能接受**，不重发。原始表与解释现见[WORKLOAD](WORKLOAD.md)：bulk目录服务p95约107–112ms（空载62–66）、终端81–84ms（空载43–44）；计划→完成目录289–320ms包含串行观察器积压。第三轮空载自身有85–93ms计划迟到，不猜CPU/I/O因果。实际payload率7.120/7.127/6.735Mbit/s不是独立容量校准。仍须校准/观察器成本/真实wire与排队因果，再选调度方案。
