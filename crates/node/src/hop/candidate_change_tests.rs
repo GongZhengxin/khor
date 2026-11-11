@@ -319,3 +319,6 @@ mod dial_fact;
 
 #[path = "candidate_admission_tests.rs"]
 mod admission;
+
+#[path = "receiver_commit_tests.rs"]
+mod receiver_commit;
