@@ -2,6 +2,18 @@
 
 更新于 2026-11-11 12:58 UTC。完整 N0–N5 目标“完成计划”仍 **active、未完成、未阻塞**，root 串行，不派发子智能体。上一份 STATE 逐字保存在 [此前完整状态](HISTORY-20261111-through-effective-route-v3.md)，SHA `6af9bcf2dfba67b241169932df711a1acdbcec8fba37eb379eaea0ae13e3d3b3`，继续链接全部更早记录。以下为当前状态；历史中的“当前/待验/草稿”仅代表当时。原始日志、准确收据和实际工作树优先，不按摘要覆盖未提交内容。
 
+## 13:15 UTC 接续：四peer全6绿，Linux完整回归在途；真实N3基线待编译
+
+前述物理 **turing-20261111T125643Z-6970ad46** 已699.061秒终态0，37files/identity/原group空；准确三轮f4r首内容 **1.263034349 / 1.253216299 / 1.222981525秒**，各30持续样本、15.386/15.342/15.544秒保持、held/continuous/selected_every/carrier_both全true。独立核原始两端：每轮31个实际完成响应、31个匹配stream、每端同一business wire、每端单一outer commit/previous_serial null、无detach/I/O-ended，首次响应都在M恢复之前。三原f4控制也绿；**全部6项绿只关闭这份候选/诊断协议的这批场景，不回填旧红或称p99、恢复长尾/移动/能耗完成**。本run `physical-result-v1.json` 与ledger已终态，不重发。
+
+唯一Turing现在是 **turing-20261111T131248Z-5c2a0339**，PID **4097389**，13:13:10 UTC launch；task `net-node`、revision `effective-route-full-linux-v3`、原control68cad、同一冻结3de源。stage exec3843终态；按准确receipt/execution/实际PID继续核全部12，未终态前不穿插Turing构建/计时。前述“唯一在途6970”已被本节替代。
+
+N3真实基线已写源码 `crates/cli/tests/netlab/workload.rs` 和 [协议](WORKLOAD.md)，ignored独立测试，**尚未编译/运行**。真实remote shell采用当前cookie/Version/Ready协议；请求不含响应前缀以排除本地回显，和真实目录/文件API并发。idle-before/bulk/idle-after各两类120样本，总720，不删除错误/超时/blocked；16MiB全量字节对照、两类至少各30样本实际落在bulk区间、关闭scratch PTY。名义40ms/8Mbit/40msqueue尚未独立校准，明确calibrated:false/diagnostic/non-SLO；不是N3完成。终端现有Tunnel与目录/文件Main分开，不能把“再拆终端连接”当新优化。
+
+控制树新本地commit **1fac856**（核完整SHA），新增SSH-only `netlab-workload` 固定三轮与原始样本验证。原门保持：只改TASKS允许列表/独立分支，不改变full或physical任务；新parser以真实720样本/唯一index/时序/完整summary/重算overlap对照completion，缺样本/重复/超时/伪造overlap/缺轮/重复summary不能绿。control stub单测 **11项、8.381秒全绿**（新增1项7subcases，零产品执行），bash语法/diff通过；原2 pycache保留。OPS仅增加固定task allowlist，`control-workload-helper-audit-v1.json`保留前后SHA。该control尚未推送，SSH可直接精确stage；Mac仍remote68cad。
+
+下一步先收同源Linux全12；同时用Mac现有通道取得新fixture的远端格式结果（若需）；新N3源/新control各自冻结后，Turing前驱终态/资源门允许再单次提交workload。不可用新fixture覆盖旧3de source收据或把新source混进本轮性能结果。N0–N5其余范围保持下文；源代码图谱对新untracked文件尚无节点，0flow不是验证。
+
 ## 当前候选与本轮确认
 
 产品 worktree `/Volumes/disk0/Khor/worktrees/current/khor-net`，branch `feat/net`。验证候选 commit **3de372a026488a64a794935600e47db29f2f6faf**，tree **ae76cd646749ca624d5e3e98af01f96099ebd0e0**，snapshot **a9f46eaa909b8cf45663395912798effb31b7261**。冻结收据 `/Volumes/disk0/Khor/evidence/net/candidate-effective-route-source-v3.json`。本状态另作 docs-only 提交，不改变既有验证的源码身份。

@@ -33,6 +33,8 @@ mod paths;
 mod relay;
 #[path = "netlab/uplink.rs"]
 mod uplink;
+#[path = "netlab/workload.rs"]
+mod workload;
 
 /// Enters a user namespace of this process's own before any thread
 /// exists: every namespace the lab makes after is owned by it.
