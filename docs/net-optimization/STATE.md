@@ -1,35 +1,35 @@
 # feat/net 当前状态与接续入口
 
-更新于2026-11-11 22:38 UTC（本地11月12日）。完整目标“完成计划”仍 **active、未完成、未阻塞**；完整范围为[PLAN](PLAN.md) N0–N5，root串行，不派发子智能体。此页是唯一当前入口。上一页原样保存在[high v2前状态](HISTORY-20261111-through-high-resident-v2.md)，SHA 560d77e0f02b553ebda7b3ac0282a54b0220a0bb1dc1b44a3063f702abf1b172；继续链接更早全部证据。实际worktree/收据/原始日志优先，不按摘要覆盖未提交内容。
+更新于2026-11-11 22:56 UTC（本地11月12日）。完整目标“完成计划”仍 **active、未完成、未阻塞**；完整范围为[PLAN](PLAN.md) N0–N5，root串行，不派发子智能体。此页是唯一当前入口。上一页原样保存在[high v2前状态](HISTORY-20261111-through-high-resident-v2.md)，SHA 560d77e0f02b553ebda7b3ac0282a54b0220a0bb1dc1b44a3063f702abf1b172；继续链接更早全部证据。实际worktree/收据/原始日志优先，不按摘要覆盖未提交内容。
 
 ## 当前状态与下一步
 
-**当前仅一个Turing任务在途：turing-20261111T223651Z-5d27f45e，high v3冷模型初始化预检。** 无Mac任务；只观察同一回执，不因超时重发。旧高BDP预检 **turing-20261111T221821Z-2e4c439f** 已799.391秒、原退出 **101**、25files、identity/原group空、准确冻结元数据复算与独立原始人口/时间戳复算/ledger终态。不要重发该run、已终态15cba7f8或旧90703编排。
+**当前没有Turing或Mac在途任务；两轮回执均已真实终态、收件、核验与ledger终态。** high v3冷模型预检 **turing-20261111T223651Z-5d27f45e** 已 **813.212秒、原退出0、25files**，两个真实w3、三low与三high全部通过；共4320业务请求成功、三份16MiB与三份192MiB完整，目录/终端各120完整落在实际文件传输内。独立提取准确冻结metadata复算、原始人口/时间戳、八TC读回/安装/下载路径字节与静态配置先于两resident/配对均核验通过。旧v2的路径失败不改绿，N1延迟突变选路仍待查。
 
-两个真实w3守卫通过，三fresh旧low全部通过（2160/2160请求、三份16MiB完整）；三high也均720/720请求成功、192MiB完整、关闭成功、目录/终端各120完整落在实际传输内，但**第二轮结束时Direct检查false，整个预检不通过**。三轮文件79.182734/80.825751/79.310770秒、payload20.340454/19.926975/20.307617Mbit，不能以独立UDP48.3M替代应用表现。bulk目录p95为368.514/359.961/355.921ms，终端327.444/313.507/325.642ms；并非完整优先级A/B或N3接受。
-
-| v2准确输入/证明 | 值 |
+| cold v3准入证据 | 值 |
 | --- | --- |
-| source | f428627b354a447f169d86d0843f79b2cf810bd3 / tree3707ffd537c5d8d3c758f83d1bbf7edfb62bf57f / snapshotfb9442b69da624075bc596f6e6ed9178a5254636；candidate-high-resident-source-v2.json，clean/0excluded |
-| control | 30d7a35db340201eed9f80a6161d9de2ce7cfbae |
-| proof | high-resident-preflight-verification-v1.json、原workload-high-contracts.json、identity-verified.json；preflight_passed=false，全部失败/完整人口/实际八份TC读回与两install保留 |
-| 失败连接事实 | 第二轮x journal先4–13ms Direct，施加300ms模型后出现Relay选中；初次选择时smoothed RTT Relay101/Direct126ms，而fresh quality约303.077/300.856ms。之后一个wire先Direct303ms、约0.64秒后Relay303ms被选中；结束仍Relay。业务请求全成功，不把它说成RPC不可达或已证唯一产品根因。 |
+| source | **1c44a5e3e8008a2e9679575ddab50d574d5bf6f9** / tree **b856ce9a5315b745b3570189ec844236e0af248f** / snapshot **90eb94ae8f576bf1c9e815b3dbaef88e246c2992**；candidate-high-resident-source-v3.json，clean/0excluded |
+| control | **5eb896e54c9ce28a3b9f1355579f3fb0516dea6e**，原UID/flock/netns/资源/期限门不变 |
+| proof | high-resident-preflight-verification-v2.json、原workload-high-contracts.json、identity-verified.json、cold-profile-path-observations-v1.json；preflight_passed=true、full_N3_accepted=false |
+| high文件秒数 / payload Mbit | 84.994152 /18.949689；81.521900 /19.756811；81.190881 /19.837360 |
+| bulk目录 / 终端 p95 ms | 410.533/313.286；370.721/335.750；369.441/322.165。全部720/轮成功，三个phase/失败分母/计划到完成/调度滞后/探针flush人口齐全，不报p99或最终UX达标 |
+| 初始路径 | 两端journal初始Direct约304–321ms，三个cohort均未记Relay选择、结束Direct=true；只说明该冷模型的可比性，不证明旧4–13→300ms突变的唯一原因或产品已修复 |
 
-v2 fixture在配对/首次Direct之后才安装高延迟，含旧低RTT状态。下一步按[HIGH-RESIDENT-SETUP](HIGH-RESIDENT-SETUP.md)预注册对照，**仅将high模型安装提前到两个resident启动/配对之前**，保留所有门/负载/期限/拓扑/可用Relay，不强制直连、不切断替代路、不放宽Direct门。新revision resident_mixed_workload_high_v3已按预注册实现并提交新run，旧v2保持失败；这是待验证假设，不称已修复产品选路。若仍不稳定，继续定位真实选路与测量可比性，不启动未获准入的priority campaign。
+**下一步：冻结完整A/B源码与相同control，严格核只差CONTINUED_FILE_RESPONSE_PRIORITY的0/-1一行、PULL_AHEAD=8与全部fixture相同，再按预定A B B A A B每block三fresh提交。** 当前无任何高profile priority数据/未冻结pair或campaign。新task netlab-workload-high-policy每block两个真实w3→三个wh2，生命周期诊断关闭，失败仍保留在原位置。原低profile18轮独立，不合并到高profile；后续prefetch1/2/8、完整预览/公平/背压/成本与N0–N5仍需完成。
 
-| 当前v3在途输入 | 值 |
-| --- | --- |
-| run | **turing-20261111T223651Z-5d27f45e**，pid606228/child606438；stage session90316已终态，实际running、format.log空、编译8.88秒、两真实w3通过(0.05秒)，low第1轮运行中，高profile未开始 |
-| source-v3 | **1c44a5e3e8008a2e9679575ddab50d574d5bf6f9** / tree **b856ce9a5315b745b3570189ec844236e0af248f** / snapshot **90eb94ae8f576bf1c9e815b3dbaef88e246c2992**；candidate-high-resident-source-v3.json，clean/0excluded |
-| control | **5eb896e54c9ce28a3b9f1355579f3fb0516dea6e**；相比1c77仅两个measurement revision literal由high_v2→v3，runner逐字相同 |
-| input audit / 校准适用性 | high-resident-input-audit-v3.json：Rust差异严格为high安装提前/LOW原位置条件保护/manifest flag，Spec仅revision变；observer/校准构造器逐字同旧v2、共同queues逐字同c50，所有负载/期限/人口/结束Direct门保留，Relay仍可用；本机12项6.575秒合成元数据绿 |
-| 原始证据 | v2新增high-resident-route-ambiguity-v1.json，完整三轮两个方向journal/准确SHA/原失败保留；不能由v3冷模型通过消除v2延迟突变后的N1待查项 |
+### 并行完成的Mac vendor默认库回归
 
-下一步：轮询当前5d27f45e；真实终态后CONTROL collect-network-ssh.py、ops/verify-turing-record.py，再 **ops/verify-high-resident-preflight-v2.py RUN**（提取准确冻结metadata、静态核安装先于两resident/配对，复算人口/时间戳）。原退出101仍可能是完整收件成功，不能因其非零重跑。核原始proof后root更新ledger。若通过，再更新pair freezer的前置为该准确新proof及适用性并冻结pair/campaign，policy block auditor的measurement revision也须由v2匹配到v3；现有旧helper不可直接套新run。若失败，保留完整人口查实际连接与模型，不切断Relay或放宽Direct门追绿。
+Mac **43114612815** / request e320800ccc684904829cebe7c93b4d55 / actualcontrol **4e34fb7dce174345410a33e892b0eb76a5cc5c23**（隔离私库feat/net-vendor-full-v1，当前Turing控制HEAD5eb未动）。source **16c79bc0e7e826febcbdd97044890d0b6592413f** / tree **b2ced2679af2b19ff544c8b8172aa326a9e17ca4** / snapshot **47ddb7a76057f1301fe34ff2e36b5c188e7c287f**。artifact **13898480553**，ZIP SHA **d35ae705f685649262daf28f4b69a4fc09be268a8f0f722bec07ee2b914f1606**；16files/11controls/source/bundle身份/两vendor锁逐字核验，vendor-full-verification-v1.json与ledger终态。
 
-高profile固定policy入口已准备：source21dfca6354eb0f530c1bd2d548035c74acf9d449，control1c77c8ab246dfefca42297af0c13c420c4b798e8；源全12项9.077秒、control dispatch1项16.918秒/34路径通过。新task netlab-workload-high-policy每block两个真实w3→三个wh2，metadata保留失败和所有传输人口。**没有冻结pair/campaign、没有任何高profile priority数据**；freeze-high-response-priority-pair-v1.py明确要求v2预检passed，当前会拒绝，应在新预检获准入后另更新适用性，不绕过。verify-high-policy-block-v1.py已准备未调用。当前Turing poll读回helper为ops/poll-turing-resident-v1.py，不写ledger。root仍是source-refs唯一writer。
+Noq完整默认库 **447通过/0忽略/0筛除**；iroh完整默认库 **184通过/1原忽略/0筛除**，另保留58路径/11home专项（它们与184重叠，不相加冒充独立覆盖）。唯一原忽略endpoint::tests::connect_via_relay_becomes_direct_and_sends_direct在源中标flaky，未偷偷运行/删除/称通过。该工作补齐默认库覆盖，**不是全部feature/ignored/integration/物理或最终N5接受**。隔离control只改net-vendor分支，在原3suite后补全iroh库；保留全部四scope及首个非零，7条合成control路径8.816秒通过。共享Mac guard/jobs2/90分钟/源码验证与其他11控制文件保持原样。私库调度/源码上传用原项目脚本，查询job/artifact也经连接器核验；无main合并/发布/部署或手机安装。
 
-15cba7f8前置仅格式红：725ce682/tree902c1f37/snapshotbe6aa14c，同control30d7；43.848秒1/10files/identity/原group空、零业务，四文件准确patch按空白/可选尾逗号/两use语句换序核验后f428627b应用。format-only-verification-v1.json与原件保留。本机source-only未跑Rust/格式器/Node/Xcode；当前没有Mac新任务、无合并/发布/部署/候选手机安装。
+### high v2失败与不丢失的观察
+
+旧 **turing-20261111T221821Z-2e4c439f**：f428627b354a447f169d86d0843f79b2cf810bd3/tree3707ffd537c5d8d3c758f83d1bbf7edfb62bf57f/snapshotfb9442b69da624075bc596f6e6ed9178a5254636，control30d7a35db340201eed9f80a6161d9de2ce7cfbae；799.391秒原101、25files/identity/原group空、high-resident-preflight-verification-v1.json与route-ambiguity-v1.json/ledger终态。三high虽2160业务全ok、192MiB完整、关闭/重叠全过，但第二轮结束Relay、Direct=false使预检失败。三文件79.183/80.826/79.311秒，约20.34/19.93/20.31Mbit；不并入新v3。
+
+v2是在配对/首次Direct后施加模型，journal先4–13ms再300ms；Relay首次选中时smoothed101ms/Direct126ms而fresh quality约303.077/300.856ms。按[HIGH-RESIDENT-SETUP](HIGH-RESIDENT-SETUP.md)在新数据前d9480418预注册，只将high配置提前，保留可用Relay、原Direct/期限/负载/完整人口门，未强制直连或切断替代路。cold v3通过不消除该N1动态行为待查项。input-audit-v3.json证明实际源码调用顺序和共同queues/observer逐字相同；本机12项6.575秒合成数据绿，未执行Rust/格式器。
+
+15cba7f8是更早仅格式红：725ce682/tree902c1f37/snapshotbe6aa14c，同control30d7；43.848秒1/10files/identity/原group空，零业务，准确四文件格式patch已f428627b应用，format-only-verification-v1.json与原件保留。旧policy自动编排90703已终态，不能恢复。root仍为source-refs唯一writer，所有新操作先核实际收据/进程，不因观察超时重发。
 
 ### 已完成的独立容量诊断
 
@@ -54,7 +54,7 @@ v2 fixture在配对/首次Direct之后才安装高延迟，含旧低RTT状态。
 
 **UDP独立容量诊断已通过；完整模型决策/旧TCP门/Noq/Node/N3未接受。** 原contract和独立proof始终physical_calibration_accepted/full_N3_accepted=false。这证明在该分离几何与负载下接收端确实获得约48.3Mbit payload，不能把旧冷TCP平均35Mbit直接等同IP链路只有35Mbit；但也不证明CUBIC、队列或CPU某一项是唯一根因。
 
-分层模型判读已按MODEL-DECISION明确版本/理由/旧新结果；high v2已实际预检失败，冷初始化v3在途，以本页顶部为准。后续按同条件priority A/B和独立prefetch1/2/8、完整预览/公平/背压/成本推进，当前priority -1仍实验候选。UDP通过不等同旧TCP通过、应用SLO或N3接受。完整N0–N5保持active、有可执行工作，不设blocked/complete。
+分层模型判读已按MODEL-DECISION明确版本/理由/旧新结果；high v2已实际预检失败，冷初始化v3完整预检已通过，以本页顶部为准。后续按同条件priority A/B和独立prefetch1/2/8、完整预览/公平/背压/成本推进，当前priority -1仍实验候选。UDP通过不等同旧TCP通过、应用SLO或N3接受。完整N0–N5保持active、有可执行工作，不设blocked/complete。
 
 ### 本轮前置失败与旧诊断（原件全部保留）
 
@@ -84,7 +84,7 @@ root串行自动编排 **exec90703已正常终态**，全部六block均原退出
 
 A/block1/场景2终端p95 **416.984ms** 原样保留，其余A78.819–83.736ms，B79.896–83.922ms。原因未证；终端在另一Tunnel，不能由一个异常推定同Main优先级对终端的直接因果效果或CPU/I/O原因。全phase/实际transfer区间/九对差值/条件成功分布/完整失败分母/文件时间及payload率均保留。仅小链路目录局部方向性收益，不报p99/显著性、不自动选胜；严格优先级仍是实验候选，公平/前台完整文件/背压/成本和全部N0–N5未闭。
 
-[HIGH-BDP](HIGH-BDP.md) 的原v1/96MiB与旧TCP门失败记录保留；新v2以 [MODEL-DECISION](MODEL-DECISION.md) 的显式分层准入及192MiB输入为准，均在首次高profile Node数据前固定。新high v2已实际编译/预检失败、high v3已编译且正在预检；prefetch矩阵未实现/运行。原低profile v4/2秒/120秒门保持，不混用cohort，也不把小链路局部收益当最终设计。
+[HIGH-BDP](HIGH-BDP.md) 的原v1/96MiB与旧TCP门失败记录保留；新v2以 [MODEL-DECISION](MODEL-DECISION.md) 的显式分层准入及192MiB输入为准，均在首次高profile Node数据前固定。新high v2已实际编译/预检失败、high v3已编译且完整预检通过；prefetch矩阵未实现/运行。原低profile v4/2秒/120秒门保持，不混用cohort，也不把小链路局部收益当最终设计。
 
 ## 冻结源码与前置证据
 
