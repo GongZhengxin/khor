@@ -33,10 +33,7 @@ async fn a_refusal_on_a_newly_dialled_tunnel_keeps_its_cooldown() {
         .collect();
     {
         let loaded = f.node.devices_loaded().unwrap();
-        loaded
-            .doc
-            .upsert(&f.middle.id, "middle", &hints)
-            .unwrap();
+        loaded.doc.upsert(&f.middle.id, "middle", &hints).unwrap();
         let mut store = loaded.store;
         store.flush(&loaded.doc).unwrap();
     }
@@ -49,9 +46,7 @@ async fn a_refusal_on_a_newly_dialled_tunnel_keeps_its_cooldown() {
     .await
     .unwrap();
     let (main, remote) = (main.unwrap(), remote.unwrap());
-    f.node
-        .wires
-        .adopt(&f.middle.id, Proto::Main, main.clone());
+    f.node.wires.adopt(&f.middle.id, Proto::Main, main.clone());
     assert!(f.node.wires.live(&f.middle.id, Proto::Tunnel).is_none());
     let network = f.node.wires.hop_epoch();
     let asks = Arc::new(AtomicUsize::new(0));
@@ -93,5 +88,8 @@ async fn a_refusal_on_a_newly_dialled_tunnel_keeps_its_cooldown() {
     middle.close().await;
     tokio::join!(f.ep.close(), f.target_ep.close(), f.middle_ep.close());
     assert!(open && same_tunnel);
-    assert_eq!(count, 1, "this attempt's own dial must not forgive its refusal");
+    assert_eq!(
+        count, 1,
+        "this attempt's own dial must not forgive its refusal"
+    );
 }
