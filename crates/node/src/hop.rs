@@ -982,7 +982,10 @@ impl Node {
         miss_context(self.device_str(), &target.id, observation, || {
             // Use the roster read after this observation began, not a
             // caller's older DeviceInfo. No document I/O under MISSED.
-            let target = all.iter().find(|device| device.id == target.id).unwrap_or(target);
+            let target = all
+                .iter()
+                .find(|device| device.id == target.id)
+                .unwrap_or(target);
             let candidates = picked
                 .iter()
                 .map(|id| {
@@ -1002,8 +1005,11 @@ impl Node {
                         id: id.clone(),
                         live: self.road_for_hop(id, &[]).is_some(),
                         wires,
-                        hints: all.iter().find(|device| &device.id == id)
-                            .map(effective_hop_hints).unwrap_or_default(),
+                        hints: all
+                            .iter()
+                            .find(|device| &device.id == id)
+                            .map(effective_hop_hints)
+                            .unwrap_or_default(),
                         missed: None,
                         attempted_at: None,
                     }

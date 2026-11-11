@@ -16,7 +16,7 @@
 
 **Turing turing-20261111T092344Z-a59e4d3f**，netlab-hop comparison-context-original-hop，PID **3731022**/child **3731238**，09:24:05 UTC launch，准确a73/tree6a2ec5/snapshot337b/control68cad，role candidate。stage39150已成功退出。最后实核同PID活着6分17秒，首f4 green、首f4i回peer **8.1秒**；仅初步一例且仍有尾巴，不称最终4秒/全部根因闭环。按同receipt/PID跟踪，不重发；计时期间不插入Turing构建。comparison-context-physical-plan-v1.json冻结1线程3轮f4_/f4s_/f4i_、原门/拓扑/持续时间、retries0。
 
-**Mac hint候选80cf只提交一次**，exec **19248**，先恢复同session/实际request receipt，拿Actions ID且stage writer无在途后register；不重发。source为candidate-hint-context-candidate-source-v1.json，预期先格式/编译/行为分开判。当前Turing物理对照不含hint，hint仅先用独立Mac。
+**Mac hint候选80cf Actions42996519985**，request76f3b258c8e64eb5abe075f76610b6c6，exec19248已成功退出，已提交register；按该准确run核，不重发。source为candidate-hint-context-candidate-source-v1.json，预期先格式/编译/行为分开判。当前Turing物理对照不含hint，hint仅先用独立Mac。
 
 hint旧源Mac **42994929836**已实际失败并收齐分类，不再在途；a73 Mac42992730535与Turing091507Z-2f94f130已全部12组终态核。比较前c2b原矩阵084720Z-2463e1e5也已收齐，不要再poll/resubmit。最新实际新运行见source-refs与末尾checkpoint。
 
@@ -75,3 +75,6 @@ MacLab与Turing同LAN；macserver为另一台、用户报告异网。iPhone loca
 3. 继续真实迟到成功/epoch提交所有权合同、LOST和同wire移动，以及已冻结双middle物理合同；并推进N3/N4/N5，不能以新87项绿替代全部目标。
 
 图谱先行，本树无.codegraph不建索引；CRG部分覆盖/滞后，0flow不是无影响。debug/explore/review技能此前已读并告知。Turing仅UID1110/tmp/khor-netlab-feat-net-1110、原flock/user-netns/Rust1.95/jobs16/nice10/50GiB起40停/90min，无sudo/host网改动；独立Mac原jobs2/shared cache/资源门可并行。SSH BatchMode/ForwardAgent=no/StrictHostKeyChecking，不转发凭据。stage helper未退出不启动另一个ledger写入；依赖分析顺序，缺数据不补零、原日志不覆盖；观察timeout不等于终态。不标complete/blocked，目标保持active。
+
+
+09:41 UTC实核Turing a59e4d3f同PID运行17分05秒：前两轮各3green（412.66/410.45秒），f4i回peer8.1/8.6秒；第三轮f4已green，仍有两项在途，不提前全9声明。第二轮f4s原green，但links记录Forwarded→Idle@5.277→Forwarded@8.412，x选择Relay@6.1→Carried@13.1；这是须保留的实际瞬态，不能只凭原green称无可见停顿，也尚未归因新gate。完整比较结果还需核原wire/请求和成本。hint80cf Mac42996519985准确source-v1（dirty文档tree019225/snapshot4e46ba）已取到收据，不重复提交。

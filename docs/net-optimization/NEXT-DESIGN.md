@@ -670,3 +670,6 @@ ff743已复用已有 Recovery 分支，使目标缺可用 wire 的判断先于�
 2026-11-11 09:01 UTC：目标/中间设备有效hint上下文仍欠。源码实核contact_version只是正向contact，Wires::back每次heard都会递增，并非网络/地址epoch；不应纳入MISSED/LOST造成持续解除退避。effective hints应沿net::endpoint::dial_addr解析有效IP/Relay并合并nearby，规范化去重；不能因原字符串顺序/重复/无效项或来源变化取消冷却。目标hint变化影响原第二腿失败，须重置目标下相关middle；只有某middle有效hint变化则仅重置该middle，保留其他实际未变的失败和比较工作。读all/roster前的观察序号约束继续，不能用更新前的DeviceInfo覆盖较新上下文；禁止在MISSED锁内读取文档/await。
 
 先将比较候选19cceb格式/单元与原C物理基线隔离冻结，再追加此合同和实现，避免把两组改变混作一个性能归因。源19cceb此时只提交独立Mac（Turing C矩阵在途），未验证。拟实际合同：同wire同本机network epoch，NO_ROUTE后真实同身份新IPv4/IPv6有效hint可以重新准入并完成carried TLS/echo；纯顺序/重复/无效项不取消冷却。新有效hint的真实TLS前置与物理完整第二腿仍分层记录，不用adapter代替N4。
+
+
+2026-11-11 09:43 UTC：静态待真实合同验证的下一N2所有权问题：open_hop_in_epoch在status OK后调用made_in_epoch；旧token在made中只早退，但调用方继续到carry策略/attach。已有旧快照/旧failure合同不独立证明“旧ask的成功回复”也会被拒绝。优先补真实旧ask先pending、新middle完成真实TLS/echo并正常释放后才返回旧OK，要求不发布旧carrier/不误记成功，保留caller3秒与原fixture。释放后变体可避开现有低ID互让门掩盖风险；再覆盖仍有消费者和SSH竞争。若真红，提交需要在原路由所有者锁内原子验证context并发布，只有检查cache还不够；同时审查Links策略检查/attach是否有并发空隙。此段为静态风险与验收方向，不是已经复现或已修原因。先完成当前hint87合同和a73物理全9；不把该风险悄悄删出完整N2。
