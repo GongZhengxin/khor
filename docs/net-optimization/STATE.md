@@ -2,6 +2,12 @@
 
 更新于2026-11-11 13:38 UTC。完整N0–N5目标“完成计划”仍 **active、未完成、未阻塞**，root串行，不派发子智能体。上份STATE逐字保存在[完整历史](HISTORY-20261111-through-workload-startup-v2.md)，SHA `76e0dbfb6c8dd23f58ffad064ca745290818a0dac42723a2c6a35506e0755971`，它继续链接旧原件/所有失败记录。历史里的“当前/待验”只代表当时；原始收据/日志和实际worktree优先，不按摘要覆盖未提交内容。
 
+## 13:46 UTC当前入口：混合负载已收三轮功能绿，唯一在途为恢复ce3b
+
+前述N3 **turing-20261111T133630Z-2aff8ae2** 已216.845秒0、17files/identity/原group空，三轮各720、共 **2160成功/0错误/0超时/0blocked**；三份16MiB逐字节一致，每类每轮120样本全在实际bulk区间，close_API accepted。完整功能proof/独立latency分解/ledger终态，**不是完整N3性能接受**，不重发。原始表与解释现见[WORKLOAD](WORKLOAD.md)：bulk目录服务p95约107–112ms（空载62–66）、终端81–84ms（空载43–44）；计划→完成目录289–320ms包含串行观察器积压。第三轮空载自身有85–93ms计划迟到，不猜CPU/I/O因果。实际payload率7.120/7.127/6.735Mbit/s不是独立容量校准。仍须校准/观察器成本/真实wire与排队因果，再选调度方案。
+
+唯一新Turing **turing-20261111T134417Z-ce3b1222**，PID **4138770**，13:44:39 UTC launch；task `netlab-recovery` / revision `effective-route-recovery-v3` / role candidate / 原control **68cadb57a0ed72d40a4ca9a843e86b9c6797bf34** / 同一生产候选 **3de372a0** 冻结source-v3（准确tree/snapshot见下文）。stage exec52496终态，下一步核同receipt/execution/实际PID和原p2/p3三轮门，**不穿插Turing构建或计时**。先前“唯一在途2aff”已由本节实际终态替代。N3校准/定时探针的具体下一协议已记录，尚未实现，不擅自把待做写成绿。全N0–N5范围与授权不变，目标active。
+
 ## 唯一在途：真实Node混合负载基线
 
 **turing-20261111T133630Z-2aff8ae2**，PID **4128164** / child **4128397**，13:36:52 UTC launch；task `netlab-workload` / revision `resident-mixed-workload-v5` / role **baseline**，control **ebe8c8243ee639aa63aaa08a3202cbc9d1c0c8d8**。stage exec85816已终态；13:37:43实际ps活、execution running/network-driver，格式/编译已过（9.81秒编译）；首轮随后实际manifest1/396样本全ok、进入bulk，见准确scenarios原件，**尚未全轮终态或验收**。只查同receipt/execution/实际PID，不重发，不另起Turing构建或计时。
