@@ -55,3 +55,12 @@ v1的真实run turing-20261111T213626Z-343630a3，当前已观察五个方向：
 v2仅在上述协议保存后实现与运行；源码、control与原始结果按STATE/收据记录。
 
 v1末尾metadata还因Turing Python3.8.10不支持int.bit_count而未产出contract；该异常与原始pacer红均保留。v2改用兼容的bin/count统计同一bitmap，不改计数含义/门。服务器缺陷处理钩子的附带OpenSSL异常不作网络根因、也不修改系统软件。
+
+
+## v2实际三fresh结果
+
+准确a6a119a4d5d3e38197ba1f0da495c6fa8ddf9cef / tree29217fb5fb5fa4cafe58c3d69435e4907e9bd2dd / snapshotd796dc95fe85326521ff4ed128a7164d7dfefd4d，control1a6eee06e2e5df3220acc6e3c6ddcae363ebc3fc。turing-20261111T214616Z-c50ab6ef已186.409秒0，17files/identity/原group空。
+
+六方向sent均145833/145833，共874998；各4000ticks，max lateness1336–2052us，无发送失败/跳过/>10ms迟到，sender窗口均70.000320Mbit。receiver窗口均48.309120Mbit；unique总601149、missing273849。完整序号位图/tuple/bucket/内容检查计数、24份TC/接口读回和6次初始rate安装通过；70M offered超过50M shaping，完整缺失保留，不当用户loss SLO。源metadata在Python3.8实际执行成功，独立复算一致。
+
+kernel-capacity-verification-v2.json与原contract/identity/ledger已终态。UDP诊断有效性和容量门通过，**physical_calibration_accepted/full_N3仍false**，旧冷TCP40–60门与全部红不改。下一步明确容量、冷TCP行为和应用体验的分层校准/准入决策并版本化，然后推进高profile Node真实业务对照；本结果不能自动完成模型、Noq、手机或完整目标。
