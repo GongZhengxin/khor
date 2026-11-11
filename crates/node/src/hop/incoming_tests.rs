@@ -2,6 +2,31 @@
 
 use super::*;
 
+/// Deliberately withhold a preference for carried-only traffic. The
+/// independent direct connection and the actual outer tunnel retain their
+/// normal selection; no global environment or transport is mocked.
+#[derive(Debug, Default)]
+struct WithheldTargetSelection {
+    normal: RoadOrder,
+}
+
+impl iroh::endpoint::transports::PathSelector for WithheldTargetSelection {
+    fn select(
+        &self,
+        ctx: &iroh::endpoint::transports::PathSelectionContext<'_>,
+    ) -> iroh::endpoint::transports::PathSelection {
+        use iroh::endpoint::transports::FourTuple;
+        if ctx
+            .paths()
+            .any(|path| matches!(path.network_path(), FourTuple::Custom { .. }))
+        {
+            iroh::endpoint::transports::PathSelection::none()
+        } else {
+            iroh::endpoint::transports::PathSelector::select(&self.normal, ctx)
+        }
+    }
+}
+
 fn answering(conn: iroh::endpoint::Connection) -> Owned<()> {
     Owned(Some(tokio::spawn(async move {
         while let Ok((mut send, mut recv)) = conn.accept_bi().await {
@@ -27,7 +52,7 @@ async fn stop(task: &mut Owned<()>) {
 }
 
 async fn observe_incoming(cancelled: bool) {
-    let mut f = Publication::new().await;
+    let mut f = Publication::new_selecting(Arc::new(WithheldTargetSelection::default())).await;
     // Two fresh endpoints share only B's ephemeral identity. Their actual
     // independent connections give A one IP tuple and one carried-only
     // tuple, as in the original shared-carrier Wires regression.
@@ -41,8 +66,22 @@ async fn observe_incoming(cancelled: bool) {
         .bind()
         .await
         .unwrap();
+    // A separate endpoint with A's same ephemeral identity supplies the
+    // independent selected IP connection. Wires must preserve an incoming
+    // carried consumer even when its preferred-route observation is absent.
+    let direct_client = iroh::Endpoint::builder(iroh::endpoint::presets::Minimal)
+        .secret_key(f.ep.secret_key().clone())
+        .relay_mode(iroh::RelayMode::Disabled)
+        .clear_ip_transports()
+        .bind_addr("127.0.0.1:0")
+        .unwrap()
+        .alpns(vec![INNER_ALPN.to_vec()])
+        .bind()
+        .await
+        .unwrap();
+    assert_eq!(direct_client.id(), f.ep.id());
     let (outgoing, direct_incoming) = tokio::time::timeout(Duration::from_secs(5), async {
-        tokio::join!(f.ep.connect(direct.addr(), INNER_ALPN), async {
+        tokio::join!(direct_client.connect(direct.addr(), INNER_ALPN), async {
             direct.accept().await.unwrap().accept().unwrap().await
         })
     })
@@ -58,6 +97,9 @@ async fn observe_incoming(cancelled: bool) {
         khor_net::path::classify(&outgoing),
         khor_net::path::PathKind::Direct
     );
+    assert!(outgoing.paths().iter().any(|path| {
+        path.id() == iroh::endpoint::PathId::ZERO && path.is_ip()
+    }));
 
     let (entered, release) = f.node.wires.gate_hop_offered_for_test();
     let mut opening = f.opening();
@@ -111,7 +153,7 @@ async fn observe_incoming(cancelled: bool) {
     stop(&mut carried_answer).await;
     stop(&mut direct_answer).await;
     f.close(serial).await;
-    direct.close().await;
+    tokio::join!(direct_client.close(), direct.close());
     tokio::time::timeout(Duration::from_secs(2), remote_attached.ended())
         .await
         .unwrap();

@@ -6,12 +6,21 @@ use khor_net::carry::{Attached, Links, RoadOrder, transport_addr};
 const INNER_ALPN: &[u8] = khor_net::endpoint::ALPN;
 
 async fn carried_endpoint(key: iroh::SecretKey, links: &Links, loopback: bool) -> iroh::Endpoint {
+    carried_endpoint_selecting(key, links, loopback, Arc::new(RoadOrder::default())).await
+}
+
+async fn carried_endpoint_selecting(
+    key: iroh::SecretKey,
+    links: &Links,
+    loopback: bool,
+    selector: Arc<dyn iroh::endpoint::transports::PathSelector>,
+) -> iroh::Endpoint {
     let mut builder = iroh::Endpoint::builder(iroh::endpoint::presets::Minimal)
         .secret_key(key)
         .relay_mode(iroh::RelayMode::Disabled)
         .clear_ip_transports()
         .add_custom_transport(links.transport())
-        .path_selector(Arc::new(RoadOrder::default()))
+        .path_selector(selector)
         .alpns(vec![
             INNER_ALPN.to_vec(),
             khor_net::endpoint::TUNNEL_ALPN.to_vec(),
@@ -54,6 +63,10 @@ struct Publication {
 
 impl Publication {
     async fn new() -> Self {
+        Self::new_selecting(Arc::new(RoadOrder::default())).await
+    }
+
+    async fn new_selecting(selector: Arc<dyn iroh::endpoint::transports::PathSelector>) -> Self {
         let root = tempfile::tempdir().unwrap();
         std::fs::create_dir_all(root.path().join(".khor")).unwrap();
         std::fs::write(
@@ -63,7 +76,7 @@ impl Publication {
         .unwrap();
         let node =
             Arc::new(Node::open_hosting(root.path().to_path_buf(), "published", false).unwrap());
-        let ep = carried_endpoint(node.key.clone(), &node.carry, true).await;
+        let ep = carried_endpoint_selecting(node.key.clone(), &node.carry, true, selector).await;
         assert_eq!(ep.id().to_string(), node.device_str());
         let middle_ep = endpoint().await;
         let key = iroh::SecretKey::generate();

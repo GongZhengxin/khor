@@ -107,3 +107,12 @@ Turing5df2c88e已355.398秒终态101、14files/identity/原group空，hop89/net6
 Linux9dccad92已357.467秒终态101、14files/identity/空group，budget34pass/2FAIL；Mac43019072595 exact13853922587/ZIP SHA5d2e01a442c41ffcfcbd3247f5fa9aa4a7f612c433927613f75c18871895243b，13files/11controls/identity、budget30pass/2FAIL。两端两项same第310行均 **answered=true、path=Some(Unknown)、requests=1**，普通/early原期限内业务成功；fastDirect两负控/旧IP/保留carrier和原30/26其他合同绿，但最终路型不符仍原红。per-run installed-carrier-partial-v1.json/ledger终态，不把它叫全12。
 
 已新增Iroh49小候选（尚未编译）：PathStateSender.record_selected若peer preferred不在本conn且只有1条established/open路径，报告这条Noq实际fallback；Backup在无Available时传数据的语义见Noq paths.rs1085–1095。保留shared选择/PathStatus/发送/其他连接，不猜空/多路。原四Node合同逐字不变；不是删掉path断言来过门。rtt_of现在有真实路RTT，会影响原Patience输入，须全回归/物理/成本。vendor主59、42–44隔离，上游未核。无Turing/Mac在途（以上两run已终态收齐），下一步提交冻结49源，单次双OS全12和独立vendor，然后原四peer新diagnostic采证/held等门不变，再完整N0–N5。
+
+
+## 12:40 UTC：49观测修正改变了两个旧fixture前置，保留无marker覆盖
+
+源eb72的Linuxe660ae7e已247.037秒终态101、11files（以identity实际为准）/空group；net68+1ignored，hop87pass/2FAIL，失败都在incoming_tests.rs第98行“incoming Custom-only/outgoing IP prerequisites”超时，未进入最终carrier所有权判断，dial_budget未跑。Mac43020688582也failure，准确产物待按同job核。不能称49网络行为或四专项失败已验证，更不能删除原NoSelected条件。
+
+新test-only改造保持原核心条件和最终断言：incoming真实carried-only且所有selected=false、独立outgoing实际Direct/TLS/echo、client实际Carried，取消/正常完成后kept+owned+carried_echo及独立direct_echo仍必须通过。仅为incoming endpoint提供明确对Custom不作选择的测试PathSelector；其middle仍用正常RoadOrder。独立IP连接从同A身份另一个真实loopback endpoint建立并加入原Wires，保留Direct，避免把其路型也改Unknown而使旧bug不再有区分力。两个同身份端点隔离观测控制；不伪造数据/PathFact、不改全局环境、不放宽NoMarker/所有权/期限。四个installed-carrier合同与生产link/Iroh49逐字保持。Publication默认new仍正常selector，其他fixture不变。该test-only候选尚待提交/格式/行为；不能把源码当已覆盖。
+
+先收eb72准确原件/分类，提交冻结fixture修订，同源双OS全12；绿后才vendor/四peer及完整N0–N5。无新在途任务时不要重发已终态eb72。
