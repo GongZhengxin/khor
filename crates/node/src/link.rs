@@ -3890,11 +3890,8 @@ impl Node {
             let until = by.map_or(dial_by, |caller| caller.min(dial_by));
             raced_carrier = true;
             carried_attempt = Some(Box::pin(async move {
-                match crate::deadline::wait(
-                    Some(until),
-                    connect_prepared_carrier(&ep, addr, ALPN),
-                )
-                .await
+                match crate::deadline::wait(Some(until), connect_prepared_carrier(&ep, addr, ALPN))
+                    .await
                 {
                     Ok(Ok(conn)) => Ok(conn),
                     Ok(Err(error)) => Err(DialFailure::of_connect(&error)),
