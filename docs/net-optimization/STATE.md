@@ -119,3 +119,12 @@ c2b Mac **42989990177**已success，exactartifact13841233618/ZIP SHA88745ebf8c49
 
 
 2026-11-11 09:03 UTC：c2b Mac42989990177现已exactartifact13841233618、20files/11controls/identity和全部12组实际总结核齐，hop79/wires16/budget26/resume1；node-regression-verification-v1.json与ledger终态，prepared-race fixture状态both_os_actual_all79_all12_verified_physical_pending。7d/c2b分别双OS绿，不外推19cceb。比较候选19cceb Mac Actions **42991598937**，request47e2276e765a479bbdf6d531a4274682、准确treef8d843/snapshotd9d80，exec49452/32788均已退出并登记；09:02 API仍in_progress，先查同run，不重发。当前没有新Turing提交，C物理计时继续。
+
+
+接续更新（实际时间见收据）：比较候选格式首轮Mac42991598937仅format，exact13841773241/ZIP SHA669330aaa09884cd970f935969fdc4b81f458989ee52c20aff4acf078be2541d，9files/11controls/identity、零测试组；远端patch逐字应用为 **a73b9cae0f9d147cb4ec445d32190e395ca97244**，tree6a2ec5cfcb0a8b93bf50779aa9178feca2af5eff/snapshot337b232e46cf436d534155349aaeff18e51948e0，candidate-comparison-context-source-v2.json。Mac **42992730535**，request9a4112b112f2410a83eab941f6817801，exec36242已成功退出，register正在登记；尚未核编译/81合同。Turing仍c2b原矩阵，禁止构建。
+
+目标/中间hint新增六合同test-only **febb4916b99975c7c4737e47b5cbe90ab4dd19b6**，tree32c34e6f3755b11a77f1d6470e6120536e225b71/snapshot4f419d0d612f64f505f5461178b012ac2987e1f3，candidate-hint-context-old-source-v1.json。已仅提交一次Mac，exec **48492**，request2a399ead14c54f02a9d2cbfdb81c4ea1正在上传bundle，先查同会话/收据不重发。真实probe先用同target/middle key的新IPv4或IPv6-only endpoint完成TLS/核实际family，probe不注册进initiator Wires；第一实际Tunnel身份不变、本机network epoch不变。先真实NO_ROUTE，再发布新有效hint或纯顺序/重复/无效项改动；要求真实carried TLS/echo前四恢复、后两继续冷却。middle仍adapter，不冒充完整物理第二腿；原81正文保留。
+
+root工作区hop.rs已写hint上下文候选但未提交/验证：HopMiss.target_hints与HopCandidate.hints经现有dial_addr（含nearby）排序去重；同锁拒绝旧观察后取同步事实，不在锁内读文档/await。生产使用原捕获观察后的all快照，排除调用方较旧DeviceInfo；test open_hop适配保留显式all/y，避免测试入口无故重读快照。target有效hint变则不继承旧第二腿失败/比较工作；middle变只使实际该middle失效。NEARBY follow只写map，不反调MISSED/Wires，未引入反向锁。代码未提交，不要按摘要覆盖。自己的精确WIP patch已保存hint-context-working-v1.patch，SHA 1ce7befad11ccf881f8065059b2651770c087b7ddcfcbdea2b5260d77adb938f；若需冻结old hint fixture格式v2，必须先临时反向移除此自有patch，仅对old test file应用返回格式并冻结旧源，然后逐字恢复，不能把候选hop代码混进旧红基线。
+
+尚无hint旧行为红。先核Mac比较D2，再核hint old首轮（预计格式）；保持D2 frozen source隔离供Turing单位/物理前后对照。完整N0–N5未缩减，LOST identity/context、同connection迁移、N3/N4/N5仍欠。
