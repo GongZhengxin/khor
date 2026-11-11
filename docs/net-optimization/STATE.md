@@ -1,23 +1,25 @@
 # feat/net 当前状态与接续入口
 
-更新于2026-11-11 22:19 UTC（本地11月12日）。完整目标“完成计划”仍 **active、未完成、未阻塞**；完整范围是 [PLAN](PLAN.md) 的N0–N5，root串行，不派发子智能体。此页是唯一当前入口；历史逐字保存在 [上一状态](HISTORY-20261111-through-capacity-setup-v5.md)，SHA `6079915ace9d27daea77a43499663ce352d51597ad32c296a02a32846f482efe`，它继续链接此前全部证据/失败。实际worktree/收据/原始日志优先，不按摘要覆盖未提交内容。
+更新于2026-11-11 22:34 UTC（本地11月12日）。完整目标“完成计划”仍 **active、未完成、未阻塞**；完整范围为[PLAN](PLAN.md) N0–N5，root串行，不派发子智能体。此页是唯一当前入口。上一页原样保存在[high v2前状态](HISTORY-20261111-through-high-resident-v2.md)，SHA 560d77e0f02b553ebda7b3ac0282a54b0220a0bb1dc1b44a3063f702abf1b172；继续链接更早全部证据。实际worktree/收据/原始日志优先，不按摘要覆盖未提交内容。
 
-## 当前在途与下一步
+## 当前状态与下一步
 
-**当前仅一个Turing任务在途：turing-20261111T221821Z-2e4c439f，真实高BDP业务预检。** 无Mac任务；只轮询这个回执，不因观察超时重发。 [MODEL-DECISION](MODEL-DECISION.md) 已在实现/首个高profile Node数据前以ff3d0074提交，明确分层校准准入v2，旧冷TCP门及原失败全部保留，不视为通过。新业务fixture已提交、clean/0excluded冻结并提交Turing；当前format/实际编译已过，两个真实w3守卫通过，第一轮low回归进行中，高profile尚无业务结果；原低profile参数和入口保留。
+**当前没有Turing或Mac在途任务。** 高BDP预检 **turing-20261111T221821Z-2e4c439f** 已799.391秒、原退出 **101**、25files、identity/原group空、准确冻结元数据复算与独立原始人口/时间戳复算/ledger终态。不要重发该run、已终态15cba7f8或旧90703编排。
 
-高profile固定300ms/50Mbit、192MiB完整文件/240秒、400ms计划/每请求2秒/各operation单在途，三phase各目录/真实PTY各120，保留≥30完整传输重叠门、720全人口/失败分母/调度滞后和原20ms借用probe。复用同一个分离队列构造器；每次实际八份端点/router读回，按y→x下载路径核对文件字节，反向ACK/control完整记录。没有产品runtime/vendor修改。固定新task先真实两个w3取消/启动回收守卫、三fresh原low w2回归，再三high wh2预检；前置失败阻止high，一旦开始某阶段则完成该阶段全部三轮并保留首个非零退出。
+两个真实w3守卫通过，三fresh旧low全部通过（2160/2160请求、三份16MiB完整）；三high也均720/720请求成功、192MiB完整、关闭成功、目录/终端各120完整落在实际传输内，但**第二轮结束时Direct检查false，整个预检不通过**。三轮文件79.182734/80.825751/79.310770秒、payload20.340454/19.926975/20.307617Mbit，不能以独立UDP48.3M替代应用表现。bulk目录p95为368.514/359.961/355.921ms，终端327.444/313.507/325.642ms；并非完整优先级A/B或N3接受。
 
-本机只做源码/Python元数据与合成调度检查：source全11项3.222秒绿；此前同组首次失败为合成数据的嵌套bulk在revision更新前复制，严格validator正确拒绝，修复fixture后通过，并非真实业务失败或放宽门。control全13项20.620秒绿，另补高阶段中间失败仍执行后续轮次/保留退出码的调度专项。图谱部分/滞后，0flows不作覆盖。共同构造器与已测c50源码已逐字核同，控制仅固定task与allowlist变化，原UID/flock/netns/资源/总期限门不变；high-resident-input-audit-v1/v2.json完整留证。下一步观察原回执，终态后collect/identity/逐原始人口、实际配置和路径字节核验，再更新ledger；不要恢复已终态15cba7f8或旧90703编排。**高profile真实结果/优先级18轮/prefetch矩阵尚无数据，不能宣布N3或最终完成。**
-
-| 当前预检输入 | 值 |
+| v2准确输入/证明 | 值 |
 | --- | --- |
-| run / control | **turing-20261111T221821Z-2e4c439f** / **30d7a35db340201eed9f80a6161d9de2ce7cfbae**，pid578110/child578324，stage session61281已终态；22:19:33Z实际running、format.log空、编译9.49秒；两个w3实际通过(0.06秒)，low第1轮idle_before240/240 ok、进入bulk，高profile未开始 |
-| source-v2 | **f428627b354a447f169d86d0843f79b2cf810bd3** / tree **3707ffd537c5d8d3c758f83d1bbf7edfb62bf57f** / snapshot **fb9442b69da624075bc596f6e6ed9178a5254636**；candidate-high-resident-source-v2.json |
-| 预检协议 | MODEL-DECISION / resident_mixed_workload_high_v2；guard2→low3→high3，不混作18轮priority比较或N3接受 |
-| 证据复用边界 | 共同calibration_queues.rs SHA256 50a03d9530b2b6d5400f953cee355333691a257b1fd05a0534aefc8cca63ca3c，逐字同c50；相对Mac8371dbb0全Git差异37个只fixture/metadata/docs，零生产runtime差异；新Linuxfixture必须实际编译/执行 |
+| source | f428627b354a447f169d86d0843f79b2cf810bd3 / tree3707ffd537c5d8d3c758f83d1bbf7edfb62bf57f / snapshotfb9442b69da624075bc596f6e6ed9178a5254636；candidate-high-resident-source-v2.json，clean/0excluded |
+| control | 30d7a35db340201eed9f80a6161d9de2ce7cfbae |
+| proof | high-resident-preflight-verification-v1.json、原workload-high-contracts.json、identity-verified.json；preflight_passed=false，全部失败/完整人口/实际八份TC读回与两install保留 |
+| 失败连接事实 | 第二轮x journal先4–13ms Direct，施加300ms模型后出现Relay选中；初次选择时smoothed RTT Relay101/Direct126ms，而fresh quality约303.077/300.856ms。之后一个wire先Direct303ms、约0.64秒后Relay303ms被选中；结束仍Relay。业务请求全成功，不把它说成RPC不可达或已证唯一产品根因。 |
 
-前置真实 **turing-20261111T221614Z-15cba7f8**：source725ce682df56e716ad891b2aa2dd72cf97326cc5/tree902c1f37ece5ee327d0acd0940e6a5ea31d1a964/snapshotbe6aa14c43f69d5910f693440addff0278e55124，同control；43.848秒原退出1、10files/identity/原group空、**仅format失败、零行为样本**。原format.patch仅四文件空白/可选尾逗号及两use语句顺序，逐token核验后f428627b应用；format-only-verification-v1.json及ledger终态保留，未把旧失败改绿。本机未跑Rust/格式器。control最终dispatch1项7.830秒、31条task/mode路径绿，包含高阶段中间失败后仍执行第三轮并保留首退出73。
+v2 fixture在配对/首次Direct之后才安装高延迟，含旧低RTT状态。下一步按[HIGH-RESIDENT-SETUP](HIGH-RESIDENT-SETUP.md)预注册对照，**仅将high模型安装提前到两个resident启动/配对之前**，保留所有门/负载/期限/拓扑/可用Relay，不强制直连、不切断替代路、不放宽Direct门。新revision resident_mixed_workload_high_v3，旧v2保持失败；这是待验证假设，尚未实现/提交新run。若仍不稳定，继续定位真实选路与测量可比性，不启动未获准入的priority campaign。
+
+高profile固定policy入口已准备：source21dfca6354eb0f530c1bd2d548035c74acf9d449，control1c77c8ab246dfefca42297af0c13c420c4b798e8；源全12项9.077秒、control dispatch1项16.918秒/34路径通过。新task netlab-workload-high-policy每block两个真实w3→三个wh2，metadata保留失败和所有传输人口。**没有冻结pair/campaign、没有任何高profile priority数据**；freeze-high-response-priority-pair-v1.py明确要求v2预检passed，当前会拒绝，应在新预检获准入后另更新适用性，不绕过。verify-high-policy-block-v1.py已准备未调用。当前Turing poll读回helper为ops/poll-turing-resident-v1.py，不写ledger。root仍是source-refs唯一writer。
+
+15cba7f8前置仅格式红：725ce682/tree902c1f37/snapshotbe6aa14c，同control30d7；43.848秒1/10files/identity/原group空、零业务，四文件准确patch按空白/可选尾逗号/两use语句换序核验后f428627b应用。format-only-verification-v1.json与原件保留。本机source-only未跑Rust/格式器/Node/Xcode；当前没有Mac新任务、无合并/发布/部署/候选手机安装。
 
 ### 已完成的独立容量诊断
 
