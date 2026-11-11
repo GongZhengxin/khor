@@ -1031,7 +1031,9 @@ mod tests {
         let (next, next_remote) = tokio::io::duplex(64);
         let (r, w) = tokio::io::split(next);
         let accepted = links
-            .attach_if(peer, Carrier::Hop { via }, r, w, |current| current.is_none())
+            .attach_if(peer, Carrier::Hop { via }, r, w, |current| {
+                current.is_none()
+            })
             .unwrap();
         assert_eq!(links.carrier(&peer), Some(Carrier::Hop { via }));
         drop(next_remote);
