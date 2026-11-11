@@ -681,13 +681,15 @@ impl Node {
                 // gets the same admission preference as a live IP wire.
                 picked.sort_by_key(|b| self.road_for_hop(b, &[]).is_none());
             }
+            #[cfg(test)]
+            self.wires.hold_hop_selection_for_test().await;
             let epoch = self.hop_miss_epoch(&y.id, &picked);
             if missed_lately_in_epoch(&me, &y.id, Some(&epoch)) {
                 return;
             }
             // Keep the cold preparation state out of every enclosing dial and
             // resident request's future, including requests that need no hop.
-            Box::pin(self.open_hop(ep, y, &all, &picked, epoch)).await;
+            Box::pin(self.open_hop_in_epoch(ep, y, &all, &picked, epoch)).await;
         })
     }
 
@@ -710,6 +712,17 @@ impl Node {
     /// carried the connection for two looks — the selector
     /// (`carry::RoadOrder`) found it no faster. `true` when a hop is up.
     async fn open_hop(
+        &self,
+        ep: &iroh::Endpoint,
+        y: &crate::DeviceInfo,
+        all: &[crate::DeviceInfo],
+        picked: &[String],
+    ) -> bool {
+        let epoch = self.hop_miss_epoch(&y.id, picked);
+        self.open_hop_in_epoch(ep, y, all, picked, epoch).await
+    }
+
+    async fn open_hop_in_epoch(
         &self,
         ep: &iroh::Endpoint,
         y: &crate::DeviceInfo,
@@ -1019,8 +1032,7 @@ impl Node {
                 |b| was_lost(&y.id, b),
             );
             if !picked.is_empty() {
-                let epoch = self.hop_miss_epoch(&y.id, &picked);
-                Box::pin(self.open_hop(ep, y, &all, &picked, epoch)).await;
+                Box::pin(self.open_hop(ep, y, &all, &picked)).await;
             }
         }
     }

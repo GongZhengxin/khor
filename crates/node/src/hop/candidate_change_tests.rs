@@ -307,3 +307,6 @@ async fn a_cost_change_alone_keeps_the_original_cooldown() {
 async fn an_older_refusal_cannot_replace_the_new_contexts_completed_failure() {
     observe(CandidateChange::NewerFailureBeforeOldReply).await;
 }
+
+#[path = "candidate_snapshot_tests.rs"]
+mod snapshot;
