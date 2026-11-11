@@ -1,14 +1,14 @@
 # feat/net 当前状态与接续入口
 
-更新于2026-11-11 17:02 UTC（本地11月12日）。完整目标“完成计划”仍 **active、未完成、未阻塞**；完整范围是 [PLAN](PLAN.md) 的N0–N5，root串行，不派发子智能体。此页是唯一当前入口；历史逐字保存在 [上一状态](HISTORY-20261111-through-policy-readback-v2.md)，SHA `07431681a2838546487bace0ed68dbc314cd68469cc33f3f98bf88ada80e539b`，它继续链接此前全部证据/失败。实际worktree/收据/原始日志优先，不按摘要覆盖未提交内容。
+更新于2026-11-11 17:11 UTC（本地11月12日）。完整目标“完成计划”仍 **active、未完成、未阻塞**；完整范围是 [PLAN](PLAN.md) 的N0–N5，root串行，不派发子智能体。此页是唯一当前入口；历史逐字保存在 [上一状态](HISTORY-20261111-through-policy-readback-v2.md)，SHA `07431681a2838546487bace0ed68dbc314cd68469cc33f3f98bf88ada80e539b`，它继续链接此前全部证据/失败。实际worktree/收据/原始日志优先，不按摘要覆盖未提交内容。
 
 ## 当前在途与下一步
 
-**唯一Turing：turing-20261111T170059Z-b3de4646**，PID **281174**，17:01:21 UTC launch，task **netlab-workload-policy** / revision **workload_response_priority_v1-v3-block1-A** / baseline / control **5f1242f5f4d216dde60ad27be0d17a5958b7ef46** / 下述冻结A/source-v3。stage exec16670已终态；准确前驱9bc已collection/identity/原group空。它是首个关闭诊断的计时block，**尚无终态/收益结论**。只查同receipt/PID，不重发，不穿插Turing构建或计时。没有Mac在途。
+**唯一Turing：turing-20261111T170751Z-4fd7ab02**，PID **294807**，17:08:13 UTC launch，task **netlab-workload-policy** / revision **workload_response_priority_v1-v3-block2-B** / candidate / control **5f1242f5f4d216dde60ad27be0d17a5958b7ef46** / 下述冻结B/source-v3。stage exec7008已终态；准确前驱b3de已collection/identity/原group空。这是第二个关闭诊断的计时block，**尚无整体终态/策略收益结论**。只查同receipt/PID，不重发，不穿插Turing构建或计时。没有Mac在途。
 
-完整campaign外部权威文件：`/Volumes/disk0/Khor/evidence/net/response-priority-campaign-v1.json`。固定 **A B B A A B** 六block，每block三个fresh完整场景，共18场景/每arm九轮；当前仅block1已launched，block2–6未提交。全矩阵保持原caller/样本/字节/TC/probe/失败人口，不因性能差重跑或排除。协议见 [SCHEDULING](SCHEDULING.md)，读回诊断不得混入计时人口。
+完整campaign外部权威文件：`/Volumes/disk0/Khor/evidence/net/response-priority-campaign-v1.json`。固定 **A B B A A B** 六block，每block三个fresh完整场景，共18场景/每arm九轮；当前block1完成、block2在途、block3–6未提交。block1 **turing-20261111T170059Z-b3de4646** 已269.363秒0、19files/identity/原group空，三个完整场景2160全ok、三份16MiB一致、实际TC/probe/两个guard/日志关闭与source-owned contract均核实；policy-block-verification-v1.json逐原始人口与成功条件分布复算，ledger/campaign终态。它只是A基线，不是策略改善。全矩阵保持原caller/样本/字节/TC/probe/失败人口，不因性能差重跑或排除。协议见 [SCHEDULING](SCHEDULING.md)，读回诊断不得混入计时人口。
 
-接续：先查b3de真实状态；完成后control目录运行collect-network-ssh.py，**等collection终态才**运行OPS/verify-turing-record.py，再用OPS/verify-response-priority-block-v1.py RUN 1核实际source/guard/原始人口/条件成功分布。此helper只解析数据、还保留failed Rust summary中的timeout/缺样本/重复样本，合成metadata已验证这三种情况；它不运行产品。核实后root更新source-refs ledger和campaign block1终态，才能按固定次序提交block2/B，revision用`workload_response_priority_v1-v3-block2-B`、同control/候选B/source-v3、准确b3de终态前驱。其余block依次类推，任何不确定提交先找同revision收据/ledger，不能重发。stage/register工具终态前不并写ledger。
+接续：先查4fd真实状态；完成后control目录运行collect-network-ssh.py，**等collection终态才**运行OPS/verify-turing-record.py，再用OPS/verify-response-priority-block-v1.py RUN 2核实际source/guard/原始人口/条件成功分布。此helper只解析数据、还保留failed Rust summary中的timeout/缺样本/重复样本，合成metadata已验证这三种情况；它不运行产品。核实后root更新source-refs ledger和campaign block2终态，才能按固定次序提交block3/B，revision用`workload_response_priority_v1-v3-block3-B`、同control/候选B/source-v3、准确4fd终态前驱。其余block依次类推，任何不确定提交先找同revision收据/ledger，不能重发。stage/register工具终态前不并写ledger。全部六block完成后，OPS/summarize-response-priority-campaign-v1.py核预定顺序/源/完整12960人口，保留整phase与实际transfer区间两个口径、九对场景差值、文件完成时间及条件payload率；不自动选胜或报p99。该summary目前仅语法检查，必须等六份真实block proof齐全后才运行，不把未执行的summary当已核结果。
 
 ## 冻结源码与前置证据
 
