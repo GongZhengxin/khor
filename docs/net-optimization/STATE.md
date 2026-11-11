@@ -1,10 +1,10 @@
 # feat/net 当前状态与接续入口
 
-更新于2026-11-11 23:01 UTC（本地11月12日）。完整目标“完成计划”仍 **active、未完成、未阻塞**；完整范围为[PLAN](PLAN.md) N0–N5，root串行，不派发子智能体。此页是唯一当前入口。上一页原样保存在[high v2前状态](HISTORY-20261111-through-high-resident-v2.md)，SHA 560d77e0f02b553ebda7b3ac0282a54b0220a0bb1dc1b44a3063f702abf1b172；继续链接更早全部证据。实际worktree/收据/原始日志优先，不按摘要覆盖未提交内容。
+更新于2026-11-11 23:20 UTC（本地11月12日）。完整目标“完成计划”仍 **active、未完成、未阻塞**；完整范围为[PLAN](PLAN.md) N0–N5，root串行，不派发子智能体。此页是唯一当前入口。上一页原样保存在[high v2前状态](HISTORY-20261111-through-high-resident-v2.md)，SHA 560d77e0f02b553ebda7b3ac0282a54b0220a0bb1dc1b44a3063f702abf1b172；继续链接更早全部证据。实际worktree/收据/原始日志优先，不按摘要覆盖未提交内容。
 
 ## 当前状态与下一步
 
-**当前仅一个Turing任务在途：turing-20261111T225814Z-6038e783，high priority block1/A。** 无Mac任务；以下cold v3与Mac两轮回执均已真实终态、收件、核验与ledger终态。 high v3冷模型预检 **turing-20261111T223651Z-5d27f45e** 已 **813.212秒、原退出0、25files**，两个真实w3、三low与三high全部通过；共4320业务请求成功、三份16MiB与三份192MiB完整，目录/终端各120完整落在实际文件传输内。独立提取准确冻结metadata复算、原始人口/时间戳、八TC读回/安装/下载路径字节与静态配置先于两resident/配对均核验通过。旧v2的路径失败不改绿，N1延迟突变选路仍待查。
+**当前仅一个Turing任务在途：turing-20261111T231143Z-7bb58177，high priority block2/B。** 无Mac任务；以下cold v3与Mac两轮回执均已真实终态、收件、核验与ledger终态。 high v3冷模型预检 **turing-20261111T223651Z-5d27f45e** 已 **813.212秒、原退出0、25files**，两个真实w3、三low与三high全部通过；共4320业务请求成功、三份16MiB与三份192MiB完整，目录/终端各120完整落在实际文件传输内。独立提取准确冻结metadata复算、原始人口/时间戳、八TC读回/安装/下载路径字节与静态配置先于两resident/配对均核验通过。旧v2的路径失败不改绿，N1延迟突变选路仍待查。
 
 | cold v3准入证据 | 值 |
 | --- | --- |
@@ -15,7 +15,7 @@
 | bulk目录 / 终端 p95 ms | 410.533/313.286；370.721/335.750；369.441/322.165。全部720/轮成功，三个phase/失败分母/计划到完成/调度滞后/探针flush人口齐全，不报p99或最终UX达标 |
 | 初始路径 | 两端journal初始Direct约304–321ms，三个cohort均未记Relay选择、结束Direct=true；只说明该冷模型的可比性，不证明旧4–13→300ms突变的唯一原因或产品已修复 |
 
-**高profile A/B源码与control现已冻结，严格核两个完整树只差CONTINUED_FILE_RESPONSE_PRIORITY的0/-1一行、PULL_AHEAD=8与全部fixture相同；预定A B B A A B每block三fresh，共18。** 第1组A已提交并实际编译43.65秒、两个真实w3守卫通过，首个wh2在途；其余五组未提交。新task netlab-workload-high-policy每block两个真实w3→三个wh2，生命周期诊断关闭，失败仍保留在原位置。原低profile18轮独立，不合并到高profile；后续prefetch1/2/8、完整预览/公平/背压/成本与N0–N5仍需完成。
+**高profile A/B源码与control现已冻结，严格核两个完整树只差CONTINUED_FILE_RESPONSE_PRIORITY的0/-1一行、PULL_AHEAD=8与全部fixture相同；预定A B B A A B每block三fresh，共18。** 第1组A已完整收件/身份/准确冻结metadata与独立原始人口核验、ledger/campaign终态通过（3/18已复核）；第2组B在途、其首轮原Rust已过，正在第2轮，整组尚未收件或复核；后四组未提交。新task netlab-workload-high-policy每block两个真实w3→三个wh2，生命周期诊断关闭，失败仍保留在原位置。原低profile18轮独立，不合并到高profile；后续prefetch1/2/8、完整预览/公平/背压/成本与N0–N5仍需完成。
 
 | high priority冻结输入 | 值 |
 | --- | --- |
@@ -23,9 +23,20 @@
 | B / priority-1 | **0c873a13c9489d3a9e873d1b1e87243c63b7ab81** / tree **17b23829edd9fdbe61ebb4f71ebc48387b118d2d** / snapshot **15f1ee6ab3fd719c6dfef67519a9cf1cfc80731e**；candidate-high-response-priority-source-v1.json |
 | control / protocol | **5eb896e54c9ce28a3b9f1355579f3fb0516dea6e**；MODEL-DECISION/HIGH-RESIDENT-SETUP，measurement resident_mixed_workload_high_v3，comparison workload_high_response_priority_v1 |
 | pair / campaign | high-response-priority-source-pair-v1.json、high-response-priority-campaign-v1.json；pair refs均pin；相对cold v3源码和Mac16c只STATE差异、零runtime，A/B各匹配旧A/B生产runtime；common queues与c50容量/物理geometry证据适用性保留 |
-| block1 | **turing-20261111T225814Z-6038e783**，pid636601/child636813、stage session6632已实际终态；measurement workload_high_response_priority_v1-block1-A。当前running，format空、编译过、两w3通过；未收件或判定三场景结果 |
+| block1 A终态 | **turing-20261111T225814Z-6038e783**，682.817秒原0、19files/identity/原group空、high-policy-block-verification-v1.json与ledger/campaign终态；三轮各720全ok、三192MiB/关闭/Direct/120重叠全过；file93.709272/81.513137/81.911400秒。不得再次advance 1或重新launch该组 |
+| block2 B在途 | **turing-20261111T231143Z-7bb58177**，pid656960/child657174；measurement workload_high_response_priority_v1-block2-B，stage/advance session37929已终态。编译44.11秒、w3守卫过；首wh2原Rust720全ok/完整192MiB/Direct/关闭/重叠均过（file96.103503秒），第2轮进行中；未判整组结果 |
 
-下一步只观察当前block1；终态后CONTROL collect-network-ssh.py→ops/verify-turing-record.py→**ops/verify-high-policy-block-v1.py RUN 1**，以准确冻结metadata复算和独立原始人口/时刻核验。然后 **ops/advance-high-response-priority-campaign-v1.py 1** 先终态ledger/campaign，再唯一提交下一组B；每组同理，不能因观察超时重复advance/launch。该advance helper已保存未调用；缺失完整测量人口时标campaign needs_review并停止下一提交，有完整人口的业务失败留在原位置。stage不确定时按同measurement revision恢复已有receipt，不重跑preparing。第6组终态也不等于完整N0–N5完成，随后需完整对照复核及prefetch/预览/公平/背压/成本等。
+下一步只观察当前block2；终态后CONTROL collect-network-ssh.py→ops/verify-turing-record.py→**ops/verify-high-policy-block-v1.py RUN 2**，以准确冻结metadata复算和独立原始人口/时刻核验。然后 **ops/advance-high-response-priority-campaign-v1.py 2** 先终态ledger/campaign，再唯一提交下一组B/block3；每组同理，不能因观察超时重复advance/launch。advance 1已实际终态，不能重复；缺失完整测量人口时标campaign needs_review并停止下一提交，有完整人口的业务失败留在原位置。stage不确定时按同measurement revision恢复已有receipt，不重跑preparing。第6组终态也不等于完整N0–N5完成，随后需完整对照复核及prefetch/预览/公平/背压/成本等。
+
+全组六block报告器ops/summarize-high-response-priority-campaign-v1.py已准备：重核每个原始report文件hash、复算全部raw population、保留失败与对应位置差值，不选winner/p99/显著性；实际对未完成campaign调用会拒绝且不生成comparison，尚无完整高profile结论。等6组完成再运行，不能拿partial表作最终策略选择。
+
+### 下一因素的准备（未启动prefetch实验）
+
+[PREFETCH](PREFETCH.md)已在任何prefetch数据前70586fd6冻结：固定priority策略须待完整对照后明确，再冻三树只差PULL_AHEAD=1/2/8一行；low/high各顺序8,1,2,1,2,8,2,8,1。每个值同一次编译输入先w3两真实守卫，再low/high各1 fresh、分别记录，共9组18场景；low失败仍执行原定high，保留首非零。原文件/请求期限、全部人口/字节/Direct/重叠门保持。
+
+准备代码 **a0f43b89320f3ac5ec5e383fe72addc995165039**、准备控制 **5d3691f252f9dee0297fa3c494374be6119bca29**，新固定task netlab-workload-prefetch；**当前priority campaign仍显式使用5eb，不切换控制或源码**。元数据13项21.435秒和dispatch1项/38 task-mode路径43.257秒通过。曾发现合成high_timeout重叠计数没随延长attempt更新，已修fixture重算并保留原门，非真实业务失败。prefetch-default-compatibility-v1.json证明新默认validator逐字段复算实际A组三轮原contract完全相同；prefetch-preparation-input-audit-v1.json证明控制只增加固定task/allowlist，资源/UID/flock/netns/期限逐字未动。
+
+失败文件只放行结构化分析其单调网络计数/固定几何，不伪要求已传完全部字节；仍functional=false，未完成无verified payload rate，区间标caller_attempt，timeout明确被原120/240秒caller界截断；720逻辑请求/失败/缺失仍保留。成功文件仍严格完整路径字节门；旧policy/preflight默认仍只准PULL_AHEAD=8，旧输出未改。**尚未选择priority、未冻结三树、未建prefetch campaign、零prefetch真实run；新代码还需实际远端运行，不称通过。** 不得提前启动或把这一准备混入当前18轮。
 
 额外静态发现留在bounded-prefetch-static-audit-v1.json：pull_path_with使用join_all批量屏障，等整批完成再补下一批；有界滚动补齐可能改善有效在途量，但**尚未实现/测量**。保留既定优先级/prefetch独立因素，后续方案须保持原顺序写入/mtime/续传/取消/资源所有权和八片内存界；不能动当前冻结pair或混入这18轮。
 
