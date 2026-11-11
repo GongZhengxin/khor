@@ -103,7 +103,10 @@ async fn a_prepared_handshake_uses_custom_path_zero_beside_a_live_ip_connection(
         let _ = task.await;
     }
     eprintln!("[initial-custom-identity-control] {rejected}");
-    assert!(matches!(rejected, iroh::endpoint::ConnectError::Connecting { .. }));
+    assert!(matches!(
+        rejected,
+        iroh::endpoint::ConnectError::Connecting { .. }
+    ));
     assert!(warm.close_reason().is_none() && warm_remote.close_reason().is_none());
     carried.close(0u32.into(), b"initial route contract complete");
     warm.close(0u32.into(), b"warm route contract complete");
