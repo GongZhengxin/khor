@@ -2,7 +2,7 @@
 
 更新于2026-11-11 12:08 UTC。完整N0–N5目标“完成计划”**active**，本轮有新真实物理证据、Mac同源12组验证与新四个已有carrier合同；未完成、未阻塞，root串行，不派发子智能体。上份STATE逐字归档到[业务连续性v2以前](HISTORY-20261111-through-business-continuity-v2.md)，SHA **909d6598e60cb5fa05fd66d4a998682f0dd79f443c3fd301cbdfbefe4d23ab0a**，它继续链接hint、comparison和全部更早失败。原始日志/准确收据优先，不能按摘要覆盖工作树。
 
-## 现在只查这两个旧行为任务
+## 旧行为573的两个任务（12:13 UTC已终态，收集在继续）
 
 冻结 **573a5880b31368a29b51197266f623bbd6702fcb**，tree **7eb044bc4f13d08e0ee399b06ec52e0de969d5a9** /snapshot **9975d20990d786026b8f662fecb9474923315edd**，candidate-installed-carrier-contract-source-v3.json，clean/0excluded。它只修四个新真实合同的清理顺序，**不含产品修复草稿**。
 
@@ -67,3 +67,12 @@ MacLab与Turing同LAN；macserver为另一构建机，用户报告异网。local
 本机source-only，无Cargo/Rust/Node/Xcode/fmt/产品执行；Git/Python源码元数据允许。Turing严格串行UID1110/flock/user-netns/tmp/khor-netlab-feat-net-1110/Rust1.95/jobs16/nice10/50GiB起40停/90min原门，无sudo/host网改动。Mac独立jobs2/shared-cache/原门可与Turing并行；SSH BatchMode/ForwardAgent=no/StrictHostKeyChecking。全实现/这些远端验证已授权；无main合并/发布/采购/生产部署或已装App/config/store/resident修改授权。fixture只动远端namespace scratch。
 
 图谱优先，本树无.codegraph不擅建；CRG滞后/部分覆盖，0flow不是无影响；debug/explore/review技能已使用。继续先核实际diff与两任务，然后按本页下一步，完整目标保持active。
+
+
+## 12:13 UTC：旧实现真实最终业务两红，候选进入远端验证
+
+Turing5df2c88e已355.398秒终态101、14files/identity/原group空，hop89/net68+1ignored/wires16/journal30绿；budget **34pass/2真实最终FAIL**。两项救通都到第310行实际业务断言，early=true/false均answered=false、path=None、requests=0；快Direct两负控绿、旧活IP调用前后继续应答/既有carrier保持，清理无panic。该最终旧行为可以作为产品红，不再与前一v2清理错误混淆。Mac43017591561已failure，exact artifact/identity收取继续，尚未按Linux结果代认Mac失败内容。
+
+现将原两文件草稿提交为候选：普通第二个已有slot与early一个父借用future为已安装carrier提供显式Custom普通握手，原genericDirect/early先快者仍可胜，缓存路失败不取消尚在途carrier，认证resting仍决定。最多2活动、原拨号/caller期限、writes/0RTT门保持；已有快速Direct不等待新carrier。性能成本未测，不能称零开销。新四合同逐字保持，必须同一最终断言转绿。四peer额外sample hop/via与组件输出仅采证，held累计false仍失败且1.5秒/10秒/30样本不变；其新增失败后继续采样不回写旧v2绿。未做provider selected修复、未改v2 selected_every门。
+
+先冻结新source并单次提交Mac/Turing net-node，回收准确同源全部12/四新合同；Turing前驱5df已结束，允许下一串行任务。继而四peer验证、provider实际数据路径与共享selected观测语义、旧f4恢复长尾及N3/N4/N5，完整目标active。

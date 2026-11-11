@@ -99,6 +99,12 @@ c2b的三个新增实际TLS/echo合同在Mac/Turing同源全部12组通过（总
 
 这增加了必要场景下的有限握手工作，不能声称流量或能耗不变。真实活IP连接旁的新Custom Path0/TLS/echo、错误身份拒绝、原IP连接存续和API输入门必须先通过，再核冻结四peer首内容、连续性、取消/旧完成及N3成本。准确候选及结果见STATE；这是待验设计，不是N2/N4完成结论。
 
+### 已安装carrier的初始路竞争（候选）
+
+已有carrier也需要一次独立初始目的地机会；把它仅塞入generic地址集合，仍会被同peer另一个活连接的共享selected route遮住。普通拨号沿原两个槽保留generic路，将第二个重复identity-only拨号替换为显式Custom普通握手；early保留原0RTT读取竞争一个普通Custom握手，不向替代路径发送early业务。原generic路的失败若尚有Custom在途，不提前决定，认证resting仍终止；两者都失败沿原失败结果/期限退出。original future与其early answer owner输掉时取消，不能增加第三次carrier尝试或扩大写重放。
+
+这会让已有carrier在快Direct场景也可能开始额外握手，必须在N3测CPU/字节/手机开销，两个slot不等于原成本不变。真实旧573在活IP控制和fastDirect负控通过时，两普通/early完整业务都无响应；候选尚待同源合同与物理接受。
+
 ### 混合负载（N3）
 
 先测应用队列、服务器并发席位、流调度、发送缓冲和承载外层流各占多少延迟，再选择优先级或隔离。优先级不能撤回已在飞行的批量字节，因此需要同时验证排队/在途量与背压。

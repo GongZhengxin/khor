@@ -3796,7 +3796,7 @@ impl Node {
         // A road this machine carries itself, as `dial_with` adds it.
         let carried_at_start = self.carried_addr(&d.id);
         let had_carried = carried_at_start.is_some();
-        addr.addrs.extend(carried_at_start);
+        addr.addrs.extend(carried_at_start.clone());
         let mut tried = crate::journal::offered(&addr);
         let Ok(frame) = proto::encode(req) else {
             return Early::NotTaken;
@@ -3874,19 +3874,51 @@ impl Node {
                 }
             }
         };
-        // Keep the ordinary early attempt fast. A newly prepared carrier
-        // may race one ordinary handshake within the SAME absolute window;
+        // Keep the ordinary early attempt fast. An installed or newly
+        // prepared carrier gets one ordinary handshake in the SAME window;
         // it sends no early request. Only rides_early readings enter here.
         let mut attempt = Box::pin(tokio::time::timeout_at(dial_by, attempt));
         let mut carried_attempt: Option<
             futures::future::BoxFuture<'_, Result<iroh::endpoint::Connection, DialFailure>>,
         > = None;
         let mut raced_carrier = false;
+        if let Some(carried) = carried_at_start
+            && let Ok(mut addr) = endpoint::dial_addr(&d.id, &[], &[])
+        {
+            addr.addrs.insert(carried);
+            let ep = ep.clone();
+            let until = by.map_or(dial_by, |caller| caller.min(dial_by));
+            raced_carrier = true;
+            carried_attempt = Some(Box::pin(async move {
+                match crate::deadline::wait(
+                    Some(until),
+                    connect_prepared_carrier(&ep, addr, ALPN),
+                )
+                .await
+                {
+                    Ok(Ok(conn)) => Ok(conn),
+                    Ok(Err(error)) => Err(DialFailure::of_connect(&error)),
+                    Err(_) => Err(DialFailure::CallerExpired),
+                }
+            }));
+        }
+        let mut original_pending = true;
+        let mut original_outcome = None;
         let mut preparing = true;
         let mut outcome = loop {
             tokio::select! {
                 biased;
-                outcome = &mut attempt => break outcome,
+                outcome = &mut attempt, if original_pending => {
+                    // A failed cached route does not decide an in-flight
+                    // carrier. Authenticated resting and success still do.
+                    if carried_attempt.is_none()
+                        || matches!(&outcome, Ok(Ok(_)) | Ok(Err(DialFailure::Asleep(_))))
+                    {
+                        break outcome;
+                    }
+                    original_pending = false;
+                    original_outcome = Some(outcome);
+                },
                 () = &mut hop, if preparing => {
                     preparing = false;
                     if !had_carried
@@ -3921,7 +3953,11 @@ impl Node {
                         Ok(conn) => break Ok(Ok((conn, None))),
                         Err(error @ DialFailure::Asleep(_)) => break Ok(Err(error)),
                         // One failed alternative does not decide the original.
-                        Err(_) => {}
+                        Err(_) => {
+                            if let Some(outcome) = original_outcome.take() {
+                                break outcome;
+                            }
+                        }
                     }
                 },
             }
@@ -13606,7 +13642,7 @@ impl Node {
         let mut tried = (0, Vec::new(), false);
         if ahead {
             let mut addr = endpoint::dial_addr(id, direct, relays).map_err(bare)?;
-            addr.addrs.extend(carried);
+            addr.addrs.extend(carried.clone());
             tried = crate::journal::offered(&addr);
             let (ep, alpn) = (ep.clone(), alpn.to_vec());
             roads.spawn(async move {
@@ -13614,9 +13650,19 @@ impl Node {
                 (crate::journal::Won::Direct, connected)
             });
         }
-        // By identity alone. Nothing here can be stale: a machine's id
-        // is the one thing about it that a restart does not change.
-        let relay_attempt = {
+        // An installed carrier uses the second existing slot immediately.
+        // The ordinary route still races it; neither path type is forced.
+        // Without a carrier, keep the identity-only relay attempt as before.
+        let relay_attempt = if let Some(carried) = carried {
+            let mut addr = endpoint::dial_addr(id, &[], &[]).map_err(bare)?;
+            addr.addrs.insert(carried);
+            let (ep, alpn) = (ep.clone(), alpn.to_vec());
+            roads.spawn(async move {
+                let connected =
+                    crate::deadline::wait(by, connect_prepared_carrier(&ep, addr, &alpn)).await;
+                (crate::journal::Won::Direct, connected)
+            })
+        } else {
             let addr = endpoint::dial_addr(id, &[], relays).map_err(bare)?;
             if !ahead {
                 tried = crate::journal::offered(&addr);

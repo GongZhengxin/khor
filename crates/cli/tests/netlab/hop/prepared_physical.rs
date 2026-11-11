@@ -277,12 +277,22 @@ pub(super) async fn run() {
         )
         .await;
         samples += 1;
-        held &= error.is_none()
-            && x.link(&y).await.as_ref().is_some_and(via_n)
-            && y.link(&x).await.as_ref().is_some_and(via_n);
-        if !held {
-            break;
+        let (x_link, y_link) = (x.link(&y).await, y.link(&x).await);
+        let current = error.is_none()
+            && x_link.as_ref().is_some_and(via_n)
+            && y_link.as_ref().is_some_and(via_n);
+        if !current {
+            eprintln!(
+                "[netlab-prepared-link] {s} sample={samples} error={error:?} x_hop={:?} x_via={:?} y_hop={:?} y_via={:?}",
+                x_link.as_ref().map(|link| link.hop),
+                x_link.as_ref().and_then(|link| link.via.as_deref()),
+                y_link.as_ref().map(|link| link.hop),
+                y_link.as_ref().and_then(|link| link.via.as_deref()),
+            );
         }
+        // Keep all subsequent samples as evidence; one failed observation
+        // still fails the original held gate for the entire case.
+        held &= current;
         tokio::time::sleep(Duration::from_millis(200)).await;
     }
     // Path journal rows are deduplicated across a peer's connections and
@@ -294,6 +304,16 @@ pub(super) async fn run() {
     let received = business(&x_rows, "list_response_received");
     let sent = business(&y_rows, "list_response_sent");
     let expected = samples + 1;
+    let selected_every = received.iter().all(|row| {
+        row["details"]["measurements"]
+            .as_array()
+            .is_some_and(|paths| {
+                paths
+                    .iter()
+                    .any(|path| path["selected"] == true && path["carried"] == true)
+            })
+    });
+    let carrier_both = carrier_held(&x_rows, restored) && carrier_held(&y_rows, restored);
     let continuous = x_wires.len() == 1
         && y_wires.len() == 1
         && received.len() == expected
@@ -304,17 +324,8 @@ pub(super) async fn run() {
         && streams(&received) == streams(&sent)
         && received[0]["at"].as_u64().is_some_and(|at| at <= restored)
         && sent[0]["at"].as_u64().is_some_and(|at| at <= restored)
-        && received.iter().all(|row| {
-            row["details"]["measurements"]
-                .as_array()
-                .is_some_and(|paths| {
-                    paths
-                        .iter()
-                        .any(|path| path["selected"] == true && path["carried"] == true)
-                })
-        })
-        && carrier_held(&x_rows, restored)
-        && carrier_held(&y_rows, restored)
+        && selected_every
+        && carrier_both
         && !retired(&x, &y, &x_wires, restored)
         && !retired(&y, &x, &y_wires, restored);
     let ok = first_error.is_none()
@@ -339,7 +350,7 @@ pub(super) async fn run() {
         s,
         ok,
         format!(
-            "activation_to_content={first_response:?} request={first_time:?} error={first_error:?} M_stopped={stopped} two_asks={two_asks} via_N={} samples={samples} hold={:?} continuous={continuous} x_wires={x_wires:?} y_wires={y_wires:?} received={} sent={} matching_streams={}",
+            "activation_to_content={first_response:?} request={first_time:?} error={first_error:?} M_stopped={stopped} two_asks={two_asks} via_N={} samples={samples} hold={:?} held={held} continuous={continuous} selected_every={selected_every} carrier_both={carrier_both} x_wires={x_wires:?} y_wires={y_wires:?} received={} sent={} matching_streams={}",
             carried.is_some(),
             hold.elapsed(),
             received.len(),
