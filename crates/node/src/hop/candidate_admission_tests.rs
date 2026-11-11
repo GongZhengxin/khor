@@ -106,7 +106,9 @@ async fn observe_admission(first_hangs: bool) {
     };
     let counts = (
         asks.load(Ordering::SeqCst),
-        refuser.as_ref().map_or(0, |m| m.asks.load(Ordering::SeqCst)),
+        refuser
+            .as_ref()
+            .map_or(0, |m| m.asks.load(Ordering::SeqCst)),
         good.asks.load(Ordering::SeqCst),
     );
     let outer_open = f.outer_local.close_reason().is_none()
@@ -114,7 +116,12 @@ async fn observe_admission(first_hangs: bool) {
         && good.local.close_reason().is_none()
         && good.incoming.close_reason().is_none();
     assert!(network.ptr_eq(&f.node.wires.hop_epoch()));
-    for task in [&mut next, &mut f.middle_task, &mut f.echo_task, &mut good.task] {
+    for task in [
+        &mut next,
+        &mut f.middle_task,
+        &mut f.echo_task,
+        &mut good.task,
+    ] {
         stop(task).await;
     }
     if let Some(task) = earlier.as_mut() {
