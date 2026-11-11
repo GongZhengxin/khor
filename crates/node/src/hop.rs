@@ -728,13 +728,25 @@ impl Node {
         let line = Box::pin(crate::journal::BY.scope(
             crate::journal::By::Hop,
             self.line_to_inner(ep, middle, Proto::Tunnel, None, false),
-        )).await.ok()?;
+        ))
+        .await
+        .ok()?;
         if let Some(wire) = HopWire::observed(&line.conn) {
             used_middle(self.device_str(), &target.id, epoch, &middle.id, wire);
         }
-        let ask = if prepared { Ask::PrepareTo(peer) } else { Ask::To(peer) };
+        let ask = if prepared {
+            Ask::PrepareTo(peer)
+        } else {
+            Ask::To(peer)
+        };
         let (send, recv) = crate::tunnel::dial(&line.conn, &ask.words()).await.ok()?;
-        Some((via, line.conn.stable_id(), line.conn.weak_handle(), send, recv))
+        Some((
+            via,
+            line.conn.stable_id(),
+            line.conn.weak_handle(),
+            send,
+            recv,
+        ))
     }
 
     /// This machine's road to `b` for picking a middle: its live wire
@@ -1023,8 +1035,11 @@ impl Node {
                     None
                 };
                 if let Ok(Some(prepared)) = crate::deadline::wait(
-                    Some(prepared_by), crate::deadline::scope(prepared_by, preparing),
-                ).await {
+                    Some(prepared_by),
+                    crate::deadline::scope(prepared_by, preparing),
+                )
+                .await
+                {
                     return Some(prepared);
                 }
             }
@@ -1049,9 +1064,12 @@ impl Node {
                 if let Ok(Some(prepared)) = crate::deadline::wait(
                     Some(attempt_by),
                     crate::deadline::scope(
-                        attempt_by, self.prepare_hop_middle(ep, y, middle, &epoch, false),
+                        attempt_by,
+                        self.prepare_hop_middle(ep, y, middle, &epoch, false),
                     ),
-                ).await {
+                )
+                .await
+                {
                     return Some(prepared);
                 }
             }
@@ -1396,7 +1414,11 @@ impl Node {
                             .await
                             .ok()?;
                     let wire = line.conn.stable_id();
-                    let hand = if prepared { Ask::PrepareFrom(from_id) } else { Ask::From(from_id) };
+                    let hand = if prepared {
+                        Ask::PrepareFrom(from_id)
+                    } else {
+                        Ask::From(from_id)
+                    };
                     crate::tunnel::dial(&line.conn, &hand.words())
                         .await
                         .ok()

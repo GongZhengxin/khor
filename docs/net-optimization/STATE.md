@@ -95,3 +95,13 @@ root已提交hop.rs每middle失败作用域候选b344→格式fcc7（尚未验�
 接着追加receiver_commit_tests.rs：实际paired Tunnel通过生产read_target/Ask/serve_hop，先经旧middle完成carried TLS/echo，再让第二middle获得OK但不发任何carrier数据，要求活carrier和通信在该输家取消前后保持；测试通过现有enroll_after_pair在临时fixture签名认证目标，未绕过生产trust。生产仍fcc7。test-only780db249/tree1ebbe6/snapshotc00977已提交Turing **082036Z-68a7cf1a**，PID3628543，stage93737已退出。初版误用了私有write_target，已在工作区改为真实u16长度+target头（无生产API放宽）；首轮预计先格式或编译门，不能算旧行为红。先核同receipt，保留所有尝试；format patch需与自己这一小段WIP分开，不覆盖。
 
 拟采用目标侧完整首帧作为提交证据：OK只表示准备，未发送carried数据的输家不能调用Links::attach替换当前peer。这样不新增线上状态字/重试写语义，仍端到端加密。并发仅对明确支持此语义的目标开启，旧/未知目标维持有界、分配总预算的兼容路径；能力的发布/降级和两个OK/迟到/取消都需真实验证。此时尚未实现，不能作为已验证设计；不要把纯select两个dial当安全竞争。
+
+
+2026-11-11 08:38 UTC authoritative checkpoint：
+- receiver旧行为23df872a/treeba02cf/snapshotc02d5a，Turing082230Z-308999e8已224.863秒终态，11files/identity/空group；hop74/2，新receiver最终真实流量合同和旧挂起合同红，原74全过。receiver-commit-old-behavior-v1.json与ledger终态。
+- 3b555d5b候选082818Z-7340470b仅格式失败45.981秒，10files/identity/空group，远端patch逐字应用为 **7d06d5e1360f3c08ef3fa1a7c30fd6ec48bd34f7**，treeb70f871326ed3f9fb3abc7c1a5dfbf93b6b2e47f/snapshotd2ff22b80e928611469a1023cbb1b8b11ae993c2，candidate-receiver-commit-candidate-source-v2.json。legacy原3秒预算按剩余slots分配，不退役outer；receiver OK后等完整u16 carrier首帧，最多65537字节/原3秒，再原样prefix交给transport并复核现有成员/hop/SSH/tie门。不记录payload，不新增常驻map/task。并行竞争不在这个源。
+- 准确7d **Turing082952Z-dae9993c**已339.355秒终态return0，21files/identity/空group，实际全部12组绿，hop76/wires16/budget30/resume1；node-regression-verification-v1.json，ledger终态。准确同源 **Mac42987755071**（requesta28af5de2c324c1094436040c883c184）已success、登记，artifact/identity/逐组待核，不可提前称双OS全12。无phone采样。
+- 最新生产源码 **8ecc441c5ac7a23aa6a3a52a6e460d2e3ed5c7c7**，tree3cf332bba3f423bd5401945aaaa5687ecb0598e7/snapshot70633b3e456faf1ee2ad69e489cb63aef996ae22，candidate-prepared-race-source-v1.json。真正最多2候选FuturesUnordered准备竞争，赢家在首次carrier payload时目标端提交；败者future在发布前丢弃。新的hop-ready/hop-ready-in必须在B/Y都被识别并返回OK，旧节点不会误授并发legacy。DeviceInfo.hop_staged只是可过期的flat自报hint；读到旧true仍要正向线协议确认，阶段失败后在同一原总预算剩余时间中走有界legacy。为降级fallback保留总剩余预算一半，不增加原3秒总期限/TRIES2/信任门/写操作重放。3个新增实际TLS/echo合同：第一prepared status挂起时第二胜出；两个Ready只提交1条且输家取消；stale hint真实拒绝后legacy救通。原76测试正文保持，新fixture SHA在candidate-prepared-race-fixture-v1.json。完整物理两腿和成本仍欠，不能把adapter unit当最终N2/N4。
+- 8ecc只提交一次Turingstage，exec **60061**，前驱dae9993c，role candidate。先恢复同session/实际receipt，不重发。此时尚未验证格式/编译/行为。最新同源双OS全12已核仍1bd，7d的Mac待artifact核。
+
+当前完整计划active，前轮为代码与实际证据进展，非等待/无进展。后续先核8ecc并收7d的Mac，再完成prepared源两OS/实际原hop矩阵；之后消除30秒全局比较阻塞（需复用原cache/所有者、保持成本门）、同wire迁移/目标有效hint/LOST identity、N3交互共存与成本、N4两腿移动、N5最终审计/真机。不要收缩为新79项测试通过即完成。无phone部署/采样，原所有红保持。

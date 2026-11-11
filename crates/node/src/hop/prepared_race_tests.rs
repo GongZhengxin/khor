@@ -2,7 +2,11 @@
 use super::*;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
-enum Mode { Prepared, DoubleReady, StaleHint }
+enum Mode {
+    Prepared,
+    DoubleReady,
+    StaleHint,
+}
 
 async fn observe_prepared(mode: Mode) {
     let mut f = Publication::new().await;
@@ -32,8 +36,12 @@ async fn observe_prepared(mode: Mode) {
         let task = Owned(Some(tokio::spawn({
             let (links, me, to) = (f.target_links.clone(), f.ep.id(), f.target_ep.id());
             let (ready_asks, legacy_asks, committed, cancelled, barrier, attachments) = (
-                ready_asks.clone(), legacy_asks.clone(), committed.clone(),
-                cancelled.clone(), barrier.clone(), attachments.clone(),
+                ready_asks.clone(),
+                legacy_asks.clone(),
+                committed.clone(),
+                cancelled.clone(),
+                barrier.clone(),
+                attachments.clone(),
             );
             async move {
                 while let Ok((mut send, mut recv)) = conn.accept_bi().await {
@@ -71,21 +79,33 @@ async fn observe_prepared(mode: Mode) {
                     };
                     committed.fetch_add(1, Ordering::SeqCst);
                     let up = stream_trace::attach_prefixed(
-                        &links, me, Carrier::Hop { via }, None, "prepared-fixture", (send, recv), prefix,
+                        &links,
+                        me,
+                        Carrier::Hop { via },
+                        None,
+                        "prepared-fixture",
+                        (send, recv),
+                        prefix,
                     );
                     attachments.send(up).unwrap();
                     return;
                 }
             }
         })));
-        if first { f.middle_task = task; } else { second.task = task; }
+        if first {
+            f.middle_task = task;
+        } else {
+            second.task = task;
+        }
     }
     drop(attachments);
     let (offered, release) = f.node.wires.gate_hop_offered_for_test();
     let start = tokio::time::Instant::now();
     let mut opening = preparing(&f);
     let serial = tokio::time::timeout(HOP_WITHIN + Duration::from_secs(1), offered)
-        .await.unwrap().unwrap();
+        .await
+        .unwrap()
+        .unwrap();
     let preparation_elapsed = start.elapsed();
     release.send(()).unwrap();
     completed(&mut opening).await;
@@ -93,26 +113,40 @@ async fn observe_prepared(mode: Mode) {
         Carrier::Hop { via } => via,
         _ => panic!("the candidate must publish a hop"),
     };
-    if mode != Mode::DoubleReady { assert_eq!(via, second.ep.id()); }
+    if mode != Mode::DoubleReady {
+        assert_eq!(via, second.ep.id());
+    }
     let conn = tokio::time::timeout(
         Duration::from_secs(5),
         f.ep.connect(
             iroh::EndpointAddr::from_parts(f.target_ep.id(), [transport_addr(&f.target_ep.id())]),
             INNER_ALPN,
         ),
-    ).await.unwrap().unwrap();
-    assert_eq!(khor_net::path::classify(&conn), khor_net::path::PathKind::Carried);
+    )
+    .await
+    .unwrap()
+    .unwrap();
+    assert_eq!(
+        khor_net::path::classify(&conn),
+        khor_net::path::PathKind::Carried
+    );
     let answered = echo(&conn).await;
     f.node.wires.adopt(&f.target.id, Proto::Main, conn.clone());
     let target_attachment = tokio::time::timeout(Duration::from_secs(2), attached.recv())
-        .await.unwrap().unwrap();
+        .await
+        .unwrap()
+        .unwrap();
     for task in [&mut f.middle_task, &mut second.task] {
         tokio::time::timeout(Duration::from_secs(2), task.0.take().unwrap())
-            .await.unwrap().unwrap();
+            .await
+            .unwrap()
+            .unwrap();
     }
     let counts = (
-        ready_asks.load(Ordering::SeqCst), legacy_asks.load(Ordering::SeqCst),
-        committed.load(Ordering::SeqCst), cancelled.load(Ordering::SeqCst),
+        ready_asks.load(Ordering::SeqCst),
+        legacy_asks.load(Ordering::SeqCst),
+        committed.load(Ordering::SeqCst),
+        cancelled.load(Ordering::SeqCst),
     );
     let extra_attachment = attached.try_recv().is_ok();
     let outer_open = f.outer_local.close_reason().is_none()
@@ -121,20 +155,45 @@ async fn observe_prepared(mode: Mode) {
     assert!(network.ptr_eq(&f.node.wires.hop_epoch()));
     conn.close(0u32.into(), b"prepared race fixture complete");
     tokio::time::timeout(Duration::from_secs(2), f.echo_task.0.take().unwrap())
-        .await.unwrap().unwrap();
-    f.node.carry.detach_attached(&f.target_ep.id(), Carrier::Hop { via }, serial);
-    f.target_links.detach_attached(&f.ep.id(), Carrier::Hop { via }, target_attachment.serial());
-    tokio::time::timeout(Duration::from_secs(2), target_attachment.ended()).await.unwrap();
+        .await
+        .unwrap()
+        .unwrap();
+    f.node
+        .carry
+        .detach_attached(&f.target_ep.id(), Carrier::Hop { via }, serial);
+    f.target_links
+        .detach_attached(&f.ep.id(), Carrier::Hop { via }, target_attachment.serial());
+    tokio::time::timeout(Duration::from_secs(2), target_attachment.ended())
+        .await
+        .unwrap();
     tokio::time::timeout(Duration::from_secs(2), async {
-        while asking(f.node.device_str(), &f.target.id) { tokio::task::yield_now().await; }
-    }).await.unwrap();
-    tokio::join!(f.ep.close(), f.target_ep.close(), f.middle_ep.close(), second.ep.close());
+        while asking(f.node.device_str(), &f.target.id) {
+            tokio::task::yield_now().await;
+        }
+    })
+    .await
+    .unwrap();
+    tokio::join!(
+        f.ep.close(),
+        f.target_ep.close(),
+        f.middle_ep.close(),
+        second.ep.close()
+    );
     assert!(answered && outer_open && !extra_attachment);
-    assert_eq!(counts, if mode == Mode::StaleHint { (2, 2, 1, 1) } else { (2, 0, 1, 1) });
+    assert_eq!(
+        counts,
+        if mode == Mode::StaleHint {
+            (2, 2, 1, 1)
+        } else {
+            (2, 0, 1, 1)
+        }
+    );
     assert!(preparation_elapsed < HOP_WITHIN);
     if mode != Mode::StaleHint {
-        assert!(preparation_elapsed < HOP_WITHIN / 2,
-            "prepared peers must race rather than wait for the legacy first-slot deadline");
+        assert!(
+            preparation_elapsed < HOP_WITHIN / 2,
+            "prepared peers must race rather than wait for the legacy first-slot deadline"
+        );
     }
 }
 

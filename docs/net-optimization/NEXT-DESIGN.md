@@ -659,3 +659,6 @@ ff743已复用已有 Recovery 分支，使目标缺可用 wire 的判断先于�
 不能直接把两个tunnel::dial同时select当成完整有界竞争：serve_hop Ask::From当前在回OK后立即attach target的同peer carried transport。两个middle同时获准可能在目标侧互相替换，即使initiator只公布赢家；输家取消时旧B可能仍在await其Onward，目标侧晚attach也须被约束。需要覆盖双OK/迟到OK/取消后晚到From等实际双middle合同，明确哪个端点拥有最终提交；先做每middle失败范围不意味着并发提交已安全。禁止以只测一个OK+一个挂起来宣布竞争完成。
 
 避免无依据固定hedge延迟；总预算/候选数/任务和stream生命周期必须有界，并记录工作量与业务收益。可研究并行准备首腿、明确admission/commit阶段及向后兼容，依据实验选择；不在此文把具体协议/参数写成用户已批准。
+
+
+2026-11-11 08:38 UTC：上文“每middle失败范围”已实现并在Turing真实第三middle救通（74/1，剩第一挂起红）；7d进一步实现原deadline公平分配和完整首帧receiver提交，Turing全部12组/hop76过、Mac同源success待逐组核。并行prepared候选8ecc已实现未验证：flat hop_staged只作hint，新hop-ready To/From双端正向协议识别，不信过期能力；最多2 future、原总期限一半保留legacy fallback，失败/取消不发布carrier，真实首帧才提交，保持加密与原TRIES2信任边界。三个真实流量合同覆盖挂起、双Ready单提交、stale hint。物理完整两腿/旧版本混合与成本仍待。此前“不能只select两个dial”风险由receiver首帧提交及双端新词识别共同处理，原旧红和分项证据仍保留。
