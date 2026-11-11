@@ -153,6 +153,13 @@ struct HopCandidate {
     id: String,
     live: bool,
     wires: Vec<HopWire>,
+    missed: Option<(u32, std::time::Instant)>,
+}
+
+impl HopCandidate {
+    fn cooling(&self) -> bool {
+        self.missed.is_some_and(|(count, at)| at.elapsed() < missed_wait(count))
+    }
 }
 
 fn same_candidates(a: &[HopCandidate], b: &[HopCandidate]) -> bool {
@@ -248,6 +255,18 @@ fn miss_context(
     {
         return Some(epoch.clone());
     }
+    // A new candidate may get admission without retrying unchanged
+    // middles that already refused. Only the same live wire in the same
+    // network can carry its own failure forward into the new context.
+    if miss.epoch.as_ref().is_some_and(|epoch| epoch.network.ptr_eq(&observation.network)) {
+        for candidate in &mut candidates {
+            if let Some(previous) = miss.candidates.iter().find(|previous| {
+                same_candidates(std::slice::from_ref(previous), std::slice::from_ref(candidate))
+            }) {
+                candidate.missed = previous.missed;
+            }
+        }
+    }
     let current = Arc::new(());
     let epoch = MissEpoch {
         network: observation.network,
@@ -279,7 +298,7 @@ fn used_middle(me: &str, to: &str, epoch: &MissEpoch, id: &str, wire: HopWire) {
     }
 }
 
-fn missed_in_epoch(me: &str, to: &str, epoch: Option<MissEpoch>) {
+fn missed_in_epoch(me: &str, to: &str, epoch: Option<MissEpoch>, attempted: &[&str]) {
     let mut all = MISSED.lock().unwrap_or_else(|p| p.into_inner());
     // Check under the same lock as the write. Neither a network change nor
     // a new candidate context can be overwritten by an old completion.
@@ -302,6 +321,12 @@ fn missed_in_epoch(me: &str, to: &str, epoch: Option<MissEpoch>) {
     }
     e.count = e.count.saturating_add(1);
     e.at = std::time::Instant::now();
+    for middle in &mut e.candidates {
+        if attempted.contains(&middle.id.as_str()) {
+            let count = middle.missed.map_or(1, |(count, _)| count.saturating_add(1));
+            middle.missed = Some((count, e.at));
+        }
+    }
 }
 
 fn made_in_epoch(me: &str, to: &str, epoch: Option<&MissEpoch>) {
@@ -321,6 +346,9 @@ fn made_in_epoch(me: &str, to: &str, epoch: Option<&MissEpoch>) {
         // its token also retires every answer still using the old one.
         let current = Arc::new(());
         miss.count = 0;
+        for middle in &mut miss.candidates {
+            middle.missed = None;
+        }
         miss.epoch = Some(MissEpoch {
             network: epoch.network.clone(),
             candidates: Arc::downgrade(&current),
@@ -336,9 +364,12 @@ fn missed_lately_in_epoch(me: &str, to: &str, epoch: Option<&MissEpoch>) -> bool
     let all = MISSED.lock().unwrap_or_else(|p| p.into_inner());
     current_miss_epoch(epoch)
         && all.get(&(me.to_owned(), to.to_owned())).is_some_and(|e| {
-            e.count > 0
-                && same_miss_epoch(e.epoch.as_ref(), epoch)
-                && e.at.elapsed() < missed_wait(e.count)
+            same_miss_epoch(e.epoch.as_ref(), epoch)
+                && if epoch.is_some() {
+                    !e.candidates.is_empty() && e.candidates.iter().all(HopCandidate::cooling)
+                } else {
+                    e.count > 0 && e.at.elapsed() < missed_wait(e.count)
+                }
         })
 }
 
@@ -346,7 +377,7 @@ fn missed_lately_in_epoch(me: &str, to: &str, epoch: Option<&MissEpoch>) -> bool
 // without a Wires owner. Actual Node tests exercise owned network epochs.
 #[cfg(test)]
 fn missed(me: &str, to: &str) {
-    missed_in_epoch(me, to, None);
+    missed_in_epoch(me, to, None, &[]);
 }
 
 #[cfg(test)]
@@ -835,6 +866,7 @@ impl Node {
                         id: id.clone(),
                         live: self.road_for_hop(id, &[]).is_some(),
                         wires,
+                        missed: None,
                     }
                 })
                 .collect()
@@ -880,15 +912,34 @@ impl Node {
             return false;
         };
         let me = self.device_str().to_owned();
+        let eligible = {
+            let all = MISSED.lock().unwrap_or_else(|p| p.into_inner());
+            let Some(miss) = all.get(&(me.clone(), y.id.clone())) else {
+                return false;
+            };
+            if !current_miss_epoch(Some(&epoch))
+                || !same_miss_epoch(miss.epoch.as_ref(), Some(&epoch))
+            {
+                return false;
+            }
+            picked.iter().filter(|id| {
+                miss.candidates.iter().any(|middle| &middle.id == *id && !middle.cooling())
+            }).take(TRIES).collect::<Vec<_>>()
+        };
+        if eligible.is_empty() {
+            return false;
+        }
         let asked = Asking::new(&me, &y.id);
+        let mut attempted = Vec::with_capacity(TRIES);
         let tries = async {
-            for b in picked.iter().take(TRIES) {
+            for b in eligible {
                 let Some(middle) = all.iter().find(|d| &d.id == b) else {
                     continue;
                 };
                 let Ok(via) = b.parse::<EndpointId>() else {
                     continue;
                 };
+                attempted.push(b.as_str());
                 // Boxed: the middle's wire is a dial, and a dial may hop.
                 let line = Box::pin(crate::journal::BY.scope(
                     crate::journal::By::Hop,
@@ -914,14 +965,13 @@ impl Node {
             }
             None
         };
-        let tried = u32::try_from(picked.len().min(TRIES)).unwrap_or(u32::MAX);
-        let Ok(Some((via, outer_wire, outer, send, recv))) =
-            crate::deadline::wait(Some(by), crate::deadline::scope(by, tries)).await
-        else {
+        let result = crate::deadline::wait(Some(by), crate::deadline::scope(by, tries)).await;
+        let tried = u32::try_from(attempted.len()).unwrap_or(u32::MAX);
+        let Ok(Some((via, outer_wire, outer, send, recv))) = result else {
             if tried > 0 && !crate::deadline::expired(caller) {
                 self.wires
                     .note(Some(&y.id), crate::journal::What::Hop { via: None, tried });
-                missed_in_epoch(&me, &y.id, Some(epoch));
+                missed_in_epoch(&me, &y.id, Some(epoch), &attempted);
             }
             return false;
         };

@@ -646,3 +646,16 @@ ff743已复用已有 Recovery 分支，使目标缺可用 wire 的判断先于�
 
 
 2026-11-11 06:58 UTC：成功后旧selection两实际合同在0a7/Mac42973738072为67/2红，均额外问旧middle一次；287仅made保留最新observation/candidates、count置0、原entry换candidate Arc使旧回答过期，None纯helper仍删除。相同whole37aed942在Mac42975178687实际69/0、全12绿，latest Linux待原netlab-hop三轮计时后跑。零count metadata按活网络peer-pair保留、弱网络过期后下一次注册清理，无新map/timer/task/Node强引用。接下来同ID真实新Tunnel、IPv4/IPv6有效地址内容/来源/顺序控制，以及LOST本机identity和相关context；不能由成功寿命窄绿关闭这些问题。f4i原17.7/31.6秒是中间节点重新可达后回peer的路径收敛，先已走Relay；后续补首个有效业务响应与收敛分解，原first-road日志oracle不作性能SLO。
+
+
+### 2026-11-11 08:05 UTC：实际admission范围与并发提交边界
+
+首腿换址候选1bd9692在Linux全部12组/73hop绿，Mac同源run42983120010已success、exact归档，identity和逐组核尚在完成。不将此当完整N2；d965→12cb仅添加两个实际admission合同并应用远端格式，生产不改，Turing f15d8284待旧行为。
+
+接下来先按证据拆解两项：两次实际NO_ROUTE不应压制未试第三middle；第一middle等待status不应吃光整个3秒预算而饿死第二个实际可用middle。fixture不改缓存，走生产hop_ahead、实际Tunnel与carried TLS/echo，并观察输家STOP_SENDING和outer仍open，原73测试保持。
+
+作用域设计候选：在原MISSED候选记录上保存每middle失败count/at，退避30秒→10分钟不变；仅实际尝试的middle受失败影响，admission先排除该context下仍冷却的middle再取TRIES2。新增候选/新真实wire可进场；RTT排序不能清掉失败。复用原network和candidate弱token防旧完成写回，成功仍保留最新观察并退役旧完成。真实hint变化/同wire移动/LOST身份仍是后续独立合同。此段为设计提议，尚无实现/候选结果。
+
+不能直接把两个tunnel::dial同时select当成完整有界竞争：serve_hop Ask::From当前在回OK后立即attach target的同peer carried transport。两个middle同时获准可能在目标侧互相替换，即使initiator只公布赢家；输家取消时旧B可能仍在await其Onward，目标侧晚attach也须被约束。需要覆盖双OK/迟到OK/取消后晚到From等实际双middle合同，明确哪个端点拥有最终提交；先做每middle失败范围不意味着并发提交已安全。禁止以只测一个OK+一个挂起来宣布竞争完成。
+
+避免无依据固定hedge延迟；总预算/候选数/任务和stream生命周期必须有界，并记录工作量与业务收益。可研究并行准备首腿、明确admission/commit阶段及向后兼容，依据实验选择；不在此文把具体协议/参数写成用户已批准。

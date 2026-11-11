@@ -83,3 +83,10 @@ MacLab与Turing同LAN；macserver为另一台构建机，用户报告异网。iP
 Turing只UID1110 `/tmp/khor-netlab-feat-net-1110`，原flock+user/netns、Rust1.95/jobs16/nice10、50GiB起40停/90min；不sudo、不改host网。Turing计时期间不穿插其构建；独立Mac原jobs2/共享cache/资源门可同时进行。SSH BatchMode/ForwardAgent=no/StrictHostKeyChecking，不转发凭据。
 
 stage-launch只一次并等exec结束再做依赖ledger写入；查同一PID和execution.json，timeout不等于失败。终态collect→identity→原合同；Mac核exactartifact/ZIP SHA/11control blobs和每组实际结果。依赖分析顺序执行，缺数据不补零，不覆盖原日志。source-refs单写。技能/AGENTS中早期“只存计划”不是永久暂停，以PLAN记录后续用户授权为准。
+
+
+2026-11-11 08:08 UTC authoritative checkpoint：1bd9692地址事实候选已准确同源双OS全12通过。Turing075404Z-9850241b，346.608秒、21files/identity/空group，hop73/budget30/wires16/resume1；Mac42983120010，exact13838890987、zipSHA28d2d990d61bf53af912f16459a59698154215a68bb0e7d9f8c097eed3b11856，20files/11controls/identity，全部12组，hop73/budget26/wires16/resume1。两端node-regression-verification-v1.json实核，ledger已终态，source-audit窄范围both_os_verified。没有same-wire移动/手机接受外推。
+
+新增admission fixture d965→远端格式12cb3a1adafe4d8120d481e1f5dda998d01fd1c3，treef6f8491d957d2b87c790b5bad883f191bf9a3bf2/snapshot88fa21b6fc5694bc7a285a9bc78c733d5cdb69ea，candidate-admission-old-source-v2.json。Turing080050Z-aee8f512仅格式失败；原样应用patch。Mac42983791997为未格式v1（treeb62c/snapshot324840），已failure，exact13838587166、ZIP SHA2ec2a28faa3d3cd83e9a9932f521a9bfac6a837e0cc4efcd0be1b211c44da9cb，collector80845待核/不要重发。Turing **080317Z-f15d8284** 已232.133秒终态return101，11files/identity/空group，原73hop全过、仅两个新合同FAIL；net67+1ignored过，剩余组未跑。需核最终失败为实际admission断言，并保存classification；不能称完整全12。
+
+root当前工作区在hop.rs实现每middle失败作用域（尚未验证）：原MISSED候选上加count/at，同network且实际同wire才延续该middle失败；只给实际尝试者退避，先筛再取TRIES2，aggregate纯退避helper保持；成功退役旧完成并清失败。不会单独解决第一middle挂起，预期仍有新挂起合同红，不能隐藏。NEXT-DESIGN记录并发双OK目标侧立即attach可能互相替换的提交风险；不能只select两个dial就宣布有界竞争安全。完整计划仍active。
