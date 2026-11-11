@@ -48,14 +48,14 @@ def case_rows(mode):
     return rows
 
 
-def write_log(path, rows, prefix=False):
+def write_log(path, rows, prefix=False, passed=1):
     path.parent.mkdir(parents=True, exist_ok=True)
     for row in rows:
         row.update(schema=1, revision=observer.REVISION)
     text = ''.join('[netlab-workload] '+json.dumps(row)+'\n' for row in rows)
     if prefix:
         text = 'test workload::fixture ... '+text
-    path.write_text(text+'test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 10 filtered out; finished in 50s\n')
+    path.write_text(text+f'test result: ok. {passed} passed; 0 failed; 0 ignored; 0 measured; 10 filtered out; finished in 50s\n')
 
 
 class ObserverEvidence(unittest.TestCase):
@@ -63,7 +63,8 @@ class ObserverEvidence(unittest.TestCase):
         modes = ['success', 'harness_prefix', 'missing_sample', 'duplicate_sample', 'timeout', 'cancelled',
                  'wrong_order', 'missing_round', 'missing_probe', 'bad_tick', 'capped', 'overflow',
                  'wrong_rate', 'wrong_text', 'missing_capture', 'missing_guard', 'guard_lied',
-                 'missing_startup_guard', 'unreaped_startup', 'bad_bytes']
+                 'missing_startup_guard', 'unreaped_startup', 'wrong_guard_summary_count',
+                 'wrong_case_summary_count', 'bad_bytes']
         for mutation in modes:
             with self.subTest(mutation=mutation), tempfile.TemporaryDirectory() as temporary:
                 root = Path(temporary)
@@ -77,7 +78,9 @@ class ObserverEvidence(unittest.TestCase):
                 if mutation == 'guard_lied': guard[0]['outcome'] = 'ok'
                 elif mutation == 'missing_startup_guard': guard.pop()
                 elif mutation == 'unreaped_startup': guard[-1]['remaining'] = 1
-                if mutation != 'missing_guard': write_log(root/'observer-guards/0/scenarios.log', guard, True)
+                if mutation != 'missing_guard':
+                    write_log(root/'observer-guards/0/scenarios.log', guard, True,
+                              passed=1 if mutation=='wrong_guard_summary_count' else 2)
                 for number, mode in enumerate(observer.MODES[:5] if mutation == 'missing_round' else observer.MODES):
                     rows = case_rows('buffered' if number == 0 and mutation == 'wrong_order' else mode)
                     if number == 0:
@@ -97,7 +100,8 @@ class ObserverEvidence(unittest.TestCase):
                             else: c['qdisc_text']['stdout'] = c['qdisc_text']['stdout'].replace('8Mbit', '4Mbit')
                         elif mutation == 'missing_capture': rows.remove(next(r for r in rows if r['event']=='capture'))
                         elif mutation == 'bad_bytes': next(r for r in rows if r['event']=='complete')['exact_bytes'] = False
-                    write_log(root/f'netlab/{number}/scenarios.log', rows, mutation == 'harness_prefix')
+                    write_log(root/f'netlab/{number}/scenarios.log', rows, mutation == 'harness_prefix',
+                              passed=2 if number==0 and mutation=='wrong_case_summary_count' else 1)
                 result = observer.verify(root)
                 self.assertEqual(result['passed'], mutation in ['success', 'harness_prefix'], json.dumps(result)[:300])
                 self.assertFalse(result['full_N3_accepted'])

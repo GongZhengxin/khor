@@ -12,7 +12,7 @@ MODES = ['streaming', 'buffered', 'buffered', 'streaming', 'streaming', 'buffere
 BYTES = 16 * 1024 * 1024
 
 
-def records(path):
+def records(path, expected_passed=1):
     text = path.read_text()
     marker = '[netlab-workload] '
     lines = [line for line in text.splitlines() if marker in line]
@@ -20,7 +20,7 @@ def records(path):
     rows = [json.loads(line.split(marker, 1)[1]) for line in lines]
     assert rows and all(r['schema'] == 1 and r['revision'] == REVISION for r in rows)
     summaries = re.findall(r'^test result: (.*)$', text, re.M)
-    assert len(summaries) == 1 and summaries[0].startswith('ok. 1 passed; 0 failed; 0 ignored;')
+    assert len(summaries) == 1 and summaries[0].startswith(f'ok. {expected_passed} passed; 0 failed; 0 ignored;')
     return rows
 
 
@@ -58,7 +58,7 @@ def profile(capture):
 def guard(report):
     logs = sorted((report / 'observer-guards').glob('*/scenarios.log'))
     assert len(logs) == 1
-    rows = records(logs[0])
+    rows = records(logs[0], expected_passed=2)
     summary = one(rows, 'observer_guard_calibration')
     assert summary['passed'] is True and summary['modes'] == summary['cancelled'] == summary['completed'] == 2
     startup = one(rows, 'observer_resident_startup_guard')
