@@ -15,7 +15,7 @@ use tokio::net::TcpStream;
 use crate::lab::{mesh, node, relay, result};
 use crate::nat::{Net, router};
 
-const REVISION: &str = "resident_mixed_workload_v2";
+const REVISION: &str = "resident_mixed_workload_v3";
 const SAMPLES: usize = 120;
 const PERIOD: Duration = Duration::from_millis(100);
 // Measurement bounds, not user-approved UX targets. Failed/blocked samples
@@ -286,10 +286,13 @@ async fn w1_real_terminal_and_directory_during_a_resident_file_pull() {
     let path = source.display().to_string();
     let cwd = path.clone();
     let (rows, bulk, destination, closed) = x.with(move |node| async move {
-        let id = node.open_shell_on("y", khor_node::shell_start::ShellStart {
-            token: "netlab-resident-mixed-workload-v1".into(), title: "netlab echo".into(),
-            cwd, command: "stty -echo; printf 'NETLAB-ECHO-%s\\n' READY; while IFS= read -r line; do printf 'NETLAB-REPLY-%s\\n' \"$line\"; done".into(), cols: 100, rows: 30,
-        }).await.expect("a scratch remote PTY");
+        // Match the existing real-terminal integration entry (term_echo.rs).
+        // CLI _host currently omits KHOR_HOST_STARTUP; its separate startup
+        // API must not be a prerequisite for measuring a real PTY's network.
+        let program = vec!["/bin/sh".into(), "-c".into(),
+            "stty -echo; printf 'NETLAB-ECHO-%s\\n' READY; while IFS= read -r line; do printf 'NETLAB-REPLY-%s\\n' \"$line\"; done".into()];
+        let id = node.open_on("y", "shell", "netlab echo", &cwd, &program, (100, 30),
+            Some("netlab-resident-mixed-workload-v3")).await.expect("a scratch remote PTY");
         let (addr, cookie) = node.reach("y", &id).await.expect("the resident's terminal pipe");
         let socket = tokio::task::spawn_blocking(move || host::connect_terminal(&addr, &cookie, 100, 30))
             .await.unwrap().expect("current terminal protocol handshake");
@@ -298,9 +301,8 @@ async fn w1_real_terminal_and_directory_during_a_resident_file_pull() {
         let ready_by = tokio::time::Instant::now() + Duration::from_secs(10);
         tokio::time::timeout_at(ready_by, async {
             stream.write_all(&framed(&host::ClientOp::Ready)).await.map_err(|e| e.to_string())?;
-            // Renderer-ready releases the startup; it does not mean the shell
-            // has installed its reader. This marker is absent from the echoed
-            // startup command, and uses the same total 10s startup budget.
+            // Wait for the actual program, including initial model replay.
+            // Still one total 10s deadline, and no input echo can match it.
             output_until(&mut stream, "NETLAB-ECHO-READY", true).await?;
             echo(&mut stream, "warmup-unique").await
         }).await.expect("bounded PTY startup").expect("a real shell response, not input echo");
