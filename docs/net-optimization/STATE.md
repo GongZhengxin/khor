@@ -2,6 +2,20 @@
 
 更新于 2026-11-11 12:58 UTC。完整 N0–N5 目标“完成计划”仍 **active、未完成、未阻塞**，root 串行，不派发子智能体。上一份 STATE 逐字保存在 [此前完整状态](HISTORY-20261111-through-effective-route-v3.md)，SHA `6af9bcf2dfba67b241169932df711a1acdbcec8fba37eb379eaea0ae13e3d3b3`，继续链接全部更早记录。以下为当前状态；历史中的“当前/待验/草稿”仅代表当时。原始日志、准确收据和实际工作树优先，不按摘要覆盖未提交内容。
 
+## 13:22 UTC 当前执行入口：3de双OS全12/四peer绿，N3基线6f4c在途
+
+同一冻结 **3de372a0** 的 Linux **turing-20261111T131248Z-5c2a0339** 已 **391.748秒终态0**，21files/identity/原group空，完整12组实际绿：net68+1原ignored、hop89、wires16、journal30、budget36（含六项initialCustom）、IPC18及六单项。`node-regression-verification-v1.json`/ledger已终态；与Mac43022962905同源12绿、vendor43023967463的443/58/11绿，以及物理6970ad46三轮全6绿构成这一候选的准确已验范围。没有最新手机、完整N1尾巴/quiet成本或N3/N4/N5最终接受。
+
+唯一在途 Turing 现在是 **turing-20261111T132111Z-6f4c9c05**，PID **4108739**，13:21:33 UTC launch，task `netlab-workload` / revision `resident-mixed-workload-v2` / role **baseline** / control **1fac8560dc25fac3a64028ff25ecdb5e786e057e**。stage exec79394已终态，下一步只查此receipt/execution/实际PID与编译/三轮，不重新stage、不另起Turing工作。
+
+它的产品源是 **b0ee2d1ccc94365601623533cb483d72c5d7466f** / tree **67fc3c61688a04634a44cb1b68387cd7f5fc302a** / snapshot **b1d0fcb7478c9057534aed88ef3cd21736ee6550**，`candidate-resident-workload-source-v2.json`，冻结时clean/0excluded。相比3de，Node/net/iroh/noq生产文件与Cargo锁逐字无diff；新增的是ignored真实N3测量代码和文档，不能将3de既有收据伪装成新fixture已验。
+
+初始fixture源 **bf2ea621** / tree02b86afa4a570fd3ad9c21e6c9db7c187358126a / snapshotf9e7fe945cbfffdbed506fce2b73709eeb9bdcf0 只在Mac **43027741141** net-unit取到root格式红（request84f8206545c1475d9fa9d3e8950f7390），准确 artifact **13860120002** / ZIP SHA **b613d7c564bfdfb971f2c59defa35c76b608af0909ef5806caedd03b2d01d745**，9files/11controls/identity、零行为组。精确format.patch仅改workload.rs，已check/apply到b0ee；format-only proof/ledger终态。不称Mac测试通过或Linux fixture编译。控制11项stub检查与固定入口SHA收据在 `control-workload-tests-v1.json`。
+
+N3这轮仍未校准、不设性能通过线：先核实际PTY唯一回复、所有720逻辑样本、16MiB全量字节和真实bulk重叠、API关闭/scratch兜底；`closed`目前表示close_on成功回复，**尚无独立host/child退出证明**，不可用作完整泄漏/取消验收。调度为固定计划时间且每类最多一个在途请求；晚于计划的积压必须保留，分析同时报告开始→结束与计划→结束/调度迟到，不能只看成功服务时间或称开放并发终端模型。原数据包含两种时间，可追加独立分析，不改写原收据。
+
+前述“唯一Turing5c/6970”“尚待vendor/全12”的旧状态均被本节实际终态替代。下文旧红和完整N0–N5范围继续保留，目标active；下一轮若编译/测量入口红，先分离fixture错误与产品红，固定源/协议后再跑，不以完整性校验绿宣告N3性能接受。
+
 ## 13:15 UTC 接续：四peer全6绿，Linux完整回归在途；真实N3基线待编译
 
 前述物理 **turing-20261111T125643Z-6970ad46** 已699.061秒终态0，37files/identity/原group空；准确三轮f4r首内容 **1.263034349 / 1.253216299 / 1.222981525秒**，各30持续样本、15.386/15.342/15.544秒保持、held/continuous/selected_every/carrier_both全true。独立核原始两端：每轮31个实际完成响应、31个匹配stream、每端同一business wire、每端单一outer commit/previous_serial null、无detach/I/O-ended，首次响应都在M恢复之前。三原f4控制也绿；**全部6项绿只关闭这份候选/诊断协议的这批场景，不回填旧红或称p99、恢复长尾/移动/能耗完成**。本run `physical-result-v1.json` 与ledger已终态，不重发。

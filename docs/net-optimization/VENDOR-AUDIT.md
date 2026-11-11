@@ -1,5 +1,7 @@
 # Vendor 补丁覆盖与退出审计
 
+2026-11-11 13:22 UTC：Iroh48/49与已有carrier拨号候选 **3de372a0** 已取得同源 Mac43022962905 / Linux5c2a0339 全12绿、Mac43023967463 的443Noq/58path/11home绿，Turing6970ad46四peer三轮全6绿（每轮31匹配实际响应流/同business wire/单outer无detach；首内容1.2630/1.2532/1.2230秒、各30持续样本超过15秒）。准确原件/identity/逐门proof/ledger已收齐，见STATE。只接受上述已测scope，不将筛选回归称59补丁全部专项或完整上游/退出接受，不回填旧3.6–5.2秒业务尾巴、严重stall、Noq1/5、移动/quiet成本或N5。当前主仍59，42–44隔离；新N3测量代码无生产vendor diff，正在单独baseline验证。下面各时点“尚待”按历史理解。
+
 2026-11-11 12:26 UTC：新增Iroh49候选，仅修每connection effective路观测：共享preferred不在本conn且只有一条established路径时报告Noq实际Backup fallback，零/多条未匹配仍Unknown，不改实际shared选路/PathStatus。源166双OS实际两项已有carrier内容已成功且各1响应，但same final route断言Unknown仍红，准确原件/部分证明见STATE。新49尚待同四合同转绿、全12、vendor/四peer/恢复成本；主现在59=Iroh1–41/45–49+Noq1–13，42–44隔离。之前58/57计数按各源时点保留。
 
 2026-11-11 11:36 UTC：源9634737a的Mac节点全12与vendor443/58path/11home均已identity/准确产物验证（Actions43010224456、43012074442）；Iroh48 scoped握手合同含错误目标身份明确拒绝已过。Turing四peer首业务三轮1.22–1.25秒，但连续性缺证仍三红，原停顿控制还两红；同源Linux全12在3fc797b0运行。不能从筛选单元绿接受48或消除历史严重stall/Noq1、5专项缺口。主仍58、42–44隔离；新业务完成收据只增强观测，不改vendor行为。
