@@ -33,7 +33,9 @@ pub(super) async fn observe<F: Future>(
                 "dst",
                 &peer.to_string(),
             ]);
-            let captured = match tokio::time::timeout(Duration::from_secs(1), command.output()).await {
+            let captured = match tokio::time::timeout(Duration::from_secs(1), command.output())
+                .await
+            {
                 Ok(Ok(out)) => json!({"ok":out.status.success(),"timed_out":false,
                     "stdout":String::from_utf8_lossy(&out.stdout),"stderr":String::from_utf8_lossy(&out.stderr)}),
                 Ok(Err(error)) => json!({"ok":false,"timed_out":false,"error":error.to_string()}),
