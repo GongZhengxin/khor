@@ -75,3 +75,14 @@ Turing **turing-20261111T102641Z-ebc3630e**，PID **3828986**，10:27:03 UTC lau
 当前Turing **turing-20261111T104128Z-9d655e7f**，PID **3863666**，10:41:51 UTC launch，netlab-hop-ownership、准确同d521源、role candidate、control68cad；exec71178已成功退出。已实际ps核运行、编译通过开始真实第一轮；不要在它活计时期间插入Turing构建/测试。与旧420 fixture逐字核同，不改门/拓扑/原三case。
 
 Mac **Actions43005910530** request7de8d1921ad448158b3b4e56c74262f0，同d521源 **net-vendor**，exec47351提交完成，登记进程按实际句柄继续核；不重复提交。它验证vendor单元，不是Node双OS或真实手机。优先核同ActionsID、Turingreceipt/PID与f4r实际结果及khor-pending-carrier事实，进一步决定解除旧选择是否足够；原早发请求/写重试门保持。无手机采样/候选安装。上一轮实际有红证据和候选实现，属于progress；完整目标继续active。
+
+
+## 11:00 UTC：旧选择候选不足，改为每次握手独立初始carrier
+
+9d655e7f已747.192秒终态101、37files/identity/空group；同冻结新6项仍f4r三红/f4三绿，新业务1.513494/1.509191/1.511466秒均超时。每轮诊断均live=true/registered=1、previous=Relay/reset=false：活的旧注册连接使global reset保护正确保持，不能强清全局路径。pending-carrier-physical-result-v1.json逐轮绑定原日志SHA/诊断。Mac43005910530同d521的vendor443 Noq/58path/11home绿，exact13848117408/ZIP SHA429603a3f4830d854684f2f5b9b75b38265d3f0f84f2a7f3205623922f94f331、13files/11controls/identity；仅旧源unit过滤器，不足以接受物理行为。两run ledger已终态，不重跑。
+
+后继 **7d4ec51b87b6998f5b712a0ece8234a497ba6ec5** /tree30cbf81c2a785b919ae652aeb99ee5ae02a10a1b/snapshote6a51b8e9f0045896effc39113c780cfb9971c26，candidate-initial-custom-source-v1.json，已撤回无活连接时清selected的行为，保留opt-in事实诊断。ConnectOptions.with_initial_custom_addr只把这一次握手的初始Noq目的地址映射到显式提供的Custom地址，不改共享选择/缓存/其他连接，TLS仍验目标id。Node给新carrier一次受原期限限制的普通握手机会；普通dial取消并join原Relay后才复用slot，最多2活动；早发仅既有rides_early读取，替代不发early请求，胜出取消原早发task后沿已有正常读取门，失败不领第二次carrier尝试，写/0-RTT集合不扩大。有限握手成本仍须N3测，不声称零增量。
+
+新增dial_budget/initial_custom.rs两个真实合同（尚未执行）：活IP连接旁新Custom PathId0/TLS/echo、错误目标身份仍拒绝且旧IP保持；未显式提供初始Custom时API拒绝。原物理fixture逐字保持。initial-custom-source-audit-v1.json保存新决策与不变量。vendor48条已按新设计重写，仍58项且未验收，42–44隔离。
+
+Turingf6ebd14d首轮net-node已47.383秒终态1、10files/identity/空group，仅root格式检查、0行为组；精确format.patch已应用，准备冻结v2后同源双端全12组，不当作编译或行为失败。此时没有Turing活计时/构建、没有Mac在途。所有旧绿/真实红保留，完整N0–N5继续active。

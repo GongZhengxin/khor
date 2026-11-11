@@ -35,9 +35,11 @@ async fn a_prepared_handshake_uses_custom_path_zero_beside_a_live_ip_connection(
     .await
     .unwrap();
     let (warm, warm_remote) = (warm.unwrap(), warm_remote.unwrap());
-    assert!(warm.paths().iter().any(|path| {
-        path.id() == iroh::endpoint::PathId::ZERO && path.is_ip()
-    }));
+    assert!(
+        warm.paths()
+            .iter()
+            .any(|path| { path.id() == iroh::endpoint::PathId::ZERO && path.is_ip() })
+    );
     let via = iroh::SecretKey::generate().public();
     let (a, b) = tokio::io::duplex(64 << 10);
     let (ar, aw) = tokio::io::split(a);
@@ -85,7 +87,10 @@ async fn a_prepared_handshake_uses_custom_path_zero_beside_a_live_ip_connection(
     })
     .await
     .unwrap();
-    assert!(rejected.is_err(), "pinning a transport cannot bypass endpoint identity");
+    assert!(
+        rejected.is_err(),
+        "pinning a transport cannot bypass endpoint identity"
+    );
     if let Ok(conn) = incoming {
         conn.close(0u32.into(), b"identity control complete");
     }
@@ -114,12 +119,15 @@ async fn an_initial_custom_address_must_be_explicit_in_the_dial() {
         unreachable!()
     };
     let addr = iroh::EndpointAddr::from_parts(peer, std::iter::empty::<iroh::TransportAddr>());
-    let result = client.connect_with_opts(
-        addr,
-        ALPN,
-        iroh::endpoint::ConnectOptions::default().with_initial_custom_addr(custom),
-    ).await;
-    assert!(matches!(result,
+    let result = client
+        .connect_with_opts(
+            addr,
+            ALPN,
+            iroh::endpoint::ConnectOptions::default().with_initial_custom_addr(custom),
+        )
+        .await;
+    assert!(matches!(
+        result,
         Err(iroh::endpoint::ConnectWithOptsError::InvalidInitialCustomAddr { .. })
     ));
     client.close().await;

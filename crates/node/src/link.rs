@@ -955,9 +955,11 @@ async fn connect_prepared_carrier(
     alpn: &[u8],
 ) -> Result<iroh::endpoint::Connection, iroh::endpoint::ConnectError> {
     let mut options = iroh::endpoint::ConnectOptions::default();
-    if let Some(iroh::TransportAddr::Custom(custom)) = addr.addrs.iter().find(|addr| {
-        matches!(addr, iroh::TransportAddr::Custom(_))
-    }) {
+    if let Some(iroh::TransportAddr::Custom(custom)) = addr
+        .addrs
+        .iter()
+        .find(|addr| matches!(addr, iroh::TransportAddr::Custom(_)))
+    {
         options = options.with_initial_custom_addr(custom.clone());
     }
     let connecting = ep.connect_with_opts(addr, alpn, options).await?;
@@ -13688,9 +13690,8 @@ impl Node {
                 addr.addrs.insert(carried);
                 let (ep, alpn) = (ep.clone(), alpn.to_vec());
                 roads.spawn(async move {
-                    let connected = crate::deadline::wait(
-                        by, connect_prepared_carrier(&ep, addr, &alpn),
-                    ).await;
+                    let connected =
+                        crate::deadline::wait(by, connect_prepared_carrier(&ep, addr, &alpn)).await;
                     (crate::journal::Won::Direct, connected)
                 });
             }
@@ -13813,10 +13814,10 @@ impl Node {
 mod dial_budget {
     use super::*;
 
+    mod initial_custom;
     mod peer_contact;
     mod probe;
     mod wire;
-    mod initial_custom;
 
     async fn fixture() -> (tempfile::TempDir, Node, DeviceInfo, iroh::Endpoint) {
         fixture_for(iroh::SecretKey::generate().public().to_string()).await
