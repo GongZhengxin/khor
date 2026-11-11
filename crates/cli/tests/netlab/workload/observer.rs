@@ -200,6 +200,7 @@ pub(super) async fn probe<T>(
     };
     let row = json!({"schema":1,"revision":REVISION,"event":"probe","phase":phase,
         "mode":mode.name(),"period_us":PERIOD.as_micros(),"ticks_us":ticks,
+        "started_us":start.duration_since(epoch).as_micros(),"ended_us":at(epoch),
         "capped":ticks.len()==CAP,"capacity":CAP,"missed_tick_behavior":"skip"});
     (value, row)
 }
@@ -217,7 +218,10 @@ async fn w3_cancelled_observer_futures_keep_outcomes_in_both_recording_modes() {
             started.send(()).unwrap();
             std::future::pending::<()>().await;
         }));
-        ready.await.unwrap();
+        tokio::time::timeout(Duration::from_secs(1), ready)
+            .await
+            .expect("the owned task starts within its fixture budget")
+            .unwrap();
         drop(owner);
         tokio::time::timeout(Duration::from_secs(1), async {
             loop {
