@@ -205,7 +205,11 @@ pub(super) fn valid(sent: &Sent, received: &Received) -> bool {
         && sent.late_over_10ms * 100 <= sent.ticks
         && received.first_after_us.is_some_and(|t| t <= 2_000_000)
         && (24_000_000..=26_000_000).contains(&received.elapsed_us)
-        && sent.sent.iter().zip(&received.received).all(|(s, r)| r & !s == 0)
+        && sent
+            .sent
+            .iter()
+            .zip(&received.received)
+            .all(|(s, r)| r & !s == 0)
         && received.peer == Some(sent.local)
         && received.local == sent.peer
         && sent.by_second.iter().sum::<u64>() == sent_count

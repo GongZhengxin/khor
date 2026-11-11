@@ -53,10 +53,8 @@ async fn snapshots(x: &Device, y: &Device, rx: &Router, ry: &Router, when: &str)
         ("right_gateway", d.unwrap(), true),
     ] {
         valid &= queues::valid_capture(&capture, router);
-        emit(
-            json!({"schema":1,"revision":REVISION,"event":"capture",
-            "name":format!("{side}_{when}"),"capture":capture}),
-        );
+        emit(json!({"schema":1,"revision":REVISION,"event":"capture",
+            "name":format!("{side}_{when}"),"capture":capture}));
     }
     valid
 }
@@ -67,7 +65,9 @@ async fn direction(sender: &Device, receiver: &Device, name: &str, tag: u64) -> 
     let (ready, port) = tokio::sync::oneshot::channel();
     let mut sink = Owned(
         receiver
-            .spawn(move |_| async move { datagrams::receive(destination, source, tag, ready).await })
+            .spawn(
+                move |_| async move { datagrams::receive(destination, source, tag, ready).await },
+            )
             .unwrap(),
     );
     let peer = tokio::time::timeout(Duration::from_secs(2), port)
