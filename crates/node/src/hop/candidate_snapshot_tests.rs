@@ -92,3 +92,6 @@ async fn an_old_selection_cannot_replace_a_newer_candidates_completed_miss() {
 async fn a_late_selection_of_the_same_candidates_keeps_the_cooldown() {
     observe_snapshot(false).await;
 }
+
+#[path = "candidate_success_tests.rs"]
+mod success;
