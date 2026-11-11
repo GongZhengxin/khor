@@ -328,3 +328,6 @@ mod prepared_race;
 
 #[path = "comparison_context_tests.rs"]
 mod comparison_context;
+
+#[path = "hint_context_tests.rs"]
+mod hint_context;
