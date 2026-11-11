@@ -161,3 +161,10 @@ reported pacing_rate约34.7–35.3Mbit、delivery_rate约28.6–28.7Mbit；同�
   B若有方向性改善，再单独决定固定FIFO容量或接收侧延迟放置的后续验证；无改善则保留反证，不继续盲调burst。
 
 此协议在任何burst实测结果之前保存；实现/准确source/control与在途状态以STATE为准。
+
+
+### 固定burst ABBA实际结果（收件后记录）
+
+准确c23cd79e/control0d573ad3，turing-20261111T185007Z-6e04ad5e，352.084秒原101，19files/identity/原group空；四轮全部272echo与八份96MiB字节/server完整、两端实际burst4093/65531、rate/delay/lat/netemlimit与计数完整。A/B/B/A upload分别25.422003/35.385418/35.390903/25.383528，download26.094119/28.670762/36.228836/26.101217Mbit/s。**四轮全部未达40–60，不接受物理模型。** B有局部改善，下载差别保留，不取最快、不报显著性或p99；burst与派生FIFO容量的耦合未隔离，各层drop不相加。
+
+前置v1仅format红、v2仅Device/Router类型编译红，均零业务且原件保留；准确修复后的v3才有行为人口。最新完整证明kernel-burst-verification-v1.json/原contract/identity与source-refs终态。下一步检查时间延迟与速率队列在同接口组合/TSQ及其放置，先为分离两者的候选模型明确拓扑与对照，再实现；不盲增burst或降低旧门，不把新模型当旧红修复成功。该后续模型尚未实现/提交，Node高profile/prefetch仍未开始。

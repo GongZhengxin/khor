@@ -1,36 +1,39 @@
 # feat/net 当前状态与接续入口
 
-更新于2026-11-11 19:24 UTC（本地11月12日）。完整目标“完成计划”仍 **active、未完成、未阻塞**；完整范围是 [PLAN](PLAN.md) 的N0–N5，root串行，不派发子智能体。此页是唯一当前入口；历史逐字保存在 [上一状态](HISTORY-20261111-through-low-policy-comparison-v3.md)，SHA `5d9c15a79d7e4d3a70e5dc15cf609bbbeabb39a3c271b7cbbf99b0fa248052c5`，它继续链接此前全部证据/失败。实际worktree/收据/原始日志优先，不按摘要覆盖未提交内容。
+更新于2026-11-11 20:20 UTC（本地11月12日）。完整目标“完成计划”仍 **active、未完成、未阻塞**；完整范围是 [PLAN](PLAN.md) 的N0–N5，root串行，不派发子智能体。此页是唯一当前入口；历史逐字保存在 [上一状态](HISTORY-20261111-through-burst-setup-v4.md)，SHA `a6629e7ae3e3688e85871ae12827b0bcde28aa76bad3931ed5d9a68ae34a243f`，它继续链接此前全部证据/失败。实际worktree/收据/原始日志优先，不按摘要覆盖未提交内容。
 
 ## 当前在途与下一步
 
-**Turing在途：turing-20261111T185007Z-6e04ad5e，PID408810/child409051**。source-v3 **c23cd79e01b49ae5e28961ee7a294ba7a55d4c1a** / tree **32620a623433af46c9f9ea6e4c59066253f4883c** / snapshot **1fbc641b9770352d851291352fbf09293e664a9f**，candidate-kernel-burst-source-v3.json，clean/0excluded；control **0d573ad369cd328ee5115085eb04ed4ea8562580**。stage session52294已终态，收据/ledger已launched；最近SSH execution=running、同PID命令live，format.log空、实际Rust编译8.55秒成功，进入首个A场景。只等/collect该run，不重发。没有Mac在途任务。 burst source-v1 **turing-20261111T184428Z-32451d75** 已45.958秒1、10files/identity/原group空，仅format失败、零行为样本。准确源ba850688146fadcdca1a28501a35bf09cba23835 / tree f4be97b11d5cdf48ce5c4b1258c2a4451c297dec / snapshot a20e84831b2a62d8f48e8a031acc32335ed68a55，control 0d573ad369cd328ee5115085eb04ed4ea8562580。原件已collect；准确one-file/one-assignment换行patch已check/apply并核非空白内容完全一致，不改任何参数/物理门。source-v2 **turing-20261111T184643Z-81f9abe5** 已37.835秒101、15files/identity/原group空，格式通过但E0308：helper接受Device，gateway实际是Router。四入口均未编译成功、零业务样本；compile-only-verification-v1.json与ledger终态。修复为各自Device/Router.spawn进入实际namespace，公用函数+父abort owner，参数与协议不改；source-v3已按上述收据提交，不重发旧收据。 最新一次延长TCP传输诊断 **turing-20261111T182504Z-cde36230** 已完成、collect、identity、独立原始人口/字节/吞吐核验、ledger终态；不要重发。原退出 **101**、266.067秒、13files、原group空，物理校准仍不接受。完整目标active，有可执行工作，不设blocked/complete。
+**目前没有Turing或Mac在途任务。** 最新burst对照 **turing-20261111T185007Z-6e04ad5e** 已实际结束、collect、identity、独立全部原始人口/字节/双向率/TC读回核验与ledger终态；不要重发。352.084秒、原退出 **101**、19files、原group空。stage session52294/实际launcher408810已终态；既有policy编排90703也已终态，不恢复重跑。
 
-| 输入 | 精确值 |
+| 冻结输入 | 精确值 |
 | --- | --- |
-| product | **c5ec8b6f90b79869e9128da9bacf5a1947752c09** / tree **67888ea203bf588807130f1df9e3be518437d586** / snapshot **53132d6975a75e43e955d9cfcafb66aa6f2919f1**；candidate-kernel-long-source-v1.json，clean/0excluded |
-| control | **c731fb00f21dc4913928daa64bb8ec25f349895d**；control-kernel-long-input-audit-v1.json，原UID/flock/netns/资源/期限门不变 |
-| diagnostic | 固定ONE fresh hl0；双向各384MiB；原300ms/50Mbit/40ms、2秒echo/240秒whole-file、默认TCP算法/window、32kbit TBF burst不改 |
-| evidence | kernel-long-verification-v1.json、socket-flow-age-summary-v1.json、workload-kernel-long-contracts.json、identity-verified.json与ledger终态 |
+| product/source-v3 | **c23cd79e01b49ae5e28961ee7a294ba7a55d4c1a** / tree **32620a623433af46c9f9ea6e4c59066253f4883c** / snapshot **1fbc641b9770352d851291352fbf09293e664a9f**；candidate-kernel-burst-source-v3.json，clean/0excluded |
+| control | **0d573ad369cd328ee5115085eb04ed4ea8562580**；control-kernel-burst-input-audit-v1.json：只添固定task allowlist和ABBA分支，原UID/flock/netns/资源/期限门不变 |
+| 固定协议 | 同源码/二进制，A B B A四fresh；A4096B/B65536B，均同tc change路径，50Mbit/150ms单向/40ms，双向各96MiB，68echo，原2秒调用/240秒整段界；无传输中ss |
+| proof | kernel-burst-verification-v1.json；source-owned workload-kernel-burst-contracts.json；identity-verified.json；ledger终态 |
 
-**最新结果：68 echo全部成功（含4 warmup）、双向384MiB全字节/server成功，min RTT300551us，平均upload32.900532/download32.432250Mbit/s。仍未达到40–60Mbit门。** 两端/两方向的3/8/15/25/50/80秒共24个实际tuple socket快照全部通过；诊断观察成功不把Rust101改成0，也不算N3或HIGH模型接受。
+| 轮 | arm | 实际burst B | min RTT us | upload Mbit/s | download Mbit/s |
+| --- | --- | --- | --- | --- | --- |
+| 1 | A | 4093 | 300358 | 25.422003 | 26.094119 |
+| 2 | B | 65531 | 300378 | 35.385418 | 28.670762 |
+| 3 | B | 65531 | 300358 | 35.390903 | 36.228836 |
+| 4 | A | 4093 | 300292 | 25.383528 | 26.101217 |
 
-同端ACKed字节计数、当地capture起止不确定性算得：sender upload25–50秒38.213–38.245、50–80秒34.802–34.829Mbit；sender download相应34.899–34.931与35.293–35.332。CUBIC窗口/交付率确实随flow age变化，但晚期仍没达到40Mbit；不能仅用96MiB太短解释全部缺口，也不能由这一轮认定唯一原因。缺失可选字段保持unknown；rcv_space不是peer advertised window，不跨host时钟相减。TBF实际burst4093B、x/gateway TBF drops991/1258、netem159/205原样保留。没有改burst/window/算法/验收门。
+**272echo全部ok（256 steady+16 warmup）、八份96MiB逐字节/server成功，八次实际两端shaper change及16份前后TC/interface读回有效；四轮均未达40–60物理吞吐门。** 观察完整性true不覆盖原Rust101，physical_calibration_accepted/full_N3仍false。B有局部改善但下载两轮28.67/36.23的差别保留，不能择优或报显著性/p99。固定latency时burst参与派生FIFO limit，因此不是固定队列字节容量的token-only因果隔离；各层drop计数不相加冒充独立损失。原LOW/HIGH/patchbay默认/生产配置未改。
 
-**下一步：先单独验证整形/排队模型，再推进高profile Node优先级与独立prefetch矩阵。** 已核原始TC拓扑与上游iproute2：TBF burst较小可能限制整形，且固定latency时burst也参与派生FIFO limit；不能声称固定queue bytes。已按HIGH-BDP预注册并实现4096/65536B固定 **A B B A** 四fresh诊断（ha0/hb0），同一源码/二进制，零ss；两arm都在新namespace实际读回后走同一tc change路径，仅burst输入不同。原HIGH/LOW及patchbay默认不改。本次准确source/control已冻结并提交上述唯一run；control-kernel-burst-input-audit-v1.json证明runner只添固定task allowlist，network.sh仅allowlist与固定ABBA分支变更，原资源门不变。不要直接放宽HIGH吞吐门或把长流结果混入旧96MiB cohort。不重复低profile18场景，不提前选定priority -1为最终策略。
+**下一步：检查传播延迟与速率队列的组合/放置，再冻结分离两者的模型对照；不继续盲增burst。** 旧模型的root netem 150ms/child TBF把时间延迟与速率队列合在同接口。上游netem手册提示TCP/TSQ与延迟放置有关、组合qdisc有约束；这是可检验候选原因，不是已证明根因。候选模型应在真实转发接口分离propagation和rate queue，保留300ms/50Mbit/40ms、96MiB/原caller/原门，并同时记录各endpoint/router的实际配置/接口/计数，验证两方向几何而不是只信builder。必须在实现/结果前另写明确拓扑与固定对照协议；模型改变不称单旋钮因果，不替代旧模型原始红。**该分离模型未实现/提交，没有下一run ID。** Node高profile优先级与独立prefetch1/2/8仍未开始；当前priority -1仍实验候选。
 
-### 本轮诊断链（全部已终态）
+### 近期诊断链与前置失败（全部已终态）
 
-- HIGH原h0 **turing-20261111T173405Z-3747b66c**：96ae5eb73b32b49710e885bfcbb5d4cf531774ec / tree dcf57e97618d55fa326819a1008e91985f4c2cf2 / snapshot d988d415695f69bd2dc4c2651c02449144e56482；control abfadd4b13b705b4c56aa0a828b9f1bf684e95c8。302.367秒101，17files/identity/原group空；204echo与六份96MiB完整，但upload25.214–25.301/download26.049–26.144Mbit，三轮全红。high-kernel-bounds-failure-v1.json，不接受。
-- LOW Model回归 **turing-20261111T174224Z-40546e83**：相同准确source/control；95.427秒0、17files/identity/原group空；原三w0、204echo与双向8MiB、12实际TC读回通过，min RTT40265–40373us、upload约7.519/download7.544–7.553Mbit。kernel-low-model-regression-v1.json；不证明HIGH通过。旧verifier源字面调用断言不适合Model函数指针，新proof核LOW指向原condition，复用未改的实际profile checker，旧件保留。
-- socket source-v1 **turing-20261111T180259Z-02b34436**：3b96b308326d56657e29d5091dd2bc9616e31937，46.9998秒1、10files/identity/原group空，仅format失败、零行为；准确one-helper换行patch按原件校验应用31d30ed8，旧红保留。
-- socket source-v2 **turing-20261111T180530Z-c21b02bc**：**31d30ed834711bf8c6de63011ae008d6dcfad24e** / tree **b3ee9ebdb57d6a11c7070b4fe40c46b55d94ff5e** / snapshot **0bfcf23f3d9fda3065e937bbe24735bad9b8886a**；control **d4752d05e04d63116f278904282541c358cb5fff**。300.255秒101、17files/identity/原group空；三hd0、204echo/六份96MiB完整，48个两端/两方向tuple快照有效。upload25.192–25.324/download26.035–26.095Mbit，物理红不变。kernel-sockets-verification-v1.json与socket-flow-age-summary-v1.json。发送端实际CUBIC、持续有待发字节、cwnd/pacing随时间增长；不据此认定唯一拥塞/缓冲/CPU原因。
+- h0三轮 **turing-20261111T173405Z-3747b66c**：96ae5eb7/control abfadd4b，302.367秒101、17files/identity/原group空；204echo/六份96MiB完整，upload25.214–25.301/download26.049–26.144Mbit，物理全红。high-kernel-bounds-failure-v1.json。
+- 同准确源LOW三w0回归 **turing-20261111T174224Z-40546e83**：95.427秒0、17files/identity/原group空；204echo/双向8MiB/12TC读回及原35–80ms/6.4–9.6Mbit门通过。kernel-low-model-regression-v1.json，不证明HIGH通过；Model函数指针按实际源核，未改旧verifier/原profile checker。
+- socket **turing-20261111T180530Z-c21b02bc**：31d30ed834711bf8c6de63011ae008d6dcfad24e / tree b3ee9ebdb57d6a11c7070b4fe40c46b55d94ff5e / snapshot 0bfcf23f3d9fda3065e937bbe24735bad9b8886a；control d4752d05e04d63116f278904282541c358cb5fff。300.255秒101、17files/identity/原group空；三hd0/204echo/六份96MiB及48实际tuple快照完整，upload25.192–25.324/download26.035–26.095Mbit仍红。kernel-sockets-verification-v1.json与socket-flow-age-summary-v1.json；原source-v1 02b仅format红零行为，准确换行patch31d30ed8，原件保留。
+- extended **turing-20261111T182504Z-cde36230**：c5ec8b6f90b79869e9128da9bacf5a1947752c09 / tree 67888ea203bf588807130f1df9e3be518437d586 / snapshot 53132d6975a75e43e955d9cfcafb66aa6f2919f1；control c731fb00f21dc4913928daa64bb8ec25f349895d。266.067秒101、13files/identity/原group空；单hl0/68echo/双向384MiB/24两端快照完整，min RTT300551us、平均32.900532/32.432250Mbit仍红。kernel-long-verification-v1.json与socket-flow-age-summary-v1.json。upload25–50秒38.213–38.245、50–80秒34.802–34.829Mbit；download34.899–34.931、35.293–35.332。晚期仍不足40，不能只用96MiB太短解释。CUBIC状态/重传是事实，不是唯一原因；rcv_space不是对端advertised window、缺失字段unknown、不跨host时钟相减。
+- burst source-v1 **turing-20261111T184428Z-32451d75**：ba850688146fadcdca1a28501a35bf09cba23835 / tree f4be97b11d5cdf48ce5c4b1258c2a4451c297dec / snapshot a20e84831b2a62d8f48e8a031acc32335ed68a55；45.958秒1、10files/identity/原group空，仅格式换行红、零行为。准确one-file/one-assignment非空白相等patch2fb0265f12f3b86b0f508d04de180311cf4600f79f79ea20310784f9da226543，c71a5efc应用；format-only-verification-v1.json/ledger终态。
+- burst source-v2 **turing-20261111T184643Z-81f9abe5**：c71a5efc0e730285714d9aa6d72647d89be3c643 / tree 0f2053bd330a1360d2606ea9a3fc7084068af0df / snapshot 31b29d7eee50fe72252c2c96fd65c76770b4950c；37.835秒101、15files/identity/原group空。格式通过，E0308 helper预期Device却传Router，四入口均编译失败、零业务。compile-only-verification-v1.json/ledger终态；c23cd79e修为实际两端各自spawn、公用namespace函数+父abort owner；新source-v3才有行为数据。
 
-socket observer由实际transfer父future借用，在同一select中poll；未spawn游离task、command kill_on_drop/1秒界限，实际transfer结束即取消余下观察。只在隔离namespace对匹配实际tuple执行ss -tinm，含命令时钟/状态/stdout，不含业务payload。延长诊断只增加一轮时间/文件量与50/80秒计划；不是同条件性能对照。
-
-上一批已完成source metadata **14项1.516秒绿**（HIGH21/socket18/long9合成子例）、control metadata **13项14.143秒绿**（固定6tasks×3 stub modes、first-failure保留），bash语法/diff通过；最新Turing实际format/compile/transport已执行，physical gate仍红。无本机Rust/格式器/Node/Xcode/产品执行。高profile Node混合与prefetch矩阵未实现/运行。
-
-本次burst新metadata已通过：`test_netlab_*.py` **8项1.325秒**，含burst 19种合成人口/顺序/实际readback/失败保护变体；control `test_network*.py` **13项14.658秒**，含7tasks×3 stub modes及ABBA/首非零保护；bash语法/diff通过。只做Git/Python数据/合成控制检查，首次Turing仅format换行红、零行为；精确格式修复后编译/物理仍待新任务。新task仍原资源/UID/flock/netns/总期限门。
+本次source `test_netlab_*.py` **8项1.325秒**（burst19合成变体），control `test_network*.py` **13项14.658秒**（7tasks×3 stub modes/ABBA/首非零），bash语法/diff通过；Rust格式/实际编译8.55秒与四轮行为在上述最新Turing任务实际执行，物理门全红。上一批14项1.516秒source/13项14.143秒control结果沿历史保留。本机未运行Rust/格式器/Node/Xcode/产品；无在途Mac。图谱在此树仅部分/滞后，zero flows不证明完整覆盖；已按实际源/原始日志复核。
 
 ## 已完成的低profile优先级对照
 
