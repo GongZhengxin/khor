@@ -196,3 +196,6 @@ async fn an_old_hop_refusal_completing_after_network_change_cannot_suppress_the_
 async fn without_a_network_change_the_real_hop_miss_still_waits() {
     observe_epoch(Change::None).await;
 }
+
+#[path = "candidate_change_tests.rs"]
+mod candidate_change;

@@ -79,3 +79,5 @@ stage helper仅新增已被固定control允许的stability条目，SHA `ff09d4ef
 终态用控制树的 `scripts/collect-network-ssh.py RECEIPT`，再用ops `verify-turing-record.py RUN_DIR`。验证身份后读实际合同。Mac exactartifact下载、zipSHA、安全解包、11control blobs及所有组结果逐项核。ledger单写。动态逐case表在task.log。v5流分析用累计read/written和last进度，Ready bytes=0不能作无流量依据。缺失边界保留unknown。
 
 原19:52 UTC的N1两至四小时窗口已经过去，不能在接续时重置为新的完成承诺。完整N0–N5原3–5工程日是量级估计，当前故障及真机/能耗验证仍影响结束时间。目标保持active，完整验收依据PLAN和ACCEPTANCE。
+
+2026-11-11 05:36 UTC 已补五个候选变化合同，candidate_change_tests.rs，真实NO_ROUTE、新实际TLS middle、内层carried echo，且断言本机hop_epoch相同。覆盖拒绝后新增、旧请求pending时新增、无变化与仅cost变化的冷却控制、较新上下文失败先完成后旧拒绝晚回的控制。原miss_epoch测试正文逐字前缀保留，旧NoRelay fixture未改。尚未修改生产缓存，先用macserver验证旧行为。Turing088e稳定性仍在跑。
