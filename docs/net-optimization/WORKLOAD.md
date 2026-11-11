@@ -40,3 +40,11 @@ v2仍三轮预热超时，有限原始输出仅为shell提示符、没有脚本�
 先在同一namespace几何和资源门、复用同一条件构造器下，独立验证内核TC瓶颈：明确TCP连接的64字节echo与双向各8MiB完整数据，nodelay、固定payload、预热另记、每步2秒/传输120秒总界，保存所有错误与原始时刻。读取实际qdisc/接口计数核单向20ms/8Mbit/40msbuffer，不能只信builder参数。校准作为模型/执行器证据，不是Noq或Node吞吐基准，也不替代UDP/中继双腿。校准门与运行版本在执行前冻结，不依据结果追改。
 
 同时增加观察器运行时的独立定时探针，分解计划迟到是否出现在发起RPC之前；比较逐样本同步记录与有界内存记录/阶段末落盘的观察器成本，两种都有完整失败人口与取消/进程中断的缺样本判定。它们是测量模型对照，不当产品加速。之后再关联实际Main/Tunnel wire和队列/许可/发送缓冲，选择有因果支持的调度候选，按同条件前后对照复验；仍需多seed/交叉顺序、SSH/peer relay、规模与手机成本。
+
+## kernel TCP v1 校准入口（已写，尚未远端验证）
+
+`workload::calibration::w0_` 为独立 ignored 测试。w0和w1复用同一个condition构造器，仍为单向20ms/每方向8Mbit/40ms队列；不运行resident或Noq来冒充独立校准。一个父调用拥有的服务任务、三个明确TCP连接，4次预热与64次64字节echo全部记录，随后upload/download各8MiB固定payload完整字节验证；upload要收到服务端全量验证后的确认才结束计时。连接/echo两秒，传输120秒，总界不在分片时重置；失败/blocked仍保留。服务任务所有退出路径归父调用，正常结束另核三个连接结果。
+
+本版在实际运行前冻结模型有效区间：去除但单列4次预热后，64次完整echo的最小RTT在35–80ms内；两方向实际payload率各在6.4–9.6Mbit/s（名义8Mbit的80%–120%）。这是独立TCP/执行器校准的宽有效区间，**不是用户体验SLO或Noq性能通过线**；不能看到结果后追改。所有原始echo/失败/字节/时间都保留，不以最快一项代替其余分布。
+
+x设备与入口网关各自namespace内，在测量前后保存`tc -s -j qdisc show`、`tc -s -d qdisc show`和`ip -s -j link show`；入口方向实际在网关veth出口，不能只查x的eth0。自动功能门只核命令成功、netem/tbf存在与上述数据/物理区间；原报告明确`calibrated:false,qdisc_units_review_required:true`，因为实际rate/delay/limit/burst单位还须核原件。发现缺失/未知单位时保持未校准，不能把builder调用成功当生效证据。独立核对原始读回后才能另留kernel模型校准证明；它不接受完整N3、双腿中继、UDP、CPU/能耗或手机场景。

@@ -15,6 +15,14 @@ use tokio::net::TcpStream;
 use crate::lab::{mesh, node, relay, result};
 use crate::nat::{Net, router};
 
+#[path = "workload/calibration.rs"]
+mod calibration;
+
+/// Shared by the resident workload and its independent kernel TCP calibration.
+fn condition() -> LinkCondition {
+    LinkCondition::new().latency_ms(20).rate_mbit(8).buffer_ms(40)
+}
+
 const REVISION: &str = "resident_mixed_workload_v3";
 const SAMPLES: usize = 120;
 const PERIOD: Duration = Duration::from_millis(100);
@@ -274,13 +282,7 @@ async fn w1_real_terminal_and_directory_during_a_resident_file_pull() {
     x.dev
         .default_iface()
         .unwrap()
-        .set_condition(
-            LinkCondition::new()
-                .latency_ms(20)
-                .rate_mbit(8)
-                .buffer_ms(40),
-            LinkDirection::Both,
-        )
+        .set_condition(condition(), LinkDirection::Both)
         .await
         .unwrap();
     let path = source.display().to_string();
