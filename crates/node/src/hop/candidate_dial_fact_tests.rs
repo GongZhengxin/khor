@@ -33,7 +33,10 @@ async fn a_refusal_on_a_newly_dialled_tunnel_keeps_its_cooldown() {
         .collect();
     {
         let loaded = f.node.devices_loaded().unwrap();
-        loaded.doc.upsert(&f.middle.id, "middle", &hints).unwrap();
+        loaded
+            .doc
+            .upsert(&f.middle.id, "middle", &hints)
+            .unwrap();
         let mut store = loaded.store;
         store.flush(&loaded.doc).unwrap();
     }
