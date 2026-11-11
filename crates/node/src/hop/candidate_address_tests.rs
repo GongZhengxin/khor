@@ -69,8 +69,10 @@ async fn observe_address(change: AddressChange) {
     let mut accepted = None;
     if change != AddressChange::None {
         stop(&mut f.middle_task).await;
-        f.outer_local.close(0u32.into(), b"old middle address retired");
-        f.outer_remote.close(0u32.into(), b"old middle address retired");
+        f.outer_local
+            .close(0u32.into(), b"old middle address retired");
+        f.outer_remote
+            .close(0u32.into(), b"old middle address retired");
         let ep = iroh::Endpoint::builder(iroh::endpoint::presets::Minimal)
             .secret_key(f.middle_ep.secret_key().clone())
             .relay_mode(iroh::RelayMode::Disabled)
@@ -108,7 +110,9 @@ async fn observe_address(change: AddressChange) {
             khor_net::path::classify(&local),
             khor_net::path::PathKind::Direct
         );
-        f.node.wires.adopt(&f.middle.id, Proto::Tunnel, local.clone());
+        f.node
+            .wires
+            .adopt(&f.middle.id, Proto::Tunnel, local.clone());
         f.outer_local = local;
         f.outer_remote = remote;
         let (attached, ready) = tokio::sync::oneshot::channel();
@@ -154,7 +158,10 @@ async fn observe_address(change: AddressChange) {
         let conn = tokio::time::timeout(
             Duration::from_secs(5),
             f.ep.connect(
-                iroh::EndpointAddr::from_parts(f.target_ep.id(), [transport_addr(&f.target_ep.id())]),
+                iroh::EndpointAddr::from_parts(
+                    f.target_ep.id(),
+                    [transport_addr(&f.target_ep.id())],
+                ),
                 INNER_ALPN,
             ),
         )
@@ -176,8 +183,8 @@ async fn observe_address(change: AddressChange) {
         drop(release);
     }
     let count = asks.load(Ordering::SeqCst);
-    let outer_open = f.outer_local.close_reason().is_none()
-        && f.outer_remote.close_reason().is_none();
+    let outer_open =
+        f.outer_local.close_reason().is_none() && f.outer_remote.close_reason().is_none();
     for task in [&mut first, &mut next, &mut f.middle_task, &mut f.echo_task] {
         stop(task).await;
     }
