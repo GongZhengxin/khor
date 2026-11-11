@@ -53,6 +53,9 @@ use crate::wires::{CarrierComparison, Proto};
 const ASK: &str = "hop ";
 /// B to Y: this stream is a hop from this machine.
 const HAND: &str = "hop-in ";
+/// Explicitly understood at both forwarding endpoints before parallel commit.
+const PREPARE: &str = "hop-ready ";
+const PREPARE_HAND: &str = "hop-ready-in ";
 
 /// What X gives the hop before dialling without it: a middle's wire
 /// that has to be dialled first, plus its own stream to Y.
@@ -572,10 +575,19 @@ pub(crate) enum Ask {
     To(EndpointId),
     /// From a middle: this stream comes from this machine.
     From(EndpointId),
+    /// Same encrypted transport, with receiver publication delayed until payload.
+    PrepareTo(EndpointId),
+    PrepareFrom(EndpointId),
 }
 
 impl Ask {
     pub(crate) fn of(target: &str) -> Option<Ask> {
+        if let Some(id) = target.strip_prefix(PREPARE_HAND) {
+            return id.parse().ok().map(Ask::PrepareFrom);
+        }
+        if let Some(id) = target.strip_prefix(PREPARE) {
+            return id.parse().ok().map(Ask::PrepareTo);
+        }
         if let Some(id) = target.strip_prefix(HAND) {
             return id.parse().ok().map(Ask::From);
         }
@@ -586,6 +598,8 @@ impl Ask {
         match self {
             Ask::To(id) => format!("{ASK}{id}"),
             Ask::From(id) => format!("{HAND}{id}"),
+            Ask::PrepareTo(id) => format!("{PREPARE}{id}"),
+            Ask::PrepareFrom(id) => format!("{PREPARE_HAND}{id}"),
         }
     }
 }
@@ -692,7 +706,37 @@ pub(crate) fn worth_a_hop(
         .collect()
 }
 
+type PreparedHop = (
+    EndpointId,
+    usize,
+    iroh::endpoint::WeakConnectionHandle,
+    SendStream,
+    RecvStream,
+);
+
 impl Node {
+    async fn prepare_hop_middle(
+        &self,
+        ep: &iroh::Endpoint,
+        target: &crate::DeviceInfo,
+        middle: &crate::DeviceInfo,
+        epoch: &MissEpoch,
+        prepared: bool,
+    ) -> Option<PreparedHop> {
+        let via = middle.id.parse::<EndpointId>().ok()?;
+        let peer = target.id.parse::<EndpointId>().ok()?;
+        let line = Box::pin(crate::journal::BY.scope(
+            crate::journal::By::Hop,
+            self.line_to_inner(ep, middle, Proto::Tunnel, None, false),
+        )).await.ok()?;
+        if let Some(wire) = HopWire::observed(&line.conn) {
+            used_middle(self.device_str(), &target.id, epoch, &middle.id, wire);
+        }
+        let ask = if prepared { Ask::PrepareTo(peer) } else { Ask::To(peer) };
+        let (send, recv) = crate::tunnel::dial(&line.conn, &ask.words()).await.ok()?;
+        Some((via, line.conn.stable_id(), line.conn.weak_handle(), send, recv))
+    }
+
     /// This machine's road to `b` for picking a middle: its live wire
     /// when one is up (a carried one is no first leg), else what it last
     /// wrote in its own row.
@@ -948,15 +992,53 @@ impl Node {
         let asked = Asking::new(&me, &y.id);
         let mut attempted = Vec::with_capacity(TRIES);
         let tries = async {
+            if y.hop_staged && eligible.len() > 1 {
+                // The row is only a hint. Every positive preparation must
+                // use words understood by both B and Y; an old endpoint
+                // cannot accidentally grant a concurrent legacy admission.
+                // Reserve half of the SAME deadline for an unknown or
+                // downgraded peer's bounded legacy fallback.
+                let now = tokio::time::Instant::now();
+                let prepared_by = now + by.saturating_duration_since(now) / 2;
+                let preparing = async {
+                    use futures::StreamExt;
+                    let mut pending = futures::stream::FuturesUnordered::new();
+                    for b in &eligible {
+                        let Some(middle) = all.iter().find(|d| &d.id == *b) else {
+                            continue;
+                        };
+                        if middle.id.parse::<EndpointId>().is_err() {
+                            continue;
+                        }
+                        attempted.push(b.as_str());
+                        pending.push(self.prepare_hop_middle(ep, y, middle, &epoch, true));
+                    }
+                    while let Some(result) = pending.next().await {
+                        if result.is_some() {
+                            // Dropping the remaining futures cancels their
+                            // request streams before any carried publication.
+                            return result;
+                        }
+                    }
+                    None
+                };
+                if let Ok(Some(prepared)) = crate::deadline::wait(
+                    Some(prepared_by), crate::deadline::scope(prepared_by, preparing),
+                ).await {
+                    return Some(prepared);
+                }
+            }
             let slots = eligible.len();
             for (index, b) in eligible.into_iter().enumerate() {
                 let Some(middle) = all.iter().find(|d| &d.id == b) else {
                     continue;
                 };
-                let Ok(via) = b.parse::<EndpointId>() else {
+                if middle.id.parse::<EndpointId>().is_err() {
                     continue;
-                };
-                attempted.push(b.as_str());
+                }
+                if !attempted.contains(&b.as_str()) {
+                    attempted.push(b.as_str());
+                }
                 // Share the existing deadline. A silent first admission
                 // cannot consume the opportunity of every other middle.
                 // Expiring this preparation does not retire its outer wire.
@@ -964,34 +1046,12 @@ impl Node {
                 let left = by.saturating_duration_since(now);
                 let slice = left / u32::try_from(slots - index).unwrap_or(u32::MAX);
                 let attempt_by = now + slice;
-                let attempt = async {
-                    // Boxed: the middle's wire is a dial, and a dial may hop.
-                    let line = Box::pin(crate::journal::BY.scope(
-                        crate::journal::By::Hop,
-                        self.line_to_inner(ep, middle, Proto::Tunnel, None, false),
-                    ))
-                    .await
-                    .ok()?;
-                    if let Some(wire) = HopWire::observed(&line.conn) {
-                        used_middle(&me, &y.id, &epoch, b, wire);
-                    }
-                    let (send, recv) = crate::tunnel::dial(&line.conn, &Ask::To(peer).words())
-                        .await
-                        .ok()?;
-                    Some((
-                        via,
-                        line.conn.stable_id(),
-                        line.conn.weak_handle(),
-                        send,
-                        recv,
-                    ))
-                };
                 if let Ok(Some(prepared)) = crate::deadline::wait(
                     Some(attempt_by),
-                    crate::deadline::scope(attempt_by, attempt),
-                )
-                .await
-                {
+                    crate::deadline::scope(
+                        attempt_by, self.prepare_hop_middle(ep, y, middle, &epoch, false),
+                    ),
+                ).await {
                     return Some(prepared);
                 }
             }
@@ -1304,9 +1364,10 @@ impl Node {
                     .devices()
                     .is_ok_and(|all| all.iter().any(|d| d.id == id && d.sponsor.is_none()))
         };
+        let prepared = matches!(ask, Ask::PrepareTo(_) | Ask::PrepareFrom(_));
         match ask {
             // B: splice `from` (X) to `to` (Y).
-            Ask::To(to) => {
+            Ask::To(to) | Ask::PrepareTo(to) => {
                 let y = to.to_string();
                 if !member(&y) || matches!(self.carry.carrier(&to), Some(Carrier::Hop { .. })) {
                     return refuse(send, REFUSED).await;
@@ -1335,7 +1396,8 @@ impl Node {
                             .await
                             .ok()?;
                     let wire = line.conn.stable_id();
-                    crate::tunnel::dial(&line.conn, &Ask::From(from_id).words())
+                    let hand = if prepared { Ask::PrepareFrom(from_id) } else { Ask::From(from_id) };
+                    crate::tunnel::dial(&line.conn, &hand.words())
                         .await
                         .ok()
                         .map(|(send, recv)| (wire, line.conn.weak_handle(), send, recv))
@@ -1384,7 +1446,7 @@ impl Node {
                 });
             }
             // Y: this stream is the link to `from`'s asker (X), via B.
-            Ask::From(x) => {
+            Ask::From(x) | Ask::PrepareFrom(x) => {
                 let asker = x.to_string();
                 if !member(&asker) || matches!(self.carry.carrier(&x), Some(Carrier::Ssh)) {
                     return refuse(send, REFUSED).await;

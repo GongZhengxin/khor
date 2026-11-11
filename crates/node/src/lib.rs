@@ -1266,6 +1266,7 @@ impl Node {
         // what the build running it is. Every other machine reads it off
         // the table to decide whether to offer a session here.
         loaded.doc.set_hosts(&self.device_str, self.hosts)?;
+        loaded.doc.set_hop_staged(&self.device_str, true)?;
         // **No style is written here any more** (2026-09-21). It used to
         // push `.khor/avatar.json` into the table on every open, back
         // when the file was the choice and the table was a report of it.

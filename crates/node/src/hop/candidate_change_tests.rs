@@ -322,3 +322,6 @@ mod admission;
 
 #[path = "receiver_commit_tests.rs"]
 mod receiver_commit;
+
+#[path = "prepared_race_tests.rs"]
+mod prepared_race;
