@@ -84,7 +84,12 @@ impl Log {
         Self::with_revision(epoch, phase, mode, REVISION)
     }
 
-    pub(super) fn with_revision(epoch: Instant, phase: &str, mode: Mode, revision: &'static str) -> Self {
+    pub(super) fn with_revision(
+        epoch: Instant,
+        phase: &str,
+        mode: Mode,
+        revision: &'static str,
+    ) -> Self {
         Self(Arc::new(Mutex::new(Store {
             revision,
             epoch,

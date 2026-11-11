@@ -35,7 +35,17 @@ pub(super) async fn configure_high(
     ry: &Router,
     revision: &'static str,
 ) {
-    queues::configure(x, y, rx, ry, Model { revision, ..HIGH_QUEUES }).await;
+    queues::configure(
+        x,
+        y,
+        rx,
+        ry,
+        Model {
+            revision,
+            ..HIGH_QUEUES
+        },
+    )
+    .await;
 }
 
 pub(super) async fn bounded_snapshot() -> Value {

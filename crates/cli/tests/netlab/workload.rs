@@ -90,7 +90,13 @@ async fn output_until(stream: &mut TcpStream, expected: &str, trace: bool) -> Re
     }
 }
 
-async fn directory(node: &Node, path: &str, phase_start: Instant, log: &Log, spec: Spec) -> Vec<Value> {
+async fn directory(
+    node: &Node,
+    path: &str,
+    phase_start: Instant,
+    log: &Log,
+    spec: Spec,
+) -> Vec<Value> {
     let mut rows = Vec::with_capacity(SAMPLES);
     for index in 0..SAMPLES {
         let scheduled = phase_start + spec.period * index as u32;
@@ -173,9 +179,7 @@ async fn phase(
         }
         let started_us = at(epoch);
         let file = format!("{path}/payload.bin");
-        let reply =
-            tokio::time::timeout(spec.bulk_limit, node.pull_path("y", &file, landed))
-                .await;
+        let reply = tokio::time::timeout(spec.bulk_limit, node.pull_path("y", &file, landed)).await;
         let ended_us = at(epoch);
         let (outcome, error, moved, dest) = match reply {
             Ok(Ok((moved, dest))) => ("ok", None, Some(moved), Some(dest)),
@@ -198,7 +202,8 @@ async fn phase(
         )
     };
     let ((mut directories, terminals, (bulk_row, dest)), timing) =
-        observer::probe_with_revision(epoch, phase_start, name, mode, spec.revision, measured).await;
+        observer::probe_with_revision(epoch, phase_start, name, mode, spec.revision, measured)
+            .await;
     let flush_started = Instant::now();
     let (_, overflow) = log.finish();
     let record_flush_us = flush_started.elapsed().as_micros();
@@ -335,7 +340,9 @@ async fn run(mode: Mode, spec: Spec) {
         .link(&y)
         .await
         .is_some_and(|l| l.hop == Hop::Direct && l.down_ms.is_none());
-    let ok = capture_before && capture_after && all_answers
+    let ok = capture_before
+        && capture_after
+        && all_answers
         && exact_bytes
         && bulk["moved"] == spec.bytes as u64
         && closed

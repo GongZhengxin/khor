@@ -3,8 +3,8 @@ use std::time::Duration;
 
 use patchbay::{Device, LinkDirection, Router};
 
-use super::{BYTES, PERIOD, REVISION, calibration, condition, emit};
 use super::observer::{Mode, Owned};
+use super::{BYTES, PERIOD, REVISION, calibration, condition, emit};
 
 #[derive(Clone, Copy)]
 pub(super) struct Spec {
@@ -52,15 +52,30 @@ pub(super) async fn captures(
     mode: Mode,
     when: &str,
 ) -> bool {
-    let mut a = Owned(x.spawn(|_| async { calibration::bounded_snapshot().await }).unwrap());
-    let mut b = Owned(rx.spawn(|_| async { calibration::bounded_snapshot().await }).unwrap());
+    let mut a = Owned(
+        x.spawn(|_| async { calibration::bounded_snapshot().await })
+            .unwrap(),
+    );
+    let mut b = Owned(
+        rx.spawn(|_| async { calibration::bounded_snapshot().await })
+            .unwrap(),
+    );
     let (a, b) = tokio::join!(&mut a.0, &mut b.0);
     let mut captures = vec![("x", a.unwrap(), false), ("gateway", b.unwrap(), true)];
     if spec.high {
-        let mut c = Owned(y.spawn(|_| async { calibration::bounded_snapshot().await }).unwrap());
-        let mut d = Owned(ry.spawn(|_| async { calibration::bounded_snapshot().await }).unwrap());
+        let mut c = Owned(
+            y.spawn(|_| async { calibration::bounded_snapshot().await })
+                .unwrap(),
+        );
+        let mut d = Owned(
+            ry.spawn(|_| async { calibration::bounded_snapshot().await })
+                .unwrap(),
+        );
         let (c, d) = tokio::join!(&mut c.0, &mut d.0);
-        captures.extend([("y", c.unwrap(), false), ("right_gateway", d.unwrap(), true)]);
+        captures.extend([
+            ("y", c.unwrap(), false),
+            ("right_gateway", d.unwrap(), true),
+        ]);
     }
     let mut valid = true;
     for (side, capture, router) in captures {
