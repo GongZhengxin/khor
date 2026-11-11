@@ -237,11 +237,26 @@ fn missed_in_epoch(me: &str, to: &str, epoch: Option<MissEpoch>) {
 fn made_in_epoch(me: &str, to: &str, epoch: Option<&MissEpoch>) {
     let mut all = MISSED.lock().unwrap_or_else(|p| p.into_inner());
     let key = (me.to_owned(), to.to_owned());
-    if current_miss_epoch(epoch)
-        && all
-            .get(&key)
-            .is_some_and(|e| same_miss_epoch(e.epoch.as_ref(), epoch))
-    {
+    if !current_miss_epoch(epoch) {
+        return;
+    }
+    let Some(miss) = all.get_mut(&key) else {
+        return;
+    };
+    if !same_miss_epoch(miss.epoch.as_ref(), epoch) {
+        return;
+    }
+    if let Some(epoch) = epoch {
+        // Success clears the wait, not the newest observation. Replacing
+        // its token also retires every answer still using the old one.
+        let current = Arc::new(());
+        miss.count = 0;
+        miss.epoch = Some(MissEpoch {
+            network: epoch.network.clone(),
+            candidates: Arc::downgrade(&current),
+        });
+        miss._current = Some(current);
+    } else {
         all.remove(&key);
     }
 }
