@@ -4,7 +4,7 @@
 
 ## 唯一在途：观察器六轮固定对照
 
-**turing-20261111T145336Z-bc4dbca9**，PID **49814** / child **50044**，14:53:57 UTC launch；task **netlab-workload-observer** / revision **workload-observer-v3** / role **diagnostic**。stage/launch本地exec94555已终态，14:54实际ps活、execution running/network-driver。尚无w3或六轮的终态结论。只查同receipt/实际PID/execution，不重发、不穿插Turing构建或计时。
+**turing-20261111T145336Z-bc4dbca9**，PID **49814** / child **50044**，14:53:57 UTC launch；task **netlab-workload-observer** / revision **workload-observer-v3** / role **diagnostic**。stage/launch本地exec94555已终态，14:56实际ps活、execution running/network-driver。原始w3已绿，两模式各一次真实任务取消及成功结果均保留；前两完整场景Streaming/Buffered各720、exact_bytes=true、实际overlap120/120、close API成功，第三场景在途。**尚非六轮终态、未收齐identity/完整parser/独立复核**。只查同receipt/实际PID/execution，不重发、不穿插Turing构建或计时。
 
 冻结源 **0b9454472767d16bc4ff0e44b14bcf3a10256e3c** / tree **725b442271fd07d85a8aeaaac84598cd3f5028e5** / snapshot **2a969d8cb0b75d48cba18792d40bffbd04df024c**，clean/0excluded，证据根 `candidate-workload-observer-source-v3.json`。控制 **7e439456cd5941607270add201d33589ebb371ba**。本页随后docs-only提交不改变冻结实验。Rust fixture与已在Linux编译通过的a9ef逐字相同；新增最后提交仅严格parser/18子例，不能把编译或kernel运行当w3/w1/w2运行绿。
 
