@@ -88,3 +88,10 @@ root已提交hop.rs每middle失败作用域候选b344→格式fcc7（尚未验�
 
 
 2026-11-11 08:11 UTC：admission两个新合同旧行为已核为cleanup之后的真实最终admission断言，非编译/前置失败；admission-old-behavior-v1.json保存，ledger终态。Mac42983791997仅格式、9files/11controls/identity，已分类，不算行为红。每middle拒绝作用域生产候选b344仅格式失败（Turing080850Z-d430a9ef，46.436秒、10files/identity/空group），逐字应用返回hop.rs patch为 **fcc7b990e22f3f78d0c06f6fa39f71e76a93bb5f**，treefb5d342a06c6de011d95da6cc16aaad1613a2e90/snapshot18dbd112a4cc7d7386c396392c9407a8153330cd，candidate-admission-per-middle-source-v2.json。只提交一次Turing stage-launch，exec **8773**，前驱d430a9ef；恢复时先查同session/实际ledger/receipt，不重发。此批预期只修第三middle未试问题，挂起第一middle合同仍预期红，不把部分验证当全绿。所有旧73测试及两个新fixture正文保持；当前无Mac待核候选、无phone采样。
+
+
+2026-11-11 08:21 UTC：上一个goal turn为实际进展：fcc7每middle候选Turing081044Z-ee0e2887已232.960秒终态，11files/identity/空group，实际hop74/1；原73全过，未试第三middle真实TLS/echo已绿，仅挂起第一middle仍在最终admission断言红。per-middle-behavior-v1.json与ledger已核，不是完整12组通过。
+
+接着追加receiver_commit_tests.rs：实际paired Tunnel通过生产read_target/Ask/serve_hop，先经旧middle完成carried TLS/echo，再让第二middle获得OK但不发任何carrier数据，要求活carrier和通信在该输家取消前后保持；测试通过现有enroll_after_pair在临时fixture签名认证目标，未绕过生产trust。生产仍fcc7。test-only780db249/tree1ebbe6/snapshotc00977已提交Turing **082036Z-68a7cf1a**，PID3628543，stage93737已退出。初版误用了私有write_target，已在工作区改为真实u16长度+target头（无生产API放宽）；首轮预计先格式或编译门，不能算旧行为红。先核同receipt，保留所有尝试；format patch需与自己这一小段WIP分开，不覆盖。
+
+拟采用目标侧完整首帧作为提交证据：OK只表示准备，未发送carried数据的输家不能调用Links::attach替换当前peer。这样不新增线上状态字/重试写语义，仍端到端加密。并发仅对明确支持此语义的目标开启，旧/未知目标维持有界、分配总预算的兼容路径；能力的发布/降级和两个OK/迟到/取消都需真实验证。此时尚未实现，不能作为已验证设计；不要把纯select两个dial当安全竞争。
