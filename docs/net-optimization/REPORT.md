@@ -368,3 +368,6 @@ Iroh47的固定物理C-B/B-C仍在第4项：C62030f1b为124业务/warm51全过�
 2026-11-11 06:58 UTC：6e5 Linux52af3091准确同源Mac42969959757全12/hop67/wires16，Linuxbudget30、Mac26，已收齐。后续成功后旧selection合同0a7/Mac42973738072真实67/2红；287/tree2780/snapshot8cdc在Mac42975178687保持whole37aed942不变，已全12/hop69/wires16/budget26/resume1绿，exact13835396432、zipSHA6b34b08ec3f76bfc92613e2018549c204547b68b17aef1718a7e51cef94ed5e0核。287最新Linux待原三轮netlab-hop计时结束，不能继承6e5的同源身份。
 
 原f4/f4s/f4i三轮1501a97c尚在跑，前两轮各3/0。f4i回peer17.7/31.6秒为middle重新可达后路径收敛，已先通过公共Relay恢复；不等于首个业务响应或全程断连。第二轮f4s Y未记录离开/返回carried而原断言green，最长echo9.4秒；不把never/零时长当瞬时恢复。后续N0按真实故障持续、首响应、fallback/收敛单列原指标覆盖与长尾。三轮尚未终态，不宣告整组或N1完成。
+
+
+2026-11-11 07:55 UTC：287候选现已准确同源Mac/Turing全12通过；原6e5三轮hop9green已收齐但f4i回peer收敛17.7/31.6/13.6秒，非首业务响应。新增同ID真实IPv4/IPv6换Tunnel合同旧行为两OS均仅这两项失败，cold自建Tunnel与不变首腿控制通过。首腿事实候选6c3首轮仅format失败，逐字应用远端补丁为1bd9692，双OS已各提交一次待核；无候选phone接受。完整范围/失败/准确收据见STATE，不能称完成。
