@@ -250,7 +250,10 @@ pub(super) async fn run() {
         link.hop == Hop::Forwarded && link.via.as_deref() == Some(n.id.as_str())
     };
     let carried = x.until(&y, Duration::from_secs(2), via_n).await;
-    let x_wires = wires(&business(&lifecycle(&x, &y, began), "list_response_received"));
+    let x_wires = wires(&business(
+        &lifecycle(&x, &y, began),
+        "list_response_received",
+    ));
     let y_wires = wires(&business(&lifecycle(&y, &x, began), "list_response_sent"));
     let two_asks = x.journal(Some(&y)).iter().any(|row| {
         row["e"] == "hop"
@@ -302,9 +305,13 @@ pub(super) async fn run() {
         && received[0]["at"].as_u64().is_some_and(|at| at <= restored)
         && sent[0]["at"].as_u64().is_some_and(|at| at <= restored)
         && received.iter().all(|row| {
-            row["details"]["measurements"].as_array().is_some_and(|paths| {
-                paths.iter().any(|path| path["selected"] == true && path["carried"] == true)
-            })
+            row["details"]["measurements"]
+                .as_array()
+                .is_some_and(|paths| {
+                    paths
+                        .iter()
+                        .any(|path| path["selected"] == true && path["carried"] == true)
+                })
         })
         && carrier_held(&x_rows, restored)
         && carrier_held(&y_rows, restored)
@@ -335,7 +342,9 @@ pub(super) async fn run() {
             "activation_to_content={first_response:?} request={first_time:?} error={first_error:?} M_stopped={stopped} two_asks={two_asks} via_N={} samples={samples} hold={:?} continuous={continuous} x_wires={x_wires:?} y_wires={y_wires:?} received={} sent={} matching_streams={}",
             carried.is_some(),
             hold.elapsed(),
-            received.len(), sent.len(), streams(&received) == streams(&sent)
+            received.len(),
+            sent.len(),
+            streams(&received) == streams(&sent)
         ),
     );
     assert!(ok, "{s}: prepared race and actual carried continuity");

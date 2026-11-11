@@ -4435,16 +4435,12 @@ impl Node {
                     documents::flow_tests::reply_written(&wire_tag, &_resp);
                     let finished = send.finish();
                     if listing && matches!(&_resp, Response::Dir { .. }) && finished.is_ok() {
-                        khor_net::carry::observe_lifecycle(
-                            &remote,
-                            "list_response_sent",
-                            || {
-                                serde_json::json!({
-                                    "wire": reply_wire, "stream": send.id().to_string(),
-                                    "early": early,
-                                })
-                            },
-                        );
+                        khor_net::carry::observe_lifecycle(&remote, "list_response_sent", || {
+                            serde_json::json!({
+                                "wire": reply_wire, "stream": send.id().to_string(),
+                                "early": early,
+                            })
+                        });
                     }
                 }
             });

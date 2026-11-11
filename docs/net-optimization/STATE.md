@@ -109,3 +109,14 @@ Turingf6ebd14d首轮net-node已47.383秒终态1、10files/identity/空group，�
 为推进实际体验而不重复串行等待，当前唯一Turing任务是 **turing-20261111T111256Z-a653cfe2**，PID **3917938**，11:13:19 UTC launch，netlab-hop-ownership/control68cad/role candidate，准确同963 source-v4；exec99094退出，实际ps核在运行且CLI编译通过，第一轮四peer前置在跑。**不要穿插另一个Turing构建**，先核同receipt/PID、scenarios.log与实际frames/业务。initial-custom-physical-run-plan-v1.json标明新6项诊断协议与所有欠项；原1.5秒/>=10秒/>=30样本/连续性不放宽。
 
 Mac **Actions43010224456** request2db0701cba2744089b87d261f2783676，同963 source-v4的net-node，exec49723已成功退出；登记按当前准确句柄核，不再提交。两OS最新全12尚欠，vendor443/58/11只是旧d521而非963。本轮已有真实三轮失败、反证撤回无效行为、scoped新实现及正向合同实证，属于progress，完整N0–N5继续active。无手机采样/候选安装。后续还须覆盖已存在carrier时的初始握手：若只给 newly-prepared 的分支 pin，shared旧路径可能仍遮住已有carrier，不能以单个新场景绿提前结束N2。
+
+
+## 11:41 UTC：scoped初始路径同源双OS全12，业务身份测量已冻结
+
+源963的Turing3fc797b0已369.804秒终态0、21files/identity/空group；全部12组，hop89/net68+1ignored/budget32、IPC18等，两个initial_custom合同均绿；node-regression-verification-v1.json逐组SHA已保存、ledger已completed_verified。加上Mac43010224456全12和43012074442的443/58/11，形成该源准确的双OS节点/单Mac vendor证据。物理a653三项f4r原红、原f4两红仍开放，不能把单元成功升格为完整接受。
+
+新增业务完成收据及更强连续性fixture已提交 **58d7cf8a41302825c52297199bf214813068faf8**，tree9baa24d471a5825b6b0ddcc38e05ecf460980b6e/snapshot0c107a7de7babe7c6726c575d75d004b731c2803，candidate-business-continuity-source-v1.json，clean/0excluded。Mac节点Actions **43013681901** request6d4fb72e0efd44209814c586eeb202c1已单次提交、exec37829终态/登记8212终态；当前已failure，准确artifact13852145754/ZIP SHAa1e1b05b1180b4bdacf692f28fd2dc2785092fbce79c75693126cddc04aee245正在按同job收取核identity后分类，不能盲重发。当前没有Turing在途，先处理准确格式/编译结果，再冻结修订和远端验收；无手机采样。
+
+old-f4-business-owner-audit-v1.json另保存第三轮实际request_stream_opened wire140105524195184，在故障前carried、故障后Relay、随后carried；原Path journal的其他wire也会参与peer级去重，故业务身份归因须加强，但不能把真实恢复慢都归为日志问题。新完成收据亦适用于原f4的实际Ls业务，原三case正文/门/模式均未改。完整计划继续active；最近向用户估全验收3–5天、低置信，不再把某批测试耗时当整体ETA。
+
+11:43 UTC补充：Mac43013681901已9files/11controls/identity，只有远端格式差异，0行为组、未编译；format-only-verification-v1.json及ledger已完成。准确返回format.patch已git apply --check并应用，下一步提交冻结v2，再单次Mac net-node与Turing netlab-hop-ownership；不得将该格式失败当产品行为红，也不重发旧58d源。
