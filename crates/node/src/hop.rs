@@ -82,8 +82,6 @@ const COMPARE_EVERY: std::time::Duration = Duration::from_secs(30);
 /// measurement end to end said not, so asking again at once would flap.
 const LOST_FOR: Duration = Duration::from_secs(10 * 60);
 
-static LAST_COMPARE: std::sync::Mutex<Option<std::time::Instant>> = std::sync::Mutex::new(None);
-
 /// How long a hop to a machine that no middle could reach is not asked
 /// for again, after the first such miss: doubling with each miss in a
 /// row up to [`LOST_FOR`], and forgotten when a hop to it opens.
@@ -157,6 +155,7 @@ struct HopCandidate {
     live: bool,
     wires: Vec<HopWire>,
     missed: Option<(u32, std::time::Instant)>,
+    attempted_at: Option<std::time::Instant>,
 }
 
 impl HopCandidate {
@@ -275,6 +274,7 @@ fn miss_context(
                 )
             }) {
                 candidate.missed = previous.missed;
+                candidate.attempted_at = previous.attempted_at;
             }
         }
     }
@@ -290,6 +290,38 @@ fn miss_context(
         ..HopMiss::new(Some(epoch.clone()))
     };
     Some(epoch)
+}
+
+/// Atomically claim actual work under the existing route owner. Recovery
+/// shares its evidence with comparisons but is not delayed by their period.
+fn begin_middle(
+    me: &str,
+    to: &str,
+    epoch: &MissEpoch,
+    id: &str,
+    comparison: bool,
+    by: tokio::time::Instant,
+) -> bool {
+    let mut all = MISSED.lock().unwrap_or_else(|p| p.into_inner());
+    let Some(miss) = all.get_mut(&(me.to_owned(), to.to_owned())) else {
+        return false;
+    };
+    if crate::deadline::expired(Some(by))
+        || !current_miss_epoch(Some(epoch))
+        || !same_miss_epoch(miss.epoch.as_ref(), Some(epoch))
+    {
+        return false;
+    }
+    let Some(middle) = miss.candidates.iter_mut().find(|middle| middle.id == id) else {
+        return false;
+    };
+    if middle.cooling()
+        || (comparison && middle.attempted_at.is_some_and(|at| at.elapsed() < COMPARE_EVERY))
+    {
+        return false;
+    }
+    middle.attempted_at = Some(std::time::Instant::now());
+    true
 }
 
 fn used_middle(me: &str, to: &str, epoch: &MissEpoch, id: &str, wire: HopWire) {
@@ -902,7 +934,7 @@ impl Node {
             }
             // Keep the cold preparation state out of every enclosing dial and
             // resident request's future, including requests that need no hop.
-            Box::pin(self.open_hop_in_epoch(ep, y, &all, &picked, epoch)).await;
+            Box::pin(self.open_hop_in_epoch(ep, y, &all, &picked, epoch, false)).await;
         })
     }
 
@@ -933,6 +965,7 @@ impl Node {
                         live: self.road_for_hop(id, &[]).is_some(),
                         wires,
                         missed: None,
+                        attempted_at: None,
                     }
                 })
                 .collect()
@@ -951,7 +984,7 @@ impl Node {
         let Some(epoch) = self.hop_miss_epoch(&y.id, picked, observation) else {
             return false;
         };
-        self.open_hop_in_epoch(ep, y, all, picked, epoch).await
+        self.open_hop_in_epoch(ep, y, all, picked, epoch, false).await
     }
 
     /// **Opens a hop to `y` through the first of `picked` that answers**
@@ -967,6 +1000,7 @@ impl Node {
         all: &[crate::DeviceInfo],
         picked: &[String],
         epoch: MissEpoch,
+        comparison: bool,
     ) -> bool {
         let caller = crate::deadline::current();
         let hop_by = tokio::time::Instant::now() + HOP_WITHIN;
@@ -993,7 +1027,8 @@ impl Node {
                 .filter(|id| {
                     miss.candidates
                         .iter()
-                        .any(|middle| &middle.id == *id && !middle.cooling())
+                        .any(|middle| &middle.id == *id && !middle.cooling()
+                            && (!comparison || middle.attempted_at.is_none_or(|at| at.elapsed() >= COMPARE_EVERY)))
                 })
                 .take(TRIES)
                 .collect::<Vec<_>>()
@@ -1020,6 +1055,9 @@ impl Node {
                             continue;
                         };
                         if middle.id.parse::<EndpointId>().is_err() {
+                            continue;
+                        }
+                        if !begin_middle(&me, &y.id, &epoch, b, comparison, prepared_by) {
                             continue;
                         }
                         attempted.push(b.as_str());
@@ -1052,6 +1090,9 @@ impl Node {
                     continue;
                 }
                 if !attempted.contains(&b.as_str()) {
+                    if !begin_middle(&me, &y.id, &epoch, b, comparison, by) {
+                        continue;
+                    }
                     attempted.push(b.as_str());
                 }
                 // Share the existing deadline. A silent first admission
@@ -1267,7 +1308,9 @@ impl Node {
     }
 
     /// **The road choice by measured legs** (NET-DIRECT step 4), every
-    /// [`COMPARE_EVERY`] from the resident's beat: for each machine whose
+    /// resident beat, with [`COMPARE_EVERY`] per unchanged middle context:
+    /// a real network/candidate/first-leg change can be compared at once.
+    /// For each machine whose
     /// live wire uses a direct or relay path, the best middle's two legs added
     /// ([`middles_with_cost`]: this machine's live round trip to the
     /// middle, the middle's written one onward) against the relay's
@@ -1278,13 +1321,6 @@ impl Node {
     /// [`LOST_FOR`]. Direct needs nothing here: iroh's punching runs under
     /// every road and takes over when it opens.
     pub(crate) async fn compare_roads(&self, ep: &iroh::Endpoint) {
-        {
-            let mut last = LAST_COMPARE.lock().unwrap_or_else(|p| p.into_inner());
-            if last.is_some_and(|t| t.elapsed() < COMPARE_EVERY) {
-                return;
-            }
-            *last = Some(std::time::Instant::now());
-        }
         if !self.hop_on() || self.carrying().is_none() {
             return;
         }
@@ -1343,7 +1379,7 @@ impl Node {
                 let Some(epoch) = self.hop_miss_epoch(&y.id, &picked, observation) else {
                     continue;
                 };
-                Box::pin(self.open_hop_in_epoch(ep, y, &all, &picked, epoch)).await;
+                Box::pin(self.open_hop_in_epoch(ep, y, &all, &picked, epoch, true)).await;
             }
         }
     }

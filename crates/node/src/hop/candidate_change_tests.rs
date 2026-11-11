@@ -325,3 +325,6 @@ mod receiver_commit;
 
 #[path = "prepared_race_tests.rs"]
 mod prepared_race;
+
+#[path = "comparison_context_tests.rs"]
+mod comparison_context;

@@ -16,7 +16,7 @@
 
 **Turing turing-20261111T084720Z-2463e1e5**，netlab-hop prepared-race-original-hop，PID3657082，08:47:41 UTC launch，已只提交一次，exec67726已成功退出，准确c2b6/tree7ebc/snapshot80f65/control68cad，前驱084053Z-8d9819ab已终态采集核空group。先查该准确receipt、execution与PID，不重发。原1线程、3轮、f4_/f4s_/f4i_、原门/拓扑/持续时间不变，retries0；计划prepared-race-original-hop-plan-v1.json。它也是后续30秒全局比较优化前的原矩阵基线；正常日志不能仅凭新源码就推断prepared协议实际被选中，需实核。Turing计时期间不插入其构建。
 
-**Mac当前c2b prepared-race候选**同源只提交一次，exec **46780**，request826ae7425d3f480a895eadddc0fe8f9f（正在上传bundle），先查同session/私库request实际receipt，不重复；拿Actions ID后待Turingstage writer退出再register。Mac独立构建可与Turing计时并行。无phone采样/部署。
+**Mac当前c2b prepared-race候选**同源只提交一次，Actions **42989990177**，request826ae7425d3f480a895eadddc0fe8f9f，exec46780已终态；收据在shared git同request.json，不重复；拿Actions ID后待Turingstage writer退出再register。Mac独立构建可与Turing计时并行。无phone采样/部署。
 
 前版7d Mac42987755071已实核全部12组/hop76/wires16/budget26/resume1，exactartifact13840183335/zipSHA95f312db1281c7c89b61aa89f00ddb26906c27f56b97701d51505dca80ccd542，20files/11controls/identity，node-regression-verification-v1.json与ledger终态；7d双OS全12已核。当前c2b Turing084053Z-8d9819ab已343.488秒终态，21files/identity/空group，全部12组绿，hop79/wires16/budget30/resume1；已保存同名verification并终态分类，不能提前外推Mac/完整N2。
 

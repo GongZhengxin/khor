@@ -662,3 +662,6 @@ ff743已复用已有 Recovery 分支，使目标缺可用 wire 的判断先于�
 
 
 2026-11-11 08:38 UTC：上文“每middle失败范围”已实现并在Turing真实第三middle救通（74/1，剩第一挂起红）；7d进一步实现原deadline公平分配和完整首帧receiver提交，Turing全部12组/hop76过、Mac同源success待逐组核。并行prepared候选8ecc已实现未验证：flat hop_staged只作hint，新hop-ready To/From双端正向协议识别，不信过期能力；最多2 future、原总期限一半保留legacy fallback，失败/取消不发布carrier，真实首帧才提交，保持加密与原TRIES2信任边界。三个真实流量合同覆盖挂起、双Ready单提交、stale hint。物理完整两腿/旧版本混合与成本仍待。此前“不能只select两个dial”风险由receiver首帧提交及双端新词识别共同处理，原旧红和分项证据仍保留。
+
+
+2026-11-11 08:51 UTC：下一步comparison admission设计。当前compare_roads在任何实际事实之前受进程全局LAST_COMPARE/30秒阻塞，一个peer甚至不同Node会消耗彼此时间；原f4i回peer尾巴13.6–31.6秒尚未闭环。拟去掉全局gate，把比较时间放原MISSED每(this,target)记录，只有当前network/candidate弱token匹配时登记；相同事实维持原30秒成本门，实际网络/候选/首腿事实改变则同cache entry换context并立即可比。沿原resident beat与note_roads，不增map/task/timer，不把每次ACK/RTT读数当连接性变化，不变30秒周期值。made成功保留该比较时间；旧epoch/旧观察不能重置它。完整物理矩阵c2b此时正在跑，作为修改前准确基线；不要在其Turing计时期间构建。此段是设计待验，未实现/未声称解决全部尾巴。
