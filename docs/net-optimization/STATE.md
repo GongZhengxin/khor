@@ -1,6 +1,6 @@
 # feat/net 当前状态与接续入口
 
-更新于2026-11-11 10:43 UTC。完整N0–N5目标“完成计划”active，上一目标轮取得同源hint双端结果并归档，本轮取得迟到成功真实红→绿及新四节点fixture源码，属于进展。未完成、未阻塞，不派发子智能体。此前STATE逐字归档于[上一状态](HISTORY-20261111-through-hint-verification.md)，SHA `617b316640985eb22785a7d5ccf3d558355d3a1da24ed6479f1ff8224b7c54f1`，继续链接全部旧失败与历史；原始日志/准确收据优先，不凭摘要覆盖原改动。
+更新于2026-11-11 11:16 UTC。完整N0–N5目标“完成计划”active，上一目标轮取得同源hint双端结果并归档，本轮取得迟到成功真实红→绿及新四节点fixture源码，属于进展。未完成、未阻塞，不派发子智能体。此前STATE逐字归档于[上一状态](HISTORY-20261111-through-hint-verification.md)，SHA `617b316640985eb22785a7d5ccf3d558355d3a1da24ed6479f1ff8224b7c54f1`，继续链接全部旧失败与历史；原始日志/准确收据优先，不凭摘要覆盖原改动。
 
 ## 位置与授权
 
@@ -86,3 +86,16 @@ Mac **Actions43005910530** request7de8d1921ad448158b3b4e56c74262f0，同d521源 
 新增dial_budget/initial_custom.rs两个真实合同（尚未执行）：活IP连接旁新Custom PathId0/TLS/echo、错误目标身份仍拒绝且旧IP保持；未显式提供初始Custom时API拒绝。原物理fixture逐字保持。initial-custom-source-audit-v1.json保存新决策与不变量。vendor48条已按新设计重写，仍58项且未验收，42–44隔离。
 
 Turingf6ebd14d首轮net-node已47.383秒终态1、10files/identity/空group，仅root格式检查、0行为组；精确format.patch已应用，准备冻结v2后同源双端全12组，不当作编译或行为失败。此时没有Turing活计时/构建、没有Mac在途。所有旧绿/真实红保留，完整N0–N5继续active。
+
+
+## 11:16 UTC：scoped初始路径实证与当前唯一物理任务
+
+0cb679源（candidate-initial-custom-source-v3.json tree12092466b63bca8af0936a43575ccb39c7a06bfa/snapshotb889a6470c17d96508ba05736b2ddf675d328594）在Turing **110302Z-51c05db4** 已335.270秒终态101、14files/identity/空group：net68+1ignored、hop89、wires16、journal30绿；dial_budget **31pass/1FAIL**。新合同的活IP、实际新Custom PathId0、TLS/echo都先通过，随后错误身份控制的client/server联合等待在第89行超时，尚不能称身份控制通过；输入未显式提供Custom的拒绝控制绿，原30含只读最多一次重试/写不重放均绿，后7组未运行。Mac **43008859430**同源也failure，exact13849817159/ZIP SHA4a3489dfd541c1e2a85d1bfe637e8d2ae1310a540a49cff434bef159b055c9bd，13files已收、identity/实际分类按验证进程结果核；不重发。
+
+先前4eff源Turing0f362755/Mac43008462719只因ensure宏尾逗号编译失败、0行为组；Turing10files/identity/空group，Mac exact13849621290/ZIP SHA5e4a1d0759a47d82ab135f8dee4ceed8395fb0bd698a5cf05dc42d923b32ff12，9files/11controls/identity。逗号已在0cb修正；格式f6、宏0f与真实行为失败分开，原件不覆盖。
+
+最新test-only修正e690→格式 **9634737a01dea34a4dc7fb54d9a32a352a9f5018**（candidate-initial-custom-source-v4.json，tree **52c536154a3a51829c64e5c167ac7965b2792a93** /snapshot **e48e12746c900206c4c8b59d0b9c010a234a7018**，clean/0excluded），将错误身份listener单独持有并在client明确拒绝后abort/join，仍要求client在5秒内返回Connecting错误，不用超时冒充身份拒绝。生产link/iroh三个实现文件与0cb、原物理fixture与420逐字核同。其自身尚待完整单位验证；不能把前半正向合同绿升级为全套通过。
+
+为推进实际体验而不重复串行等待，当前唯一Turing任务是 **turing-20261111T111256Z-a653cfe2**，PID **3917938**，11:13:19 UTC launch，netlab-hop-ownership/control68cad/role candidate，准确同963 source-v4；exec99094退出，实际ps核在运行且CLI编译通过，第一轮四peer前置在跑。**不要穿插另一个Turing构建**，先核同receipt/PID、scenarios.log与实际frames/业务。initial-custom-physical-run-plan-v1.json标明新6项诊断协议与所有欠项；原1.5秒/>=10秒/>=30样本/连续性不放宽。
+
+Mac **Actions43010224456** request2db0701cba2744089b87d261f2783676，同963 source-v4的net-node，exec49723已成功退出；登记按当前准确句柄核，不再提交。两OS最新全12尚欠，vendor443/58/11只是旧d521而非963。本轮已有真实三轮失败、反证撤回无效行为、scoped新实现及正向合同实证，属于progress，完整N0–N5继续active。无手机采样/候选安装。后续还须覆盖已存在carrier时的初始握手：若只给 newly-prepared 的分支 pin，shared旧路径可能仍遮住已有carrier，不能以单个新场景绿提前结束N2。
