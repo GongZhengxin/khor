@@ -46,6 +46,7 @@ def profile(capture):
     netems = [r for r in rows if r['kind'] == 'netem' and r['dev'] == tbf['dev']]
     assert len(netems) == 1
     netem = netems[0]
+    assert netem['root'] is True and netem['handle'] == '1:' and tbf['parent'] == '1:1'
     assert tbf['options'] == dict(rate=1000000, burst=4096, lat=40000)
     assert netem['options']['delay'] == dict(delay=.02, jitter=0, correlation=0)
     text = capture['qdisc_text']['stdout']
