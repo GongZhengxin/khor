@@ -1,8 +1,24 @@
 # feat/net 当前状态与接续入口
 
-更新于2026-11-11 16:40 UTC。完整目标“完成计划”仍 **active、未完成、未阻塞**，范围为 [PLAN](PLAN.md) 的 N0–N5，root串行，不派发子智能体。本页顶部是唯一当前入口，后续时间段保存历史，不据旧“在途”重发。上一份STATE逐字保存于 [完整历史](HISTORY-20261111-through-kernel-calibration.md)，SHA `8172caf6900ae2196273ecdf86a4b8d17572537299392bfa1b5b1322eefbe540`；它继续链接此前所有历史与失败原件。实际worktree、收据、日志优先，不按摘要覆盖未提交内容。
+更新于2026-11-11 16:49 UTC。完整目标“完成计划”仍 **active、未完成、未阻塞**，范围为 [PLAN](PLAN.md) 的 N0–N5，root串行，不派发子智能体。本页顶部是唯一当前入口，后续时间段保存历史，不据旧“在途”重发。上一份STATE逐字保存于 [完整历史](HISTORY-20261111-through-kernel-calibration.md)，SHA `8172caf6900ae2196273ecdf86a4b8d17572537299392bfa1b5b1322eefbe540`；它继续链接此前所有历史与失败原件。实际worktree、收据、日志优先，不按摘要覆盖未提交内容。
 
-## 当前执行入口：参照失败保留，准备单因素调度对照
+## 当前执行入口：source-v2诊断编译在途，尚无策略计时结果
+
+协议仍 [SCHEDULING](SCHEDULING.md) 的`workload_response_priority_v1`，v1源码只有格式失败、**零行为/策略计时样本**。原Mac **43060911492**（requestf1b86733b63a43d3b757ef8fd73f5fac、control68cad）已failure，exact artifact **13872249427**、ZIP **51add361cc992a2c49f1587db9ad55ba6d9f6e754e302b4813776f3628b9f5b8**，9files/11controls/identity；Linux **turing-20261111T164124Z-bd59e496** 已54.723秒1、10files/identity/原group空。两者format.patch逐字一致，只调整一处priority_applied换行，已准确check/apply提交 **1df76f64**；两个`format-only-verification-v1.json`和ledger均终态。不能当Node编译或实际priority读回通过。
+
+修正后冻结 **B/source-v2：8371dbb024502c8a0fea952b0ea96fbff6a41f39** / tree **51310731fd24ed9e18fa27060770c3ccee9570ce** / snapshot **5d989256ae5e0362440141dff578ea2c94e87bb7**，`candidate-response-priority-source-v2.json`，clean/0excluded。匹配 **A：f324d9f84bcb9f001b18e924bebf6fd101dbe26f** / tree **edb11e743b349732c38543bacc2297dad6e92cbc** / snapshot **19f7a1426b2cbf6a52ecd3fc724295a4ccd56f55**，`control-response-priority-source-v2.json`。完整树只有link.rs优先级const一行增/一行删，PULL_AHEAD仍8，全部fixture/parser/协议SHA一致、实际工作区保留B；两臂source/snapshot各隔离ref pin，独立核验 `response-priority-source-pair-v2.json`。这是匹配控制，不是旧版历史基线。source-v1 refs/原件不覆盖，v2也尚未产生性能结果。
+
+新control **5f1242f5f4d216dde60ad27be0d17a5958b7ef46**，本地未push；SSH传送准确Git控制文件，原资源/UID/flock/netns/期限门保持。source-v2另补实际启动取消回收回归：`lab::resident_ready`在未poll或等待中都持有Reaped，w3用真实sleep子进程验证两种取消后进程不存在；parser必须看到实际startup guard。fixture默认60秒启动门未动，不证明产品keeper后代或启动延迟。新metadata `test_netlab*.py` **11项1.392秒绿**，含缺startup guard/仍有残留的拒绝检查；无本地Rust/格式器/产品执行。
+
+**唯一Turing在途：turing-20261111T164701Z-a5469ffc**，PID **252606**、child **252828**，16:47:23 UTC launch，tasknetlab-workload-wires / revisionworkload_response_priority_v1-source-v2-B-readback / diagnostic / control5f1242f / 上述B。stage exec77921已终态，准确前驱bd59已收集/identity/原group空。最近同receipt观察：格式已过、正在实际netlab编译，**w3与三轮行为尚未核实**。不重发、不穿插Turing任务。
+
+Mac source-v2提交一次正在exec session **84214**；request **cd1cb21f0dcb4cdb8cd595609ccda8f0**，原builder-ref feat/net、net-node、预期实际control68cad。快照已上传，不因等待重发；先继续同exec/查本地 `.git/khor-development/runs/cd1cb21f0dcb4cdb8cd595609ccda8f0.json` 和精确workflow，获得databaseId后register。当前本段尚无已核run ID。
+
+下一步：收准确v2 Mac/上述B实际priority getter/取消guard，成功后同control串行执行A真实readback；两者均满足前置后才按 **A B B A A B** 六block、每block三fresh场景做关闭诊断的计时，原完整人口/实际TC/probe/字节/期限保持。任何entry/source失败保留原件并明确新版本，不选择性重跑性能差的轮。原035九场景6绿/3失败、四残留手工回收不当自动清理绿；启动/配对根因、严重同故障fallback参照以及全部N0–N5仍待收口。
+
+最近向用户明确：**未完成**，本轮对照预计1–2小时；完整计划剩余2–4天、低置信度，受新失败定位及真实iPhone/能耗验收影响。它是预估，不是承诺或接受结论；不要压缩后重新起算或声称已完成。
+
+## 16:40 UTC工作记录：参照失败与策略准备
 
 **目前没有Turing或Mac在途任务。** 原唯一Turing **turing-20261111T161025Z-0354726c** 已 **1248.401秒、退出101**。21files/source/control/identity核实；原九场景 **6绿/3失败**：首轮fr-carried配对90秒超时、fr-relay启动60秒超时；第三轮fr-carried启动60秒超时。其余六场景实际测得384对started/finished全部ok（含bootstrap/setup），不能用这些成功人口掩盖三个未进入业务测量的失败。`steady-reference-failure-v1.json`保留逐轮分布/失败原文，ledger终态；不是f4s同故障窗口对照。主机load记录保留，不据此认定CPU根因。
 
