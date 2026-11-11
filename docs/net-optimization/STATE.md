@@ -2,6 +2,16 @@
 
 更新于2026-11-11 13:38 UTC。完整N0–N5目标“完成计划”仍 **active、未完成、未阻塞**，root串行，不派发子智能体。上份STATE逐字保存在[完整历史](HISTORY-20261111-through-workload-startup-v2.md)，SHA `76e0dbfb6c8dd23f58ffad064ca745290818a0dac42723a2c6a35506e0755971`，它继续链接旧原件/所有失败记录。历史里的“当前/待验”只代表当时；原始收据/日志和实际worktree优先，不按摘要覆盖未提交内容。
 
+## 14:15 UTC当前入口：kernel三轮原件/单位已核，动态选路f2f在途
+
+独立kernel模型 **turing-20261111T140913Z-141b0ea2** 已 **94.220秒0**、17files/identity/原group空，原始自动contract三轮全绿；更独立的 `kernel-profile-verification-v1.json` 核完实际12份读回，kernel_model_profile_confirmed=true、**full_N3_accepted=false**。min RTT40199/40216/40277us，两方向实际payload约7.52/7.55Mbit/s；原4预热+64echo/两8MiB全部成功/全量字节一致。JSON rate1000000↔文本8Mbit、delay0.02↔20ms、lat40000↔40ms相互核实；burst4096B，x eth0/gateway v7前后同profile且两侧qdisc都经过≥8MiB实际数据。记录qdisc drops每轮18/21，不能把零randomloss写成零drop。校准的是共享condition的独立kernel模型，**不追填旧Node cohort已读回配置**；下一版w1也要保留自身前后TC读回。详细数值/边界已入WORKLOAD，proof/ledger终态。
+
+准确源仍 **df5b3f6a** / treea315f0e280e0766b68b48f5c8b15b6f5c2e06aa6 / snapshot97386eb2d87102dc7d14619ef929447385ed677a，source-v2不变；本次control **ea44ab27af3011821d188e0a500ad91b20ed17b1**。前一bd7e5f6c原始总job1/contractfalse已保留：三项Rust门全绿，但harness把首manifest接在test名称同一行，旧startswith校验漏读。17files/identity/空group、validator-prefix-failure-v1 proof/ledger终态；没有追认旧report为绿。新control只修唯一marker后解析，原门/样本数不变，新增harness前缀回归；完整control **12项8.578秒绿**、bash/diff过。旧原件副本的metadata-only重放验证另存control-workload-calibration-prefix-replay-v1.json；新的三轮真实运行才是当前0收据。外部单位verifier的1正例/6单位错例已过，SHA在kernel-profile-verifier-audit-v1.json。无本地Rust/产品执行。
+
+唯一Turing当前为 **turing-20261111T141304Z-f2f17750**，PID **4174858**，14:13:25 UTC launch；task `netlab-dynamic` / revision `effective-route-dynamic-v3` / candidate / 原control **68cadb57a0ed72d40a4ca9a843e86b9c6797bf34** / 同一生产候选 **3de372a0** 的冻结source-v3。stage exec57393终态，原固定p2/p3/p7三轮矩阵，不重发、不穿插Turing构建/计时；这是49改变有效RTT/Patience后对完整动态矩阵的最新源复验，前一单独p2/p3绿不代替p7等场景。下一步先核实际PID/execution/全部原门。
+
+与此同时root可以本地source-only实现下一版Node观察器校准：同一实际condition/真实终端与文件、固定计划与每类一个在途/所有720人口保持，加入父future拥有的有界定时探针，比较逐条同步落盘与阶段末有界记录；明确模型版本/顺序对照，保留失败与取消/中断缺样本判断，不冒充产品优化或删计划积压。w1自身前后设备/gateway TC读回也要保存；`closed`仍只是API成功，独立host/child退出证明待补。这些**尚未实现**，待当前Turing时序完成再按固定新源/control运行；Mac独立格式/构建可以并行。完整N0–N5/原严重stall与quiet/长稳/真机/59vendor专项等范围不变，目标active，无外部阻塞。
+
 ## 14:05 UTC当前入口：恢复三轮已收齐，独立kernel校准bd7在途
 
 生产候选3de的恢复 **turing-20261111T134417Z-ce3b1222** 已 **568.791秒0**，15files/identity/原group空，p2/p3各三轮 **全6绿**。p3黑洞后228/225/227次真实Node目录RPC，worst644.5/664.6/590.5ms，零失败/零retired；p2约2.0秒/947.8ms/962.2ms离开慢路（可用Relay或Direct均允许），原30post样本/无退役门保持。`recovery-result-v1.json`另核原始每个logical attempt恰有started/finished、list成功/无error、所有p3真实elapsed≤原1秒。它是目录RPC，不是PTY或完整N1稳定/严重stall/成本接受；proof/ledger已终态，不重发。

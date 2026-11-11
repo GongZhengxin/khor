@@ -48,3 +48,14 @@ v2仍三轮预热超时，有限原始输出仅为shell提示符、没有脚本�
 本版在实际运行前冻结模型有效区间：去除但单列4次预热后，64次完整echo的最小RTT在35–80ms内；两方向实际payload率各在6.4–9.6Mbit/s（名义8Mbit的80%–120%）。这是独立TCP/执行器校准的宽有效区间，**不是用户体验SLO或Noq性能通过线**；不能看到结果后追改。所有原始echo/失败/字节/时间都保留，不以最快一项代替其余分布。
 
 x设备与入口网关各自namespace内，在测量前后保存`tc -s -j qdisc show`、`tc -s -d qdisc show`和`ip -s -j link show`；入口方向实际在网关veth出口，不能只查x的eth0。自动功能门只核命令成功、netem/tbf存在与上述数据/物理区间；原报告明确`calibrated:false,qdisc_units_review_required:true`，因为实际rate/delay/limit/burst单位还须核原件。发现缺失/未知单位时保持未校准，不能把builder调用成功当生效证据。独立核对原始读回后才能另留kernel模型校准证明；它不接受完整N3、双腿中继、UDP、CPU/能耗或手机场景。
+
+
+## kernel v1已核三轮与真实单位（14:13 UTC）
+
+同一源df5b3f6a0ac26aa02dc92a5593735fef35048adf / treea315f0e280e0766b68b48f5c8b15b6f5c2e06aa6 / snapshot97386eb2d87102dc7d14619ef929447385ed677a，control ea44ab27af3011821d188e0a500ad91b20ed17b1，run turing-20261111T140913Z-141b0ea2，94.220秒终态0、17files/identity/原group空，三轮自动原始数据校验全部通过。64个稳态echo的min RTT40199/40216/40277us；upload约7.520/7.520/7.519Mbit/s、download约7.553Mbit/s，三轮两份8MiB全量字节均一致。4次预热始终另存，未丢弃失败人口（本轮无失败）。
+
+另用kernel-profile-verification-v1.json交叉核12份实际读回（3轮×设备/网关×前/后）：JSON rate1000000对应同次文本8Mbit，即bytes/s；netem delay0.02对应20.0ms，即seconds；tbf lat40000对应40.0ms，即microseconds，burst4096B，limit1000。设备eth0与网关v7都实际生效；每轮两侧qdisc字节分别增加约8.98MB/8.98MB，证明两个方向都有实际数据经过已读回的qdisc。**零随机丢包配置不等于无丢包**：实记设备/网关qdisc drops增量各18/21，不删除或归零，不据此臆测具体TCP/Noq因果。
+
+该独立证明只接受共享condition对应的kernel TCP模型，full_N3_accepted=false。原自动报告仍calibrated:false（保留其“需单位复核”的原始阶段），旧Node三轮仍是原来的未校准diagnostic cohort，不能追填旧样本已做实际读回。下一版Node测量也要在它自己的真实namespace保存前后读回，补观察器定时/记录成本、真实wire/排队与进程退出事实。
+
+此前同源run turing-20261111T140243Z-bd7e5f6c的三项Rust功能门均绿，但总job1/原报告false：校验器用startswith漏读被Rust test名称前缀接在同一行的manifest。原件/红状态完整保留于validator-prefix-failure-v1.json；新control修正为唯一标记后解析、仍要求manifest恰1及原样本/全部门，新增harness_prefix正例与其余反例（12个子例），完整control stub12项8.578秒绿。新parser仅在原始日志副本中回放验证（control-workload-calibration-prefix-replay-v1.json）后，以上独立重跑三轮才取得新的0/通过收据；没有改写旧报告或放宽物理门。
