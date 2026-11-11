@@ -7951,6 +7951,9 @@ fn negotiate_max_idle_timeout(x: Option<VarInt>, y: Option<VarInt>) -> Option<Du
 }
 
 #[cfg(test)]
+pub(crate) mod ack_sampling_contract;
+
+#[cfg(test)]
 mod tests {
     use super::*;
 
