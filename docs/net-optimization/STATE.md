@@ -1,10 +1,10 @@
 # feat/net 当前状态与接续入口
 
-更新于2026-11-11 09:39 UTC。完整N0–N5目标“完成计划”active，本轮是代码与实际证据进展，未完成/未阻塞。root串行，不派发子智能体。此前逐字STATE在[上一状态](HISTORY-20261111-through-comparison-and-hints.md)，SHA `e0ad47c3c71a3b8c0adecf54314b542bea81544114e2b395c806451663fba867`，继续链接此前全部原始失败与历史。真实worktree、diff、receipt与进程优先，不凭调度paused/观察超时停止或重发。
+更新于2026-11-11 09:49 UTC。完整N0–N5目标“完成计划”active，本轮是代码与实际证据进展，未完成/未阻塞。root串行，不派发子智能体。此前逐字STATE在[上一状态](HISTORY-20261111-through-comparison-and-hints.md)，SHA `e0ad47c3c71a3b8c0adecf54314b542bea81544114e2b395c806451663fba867`，继续链接此前全部原始失败与历史。真实worktree、diff、receipt与进程优先，不凭调度paused/观察超时停止或重发。
 
 ## 位置、授权与源码
 
-产品 `/Volumes/disk0/Khor/worktrees/current/khor-net`，branch `feat/net`。最新hint候选代码 **80cf9f3ea27f906bee3db7a3db113a6c62679a3b**，冻结tree **01922549a6cf3f593b96ff504a973a98a327d420**，snapshot **4e46ba00f262e19243e32dfd7ea360d03f7a3c19**，source文件candidate-hint-context-candidate-source-v1.json。该snapshot dirty=true只含当时文档WIP，excluded_untracked_count=1是尚未暂存的PREPARED-PHYSICAL-ACCEPTANCE.md，不是漏产品源码；按准确tree验证，不伪称clean。代码尚未实际验证，后续文档提交另核HEAD/diff。
+产品 `/Volumes/disk0/Khor/worktrees/current/khor-net`，branch `feat/net`。最新hint候选 **0d1c0330036d42a3529e4e7f073c330fe9abda9e**，tree **a650622220a3d62a59ad4a13049085d1789250f0**，snapshot **84b75533a9a4781cce1c08437aa6be16666ce4af**，candidate-hint-context-candidate-source-v2.json，clean/0excluded。它仅逐字应用80cf首轮返回的hop.rs format.patch；产品逻辑与六fixture不变，尚待实际87合同。80cf source-v1 dirty文档且当时未包含未暂存N4计划，相关准确源/格式-only原件仍保留；不把v1结果外推为行为验证。后续文档提交另核HEAD/diff。
 
 最新已核双OS全部12组的是比较源 **a73b9cae0f9d147cb4ec445d32190e395ca97244**，tree **6a2ec5cfcb0a8b93bf50779aa9178feca2af5eff**，snapshot **337b232e46cf436d534155349aaeff18e51948e0**，candidate-comparison-context-source-v2.json，hop81。它早于hint实现，原物理前后对照冻结在该源，不能混入hint改变。
 
@@ -14,11 +14,13 @@
 
 ## 当前在途：先查同一收据
 
-**Turing turing-20261111T092344Z-a59e4d3f**，netlab-hop comparison-context-original-hop，PID **3731022**/child **3731238**，09:24:05 UTC launch，准确a73/tree6a2ec5/snapshot337b/control68cad，role candidate。stage39150已成功退出。最后实核同PID活着6分17秒，首f4 green、首f4i回peer **8.1秒**；仅初步一例且仍有尾巴，不称最终4秒/全部根因闭环。按同receipt/PID跟踪，不重发；计时期间不插入Turing构建。comparison-context-physical-plan-v1.json冻结1线程3轮f4_/f4s_/f4i_、原门/拓扑/持续时间、retries0。
+**Turing turing-20261111T094808Z-fb91c212**，hint候选effective-hint-context-candidate，PID3786112，09:48:29 UTC launch，只提交一次，exec64185已成功退出，准确0d1c/treea650/snapshot84b755/control68cad，前驱a59e4d3f原矩阵已terminal/collected/identity/空group。先核该准确receipt/execution/PID，不重发；此时尚未核新87行为。当前是单位回归，不是新物理计时。
 
-**Mac hint候选80cf Actions42996519985**，request76f3b258c8e64eb5abe075f76610b6c6，exec19248已成功退出，已提交register；按该准确run核，不重发。source为candidate-hint-context-candidate-source-v1.json，预期先格式/编译/行为分开判。当前Turing物理对照不含hint，hint仅先用独立Mac。
+**Mac hint候选 Actions42997902740**，request7220f75337c74afc89eb8b0817c3682a，准确同源0d1c source-v2，已登记，exec94386/83932退出，09:46 API仍in_progress。先查同run。初版Mac42996519985仅format、exact13843469806/ZIP SHA4249b1638d9578fa70f6efb312c314daa54184a26d53a522b38bdba545bf27d6，9files/11controls/identity、0组，精确patch应用为0d1c，已分类，不重跑。
 
-hint旧源Mac **42994929836**已实际失败并收齐分类，不再在途；a73 Mac42992730535与Turing091507Z-2f94f130已全部12组终态核。比较前c2b原矩阵084720Z-2463e1e5也已收齐，不要再poll/resubmit。最新实际新运行见source-refs与末尾checkpoint。
+比较a73物理 **092344Z-a59e4d3f已全部9green终态收齐**，不再poll；比较前c2b084720Z-2463e1e5、两OS a73单位和hint旧Mac42994929836也都已终态核。以下的旧“在跑”表述由最新本节/末尾checkpoint替代。
+
+无phone采样/候选安装，完整N0–N5继续active。
 
 ## 本轮实际设计与证据
 
@@ -48,17 +50,17 @@ test-only旧格式源 **e2658a4a3699ca62b49b9b3ff3cfddb5f4dd1071**，treedd847b8
 
 80cf候选在原HopMiss加target_hints/每candidate加hints，经现有dial_addr（含nearby）解析有效IP/Relay后排序去重。目标有效hint变不继承旧第二腿失败/工作，只有middle变则仅它失效。生产用观察后冻结all，排除caller较旧DeviceInfo；同MISSED锁先拒绝旧观察再读同步facts，不在锁内读文档/await；NEARBY follow只写自身map不反调MISSED/Wires。contact_version每次heard递增，不是网络epoch，已明确排除，RTT/顺序/来源也不取消退避。原81和六fixture正文保持，预算/并发/信任不变。hint-context-source-audit-v1.json与候选source记录细节。
 
-为冻结old格式v2，曾将自己的hint-context-working-v1.patch临时反向移除、应用返回test format并冻旧源，再逐字恢复。SHA **1ce7befad11ccf881f8065059b2651770c087b7ddcfcbdea2b5260d77adb938f**，候选已正式提交80cf，不需重新重放此patch。初版Mac42993175638只是格式失败，exact13842223815/ZIP SHAdbd2cb6d0b09a218887ce04596f38ae5cb620722de4d640927737d054620dfd6，9files/11controls核，源febb；不得混作行为红。
+为冻结old格式v2，曾将自己的hint-context-working-v1.patch临时反向移除、应用返回test format并冻旧源，再逐字恢复。SHA **1ce7befad11ccf881f8065059b2651770c087b7ddcfcbdea2b5260d77adb938f**，候选已正式提交80cf→格式0d1c，不需重新重放此patch。初版Mac42993175638只是格式失败，exact13842223815/ZIP SHAdbd2cb6d0b09a218887ce04596f38ae5cb620722de4d640927737d054620dfd6，9files/11controls核，源febb；不得混作行为红。
 
 ## 原物理矩阵与完整剩余范围
 
-比较前 **c2b 084720Z-2463e1e5**已1564.564秒终态，15files/identity/空group；原三轮各3green、全部9项，f4i回peer **28.2/17.8/34.6秒**，f4最慢echo3.7/3.5/3.5，f4s9.1/9.3/9.3。original-hop-verification-v1.json核原rows/日志SHA。verify-original-hop-matrix-v1.py只读metadata/log，不执行产品。f4i是公共Relay已可用、middle恢复可达后回peer的收敛，不是首业务响应/整个断连；never/无观察切换不是零恢复。a73物理尚未收齐，不提前给差值/p99结论。
+比较前 **c2b 084720Z-2463e1e5**已1564.564秒终态，15files/identity/空group；原三轮各3green、全部9项，f4i回peer **28.2/17.8/34.6秒**，f4最慢echo3.7/3.5/3.5，f4s9.1/9.3/9.3。original-hop-verification-v1.json核原rows/日志SHA。verify-original-hop-matrix-v1.py只读metadata/log，不执行产品。f4i是公共Relay已可用、middle恢复可达后回peer的收敛，不是首业务响应/整个断连；never/无观察切换不是零恢复。a73物理已收齐9green，f4i8.1/8.6/8.1秒；只3样本、不作p99或最终接受。
 
 PREPARED-PHYSICAL-ACCEPTANCE.md已冻结、待实施：原f4/f4s/f4i只有X/Y/M三个khor节点，不能证明双middle prepared并行。新增四peer actual case须在M status未回复时经N在1.5秒内完成真实业务，恢复M后10秒/30业务同wire且无迟到覆盖；若迟到请求未被观察，不声称覆盖。若放既有f4_过滤器则未来四case×三轮属于新12项集合，保留原三body/拓扑/门，与当前9项归因隔离，不必修改trusted control/host网络。
 
 完整N0–N5都继续：
 - N0最终体验定义、足够样本p99与相同条件完整前后证据未收齐。
-- N1 a73物理对照、8秒剩余尾巴、严重单向stall、quiet/stalls和新比较成本仍欠。Iroh47/Noq13既有固定物理集含红且样本少，不能用新单元绿抹掉。
+- N1 a73物理后的8秒剩余尾巴、严重单向stall、quiet/stalls和新比较成本仍欠。Iroh47/Noq13既有固定物理集含红且样本少，不能用新单元绿抹掉。
 - N2 同connection实际IPv4/v6移动、LOST本机身份/路由上下文、目标/中间hint候选双OS及完整取消/迟到成功组合仍欠。特别需审查旧epoch的成功准备：made_in_epoch对旧token只早退，open_hop之后仍可能继续发布；这只是静态待真实合同证明的风险，不能当已确认根因/已修复。
 - N3 真Node交互/批量共享或隔离、背压公平、1/3/5设备与CPU/字节/唤醒/手机能耗。已有congestion independent_fifo_v2仅底层Noq模拟，不能代替真实Node/hop/手机。
 - N4 完整两腿Direct/Relay/SSH不对称、唯一/多个middle、双middle实际竞争、旧版本混合、独立/同时v4-v6与Wi-Fi↔蜂窝、拓扑故障域与运维设计未闭环。
@@ -70,11 +72,14 @@ MacLab与Turing同LAN；macserver为另一台、用户报告异网。iPhone loca
 
 ## 下一步与执行约束
 
-1. 先核Turing a59e4d3f同PID/完整原9项，不重发；terminal后collect→verify-turing-record→verify-original-hop-matrix-v1，再核实际SLO。若仍计时，不插入Turing构建。
-2. 恢复Mac19248，登记实际hint候选run，核格式/编译/行为；只应用准确返回patch，冻结v2并保持同六fixture。old83/4真红已取得，不重跑旧源。随后同源双OS最新必须核，不用a73代替80cf。
+1. a73原9项已收齐并核，结果comparison-context-original-hop-result-v1.json；继续诊断约8秒尾巴与f4s瞬态/成本，不再重跑或把原green当最终接受。
+2. 核Mac42997902740与Turingfb91c212实际同源0d1c格式/编译/87行为；同六fixture保留。old83/4真红已取得，不重跑旧源。随后同源双OS最新必须核，不用a73代替80cf。
 3. 继续真实迟到成功/epoch提交所有权合同、LOST和同wire移动，以及已冻结双middle物理合同；并推进N3/N4/N5，不能以新87项绿替代全部目标。
 
 图谱先行，本树无.codegraph不建索引；CRG部分覆盖/滞后，0flow不是无影响。debug/explore/review技能此前已读并告知。Turing仅UID1110/tmp/khor-netlab-feat-net-1110、原flock/user-netns/Rust1.95/jobs16/nice10/50GiB起40停/90min，无sudo/host网改动；独立Mac原jobs2/shared cache/资源门可并行。SSH BatchMode/ForwardAgent=no/StrictHostKeyChecking，不转发凭据。stage helper未退出不启动另一个ledger写入；依赖分析顺序，缺数据不补零、原日志不覆盖；观察timeout不等于终态。不标complete/blocked，目标保持active。
 
 
 09:41 UTC实核Turing a59e4d3f同PID运行17分05秒：前两轮各3green（412.66/410.45秒），f4i回peer8.1/8.6秒；第三轮f4已green，仍有两项在途，不提前全9声明。第二轮f4s原green，但links记录Forwarded→Idle@5.277→Forwarded@8.412，x选择Relay@6.1→Carried@13.1；这是须保留的实际瞬态，不能只凭原green称无可见停顿，也尚未归因新gate。完整比较结果还需核原wire/请求和成本。hint80cf Mac42996519985准确source-v1（dirty文档tree019225/snapshot4e46ba）已取到收据，不重复提交。
+
+
+原物理对照最终：a73 a59e4d3f已1285.299秒、15files/identity/空group、原三轮各3green/全9；f4i8.1/8.6/8.1秒，对应c2b28.2/17.8/34.6。f4最慢echo3.4/3.5/3.4，f4s8.7/8.5/9.6（第三比baseline9.3更慢，非全部指标单调改善）；第二f4s含Idle@5.277→Forwarded@8.412。comparison-context-original-hop-result-v1.json绑定两source/原日志SHA/差值和所有限制，物理计划已终态。约8秒残余、瞬态与总成本都未接受；原3peer仅一middle不能证明prepared双middle wire协议。之后才提交一次Turing0d1c新单位，未在任何活计时期间穿插构建。

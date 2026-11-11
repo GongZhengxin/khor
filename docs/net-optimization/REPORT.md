@@ -380,3 +380,6 @@ Iroh47的固定物理C-B/B-C仍在第4项：C62030f1b为124业务/warm51全过�
 
 
 比较a73第二轮已原3green，f4i8.6秒；f4s虽green但link采样含Idle（5.277→8.412秒），x到13.1秒才选回carried。保留此瞬态和约8秒尾巴，不由原green升级为最终体验接受，也不在未进一步证据时归因gate。第三轮尚在跑。
+
+
+最终原物理对照a73三轮已收齐全9green，1285.299秒、15files/identity/空group：f4i8.1/8.6/8.1秒 vs c2b28.2/17.8/34.6。保留f4s第二轮Idle和第三轮最慢9.6秒（baseline9.3），不称所有体验指标改善。完整结果comparison-context-original-hop-result-v1.json保存准确source/控制/原日志和限制；n=3、非p99、不是首业务恢复，约8秒和成本仍待。hint0d1c source-v2（clean）已Mac42997902740/Turing单次提交验证中，不继承a73接受范围。
