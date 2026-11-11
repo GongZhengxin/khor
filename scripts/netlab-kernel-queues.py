@@ -69,13 +69,7 @@ def captures(rows, bulk_bytes):
     return counters
 
 
-def separated(path):
-    calibrated = high.case(path, revision=REVISION, allow_bounds_failure=True, profile_reader=captures)
-    marker = '[netlab-workload-calibration] '
-    rows = [json.loads(l.split(marker, 1)[1]) for l in path.read_text().splitlines() if marker in l]
-    manifest = high.one(rows, 'manifest')
-    assert manifest['separate_queues'] is True and manifest['requested_burst_bytes'] == 65536
-    assert manifest['socket_diagnostic'] is False and not any(r['event'] in ['tcp_snapshot', 'shaper_change'] for r in rows)
+def installs(rows, counters):
     installs = [r for r in rows if r['event'] == 'rate_install']
     assert len(installs) == 2 and {r['side'] for r in installs} == {'gateway', 'right_gateway'}
     for install in installs:
@@ -87,10 +81,20 @@ def separated(path):
         assert n[0]['root'] is True and n[0]['options']['delay'] == dict(delay=.15, jitter=0, correlation=0)
         assert n[0]['options']['limit'] == 1000
         assert ipaddress.IPv4Address(install['uplink_ip']).is_loopback is False
-        assert install['device'] == calibrated['profile_counters'][install['side']]['before']['rate_interface']
+        assert install['device'] == counters[install['side']]['before']['rate_interface']
         assert install['args'] == ['qdisc', 'replace', 'dev', install['device'], 'root', 'handle', '10:', 'tbf',
                                    'rate', '50mbit', 'burst', '65536', 'latency', '40ms']
         assert install['command']['ok'] is True and install['command']['timed_out'] is False
+
+
+def separated(path):
+    calibrated = high.case(path, revision=REVISION, allow_bounds_failure=True, profile_reader=captures)
+    marker = '[netlab-workload-calibration] '
+    rows = [json.loads(l.split(marker, 1)[1]) for l in path.read_text().splitlines() if marker in l]
+    manifest = high.one(rows, 'manifest')
+    assert manifest['separate_queues'] is True and manifest['requested_burst_bytes'] == 65536
+    assert manifest['socket_diagnostic'] is False and not any(r['event'] in ['tcp_snapshot', 'shaper_change'] for r in rows)
+    installs(rows, calibrated['profile_counters'])
     return calibrated
 
 

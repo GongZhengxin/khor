@@ -1,6 +1,6 @@
 # feat/net 当前状态与接续入口
 
-更新于2026-11-11 21:14 UTC（本地11月12日）。完整目标“完成计划”仍 **active、未完成、未阻塞**；完整范围是 [PLAN](PLAN.md) 的N0–N5，root串行，不派发子智能体。此页是唯一当前入口；历史逐字保存在 [上一状态](HISTORY-20261111-through-burst-setup-v4.md)，SHA `a6629e7ae3e3688e85871ae12827b0bcde28aa76bad3931ed5d9a68ae34a243f`，它继续链接此前全部证据/失败。实际worktree/收据/原始日志优先，不按摘要覆盖未提交内容。
+更新于2026-11-11 21:28 UTC（本地11月12日）。完整目标“完成计划”仍 **active、未完成、未阻塞**；完整范围是 [PLAN](PLAN.md) 的N0–N5，root串行，不派发子智能体。此页是唯一当前入口；历史逐字保存在 [上一状态](HISTORY-20261111-through-burst-setup-v4.md)，SHA `a6629e7ae3e3688e85871ae12827b0bcde28aa76bad3931ed5d9a68ae34a243f`，它继续链接此前全部证据/失败。实际worktree/收据/原始日志优先，不按摘要覆盖未提交内容。
 
 ## 当前在途与下一步
 
@@ -15,7 +15,7 @@
 
 全部272echo（含16预热）/八份96MiB/server成功；A每轮四capture，B每轮八capture、两endpoint无netem/TBF、两个router各root TBF在实际WAN ix、root netem150ms在LAN v7/v9，互不嵌套，actual burst65531、rate6250000B/s、lat40000us、limit1000及每方向实际byte增量均核。B两轮的pubx/pub y rate drops分别79/80与80/78，**两router传播netem drops均0**；计数不相加。**四轮物理40–60门全红，不接受新模型或N3。** 分离不是本次吞吐缺口的充分解法，不能据此认定唯一TC/CUBIC/CPU根因。原format-v1 turing-20261111T210238Z-47ae288c已45.943秒1、10files/identity/原group空，仅格式红零行为；准确单文件空白patch已1f4d90dc应用，原件/format-only-verification-v1.json保留。Rust实际编译12.23秒，source metadata9项1.057秒/control13项13.004秒见下，未本机跑产品。
 
-**下一步：先预注册不依赖TCP拥塞控制的数据报容量诊断，区分链路容量与冷TCP单流行为；不继续盲改burst/queue/算法/窗口，不放宽旧门。** [RFC6349](https://www.rfc-editor.org/rfc/rfc6349.html)将接近瓶颈带宽的TCP度量限定在equilibrium，明确排除slow start瞬态；[RFC9438](https://www.rfc-editor.org/rfc/rfc9438.html)定义拥塞窗口增长/恢复。它们支持把IP链路容量与TCP payload平均率分开测，但不证明此处的唯一原因或自动让旧门失效。拟在相同分离几何用固定有界paced UDP、独立双向/接收端本地稳态窗、完整sequence/内容/发送失败/接收缺失/队列字节和drops核验；先固定输入/pacer有效性/物理门/总期限与重复数再实现。旧TCP原门/全部红保留，该诊断本身也不自动接受模型/Noq/Node/N3。**UDP协议仍待预注册/未实现/未提交，没有下一run ID。** 高profile Node优先级与独立prefetch1/2/8未开始，当前priority -1仍候选。完整N0–N5不变，目标active/非blocked/非complete。
+**下一步：先预注册不依赖TCP拥塞控制的数据报容量诊断，区分链路容量与冷TCP单流行为；不继续盲改burst/queue/算法/窗口，不放宽旧门。** [RFC6349](https://www.rfc-editor.org/rfc/rfc6349.html)将接近瓶颈带宽的TCP度量限定在equilibrium，明确排除slow start瞬态；[RFC9438](https://www.rfc-editor.org/rfc/rfc9438.html)定义拥塞窗口增长/恢复。它们支持把IP链路容量与TCP payload平均率分开测，但不证明此处的唯一原因或自动让旧门失效。拟在相同分离几何用固定有界paced UDP、独立双向/接收端本地稳态窗、完整sequence/内容/发送失败/接收缺失/队列字节和drops核验；先固定输入/pacer有效性/物理门/总期限与重复数再实现。旧TCP原门/全部红保留，该诊断本身也不自动接受模型/Noq/Node/N3。**UDP已在293aa396提交[实施前固定协议](CAPACITY-DIAGNOSTIC.md)，目前实现与metadata完成、尚未提交远端，无下一run ID。** Turing只读预检无iperf/iperf3/netperf/nuttcp，不安装全局软件；固定uq0三fresh、20秒70Mbit/1200B每方向、145833计划序号，实际1ms slot/Skip不追赶，发送/失败/接收完整bitmap及错误/缺失分母，两端各自[5,15)秒窗口，原分离几何八份实际读回。2秒ready/28秒总方向界、父abort owner、命令2秒/kill_on_drop。pacer有效性与capacity40–60独立记录，不改TCP旧门或自动接受模型。source test_netlab_*.py **10项1.640秒**（新增capacity25合成变体），control test_network*.py **13项13.904秒**（9tasks×3模式），bash/diff过；queues validator仅抽出同一install校验复用、旧queues/burst/high/socket/long回归全过，Rust格式/编译/实际UDP仍待Turing。 高profile Node优先级与独立prefetch1/2/8未开始，当前priority -1仍候选。完整N0–N5不变，目标active/非blocked/非complete。
 
 ### 已完成的burst前置对照
 

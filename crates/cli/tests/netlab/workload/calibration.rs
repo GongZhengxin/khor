@@ -13,6 +13,10 @@ use crate::nat::{Net, router};
 
 #[path = "calibration_burst.rs"]
 mod burst;
+#[path = "calibration_capacity.rs"]
+mod capacity;
+#[path = "calibration_datagrams.rs"]
+mod datagrams;
 #[path = "calibration_queues.rs"]
 mod queues;
 #[path = "calibration_sockets.rs"]
@@ -370,6 +374,12 @@ async fn hb0_high_bdp_tcp_with_sixty_four_kib_token_bucket() {
 #[ignore = "forwarding queue topology diagnostic under its fixed guarded task"]
 async fn hq0_high_bdp_tcp_with_separate_forwarding_rate_and_delay_queues() {
     run(HIGH_QUEUES).await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 6)]
+#[ignore = "independent paced UDP capacity diagnostic; fixed guarded three fresh cases"]
+async fn uq0_independent_datagram_capacity_under_the_high_bdp_model() {
+    capacity::run().await;
 }
 
 async fn run(model: Model) {
