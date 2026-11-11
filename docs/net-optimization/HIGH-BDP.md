@@ -1,5 +1,8 @@
 # 大带宽时延积模型协议
 
+**高profile Node首次实施前的v2准入、分离几何与192MiB文件决定见[MODEL-DECISION](MODEL-DECISION.md)。**
+下文v1的96MiB/TCP吞吐前置及全部实际失败保留为历史，不据此推定新模型通过或覆盖旧红。
+
 2026-11-11 17:17 UTC，实施/计时前冻结。完整N0–N5不变；这是[SCHEDULING](SCHEDULING.md)
 要求的大BDP覆盖，不修改原低profile v4、原2秒调用或120秒文件门。当前六block低profile
 仍使用原冻结v3源码对；本页不能被当作已实现/已运行，也不能改变该campaign的输入。
