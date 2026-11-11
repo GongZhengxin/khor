@@ -129,3 +129,12 @@ Mac **Actions43010224456** request2db0701cba2744089b87d261f2783676，同963 sour
 old-f4-business-owner-audit-v1.json另保存第三轮实际request_stream_opened wire140105524195184，在故障前carried、故障后Relay、随后carried；原Path journal的其他wire也会参与peer级去重，故业务身份归因须加强，但不能把真实恢复慢都归为日志问题。新完成收据亦适用于原f4的实际Ls业务，原三case正文/门/模式均未改。完整计划继续active；最近向用户估全验收3–5天、低置信，不再把某批测试耗时当整体ETA。
 
 11:43 UTC补充：Mac43013681901已9files/11controls/identity，只有远端格式差异，0行为组、未编译；format-only-verification-v1.json及ledger已完成。准确返回format.patch已git apply --check并应用，下一步提交冻结v2，再单次Mac net-node与Turing netlab-hop-ownership；不得将该格式失败当产品行为红，也不重发旧58d源。
+
+
+## 11:51 UTC：业务身份观测揭示反向状态缺口，已有carrier合同先验证
+
+Mac43014256036同b1a源已20files/11controls/identity、12组全绿（hop89/budget28/net68+1ignored），exact13852421273/ZIP SHA24e0d3b428a3b2ae1c4992456deb446db45f9a9d1df3cabcb455056f38356d32，per-run证明与ledger终态。Turing2f2a53e1仍唯一在途，已编译通过并进入第二轮；前两轮f4r仍原红，首内容1.220731/1.251523秒，但持续采样第一轮就held=false，因此只测到1样本、双方2个响应且流匹配，不得宣称30成功/连续性通过。第一轮f4控制green（最长3.6秒），剩余待原任务完成。新日志证明只有一个Custom路径时首响应的selected仍false；Wires::carrier_in_use现有代码也承认这种shared selected tuple跨连接情况。需分别分析实际业务wire/outer serial和Link状态，不能据此直接放宽v2 gate。
+
+静态源链：links_now只读取Wires::link的outgoing Main/Tunnel settled word，不把实际served carried连接直接显示为对等可拨；已有carrier时普通/early当前仍用共享初始路由，反向新拨可能被旧Relay/IP遮住。此处仍为待真实测试的因果假设，不能凭第一轮状态就宣布根因。新四个真实合同已在dial_budget/initial_custom.rs追加，尚未提交/远端编译：旧已认证IP连接在调用前后实际Sessions/SessionRows保持可用；同一身份另一个仅Custom端点的已安装carrier可传输；只允许carrier或Direct一端接受新握手，分别经Node普通line与ask_on，原1秒caller内要求唯一实际业务响应与正确路由，输家不拆既有carrier。四case为两救通+两快Direct负控；不作为两物理relay腿/完整移动或accepted0RTT复制证明。生产和当前四peerfixture未改。
+
+下一步冻结test-only源送Mac先取得旧行为结果；Turing当前计时不插入工作。若真实前置或旧warm wire失败先修fixture，不冒充产品红；只有最终救通合同失败且负控/前置通过才推进有限两路竞争。当前完整N0–N5 active，无手机采样或外部阻塞。

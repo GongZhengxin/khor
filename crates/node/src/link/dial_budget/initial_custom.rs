@@ -145,3 +145,181 @@ async fn an_initial_custom_address_must_be_explicit_in_the_dial() {
     ));
     client.close().await;
 }
+
+async fn answer_sessions(conn: &iroh::endpoint::Connection) {
+    let (mut send, mut recv) = conn.accept_bi().await.unwrap();
+    let bytes = recv.read_to_end(MAX_FRAME).await.unwrap();
+    assert!(matches!(proto::question(&bytes).unwrap(), Request::Sessions));
+    send.write_all(&proto::encode(&Response::SessionRows { rows: vec![] }).unwrap())
+        .await
+        .unwrap();
+    send.finish().unwrap();
+}
+
+async fn check_warm_ip(local: &iroh::endpoint::Connection, remote: &iroh::endpoint::Connection) {
+    let (response, ()) = tokio::time::timeout(Duration::from_secs(2), async {
+        tokio::join!(
+            exchange(
+                local,
+                "warm IP control",
+                &Request::Sessions,
+                Duration::from_secs(1)
+            ),
+            answer_sessions(remote),
+        )
+    })
+    .await
+    .unwrap();
+    assert!(matches!(response, Ok(Response::SessionRows { .. })));
+    assert!(local.close_reason().is_none() && remote.close_reason().is_none());
+}
+
+/// Two endpoints for the same identity separate the cached old IP route
+/// from the installed carrier. The old authenticated IP connection keeps
+/// answering, while only the chosen endpoint accepts a new handshake.
+/// This is a real Node dial/response contract, not a two-leg relay fixture.
+async fn observe_installed(early: bool, direct_answers: bool) {
+    use std::sync::{
+        Arc,
+        atomic::{AtomicUsize, Ordering},
+    };
+    let key = iroh::SecretKey::generate();
+    let direct_links = Links::new(key.public());
+    let direct = endpoint(key.clone(), &direct_links).await;
+    let links = Links::new(key.public());
+    let carried = iroh::Endpoint::builder(iroh::endpoint::presets::Minimal)
+        .secret_key(key)
+        .relay_mode(iroh::RelayMode::Disabled)
+        .clear_ip_transports()
+        .add_custom_transport(links.transport())
+        .alpns(vec![ALPN.to_vec()])
+        .bind()
+        .await
+        .unwrap();
+    let (_root, node, mut peer, initial_ep) = fixture_for(direct.id().to_string()).await;
+    initial_ep.close().await;
+    let ep = endpoint(node.key.clone(), &node.carry).await;
+    peer.addrs = direct
+        .addr()
+        .addrs
+        .iter()
+        .filter_map(|addr| match addr {
+            iroh::TransportAddr::Ip(addr) => Some(addr.to_string()),
+            _ => None,
+        })
+        .collect();
+    assert!(!peer.addrs.is_empty());
+    let (warm, warm_remote) = tokio::time::timeout(Duration::from_secs(5), async {
+        tokio::join!(ep.connect(direct.addr(), ALPN), async {
+            direct.accept().await.unwrap().accept().unwrap().await
+        })
+    })
+    .await
+    .unwrap();
+    let (warm, warm_remote) = (warm.unwrap(), warm_remote.unwrap());
+    check_warm_ip(&warm, &warm_remote).await;
+    assert!(node.wires.live(&peer.id, wires::Proto::Main).is_none());
+    let via = iroh::SecretKey::generate().public();
+    let (a, b) = tokio::io::duplex(64 << 10);
+    let (ar, aw) = tokio::io::split(a);
+    let (br, bw) = tokio::io::split(b);
+    let local = node
+        .carry
+        .attach(carried.id(), Carrier::Hop { via }, ar, aw);
+    let remote = links.attach(ep.id(), Carrier::Hop { via }, br, bw);
+    assert!(node.carried_addr(&peer.id).is_some());
+    let requests = Arc::new(AtomicUsize::new(0));
+    let mut serving = Aborts(Some(tokio::spawn({
+        let server = if direct_answers {
+            direct.clone()
+        } else {
+            carried.clone()
+        };
+        let requests = requests.clone();
+        async move {
+            let conn = server
+                .accept()
+                .await
+                .unwrap()
+                .accept()
+                .unwrap()
+                .await
+                .unwrap();
+            answer_sessions(&conn).await;
+            requests.fetch_add(1, Ordering::SeqCst);
+            conn.closed().await;
+        }
+    })));
+    let by = tokio::time::Instant::now() + Duration::from_secs(1);
+    let outcome = tokio::time::timeout_at(
+        by + Duration::from_millis(300),
+        crate::deadline::scope(by, async {
+            if early {
+                node.ask_on(&ep, &peer, &Request::Sessions).await
+            } else {
+                let line = node
+                    .line_to_inner(&ep, &peer, wires::Proto::Main, None, false)
+                    .await
+                    .map_err(|error| unreached_words(&peer.name, error))?;
+                node.exchange_on(&line, &Request::Sessions)
+                    .await
+                    .map_err(Miss::words)
+            }
+        }),
+    )
+    .await;
+    let answered = matches!(outcome, Ok(Ok(Response::SessionRows { .. })));
+    let path = node
+        .wires
+        .live(&peer.id, wires::Proto::Main)
+        .map(|conn| khor_net::path::classify(&conn));
+    let carrier_kept = node.carry.has(&carried.id());
+    check_warm_ip(&warm, &warm_remote).await;
+    let total = requests.load(Ordering::SeqCst);
+    node.carry
+        .detach_attached(&carried.id(), Carrier::Hop { via }, local.serial());
+    links.detach_attached(&ep.id(), Carrier::Hop { via }, remote.serial());
+    tokio::time::timeout(Duration::from_secs(2), async {
+        tokio::join!(local.ended(), remote.ended());
+    })
+    .await
+    .unwrap();
+    tokio::join!(ep.close(), direct.close(), carried.close());
+    serving.0.as_ref().unwrap().abort();
+    if let Err(error) = serving.0.as_mut().unwrap().await {
+        assert!(error.is_cancelled(), "scratch response owner must not panic");
+    }
+    let expected = if direct_answers {
+        khor_net::path::PathKind::Direct
+    } else {
+        khor_net::path::PathKind::Carried
+    };
+    assert!(
+        carrier_kept,
+        "a losing dial must preserve the installed carrier"
+    );
+    assert!(
+        answered && path == Some(expected),
+        "the usable initial route must win within the original caller window: early={early}, direct_answers={direct_answers}, answered={answered}, path={path:?}, requests={total}");
+    assert_eq!(total, 1, "the successful reading is not replayed");
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn ordinary_dial_uses_an_installed_carrier_beside_a_live_old_ip_wire() {
+    observe_installed(false, false).await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn early_dial_uses_an_installed_carrier_beside_a_live_old_ip_wire() {
+    observe_installed(true, false).await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn an_installed_carrier_does_not_delay_a_fast_direct_ordinary_dial() {
+    observe_installed(false, true).await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn an_installed_carrier_does_not_delay_a_fast_direct_early_dial() {
+    observe_installed(true, true).await;
+}

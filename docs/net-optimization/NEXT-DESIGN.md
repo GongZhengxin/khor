@@ -678,3 +678,6 @@ ff743已复用已有 Recovery 分支，使目标缺可用 wire 的判断先于�
 2026-11-11 11:36 UTC：原scoped握手候选963已Mac全12和vendor443/58/11绿，Turing四peer三轮首内容1.22–1.25秒/后续30请求全成功，但原连续性判据缺wire仍三红；原f4控制2059/2325ms超门、业务最长5.2/4.9秒也保留。下一测量须绑定实际Ls/Dir已完成响应的双方wire与stream，而非去重后的Path started/selected标签。新诊断仅环境开关开启时构造，不记录请求路径/响应内容，不加常驻状态/任务/计时器；normal在decode成功后，early仅在握手Accepted且响应成功后，服务端完整write+FIN成功后记录。fixture要求31事件/不同stream两端一一匹配、同wire、首响应与carriercommit早于M恢复、每次客户端成功时carried、两端单一外层serial无I/O结束/替换，未满足仍红；原1.5秒/10秒/30请求门不变。旧a653原红不可追认。此为待远端编译/真实验收的测量增强，不作行为修复或整体验收。
 
 已存在carrier时仍欠独立initial-route机会：新准备分支的!had_carried保护使旧carrier可能仍被共享Relay初始选择遮住。拟在原两slot/原caller+拨号期限内保留genericDirect与显式Custom的有限竞争，early替代仍普通握手且先取消原早发owner，无写重放扩大；必须先补真实已有carrier/更快Direct与取消合同再实施，不把newly-prepared场景覆盖外推到这里。旧f4红也须按实际请求/路径/第一腿恢复时间分解，不能通过放宽门关闭。
+
+
+2026-11-11 11:51 UTC：b1a物理前两轮的新业务wire/stream收据已能匹配，但第一持续样本两端Link条件失败而早停，不能外推30样本成功。首响应时只有Custom path且selected=false，现有Wires::carrier_in_use也处理此情况；先区分actual received wire、served/outgoing slot和cached settled word，不直接把v2判据放宽。静态已有carrier initial gap假设与反向Link新拨一致，新增真实四合同在旧活IP旁安装只提供Custom的同身份端点，分别只许Direct或Custom接受新handshake，用Node普通/early完整SessionRows验证原caller内首响应、路由、唯一请求与旧IP/既有carrier保留。先取test-only旧行为，负控/fixture需真实通过。
