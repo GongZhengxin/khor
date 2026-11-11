@@ -313,3 +313,6 @@ mod snapshot;
 
 #[path = "candidate_address_tests.rs"]
 mod address;
+
+#[path = "candidate_dial_fact_tests.rs"]
+mod dial_fact;
