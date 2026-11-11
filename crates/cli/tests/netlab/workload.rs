@@ -51,7 +51,10 @@ async fn echo(stream: &mut TcpStream, token: &str) -> Result<(), String> {
             return Err("terminal stream ended before its response".into());
         }
         received.extend_from_slice(&bytes[..n]);
-        if received.windows(expected.len()).any(|b| b == expected.as_bytes()) {
+        if received
+            .windows(expected.len())
+            .any(|b| b == expected.as_bytes())
+        {
             return Ok(());
         }
         if received.len() > 1024 * 1024 {
@@ -96,14 +99,31 @@ async fn directory(
         tokio::time::sleep_until(scheduled.into()).await;
         let started_us = at(epoch);
         let (outcome, error) = match tokio::time::timeout(CALLER, node.ls_of("y", path)).await {
-            Ok(Ok((_, entries, false))) if entries.iter().any(|e| e.name == "payload.bin" && e.size == BYTES as u64) => ("ok", None),
+            Ok(Ok((_, entries, false)))
+                if entries
+                    .iter()
+                    .any(|e| e.name == "payload.bin" && e.size == BYTES as u64) =>
+            {
+                ("ok", None)
+            }
             Ok(Ok(_)) => ("error", Some("directory omitted the known payload".into())),
             Ok(Err(e)) => ("error", Some(e)),
             Err(_) => ("timeout", Some("directory caller deadline".into())),
         };
-        rows.push(sample(epoch, phase, "directory", index,
-            scheduled.duration_since(epoch).as_micros().try_into().unwrap(),
-            started_us, outcome, error));
+        rows.push(sample(
+            epoch,
+            phase,
+            "directory",
+            index,
+            scheduled
+                .duration_since(epoch)
+                .as_micros()
+                .try_into()
+                .unwrap(),
+            started_us,
+            outcome,
+            error,
+        ));
     }
     rows
 }
@@ -121,17 +141,37 @@ async fn terminal(
         tokio::time::sleep_until(scheduled.into()).await;
         let started_us = at(epoch);
         let (outcome, error) = if broken {
-            ("blocked", Some("terminal failed earlier; no implicit reattach".into()))
+            (
+                "blocked",
+                Some("terminal failed earlier; no implicit reattach".into()),
+            )
         } else {
             match tokio::time::timeout(CALLER, echo(stream, &format!("{phase}-{index:04}"))).await {
                 Ok(Ok(())) => ("ok", None),
-                Ok(Err(e)) => { broken = true; ("error", Some(e)) },
-                Err(_) => { broken = true; ("timeout", Some("terminal caller deadline".into())) },
+                Ok(Err(e)) => {
+                    broken = true;
+                    ("error", Some(e))
+                }
+                Err(_) => {
+                    broken = true;
+                    ("timeout", Some("terminal caller deadline".into()))
+                }
             }
         };
-        rows.push(sample(epoch, phase, "terminal", index,
-            scheduled.duration_since(epoch).as_micros().try_into().unwrap(),
-            started_us, outcome, error));
+        rows.push(sample(
+            epoch,
+            phase,
+            "terminal",
+            index,
+            scheduled
+                .duration_since(epoch)
+                .as_micros()
+                .try_into()
+                .unwrap(),
+            started_us,
+            outcome,
+            error,
+        ));
     }
     rows
 }
@@ -148,14 +188,18 @@ async fn phase(
     // Snapshots are outside the sample window, on this resident's actual IPC.
     let before = node.wire_counts().await.map_err(|e| e.to_string());
     let phase_start = Instant::now();
-    emit(json!({"schema":1,"revision":REVISION,"event":"phase_started","phase":name,"at_us":at(epoch),"wire_counts":before}));
+    emit(
+        json!({"schema":1,"revision":REVISION,"event":"phase_started","phase":name,"at_us":at(epoch),"wire_counts":before}),
+    );
     let pull = async {
         if !bulk {
             return (Value::Null, None);
         }
         let started_us = at(epoch);
         let file = format!("{path}/payload.bin");
-        let reply = tokio::time::timeout(Duration::from_secs(120), node.pull_path("y", &file, landed)).await;
+        let reply =
+            tokio::time::timeout(Duration::from_secs(120), node.pull_path("y", &file, landed))
+                .await;
         let ended_us = at(epoch);
         let (outcome, error, moved, dest) = match reply {
             Ok(Ok((moved, dest))) => ("ok", None, Some(moved), Some(dest)),
@@ -176,8 +220,10 @@ async fn phase(
         pull,
     );
     directories.extend(terminals);
-    emit(json!({"schema":1,"revision":REVISION,"event":"phase_finished","phase":name,
-        "at_us":at(epoch),"wire_counts":node.wire_counts().await.map_err(|e|e.to_string())}));
+    emit(
+        json!({"schema":1,"revision":REVISION,"event":"phase_finished","phase":name,
+        "at_us":at(epoch),"wire_counts":node.wire_counts().await.map_err(|e|e.to_string())}),
+    );
     (directories, bulk_row, dest)
 }
 
@@ -194,23 +240,39 @@ async fn w1_real_terminal_and_directory_during_a_resident_file_pull() {
     let x = node(s, dx, "x", &[&r], &[("SHELL", "/bin/sh")]).await;
     let y = node(s, dy, "y", &[&r], &[("SHELL", "/bin/sh")]).await;
     mesh(&[&x, &y]).await;
-    assert!(x.until(&y, Duration::from_secs(60), |l| l.hop == Hop::Direct).await.is_some());
+    assert!(
+        x.until(&y, Duration::from_secs(60), |l| l.hop == Hop::Direct)
+            .await
+            .is_some()
+    );
     let source = y.home.0.join("workload");
     let landed = x.home.0.join("landed");
     std::fs::create_dir_all(&source).unwrap();
     std::fs::create_dir_all(&landed).unwrap();
     let mut seed = 0x6d697865646c6f61u64;
-    let payload: Vec<u8> = (0..BYTES).map(|_| {
-        seed ^= seed << 13; seed ^= seed >> 7; seed ^= seed << 17;
-        (seed >> 32) as u8
-    }).collect();
+    let payload: Vec<u8> = (0..BYTES)
+        .map(|_| {
+            seed ^= seed << 13;
+            seed ^= seed >> 7;
+            seed ^= seed << 17;
+            (seed >> 32) as u8
+        })
+        .collect();
     std::fs::write(source.join("payload.bin"), &payload).unwrap();
     // Only x's interface is impaired, in both directions: nominal direct
     // RTT40ms, 8Mbit/s each direction, explicit40ms rate queue, zero random loss.
-    x.dev.default_iface().unwrap().set_condition(
-        LinkCondition::new().latency_ms(20).rate_mbit(8).buffer_ms(40),
-        LinkDirection::Both,
-    ).await.unwrap();
+    x.dev
+        .default_iface()
+        .unwrap()
+        .set_condition(
+            LinkCondition::new()
+                .latency_ms(20)
+                .rate_mbit(8)
+                .buffer_ms(40),
+            LinkDirection::Both,
+        )
+        .await
+        .unwrap();
     let path = source.display().to_string();
     let cwd = path.clone();
     let (rows, bulk, destination, closed) = x.with(move |node| async move {
@@ -242,19 +304,51 @@ async fn w1_real_terminal_and_directory_during_a_resident_file_pull() {
         let closed = tokio::time::timeout(Duration::from_secs(10), node.close_on("y", &id)).await.is_ok_and(|r|r.is_ok());
         (rows, bulk, destination, closed)
     }).await;
-    let exact_bytes = destination.as_ref().and_then(|p|std::fs::read(p).ok()).is_some_and(|bytes|bytes==payload);
-    let overlap = |operation: &str| rows.iter().filter(|row| row["phase"]=="bulk" && row["operation"]==operation
-        && row["started_us"].as_u64().unwrap()>=bulk["started_us"].as_u64().unwrap()
-        && row["ended_us"].as_u64().unwrap()<=bulk["ended_us"].as_u64().unwrap()).count();
-    let all_answers = rows.len()==SAMPLES*6 && rows.iter().all(|row|row["outcome"]=="ok");
-    let direct_after = x.link(&y).await.is_some_and(|l|l.hop==Hop::Direct && l.down_ms.is_none());
-    let ok = all_answers && exact_bytes && bulk["moved"]==BYTES as u64 && closed && direct_after
-        && overlap("directory")>=30 && overlap("terminal")>=30;
-    emit(json!({"schema":1,"revision":REVISION,"event":"complete","functional_ok":ok,
+    let exact_bytes = destination
+        .as_ref()
+        .and_then(|p| std::fs::read(p).ok())
+        .is_some_and(|bytes| bytes == payload);
+    let overlap = |operation: &str| {
+        rows.iter()
+            .filter(|row| {
+                row["phase"] == "bulk"
+                    && row["operation"] == operation
+                    && row["started_us"].as_u64().unwrap() >= bulk["started_us"].as_u64().unwrap()
+                    && row["ended_us"].as_u64().unwrap() <= bulk["ended_us"].as_u64().unwrap()
+            })
+            .count()
+    };
+    let all_answers = rows.len() == SAMPLES * 6 && rows.iter().all(|row| row["outcome"] == "ok");
+    let direct_after = x
+        .link(&y)
+        .await
+        .is_some_and(|l| l.hop == Hop::Direct && l.down_ms.is_none());
+    let ok = all_answers
+        && exact_bytes
+        && bulk["moved"] == BYTES as u64
+        && closed
+        && direct_after
+        && overlap("directory") >= 30
+        && overlap("terminal") >= 30;
+    emit(
+        json!({"schema":1,"revision":REVISION,"event":"complete","functional_ok":ok,
         "samples":rows.len(),"all_answers":all_answers,"exact_bytes":exact_bytes,"closed":closed,
         "direct_after":direct_after,"directory_overlap":overlap("directory"),"terminal_overlap":overlap("terminal"),
         "bulk":bulk,"calibrated":false,"slo":false,"p99_claimed":false,
-        "x_journal":x.journal(Some(&y)),"y_journal":y.journal(Some(&x))}));
-    result(s, ok, format!("real PTY+directory samples={} exact_bytes={exact_bytes} overlap={}/{} closed={closed}; uncalibrated diagnostic baseline, not a latency SLO",rows.len(),overlap("directory"),overlap("terminal")));
-    assert!(ok, "w1: all logical outcomes, actual bulk overlap, intact payload and scratch PTY cleanup");
+        "x_journal":x.journal(Some(&y)),"y_journal":y.journal(Some(&x))}),
+    );
+    result(
+        s,
+        ok,
+        format!(
+            "real PTY+directory samples={} exact_bytes={exact_bytes} overlap={}/{} closed={closed}; uncalibrated diagnostic baseline, not a latency SLO",
+            rows.len(),
+            overlap("directory"),
+            overlap("terminal")
+        ),
+    );
+    assert!(
+        ok,
+        "w1: all logical outcomes, actual bulk overlap, intact payload and scratch PTY cleanup"
+    );
 }
