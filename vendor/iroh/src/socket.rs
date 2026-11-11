@@ -550,6 +550,11 @@ impl Socket {
         self.mapped_addrs.to_transport_addr(addr)
     }
 
+    /// A per-dial custom destination, independent of the endpoint-id path cache.
+    pub(crate) fn custom_socket_addr(&self, remote: &iroh_base::CustomAddr) -> SocketAddr {
+        self.mapped_addrs.custom_addrs.get(remote).private_socket_addr()
+    }
+
     pub(crate) fn to_local_transport_addr(
         &self,
         local_ip: Option<IpAddr>,

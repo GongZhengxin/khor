@@ -15,7 +15,7 @@ use std::{collections::BTreeSet, net::SocketAddr, pin::Pin, sync::Arc};
 
 #[cfg(not(wasm_browser))]
 use ipnet::{Ipv4Net, Ipv6Net};
-use iroh_base::{EndpointAddr, EndpointId, RelayUrl, SecretKey, TransportAddr};
+use iroh_base::{CustomAddr, EndpointAddr, EndpointId, RelayUrl, SecretKey, TransportAddr};
 use iroh_relay::{RelayConfig, RelayMap, tls::CaTlsConfig};
 #[cfg(not(wasm_browser))]
 use n0_error::bail;
@@ -932,6 +932,8 @@ pub enum ConnectWithOptsError {
     EndpointClosed,
     #[error("Invalid ALPN")]
     InvalidAlpn,
+    #[error("Initial custom address must be supplied in EndpointAddr")]
+    InvalidInitialCustomAddr,
 }
 
 #[allow(missing_docs)]
@@ -1121,6 +1123,12 @@ impl Endpoint {
         // Connecting to ourselves is not supported.
         ensure!(endpoint_id != self.id(), ConnectWithOptsError::SelfConnect);
         ensure!(!alpn.is_empty(), ConnectWithOptsError::InvalidAlpn);
+        if let Some(initial) = &options.initial_custom_addr {
+            ensure!(
+                endpoint_addr.addrs.contains(&TransportAddr::Custom(initial.clone())),
+                ConnectWithOptsError::InvalidInitialCustomAddr,
+            );
+        }
 
         event!(
             target: "iroh::_events::conn::connecting",
@@ -1152,7 +1160,10 @@ impl Endpoint {
             .static_config
             .create_client_config(alpn_protocols, transport_config.clone());
 
-        let dest_addr = mapped_addr.private_socket_addr();
+        let dest_addr = options.initial_custom_addr.as_ref().map_or_else(
+            || mapped_addr.private_socket_addr(),
+            |custom| self.inner.custom_socket_addr(custom),
+        );
         let server_name = &tls::name::encode(endpoint_id);
         let connect =
             self.inner
@@ -1883,9 +1894,18 @@ impl Endpoint {
 pub struct ConnectOptions {
     transport_config: Option<QuicTransportConfig>,
     additional_alpns: Vec<Vec<u8>>,
+    initial_custom_addr: Option<CustomAddr>,
 }
 
 impl ConnectOptions {
+    /// Starts this handshake on an explicitly supplied custom address.
+    /// The address must also occur in its EndpointAddr. Other connections,
+    /// cached candidates and post-handshake path selection are unchanged.
+    pub fn with_initial_custom_addr(mut self, addr: CustomAddr) -> Self {
+        self.initial_custom_addr = Some(addr);
+        self
+    }
+
     /// Initializes new connection options.
     ///
     /// By default, the connection will use the same options

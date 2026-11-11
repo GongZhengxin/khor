@@ -579,22 +579,14 @@ impl RemoteStateActor {
                         .collect();
                 self.state.handle_msg_resolve_remote(addrs, tx);
                 if !custom.is_empty() {
-                    // A pending handshake is not registered here yet. Its
-                    // endpoint-id packets otherwise keep using a cached
-                    // selected path, even after a carried road becomes ready.
-                    // Preserve live connections; without one, retransmit the
-                    // same QUIC flight across the known roads as on a cold dial.
-                    let live = self.connections.values().any(|state| {
-                        state.handle.upgrade().is_some_and(|conn| conn.close_reason().is_none())
-                    });
-                    let selected = self.state.selected_path.clone();
-                    if !live {
-                        self.state.selected_path = None;
-                    }
                     if std::env::var_os("KHOR_NET_DIAGNOSTICS").is_some() {
+                        let live = self.connections.values().any(|state| {
+                            state.handle.upgrade().is_some_and(|conn| conn.close_reason().is_none())
+                        });
+                        let selected = self.state.selected_path.clone();
                         eprintln!(
-                            "[khor-pending-carrier] remote={} live={} registered={} previous={selected:?} reset={}",
-                            self.state.endpoint_id, live, self.connections.len(), !live,
+                            "[khor-pending-carrier] remote={} live={} registered={} previous={selected:?}",
+                            self.state.endpoint_id, live, self.connections.len(),
                         );
                     }
                 }

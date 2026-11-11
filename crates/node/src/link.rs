@@ -947,6 +947,23 @@ const DIAL_MOST: Duration = Duration::from_secs(25);
 
 type HopPreparation<'a> = std::pin::Pin<&'a mut (dyn std::future::Future<Output = ()> + Send + 'a)>;
 
+/// A prepared carrier is a distinct handshake candidate, not an update to
+/// the shared initial path selected by another connection to this peer.
+async fn connect_prepared_carrier(
+    ep: &iroh::Endpoint,
+    addr: iroh::EndpointAddr,
+    alpn: &[u8],
+) -> Result<iroh::endpoint::Connection, iroh::endpoint::ConnectError> {
+    let mut options = iroh::endpoint::ConnectOptions::default();
+    if let Some(iroh::TransportAddr::Custom(custom)) = addr.addrs.iter().find(|addr| {
+        matches!(addr, iroh::TransportAddr::Custom(_))
+    }) {
+        options = options.with_initial_custom_addr(custom.clone());
+    }
+    let connecting = ep.connect_with_opts(addr, alpn, options).await?;
+    Ok(connecting.await?)
+}
+
 struct DialWindow {
     within: Duration,
     by: Option<tokio::time::Instant>,
@@ -3855,19 +3872,60 @@ impl Node {
                 }
             }
         };
-        // One original handshake and one original budget. Preparing a hop
-        // cooperatively cannot delay a usable ordinary road or duplicate
-        // the early request's task. Keep the preparation until adoption.
+        // Keep the ordinary early attempt fast. A newly prepared carrier
+        // may race one ordinary handshake within the SAME absolute window;
+        // it sends no early request. Only rides_early readings enter here.
         let mut attempt = Box::pin(tokio::time::timeout_at(dial_by, attempt));
+        let mut carried_attempt: Option<
+            futures::future::BoxFuture<'_, Result<iroh::endpoint::Connection, DialFailure>>,
+        > = None;
+        let mut raced_carrier = false;
         let mut preparing = true;
         let mut outcome = loop {
             tokio::select! {
                 biased;
                 outcome = &mut attempt => break outcome,
-                () = &mut hop, if preparing => preparing = false,
+                () = &mut hop, if preparing => {
+                    preparing = false;
+                    if !had_carried
+                        && !crate::deadline::expired(by)
+                        && let Some(carried) = self.carried_addr(&d.id)
+                        && let Ok(mut addr) = endpoint::dial_addr(&d.id, &[], &[])
+                    {
+                        addr.addrs.insert(carried);
+                        tried.2 = true;
+                        raced_carrier = true;
+                        let ep = ep.clone();
+                        let until = by.map_or(dial_by, |caller| caller.min(dial_by));
+                        carried_attempt = Some(Box::pin(async move {
+                            match crate::deadline::wait(
+                                Some(until), connect_prepared_carrier(&ep, addr, ALPN),
+                            ).await {
+                                Ok(Ok(conn)) => Ok(conn),
+                                Ok(Err(error)) => Err(DialFailure::of_connect(&error)),
+                                Err(_) => Err(DialFailure::CallerExpired),
+                            }
+                        }));
+                    }
+                },
+                connected = async {
+                    match carried_attempt.as_mut() {
+                        Some(attempt) => attempt.as_mut().await,
+                        None => std::future::pending().await,
+                    }
+                }, if carried_attempt.is_some() => {
+                    carried_attempt = None;
+                    match connected {
+                        Ok(conn) => break Ok(Ok((conn, None))),
+                        Err(error @ DialFailure::Asleep(_)) => break Ok(Err(error)),
+                        // One failed alternative does not decide the original.
+                        Err(_) => {}
+                    }
+                },
             }
         };
         drop(attempt);
+        drop(carried_attempt);
         let failed_at = n0_future::time::Instant::now();
         #[cfg(test)]
         if let Ok(Err(failed)) = &outcome {
@@ -3894,6 +3952,7 @@ impl Node {
         // failure after starting the early task never enters this fallback.
         if !early_data
             && !had_carried
+            && !raced_carrier
             && matches!(outcome, Ok(Err(DialFailure::Refused(_))))
             && !crate::deadline::expired(by)
             && tokio::time::Instant::now() < dial_by
@@ -3931,7 +3990,7 @@ impl Node {
                             eprintln!("[early-fallback-stage] old IP hints discarded={removed}");
                             #[cfg(not(test))]
                             let _ = removed;
-                            ep.connect(addr, ALPN)
+                            connect_prepared_carrier(ep, addr, ALPN)
                                 .await
                                 .map(|conn| (conn, None))
                                 .map_err(|error| DialFailure::of_connect(&error))
@@ -13523,7 +13582,7 @@ impl Node {
         }
         // By identity alone. Nothing here can be stale: a machine's id
         // is the one thing about it that a restart does not change.
-        {
+        let relay_attempt = {
             let addr = endpoint::dial_addr(id, &[], relays).map_err(bare)?;
             if !ahead {
                 tried = crate::journal::offered(&addr);
@@ -13539,8 +13598,8 @@ impl Node {
                 }
                 let connected = crate::deadline::wait(by, ep.connect(addr, &alpn)).await;
                 (crate::journal::Won::Relay, connected)
-            });
-        }
+            })
+        };
         let tunnel = alpn == khor_net::endpoint::TUNNEL_ALPN;
         let origin = crate::journal::by_now();
         let note = |won: Option<crate::journal::Won>,
@@ -13613,38 +13672,39 @@ impl Node {
                 );
                 return Err(DialFailure::TimedOut);
             }
+            // A pending handshake is not yet in iroh's live path registry.
+            // Give a newly prepared carrier its own initial route now. An
+            // aborted relay task must be joined before its slot is reused.
+            if preparing_hop
+                && preparation.is_none()
+                && !already_carried
+                && !carried_retry
+                && roads.len() < 2
+                && let Some(carried) = self.carried_addr(id)
+            {
+                carried_retry = true;
+                offered_carried = true;
+                let mut addr = endpoint::dial_addr(id, &[], &[]).map_err(bare)?;
+                addr.addrs.insert(carried);
+                let (ep, alpn) = (ep.clone(), alpn.to_vec());
+                roads.spawn(async move {
+                    let connected = crate::deadline::wait(
+                        by, connect_prepared_carrier(&ep, addr, &alpn),
+                    ).await;
+                    (crate::journal::Won::Direct, connected)
+                });
+            }
             if roads.is_empty() && preparation.is_none() {
-                // An offered carrier joins any still-running handshake in
-                // iroh. If both original attempts already failed, give this
-                // newly prepared road one attempt in the SAME dial window.
-                // There are never more than the original two active dials.
-                if preparing_hop
-                    && !already_carried
-                    && !carried_retry
-                    && let Some(carried) = self.carried_addr(id)
-                {
-                    carried_retry = true;
-                    offered_carried = true;
-                    let addr = endpoint::dial_addr(id, &[], &[]).map_err(bare)?;
-                    let mut addr = addr;
-                    addr.addrs.insert(carried);
-                    let (ep, alpn) = (ep.clone(), alpn.to_vec());
-                    roads.spawn(async move {
-                        let connected = crate::deadline::wait(by, ep.connect(addr, &alpn)).await;
-                        (crate::journal::Won::Direct, connected)
-                    });
-                } else {
-                    note(
-                        None,
-                        refused.as_deref().map(crate::journal::scrub),
-                        false,
-                        offered_carried,
-                    );
-                    return Err(match refused {
-                        Some(why) => DialFailure::Refused(why),
-                        None => DialFailure::TimedOut,
-                    });
-                }
+                note(
+                    None,
+                    refused.as_deref().map(crate::journal::scrub),
+                    false,
+                    offered_carried,
+                );
+                return Err(match refused {
+                    Some(why) => DialFailure::Refused(why),
+                    None => DialFailure::TimedOut,
+                });
             }
             tokio::select! {
                 biased;
@@ -13682,6 +13742,13 @@ impl Node {
                 }, if preparation.is_some() => {
                     preparation = None;
                     offered_carried |= self.carried_addr(id).is_some();
+                    if !already_carried
+                        && !carried_retry
+                        && self.carried_addr(id).is_some()
+                        && roads.len() >= 2
+                    {
+                        relay_attempt.abort();
+                    }
                 },
             }
         }
@@ -13749,6 +13816,7 @@ mod dial_budget {
     mod peer_contact;
     mod probe;
     mod wire;
+    mod initial_custom;
 
     async fn fixture() -> (tempfile::TempDir, Node, DeviceInfo, iroh::Endpoint) {
         fixture_for(iroh::SecretKey::generate().public().to_string()).await
