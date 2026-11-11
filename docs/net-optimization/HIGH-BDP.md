@@ -132,3 +132,32 @@ reported pacing_rate约34.7–35.3Mbit、delivery_rate约28.6–28.7Mbit；同�
 使用同一端点同一tuple/本地payload时钟的bytes_acked差值，含capture起止误差，upload25–50秒38.213–38.245、50–80秒34.802–34.829Mbit；download相应34.899–34.931、35.293–35.332。晚期仍低于40，因此不能把全部缺口归于96MiB流太短；CUBIC随flow age改变也不是唯一因果证明。实际burst4093B、TBF drops991/1258与netem159/205保留。rcv_space不当作对端advertised window，缺失字段保持unknown，不跨host相减时钟。
 
 准确来源和证明见STATE及该run的kernel-long-verification-v1.json、socket-flow-age-summary-v1.json；后一工具是数据分析，不运行产品。96MiB三轮socket诊断c21与384MiB单轮不混作同条件策略对照。下一步先核定实际TC拓扑/整形与排队假设并预注册单因素校准，尚未改burst/window/算法、未启动下一run，高profile Node/prefetch仍未开始。
+
+## 固定latency下的burst旋钮对照（计时前预注册）
+
+延长流仍不足40Mbit；先验证小token bucket与持续drop相关的可检验假设，不能据此判唯一根因。
+上游[TBF手册](https://raw.githubusercontent.com/iproute2/iproute2/main/man/man8/tc-tbf.8)
+说明高整形率可能需要较大burst；[iproute2实现](https://raw.githubusercontent.com/iproute2/iproute2/main/tc/q_tbf.c)
+由rate、latency与burst共同计算FIFO limit。因此这是一项输入旋钮对照，**不是固定队列字节容量的因果隔离**。
+同时[netem手册](https://man7.org/linux/man-pages/man8/tc-netem.8.html)提示TCP/TSQ与延迟放置有关；
+本轮保留既有x端几何，不能由burst对照自动宣称已证明真实网络模型充分。
+
+- 新revision `workload_kernel_tcp_burst_v1`；固定同一源码/二进制的两个ignored入口ha0/hb0，
+  A为4096B、B为65536B，**A B B A**四个fresh场景，仅一个编译，串行运行，不择优替换。
+- 两arm在新namespace内都先使用原builder，再从实际TC JSON唯一匹配root netem 1:/child tbf10:，
+  确认旧rate6250000B/s、lat40000us、burst约4096B、delay0.15s、netem limit1000，
+  然后调用相同`tc qdisc change`路径，仅burst参数不同；命令及初始原始读回保留。
+  原profile/旧测试、patchbay默认与生产网络不改。命令有2秒界限、kill_on_drop，namespace任务有父abort owner。
+- 两端保持50Mbit/150ms/40ms。输入burst4096/65536B名义可蓄积0.655/10.486ms流量；
+  64KiB是本轮预定探索值，不是已选参数。固定latency会同时增大派生FIFO容量，明确保留这一耦合。
+- 保持原HIGH各方向96MiB/完整seed比较、68echo（4预热）、2秒连接/echo、240秒整段传输，
+  默认TCP算法与socket窗口，不采传输中ss，不把观察开销混入旧socket cohort。
+- 物理门仍min RTT270–420ms、两方向40–60Mbit。每轮读取两端前后实际TC JSON/详细文本/接口计数，
+  要求actual burst在请求值下16B量化误差内，netem limit1000、rate/delay/lat保持，原始drop/全部失败保留。
+- control固定四入口顺序，每轮失败继续收剩余诊断，但最终保留首个非零退出；元数据观察成功不得覆盖Rust失败。
+  任一前置/transport/字节/读回失败则该轮观察不合格。四轮齐全也只接受诊断完整性，
+  **不接受物理校准、Node策略、N3或最终模型**；两轮/arm不足替代三轮独立校准。
+- 判读记录两个arm的全部双向平均率、echo min、TC/interface字节与drops；不报p99/显著性，不把B局部通过改写A/h0红。
+  B若有方向性改善，再单独决定固定FIFO容量或接收侧延迟放置的后续验证；无改善则保留反证，不继续盲调burst。
+
+此协议在任何burst实测结果之前保存；实现/准确source/control与在途状态以STATE为准。

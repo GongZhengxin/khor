@@ -11,6 +11,8 @@ use tokio::net::{TcpListener, TcpStream};
 use crate::lab::result;
 use crate::nat::{Net, router};
 
+#[path = "calibration_burst.rs"]
+mod burst;
 #[path = "calibration_sockets.rs"]
 mod sockets;
 
@@ -33,6 +35,7 @@ struct Model {
     condition: fn() -> patchbay::LinkCondition,
     socket_diagnostic: bool,
     socket_plan: &'static [u64],
+    burst_bytes: Option<u32>,
 }
 
 const LOW: Model = Model {
@@ -47,6 +50,7 @@ const LOW: Model = Model {
     condition: super::condition,
     socket_diagnostic: false,
     socket_plan: &[3, 8, 15, 25],
+    burst_bytes: None,
 };
 
 const HIGH: Model = Model {
@@ -61,6 +65,7 @@ const HIGH: Model = Model {
     condition: high_condition,
     socket_diagnostic: false,
     socket_plan: &[3, 8, 15, 25],
+    burst_bytes: None,
 };
 
 const HIGH_SOCKETS: Model = Model {
@@ -76,6 +81,19 @@ const HIGH_LONG: Model = Model {
     size: 384 * 1024 * 1024,
     socket_plan: &[3, 8, 15, 25, 50, 80],
     ..HIGH_SOCKETS
+};
+
+const HIGH_BURST_A: Model = Model {
+    case: "ha0",
+    revision: "workload_kernel_tcp_burst_v1",
+    burst_bytes: Some(4096),
+    ..HIGH
+};
+
+const HIGH_BURST_B: Model = Model {
+    case: "hb0",
+    burst_bytes: Some(65536),
+    ..HIGH_BURST_A
 };
 
 fn high_condition() -> patchbay::LinkCondition {
@@ -324,6 +342,18 @@ async fn hl0_high_bdp_extended_transfer_retains_late_socket_observations() {
     run(HIGH_LONG).await;
 }
 
+#[tokio::test(flavor = "multi_thread", worker_threads = 6)]
+#[ignore = "fixed burst diagnostic control, run in the guarded ABBA task"]
+async fn ha0_high_bdp_tcp_with_four_kib_token_bucket() {
+    run(HIGH_BURST_A).await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 6)]
+#[ignore = "fixed burst diagnostic candidate, run in the guarded ABBA task"]
+async fn hb0_high_bdp_tcp_with_sixty_four_kib_token_bucket() {
+    run(HIGH_BURST_B).await;
+}
+
 async fn run(model: Model) {
     let lab = Lab::new().await.unwrap();
     let rx = router(&lab, "pubx", Net::Public).await;
@@ -335,6 +365,10 @@ async fn run(model: Model) {
         .set_condition((model.condition)(), LinkDirection::Both)
         .await
         .unwrap();
+    if model.burst_bytes.is_some() {
+        burst::apply(&x, model, "x").await;
+        burst::apply(&rx, model, "gateway").await;
+    }
     let mut seed = 0x6d697865646c6f61u64;
     let payload = Arc::new(
         (0..model.size)
@@ -353,6 +387,7 @@ async fn run(model: Model) {
         "bulk_caller_us":model.bulk_limit.as_micros(),
         "socket_diagnostic":model.socket_diagnostic,
         "socket_plan_seconds":model.socket_plan,
+        "requested_burst_bytes":model.burst_bytes,
         "layer":"kernel_TCP","residents":false,"slo":false,"qdisc_units_review_required":true}),
     );
     let xb = on(&x).await;

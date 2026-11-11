@@ -1,6 +1,6 @@
 # feat/net 当前状态与接续入口
 
-更新于2026-11-11 18:35 UTC（本地11月12日）。完整目标“完成计划”仍 **active、未完成、未阻塞**；完整范围是 [PLAN](PLAN.md) 的N0–N5，root串行，不派发子智能体。此页是唯一当前入口；历史逐字保存在 [上一状态](HISTORY-20261111-through-low-policy-comparison-v3.md)，SHA `5d9c15a79d7e4d3a70e5dc15cf609bbbeabb39a3c271b7cbbf99b0fa248052c5`，它继续链接此前全部证据/失败。实际worktree/收据/原始日志优先，不按摘要覆盖未提交内容。
+更新于2026-11-11 18:43 UTC（本地11月12日）。完整目标“完成计划”仍 **active、未完成、未阻塞**；完整范围是 [PLAN](PLAN.md) 的N0–N5，root串行，不派发子智能体。此页是唯一当前入口；历史逐字保存在 [上一状态](HISTORY-20261111-through-low-policy-comparison-v3.md)，SHA `5d9c15a79d7e4d3a70e5dc15cf609bbbeabb39a3c271b7cbbf99b0fa248052c5`，它继续链接此前全部证据/失败。实际worktree/收据/原始日志优先，不按摘要覆盖未提交内容。
 
 ## 当前在途与下一步
 
@@ -17,7 +17,7 @@
 
 同端ACKed字节计数、当地capture起止不确定性算得：sender upload25–50秒38.213–38.245、50–80秒34.802–34.829Mbit；sender download相应34.899–34.931与35.293–35.332。CUBIC窗口/交付率确实随flow age变化，但晚期仍没达到40Mbit；不能仅用96MiB太短解释全部缺口，也不能由这一轮认定唯一原因。缺失可选字段保持unknown；rcv_space不是peer advertised window，不跨host时钟相减。TBF实际burst4093B、x/gateway TBF drops991/1258、netem159/205原样保留。没有改burst/window/算法/验收门。
 
-**下一步：先单独验证整形/排队模型，再推进高profile Node优先级与独立prefetch矩阵。** 先按原始TC拓扑、实际计数与权威实现核定burst/排队假设，预注册单因素校准对照；目前未实现/提交该对照、没有下一run ID。不要直接放宽HIGH吞吐门或把长流结果混入旧96MiB cohort。不重复低profile18场景，不提前选定priority -1为最终策略。
+**下一步：先单独验证整形/排队模型，再推进高profile Node优先级与独立prefetch矩阵。** 已核原始TC拓扑与上游iproute2：TBF burst较小可能限制整形，且固定latency时burst也参与派生FIFO limit；不能声称固定queue bytes。已按HIGH-BDP预注册并实现4096/65536B固定 **A B B A** 四fresh诊断（ha0/hb0），同一源码/二进制，零ss；两arm都在新namespace实际读回后走同一tc change路径，仅burst输入不同。原HIGH/LOW及patchbay默认不改。当前尚未提交远端，没有下一run ID。不要直接放宽HIGH吞吐门或把长流结果混入旧96MiB cohort。不重复低profile18场景，不提前选定priority -1为最终策略。
 
 ### 本轮诊断链（全部已终态）
 
@@ -28,7 +28,9 @@
 
 socket observer由实际transfer父future借用，在同一select中poll；未spawn游离task、command kill_on_drop/1秒界限，实际transfer结束即取消余下观察。只在隔离namespace对匹配实际tuple执行ss -tinm，含命令时钟/状态/stdout，不含业务payload。延长诊断只增加一轮时间/文件量与50/80秒计划；不是同条件性能对照。
 
-本批已完成source metadata **14项1.516秒绿**（HIGH21/socket18/long9合成子例）、control metadata **13项14.143秒绿**（固定6tasks×3 stub modes、first-failure保留），bash语法/diff通过；最新Turing实际format/compile/transport已执行，physical gate仍红。无本机Rust/格式器/Node/Xcode/产品执行。高profile Node混合与prefetch矩阵未实现/运行。
+上一批已完成source metadata **14项1.516秒绿**（HIGH21/socket18/long9合成子例）、control metadata **13项14.143秒绿**（固定6tasks×3 stub modes、first-failure保留），bash语法/diff通过；最新Turing实际format/compile/transport已执行，physical gate仍红。无本机Rust/格式器/Node/Xcode/产品执行。高profile Node混合与prefetch矩阵未实现/运行。
+
+本次burst新metadata已通过：`test_netlab_*.py` **8项1.325秒**，含burst 19种合成人口/顺序/实际readback/失败保护变体；control `test_network*.py` **13项14.658秒**，含7tasks×3 stub modes及ABBA/首非零保护；bash语法/diff通过。只做Git/Python数据/合成控制检查，Rust格式/编译/物理仍待同一次Turing任务。新task仍原资源/UID/flock/netns/总期限门。
 
 ## 已完成的低profile优先级对照
 
