@@ -32,7 +32,8 @@ pub(super) async fn apply(device: &Device, model: Model, side: &'static str) {
         .spawn(move |_| async move {
             let before = command(&["-j".into(), "qdisc".into(), "show".into()]).await;
             assert_eq!(before["ok"], true, "initial tc readback: {before}");
-            let rows: Vec<Value> = serde_json::from_str(before["stdout"].as_str().unwrap()).unwrap();
+            let rows: Vec<Value> =
+                serde_json::from_str(before["stdout"].as_str().unwrap()).unwrap();
             let rates: Vec<_> = rows.iter().filter(|r| r["kind"] == "tbf").collect();
             let nets: Vec<_> = rows.iter().filter(|r| r["kind"] == "netem").collect();
             assert_eq!(rates.len(), 1);

@@ -1,10 +1,10 @@
 # feat/net 当前状态与接续入口
 
-更新于2026-11-11 18:43 UTC（本地11月12日）。完整目标“完成计划”仍 **active、未完成、未阻塞**；完整范围是 [PLAN](PLAN.md) 的N0–N5，root串行，不派发子智能体。此页是唯一当前入口；历史逐字保存在 [上一状态](HISTORY-20261111-through-low-policy-comparison-v3.md)，SHA `5d9c15a79d7e4d3a70e5dc15cf609bbbeabb39a3c271b7cbbf99b0fa248052c5`，它继续链接此前全部证据/失败。实际worktree/收据/原始日志优先，不按摘要覆盖未提交内容。
+更新于2026-11-11 18:46 UTC（本地11月12日）。完整目标“完成计划”仍 **active、未完成、未阻塞**；完整范围是 [PLAN](PLAN.md) 的N0–N5，root串行，不派发子智能体。此页是唯一当前入口；历史逐字保存在 [上一状态](HISTORY-20261111-through-low-policy-comparison-v3.md)，SHA `5d9c15a79d7e4d3a70e5dc15cf609bbbeabb39a3c271b7cbbf99b0fa248052c5`，它继续链接此前全部证据/失败。实际worktree/收据/原始日志优先，不按摘要覆盖未提交内容。
 
 ## 当前在途与下一步
 
-**目前没有Turing或Mac在途任务。** 最新一次延长TCP传输诊断 **turing-20261111T182504Z-cde36230** 已完成、collect、identity、独立原始人口/字节/吞吐核验、ledger终态；不要重发。原退出 **101**、266.067秒、13files、原group空，物理校准仍不接受。完整目标active，有可执行工作，不设blocked/complete。
+**目前没有Turing或Mac在途任务。** burst source-v1 **turing-20261111T184428Z-32451d75** 已45.958秒1、10files/identity/原group空，仅format失败、零行为样本。准确源ba850688146fadcdca1a28501a35bf09cba23835 / tree f4be97b11d5cdf48ce5c4b1258c2a4451c297dec / snapshot a20e84831b2a62d8f48e8a031acc32335ed68a55，control 0d573ad369cd328ee5115085eb04ed4ea8562580。原件已collect；准确one-file/one-assignment换行patch已check/apply并核非空白内容完全一致，不改任何参数/物理门。准备冻结source-v2后提交新run，不能重发旧收据。 最新一次延长TCP传输诊断 **turing-20261111T182504Z-cde36230** 已完成、collect、identity、独立原始人口/字节/吞吐核验、ledger终态；不要重发。原退出 **101**、266.067秒、13files、原group空，物理校准仍不接受。完整目标active，有可执行工作，不设blocked/complete。
 
 | 输入 | 精确值 |
 | --- | --- |
@@ -17,7 +17,7 @@
 
 同端ACKed字节计数、当地capture起止不确定性算得：sender upload25–50秒38.213–38.245、50–80秒34.802–34.829Mbit；sender download相应34.899–34.931与35.293–35.332。CUBIC窗口/交付率确实随flow age变化，但晚期仍没达到40Mbit；不能仅用96MiB太短解释全部缺口，也不能由这一轮认定唯一原因。缺失可选字段保持unknown；rcv_space不是peer advertised window，不跨host时钟相减。TBF实际burst4093B、x/gateway TBF drops991/1258、netem159/205原样保留。没有改burst/window/算法/验收门。
 
-**下一步：先单独验证整形/排队模型，再推进高profile Node优先级与独立prefetch矩阵。** 已核原始TC拓扑与上游iproute2：TBF burst较小可能限制整形，且固定latency时burst也参与派生FIFO limit；不能声称固定queue bytes。已按HIGH-BDP预注册并实现4096/65536B固定 **A B B A** 四fresh诊断（ha0/hb0），同一源码/二进制，零ss；两arm都在新namespace实际读回后走同一tc change路径，仅burst输入不同。原HIGH/LOW及patchbay默认不改。当前尚未提交远端，没有下一run ID。不要直接放宽HIGH吞吐门或把长流结果混入旧96MiB cohort。不重复低profile18场景，不提前选定priority -1为最终策略。
+**下一步：先单独验证整形/排队模型，再推进高profile Node优先级与独立prefetch矩阵。** 已核原始TC拓扑与上游iproute2：TBF burst较小可能限制整形，且固定latency时burst也参与派生FIFO limit；不能声称固定queue bytes。已按HIGH-BDP预注册并实现4096/65536B固定 **A B B A** 四fresh诊断（ha0/hb0），同一源码/二进制，零ss；两arm都在新namespace实际读回后走同一tc change路径，仅burst输入不同。原HIGH/LOW及patchbay默认不改。本次准确source/control已冻结并提交上述唯一run；control-kernel-burst-input-audit-v1.json证明runner只添固定task allowlist，network.sh仅allowlist与固定ABBA分支变更，原资源门不变。不要直接放宽HIGH吞吐门或把长流结果混入旧96MiB cohort。不重复低profile18场景，不提前选定priority -1为最终策略。
 
 ### 本轮诊断链（全部已终态）
 
@@ -30,7 +30,7 @@ socket observer由实际transfer父future借用，在同一select中poll；未sp
 
 上一批已完成source metadata **14项1.516秒绿**（HIGH21/socket18/long9合成子例）、control metadata **13项14.143秒绿**（固定6tasks×3 stub modes、first-failure保留），bash语法/diff通过；最新Turing实际format/compile/transport已执行，physical gate仍红。无本机Rust/格式器/Node/Xcode/产品执行。高profile Node混合与prefetch矩阵未实现/运行。
 
-本次burst新metadata已通过：`test_netlab_*.py` **8项1.325秒**，含burst 19种合成人口/顺序/实际readback/失败保护变体；control `test_network*.py` **13项14.658秒**，含7tasks×3 stub modes及ABBA/首非零保护；bash语法/diff通过。只做Git/Python数据/合成控制检查，Rust格式/编译/物理仍待同一次Turing任务。新task仍原资源/UID/flock/netns/总期限门。
+本次burst新metadata已通过：`test_netlab_*.py` **8项1.325秒**，含burst 19种合成人口/顺序/实际readback/失败保护变体；control `test_network*.py` **13项14.658秒**，含7tasks×3 stub modes及ABBA/首非零保护；bash语法/diff通过。只做Git/Python数据/合成控制检查，首次Turing仅format换行红、零行为；精确格式修复后编译/物理仍待新任务。新task仍原资源/UID/flock/netns/总期限门。
 
 ## 已完成的低profile优先级对照
 
