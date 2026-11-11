@@ -154,6 +154,7 @@ struct HopCandidate {
     id: String,
     live: bool,
     wires: Vec<HopWire>,
+    hints: Vec<String>,
     missed: Option<(u32, std::time::Instant)>,
     attempted_at: Option<std::time::Instant>,
 }
@@ -170,6 +171,7 @@ fn same_candidates(a: &[HopCandidate], b: &[HopCandidate]) -> bool {
         && a.iter().zip(b).all(|(a, b)| {
             a.id == b.id
                 && a.live == b.live
+                && a.hints == b.hints
                 && a.wires.len() == b.wires.len()
                 && a.wires.iter().zip(&b.wires).all(|(a, b)| a.matches(b))
         })
@@ -180,6 +182,7 @@ struct HopMiss {
     at: std::time::Instant,
     epoch: Option<MissEpoch>,
     candidates: Vec<HopCandidate>,
+    target_hints: Vec<String>,
     observed: u64,
     // Only this cache entry owns the candidate token. In-flight asks hold
     // weak tokens, so retiring a context also retires its late answers.
@@ -193,6 +196,7 @@ impl HopMiss {
             at: std::time::Instant::now(),
             epoch,
             candidates: Vec::new(),
+            target_hints: Vec::new(),
             observed: 0,
             _current: None,
         }
@@ -230,7 +234,7 @@ fn miss_context(
     me: &str,
     to: &str,
     observation: MissObservation,
-    candidates: impl FnOnce() -> Vec<HopCandidate>,
+    facts: impl FnOnce() -> (Vec<String>, Vec<HopCandidate>),
 ) -> Option<MissEpoch> {
     let mut all = MISSED.lock().unwrap_or_else(|p| p.into_inner());
     if observation.network.strong_count() == 0 {
@@ -248,11 +252,12 @@ fn miss_context(
     // Snapshot live wires under the same routing lock as registration.
     // A CPU-delayed registry snapshot cannot replace fresher evidence.
     // Wires never takes MISSED while holding its registries; no await here.
-    let mut candidates = candidates();
+    let (target_hints, mut candidates) = facts();
     candidates.sort_unstable_by(|a, b| a.id.cmp(&b.id));
     candidates.dedup_by(|a, b| a.id == b.id);
     miss.observed = observation.order;
-    if same_candidates(&miss.candidates, &candidates)
+    if miss.target_hints == target_hints
+        && same_candidates(&miss.candidates, &candidates)
         && let Some(epoch) = &miss.epoch
         && epoch.network.ptr_eq(&observation.network)
     {
@@ -261,10 +266,11 @@ fn miss_context(
     // A new candidate may get admission without retrying unchanged
     // middles that already refused. Only the same live wire in the same
     // network can carry its own failure forward into the new context.
-    if miss
-        .epoch
-        .as_ref()
-        .is_some_and(|epoch| epoch.network.ptr_eq(&observation.network))
+    if miss.target_hints == target_hints
+        && miss
+            .epoch
+            .as_ref()
+            .is_some_and(|epoch| epoch.network.ptr_eq(&observation.network))
     {
         for candidate in &mut candidates {
             if let Some(previous) = miss.candidates.iter().find(|previous| {
@@ -285,6 +291,7 @@ fn miss_context(
     };
     *miss = HopMiss {
         candidates,
+        target_hints,
         observed: observation.order,
         _current: Some(current),
         ..HopMiss::new(Some(epoch.clone()))
@@ -741,6 +748,18 @@ pub(crate) fn worth_a_hop(
         .collect()
 }
 
+/// The same effective IP/Relay/nearby candidates as the dialer. Invalid
+/// input, list order, duplicates and source provenance are not new roads.
+fn effective_hop_hints(device: &crate::DeviceInfo) -> Vec<String> {
+    let Ok(addr) = khor_net::endpoint::dial_addr(&device.id, &device.addrs, &[]) else {
+        return Vec::new();
+    };
+    let mut hints: Vec<_> = addr.addrs.iter().map(|addr| format!("{addr:?}")).collect();
+    hints.sort_unstable();
+    hints.dedup();
+    hints
+}
+
 type PreparedHop = (
     EndpointId,
     usize,
@@ -929,7 +948,7 @@ impl Node {
             }
             #[cfg(test)]
             self.wires.hold_hop_selection_for_test().await;
-            let Some(epoch) = self.hop_miss_epoch(&y.id, &picked, observation) else {
+            let Some(epoch) = self.hop_miss_epoch_for(y, &all, &picked, observation) else {
                 return;
             };
             if missed_lately_in_epoch(&me, &y.id, Some(&epoch)) {
@@ -941,14 +960,30 @@ impl Node {
         })
     }
 
+    #[cfg(test)]
     fn hop_miss_epoch(
         &self,
         to: &str,
         picked: &[String],
         observation: MissObservation,
     ) -> Option<MissEpoch> {
-        miss_context(self.device_str(), to, observation, || {
-            picked
+        let all = self.devices().ok()?;
+        let target = all.iter().find(|device| device.id == to)?;
+        self.hop_miss_epoch_for(target, &all, picked, observation)
+    }
+
+    fn hop_miss_epoch_for(
+        &self,
+        target: &crate::DeviceInfo,
+        all: &[crate::DeviceInfo],
+        picked: &[String],
+        observation: MissObservation,
+    ) -> Option<MissEpoch> {
+        miss_context(self.device_str(), &target.id, observation, || {
+            // Use the roster read after this observation began, not a
+            // caller's older DeviceInfo. No document I/O under MISSED.
+            let target = all.iter().find(|device| device.id == target.id).unwrap_or(target);
+            let candidates = picked
                 .iter()
                 .map(|id| {
                     let mut conns: Vec<_> = self
@@ -967,11 +1002,14 @@ impl Node {
                         id: id.clone(),
                         live: self.road_for_hop(id, &[]).is_some(),
                         wires,
+                        hints: all.iter().find(|device| &device.id == id)
+                            .map(effective_hop_hints).unwrap_or_default(),
                         missed: None,
                         attempted_at: None,
                     }
                 })
-                .collect()
+                .collect();
+            (effective_hop_hints(target), candidates)
         })
     }
 
@@ -984,7 +1022,7 @@ impl Node {
         picked: &[String],
     ) -> bool {
         let observation = MissObservation::new(self.wires.hop_epoch());
-        let Some(epoch) = self.hop_miss_epoch(&y.id, picked, observation) else {
+        let Some(epoch) = self.hop_miss_epoch_for(y, all, picked, observation) else {
             return false;
         };
         self.open_hop_in_epoch(ep, y, all, picked, epoch, false)
@@ -1384,7 +1422,7 @@ impl Node {
                     network: observation.network.clone(),
                     order: observation.order,
                 };
-                let Some(epoch) = self.hop_miss_epoch(&y.id, &picked, observation) else {
+                let Some(epoch) = self.hop_miss_epoch_for(y, &all, &picked, observation) else {
                     continue;
                 };
                 Box::pin(self.open_hop_in_epoch(ep, y, &all, &picked, epoch, true)).await;
