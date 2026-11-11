@@ -2,6 +2,17 @@
 
 更新于2026-11-11 12:08 UTC。完整N0–N5目标“完成计划”**active**，本轮有新真实物理证据、Mac同源12组验证与新四个已有carrier合同；未完成、未阻塞，root串行，不派发子智能体。上份STATE逐字归档到[业务连续性v2以前](HISTORY-20261111-through-business-continuity-v2.md)，SHA **909d6598e60cb5fa05fd66d4a998682f0dd79f443c3fd301cbdfbefe4d23ab0a**，它继续链接hint、comparison和全部更早失败。原始日志/准确收据优先，不能按摘要覆盖工作树。
 
+## 当前只查候选166这两个任务（12:18 UTC）
+
+工作树已提交/核clean，候选 **166a4afb2b2d87c062f259a84ba8ea09398df995** /tree **0b3d6ece1d87300ed7a7e6b5aec0e8c8a0067514** /snapshot **898c8132966fb5fc7a3de11e030c95ff65a403d6**，candidate-installed-carrier-source-v2.json。前述两文件root草稿已在3a64实现、166远端格式修正；**不再是未提交改动**，四新合同逐字保持573。尚未验证候选，不称修复接受。
+
+- 唯一Turing **turing-20261111T121637Z-9dccad92**，PID **4027265**，12:16:58 UTC launch，net-node/role candidate/control68cad；stage exec31533终态，按同receipt/PID查编译与全部12，不能另起Turing构建。
+- Mac **Actions43019072595** request **ed7c728dec1b45fbbdce68f7bf1aa241**，同166源net-node/control68cad；submit exec90531终态、登记按真实句柄收尾，不重发。
+
+旧573两端**实际最终业务两红**已收齐：Linux5df2c88e budget34pass/2fail，Mac43017591561 budget30pass/2fail；两项都第310行answered=false、path=None、requests=0，fastDirect两负控/旧IP前后与保留carrier均过，清理无panic。Mac exact13853971039/ZIP SHA0e8af675fcfcf4703bd91e0c960b422e59d7e7df9a3f82107f76b8c8dc78ace5、13files/11controls/identity；两端installed-carrier-old-behavior-v1.json、ledger已完成。不能与更早412的清理错误混淆。
+
+候选3a64首轮Linux37e7485e已48.064秒终态1、10files/identity/空group，只root格式、0行为组；精确patch已应用到166。Mac43018748747也已failure，正在收原准确产物核identity与是否同format-only，不代认行为；不能重发旧源。这批166通过后继续原四peer验证、shared selected与实际传输路径观测及旧f4长尾，再完整N0–N5。以下“旧任务/草稿”段落保留当时记录，由本节替代当前状态。
+
 ## 旧行为573的两个任务（12:13 UTC已终态，收集在继续）
 
 冻结 **573a5880b31368a29b51197266f623bbd6702fcb**，tree **7eb044bc4f13d08e0ee399b06ec52e0de969d5a9** /snapshot **9975d20990d786026b8f662fecb9474923315edd**，candidate-installed-carrier-contract-source-v3.json，clean/0excluded。它只修四个新真实合同的清理顺序，**不含产品修复草稿**。
