@@ -206,6 +206,48 @@ pub(super) async fn probe<T>(
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+#[ignore = "real startup owner cancellation, separate from network SLOs"]
+async fn w3_cancelled_resident_startup_reaps_before_and_after_poll() {
+    for polled in [false, true] {
+        let tag = if polled {
+            "startup-polled"
+        } else {
+            "startup-unpolled"
+        };
+        let home = crate::scratch::scratch(tag);
+        let mut command = std::process::Command::new("sleep");
+        command.arg("60");
+        let mut child = command.spawn().unwrap();
+        let pid = child.id();
+        assert!(child.try_wait().unwrap().is_none());
+        let owned = crate::scratch::Reaped(child);
+        let ready = crate::lab::resident_ready(owned, &home.0, "never-ready");
+        if polled {
+            let cancelled = tokio::time::timeout(Duration::from_millis(20), ready).await;
+            assert!(cancelled.is_err());
+        } else {
+            drop(ready);
+        }
+        let alive = std::process::Command::new("kill")
+            .args(["-0", &pid.to_string()])
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .status()
+            .unwrap();
+        assert!(!alive.success(), "cancelled startup left its child alive");
+    }
+    emit(
+        json!({"schema":1,"revision":REVISION,"event":"observer_resident_startup_guard",
+        "unpolled_cancelled":1,"polled_cancelled":1,"remaining":0,"passed":true,"slo":false}),
+    );
+    crate::lab::result(
+        "w3-startup",
+        true,
+        "actual child reaped for unpolled and pending startup cancellation; not product startup latency",
+    );
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 #[ignore = "fixture cancellation/ownership calibration, separate from network SLOs"]
 async fn w3_cancelled_observer_futures_keep_outcomes_in_both_recording_modes() {
     for mode in [Mode::Streaming, Mode::Buffered] {

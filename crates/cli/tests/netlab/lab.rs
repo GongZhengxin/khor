@@ -278,14 +278,7 @@ pub async fn node_on(
         }
     }
     let child = Reaped(dev.spawn_command_sync(cmd).unwrap());
-    let began = Instant::now();
-    while !home.0.join(".khor/endpoint.json").exists() {
-        assert!(
-            began.elapsed() < Duration::from_secs(60),
-            "{name} stands up"
-        );
-        tokio::time::sleep(Duration::from_millis(100)).await;
-    }
+    let child = resident_ready(child, &home.0, name).await;
     // One observer client per resident, as in the app. Reopening for every
     // sample can contend with an earlier local metadata operation.
     let (client_home, client_name) = (home.0.clone(), name.to_owned());
@@ -308,6 +301,19 @@ pub async fn node_on(
         home,
         serve: Some(child),
     }
+}
+
+/// Own the child even if this readiness future is dropped before its first poll.
+pub(crate) async fn resident_ready(child: Reaped, home: &Path, name: &str) -> Reaped {
+    let began = Instant::now();
+    while !home.join(".khor/endpoint.json").exists() {
+        assert!(
+            began.elapsed() < Duration::from_secs(60),
+            "{name} stands up"
+        );
+        tokio::time::sleep(Duration::from_millis(100)).await;
+    }
+    child
 }
 
 /// Preserve optional decision/ACK logs after measurement, before scratch cleanup.

@@ -25,6 +25,7 @@ class PolicyEvidence(unittest.TestCase):
                 for mode in ['streaming','buffered']:
                     guard.extend([dict(event='sample',mode=mode,outcome='cancelled'),dict(event='sample',mode=mode,outcome='ok')])
                 guard.append(dict(event='observer_guard_calibration',modes=2,cancelled=2,completed=2,passed=True))
+                guard.append(dict(event='observer_resident_startup_guard',unpolled_cancelled=1,polled_cancelled=1,remaining=0,passed=True))
                 if mutation!='missing_guard':write_log(report/'observer-guards/0/scenarios.log',guard)
                 for i in range(2 if mutation=='missing_round' else 3):
                     rows=case_rows('buffered')

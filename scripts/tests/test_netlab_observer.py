@@ -62,7 +62,8 @@ class ObserverEvidence(unittest.TestCase):
     def test_complete_population_probes_order_and_profiles_are_required(self):
         modes = ['success', 'harness_prefix', 'missing_sample', 'duplicate_sample', 'timeout', 'cancelled',
                  'wrong_order', 'missing_round', 'missing_probe', 'bad_tick', 'capped', 'overflow',
-                 'wrong_rate', 'wrong_text', 'missing_capture', 'missing_guard', 'guard_lied', 'bad_bytes']
+                 'wrong_rate', 'wrong_text', 'missing_capture', 'missing_guard', 'guard_lied',
+                 'missing_startup_guard', 'unreaped_startup', 'bad_bytes']
         for mutation in modes:
             with self.subTest(mutation=mutation), tempfile.TemporaryDirectory() as temporary:
                 root = Path(temporary)
@@ -72,7 +73,10 @@ class ObserverEvidence(unittest.TestCase):
                     guard.extend([dict(event='sample', mode=mode, outcome='cancelled'),
                                   dict(event='sample', mode=mode, outcome='ok')])
                 guard.append(dict(event='observer_guard_calibration', modes=2, cancelled=2, completed=2, passed=True))
+                guard.append(dict(event='observer_resident_startup_guard',unpolled_cancelled=1,polled_cancelled=1,remaining=0,passed=True))
                 if mutation == 'guard_lied': guard[0]['outcome'] = 'ok'
+                elif mutation == 'missing_startup_guard': guard.pop()
+                elif mutation == 'unreaped_startup': guard[-1]['remaining'] = 1
                 if mutation != 'missing_guard': write_log(root/'observer-guards/0/scenarios.log', guard, True)
                 for number, mode in enumerate(observer.MODES[:5] if mutation == 'missing_round' else observer.MODES):
                     rows = case_rows('buffered' if number == 0 and mutation == 'wrong_order' else mode)

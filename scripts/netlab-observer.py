@@ -61,11 +61,15 @@ def guard(report):
     rows = records(logs[0])
     summary = one(rows, 'observer_guard_calibration')
     assert summary['passed'] is True and summary['modes'] == summary['cancelled'] == summary['completed'] == 2
+    startup = one(rows, 'observer_resident_startup_guard')
+    assert startup['passed'] is True and startup['unpolled_cancelled'] == startup['polled_cancelled'] == 1
+    assert startup['remaining'] == 0
     samples = [r for r in rows if r['event'] == 'sample']
     assert len(samples) == 4
     for mode in ['streaming', 'buffered']:
         assert Counter(r['outcome'] for r in samples if r['mode'] == mode) == {'ok': 1, 'cancelled': 1}
-    return dict(log=str(logs[0].relative_to(report)), sha256=hashlib.sha256(logs[0].read_bytes()).hexdigest(), passed=True)
+    return dict(log=str(logs[0].relative_to(report)), sha256=hashlib.sha256(logs[0].read_bytes()).hexdigest(), passed=True,
+                resident_startup_cancellation_verified=True)
 
 
 def case(path, mode):

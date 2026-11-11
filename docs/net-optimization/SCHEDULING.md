@@ -35,6 +35,8 @@ Noq 1.3.0的[固定源码](https://github.com/n0-computer/noq/blob/c1f411562e607
 
 随后只用`netlab-workload-policy`计时，显式关闭lifecycle/sampling；使用同一冻结control、UID/锁/资源门。
 先w3真实拥有者/取消记录guard，再三个Buffered完整场景，失败不删除后续轮，首非零状态保持。
+source-v2起，w3另执行真实sleep子进程在首次poll前与等待中取消的两项回收检查；
+source-owned parser要求该实际guard原件。它校准fixture取消，不证明产品keeper后代或启动延迟。
 低profile保持v4：单向20ms/每方向8Mbit/40ms队列/16MiB，三阶段各两类120、100ms计划、每类1在途，
 原2秒调用/120秒bulk/10秒就绪总界，实际TC读回/探针/完整字节/关闭API门都不变。
 
