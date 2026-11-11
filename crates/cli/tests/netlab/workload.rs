@@ -186,7 +186,7 @@ async fn phase(
     bulk: bool,
 ) -> (Vec<Value>, Value, Option<PathBuf>) {
     // Snapshots are outside the sample window, on this resident's actual IPC.
-    let before = node.wire_counts().await.map_err(|e| e.to_string());
+    let before = node.wire_counts().await.map_err(|e| format!("{e:?}"));
     let phase_start = Instant::now();
     emit(
         json!({"schema":1,"revision":REVISION,"event":"phase_started","phase":name,"at_us":at(epoch),"wire_counts":before}),
@@ -222,7 +222,7 @@ async fn phase(
     directories.extend(terminals);
     emit(
         json!({"schema":1,"revision":REVISION,"event":"phase_finished","phase":name,
-        "at_us":at(epoch),"wire_counts":node.wire_counts().await.map_err(|e|e.to_string())}),
+        "at_us":at(epoch),"wire_counts":node.wire_counts().await.map_err(|e|format!("{e:?}"))}),
     );
     (directories, bulk_row, dest)
 }
