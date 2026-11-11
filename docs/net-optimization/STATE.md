@@ -4,7 +4,7 @@
 
 ## 当前在途与下一步
 
-**当前仅一个Turing任务在途：turing-20261111T221821Z-2e4c439f，真实高BDP业务预检。** 无Mac任务；只轮询这个回执，不因观察超时重发。 [MODEL-DECISION](MODEL-DECISION.md) 已在实现/首个高profile Node数据前以ff3d0074提交，明确分层校准准入v2，旧冷TCP门及原失败全部保留，不视为通过。新业务fixture已提交、clean/0excluded冻结并提交Turing；当前format已过、编译中，尚无业务结果；原低profile参数和入口保留。
+**当前仅一个Turing任务在途：turing-20261111T221821Z-2e4c439f，真实高BDP业务预检。** 无Mac任务；只轮询这个回执，不因观察超时重发。 [MODEL-DECISION](MODEL-DECISION.md) 已在实现/首个高profile Node数据前以ff3d0074提交，明确分层校准准入v2，旧冷TCP门及原失败全部保留，不视为通过。新业务fixture已提交、clean/0excluded冻结并提交Turing；当前format/实际编译已过，两个真实w3守卫通过，第一轮low回归进行中，高profile尚无业务结果；原低profile参数和入口保留。
 
 高profile固定300ms/50Mbit、192MiB完整文件/240秒、400ms计划/每请求2秒/各operation单在途，三phase各目录/真实PTY各120，保留≥30完整传输重叠门、720全人口/失败分母/调度滞后和原20ms借用probe。复用同一个分离队列构造器；每次实际八份端点/router读回，按y→x下载路径核对文件字节，反向ACK/control完整记录。没有产品runtime/vendor修改。固定新task先真实两个w3取消/启动回收守卫、三fresh原low w2回归，再三high wh2预检；前置失败阻止high，一旦开始某阶段则完成该阶段全部三轮并保留首个非零退出。
 
@@ -12,7 +12,7 @@
 
 | 当前预检输入 | 值 |
 | --- | --- |
-| run / control | **turing-20261111T221821Z-2e4c439f** / **30d7a35db340201eed9f80a6161d9de2ce7cfbae**，pid578110/child578324，stage session61281已终态；22:18:53Z实际running、format.log空、无场景完成 |
+| run / control | **turing-20261111T221821Z-2e4c439f** / **30d7a35db340201eed9f80a6161d9de2ce7cfbae**，pid578110/child578324，stage session61281已终态；22:19:33Z实际running、format.log空、编译9.49秒；两个w3实际通过(0.06秒)，low第1轮idle_before240/240 ok、进入bulk，高profile未开始 |
 | source-v2 | **f428627b354a447f169d86d0843f79b2cf810bd3** / tree **3707ffd537c5d8d3c758f83d1bbf7edfb62bf57f** / snapshot **fb9442b69da624075bc596f6e6ed9178a5254636**；candidate-high-resident-source-v2.json |
 | 预检协议 | MODEL-DECISION / resident_mixed_workload_high_v2；guard2→low3→high3，不混作18轮priority比较或N3接受 |
 | 证据复用边界 | 共同calibration_queues.rs SHA256 50a03d9530b2b6d5400f953cee355333691a257b1fd05a0534aefc8cca63ca3c，逐字同c50；相对Mac8371dbb0全Git差异37个只fixture/metadata/docs，零生产runtime差异；新Linuxfixture必须实际编译/执行 |
