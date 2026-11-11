@@ -1,14 +1,23 @@
 # feat/net 当前状态与接续入口
 
-更新于2026-11-11 22:20 UTC（本地11月12日）。完整目标“完成计划”仍 **active、未完成、未阻塞**；完整范围是 [PLAN](PLAN.md) 的N0–N5，root串行，不派发子智能体。此页是唯一当前入口；历史逐字保存在 [上一状态](HISTORY-20261111-through-capacity-setup-v5.md)，SHA `6079915ace9d27daea77a43499663ce352d51597ad32c296a02a32846f482efe`，它继续链接此前全部证据/失败。实际worktree/收据/原始日志优先，不按摘要覆盖未提交内容。
+更新于2026-11-11 22:19 UTC（本地11月12日）。完整目标“完成计划”仍 **active、未完成、未阻塞**；完整范围是 [PLAN](PLAN.md) 的N0–N5，root串行，不派发子智能体。此页是唯一当前入口；历史逐字保存在 [上一状态](HISTORY-20261111-through-capacity-setup-v5.md)，SHA `6079915ace9d27daea77a43499663ce352d51597ad32c296a02a32846f482efe`，它继续链接此前全部证据/失败。实际worktree/收据/原始日志优先，不按摘要覆盖未提交内容。
 
 ## 当前在途与下一步
 
-**当前没有Turing或Mac在途任务；正在冻结高BDP真实业务预检源码。** [MODEL-DECISION](MODEL-DECISION.md) 已在实现/首个高profile Node数据前以ff3d0074提交，明确分层校准准入v2，旧冷TCP门及原失败全部保留，不视为通过。新业务fixture实现已写入本worktree，尚未远端编译/运行；原低profile参数和入口保留。
+**当前仅一个Turing任务在途：turing-20261111T221821Z-2e4c439f，真实高BDP业务预检。** 无Mac任务；只轮询这个回执，不因观察超时重发。 [MODEL-DECISION](MODEL-DECISION.md) 已在实现/首个高profile Node数据前以ff3d0074提交，明确分层校准准入v2，旧冷TCP门及原失败全部保留，不视为通过。新业务fixture已提交、clean/0excluded冻结并提交Turing；当前format已过、编译中，尚无业务结果；原低profile参数和入口保留。
 
 高profile固定300ms/50Mbit、192MiB完整文件/240秒、400ms计划/每请求2秒/各operation单在途，三phase各目录/真实PTY各120，保留≥30完整传输重叠门、720全人口/失败分母/调度滞后和原20ms借用probe。复用同一个分离队列构造器；每次实际八份端点/router读回，按y→x下载路径核对文件字节，反向ACK/control完整记录。没有产品runtime/vendor修改。固定新task先真实两个w3取消/启动回收守卫、三fresh原low w2回归，再三high wh2预检；前置失败阻止high，一旦开始某阶段则完成该阶段全部三轮并保留首个非零退出。
 
-本机只做源码/Python元数据与合成调度检查：source全11项3.222秒绿；此前同组首次失败为合成数据的嵌套bulk在revision更新前复制，严格validator正确拒绝，修复fixture后通过，并非真实业务失败或放宽门。control全13项20.620秒绿，另补高阶段中间失败仍执行后续轮次/保留退出码的调度专项。图谱部分/滞后，0flows不作覆盖。下一步核共同构造器与已测c50源码逐字一致、控制差异限于固定task与allowlist、冻结准确源码/控制；然后在原UID/flock/netns/资源/总期限守卫下串行提交Turing。**高profile真实结果/优先级18轮/prefetch矩阵尚无数据，不能宣布N3或最终完成。**
+本机只做源码/Python元数据与合成调度检查：source全11项3.222秒绿；此前同组首次失败为合成数据的嵌套bulk在revision更新前复制，严格validator正确拒绝，修复fixture后通过，并非真实业务失败或放宽门。control全13项20.620秒绿，另补高阶段中间失败仍执行后续轮次/保留退出码的调度专项。图谱部分/滞后，0flows不作覆盖。共同构造器与已测c50源码已逐字核同，控制仅固定task与allowlist变化，原UID/flock/netns/资源/总期限门不变；high-resident-input-audit-v1/v2.json完整留证。下一步观察原回执，终态后collect/identity/逐原始人口、实际配置和路径字节核验，再更新ledger；不要恢复已终态15cba7f8或旧90703编排。**高profile真实结果/优先级18轮/prefetch矩阵尚无数据，不能宣布N3或最终完成。**
+
+| 当前预检输入 | 值 |
+| --- | --- |
+| run / control | **turing-20261111T221821Z-2e4c439f** / **30d7a35db340201eed9f80a6161d9de2ce7cfbae**，pid578110/child578324，stage session61281已终态；22:18:53Z实际running、format.log空、无场景完成 |
+| source-v2 | **f428627b354a447f169d86d0843f79b2cf810bd3** / tree **3707ffd537c5d8d3c758f83d1bbf7edfb62bf57f** / snapshot **fb9442b69da624075bc596f6e6ed9178a5254636**；candidate-high-resident-source-v2.json |
+| 预检协议 | MODEL-DECISION / resident_mixed_workload_high_v2；guard2→low3→high3，不混作18轮priority比较或N3接受 |
+| 证据复用边界 | 共同calibration_queues.rs SHA256 50a03d9530b2b6d5400f953cee355333691a257b1fd05a0534aefc8cca63ca3c，逐字同c50；相对Mac8371dbb0全Git差异37个只fixture/metadata/docs，零生产runtime差异；新Linuxfixture必须实际编译/执行 |
+
+前置真实 **turing-20261111T221614Z-15cba7f8**：source725ce682df56e716ad891b2aa2dd72cf97326cc5/tree902c1f37ece5ee327d0acd0940e6a5ea31d1a964/snapshotbe6aa14c43f69d5910f693440addff0278e55124，同control；43.848秒原退出1、10files/identity/原group空、**仅format失败、零行为样本**。原format.patch仅四文件空白/可选尾逗号及两use语句顺序，逐token核验后f428627b应用；format-only-verification-v1.json及ledger终态保留，未把旧失败改绿。本机未跑Rust/格式器。control最终dispatch1项7.830秒、31条task/mode路径绿，包含高阶段中间失败后仍执行第三轮并保留首退出73。
 
 ### 已完成的独立容量诊断
 
