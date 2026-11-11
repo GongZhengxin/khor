@@ -116,11 +116,60 @@ impl MissObservation {
     }
 }
 
+struct HopWire {
+    id: usize,
+    addrs: Vec<String>,
+    weak: iroh::endpoint::WeakConnectionHandle,
+}
+
+impl HopWire {
+    fn observed(conn: &iroh::endpoint::Connection) -> Option<Self> {
+        let mut addrs: Vec<_> = conn
+            .paths()
+            .iter()
+            .filter(|path| path.is_ip() || path.is_relay())
+            .map(|path| format!("{:?}", path.remote_addr()))
+            .collect();
+        addrs.sort_unstable();
+        addrs.dedup();
+        (!addrs.is_empty() && conn.close_reason().is_none()).then(|| Self {
+            id: conn.stable_id(),
+            addrs,
+            weak: conn.weak_handle(),
+        })
+    }
+
+    fn matches(&self, other: &Self) -> bool {
+        self.id == other.id
+            && self.addrs == other.addrs
+            && self
+                .weak
+                .upgrade()
+                .is_some_and(|conn| conn.close_reason().is_none())
+    }
+}
+
+struct HopCandidate {
+    id: String,
+    live: bool,
+    wires: Vec<HopWire>,
+}
+
+fn same_candidates(a: &[HopCandidate], b: &[HopCandidate]) -> bool {
+    a.len() == b.len()
+        && a.iter().zip(b).all(|(a, b)| {
+            a.id == b.id
+                && a.live == b.live
+                && a.wires.len() == b.wires.len()
+                && a.wires.iter().zip(&b.wires).all(|(a, b)| a.matches(b))
+        })
+}
+
 struct HopMiss {
     count: u32,
     at: std::time::Instant,
     epoch: Option<MissEpoch>,
-    candidates: Vec<(String, bool)>,
+    candidates: Vec<HopCandidate>,
     observed: u64,
     // Only this cache entry owns the candidate token. In-flight asks hold
     // weak tokens, so retiring a context also retires its late answers.
@@ -171,10 +220,8 @@ fn miss_context(
     me: &str,
     to: &str,
     observation: MissObservation,
-    mut candidates: Vec<(String, bool)>,
+    candidates: impl FnOnce() -> Vec<HopCandidate>,
 ) -> Option<MissEpoch> {
-    candidates.sort_unstable();
-    candidates.dedup();
     let mut all = MISSED.lock().unwrap_or_else(|p| p.into_inner());
     if observation.network.strong_count() == 0 {
         return None;
@@ -188,8 +235,14 @@ fn miss_context(
     if observation.order < miss.observed {
         return None;
     }
+    // Snapshot live wires under the same routing lock as registration.
+    // A CPU-delayed registry snapshot cannot replace fresher evidence.
+    // Wires never takes MISSED while holding its registries; no await here.
+    let mut candidates = candidates();
+    candidates.sort_unstable_by(|a, b| a.id.cmp(&b.id));
+    candidates.dedup_by(|a, b| a.id == b.id);
     miss.observed = observation.order;
-    if miss.candidates == candidates
+    if same_candidates(&miss.candidates, &candidates)
         && let Some(epoch) = &miss.epoch
         && epoch.network.ptr_eq(&observation.network)
     {
@@ -207,6 +260,23 @@ fn miss_context(
         ..HopMiss::new(Some(epoch.clone()))
     };
     Some(epoch)
+}
+
+fn used_middle(me: &str, to: &str, epoch: &MissEpoch, id: &str, wire: HopWire) {
+    let mut all = MISSED.lock().unwrap_or_else(|p| p.into_inner());
+    let Some(miss) = all.get_mut(&(me.to_owned(), to.to_owned())) else {
+        return;
+    };
+    if current_miss_epoch(Some(epoch))
+        && same_miss_epoch(miss.epoch.as_ref(), Some(epoch))
+        && let Some(middle) = miss.candidates.iter_mut().find(|middle| middle.id == id)
+    {
+        // Record the wire this attempt actually established, before asking.
+        // Its own successful dial is not an external candidate change that
+        // should forgive a NO_ROUTE returned on that very same wire.
+        middle.live = true;
+        middle.wires = vec![wire];
+    }
 }
 
 fn missed_in_epoch(me: &str, to: &str, epoch: Option<MissEpoch>) {
@@ -749,10 +819,30 @@ impl Node {
             self.device_str(),
             to,
             observation,
-            picked
-                .iter()
-                .map(|id| (id.clone(), self.road_for_hop(id, &[]).is_some()))
-                .collect(),
+            || {
+                picked
+                    .iter()
+                    .map(|id| {
+                        let mut conns: Vec<_> = self
+                            .wires
+                            .live(id, Proto::Tunnel)
+                            .or_else(|| self.wires.live(id, Proto::Main))
+                            .into_iter()
+                            .collect();
+                        if conns.is_empty() {
+                            conns = self.wires.incoming_for_hop(id);
+                        }
+                        let mut wires: Vec<_> = conns.iter().filter_map(HopWire::observed).collect();
+                        wires.sort_unstable_by_key(|wire| wire.id);
+                        wires.dedup_by_key(|wire| wire.id);
+                        HopCandidate {
+                            id: id.clone(),
+                            live: self.road_for_hop(id, &[]).is_some(),
+                            wires,
+                        }
+                    })
+                    .collect()
+            },
         )
     }
 
@@ -812,6 +902,9 @@ impl Node {
                 let Ok(line) = line.await else {
                     continue;
                 };
+                if let Some(wire) = HopWire::observed(&line.conn) {
+                    used_middle(&me, &y.id, &epoch, b, wire);
+                }
                 if let Ok((send, recv)) =
                     crate::tunnel::dial(&line.conn, &Ask::To(peer).words()).await
                 {
