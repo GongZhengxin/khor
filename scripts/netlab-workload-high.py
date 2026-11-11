@@ -49,11 +49,16 @@ def download_captures(rows, bulk_bytes):
     return result
 
 
-def case(path):
-    value = observer.case(path, 'buffered', revision=REVISION, bulk_bytes=BYTES, period_us=400000,
-                          profile_reader=download_captures, allow_failed=True)
+def case(path, allow_incomplete_bulk=False):
     rows = observer.records(path, revision=REVISION, allow_failed=True)
     manifest = observer.one(rows, 'manifest'); bulk = observer.one(rows, 'bulk'); done = observer.one(rows, 'complete')
+    reader = download_captures
+    if allow_incomplete_bulk and bulk['outcome'] != 'ok':
+        # Preserve geometry and monotonic counters for a failed attempt. It
+        # cannot pass functional acceptance without a complete verified file.
+        reader = lambda captures, expected: download_captures(captures, 0)
+    value = observer.case(path, 'buffered', revision=REVISION, bulk_bytes=BYTES, period_us=400000,
+                          profile_reader=reader, allow_failed=True)
     assert manifest['network_profile'] == 'forwarding_split_300ms_50mbit'
     assert manifest['impairment_installed_before_residents'] is True
     assert manifest['nominal_rtt_ms'] == 300 and manifest['mbit_per_direction'] == 50

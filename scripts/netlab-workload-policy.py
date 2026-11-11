@@ -12,14 +12,14 @@ observer = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(observer)
 
 
-def configuration(source_root):
+def configuration(source_root, allowed_ahead=(8,)):
     path = Path(source_root)/'crates/node/src/link.rs'
     text = path.read_text()
     priority = re.findall(r'^const CONTINUED_FILE_RESPONSE_PRIORITY: i32 = (-?\d+);$', text, re.M)
     ahead = re.findall(r'^const PULL_AHEAD: u64 = (\d+);$', text, re.M)
     assert len(priority) == len(ahead) == 1
     priority, ahead = int(priority[0]), int(ahead[0])
-    assert priority in [0, -1] and ahead == 8
+    assert priority in [0, -1] and ahead in allowed_ahead
     return dict(continued_file_response_priority=priority, pull_ahead=ahead,
                 source_file_sha256=hashlib.sha256(path.read_bytes()).hexdigest(),
                 evidence='static configuration in the exact compiled source; readback is a separate diagnostic cohort')
