@@ -310,3 +310,6 @@ async fn an_older_refusal_cannot_replace_the_new_contexts_completed_failure() {
 
 #[path = "candidate_snapshot_tests.rs"]
 mod snapshot;
+
+#[path = "candidate_address_tests.rs"]
+mod address;
