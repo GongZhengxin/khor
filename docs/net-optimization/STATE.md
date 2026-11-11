@@ -1,14 +1,18 @@
 # feat/net 当前状态与接续入口
 
-更新于2026-11-11 15:52 UTC。完整目标“完成计划”仍 **active、未完成、未阻塞**，范围为 [PLAN](PLAN.md) 的 N0–N5，root串行，不派发子智能体。本页替代旧页中所有“当前/在途/下一步”。上一份STATE逐字保存于 [完整历史](HISTORY-20261111-through-kernel-calibration.md)，SHA `8172caf6900ae2196273ecdf86a4b8d17572537299392bfa1b5b1322eefbe540`；它继续链接此前所有历史与失败原件。历史段落只代表当时，实际worktree、收据、日志优先，不按摘要覆盖未提交内容。
+更新于2026-11-11 16:13 UTC。完整目标“完成计划”仍 **active、未完成、未阻塞**，范围为 [PLAN](PLAN.md) 的 N0–N5，root串行，不派发子智能体。本页替代旧页中所有“当前/在途/下一步”。上一份STATE逐字保存于 [完整历史](HISTORY-20261111-through-kernel-calibration.md)，SHA `8172caf6900ae2196273ecdf86a4b8d17572537299392bfa1b5b1322eefbe540`；它继续链接此前所有历史与失败原件。历史段落只代表当时，实际worktree、收据、日志优先，不按摘要覆盖未提交内容。
 
-## 当前执行入口：最新长稳已核，业务流诊断在途
+## 当前执行入口：长稳与业务流已核，稳态路径参照在途
 
 **turing-20261111T145336Z-bc4dbca9** 已389.740秒0、25files/identity/原group空，固定六轮全绿，共4320请求全ok、六份16MiB完全一致、实际TC/探针/全部人口已按原始行独立复核。`observer-comparison-v1.json`、helper audit、ledger均终态，不重发。两模式bulk目录p95均109–113ms、终端81–83ms；记录方式没有稳定改善。probe多数p95 1–2ms；目录数百ms计划迟到主要是前一请求未完成形成的串行积压，残余dispatch p95约1.2–2.1ms。完整数表/分解与限制在WORKLOAD；不当完整N3、CPU/I/O、p99或手机接受。
 
 最新生产长稳 **turing-20261111T150352Z-de04bcc1** 已 **2486.648秒0、11files/identity/原group空**。同生产3de/source-v3，原p1/p1j/p1s/p5全4绿：p1/p1j/p1s各原600秒、均零切换/零退役；p1s20次300ms spike、32个实际目录RPC中该case20个，最慢651.2ms；p5的150/300/600ms各4次，共12 RPC，全ok，最慢318.6/504.5/966.2ms，各组均零Relay切换/零punch。`stability-result-v1.json`独立核全部32个logical started/finished与原30秒caller、22份CPU64实际affinity/进程start身份/CPU ticks推进。它是原稳定性门，不新加或暗称1秒UX门，RPC不是PTY，严重f4s/quiet/手机/能耗仍未闭。proof/ledger终态，不重发。
 
-**唯一当前Turing：turing-20261111T154837Z-0ff8c054**，PID **135795** / child **136035**，15:48:59 UTC launch；task **netlab-workload-wires** / revision **workload-wire-stages-v3** / diagnostic / control **71f1eeb4e18d5ea6e4c04ac5348c43eb52b4bd89** / 下文诊断source-v3（04c67d8e）。stage exec22456已终态，15:51实际PID/execution活，w3 guard已绿、首个完整Buffered/lifecycle场景720/逐字节/120重叠已绿，第二轮在途。**尚未三轮终态、未收齐实际stream/profile/stage合同**。只查同receipt/PID，不重发；不穿插Turing构建/计时。
+业务流诊断 **turing-20261111T154837Z-0ff8c054** 已 **259.658秒0、25files/identity/原group空**，04c67d8e/source-v3/control71f1eeb4，三轮全2160成功、三16MiB逐字节一致。实际双方每轮360目录+64切片/共1272 stream逐一匹配，目录/文件均为单一实际Main，唯一终端为另一实际Tunnel。`wire-stage-verification-v1.json`独立核原始人口/响应流/ALPN/offset及日志SHA；原TC/probe/guard也全绿，ledger终态。bulk目录API p95约113–115ms、native exchange101–103ms；server accept→本地write p95仅8.02/8.05/8.64ms、seat等待10–11us。不能用p95相减作逐条归因，未测accept前/每包交付，日志有扰动，不当N3策略收益/CPU/能耗。原始表及下一候选见WORKLOAD。
+
+极端中继 **turing-20261111T155852Z-d8c22be9** 已 **175.621秒0、14files/identity/原group空**，同生产3de/source-v3/原control68cad。原f4s功能门绿，唯一实际目录RPC **8712.927ms**；原件中中继腿被故意封锁 **8193ms**，从请求开始至恢复8150ms、**恢复至完成563ms**。不能把8.7秒全称为不明原因的恢复后停顿；备用公共Relay同时被加2500ms/方向，尚缺同故障窗口固定备用路业务对照，无法据此定量认定可避免时延。`severe-hop-result-v1.json`保留全部9phase/真实hold/attempt与三个诊断log SHA，ledger终态；初始metadata审计误预期只有6个观测phase而停止，已把另3个held前置保留/验证，没有改动原件或门。功能绿不等于全部严重6aa/quiet/首响应/手机问题关闭。
+
+**唯一当前Turing：turing-20261111T161025Z-0354726c**，PID **163013**，16:10:47 UTC launch；task **netlab-hop-reference** / revision **effective-route-steady-reference-v3** / baseline / 原control **68cadb57a0ed72d40a4ca9a843e86b9c6797bf34** / 同生产3de/source-v3。stage exec55450已终态，原fr-auto/fr-carried/fr-relay三轮顺序矩阵，每个真实双向各30目录、原准备120秒/等待60秒/hold10秒/30秒caller/间隔200ms保持。**尚未终态**，只查同receipt/PID，不重发、不穿插Turing构建/计时。它更新已知好路径的稳态参照，**不是f4s同故障窗口对照**；两者缺口不可混算。
 
 冻结源 **0b9454472767d16bc4ff0e44b14bcf3a10256e3c** / tree **725b442271fd07d85a8aeaaac84598cd3f5028e5** / snapshot **2a969d8cb0b75d48cba18792d40bffbd04df024c**，clean/0excluded，证据根 `candidate-workload-observer-source-v3.json`。控制 **7e439456cd5941607270add201d33589ebb371ba**。本页随后docs-only提交不改变冻结实验。Rust fixture与已在Linux编译通过的a9ef逐字相同；新增最后提交仅严格parser/18子例，不能把编译或kernel运行当w3/w1/w2运行绿。
 
@@ -28,15 +32,15 @@ control纯Python/shell stub **13项9.707秒绿**（含固定顺序、guard失败
 
 Turing唯一仍 **de04bcc1**，15:31原PID/child活，p1、p1j各原600秒已绿，均零切换/零退役；p1j10轮punch，仍需p1s/p5完整原门。不缩短观察或注入，不穿插Turing构建/计时。结束后才按**诊断source-v3 / control71f1eeb4**运行workload-wires；本段没有重发或提前调度Linux新任务。
 
-新控制 **71f1eeb4e18d5ea6e4c04ac5348c43eb52b4bd89**（本地未push）增加SSH-only固定 `netlab-workload-wires`：先w3 guard，成功后三个Buffered/lifecycle真实完整场景，一轮失败不丢后两轮、保留首非零状态，source-owned parser核全部原件。guard失败跳过三轮但仍保留parser失败；原UID/锁/namespace/资源/期限门不变。control stub **13项10.765秒绿**（两task各success/case失败/guard失败）；wire metadata **14子例0.034秒绿**，源9项metadata/control stub总0.989秒绿，bash/diff过，无本地Rust/产品执行。`control-workload-wires-tests-v1.json` / `control-workload-wires-helper-audit-v1.json`保存SHA/范围。此新诊断已在de04准确终态/identity/proof之后提交0ff，尚未接受三轮结果；不把纯metadata、旧六轮或Mac编译当本版Linux实际流证据。
+新控制 **71f1eeb4e18d5ea6e4c04ac5348c43eb52b4bd89**（本地未push）增加SSH-only固定 `netlab-workload-wires`：先w3 guard，成功后三个Buffered/lifecycle真实完整场景，一轮失败不丢后两轮、保留首非零状态，source-owned parser核全部原件。guard失败跳过三轮但仍保留parser失败；原UID/锁/namespace/资源/期限门不变。control stub **13项10.765秒绿**（两task各success/case失败/guard失败）；wire metadata **14子例0.034秒绿**，源9项metadata/control stub总0.989秒绿，bash/diff过，无本地Rust/产品执行。`control-workload-wires-tests-v1.json` / `control-workload-wires-helper-audit-v1.json`保存SHA/范围。此新诊断已在de04准确终态后提交0ff并独立核完三轮，实际范围见顶部；不把它当产品调度优化或完整N3接受。
 
-## Noq5专属合同已执行；隔离单门去除对照待验
+## Noq5专属unit合同与隔离单门去除对照均已核
 
 源码ea986be7新增四项，仅cfg(test)模块/入口，不改Noq生产采样或保留策略，主59补丁数量不变。准确候选source **b7171bcf9e4a4042e80d07a499eadf8e0a99c738** / tree **d877e1b305bbb68b16fbb5e1aeec860869d3079c** / snapshot **12b0f3ca54e29e4f4c817d2303d2097bb8ae5e3c**，`candidate-noq-ack-contracts-source-v1.json`。
 
 **Mac43050978778**（request15b87066a422467593706941ba1bdbd5，net-vendor/原control68cad）已success，13files/11controls/identity，exact **13869222421** / ZIP SHA **424418d0dcd1b4f81e707c17c4c5d96d07a2a42debd4b9d0679ee14750a36f5a**；Noq **447**、Iroh路径58/选家11均绿。四个新ACK测试名称逐原件核实，`ack-contracts-verification-v1.json`/ledger终态。真实TLS/实际PING后，用原allocator/retention构造ACK-only单位尾账并回收最大记录；合法旧最大号不造样本、正常最大一次采样、重复/仅ACK-only不采样、未分配最大必须PROTOCOL_VIOLATION。尾部不是1000份线上发包，不证明上游或物理性能。
 
-为证明测试能识别缺陷，另构造单门去除的隔离Git对象：**794795e7e4e3f8756dedcdd2db0dbbd494f356d5** / tree **4f9044797ec1d181dd1956a3caff0ec6a6f9edb2** / snapshot **dd73e4ff7d81e1df8618919312e5a29a0d93b05a**，`noq-ack-largest-ablation-source-v1.json`。只去掉RTT采样条件中的largest_newly_acked，实际diff精确1行增/1行删，三个完整测试文件SHA一致；feat/net工作区保护仍在，两个实验ref单独pin，未checkout该变体。`noq-ack-largest-ablation-audit-v1.json`及独立diff proof已保存。它不是官方上游/历史基线；预期目标reclaimed测试在样本计数断言红、其余三控制绿，**尚无运行结论**。Mac submit exec5693在途，恢复同request/收据，不重复提交。Noq1及全部59上游/成本范围保持。
+为证明测试能识别缺陷，另构造单门去除的隔离Git对象：**794795e7e4e3f8756dedcdd2db0dbbd494f356d5** / tree **4f9044797ec1d181dd1956a3caff0ec6a6f9edb2** / snapshot **dd73e4ff7d81e1df8618919312e5a29a0d93b05a**，`noq-ack-largest-ablation-source-v1.json`。只去掉RTT采样条件中的largest_newly_acked，实际diff精确1行增/1行删，三个完整测试文件SHA一致；feat/net工作区保护仍在，两个实验ref单独pin，未checkout该变体。`noq-ack-largest-ablation-audit-v1.json`及独立diff proof已保存。它不是官方上游/历史基线；预注册期望reclaimed样本计数断言红、其余三控制绿；以下实际结果匹配。隔离对照 **Mac43052478191**（request23628ba3db4b4b9691e51818ea23d716，原control68cad）已terminal failure，exact **13870301323** / ZIP SHA **3cfa138fc7db0f7ce70c47ccb63b516035dfb771dd3dd7ba56daa92cbea45115**，11files/11controls/identity。**446pass/唯一1fail**，其余3个新控制绿；唯一reclaimed测试正是在RTT样本计数断言实际6/期望5失败，不是编译/前置/非法ACK。`ack-ablation-verification-v1.json`逐门核实，ledger终态。对照保留原红，候选447全绿，证明本unit能识别该门；Noq1及全部59上游/物理/成本范围保持，无Mac在途。
 
 ## 最新已核终态
 
@@ -53,7 +57,7 @@ Turing唯一仍 **de04bcc1**，15:31原PID/child活，p1、p1j各原600秒已绿
 
 ## 已验证生产候选与实现边界
 
-生产候选 **3de372a026488a64a794935600e47db29f2f6faf** / tree **ae76cd646749ca624d5e3e98af01f96099ebd0e0** / snapshot **a9f46eaa909b8cf45663395912798effb31b7261**，`candidate-effective-route-source-v3.json`。后续observer/kernel/parser改动均为测试/工具/文档，相对此生产文件和Cargo锁无改变。完整原件索引与SHA见 `source-refs.json` 及历史。
+生产候选 **3de372a026488a64a794935600e47db29f2f6faf** / tree **ae76cd646749ca624d5e3e98af01f96099ebd0e0** / snapshot **a9f46eaa909b8cf45663395912798effb31b7261**，`candidate-effective-route-source-v3.json`。截至0b945447的observer/kernel/parser改动为测试/工具/文档；其后04c67d8e新增opt-in诊断/default env查询，生产文件有diff，已核Mac12与Linux0ff的明确scope。不能把3de动态/长稳原件称为04实际复验；Noq5新增仅cfg(test)，采样保护/锁文件未变。完整原件索引与SHA见 `source-refs.json` 及历史。
 
 - Mac完整Node **43022962905**、Linux完整Node **turing-20261111T131248Z-5c2a0339** 同源全12绿；含六initialCustom、两incoming实际执行。短8 **678b0ebd** 不替代全12。
 - Mac vendor筛选 **43023967463**：443Noq/58path/11home绿，不是全部59补丁专项或完整vendor。
@@ -88,4 +92,4 @@ MacLab/Turing同LAN；macserver是另一构建机，用户报告异网。localho
 
 图谱先行，本树无.codegraph不擅建，CRG部分/滞后，0flow不证明无影响；explore/debug/review技能已使用。source-refs.json仅root单写，stage/register未终态前不并行ledger写；timeout/EOF不是终态，查同receipt/PID/Actions不重发。当前stage已终态。
 
-下一步查0ff同PID/execution，终态收原件/identity/全部三轮人口和实际wire/stage；审阅源parser原报告，再独立定位permit/dispatch/编码/write/网络间隙，不把diagnostic当SLO收益。恢复Mac单门去除对照同request，严格核是否目标断言红/控制绿；不因预期红重跑或放宽条件。继续N3策略实验、严重f4s与完整N0–N5，目标active，无外部阻塞。
+下一步查0354726c原三轮稳态矩阵/PID/execution，终态核全部双向人口、固定路隔离与原门。N3依据已核wire/stage设计prefetch1/2/8和后续文件stream优先级对照，保留首份内容与大BDP吞吐，补公平推进/1、3、5设备成本；这些候选尚未实现或接受。f4s先补同故障窗口的已知备用路业务参照，分清物理下界与额外等待，不能把8193ms强制断网全记为恢复bug。Noq1/全部59与N2/N4/N5范围保持。目标active，无外部阻塞。

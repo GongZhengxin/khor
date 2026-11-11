@@ -167,3 +167,5 @@ Noq1/5缺少专门行为覆盖的状态不变。没有升级、删补丁或发�
 helper是connection子模块、仅cfg(test)，使用真实已发PING的metadata与实际retention/ACK处理器，未修改生产采样代码。新增尾部是单位账目夹具，**不是1000份真实线上ACK发包，也不证明上游网络重现或完整Noq5退出**；后续应以同一完整测试夹具在隔离的旧采样门取得预期红、候选绿，再补网络/恢复与全部vendor回归。原Noq1 idle→burst/丢包/Cubic对照和其余59审计范围不变。当前未编译/运行，不记绿。
 
 2026-11-11 15:52 UTC追加：上述Noq5四合同在准确source-b717的Mac43050978778真实全部执行绿，整个Noq447/Iroh路径58/选家11绿（原件/身份/proof见STATE）。仅减少四个专属unit行为缺口，不接受Noq5完整退出/上游等价、Noq1或N5。下一步隔离Git对象仅去掉largest_newly_acked采样门，三个完整测试源相同，验证reclaimed断言确能红；尚未收运行结果。最新生产3de长稳de04的全部原4门已绿/32目录RPC全ok、CPU约束逐原件核实；严重f4s/quiet与手机/成本范围保留。
+
+2026-11-11 16:00 UTC追加：同一完整fixture的单门去除Git对象在Mac43052478191得到预期 **446pass/1fail**，其余三个新控制全绿；唯一reclaimed测试在“不得产生RTT样本”断言实际6/期望5失败。准确11files/11controls/identity、exact13870301323、ZIP SHA3cfa138fc7db0f7ce70c47ccb63b516035dfb771dd3dd7ba56daa92cbea45115；相对candidate-b717只有1行guard去除、测试源SHA完全相同、feat/net保护未变。`ack-ablation-verification-v1.json`与candidate447全绿构成这项unit行为的可辨识对照；不是官方上游/历史整版对照，也不替代Noq1/5物理性能或完整59退出。

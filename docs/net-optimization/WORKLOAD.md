@@ -1,6 +1,6 @@
 # 真实 Node 混合负载基线
 
-2026-11-11，当前观察器协议 `resident_mixed_workload_v4` 已在Linux编译，首次真实六轮对照在途、运行验收尚未完成；v3已取得下列三轮功能基线，不能视为v4证据。这不替代完整 N3 或最终用户体验门。沿用 Linux namespace / scratch resident / 原资源门，运行时冻结产品 tree、control、原始日志。产品调度和连接策略不随此实验修改。
+2026-11-11，当前观察器协议 `resident_mixed_workload_v4` 已取得六轮日志方式对照和三轮实际业务流诊断，功能/人口/TC与各自观察器合同已复核；v3已取得下列三轮功能基线，不能视为v4证据。这不替代完整 N3 或最终用户体验门。沿用 Linux namespace / scratch resident / 原资源门，运行时冻结产品 tree、control、原始日志。产品调度和连接策略不随此实验修改。
 
 固定两个真实 resident，公开 IPv4，配对后先达到 Direct。仅 x 接口双向配置：单向20ms、每方向8Mbit/s、40ms队列、零随机丢包。该配置的实际吞吐尚未独立校准，日志明确 `calibrated:false`；第一轮是测量入口和功能合同验证，不能把名义速率当实际容量、测得差异当拥塞控制收益。
 
@@ -60,7 +60,7 @@ x设备与入口网关各自namespace内，在测量前后保存`tc -s -j qdisc 
 
 此前同源run turing-20261111T140243Z-bd7e5f6c的三项Rust功能门均绿，但总job1/原报告false：校验器用startswith漏读被Rust test名称前缀接在同一行的manifest。原件/红状态完整保留于validator-prefix-failure-v1.json；新control修正为唯一标记后解析、仍要求manifest恰1及原样本/全部门，新增harness_prefix正例与其余反例（12个子例），完整control stub12项8.578秒绿。新parser仅在原始日志副本中回放验证（control-workload-calibration-prefix-replay-v1.json）后，以上独立重跑三轮才取得新的0/通过收据；没有改写旧报告或放宽物理门。
 
-## v4观察器对照（Linux已编译；首次六轮在途）
+## v4观察器对照（六轮及独立业务流诊断已执行）
 
 保持真实PTY/目录/16MiB、三阶段各两类120请求、原2秒请求和120秒bulk上界、原程序就绪10秒总界、同condition。仅改变测量记录方式：w1 Streaming逐条输出，w2 Buffered在每阶段测量结束后输出；两者都持有相同最多512行的内存记录。缓冲flush耗时另记，不悄悄当作零开销；不同phase仍保留原计划与每类一个在途，积压不删除。
 
@@ -91,10 +91,26 @@ bulk实际18.645/18.900/18.928/19.106/19.228/18.666秒。缓冲落盘没有稳�
 
 原始逐条重新分解固定100ms计划：`开始迟到 = max(0,前一操作结束−本次计划) + (本次开始−max(前一结束,本次计划))`。bulk目录前一操作积压p95为92.635/255.357/288.340/230.387/19.609/190.233ms，对应残余dispatch p95仅1.764/1.415/2.086/1.246/2.054/1.337ms；每轮有16/26/18/33/18/19次目录服务超过100ms。因此计划积压大部分是这个每类一个在途模型的前一请求未完成，不能直接叫Node内部排队或当作增加观察器并发即可改善用户体验。后续须把实际wire/stream、server permit/read/dispatch/encode/write和网络排队核清，再做策略对照。
 
-## 下一份实际业务流诊断协议（workload_wire_stages_v1，尚未运行）
+## 实际业务流诊断协议（workload_wire_stages_v1，已按下文三轮执行）
 
 保持w2 Buffered整个真实PTY/目录/16MiB、三个阶段/720人口、condition、原2秒/120秒/10秒边界和关闭API，不变动生产选路或队列策略。独立 `netlab-workload-wires` 固定先w3 guard、再三个完整w2串行；新增字段仅在既有KHOR_NET_DIAGNOSTICS开关下取时间/写日志，不增加定时任务、探测、常驻map或强Node。原有list事件名及字段保持，补实际协商ALPN、同进程wire与stream、FetchPath offset/响应长度；不记录文件名、target或payload。实际两端serve.log在测量结束后保留。
 
 每轮源parser要求完整720请求/全部实际profile与probe，以及client/server各360目录和64个256KiB切片成功响应，流ID逐一匹配、slice offset覆盖0到16MiB、wire映射一致。目录按已知每类一个在途/三阶段各120的响应次序分组；切片用唯一offset匹配。记录真实是否共享单一Main，不强迫共享假说通过；唯一终端Tunnel需有实际成功status、正确ALPN、双方同stream且wire与Main不同。异常/重试导致额外或缺少流时诊断完整性报红，原始logical outcomes与全部日志继续保留，不视为产品失败或选择性删除流。
 
 服务端以实际accept_bi返回为零点，记开始等待seat、拿到seat、读完request、dispatch准备完成、编码完成、write_all完成。差分分别包含暂停/准入检查、实际seat等待、读请求与任务调度、解析/认证/早数据等待/dispatch、编码及本地write；不能把它们全叫磁盘时间或网络队列。accept之前的QUIC排队未测，write_all是本地发送缓冲接受，不是收到/ACK。client早数据时长从early dial开始、普通时长从exchange开始，保留origin不混减跨进程时钟。生命周期日志本身有扰动，三轮是定位cohort，不能与此前六轮直接当生产策略收益、p99、完整取消/进程退出/能耗或N3接受。之后基于原件决定是否需要调优stream优先级、批量inflight或连接布局。
+
+## 实际wire与server阶段定位（2026-11-11 16:00 UTC）
+
+`turing-20261111T154837Z-0ff8c054`，准确source04c67d8e/treeacc229f8aa046ac6c1bdac041434351e3bbb6693、control71f1eeb4，259.658秒0、25files/identity/原group空；三轮每轮720、共2160全部ok，三份16MiB逐字节一致，全部profile/probe/重叠和独立guard通过。双方原始serve.log按实际ALPN、wire、stream和offset逐一重核，每轮360目录+64切片=424条响应匹配，合计1272；三轮目录与文件均共享该轮单一Main，唯一终端Tunnel双方匹配、wire不同。`wire-stage-verification-v1.json`独立保留日志SHA、人口和时长；不是生产策略性能对照。
+
+bulk阶段p95（毫秒）：
+
+| 轮次 | 目录完整API | resident内网络exchange | server accept到本地write完成 | 其中seat等待 | 其中准备响应 | 终端完整API |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | 114.962 | 102.951 | 8.022 | 0.011 | 7.339 | 82.244 |
+| 2 | 112.967 | 101.325 | 8.049 | 0.010 | 7.580 | 81.733 |
+| 3 | 112.686 | 101.216 | 8.644 | 0.010 | 7.895 | 81.573 |
+
+同cohort空载resident exchange约51–53ms、server accept→write p95约6.9–7.5ms，bulk为上表。不能相减各自p95当作一条请求的因果分解，也不减跨进程绝对clock。该受控负载下seat等待仅8–11us、server准备略增，未支持把约100ms native exchange主要归因32个serve seats耗尽；尚未观测QUIC accept之前、实际排队/ACK/每包交付或host/child退出。所有目录响应为普通交换、early=false。
+
+下一步先做同fixture、日志关闭的策略对照：比较固定bulk在途1/2/8以及后续文件切片的stream优先级，首切片/首份有效内容与普通控制请求保持及时性；这些仍是候选，尚未实现/选定，不在本文把新的参数当用户SLO。既测40ms/8Mbit小BDP，也必须覆盖原PULL_AHEAD设计依据的300ms/50Mbit大BDP，防止仅为当前小链路牺牲吞吐。后续补共享/分连接、连续控制下bulk公平推进及1/3/5设备成本；严格优先级可能造成饥饿，单cohort延迟下降不足以接受。当前终端本来就是另一连接，继续增加连接须有数据支持。
