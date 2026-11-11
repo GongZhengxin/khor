@@ -374,3 +374,6 @@ Iroh47的固定物理C-B/B-C仍在第4项：C62030f1b为124业务/warm51全过�
 
 
 2026-11-11 08:49 UTC：每middle作用域、总期限公平legacy准备与完整首帧receiver提交已经7d源双OS准确全部12组/hop76通过，旧第三middle/挂起/receiver覆盖实际红均保留。真正prepared有界竞争候选c2b在Turing084053Z-8d9819ab准确全部12组/hop79绿（343.488秒、21files/identity/空group）；三新合同为挂起第一status仍由第二胜出、两个Ready仅1次真实数据提交并取消输家、过期hint拒绝后legacy实际TLS/echo救通。Mac同源和原3轮物理hop矩阵只提交一次待核，不能外推为完整N2/N4。DESIGN已按实际所有者和证据更新，预算分割/receiver等待仍需高RTT与成本验收；完整N0–N5 active。
+
+
+2026-11-11 09:30 UTC：比较源a73在准确同源Mac42992730535/Turing091507Z-2f94f130均全部12组/hop81绿；具体identity/controls/原总结与node-regression-verification-v1.json已核。修改前c2b原三轮hop矩阵084720Z-2463e1e5已全部9green、1564.564秒，f4i收敛28.2/17.8/34.6秒（Relay已可用后回peer的口径），不是首响应；原慢Echo/never行都保留。a73同原矩阵092344Z-a59e4d3f在跑，首f4i8.1秒仅初步一例，仍不满足极致恢复的完整接受；不称全部长尾已解决。新两middle实际竞争合同已在PREPARED-PHYSICAL-ACCEPTANCE.md冻结待实施，原三peer矩阵只有一个middle，不能用它证明并行prepared协议。hint上下文候选尚未行为验证，不与这两个冻结源混作性能归因。
