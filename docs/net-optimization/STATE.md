@@ -2,11 +2,11 @@
 
 ## 最新接续点
 
-2026-11-10 22:38 UTC 核对服务器重启前已发出的两项验证。Iroh47 候选 `8cd58f8ea707991f23b10ac05d6c8388a61dd519`，tree `4c4d7be8de2c615c35de9b5ca6f3db0cce47a78c`，snapshot `4e900db337c5c4356cb4b27b0de2880210bcf67f`。Turing `c350f32c` 的协议、路径与选中继单元分别 443、58、11 项通过。Turing `f1537e21` 和 macserver `42915496687` 的同源 `net-node` 各 12 组通过，均采集并核对身份，Mac artifact `13808888027`。当前重型任务均已结束。
+2026-11-11 04:58 UTC 用户恢复活动目标“完成计划”。上轮仅回复进度，归为无进展。本轮已核对工作树、控制版本、先前验证和执行器，开始下一项原始矩阵。目标面板曾被误作停止条件，现依 PLAN 的 U14 及用户继续指令推进。
 
-目标面板的“完成计划”仍显示 paused，记录更新于 2026-11-09 18:06:51 UTC。已收齐重启前的任务结果。下一步的原始动态三轮和稳定性一轮已登记在 `confirmation-copy-identity-original-matrix-plan-v1.json`，等待接续执行。稳定性任务已加入本地提交允许列表，现有控制脚本及场景沿用，审计见 `stability-task-allowlist-audit-v1.json`。
+当前唯一重型任务为 `turing-20261111T045728Z-3d36cba8`，PID 3326979，04:57:49 UTC 启动。执行原 `netlab-dynamic` 的 p2、p3、p7 三轮，源码 `8cd58f8ea707991f23b10ac05d6c8388a61dd519`，tree `4c4d7be8de2c615c35de9b5ca6f3db0cce47a78c`，snapshot `4e900db337c5c4356cb4b27b0de2880210bcf67f`，control `68cadb57a0ed72d40a4ca9a843e86b9c6797bf34`。独立 macserver 可穿插便携构建，Turing 本机计时保持独占，依据 ACCEPTANCE.md 的开发加速规则。完成后采集并审计实际结果，再执行已登记的原稳定性一轮。矩阵见 `confirmation-copy-identity-original-matrix-plan-v1.json`。
 
-最近固定四轮的 496 次业务请求全成功，候选仍有 7.31 秒选路长尾。新的副本确认修正通过单元及双系统回归，待实网验证。此前单向停顿根因、仅一台邻居可达时中继两腿的实际接管、IPv6、iPhone 换网与能耗均待验。NoRelay 与 ToNoRelay 缺第二腿提示的筛选问题已从源码定位，真实转发回显回归待补。
+上述候选的协议、路径、选中继单元分别 443、58、11 项通过。同源 Turing `f1537e21` 和 macserver `42915496687` 各 12 组回归已验证。最近固定四轮中候选仍有 7.31 秒恢复长尾。更早的单向停顿、完整两腿 peer relay、IPv6、iPhone 换网和能耗待验。当前并行准备 NoRelay、ToNoRelay 缺失第二腿提示的真实转发回显合同，尚未改该生产分支。
 
 下文为此前工作记录，运行状态以上述接续点及收据为准。
 
@@ -154,3 +154,5 @@ v5 ef0bfa7e/tree d635e42951140ed36ca0e41f586bfc9569940cb1/snapshot31e10e49c71361
 22:26 UTC旧确认身份 b0146293终态59.867秒/13files/group空/identity、fmt/Noq443绿，iroh56pass/2FAIL：两个旧行为确实以其他copy的2覆盖代表自身0/1，原55及代表改变控制绿，home未跑。修正候选Iroh47只samples_after取同一代表，4处调用（Moving/首恢复/退化/自然停止）统一证据，原window/时限/门/3次预算保留，实际可能使用更多原预算，须量测。全57patch候选、42–44隔离，whole395341与原ae62不变。未编译/物理未验，不作f8或6aa定因。
 
 22:28 UTC当前唯一重型 **turing-20261110T222723Z-c350f32c**，PID2996638，22:27:45 UTC启动，Iroh47候选8cd58f8ea707991f23b10ac05d6c8388a61dd519/tree4c4d7be8de2c615c35de9b5ca6f3db0cce47a78c/snapshot4e900db337c5c4356cb4b27b0de2880210bcf67f/control68cad。尚未终态，当前vendor范围57候选，无额外physical/Mac/phone。
+
+2026-11-11 05:06 UTC 已准备 NoRelay/ToNoRelay 三个缺第二腿提示回归，加已知 Direct 可达及递归拒绝两控制，共五项。真实 hop_ahead、Tunnel、内层 TLS/echo，使用原 Publication 适配中间节点。原 sole_peer 文件仅末尾新增模块，原正文逐字保留。fixture SHA9629a261389cc6152b7938a6e6d02697121e031432f4c0c00a47accb769cb01b，证据 no-relay-missing-hint-fixture-v1.json。生产行为未改，先在独立 macserver 取旧行为结果。Turing 动态 3d36cba8 的 PID/进程组与 netlab 子进程已实核存活，仍在首轮 p7。

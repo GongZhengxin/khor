@@ -185,3 +185,6 @@ mod incoming_middle;
 
 #[path = "miss_epoch_tests.rs"]
 mod miss_epoch;
+
+#[path = "no_relay_hint_tests.rs"]
+mod no_relay_hint;
