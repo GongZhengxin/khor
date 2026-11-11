@@ -316,3 +316,6 @@ mod address;
 
 #[path = "candidate_dial_fact_tests.rs"]
 mod dial_fact;
+
+#[path = "candidate_admission_tests.rs"]
+mod admission;
