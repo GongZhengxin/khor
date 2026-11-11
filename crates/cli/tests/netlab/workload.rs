@@ -7,7 +7,7 @@ use std::time::{Duration, Instant};
 
 use khor_core::Hop;
 use khor_node::{Node, host};
-use patchbay::{Lab, LinkCondition, LinkDirection};
+use patchbay::{Lab, LinkCondition};
 use serde_json::{Value, json};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
@@ -20,6 +20,9 @@ mod calibration;
 #[path = "workload/observer.rs"]
 mod observer;
 use observer::{Log, Mode, Owned};
+#[path = "workload/profile.rs"]
+mod profile;
+use profile::{HIGH, LOW, Spec};
 
 /// Shared by the resident workload and its independent kernel TCP calibration.
 fn condition() -> LinkCondition {
@@ -87,17 +90,17 @@ async fn output_until(stream: &mut TcpStream, expected: &str, trace: bool) -> Re
     }
 }
 
-async fn directory(node: &Node, path: &str, phase_start: Instant, log: &Log) -> Vec<Value> {
+async fn directory(node: &Node, path: &str, phase_start: Instant, log: &Log, spec: Spec) -> Vec<Value> {
     let mut rows = Vec::with_capacity(SAMPLES);
     for index in 0..SAMPLES {
-        let scheduled = phase_start + PERIOD * index as u32;
+        let scheduled = phase_start + spec.period * index as u32;
         tokio::time::sleep_until(scheduled.into()).await;
         let attempt = log.start("directory", index, scheduled);
         let (outcome, error) = match tokio::time::timeout(CALLER, node.ls_of("y", path)).await {
             Ok(Ok((_, entries, false)))
                 if entries
                     .iter()
-                    .any(|e| e.name == "payload.bin" && e.size == BYTES as u64) =>
+                    .any(|e| e.name == "payload.bin" && e.size == spec.bytes as u64) =>
             {
                 ("ok", None)
             }
@@ -115,11 +118,12 @@ async fn terminal(
     phase_start: Instant,
     phase: &str,
     log: &Log,
+    spec: Spec,
 ) -> Vec<Value> {
     let mut rows = Vec::with_capacity(SAMPLES);
     let mut broken = false;
     for index in 0..SAMPLES {
-        let scheduled = phase_start + PERIOD * index as u32;
+        let scheduled = phase_start + spec.period * index as u32;
         tokio::time::sleep_until(scheduled.into()).await;
         let attempt = log.start("terminal", index, scheduled);
         let (outcome, error) = if broken {
@@ -154,13 +158,14 @@ async fn phase(
     name: &str,
     bulk: bool,
     mode: Mode,
+    spec: Spec,
 ) -> (Vec<Value>, Value, Option<PathBuf>) {
     // Snapshots are outside the sample window, on this resident's actual IPC.
     let before = node.wire_counts().await.map_err(|e| format!("{e:?}"));
     let phase_start = Instant::now();
-    let log = Log::new(epoch, name, mode);
+    let log = Log::with_revision(epoch, name, mode, spec.revision);
     emit(
-        json!({"schema":1,"revision":REVISION,"event":"phase_started","phase":name,"mode":mode.name(),"at_us":at(epoch),"wire_counts":before}),
+        json!({"schema":1,"revision":spec.revision,"event":"phase_started","phase":name,"mode":mode.name(),"at_us":at(epoch),"wire_counts":before}),
     );
     let pull = async {
         if !bulk {
@@ -169,7 +174,7 @@ async fn phase(
         let started_us = at(epoch);
         let file = format!("{path}/payload.bin");
         let reply =
-            tokio::time::timeout(Duration::from_secs(120), node.pull_path("y", &file, landed))
+            tokio::time::timeout(spec.bulk_limit, node.pull_path("y", &file, landed))
                 .await;
         let ended_us = at(epoch);
         let (outcome, error, moved, dest) = match reply {
@@ -177,9 +182,9 @@ async fn phase(
             Ok(Err(e)) => ("error", Some(e), None, None),
             Err(_) => ("timeout", Some("bulk caller deadline".into()), None, None),
         };
-        let row = json!({"schema":1,"revision":REVISION,"event":"bulk","phase":name,"mode":mode.name(),
-            "started_us":started_us,"ended_us":ended_us,"moved":moved,"expected":BYTES,
-            "outcome":outcome,"error":error,"caller_ms":120000});
+        let row = json!({"schema":1,"revision":spec.revision,"event":"bulk","phase":name,"mode":mode.name(),
+            "started_us":started_us,"ended_us":ended_us,"moved":moved,"expected":spec.bytes,
+            "outcome":outcome,"error":error,"caller_ms":spec.bulk_limit.as_millis()});
         log.push(row.clone());
         (row, dest)
     };
@@ -187,13 +192,13 @@ async fn phase(
     // tasks or extra endpoints sharing the resident's identity.
     let measured = async {
         tokio::join!(
-            directory(node, path, phase_start, &log),
-            terminal(stream, phase_start, name, &log),
+            directory(node, path, phase_start, &log, spec),
+            terminal(stream, phase_start, name, &log, spec),
             pull,
         )
     };
     let ((mut directories, terminals, (bulk_row, dest)), timing) =
-        observer::probe(epoch, phase_start, name, mode, measured).await;
+        observer::probe_with_revision(epoch, phase_start, name, mode, spec.revision, measured).await;
     let flush_started = Instant::now();
     let (_, overflow) = log.finish();
     let record_flush_us = flush_started.elapsed().as_micros();
@@ -205,7 +210,7 @@ async fn phase(
     );
     directories.extend(terminals);
     emit(
-        json!({"schema":1,"revision":REVISION,"event":"phase_finished","phase":name,"mode":mode.name(),"logger_overflow":overflow,"probe_capped":probe_capped,"record_flush_us":record_flush_us,
+        json!({"schema":1,"revision":spec.revision,"event":"phase_finished","phase":name,"mode":mode.name(),"logger_overflow":overflow,"probe_capped":probe_capped,"record_flush_us":record_flush_us,
         "at_us":at(epoch),"wire_counts":node.wire_counts().await.map_err(|e|format!("{e:?}"))}),
     );
     (directories, bulk_row, dest)
@@ -214,17 +219,25 @@ async fn phase(
 #[tokio::test(flavor = "multi_thread", worker_threads = 6)]
 #[ignore = "real resident workload baseline; run alone through the guarded netlab task"]
 async fn w1_real_terminal_and_directory_during_a_resident_file_pull() {
-    run(Mode::Streaming).await;
+    run(Mode::Streaming, LOW).await;
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 6)]
 #[ignore = "paired buffered observer mode; guarded workload observer task"]
 async fn w2_buffered_terminal_and_directory_during_a_resident_file_pull() {
-    run(Mode::Buffered).await;
+    run(Mode::Buffered, LOW).await;
 }
 
-async fn run(mode: Mode) {
-    let s = if mode == Mode::Streaming {
+#[tokio::test(flavor = "multi_thread", worker_threads = 6)]
+#[ignore = "high-BDP actual resident workload; fixed preflight before policy comparison"]
+async fn wh2_high_bdp_buffered_directory_terminal_and_complete_file() {
+    run(Mode::Buffered, HIGH).await;
+}
+
+async fn run(mode: Mode, spec: Spec) {
+    let s = if spec.high {
+        "wh2-buffer"
+    } else if mode == Mode::Streaming {
         "w1-stream"
     } else {
         "w2-buffer"
@@ -248,7 +261,7 @@ async fn run(mode: Mode) {
     std::fs::create_dir_all(&source).unwrap();
     std::fs::create_dir_all(&landed).unwrap();
     let mut seed = 0x6d697865646c6f61u64;
-    let payload: Vec<u8> = (0..BYTES)
+    let payload: Vec<u8> = (0..spec.bytes)
         .map(|_| {
             seed ^= seed << 13;
             seed ^= seed >> 7;
@@ -257,32 +270,10 @@ async fn run(mode: Mode) {
         })
         .collect();
     std::fs::write(source.join("payload.bin"), &payload).unwrap();
-    // Only x's interface is impaired, in both directions: nominal direct
-    // RTT40ms, 8Mbit/s each direction, explicit40ms rate queue, zero random loss.
-    x.dev
-        .default_iface()
-        .unwrap()
-        .set_condition(condition(), LinkDirection::Both)
-        .await
-        .unwrap();
+    profile::configure(&x.dev, &y.dev, &rx, &ry, spec).await;
     let path = source.display().to_string();
     let cwd = path.clone();
-    let before_x = x
-        .dev
-        .spawn(|_| async { calibration::snapshot().await })
-        .unwrap()
-        .await
-        .unwrap();
-    let before_gateway = rx
-        .spawn(|_| async { calibration::snapshot().await })
-        .unwrap()
-        .await
-        .unwrap();
-    for (name, capture) in [("x_before", before_x), ("gateway_before", before_gateway)] {
-        emit(
-            json!({"schema":1,"revision":REVISION,"event":"capture","mode":mode.name(),"name":name,"capture":capture}),
-        );
-    }
+    let capture_before = profile::captures(&x.dev, &y.dev, &rx, &ry, spec, mode, "before").await;
     let node = x.with(|node| async move { node }).await;
     let mut benchmark = Owned(x.dev.spawn(move |_| async move {
         // Match the existing real-terminal integration entry (term_echo.rs).
@@ -306,16 +297,17 @@ async fn run(mode: Mode) {
             echo(&mut stream, "warmup-unique").await
         }).await.expect("bounded PTY startup").expect("a real shell response, not input echo");
         let epoch = Instant::now();
-        emit(json!({"schema":1,"revision":REVISION,"event":"manifest","mode":mode.name(),"probe_period_us":20000,"logger_capacity":512,"samples_per_operation_per_phase":SAMPLES,
+        emit(json!({"schema":1,"revision":spec.revision,"event":"manifest","mode":mode.name(),"probe_period_us":20000,"logger_capacity":512,"samples_per_operation_per_phase":SAMPLES,
             "phases":["idle_before","bulk","idle_after"],"operations":["directory","terminal"],
-            "period_us":PERIOD.as_micros(),"caller_us":CALLER.as_micros(),"bulk_bytes":BYTES,
-            "nominal_rtt_ms":40,"mbit_per_direction":8,"queue_ms":40,"random_loss_pct":0,
+            "period_us":spec.period.as_micros(),"caller_us":CALLER.as_micros(),"bulk_bytes":spec.bytes,
+            "nominal_rtt_ms":if spec.high {300} else {40},"mbit_per_direction":if spec.high {50} else {8},"queue_ms":40,"random_loss_pct":0,
             "connection_layout":"directory_and_fetch_Main__terminal_Tunnel","slo":false,
+            "network_profile":if spec.high {"forwarding_split_300ms_50mbit"} else {"combined_40ms_8mbit"},
             "calibrated":false,"seed":"6d697865646c6f61","diagnostic_recording":true}));
-        let (mut rows, _, _) = phase(&node, &mut stream, &path, &landed, epoch, "idle_before", false, mode).await;
-        let (during, bulk, destination) = phase(&node, &mut stream, &path, &landed, epoch, "bulk", true, mode).await;
+        let (mut rows, _, _) = phase(&node, &mut stream, &path, &landed, epoch, "idle_before", false, mode, spec).await;
+        let (during, bulk, destination) = phase(&node, &mut stream, &path, &landed, epoch, "bulk", true, mode, spec).await;
         rows.extend(during);
-        let (after, _, _) = phase(&node, &mut stream, &path, &landed, epoch, "idle_after", false, mode).await;
+        let (after, _, _) = phase(&node, &mut stream, &path, &landed, epoch, "idle_after", false, mode, spec).await;
         rows.extend(after);
         drop(stream);
         let closed = tokio::time::timeout(Duration::from_secs(10), node.close_on("y", &id)).await.is_ok_and(|r|r.is_ok());
@@ -323,22 +315,7 @@ async fn run(mode: Mode) {
     }).unwrap());
     let (rows, bulk, destination, closed) =
         (&mut benchmark.0).await.expect("owned workload completes");
-    let after_x = x
-        .dev
-        .spawn(|_| async { calibration::snapshot().await })
-        .unwrap()
-        .await
-        .unwrap();
-    let after_gateway = rx
-        .spawn(|_| async { calibration::snapshot().await })
-        .unwrap()
-        .await
-        .unwrap();
-    for (name, capture) in [("x_after", after_x), ("gateway_after", after_gateway)] {
-        emit(
-            json!({"schema":1,"revision":REVISION,"event":"capture","mode":mode.name(),"name":name,"capture":capture}),
-        );
-    }
+    let capture_after = profile::captures(&x.dev, &y.dev, &rx, &ry, spec, mode, "after").await;
     let exact_bytes = destination
         .as_ref()
         .and_then(|p| std::fs::read(p).ok())
@@ -358,15 +335,16 @@ async fn run(mode: Mode) {
         .link(&y)
         .await
         .is_some_and(|l| l.hop == Hop::Direct && l.down_ms.is_none());
-    let ok = all_answers
+    let ok = capture_before && capture_after && all_answers
         && exact_bytes
-        && bulk["moved"] == BYTES as u64
+        && bulk["moved"] == spec.bytes as u64
         && closed
         && direct_after
         && overlap("directory") >= 30
         && overlap("terminal") >= 30;
     emit(
-        json!({"schema":1,"revision":REVISION,"event":"complete","mode":mode.name(),"functional_ok":ok,
+        json!({"schema":1,"revision":spec.revision,"event":"complete","mode":mode.name(),"functional_ok":ok,
+        "profile_readback_commands_ok":capture_before && capture_after,
         "samples":rows.len(),"all_answers":all_answers,"exact_bytes":exact_bytes,"closed":closed,
         "direct_after":direct_after,"directory_overlap":overlap("directory"),"terminal_overlap":overlap("terminal"),
         "bulk":bulk,"calibrated":false,"slo":false,"p99_claimed":false,

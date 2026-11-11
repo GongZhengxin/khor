@@ -12,15 +12,18 @@ MODES = ['streaming', 'buffered', 'buffered', 'streaming', 'streaming', 'buffere
 BYTES = 16 * 1024 * 1024
 
 
-def records(path, expected_passed=1):
+def records(path, expected_passed=1, revision=REVISION, allow_failed=False):
     text = path.read_text()
     marker = '[netlab-workload] '
     lines = [line for line in text.splitlines() if marker in line]
     assert all(line.count(marker) == 1 for line in lines)
     rows = [json.loads(line.split(marker, 1)[1]) for line in lines]
-    assert rows and all(r['schema'] == 1 and r['revision'] == REVISION for r in rows)
+    assert rows and all(r['schema'] == 1 and r['revision'] == revision for r in rows)
     summaries = re.findall(r'^test result: (.*)$', text, re.M)
-    assert len(summaries) == 1 and summaries[0].startswith(f'ok. {expected_passed} passed; 0 failed; 0 ignored;')
+    assert len(summaries) == 1
+    passed = summaries[0].startswith(f'ok. {expected_passed} passed; 0 failed; 0 ignored;')
+    failed = allow_failed and expected_passed == 1 and summaries[0].startswith('FAILED. 0 passed; 1 failed; 0 ignored;')
+    assert passed or failed
     return rows
 
 
@@ -72,15 +75,15 @@ def guard(report):
                 resident_startup_cancellation_verified=True)
 
 
-def case(path, mode):
-    rows = records(path)
+def case(path, mode, revision=REVISION, bulk_bytes=BYTES, period_us=100000, profile_reader=None, allow_failed=False):
+    rows = records(path, revision=revision, allow_failed=allow_failed)
     assert all(r.get("mode") == mode for r in rows)
     assert not any(r['event'] == 'logger_aborted' for r in rows)
     manifest, complete, bulk = (one(rows, event) for event in ['manifest', 'complete', 'bulk'])
     assert manifest['mode'] == complete['mode'] == bulk['mode'] == mode
-    assert manifest['samples_per_operation_per_phase'] == 120 and manifest['period_us'] == 100000
+    assert manifest['samples_per_operation_per_phase'] == 120 and manifest['period_us'] == period_us
     assert manifest['caller_us'] == 2000000 and manifest['probe_period_us'] == 20000 and manifest['logger_capacity'] == 512
-    assert manifest['calibrated'] is False and manifest['slo'] is False and manifest['bulk_bytes'] == BYTES
+    assert manifest['calibrated'] is False and manifest['slo'] is False and manifest['bulk_bytes'] == bulk_bytes
     samples = [r for r in rows if r['event'] == 'sample']
     expected = {(p, op) for p in PHASES for op in ['directory', 'terminal']}
     assert len(samples) == 720 and {(r['phase'], r['operation']) for r in samples} == expected
@@ -104,7 +107,7 @@ def case(path, mode):
         for op in ['directory', 'terminal']:
             group = sorted([r for r in samples if r['phase'] == phase and r['operation'] == op], key=lambda r:r['index'])
             assert len(group) == 120 and [r['index'] for r in group] == list(range(120))
-            assert all(r['mode'] == mode and r['caller_us'] == 2000000 and r['scheduled_us'] == probe['started_us']+r['index']*100000 for r in group)
+            assert all(r['mode'] == mode and r['caller_us'] == 2000000 and r['scheduled_us'] == probe['started_us']+r['index']*period_us for r in group)
             assert all(r['ended_us'] >= r['started_us'] >= r['scheduled_us'] and r['ended_us'] <= probe['ended_us'] and r['elapsed_us'] == r['ended_us']-r['started_us'] for r in group)
             assert all(r['outcome'] in ['ok', 'error', 'timeout', 'blocked', 'cancelled', 'aborted'] for r in group)
             success = [r for r in group if r['outcome'] == 'ok']
@@ -113,15 +116,22 @@ def case(path, mode):
                 success_scheduled_to_end_us=distribution([r['ended_us']-r['scheduled_us'] for r in success]),
                 schedule_lag_all_us=distribution([r['started_us']-r['scheduled_us'] for r in group]), p99_claimed=False)
     captures = [r for r in rows if r['event'] == 'capture']
-    assert len(captures) == 4 and {r['name'] for r in captures} == {'x_before', 'gateway_before', 'x_after', 'gateway_after'}
-    profiles = {r['name']: profile(r['capture']) for r in captures}
-    assert all(profiles[side+'_before']['interface'] == profiles[side+'_after']['interface'] for side in ['x', 'gateway'])
-    assert profiles['x_after']['bytes'] > profiles['x_before']['bytes']
-    assert profiles['gateway_after']['bytes']-profiles['gateway_before']['bytes'] >= BYTES
+    if profile_reader is not None:
+        profiles = profile_reader(captures, bulk_bytes)
+    else:
+        assert len(captures) == 4 and {r['name'] for r in captures} == {'x_before', 'gateway_before', 'x_after', 'gateway_after'}
+        profiles = {r['name']: profile(r['capture']) for r in captures}
+        assert all(profiles[side+'_before']['interface'] == profiles[side+'_after']['interface'] for side in ['x', 'gateway'])
+        assert profiles['x_after']['bytes'] > profiles['x_before']['bytes']
+        assert profiles['gateway_after']['bytes']-profiles['gateway_before']['bytes'] >= bulk_bytes
     overlap = {op:sum(r['phase'] == 'bulk' and r['operation'] == op and bulk['started_us'] <= r['started_us'] <= r['ended_us'] <= bulk['ended_us'] for r in samples) for op in ['directory', 'terminal']}
     assert all(complete[op+'_overlap'] == n and n >= 30 for op, n in overlap.items()) and complete['samples'] == 720
-    functional = all(r['outcome'] == 'ok' and r['error'] is None for r in samples) and bulk['outcome'] == 'ok' and bulk['moved'] == BYTES
+    functional = all(r['outcome'] == 'ok' and r['error'] is None for r in samples) and bulk['outcome'] == 'ok' and bulk['moved'] == bulk_bytes
     functional &= all(complete[k] is True for k in ['functional_ok', 'all_answers', 'exact_bytes', 'closed', 'direct_after'])
+    if allow_failed:
+        summaries = re.findall(r'^test result: (.*)$', path.read_text(), re.M)
+        expected_footer = 'ok. 1 passed; 0 failed; 0 ignored;' if functional else 'FAILED. 0 passed; 1 failed; 0 ignored;'
+        assert summaries[0].startswith(expected_footer)
     return dict(valid=True, functional_ok=functional, mode=mode, groups=groups, scheduling=scheduling, overlap=overlap,
                 bulk=bulk, profiles=profiles, profile_readback_confirmed=True, full_N3_accepted=False)
 

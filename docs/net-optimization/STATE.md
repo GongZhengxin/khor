@@ -1,10 +1,18 @@
 # feat/net 当前状态与接续入口
 
-更新于2026-11-11 21:54 UTC（本地11月12日）。完整目标“完成计划”仍 **active、未完成、未阻塞**；完整范围是 [PLAN](PLAN.md) 的N0–N5，root串行，不派发子智能体。此页是唯一当前入口；历史逐字保存在 [上一状态](HISTORY-20261111-through-capacity-setup-v5.md)，SHA `6079915ace9d27daea77a43499663ce352d51597ad32c296a02a32846f482efe`，它继续链接此前全部证据/失败。实际worktree/收据/原始日志优先，不按摘要覆盖未提交内容。
+更新于2026-11-11 22:20 UTC（本地11月12日）。完整目标“完成计划”仍 **active、未完成、未阻塞**；完整范围是 [PLAN](PLAN.md) 的N0–N5，root串行，不派发子智能体。此页是唯一当前入口；历史逐字保存在 [上一状态](HISTORY-20261111-through-capacity-setup-v5.md)，SHA `6079915ace9d27daea77a43499663ce352d51597ad32c296a02a32846f482efe`，它继续链接此前全部证据/失败。实际worktree/收据/原始日志优先，不按摘要覆盖未提交内容。
 
 ## 当前在途与下一步
 
-**目前没有Turing或Mac在途任务。** 独立UDP容量诊断 **turing-20261111T214616Z-c50ab6ef** 已186.409秒、原退出 **0**、17files、identity/原group空，collect/逐原始位图与本地窗口人口核验/source-owned metadata复算/ledger终态。stage session12779与PID553115/child553331均已实际终态；只复用证据，不重发。旧policy编排90703也已终态，不恢复。
+**当前没有Turing或Mac在途任务；正在冻结高BDP真实业务预检源码。** [MODEL-DECISION](MODEL-DECISION.md) 已在实现/首个高profile Node数据前以ff3d0074提交，明确分层校准准入v2，旧冷TCP门及原失败全部保留，不视为通过。新业务fixture实现已写入本worktree，尚未远端编译/运行；原低profile参数和入口保留。
+
+高profile固定300ms/50Mbit、192MiB完整文件/240秒、400ms计划/每请求2秒/各operation单在途，三phase各目录/真实PTY各120，保留≥30完整传输重叠门、720全人口/失败分母/调度滞后和原20ms借用probe。复用同一个分离队列构造器；每次实际八份端点/router读回，按y→x下载路径核对文件字节，反向ACK/control完整记录。没有产品runtime/vendor修改。固定新task先真实两个w3取消/启动回收守卫、三fresh原low w2回归，再三high wh2预检；前置失败阻止high，一旦开始某阶段则完成该阶段全部三轮并保留首个非零退出。
+
+本机只做源码/Python元数据与合成调度检查：source全11项3.222秒绿；此前同组首次失败为合成数据的嵌套bulk在revision更新前复制，严格validator正确拒绝，修复fixture后通过，并非真实业务失败或放宽门。control全13项20.620秒绿，另补高阶段中间失败仍执行后续轮次/保留退出码的调度专项。图谱部分/滞后，0flows不作覆盖。下一步核共同构造器与已测c50源码逐字一致、控制差异限于固定task与allowlist、冻结准确源码/控制；然后在原UID/flock/netns/资源/总期限守卫下串行提交Turing。**高profile真实结果/优先级18轮/prefetch矩阵尚无数据，不能宣布N3或最终完成。**
+
+### 已完成的独立容量诊断
+
+独立UDP容量诊断 **turing-20261111T214616Z-c50ab6ef** 已186.409秒、原退出 **0**、17files、identity/原group空，collect/逐原始位图与本地窗口人口核验/source-owned metadata复算/ledger终态。stage session12779与PID553115/child553331均已实际终态；只复用证据，不重发。旧policy编排90703也已终态，不恢复。
 
 | 最新准确输入/证明 | 值 |
 | --- | --- |
@@ -25,7 +33,7 @@
 
 **UDP独立容量诊断已通过；完整模型决策/旧TCP门/Noq/Node/N3未接受。** 原contract和独立proof始终physical_calibration_accepted/full_N3_accepted=false。这证明在该分离几何与负载下接收端确实获得约48.3Mbit payload，不能把旧冷TCP平均35Mbit直接等同IP链路只有35Mbit；但也不证明CUBIC、队列或CPU某一项是唯一根因。
 
-**下一步：先落盘分层校准与模型判读决策，再实现高profile真实Node混合场景。** 保留旧冷TCP270–420ms/40–60Mbit门与所有红，不把UDP通过默写成TCP通过；显式记录容量、TCP工作负载与应用体验各自的证据和边界，不能靠继续盲调burst/queue/算法/窗口追绿。任何高profile准入/模型协议变化须明确版本/理由/旧新结果，不默默换门。然后按HIGH-BDP原同条件A/B与独立prefetch1/2/8、完整预览/公平/背压/成本推进；当前priority -1仍实验候选。**高profile Node/prefetch尚未实现/运行，没有下一run ID。** 完整N0–N5保持active、有可执行工作，不设blocked/complete。
+分层模型判读已按MODEL-DECISION明确版本/理由/旧新结果；高profile业务fixture已实现待冻结和远端运行。后续按同条件priority A/B和独立prefetch1/2/8、完整预览/公平/背压/成本推进，当前priority -1仍实验候选。UDP通过不等同旧TCP通过、应用SLO或N3接受。完整N0–N5保持active、有可执行工作，不设blocked/complete。
 
 ### 本轮前置失败与旧诊断（原件全部保留）
 
@@ -55,7 +63,7 @@ root串行自动编排 **exec90703已正常终态**，全部六block均原退出
 
 A/block1/场景2终端p95 **416.984ms** 原样保留，其余A78.819–83.736ms，B79.896–83.922ms。原因未证；终端在另一Tunnel，不能由一个异常推定同Main优先级对终端的直接因果效果或CPU/I/O原因。全phase/实际transfer区间/九对差值/条件成功分布/完整失败分母/文件时间及payload率均保留。仅小链路目录局部方向性收益，不报p99/显著性、不自动选胜；严格优先级仍是实验候选，公平/前台完整文件/背压/成本和全部N0–N5未闭。
 
-[HIGH-BDP](HIGH-BDP.md)保持预注册：300ms/50Mbit、96MiB、400ms计划、先独立kernel校准，再Node策略及独立prefetch1/2/8。h0校准与两个socket诊断已执行并终态，物理门仍红；**高profileNode混合场景及prefetch矩阵尚未实现/运行**。不改变原v4/2秒/120秒门，不混用cohort，也不把本次局部结果当最终设计。
+[HIGH-BDP](HIGH-BDP.md) 的原v1/96MiB与旧TCP门失败记录保留；新v2以 [MODEL-DECISION](MODEL-DECISION.md) 的显式分层准入及192MiB输入为准，均在首次高profile Node数据前固定。新高profilefixture已实现，尚未远端编译/执行；prefetch矩阵未实现/运行。原低profile v4/2秒/120秒门保持，不混用cohort，也不把小链路局部收益当最终设计。
 
 ## 冻结源码与前置证据
 
@@ -95,7 +103,7 @@ Mac/B实际编译源是source-v2 **8371dbb024502c8a0fea952b0ea96fbff6a41f39** / 
 - **N0**：最终分场景UX门、足量尾部人口、同条件完整前后与成本报告；当前不是p99或最终最优设计证明。
 - **N1**：严重/quiet/恢复长尾、跨连接质量与比较成本，原启动/配对失败定位，同故障fallback参照。
 - **N2**：同一真实连接独立/同时IPv4/IPv6地址迁移、LOST身份、完整取消/owner/迟到/撤销，以及carrier在调用开始后到达。
-- **N3**：低profile18场景及独立UDP容量诊断已完成；旧TCP门仍红，先明确分层模型判读协议，再独立比较prefetch1/2/8、大BDP300ms/50Mbit（先kernel校准/预注册新模型）、前台完整文件/预览、连续控制下bulk公平、共享/分连接、背压/取消、独立host/child退出、1/3/5设备CPU/字节/唤醒/能耗。小链路收益不能自动接受全部范围。
+- **N3**：低profile18场景及独立UDP容量诊断已完成；旧TCP门仍红，分层模型判读v2已明确，先真实高profile预检，再独立比较prefetch1/2/8、大BDP300ms/50Mbit（先kernel校准/预注册新模型）、前台完整文件/预览、连续控制下bulk公平、共享/分连接、背压/取消、独立host/child退出、1/3/5设备CPU/字节/唤醒/能耗。小链路收益不能自动接受全部范围。
 - **N4**：两腿Direct/Relay/peer relay/SSH、唯一/多middle、prepared/混合版本、middle自身v4/v6移动、整机/出口/登记故障域及基于数据的中继布局/运维设计。
 - **N5**：全部59 vendor的上游/退出、Noq1/物理Noq5、最终准确集成源码Quality/native/proxy、多机/iPhone与能耗、统一决策报告。
 

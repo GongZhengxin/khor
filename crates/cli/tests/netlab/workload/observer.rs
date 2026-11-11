@@ -32,6 +32,7 @@ impl<T> Drop for Owned<T> {
 }
 
 struct Store {
+    revision: &'static str,
     epoch: Instant,
     phase: String,
     mode: Mode,
@@ -68,7 +69,7 @@ impl Drop for Store {
             }
         }
         emit(
-            json!({"schema":1,"revision":REVISION,"event":"logger_aborted",
+            json!({"schema":1,"revision":self.revision,"event":"logger_aborted",
             "phase":self.phase,"mode":self.mode.name(),"rows":self.rows.len(),
             "active":self.active,"overflow":self.overflow}),
         );
@@ -80,7 +81,12 @@ pub(super) struct Log(Arc<Mutex<Store>>);
 
 impl Log {
     pub(super) fn new(epoch: Instant, phase: &str, mode: Mode) -> Self {
+        Self::with_revision(epoch, phase, mode, REVISION)
+    }
+
+    pub(super) fn with_revision(epoch: Instant, phase: &str, mode: Mode, revision: &'static str) -> Self {
         Self(Arc::new(Mutex::new(Store {
+            revision,
             epoch,
             phase: phase.into(),
             mode,
@@ -143,7 +149,7 @@ impl Attempt {
     fn complete(&mut self, outcome: &str, error: Option<String>) -> Value {
         let mut store = self.log.0.lock().unwrap();
         let ended_us = at(store.epoch);
-        let row = json!({"schema":1,"revision":REVISION,"event":"sample",
+        let row = json!({"schema":1,"revision":store.revision,"event":"sample",
             "phase":store.phase,"operation":self.operation,"index":self.index,
             "scheduled_us":self.scheduled_us,"started_us":self.started_us,
             "ended_us":ended_us,"elapsed_us":ended_us-self.started_us,
@@ -183,6 +189,17 @@ pub(super) async fn probe<T>(
     mode: Mode,
     measured: impl Future<Output = T>,
 ) -> (T, Value) {
+    probe_with_revision(epoch, start, phase, mode, REVISION, measured).await
+}
+
+pub(super) async fn probe_with_revision<T>(
+    epoch: Instant,
+    start: Instant,
+    phase: &str,
+    mode: Mode,
+    revision: &'static str,
+    measured: impl Future<Output = T>,
+) -> (T, Value) {
     const PERIOD: Duration = Duration::from_millis(20);
     const CAP: usize = 20000;
     let mut ticks = Vec::with_capacity(1024);
@@ -198,7 +215,7 @@ pub(super) async fn probe<T>(
             }
         }
     };
-    let row = json!({"schema":1,"revision":REVISION,"event":"probe","phase":phase,
+    let row = json!({"schema":1,"revision":revision,"event":"probe","phase":phase,
         "mode":mode.name(),"period_us":PERIOD.as_micros(),"ticks_us":ticks,
         "started_us":start.duration_since(epoch).as_micros(),"ended_us":at(epoch),
         "capped":ticks.len()==CAP,"capacity":CAP,"missed_tick_behavior":"skip"});

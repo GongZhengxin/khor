@@ -19,7 +19,7 @@ impl<T> Drop for Owned<T> {
     }
 }
 
-async fn capture() -> Value {
+pub(super) async fn capture() -> Value {
     let mut rows = serde_json::Map::new();
     for (name, program, args) in [
         ("qdisc_json", "tc", vec!["-s", "-j", "qdisc", "show"]),

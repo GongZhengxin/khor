@@ -3,7 +3,7 @@
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use patchbay::{Device, Lab, LinkDirection};
+use patchbay::{Device, Lab, LinkDirection, Router};
 use serde_json::{Value, json};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
@@ -27,6 +27,24 @@ const SIZE: usize = 8 * 1024 * 1024;
 const WARM: usize = 4;
 const ECHOES: usize = 64;
 const CALLER: Duration = Duration::from_secs(2);
+
+pub(super) async fn configure_high(
+    x: &Device,
+    y: &Device,
+    rx: &Router,
+    ry: &Router,
+    revision: &'static str,
+) {
+    queues::configure(x, y, rx, ry, Model { revision, ..HIGH_QUEUES }).await;
+}
+
+pub(super) async fn bounded_snapshot() -> Value {
+    capacity::capture().await
+}
+
+pub(super) fn split_snapshot_valid(capture: &Value, router: bool) -> bool {
+    queues::valid_capture(capture, router)
+}
 
 #[derive(Clone, Copy)]
 struct Model {

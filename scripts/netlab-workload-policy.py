@@ -25,8 +25,8 @@ def configuration(source_root):
                 evidence='static configuration in the exact compiled source; readback is a separate diagnostic cohort')
 
 
-def populations(path, bulk):
-    rows = [r for r in observer.records(path) if r['event']=='sample' and r['phase']=='bulk']
+def populations(path, bulk, revision=observer.REVISION, allow_failed=False):
+    rows = [r for r in observer.records(path, revision=revision, allow_failed=allow_failed) if r['event']=='sample' and r['phase']=='bulk']
     groups = {}
     for operation in ['directory', 'terminal']:
         samples = [r for r in rows if r['operation']==operation]
