@@ -1,10 +1,10 @@
 # feat/net 当前状态与接续入口
 
-更新于2026-11-11 06:44 UTC。完整N0–N5未完成，目标“完成计划”active。用户U14要求持续推进，不以调度面板paused或阶段完成作为停止条件。root串行，不派发子智能体。此前逐字STATE保存在[最近历史](HISTORY-20261111-through-snapshot-and-stability.md)，SHA `974f95530ba857f2d2e9669b91728f7210d2efc7fb1c1aad11c251d108df4a7c`，它继续链接更早历史与失败。收据、进程和实际工作树优先。
+更新于2026-11-11 06:49 UTC。完整N0–N5未完成，目标“完成计划”active。用户U14要求持续推进，不以调度面板paused或阶段完成作为停止条件。root串行，不派发子智能体。此前逐字STATE保存在[最近历史](HISTORY-20261111-through-snapshot-and-stability.md)，SHA `974f95530ba857f2d2e9669b91728f7210d2efc7fb1c1aad11c251d108df4a7c`，它继续链接更早历史与失败。收据、进程和实际工作树优先。
 
 ## 位置、授权与当前源
 
-产品 `/Volumes/disk0/Khor/worktrees/current/khor-net`，branch `feat/net`。最新生产候选 **6e5edfec62c8d198eca9d14b47c4122fc595a8d1**，tree **3ac48d6834a0a432241d4e190315a367432a8566**，snapshot **12ef3f505525ba39a4e47f03b8527a2ce4c966f7**。后续文档提交另核HEAD/diff。
+产品 `/Volumes/disk0/Khor/worktrees/current/khor-net`，branch `feat/net`。最新生产候选 **2874985e90c1523a6db1b4171a48de085718552d**，tree **2780ffe007956ec655bb4475b1a2c57b1853bb7e**，snapshot **8cdc87e0040c5a813e40c70197ea6d40dcf237c7**。最新已核双OS全12源仍6e5/tree3ac48/snapshot12ef；287仅made成功保留观察的修复候选，尚未验证。后续文档提交另核HEAD/diff。
 
 控制 `/Volumes/disk0/Khor/worktrees/current/khor-build-net`，固定 **68cadb57a0ed72d40a4ca9a843e86b9c6797bf34**，原两个untracked pycache保留。原N1隔离树 `/Volumes/disk0/Khor/worktrees/current/khor-net-recovery-deadlines`，detached2ef6bee5a5aaf841af066f4edb5c894769d4539d，Iroh42–44仍隔离。
 
@@ -82,3 +82,12 @@ stage-launch只一次，结束exec session后做依赖动作。记录exact收据
 2026-11-11 06:32 UTC：固定四轮集合已收齐：两C均warm/Go绿，共248业务成功；B一次初始业务超时、一次124业务但warm11/51失败且一向Go7499.610ms。三个实际replug均8方向有进展、4innercopies、原3+3 probe，完整相邻成本界。reads_finished enclosing aggregate innerTX datagrams依次C328/B312/C337，字节23357/22403/23740，IMMEDIATE_ACK37/39/37；选路驻留阶段与相邻边界不同，不能全归为补丁额外开销/单probe/整网或手机能耗。完整result JSON含原边界和source。两C样本太少且较慢值3820ms贴门，不称可靠性/p99或全N1。
 
 成功后旧快照新fixture candidate_success_tests SHA0b81c4384956ac4d240ec3a65959b4009fa209f2d25e584575979d3da0d87ea0，真实新middle、内层carried TLS/echo/adopt，分别保持consumer活跃或实际close+detach再放旧selection，要求没有旧middle额外请求、本机网络epoch不变。旧candidate_snapshot测试文件逐字前缀保留，仅追加module。candidate-success-miss-fixture-v1.json注册，尚未改made/生产缓存逻辑。元数据准备时源已冻结后因缺Path import停止，只完成后续metadata并匹配实际HEAD/tree，未重建/覆盖source或发生产品运行。
+
+
+2026-11-11 06:49 UTC：成功后旧selection合同已取得真实旧行为红。Mac42973738072准确0a7/treef68ab/snapshot2980990/control68cad，format与net67+1ignored绿，hop67pass/2FAIL、89.02秒，原67全过；两新合同都先完成真实新carried TLS/echo，再放行旧selection，各额外向旧middle发1次（实际count1,1应0,1）。通路使用中和业务完毕close/detach后均红。exact13834782095、zipSHA1b8032d952913474e51e09e4aeeb923b041bdff43ff46b3e373cdb1e36093bf3，10files/11controls/identity核，后续组未跑。
+
+生产2874985e只改made_in_epoch：成功count归零，保留最新observation/candidates，在原entry内替换Arc<()> token使旧完成失效；None纯backoff helper仍删除。原退避/预算/信任/所有权边界保留，不新建map/task/timer/Node或Connection强引用。零count路由元数据在活网络保留，network弱token过期时由下一次miss_context登记回收。whole成功fixture SHA37aed9428b2bafa5097f651ce4c1ca6124af111477b2a6e8435bc6b3fa9b8161不改。candidate-success-miss-source-audit-v1.json记录窄源差与寿命。Mac提交执行会话73036待实际收据，先查同一会话，不重发；此时尚未核候选结果，Linux最新287也待Turing计时矩阵结束后调度。
+
+Turing1501a97c同一PID3492772在06:49实核已运行8分32秒，首轮f4原green（回carried3.8秒、middle leg听到后0.3秒、最慢echo3.4秒）；f4i原green但闲置后恢复17.7秒，仍是体验长尾，不能由现有断言绿称最佳设计。首轮f4s仍在跑。只监控同一任务，完整三轮与原失败都保留。
+
+Mac archive采集新增ops/collect-mac-archive-v1.py，SHA7caaea2bb16610072d79e84dbf7129cc9fd6a17736b1b75e5cb1080c206f3d19，只读ledger/GH，核exactartifact/run/control与API.digest，拒绝覆盖、路径逃逸与symlink，安全解包；从不执行归档内容，也不分类产品行为。已用于42973738072精确归档，archive-verification.json保留脚本SHA。之后仍必须verify-mac-record与实际日志判合同。
