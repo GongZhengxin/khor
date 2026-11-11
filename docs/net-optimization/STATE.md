@@ -1,6 +1,6 @@
 # feat/net 当前状态与接续入口
 
-更新于2026-11-11 10:25 UTC。完整N0–N5目标“完成计划”active，上一目标轮取得同源hint双端结果并归档，本轮取得迟到成功真实红→绿及新四节点fixture源码，属于进展。未完成、未阻塞，不派发子智能体。此前STATE逐字归档于[上一状态](HISTORY-20261111-through-hint-verification.md)，SHA `617b316640985eb22785a7d5ccf3d558355d3a1da24ed6479f1ff8224b7c54f1`，继续链接全部旧失败与历史；原始日志/准确收据优先，不凭摘要覆盖原改动。
+更新于2026-11-11 10:29 UTC。完整N0–N5目标“完成计划”active，上一目标轮取得同源hint双端结果并归档，本轮取得迟到成功真实红→绿及新四节点fixture源码，属于进展。未完成、未阻塞，不派发子智能体。此前STATE逐字归档于[上一状态](HISTORY-20261111-through-hint-verification.md)，SHA `617b316640985eb22785a7d5ccf3d558355d3a1da24ed6479f1ff8224b7c54f1`，继续链接全部旧失败与历史；原始日志/准确收据优先，不凭摘要覆盖原改动。
 
 ## 位置与授权
 
@@ -57,3 +57,10 @@ MacLab和Turing同LAN；macserver是另一构建机，用户报告异网。iPhon
 当前准确源 **1f0a8be64bd4a692475b901e34fb8d7996dda034**，tree **50a9b88e52f6e2c4bad8ce27b5f37116623625d7**，snapshot **84e7eec83981530c44604ea6ed23ac94e85fb220**，candidate-prepared-physical-source-v2.json，clean/0excluded；生产carry/hop/stream_trace/wires逐字核对与双OS已过67929相同，新CLI fixture独立待编译/行为。远端精确格式补丁已提交，上一节旧“待提交/冻结”由此替代。
 
 Turing **turing-20261111T102641Z-ebc3630e**，PID **3828986**，10:27:03 UTC launch，netlab-hop-ownership、原control68cad、role diagnostic；stage exec97445已成功退出，仅提交一次。前驱3fa格式-only已收齐、identity/空group。prepared-physical-run-plan-v1.json记录新2case×3的6项诊断校准；先查同receipt/execution/PID与task.log，不能用原9项checker，也不能在活物理计时期间启动另一个Turing构建/测试。无其他Turing计时、无Mac在途、无手机采样。下一步核编译和真实前置/业务结果；若失败保留原轮次，不盲重发或把返回码当覆盖证明。完整N0–N5保持active。
+
+
+## 10:29 UTC：前一fixture编译失败已修，当前只查874eb4c4
+
+前一物理ebc3630e已58.500秒终态1、13files/identity/空group；三次driver均因同一E0631编译错误未进入任何网络case：Option<Link>::is_some_and传入了借用Link的谓词。保存全部原编译日志，分类fixture_compile_E0631_no_network_scenarios，不是产品网络红。源码两处改为as_ref后提交 **42014586604f54a7541e0873d219332a3596743c**；candidate-prepared-physical-source-v3.json tree **5312d9cc34176feddb6e3adc3853e0b9df73abbd** /snapshot **033023d20020d0bfb4849499dff933422b38cd88**，clean/0excluded。
+
+当前唯一Turing任务 **turing-20261111T102838Z-874eb4c4**，PID **3831005**，10:28:59 UTC launch，netlab-hop-ownership/同control68cad/role diagnostic；stage exec57262已成功退出，已按同PID实际ps核在运行。prepared-physical-run-plan-v2.json保存新2case×3合同和前驱编译失败。先核同receipt/execution/PID/task.log；不要再poll/重发已终态ebc、3fa或67929双OS单位。编译/前置/业务/缺观察分开分类。任何新计时未终态前不穿插Turing构建。无Mac在途、无phone采样。下一步必须核新fixture实际编译与两middle前置，随后合同/失败归因；完整N0–N5不缩小，goal active。
