@@ -9,7 +9,7 @@ use crate::nat::{Net, router};
 
 use super::{HIGH_QUEUES, Model, datagrams, emit, queues};
 
-const REVISION: &str = "workload_kernel_udp_capacity_v1";
+const REVISION: &str = "workload_kernel_udp_capacity_v2";
 
 struct Owned<T>(tokio::task::JoinHandle<T>);
 
@@ -120,7 +120,7 @@ pub(super) async fn run() {
         "ready_limit_seconds":2,"direction_limit_seconds":28,"steady_seconds":[5,15],
         "rtt_ms":300,"mbit_each_direction":50,"queue_ms":40,"burst_bytes":65536,
         "capacity_mbit_bounds":[40,60],"sender_steady_mbit_bounds":[65,75],
-        "receiver_first_limit_us":2000000,"pacer_tick_us":1000,"pacer_max_lateness_us":20000,
+        "receiver_first_limit_us":2000000,"pacer_tick_us":datagrams::TICK_US,"pacer_max_lateness_us":20000,
         "pacer_late_10ms_percent_limit":1,"pacer_skip_percent_limit":1,
         "layer":"kernel_UDP","residents":false,"slo":false,"physical_calibration_accepted":false}),
     );

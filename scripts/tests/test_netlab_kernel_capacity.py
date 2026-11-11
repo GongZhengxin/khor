@@ -26,16 +26,16 @@ def fixture(slow=False):
     data.append(dict(event='udp_manifest',layout='forwarding_split',payload_bytes=1200,offered_bit_per_sec=70000000,
         planned_packets=capacity.PACKETS,send_seconds=20,receive_seconds=25,ready_limit_seconds=2,direction_limit_seconds=28,
         steady_seconds=[5,15],rtt_ms=300,mbit_each_direction=50,queue_ms=40,burst_bytes=65536,
-        capacity_mbit_bounds=[40,60],sender_steady_mbit_bounds=[65,75],receiver_first_limit_us=2000000,pacer_tick_us=1000,
+        capacity_mbit_bounds=[40,60],sender_steady_mbit_bounds=[65,75],receiver_first_limit_us=2000000,pacer_tick_us=5000,
         pacer_max_lateness_us=20000,pacer_late_10ms_percent_limit=1,pacer_skip_percent_limit=1,
         layer='kernel_UDP',residents=False,slo=False,physical_calibration_accepted=False))
     received=[0]*capacity.WORDS
     for seq in range(capacity.PACKETS):
         if seq%7 < (3 if slow else 5):received[seq//64] |= 1 << (seq%64)
-    unique=sum(w.bit_count() for w in received)
+    unique=sum(bin(w).count('1') for w in received)
     for name,source,dest in [('upload','198.18.1.2:41001','198.18.2.2:42001'),('download','198.18.2.2:41002','198.18.1.2:42002')]:
         s=dict(local=source,peer=dest,elapsed_us=20000000,sent=list(ALL),failed=[0]*capacity.WORDS,
-            by_second=distribution(capacity.PACKETS,21),ticks=20000,max_lateness_us=500,late_over_10ms=0,first_error=None)
+            by_second=distribution(capacity.PACKETS,21),ticks=4000,max_lateness_us=500,late_over_10ms=0,first_error=None)
         r=dict(local=dest,peer=source,elapsed_us=25000000,first_after_us=150000,received=list(received),
             by_second=distribution(unique,25),datagrams=unique,duplicates=0,malformed=0,foreign=0,out_of_range=0)
         rate=sum(r['by_second'][5:15])*1200*8/10000000

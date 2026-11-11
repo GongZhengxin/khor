@@ -53,3 +53,5 @@ v1的真实run turing-20261111T213626Z-343630a3，当前已观察五个方向：
 新revision **workload_kernel_udp_capacity_v2**；同一uq0入口/固定三fresh任务。每方向20秒/1200B/70Mbit、145833计划序号/完整bitmap、65–75 sender窗口、≥99%成功、≤1%跳过、20ms最大迟到/>10ms≤1%、40–60 receiver窗口、所有期限/拓扑/内容与序号校验全不变。slot上限4000、每slot最多37包，manifest固定pacer_tick_us5000；不混作v1人口，也不把v1失败改绿。
 
 v2仅在上述协议保存后实现与运行；源码、control与原始结果按STATE/收据记录。
+
+v1末尾metadata还因Turing Python3.8.10不支持int.bit_count而未产出contract；该异常与原始pacer红均保留。v2改用兼容的bin/count统计同一bitmap，不改计数含义/门。服务器缺陷处理钩子的附带OpenSSL异常不作网络根因、也不修改系统软件。

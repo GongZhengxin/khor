@@ -8,6 +8,7 @@ use tokio::time::{Instant, MissedTickBehavior};
 
 pub(super) const SIZE: usize = 1200;
 pub(super) const RATE: u64 = 70_000_000;
+pub(super) const TICK_US: u64 = 5000;
 pub(super) const PACKETS: usize = (20 * RATE / (SIZE as u64 * 8)) as usize;
 const WORDS: usize = PACKETS.div_ceil(64);
 
@@ -91,14 +92,14 @@ pub(super) async fn send(ip: Ipv4Addr, peer: SocketAddr, tag: u64) -> Sent {
         late_over_10ms: 0,
         first_error: None,
     };
-    let mut timer = tokio::time::interval_at(began, Duration::from_millis(1));
+    let mut timer = tokio::time::interval_at(began, Duration::from_micros(TICK_US));
     timer.set_missed_tick_behavior(MissedTickBehavior::Skip);
     let mut previous_slot = None;
     'paced: loop {
         let scheduled = timer.tick().await;
         let now = Instant::now();
-        let slot = now.duration_since(began).as_millis() as u64;
-        if slot >= 20_000 || now >= end {
+        let slot = now.duration_since(began).as_micros() as u64 / TICK_US;
+        if slot >= 20_000_000 / TICK_US || now >= end {
             break;
         }
         if previous_slot == Some(slot) {
@@ -109,9 +110,9 @@ pub(super) async fn send(ip: Ipv4Addr, peer: SocketAddr, tag: u64) -> Sent {
         result.ticks += 1;
         result.max_lateness_us = result.max_lateness_us.max(late);
         result.late_over_10ms += u64::from(late > 10_000);
-        let divisor = SIZE as u64 * 8 * 1000;
-        let first = (slot * RATE / divisor) as usize;
-        let last = (((slot + 1) * RATE / divisor) as usize).min(PACKETS);
+        let divisor = SIZE as u64 * 8 * 1_000_000;
+        let first = (slot * TICK_US * RATE / divisor) as usize;
+        let last = (((slot + 1) * TICK_US * RATE / divisor) as usize).min(PACKETS);
         for seq in first..last {
             let bytes = packet(seq, tag);
             let sent = tokio::time::timeout_at(end, socket.send(&bytes)).await;

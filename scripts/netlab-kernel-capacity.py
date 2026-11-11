@@ -11,7 +11,7 @@ import sys
 
 spec = importlib.util.spec_from_file_location('kernel_queues', Path(__file__).with_name('netlab-kernel-queues.py'))
 queues = importlib.util.module_from_spec(spec); spec.loader.exec_module(queues)
-REVISION = 'workload_kernel_udp_capacity_v1'
+REVISION = 'workload_kernel_udp_capacity_v2'
 SIZE = 1200
 RATE = 70000000
 PACKETS = 20*RATE//(SIZE*8)
@@ -23,7 +23,7 @@ def bitmap(value):
     assert isinstance(value, list) and len(value) == WORDS
     assert all(type(w) is int and 0 <= w < 1 << 64 for w in value)
     assert value[-1] >> (PACKETS % 64) == 0
-    return sum(w.bit_count() for w in value)
+    return sum(bin(w).count('1') for w in value)
 
 
 def buckets(value, count):
@@ -45,8 +45,8 @@ def direction(row):
     assert not any(a & b for a, b in zip(s['sent'], s['failed']))
     assert not any(a & ~b for a, b in zip(r['received'], s['sent']))
     assert failed == 0 and s['first_error'] is None and sent*100 >= PACKETS*99
-    assert 19000000 <= s['elapsed_us'] <= 21000000 and 0 < s['ticks'] <= 20000
-    assert sent <= s['ticks']*8 and 0 <= s['max_lateness_us'] <= 20000
+    assert 19000000 <= s['elapsed_us'] <= 21000000 and 0 < s['ticks'] <= 4000
+    assert sent <= s['ticks']*37 and 0 <= s['max_lateness_us'] <= 20000
     assert 0 <= s['late_over_10ms']*100 <= s['ticks']
     assert buckets(s['by_second'], 21) == sent
     sender_rate = sum(s['by_second'][5:15])*SIZE*8/10000000
@@ -84,7 +84,7 @@ def case(path):
     expected = dict(layout='forwarding_split',payload_bytes=1200,offered_bit_per_sec=RATE,planned_packets=PACKETS,
         send_seconds=20,receive_seconds=25,ready_limit_seconds=2,direction_limit_seconds=28,steady_seconds=[5,15],
         rtt_ms=300,mbit_each_direction=50,queue_ms=40,burst_bytes=65536,capacity_mbit_bounds=[40,60],
-        sender_steady_mbit_bounds=[65,75],receiver_first_limit_us=2000000,pacer_tick_us=1000,
+        sender_steady_mbit_bounds=[65,75],receiver_first_limit_us=2000000,pacer_tick_us=5000,
         pacer_max_lateness_us=20000,pacer_late_10ms_percent_limit=1,pacer_skip_percent_limit=1,
         layer='kernel_UDP',residents=False,slo=False,physical_calibration_accepted=False)
     assert all(m[k] == v for k, v in expected.items())
