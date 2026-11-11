@@ -50,3 +50,10 @@ N0最终UX门/足够样本p99/一致完整前后证据；N1约8秒尾巴、严�
 MacLab和Turing同LAN；macserver是另一构建机，用户报告异网。iPhone localhost旧0.2.0现场靠反复关开App某次恢复，截图5GA仅hinton Direct29ms；候选未安装，无phone sampler，旧窗口已过期。最终走可信GitHub/TestFlight真机流程。最新向用户估计完整仍3–5天且低置信，承认此前按小时估计混淆局部与整体验收；不在compact后重置或把阶段绿当整体完成。
 
 图谱优先，本树无.codegraph不擅建；CRG部分/滞后，0flow不是无影响；debug/explore/review技能已使用。执行继续，goal保持active。
+
+
+## 10:28 UTC：四peer物理任务已单次启动
+
+当前准确源 **1f0a8be64bd4a692475b901e34fb8d7996dda034**，tree **50a9b88e52f6e2c4bad8ce27b5f37116623625d7**，snapshot **84e7eec83981530c44604ea6ed23ac94e85fb220**，candidate-prepared-physical-source-v2.json，clean/0excluded；生产carry/hop/stream_trace/wires逐字核对与双OS已过67929相同，新CLI fixture独立待编译/行为。远端精确格式补丁已提交，上一节旧“待提交/冻结”由此替代。
+
+Turing **turing-20261111T102641Z-ebc3630e**，PID **3828986**，10:27:03 UTC launch，netlab-hop-ownership、原control68cad、role diagnostic；stage exec97445已成功退出，仅提交一次。前驱3fa格式-only已收齐、identity/空group。prepared-physical-run-plan-v1.json记录新2case×3的6项诊断校准；先查同receipt/execution/PID与task.log，不能用原9项checker，也不能在活物理计时期间启动另一个Turing构建/测试。无其他Turing计时、无Mac在途、无手机采样。下一步核编译和真实前置/业务结果；若失败保留原轮次，不盲重发或把返回码当覆盖证明。完整N0–N5保持active。
