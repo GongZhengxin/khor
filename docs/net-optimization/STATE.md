@@ -1,12 +1,12 @@
 # feat/net 当前状态与接续入口
 
-更新于2026-11-11 07:55 UTC。完整N0–N5未完成，用户“完成计划”目标active；root串行，不派发子智能体。此前逐字STATE保存在[上一状态](HISTORY-20261111-through-first-leg-facts.md)，SHA `0e424f63d4f2fcee7f40961de1ddb666f7dd90647032f4a0f4eec5e89aa5ee70`，继续链接此前原始历史及失败。收据、真实进程和实际worktree优先，不能把观察超时或调度paused当作停止/重发依据。
+更新于2026-11-11 08:13 UTC。完整N0–N5未完成，用户“完成计划”目标active；root串行，不派发子智能体。此前逐字STATE保存在[上一状态](HISTORY-20261111-through-first-leg-facts.md)，SHA `0e424f63d4f2fcee7f40961de1ddb666f7dd90647032f4a0f4eec5e89aa5ee70`，继续链接此前原始历史及失败。收据、真实进程和实际worktree优先，不能把观察超时或调度paused当作停止/重发依据。
 
 ## 位置、授权与当前源
 
-产品 `/Volumes/disk0/Khor/worktrees/current/khor-net`，branch `feat/net`。最新生产候选 **1bd9692aac088026436a0c1044296e54b43344d6**，tree **407ab1b825e3cc9c4db5bcb3e58fa53c0cf86e36**，snapshot **5bd853bbf58cd3a873b6b67207905aced483c448**；它是6c3b86e首腿地址事实修复原样应用远端format.patch，无行为调整。source文件 `candidate-address-facts-candidate-source-v2.json`。实际行为尚未验证。
+产品 `/Volumes/disk0/Khor/worktrees/current/khor-net`，branch `feat/net`。最新生产候选 **fcc7b990e22f3f78d0c06f6fa39f71e76a93bb5f**，tree **fb5d342a06c6de011d95da6cc16aaad1613a2e90**，snapshot **18dbd112a4cc7d7386c396392c9407a8153330cd**；每middle失败作用域修复，尚待实际行为。source `candidate-admission-per-middle-source-v2.json`，原73测试+两个admission测试正文不变。
 
-最新已经准确同源双OS全12通过的是 **2874985e90c1523a6db1b4171a48de085718552d**，tree2780ffe007956ec655bb4475b1a2c57b1853bb7e，snapshot8cdc87e0040c5a813e40c70197ea6d40dcf237c7。不要外推给新候选。
+最新已经准确同源双OS全12通过的是 **1bd9692aac088026436a0c1044296e54b43344d6**，tree407ab1b825e3cc9c4db5bcb3e58fa53c0cf86e36，snapshot5bd853bbf58cd3a873b6b67207905aced483c448，Mac42983120010/Turing075404Z-9850241b均hop73/全部12组。它修同ID真实新Tunnel的IPv4/IPv6地址事实，不包括同一connection迁移、并发admission、完整N2或phone。更早287成功观察寿命修复亦有双OS全12，不跨源外推。
 
 控制树 `/Volumes/disk0/Khor/worktrees/current/khor-build-net`，固定68cadb57a0ed72d40a4ca9a843e86b9c6797bf34，原两个untracked pycache保留。Iroh42–44隔离树 `/Volumes/disk0/Khor/worktrees/current/khor-net-recovery-deadlines`，detached2ef6bee5a5aaf841af066f4edb5c894769d4539d，未动。证据根 `/Volumes/disk0/Khor/evidence/net`，ops同根/ops，source-refs.json由root单写。
 
@@ -14,14 +14,9 @@
 
 ## 正在进行：先查同一收据，不重复提交
 
-07:54已各提交一次新候选1bd9692/tree407ab/snapshot5bd853：
-- Turing `stage-launch-turing.py net-node first-leg-facts-candidate-v2`，run **turing-20261111T075404Z-9850241b**，PID3592746，exec session16726已结束；前驱 `turing-20261111T074844Z-fdbdcb85/receipt.json`，role candidate。先恢复该session/实际ledger与receipt，确认run/PID，不重发。stage writer退出前禁止另一个ledger写入。
-- Mac同源net-node，run **42983120010**，request42464aa10903435094cdabd2bcfdce13，已登记，exec session55033已结束。先查session及实际request收据；拿到Actions ID且Turing stage writer结束后用register-mac-run.py登记，不能把提交超时当失败。
-- 前版Mac42981901522已failure，exact artifact13838176447、API zipSHA3dbe0c9955f3d6f08e880fcc0e3319e226f86898f85f37c3d0ba6d9400ca1591；collector和identity核已结束，9files/11controls，与Turing同一format.patch逐字相同，只有格式失败、零测试组。
+**Turing turing-20261111T081044Z-ee0e2887**，net-node，PID **3616894**，child待核，08:11:06 UTC launch，role candidate。准确fcc7/treefb5d/snapshot18db/control68cad，receipt同名目录；stage exec8773已终态成功退出，不重发。此次候选只处理第三middle未试作用域，挂起第一middle合同预期仍红，不允许隐藏或当全绿；需要核原73和第三middle回归后继续有界竞争的目标提交所有权设计。
 
-前版Turing **turing-20261111T074844Z-fdbdcb85**准确6c3/tree4c0725bf6b055254b66379fb74cb4ca9d5e0586d/snapshot01669b09f542b978c45ab1038556083a3946ce3a，47.3056秒终态return1，10files/identity/空group核，只有format.patch，无测试组。已逐字应用远端hop.rs格式补丁并提交1bd9692。source-refs两个旧format-only项均已终态分类。
-
-没有phone sampler；候选没有装到iPhone。
+Mac当前无待核候选，无phone采样。1bd同源双OS全12已归档/identity/逐组核并终态分类。Mac42983791997和Turing080050Z-aee8f512只是admission fixture格式失败；Turing080317Z-f15d8284旧行为实际73绿/2新红已核，候选b344的080850Z-d430a9ef只是生产格式失败，精确patch应用为当前fcc7；原件和ledger均保留。下文历史“待”标记由此节和末尾checkpoint替代。
 
 ## 最新证据与实现
 
@@ -89,4 +84,7 @@ stage-launch只一次并等exec结束再做依赖ledger写入；查同一PID和e
 
 新增admission fixture d965→远端格式12cb3a1adafe4d8120d481e1f5dda998d01fd1c3，treef6f8491d957d2b87c790b5bad883f191bf9a3bf2/snapshot88fa21b6fc5694bc7a285a9bc78c733d5cdb69ea，candidate-admission-old-source-v2.json。Turing080050Z-aee8f512仅格式失败；原样应用patch。Mac42983791997为未格式v1（treeb62c/snapshot324840），已failure，exact13838587166、ZIP SHA2ec2a28faa3d3cd83e9a9932f521a9bfac6a837e0cc4efcd0be1b211c44da9cb，collector80845待核/不要重发。Turing **080317Z-f15d8284** 已232.133秒终态return101，11files/identity/空group，原73hop全过、仅两个新合同FAIL；net67+1ignored过，剩余组未跑。需核最终失败为实际admission断言，并保存classification；不能称完整全12。
 
-root当前工作区在hop.rs实现每middle失败作用域（尚未验证）：原MISSED候选上加count/at，同network且实际同wire才延续该middle失败；只给实际尝试者退避，先筛再取TRIES2，aggregate纯退避helper保持；成功退役旧完成并清失败。不会单独解决第一middle挂起，预期仍有新挂起合同红，不能隐藏。NEXT-DESIGN记录并发双OK目标侧立即attach可能互相替换的提交风险；不能只select两个dial就宣布有界竞争安全。完整计划仍active。
+root已提交hop.rs每middle失败作用域候选b344→格式fcc7（尚未验证）：原MISSED候选上加count/at，同network且实际同wire才延续该middle失败；只给实际尝试者退避，先筛再取TRIES2，aggregate纯退避helper保持；成功退役旧完成并清失败。不会单独解决第一middle挂起，预期仍有新挂起合同红，不能隐藏。NEXT-DESIGN记录并发双OK目标侧立即attach可能互相替换的提交风险；不能只select两个dial就宣布有界竞争安全。完整计划仍active。
+
+
+2026-11-11 08:11 UTC：admission两个新合同旧行为已核为cleanup之后的真实最终admission断言，非编译/前置失败；admission-old-behavior-v1.json保存，ledger终态。Mac42983791997仅格式、9files/11controls/identity，已分类，不算行为红。每middle拒绝作用域生产候选b344仅格式失败（Turing080850Z-d430a9ef，46.436秒、10files/identity/空group），逐字应用返回hop.rs patch为 **fcc7b990e22f3f78d0c06f6fa39f71e76a93bb5f**，treefb5d342a06c6de011d95da6cc16aaad1613a2e90/snapshot18dbd112a4cc7d7386c396392c9407a8153330cd，candidate-admission-per-middle-source-v2.json。只提交一次Turing stage-launch，exec **8773**，前驱d430a9ef；恢复时先查同session/实际ledger/receipt，不重发。此批预期只修第三middle未试问题，挂起第一middle合同仍预期红，不把部分验证当全绿。所有旧73测试及两个新fixture正文保持；当前无Mac待核候选、无phone采样。
