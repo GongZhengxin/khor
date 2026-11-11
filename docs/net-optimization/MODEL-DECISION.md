@@ -51,3 +51,9 @@ root/接口/单位/queue/配置漂移严格核验，安装原命令/初始读回
 
 Mac既有运行时证据仅在全Git差异证明零生产runtime变更时复用；新Linux fixture必须实际编译/执行。
 无合并/发布/生产部署/候选手机安装授权的推定。新source/control/run和状态以STATE为准。
+
+## 高profile优先级campaign的固定入口（首个policy数据前）
+
+预检与策略数据分开：只有原netlab-workload-high回执终态、source-owned metadata与独立原始人口/配置/路径字节核验通过后，才可启动策略campaign。新固定task为netlab-workload-high-policy；每个block先两个真实w3守卫，再三个同wh2 high fresh，关闭生命周期诊断；不重复low人口混入策略分布。守卫失败阻止业务，一旦业务开始保留全部三轮及首个非零退出。新metadata单独输出workload-high-policy-contracts.json，原preflight/旧low validator不变。
+
+首次提交前冻结完整A/B树与固定control，证明树之间仅priority const的0/-1一行不同，PULL_AHEAD=8、共同整形构造器与已验证预检逐字同；如果只有文档/metadata增加则记录全Git差异以复用已有Linuxfixture行为和Mac生产runtime证据。沿已声明A B B A A B共18轮，计时前落盘campaign；失败仍保留在其预定位置，任何改变另冻版本，不按结果挑轮。此入口已准备不等于预检已通过或campaign已启动。
