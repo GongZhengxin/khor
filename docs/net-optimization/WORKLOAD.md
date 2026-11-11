@@ -1,6 +1,6 @@
 # 真实 Node 混合负载基线
 
-2026-11-11，当前观察器协议 `resident_mixed_workload_v4` 尚未验证；v3已取得下列三轮功能基线，不能视为v4证据。这不替代完整 N3 或最终用户体验门。沿用 Linux namespace / scratch resident / 原资源门，运行时冻结产品 tree、control、原始日志。产品调度和连接策略不随此实验修改。
+2026-11-11，当前观察器协议 `resident_mixed_workload_v4` 已在Linux编译，首次真实六轮对照在途、运行验收尚未完成；v3已取得下列三轮功能基线，不能视为v4证据。这不替代完整 N3 或最终用户体验门。沿用 Linux namespace / scratch resident / 原资源门，运行时冻结产品 tree、control、原始日志。产品调度和连接策略不随此实验修改。
 
 固定两个真实 resident，公开 IPv4，配对后先达到 Direct。仅 x 接口双向配置：单向20ms、每方向8Mbit/s、40ms队列、零随机丢包。该配置的实际吞吐尚未独立校准，日志明确 `calibrated:false`；第一轮是测量入口和功能合同验证，不能把名义速率当实际容量、测得差异当拥塞控制收益。
 
@@ -35,13 +35,13 @@ v2仍三轮预热超时，有限原始输出仅为shell提示符、没有脚本�
 
 文件完成18.850/18.833/19.929秒。有效负载率是实际字节/实际耗时，不是独立测得的链路容量。第三轮空载和后空载已有约85–93ms调度迟到；具体原因未定位，不能按系统load猜CPU、磁盘或产品网络。目录计划→完成约300ms含每类最多一个在途的观察器积压，不直接证明Node内部排队300ms。原始数据没有被“只看服务时间”或删除失败过滤；本轮没有足够原因直接采用stream priority、固定批量限速或新连接。
 
-## 下一份校准与定位协议（尚未实现）
+## 后续校准与定位协议（历史提议；实际进度见下文）
 
 先在同一namespace几何和资源门、复用同一条件构造器下，独立验证内核TC瓶颈：明确TCP连接的64字节echo与双向各8MiB完整数据，nodelay、固定payload、预热另记、每步2秒/传输120秒总界，保存所有错误与原始时刻。读取实际qdisc/接口计数核单向20ms/8Mbit/40msbuffer，不能只信builder参数。校准作为模型/执行器证据，不是Noq或Node吞吐基准，也不替代UDP/中继双腿。校准门与运行版本在执行前冻结，不依据结果追改。
 
 同时增加观察器运行时的独立定时探针，分解计划迟到是否出现在发起RPC之前；比较逐样本同步记录与有界内存记录/阶段末落盘的观察器成本，两种都有完整失败人口与取消/进程中断的缺样本判定。它们是测量模型对照，不当产品加速。之后再关联实际Main/Tunnel wire和队列/许可/发送缓冲，选择有因果支持的调度候选，按同条件前后对照复验；仍需多seed/交叉顺序、SSH/peer relay、规模与手机成本。
 
-## kernel TCP v1 校准入口（已写，尚未远端验证）
+## kernel TCP v1 校准入口（实现与实际三轮复核见下文）
 
 `workload::calibration::w0_` 为独立 ignored 测试。w0和w1复用同一个condition构造器，仍为单向20ms/每方向8Mbit/40ms队列；不运行resident或Noq来冒充独立校准。一个父调用拥有的服务任务、三个明确TCP连接，4次预热与64次64字节echo全部记录，随后upload/download各8MiB固定payload完整字节验证；upload要收到服务端全量验证后的确认才结束计时。连接/echo两秒，传输120秒，总界不在分片时重置；失败/blocked仍保留。服务任务所有退出路径归父调用，正常结束另核三个连接结果。
 
@@ -60,7 +60,7 @@ x设备与入口网关各自namespace内，在测量前后保存`tc -s -j qdisc 
 
 此前同源run turing-20261111T140243Z-bd7e5f6c的三项Rust功能门均绿，但总job1/原报告false：校验器用startswith漏读被Rust test名称前缀接在同一行的manifest。原件/红状态完整保留于validator-prefix-failure-v1.json；新control修正为唯一标记后解析、仍要求manifest恰1及原样本/全部门，新增harness_prefix正例与其余反例（12个子例），完整control stub12项8.578秒绿。新parser仅在原始日志副本中回放验证（control-workload-calibration-prefix-replay-v1.json）后，以上独立重跑三轮才取得新的0/通过收据；没有改写旧报告或放宽物理门。
 
-## v4观察器对照（实现中，尚未编译/执行）
+## v4观察器对照（Linux已编译；首次六轮在途）
 
 保持真实PTY/目录/16MiB、三阶段各两类120请求、原2秒请求和120秒bulk上界、原程序就绪10秒总界、同condition。仅改变测量记录方式：w1 Streaming逐条输出，w2 Buffered在每阶段测量结束后输出；两者都持有相同最多512行的内存记录。缓冲flush耗时另记，不悄悄当作零开销；不同phase仍保留原计划与每类一个在途，积压不删除。
 
@@ -69,3 +69,5 @@ x设备与入口网关各自namespace内，在测量前后保存`tc -s -j qdisc 
 每阶段同一观察器runtime增加父future借用的20ms定时探针，不新起任务、不逐tick打印，保留计划/实际时间对，明确Skip和被跳过的计划间隔。最多20000个tick（每阶段约320KiB原始时间对），到上限或logger overflow不能通过。v4两模式都有相同探针，**不可把v3/v4不同观察器直接当产品改进**。在实际Node实验自己的x/gateway命名空间，前后保存TC JSON/文本/接口计数，与kernel独立校准分开核对。close仍只是API回复，host/child独立退出与真实wire/许可/排队证据仍待补。
 
 计划在同一冻结source/control跑三对，顺序Streaming→Buffered、Buffered→Streaming、Streaming→Buffered，3次/模式；这是有限顺序对照，奇数配对不能称完全平衡或最终性能接受。先过独立w3拥有者/记录器校准，再执行六个完整场景；后续完整统计仍需多seed/更充分顺序平衡与长尾人口。此处已提前记录顺序，不因结果选择性重跑。
+
+2026-11-11 14:55 UTC：冻结源0b945447/tree725b442271fd07d85a8aeaaac84598cd3f5028e5，control7e439456，实际任务 `turing-20261111T145336Z-bc4dbca9` 已启动。先w3取消/记录校准，再上述固定六轮，尚未有终态结论。Rust与 `turing-20261111T144048Z-f970f1d5` 的a9ef源逐字相同，后者已编译全fixture并通过三w0独立kernel校准，但没有运行w3或w1/w2，不能替代本次运行。控制13项stub及source metadata的18子例仅验证调度/解析合同；全部本机检查未运行产品。原始收据、后续结果与完整范围见STATE。
