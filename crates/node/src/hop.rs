@@ -100,11 +100,28 @@ struct MissEpoch {
     candidates: std::sync::Weak<()>,
 }
 
+struct MissObservation {
+    network: std::sync::Weak<()>,
+    order: u64,
+}
+
+impl MissObservation {
+    fn new(network: std::sync::Weak<()>) -> Self {
+        use std::sync::atomic::{AtomicU64, Ordering};
+        static NEXT: AtomicU64 = AtomicU64::new(1);
+        Self {
+            network,
+            order: NEXT.fetch_add(1, Ordering::Relaxed),
+        }
+    }
+}
+
 struct HopMiss {
     count: u32,
     at: std::time::Instant,
     epoch: Option<MissEpoch>,
     candidates: Vec<(String, bool)>,
+    observed: u64,
     // Only this cache entry owns the candidate token. In-flight asks hold
     // weak tokens, so retiring a context also retires its late answers.
     _current: Option<Arc<()>>,
@@ -117,6 +134,7 @@ impl HopMiss {
             at: std::time::Instant::now(),
             epoch,
             candidates: Vec::new(),
+            observed: 0,
             _current: None,
         }
     }
@@ -152,33 +170,43 @@ fn current_miss_epoch(epoch: Option<&MissEpoch>) -> bool {
 fn miss_context(
     me: &str,
     to: &str,
-    network: std::sync::Weak<()>,
+    observation: MissObservation,
     mut candidates: Vec<(String, bool)>,
-) -> MissEpoch {
+) -> Option<MissEpoch> {
     candidates.sort_unstable();
     candidates.dedup();
     let mut all = MISSED.lock().unwrap_or_else(|p| p.into_inner());
+    if observation.network.strong_count() == 0 {
+        return None;
+    }
     all.retain(|_, miss| current_miss_epoch(miss.epoch.as_ref()));
     let miss = all
         .entry((me.to_owned(), to.to_owned()))
         .or_insert_with(|| HopMiss::new(None));
+    // A delayed selection is not evidence that a newer route disappeared.
+    // The sequence is captured before reading the roster and roadbook.
+    if observation.order < miss.observed {
+        return None;
+    }
+    miss.observed = observation.order;
     if miss.candidates == candidates
         && let Some(epoch) = &miss.epoch
-        && epoch.network.ptr_eq(&network)
+        && epoch.network.ptr_eq(&observation.network)
     {
-        return epoch.clone();
+        return Some(epoch.clone());
     }
     let current = Arc::new(());
     let epoch = MissEpoch {
-        network,
+        network: observation.network,
         candidates: Arc::downgrade(&current),
     };
     *miss = HopMiss {
         candidates,
+        observed: observation.order,
         _current: Some(current),
         ..HopMiss::new(Some(epoch.clone()))
     };
-    epoch
+    Some(epoch)
 }
 
 fn missed_in_epoch(me: &str, to: &str, epoch: Option<MissEpoch>) {
@@ -312,7 +340,7 @@ static ASKING: std::sync::LazyLock<
 /// in place of its own and end both. Of two hops between the same two
 /// machines, the one the lower id asked for stands, at both ends: the
 /// lower refuses the other's while it asks ([`Node::serve_hop`]), the
-/// higher keeps the other's that came in meanwhile ([`Node::open_hop`]).
+/// higher keeps the other's that came in meanwhile ([`Node::open_hop_in_epoch`]).
 struct Asking((String, String));
 
 impl Asking {
@@ -453,7 +481,7 @@ pub(crate) enum Legs {
     /// may be the relay — `to`'s home may be a far relay where the
     /// middle's is near (hinton on aps1, 10-20). The legs' sum is held
     /// against the relay's measured round trip, and iroh's end to end
-    /// measurement has the last word ([`Node::open_hop`]).
+    /// measurement has the last word ([`Node::open_hop_in_epoch`]).
     Measured,
     /// **This machine has no relay** (C7, `egress`): the first leg must be
     /// one it has without one — direct — and the second may be the
@@ -631,6 +659,7 @@ impl Node {
             if !self.hop_on() || y.id.parse().is_ok_and(|p| self.carry.has(&p)) {
                 return;
             }
+            let observation = MissObservation::new(self.wires.hop_epoch());
             let Ok(all) = self.devices() else { return };
             let me = self.device_str().to_owned();
             let mine = all
@@ -683,7 +712,9 @@ impl Node {
             }
             #[cfg(test)]
             self.wires.hold_hop_selection_for_test().await;
-            let epoch = self.hop_miss_epoch(&y.id, &picked);
+            let Some(epoch) = self.hop_miss_epoch(&y.id, &picked, observation) else {
+                return;
+            };
             if missed_lately_in_epoch(&me, &y.id, Some(&epoch)) {
                 return;
             }
@@ -693,16 +724,36 @@ impl Node {
         })
     }
 
-    fn hop_miss_epoch(&self, to: &str, picked: &[String]) -> MissEpoch {
+    fn hop_miss_epoch(
+        &self,
+        to: &str,
+        picked: &[String],
+        observation: MissObservation,
+    ) -> Option<MissEpoch> {
         miss_context(
             self.device_str(),
             to,
-            self.wires.hop_epoch(),
+            observation,
             picked
                 .iter()
                 .map(|id| (id.clone(), self.road_for_hop(id, &[]).is_some()))
                 .collect(),
         )
+    }
+
+    #[cfg(test)]
+    async fn open_hop(
+        &self,
+        ep: &iroh::Endpoint,
+        y: &crate::DeviceInfo,
+        all: &[crate::DeviceInfo],
+        picked: &[String],
+    ) -> bool {
+        let observation = MissObservation::new(self.wires.hop_epoch());
+        let Some(epoch) = self.hop_miss_epoch(&y.id, picked, observation) else {
+            return false;
+        };
+        self.open_hop_in_epoch(ep, y, all, picked, epoch).await
     }
 
     /// **Opens a hop to `y` through the first of `picked` that answers**
@@ -711,17 +762,6 @@ impl Node {
     /// and watches it: the hop is let go once direct, or the relay, has
     /// carried the connection for two looks — the selector
     /// (`carry::RoadOrder`) found it no faster. `true` when a hop is up.
-    async fn open_hop(
-        &self,
-        ep: &iroh::Endpoint,
-        y: &crate::DeviceInfo,
-        all: &[crate::DeviceInfo],
-        picked: &[String],
-    ) -> bool {
-        let epoch = self.hop_miss_epoch(&y.id, picked);
-        self.open_hop_in_epoch(ep, y, all, picked, epoch).await
-    }
-
     async fn open_hop_in_epoch(
         &self,
         ep: &iroh::Endpoint,
@@ -971,7 +1011,7 @@ impl Node {
     /// measured round trip. A hop that meets the selector's gain margin
     /// is opened; iroh then measures it end to end and the selector
     /// keeps whichever is faster, and a hop that loses is let go
-    /// ([`Node::open_hop`]) and not tried through that middle again for
+    /// ([`Node::open_hop_in_epoch`]) and not tried through that middle again for
     /// [`LOST_FOR`]. Direct needs nothing here: iroh's punching runs under
     /// every road and takes over when it opens.
     pub(crate) async fn compare_roads(&self, ep: &iroh::Endpoint) {
@@ -985,6 +1025,7 @@ impl Node {
         if !self.hop_on() || self.carrying().is_none() {
             return;
         }
+        let observation = MissObservation::new(self.wires.hop_epoch());
         let Ok(all) = self.devices() else { return };
         let me = self.device_str().to_owned();
         let mine = all
@@ -1032,7 +1073,14 @@ impl Node {
                 |b| was_lost(&y.id, b),
             );
             if !picked.is_empty() {
-                Box::pin(self.open_hop(ep, y, &all, &picked)).await;
+                let observation = MissObservation {
+                    network: observation.network.clone(),
+                    order: observation.order,
+                };
+                let Some(epoch) = self.hop_miss_epoch(&y.id, &picked, observation) else {
+                    continue;
+                };
+                Box::pin(self.open_hop_in_epoch(ep, y, &all, &picked, epoch)).await;
             }
         }
     }
