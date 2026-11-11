@@ -87,12 +87,7 @@ async fn output_until(stream: &mut TcpStream, expected: &str, trace: bool) -> Re
     }
 }
 
-async fn directory(
-    node: &Node,
-    path: &str,
-    phase_start: Instant,
-    log: &Log,
-) -> Vec<Value> {
+async fn directory(node: &Node, path: &str, phase_start: Instant, log: &Log) -> Vec<Value> {
     let mut rows = Vec::with_capacity(SAMPLES);
     for index in 0..SAMPLES {
         let scheduled = phase_start + PERIOD * index as u32;
@@ -204,7 +199,10 @@ async fn phase(
     let record_flush_us = flush_started.elapsed().as_micros();
     let probe_capped = timing["capped"] == true;
     emit(timing);
-    assert!(!overflow && !probe_capped, "bounded observer retained the entire phase");
+    assert!(
+        !overflow && !probe_capped,
+        "bounded observer retained the entire phase"
+    );
     directories.extend(terminals);
     emit(
         json!({"schema":1,"revision":REVISION,"event":"phase_finished","phase":name,"mode":mode.name(),"logger_overflow":overflow,"probe_capped":probe_capped,"record_flush_us":record_flush_us,
@@ -226,7 +224,11 @@ async fn w2_buffered_terminal_and_directory_during_a_resident_file_pull() {
 }
 
 async fn run(mode: Mode) {
-    let s = if mode == Mode::Streaming { "w1-stream" } else { "w2-buffer" };
+    let s = if mode == Mode::Streaming {
+        "w1-stream"
+    } else {
+        "w2-buffer"
+    };
     let lab = Lab::new().await.unwrap();
     let r = relay(&lab, s, "relay", None).await;
     let rx = router(&lab, "pubx", Net::Public).await;
@@ -265,10 +267,21 @@ async fn run(mode: Mode) {
         .unwrap();
     let path = source.display().to_string();
     let cwd = path.clone();
-    let before_x = x.dev.spawn(|_| async { calibration::snapshot().await }).unwrap().await.unwrap();
-    let before_gateway = rx.spawn(|_| async { calibration::snapshot().await }).unwrap().await.unwrap();
+    let before_x = x
+        .dev
+        .spawn(|_| async { calibration::snapshot().await })
+        .unwrap()
+        .await
+        .unwrap();
+    let before_gateway = rx
+        .spawn(|_| async { calibration::snapshot().await })
+        .unwrap()
+        .await
+        .unwrap();
     for (name, capture) in [("x_before", before_x), ("gateway_before", before_gateway)] {
-        emit(json!({"schema":1,"revision":REVISION,"event":"capture","mode":mode.name(),"name":name,"capture":capture}));
+        emit(
+            json!({"schema":1,"revision":REVISION,"event":"capture","mode":mode.name(),"name":name,"capture":capture}),
+        );
     }
     let node = x.with(|node| async move { node }).await;
     let mut benchmark = Owned(x.dev.spawn(move |_| async move {
@@ -308,11 +321,23 @@ async fn run(mode: Mode) {
         let closed = tokio::time::timeout(Duration::from_secs(10), node.close_on("y", &id)).await.is_ok_and(|r|r.is_ok());
         (rows, bulk, destination, closed)
     }).unwrap());
-    let (rows, bulk, destination, closed) = (&mut benchmark.0).await.expect("owned workload completes");
-    let after_x = x.dev.spawn(|_| async { calibration::snapshot().await }).unwrap().await.unwrap();
-    let after_gateway = rx.spawn(|_| async { calibration::snapshot().await }).unwrap().await.unwrap();
+    let (rows, bulk, destination, closed) =
+        (&mut benchmark.0).await.expect("owned workload completes");
+    let after_x = x
+        .dev
+        .spawn(|_| async { calibration::snapshot().await })
+        .unwrap()
+        .await
+        .unwrap();
+    let after_gateway = rx
+        .spawn(|_| async { calibration::snapshot().await })
+        .unwrap()
+        .await
+        .unwrap();
     for (name, capture) in [("x_after", after_x), ("gateway_after", after_gateway)] {
-        emit(json!({"schema":1,"revision":REVISION,"event":"capture","mode":mode.name(),"name":name,"capture":capture}));
+        emit(
+            json!({"schema":1,"revision":REVISION,"event":"capture","mode":mode.name(),"name":name,"capture":capture}),
+        );
     }
     let exact_bytes = destination
         .as_ref()
