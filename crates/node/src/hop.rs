@@ -94,8 +94,33 @@ const MISSED_FIRST: Duration = Duration::from_secs(30);
 
 /// Per (this machine, far machine): hops that found no middle in a row,
 /// and when the last did.
-type MissEpoch = std::sync::Weak<()>;
-type HopMiss = (u32, std::time::Instant, Option<MissEpoch>);
+#[derive(Clone)]
+struct MissEpoch {
+    network: std::sync::Weak<()>,
+    candidates: std::sync::Weak<()>,
+}
+
+struct HopMiss {
+    count: u32,
+    at: std::time::Instant,
+    epoch: Option<MissEpoch>,
+    candidates: Vec<(String, bool)>,
+    // Only this cache entry owns the candidate token. In-flight asks hold
+    // weak tokens, so retiring a context also retires its late answers.
+    _current: Option<Arc<()>>,
+}
+
+impl HopMiss {
+    fn new(epoch: Option<MissEpoch>) -> Self {
+        Self {
+            count: 0,
+            at: std::time::Instant::now(),
+            epoch,
+            candidates: Vec::new(),
+            _current: None,
+        }
+    }
+}
 
 static MISSED: std::sync::LazyLock<
     std::sync::Mutex<std::collections::HashMap<(String, String), HopMiss>>,
@@ -110,32 +135,77 @@ fn missed_wait(n: u32) -> Duration {
 
 fn same_miss_epoch(a: Option<&MissEpoch>, b: Option<&MissEpoch>) -> bool {
     match (a, b) {
-        (Some(a), Some(b)) => a.ptr_eq(b),
+        (Some(a), Some(b)) => {
+            a.network.ptr_eq(&b.network) && a.candidates.ptr_eq(&b.candidates)
+        }
         (None, None) => true,
         _ => false,
     }
 }
 
 fn current_miss_epoch(epoch: Option<&MissEpoch>) -> bool {
-    epoch.is_none_or(|epoch| epoch.strong_count() != 0)
+    epoch.is_none_or(|epoch| {
+        epoch.network.strong_count() != 0 && epoch.candidates.strong_count() != 0
+    })
+}
+
+/// Candidate membership and actual first-leg availability define a miss's
+/// context. Cost and ordering deliberately do not: noisy RTT is no new route.
+fn miss_context(
+    me: &str,
+    to: &str,
+    network: std::sync::Weak<()>,
+    mut candidates: Vec<(String, bool)>,
+) -> MissEpoch {
+    candidates.sort_unstable();
+    candidates.dedup();
+    let mut all = MISSED.lock().unwrap_or_else(|p| p.into_inner());
+    all.retain(|_, miss| current_miss_epoch(miss.epoch.as_ref()));
+    let miss = all
+        .entry((me.to_owned(), to.to_owned()))
+        .or_insert_with(|| HopMiss::new(None));
+    if miss.candidates == candidates
+        && let Some(epoch) = &miss.epoch
+        && epoch.network.ptr_eq(&network)
+    {
+        return epoch.clone();
+    }
+    let current = Arc::new(());
+    let epoch = MissEpoch {
+        network,
+        candidates: Arc::downgrade(&current),
+    };
+    *miss = HopMiss {
+        candidates,
+        _current: Some(current),
+        ..HopMiss::new(Some(epoch.clone()))
+    };
+    epoch
 }
 
 fn missed_in_epoch(me: &str, to: &str, epoch: Option<MissEpoch>) {
     let mut all = MISSED.lock().unwrap_or_else(|p| p.into_inner());
-    // Check under the same lock as the write. An old completion cannot
-    // overwrite a new epoch's miss after the network forgave its token.
+    // Check under the same lock as the write. Neither a network change nor
+    // a new candidate context can be overwritten by an old completion.
     if !current_miss_epoch(epoch.as_ref()) {
         return;
     }
-    let now = std::time::Instant::now();
-    let e = all
-        .entry((me.to_owned(), to.to_owned()))
-        .or_insert((0, now, epoch.clone()));
-    if !same_miss_epoch(e.2.as_ref(), epoch.as_ref()) {
-        *e = (0, now, epoch);
+    let key = (me.to_owned(), to.to_owned());
+    if epoch.is_some()
+        && !all
+            .get(&key)
+            .is_some_and(|e| same_miss_epoch(e.epoch.as_ref(), epoch.as_ref()))
+    {
+        return;
     }
-    e.0 = e.0.saturating_add(1);
-    e.1 = now;
+    let e = all
+        .entry(key)
+        .or_insert_with(|| HopMiss::new(epoch.clone()));
+    if !same_miss_epoch(e.epoch.as_ref(), epoch.as_ref()) {
+        *e = HopMiss::new(epoch);
+    }
+    e.count = e.count.saturating_add(1);
+    e.at = std::time::Instant::now();
 }
 
 fn made_in_epoch(me: &str, to: &str, epoch: Option<&MissEpoch>) {
@@ -144,7 +214,7 @@ fn made_in_epoch(me: &str, to: &str, epoch: Option<&MissEpoch>) {
     if current_miss_epoch(epoch)
         && all
             .get(&key)
-            .is_some_and(|e| same_miss_epoch(e.2.as_ref(), epoch))
+            .is_some_and(|e| same_miss_epoch(e.epoch.as_ref(), epoch))
     {
         all.remove(&key);
     }
@@ -156,8 +226,10 @@ fn missed_lately_in_epoch(me: &str, to: &str, epoch: Option<&MissEpoch>) -> bool
     current_miss_epoch(epoch)
         && all
             .get(&(me.to_owned(), to.to_owned()))
-            .is_some_and(|(n, at, stored)| {
-                same_miss_epoch(stored.as_ref(), epoch) && at.elapsed() < missed_wait(*n)
+            .is_some_and(|e| {
+                e.count > 0
+                    && same_miss_epoch(e.epoch.as_ref(), epoch)
+                    && e.at.elapsed() < missed_wait(e.count)
             })
 }
 
@@ -570,9 +642,7 @@ impl Node {
                 .find(|d| d.id == me)
                 .map(|d| self.roads_of(d))
                 .unwrap_or_default();
-            if !self.wants_hop(y, &mine)
-                || missed_lately_in_epoch(&me, &y.id, Some(&self.wires.hop_epoch()))
-            {
+            if !self.wants_hop(y, &mine) {
                 return;
             }
             let rows: Vec<(String, bool, bool)> = all
@@ -615,10 +685,26 @@ impl Node {
                 // gets the same admission preference as a live IP wire.
                 picked.sort_by_key(|b| self.road_for_hop(b, &[]).is_none());
             }
+            let epoch = self.hop_miss_epoch(&y.id, &picked);
+            if missed_lately_in_epoch(&me, &y.id, Some(&epoch)) {
+                return;
+            }
             // Keep the cold preparation state out of every enclosing dial and
             // resident request's future, including requests that need no hop.
-            Box::pin(self.open_hop(ep, y, &all, &picked)).await;
+            Box::pin(self.open_hop(ep, y, &all, &picked, epoch)).await;
         })
+    }
+
+    fn hop_miss_epoch(&self, to: &str, picked: &[String]) -> MissEpoch {
+        miss_context(
+            self.device_str(),
+            to,
+            self.wires.hop_epoch(),
+            picked
+                .iter()
+                .map(|id| (id.clone(), self.road_for_hop(id, &[]).is_some()))
+                .collect(),
+        )
     }
 
     /// **Opens a hop to `y` through the first of `picked` that answers**
@@ -633,6 +719,7 @@ impl Node {
         y: &crate::DeviceInfo,
         all: &[crate::DeviceInfo],
         picked: &[String],
+        epoch: MissEpoch,
     ) -> bool {
         let caller = crate::deadline::current();
         let hop_by = tokio::time::Instant::now() + HOP_WITHIN;
@@ -644,7 +731,6 @@ impl Node {
             return false;
         };
         let me = self.device_str().to_owned();
-        let epoch = self.wires.hop_epoch();
         let asked = Asking::new(&me, &y.id);
         let tries = async {
             for b in picked.iter().take(TRIES) {
@@ -937,7 +1023,8 @@ impl Node {
                 |b| was_lost(&y.id, b),
             );
             if !picked.is_empty() {
-                Box::pin(self.open_hop(ep, y, &all, &picked)).await;
+                let epoch = self.hop_miss_epoch(&y.id, &picked);
+                Box::pin(self.open_hop(ep, y, &all, &picked, epoch)).await;
             }
         }
     }
