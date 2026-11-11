@@ -97,9 +97,12 @@ async fn observe_incoming(cancelled: bool) {
         khor_net::path::classify(&outgoing),
         khor_net::path::PathKind::Direct
     );
-    assert!(outgoing.paths().iter().any(|path| {
-        path.id() == iroh::endpoint::PathId::ZERO && path.is_ip()
-    }));
+    assert!(
+        outgoing
+            .paths()
+            .iter()
+            .any(|path| { path.id() == iroh::endpoint::PathId::ZERO && path.is_ip() })
+    );
 
     let (entered, release) = f.node.wires.gate_hop_offered_for_test();
     let mut opening = f.opening();
