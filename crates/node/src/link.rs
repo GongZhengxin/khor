@@ -4495,8 +4495,8 @@ impl Node {
                 };
                 let continued_file = fetch_offset.is_some_and(|offset| offset > 0)
                     && matches!(&_resp, Response::PathSlice { .. });
-                let priority_applied = !continued_file
-                    || send.set_priority(CONTINUED_FILE_RESPONSE_PRIORITY).is_ok();
+                let priority_applied =
+                    !continued_file || send.set_priority(CONTINUED_FILE_RESPONSE_PRIORITY).is_ok();
                 // Read before the first write/FIN, and only for the opt-in
                 // trace. Both experimental sources have the same readback.
                 let observed_priority = accepted_at.and_then(|_| send.priority().ok());
