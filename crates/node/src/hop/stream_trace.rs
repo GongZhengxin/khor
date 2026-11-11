@@ -189,14 +189,25 @@ pub(super) fn attach_prefixed(
     use tokio::io::AsyncReadExt;
     let (send, recv) = pair;
     if std::env::var_os("KHOR_NET_DIAGNOSTICS").is_none() {
-        return links.attach(peer, carrier, std::io::Cursor::new(prefix).chain(recv), send);
+        return links.attach(
+            peer,
+            carrier,
+            std::io::Cursor::new(prefix).chain(recv),
+            send,
+        );
     }
     let send_id = format!("{:?}", send.id());
     let recv_id = format!("{:?}", recv.id());
     let attached = links.attach(
         peer,
         carrier,
-        Tap::new(std::io::Cursor::new(prefix).chain(recv), peer, role, wire, recv_id.clone()),
+        Tap::new(
+            std::io::Cursor::new(prefix).chain(recv),
+            peer,
+            role,
+            wire,
+            recv_id.clone(),
+        ),
         Tap::new(send, peer, role, wire, send_id.clone()),
     );
     khor_net::carry::observe_lifecycle(peer, "hop_stream_bound", || {

@@ -969,17 +969,29 @@ impl Node {
                     let line = Box::pin(crate::journal::BY.scope(
                         crate::journal::By::Hop,
                         self.line_to_inner(ep, middle, Proto::Tunnel, None, false),
-                    )).await.ok()?;
+                    ))
+                    .await
+                    .ok()?;
                     if let Some(wire) = HopWire::observed(&line.conn) {
                         used_middle(&me, &y.id, &epoch, b, wire);
                     }
-                    let (send, recv) =
-                        crate::tunnel::dial(&line.conn, &Ask::To(peer).words()).await.ok()?;
-                    Some((via, line.conn.stable_id(), line.conn.weak_handle(), send, recv))
+                    let (send, recv) = crate::tunnel::dial(&line.conn, &Ask::To(peer).words())
+                        .await
+                        .ok()?;
+                    Some((
+                        via,
+                        line.conn.stable_id(),
+                        line.conn.weak_handle(),
+                        send,
+                        recv,
+                    ))
                 };
                 if let Ok(Some(prepared)) = crate::deadline::wait(
-                    Some(attempt_by), crate::deadline::scope(attempt_by, attempt),
-                ).await {
+                    Some(attempt_by),
+                    crate::deadline::scope(attempt_by, attempt),
+                )
+                .await
+                {
                     return Some(prepared);
                 }
             }
@@ -1390,12 +1402,13 @@ impl Node {
                 // writes a complete framed datagram. A status-only loser
                 // can therefore finish late without replacing live traffic.
                 let mut recv = recv;
-                let Ok(Some(prefix)) = tokio::time::timeout(
-                    HOP_WITHIN, stream_trace::first_frame(&mut recv),
-                ).await else {
+                let Ok(Some(prefix)) =
+                    tokio::time::timeout(HOP_WITHIN, stream_trace::first_frame(&mut recv)).await
+                else {
                     return;
                 };
-                if !self.hop_on() || self.carrying().is_none()
+                if !self.hop_on()
+                    || self.carrying().is_none()
                     || !member(&asker)
                     || matches!(self.carry.carrier(&x), Some(Carrier::Ssh))
                     || (me < asker && asking(&me, &asker))
