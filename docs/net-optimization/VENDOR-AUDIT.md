@@ -1,5 +1,7 @@
 # Vendor 补丁覆盖与退出审计
 
+2026-11-11 11:02 UTC：主候选现 **58项**（Iroh1–41/45–48、Noq1–13，42–44仍隔离）。新增48是每次握手显式指定初始Custom载体及Node有限竞争，准确实现/合同在STATE与vendor/iroh/KHOR.md；尚待同源双OS Node、完整vendor与冻结四peer协议/成本，不作为已接受项。先前只解除“无活连接”selected_path的d521在Mac43005910530通过443/58/11过滤器，但Turing9d655e7f四peer三轮仍红，live=true/registered=1保护未触发，后继已撤回该行为；单元绿不补产品恢复证据。以下旧计数和“当前”段落均按其原时点保留，不覆盖旧严重stall/Noq1、5等缺口。
+
 2026-11-11 06:35 UTC：当前主候选仍57项（Iroh1–41/45–47、Noq1–13，42–44隔离）。Iroh47实际旧41c2/b0146293为Noq443绿/path56绿2红；候选8cd/c350为443/58/11绿，8cd准确双OS全12，原动态27/0与长稳4/0均已核。固定物理C-B/B-C四项收齐：两C分别Go3569.426/3536.190ms与3820.207/3533.388ms、各124业务与warm51全过；B一次初始业务超时未replug、一次Go7499.610/3473.251ms且warm11/51失败。三个实际replug均4innercopies、原3+3探测预算及8方向byte进展，成本完整边界和selected-road驻留差异保留。详见证据根confirmation-copy-identity-physical-fixed-four-result.json和STATE。两C样本少且贴4秒门，不作p99/可靠性/全N1接受，6aa严重stall未重现/闭环，quiet/stalls/手机/能耗和57项专项审计仍欠。Iroh47只统一samples_after与quality/age的代表copy，原quality选择/预算不改；上游未核等价，退出仍需对应原合同/成本/实际场景。下文带旧时点的“尚未验证”等为历史，当前以本段和STATE为准。
 
 当前候选盘点（21:52 UTC）：主56项=Iroh1–41/45/46、Noq1–13，42–44仍隔离；46物理固定六次未接受。Noq13仅解决独立显式路径探测ACK及时性，实际旧efb2/8a4a7521原443项442绿/1红，普通延迟ACK/Initial与真实accepted0RTT三负控及原439绿，whole fixture e057冻结。候选仅Established+Data+peer supports时附同一次PING的IMMEDIATE_ACK，无新PING/任务/计时器/重试；更早ACK可能增加独立datagram，实际成本/物理稳定性未证。当前候选尚未编译/验证，不作为6aa根因、手机或N1接受。上游未提交/未新核等价行为；以全四合同及移动/quiet成本复验退出，不能由接口同名删除。下文53/54/55和旧范围均为历史记录。
@@ -137,3 +139,10 @@ Noq1/5缺少专门行为覆盖的状态不变。没有升级、删补丁或发�
 ## Iroh46候选：已知故障前水平的首次恢复刷新
 
 主vendor55（Iroh1–41/45/46、Noq1–12），42–44仍隔离；新增46未全面验收。原c775/eec09ec1 Noq439/path53pass2FAIL（旧50及3负控过）→1c847229/5c2e4ff2 Noq439/path55/home11绿，同whole ae62和旧测试尾。首个pre-fault真实Reading作为恢复期触发提示，真实新样本回到其水平只准首次重建质量窗口；不能把旧值当新样本/可达/收益证据。原3probe/250ms/2秒、Moving与gain/新包epoch/重hold保持，无新task/map/timer/强conn。详KHOR46及fixture freeze。双OSNode在跑，物理三组前瞻对照/quiet成本/动态/手机待，不升格unit结论。上游等价有限epoch/实测历史确认尚未核，不删除其他补丁或依赖。
+
+
+## Iroh48：pending-handshake与其他连接的选择隔离（候选未验收）
+
+| 保留目标 | 当前证据与缺口 | 退出条件 |
+| --- | --- | --- |
+| 新准备的carrier能作为一次握手的初始路，另一活连接不遮住；保留TLS、正常读取/写边界和总期限 | 874eb4c4与d521/9d655e7f冻结四peer各3个真实业务红，后者明确旧Relay的live注册保护。4eff候选新增显式地址API，未提供该地址拒绝；Node合同拟验证活IP旁新Custom Path0/TLS/echo、错误身份拒绝与旧IP存续，当前未执行。普通拨号<=2活动/先join再复用slot，早发替代不发early业务，失败不领取另一carrier预算；实际额外握手字节/CPU尚欠 | 上游同语义实现尚未核，不据“支持自定义transport”或方法同名认定等价。必须验证每次初始目的地址、有活连接负控、身份错误/暂停/取消/原deadline/零新增写重放、真实唯一/多个middle两腿、移动与N3成本。全部调用者可迁移后退出；不能用本项窄绿删除其他57项 |

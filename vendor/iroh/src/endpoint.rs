@@ -1126,7 +1126,7 @@ impl Endpoint {
         if let Some(initial) = &options.initial_custom_addr {
             ensure!(
                 endpoint_addr.addrs.contains(&TransportAddr::Custom(initial.clone())),
-                ConnectWithOptsError::InvalidInitialCustomAddr,
+                ConnectWithOptsError::InvalidInitialCustomAddr
             );
         }
 
