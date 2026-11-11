@@ -366,8 +366,14 @@ async fn run(model: Model) {
         .await
         .unwrap();
     if model.burst_bytes.is_some() {
-        burst::apply(&x, model, "x").await;
-        burst::apply(&rx, model, "gateway").await;
+        let client = x
+            .spawn(move |_| async move { burst::apply(model, "x").await })
+            .unwrap();
+        burst::owned(client).await;
+        let gateway = rx
+            .spawn(move |_| async move { burst::apply(model, "gateway").await })
+            .unwrap();
+        burst::owned(gateway).await;
     }
     let mut seed = 0x6d697865646c6f61u64;
     let payload = Arc::new(

@@ -3,7 +3,6 @@
 //! coupling rather than claiming to isolate token timing from queue capacity.
 use std::time::Duration;
 
-use patchbay::Device;
 use serde_json::{Value, json};
 
 use super::{Model, emit};
@@ -27,63 +26,61 @@ async fn command(args: &[String]) -> Value {
     }
 }
 
-pub(super) async fn apply(device: &Device, model: Model, side: &'static str) {
-    let task = device
-        .spawn(move |_| async move {
-            let before = command(&["-j".into(), "qdisc".into(), "show".into()]).await;
-            assert_eq!(before["ok"], true, "initial tc readback: {before}");
-            let rows: Vec<Value> =
-                serde_json::from_str(before["stdout"].as_str().unwrap()).unwrap();
-            let rates: Vec<_> = rows.iter().filter(|r| r["kind"] == "tbf").collect();
-            let nets: Vec<_> = rows.iter().filter(|r| r["kind"] == "netem").collect();
-            assert_eq!(rates.len(), 1);
-            assert_eq!(nets.len(), 1);
-            let (rate, net) = (rates[0], nets[0]);
-            assert_eq!(rate["parent"], "1:1");
-            assert_eq!(rate["handle"], "10:");
-            assert_eq!(rate["options"]["rate"], 6250000);
-            assert_eq!(rate["options"]["lat"], 40000);
-            assert!((4080..=4096).contains(&rate["options"]["burst"].as_u64().unwrap()));
-            assert_eq!(net["root"], true);
-            assert_eq!(net["handle"], "1:");
-            assert_eq!(net["dev"], rate["dev"]);
-            assert_eq!(net["options"]["limit"], 1000);
-            assert_eq!(
-                net["options"]["delay"],
-                json!({"delay":0.15,"jitter":0,"correlation":0})
-            );
-            let dev = rate["dev"].as_str().unwrap();
-            let requested = model.burst_bytes.unwrap();
-            let args: Vec<String> = [
-                "qdisc",
-                "change",
-                "dev",
-                dev,
-                "parent",
-                "1:1",
-                "handle",
-                "10:",
-                "tbf",
-                "rate",
-                "50mbit",
-                "burst",
-                &requested.to_string(),
-                "latency",
-                "40ms",
-            ]
-            .into_iter()
-            .map(str::to_owned)
-            .collect();
-            let changed = command(&args).await;
-            emit(
-                json!({"schema":1,"revision":model.revision,"event":"shaper_change",
-                "side":side,"device":dev,"requested_burst_bytes":requested,
-                "latency_us":40000,"derived_fifo_limit_changes":true,
-                "before":before,"args":args,"command":changed}),
-            );
-            assert_eq!(changed["ok"], true, "tc diagnostic change: {changed}");
-        })
-        .unwrap();
+pub(super) async fn apply(model: Model, side: &'static str) {
+    let before = command(&["-j".into(), "qdisc".into(), "show".into()]).await;
+    assert_eq!(before["ok"], true, "initial tc readback: {before}");
+    let rows: Vec<Value> = serde_json::from_str(before["stdout"].as_str().unwrap()).unwrap();
+    let rates: Vec<_> = rows.iter().filter(|r| r["kind"] == "tbf").collect();
+    let nets: Vec<_> = rows.iter().filter(|r| r["kind"] == "netem").collect();
+    assert_eq!(rates.len(), 1);
+    assert_eq!(nets.len(), 1);
+    let (rate, net) = (rates[0], nets[0]);
+    assert_eq!(rate["parent"], "1:1");
+    assert_eq!(rate["handle"], "10:");
+    assert_eq!(rate["options"]["rate"], 6250000);
+    assert_eq!(rate["options"]["lat"], 40000);
+    assert!((4080..=4096).contains(&rate["options"]["burst"].as_u64().unwrap()));
+    assert_eq!(net["root"], true);
+    assert_eq!(net["handle"], "1:");
+    assert_eq!(net["dev"], rate["dev"]);
+    assert_eq!(net["options"]["limit"], 1000);
+    assert_eq!(
+        net["options"]["delay"],
+        json!({"delay":0.15,"jitter":0,"correlation":0})
+    );
+    let dev = rate["dev"].as_str().unwrap();
+    let requested = model.burst_bytes.unwrap();
+    let args: Vec<String> = [
+        "qdisc",
+        "change",
+        "dev",
+        dev,
+        "parent",
+        "1:1",
+        "handle",
+        "10:",
+        "tbf",
+        "rate",
+        "50mbit",
+        "burst",
+        &requested.to_string(),
+        "latency",
+        "40ms",
+    ]
+    .into_iter()
+    .map(str::to_owned)
+    .collect();
+    let changed = command(&args).await;
+    emit(
+        json!({"schema":1,"revision":model.revision,"event":"shaper_change",
+        "side":side,"device":dev,"requested_burst_bytes":requested,
+        "latency_us":40000,"derived_fifo_limit_changes":true,
+        "before":before,"args":args,"command":changed}),
+    );
+    assert_eq!(changed["ok"], true, "tc diagnostic change: {changed}");
+}
+
+pub(super) async fn owned(task: tokio::task::JoinHandle<()>) {
     let _owner = Owner(task.abort_handle());
     task.await.unwrap();
 }
