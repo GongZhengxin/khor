@@ -1,14 +1,25 @@
 # feat/net 当前状态与接续入口
 
-更新于2026-11-11 17:11 UTC（本地11月12日）。完整目标“完成计划”仍 **active、未完成、未阻塞**；完整范围是 [PLAN](PLAN.md) 的N0–N5，root串行，不派发子智能体。此页是唯一当前入口；历史逐字保存在 [上一状态](HISTORY-20261111-through-policy-readback-v2.md)，SHA `07431681a2838546487bace0ed68dbc314cd68469cc33f3f98bf88ada80e539b`，它继续链接此前全部证据/失败。实际worktree/收据/原始日志优先，不按摘要覆盖未提交内容。
+更新于2026-11-11 17:20 UTC（本地11月12日）。完整目标“完成计划”仍 **active、未完成、未阻塞**；完整范围是 [PLAN](PLAN.md) 的N0–N5，root串行，不派发子智能体。此页是唯一当前入口；历史逐字保存在 [上一状态](HISTORY-20261111-through-policy-readback-v2.md)，SHA `07431681a2838546487bace0ed68dbc314cd68469cc33f3f98bf88ada80e539b`，它继续链接此前全部证据/失败。实际worktree/收据/原始日志优先，不按摘要覆盖未提交内容。
 
 ## 当前在途与下一步
 
-**唯一Turing：turing-20261111T170751Z-4fd7ab02**，PID **294807**，17:08:13 UTC launch，task **netlab-workload-policy** / revision **workload_response_priority_v1-v3-block2-B** / candidate / control **5f1242f5f4d216dde60ad27be0d17a5958b7ef46** / 下述冻结B/source-v3。stage exec7008已终态；准确前驱b3de已collection/identity/原group空。这是第二个关闭诊断的计时block，**尚无整体终态/策略收益结论**。只查同receipt/PID，不重发，不穿插Turing构建或计时。没有Mac在途。
+**root串行自动流程在途：exec session90703**，运行OPS/run-remaining-response-priority-blocks-v1.py。该进程是当前**唯一source-refs/campaign写入者**；它仅依固定A B B A A B顺序观察block3–6，等原job真实completed后收件→identity→原始人口核验→终态记录→只启动一个下一block。观察/校验错误即停止，不会以超时重发。**它还活着时，不另写ledger、不手工advance、不启动其他Turing任务。**继续同exec，若句柄丢失则查本机该Python进程、campaign及automation日志，不能因旧STATE重启。自动流程只是工具串行编排，没有派发子智能体。
 
-完整campaign外部权威文件：`/Volumes/disk0/Khor/evidence/net/response-priority-campaign-v1.json`。固定 **A B B A A B** 六block，每block三个fresh完整场景，共18场景/每arm九轮；当前block1完成、block2在途、block3–6未提交。block1 **turing-20261111T170059Z-b3de4646** 已269.363秒0、19files/identity/原group空，三个完整场景2160全ok、三份16MiB一致、实际TC/probe/两个guard/日志关闭与source-owned contract均核实；policy-block-verification-v1.json逐原始人口与成功条件分布复算，ledger/campaign终态。它只是A基线，不是策略改善。全矩阵保持原caller/样本/字节/TC/probe/失败人口，不因性能差重跑或排除。协议见 [SCHEDULING](SCHEDULING.md)，读回诊断不得混入计时人口。
+本段是17:20 UTC观察快照，**实际后续句柄以campaign和同exec输出为准**。当时唯一Turing为 **turing-20261111T171702Z-d8d2a9b3**，PID **315122**，block **4/A**，launch 2026-11-11T17:17:24.253093+00:00，tasknetlab-workload-policy / revisionworkload_response_priority_v1-v3-block4-A / 同冻结source-v3与control5f1242f。最近同exec已实际确认原PID live/network-driver；整体未收终态。没有Mac在途。
 
-接续：先查4fd真实状态；完成后control目录运行collect-network-ssh.py，**等collection终态才**运行OPS/verify-turing-record.py，再用OPS/verify-response-priority-block-v1.py RUN 2核实际source/guard/原始人口/条件成功分布。此helper只解析数据、还保留failed Rust summary中的timeout/缺样本/重复样本，合成metadata已验证这三种情况；它不运行产品。核实后root更新source-refs ledger和campaign block2终态，才能按固定次序提交block3/B，revision用`workload_response_priority_v1-v3-block3-B`、同control/候选B/source-v3、准确4fd终态前驱。其余block依次类推，任何不确定提交先找同revision收据/ledger，不能重发。stage/register工具终态前不并写ledger。全部六block完成后，OPS/summarize-response-priority-campaign-v1.py核预定顺序/源/完整12960人口，保留整phase与实际transfer区间两个口径、九对场景差值、文件完成时间及条件payload率；不自动选胜或报p99。该summary目前仅语法检查，必须等六份真实block proof齐全后才运行，不把未执行的summary当已核结果。
+campaign权威文件：`/Volumes/disk0/Khor/evidence/net/response-priority-campaign-v1.json`，automation原始输出留`response-priority-remaining-blocks-automation-v1.log`。固定六block，每block三个fresh场景、共18/每arm九轮；本次快照完成3/6，不因性能差重跑、删失败或提前选胜。读取文件只代表记录，运行/完成仍需同exec或准确原PID/execution观察。
+
+已终态、原件/source/control/identity/原group空与原始人口均核实：
+- block1/A **turing-20261111T170059Z-b3de4646**：269.363秒0、19files，三场景2160全ok、三份16MiB一致。
+- block2/B **turing-20261111T170751Z-4fd7ab02**：252.048秒0、19files，三场景2160全ok、三份16MiB一致。
+- block3/B **turing-20261111T171328Z-3abf2108**：同campaign proof已核三场景2160全ok，原始文件与准确时间见该run execution/identity。
+
+三组均两个真实guard、实际TC/probe、日志关闭、source-owned contract与逐原始人口/条件分布复算过；policy-block-verification-v1.json/ledger/campaign已终态。合计9场景6480全ok，**尚无完整策略收益结论**。后续即使功能绿也不自动接受N3或最优设计。
+
+编排正常结束后再独立复核六份真实block proof与完整manifest，然后运行OPS/summarize-response-priority-campaign-v1.py；它核固定顺序/源/全部12960人口，保留全phase/实际transfer区间、九对场景差值、完整文件时间及条件payload率，不自动选胜或报p99。该summary目前只语法检查，尚未执行/接受。编排若异常，先查同receipt/原PID/automation log与已生成proof，不能把观察超时当终态或盲目重发。
+
+下一工作包的预注册已保存[HIGH-BDP](HIGH-BDP.md)：300ms/50Mbit、96MiB、400ms操作计划、独立kernel双向校准及独立prefetch1/2/8顺序。**未实现、未运行**；不修改原低profile v4/2秒/120秒门，也不在当前Turing计时中穿插编译/新矩阵。完整N0–N5及全部历史失败仍在下文。
 
 ## 冻结源码与前置证据
 
