@@ -15,7 +15,7 @@ use tokio::net::TcpStream;
 use crate::lab::{mesh, node, relay, result};
 use crate::nat::{Net, router};
 
-const REVISION: &str = "resident_mixed_workload_v1";
+const REVISION: &str = "resident_mixed_workload_v2";
 const SAMPLES: usize = 120;
 const PERIOD: Duration = Duration::from_millis(100);
 // Measurement bounds, not user-approved UX targets. Failed/blocked samples
@@ -40,9 +40,13 @@ fn framed(op: &host::ClientOp) -> Vec<u8> {
 /// The expected prefix is absent from the input. Even if terminal echo is
 /// accidentally on, an echoed input cannot impersonate the shell's response.
 async fn echo(stream: &mut TcpStream, token: &str) -> Result<(), String> {
-    let frame = framed(&host::ClientOp::Input(format!("{token}\n").into_bytes()));
+    let frame = framed(&host::ClientOp::Input(khor_node::shell_start::input(token)));
     stream.write_all(&frame).await.map_err(|e| e.to_string())?;
     let expected = format!("NETLAB-REPLY-{token}");
+    output_until(stream, &expected, token == "warmup-unique").await
+}
+
+async fn output_until(stream: &mut TcpStream, expected: &str, trace: bool) -> Result<(), String> {
     let mut received = Vec::new();
     loop {
         let mut bytes = [0; 4096];
@@ -51,6 +55,12 @@ async fn echo(stream: &mut TcpStream, token: &str) -> Result<(), String> {
             return Err("terminal stream ended before its response".into());
         }
         received.extend_from_slice(&bytes[..n]);
+        if trace && received.len() <= 2048 {
+            eprintln!(
+                "[netlab-workload-startup] bytes={:?}",
+                String::from_utf8_lossy(&bytes[..n])
+            );
+        }
         if received
             .windows(expected.len())
             .any(|b| b == expected.as_bytes())
@@ -278,16 +288,22 @@ async fn w1_real_terminal_and_directory_during_a_resident_file_pull() {
     let (rows, bulk, destination, closed) = x.with(move |node| async move {
         let id = node.open_shell_on("y", khor_node::shell_start::ShellStart {
             token: "netlab-resident-mixed-workload-v1".into(), title: "netlab echo".into(),
-            cwd, command: "stty -echo; while IFS= read -r line; do printf 'NETLAB-REPLY-%s\\n' \"$line\"; done".into(), cols: 100, rows: 30,
+            cwd, command: "stty -echo; printf 'NETLAB-ECHO-%s\\n' READY; while IFS= read -r line; do printf 'NETLAB-REPLY-%s\\n' \"$line\"; done".into(), cols: 100, rows: 30,
         }).await.expect("a scratch remote PTY");
         let (addr, cookie) = node.reach("y", &id).await.expect("the resident's terminal pipe");
         let socket = tokio::task::spawn_blocking(move || host::connect_terminal(&addr, &cookie, 100, 30))
             .await.unwrap().expect("current terminal protocol handshake");
         socket.set_nonblocking(true).unwrap();
         let mut stream = TcpStream::from_std(socket).unwrap();
-        stream.write_all(&framed(&host::ClientOp::Ready)).await.unwrap();
-        tokio::time::timeout(Duration::from_secs(10), echo(&mut stream, "warmup-unique"))
-            .await.expect("bounded PTY startup").expect("a real shell response, not input echo");
+        let ready_by = tokio::time::Instant::now() + Duration::from_secs(10);
+        tokio::time::timeout_at(ready_by, async {
+            stream.write_all(&framed(&host::ClientOp::Ready)).await.map_err(|e| e.to_string())?;
+            // Renderer-ready releases the startup; it does not mean the shell
+            // has installed its reader. This marker is absent from the echoed
+            // startup command, and uses the same total 10s startup budget.
+            output_until(&mut stream, "NETLAB-ECHO-READY", true).await?;
+            echo(&mut stream, "warmup-unique").await
+        }).await.expect("bounded PTY startup").expect("a real shell response, not input echo");
         let epoch = Instant::now();
         emit(json!({"schema":1,"revision":REVISION,"event":"manifest","samples_per_operation_per_phase":SAMPLES,
             "phases":["idle_before","bulk","idle_after"],"operations":["directory","terminal"],
