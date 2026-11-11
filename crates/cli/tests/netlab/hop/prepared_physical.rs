@@ -42,17 +42,47 @@ async fn warm_tunnel(from: &LabNode, to: &LabNode) {
     .expect("an actual successful resident-owned Tunnel dial is recorded");
 }
 
-fn carried_wires(node: &LabNode, peer: &LabNode, since: u64) -> BTreeSet<u64> {
-    node.journal(Some(peer))
-        .into_iter()
+fn lifecycle(node: &LabNode, peer: &LabNode, since: u64) -> Vec<serde_json::Value> {
+    std::fs::read_to_string(node.home.0.join("serve.log"))
+        .unwrap()
+        .lines()
+        .filter_map(|line| line.split_once("[khor-carried-lifecycle] "))
+        .filter_map(|(_, json)| serde_json::from_str::<serde_json::Value>(json).ok())
         .filter(|row| {
-            row["e"] == "path"
-                && row["change"] == "started"
-                && row["road"] == "carried"
+            row["peer"].as_str() == Some(peer.id.as_str())
                 && row["at"].as_u64().is_some_and(|at| at >= since)
         })
-        .filter_map(|row| row["wire"].as_u64())
         .collect()
+}
+
+fn business<'a>(rows: &'a [serde_json::Value], phase: &str) -> Vec<&'a serde_json::Value> {
+    rows.iter().filter(|row| row["phase"] == phase).collect()
+}
+
+fn wires(rows: &[&serde_json::Value]) -> BTreeSet<u64> {
+    rows.iter()
+        .filter_map(|row| row["details"]["wire"].as_u64())
+        .collect()
+}
+
+fn streams(rows: &[&serde_json::Value]) -> BTreeSet<String> {
+    rows.iter()
+        .filter_map(|row| row["details"]["stream"].as_str().map(str::to_owned))
+        .collect()
+}
+
+fn carrier_held(rows: &[serde_json::Value], before: u64) -> bool {
+    let commits = business(rows, "link_attachment_committed");
+    commits.len() == 1
+        && commits[0]["at"].as_u64().is_some_and(|at| at <= before)
+        && commits[0]["details"]["serial"].as_u64().is_some()
+        && commits[0]["details"].get("previous_serial") == Some(&serde_json::Value::Null)
+        && !rows.iter().any(|row| {
+            matches!(
+                row["phase"].as_str(),
+                Some("link_detached" | "link_io_ended")
+            )
+        })
 }
 
 fn retired(node: &LabNode, peer: &LabNode, wires: &BTreeSet<u64>, since: u64) -> bool {
@@ -124,10 +154,14 @@ pub(super) async fn run() {
         slow(device, LEG).await;
     }
     slow(&dn, Duration::from_millis(80)).await;
-    let mut x = node(s, dx, "x", &[&relay], &[]).await;
-    let mut y = node(s, dy, "y", &[&relay], &[]).await;
-    let m = node(s, dm, "m", &[&relay], &[]).await;
-    let n = node(s, dn, "n", &[&relay], &[]).await;
+    // Completion receipts bind real business streams to their connection.
+    // This case includes lifecycle logging even outside a diagnostic suite;
+    // the original three physical controls retain their existing modes.
+    let diagnostics = [("KHOR_NET_DIAGNOSTICS", "lifecycle")];
+    let mut x = node(s, dx, "x", &[&relay], &diagnostics).await;
+    let mut y = node(s, dy, "y", &[&relay], &diagnostics).await;
+    let m = node(s, dm, "m", &[&relay], &diagnostics).await;
+    let n = node(s, dn, "n", &[&relay], &diagnostics).await;
     // The lower identity owns an outgoing hop if both residents ask.
     if y.id < x.id {
         std::mem::swap(&mut x, &mut y);
@@ -216,8 +250,8 @@ pub(super) async fn run() {
         link.hop == Hop::Forwarded && link.via.as_deref() == Some(n.id.as_str())
     };
     let carried = x.until(&y, Duration::from_secs(2), via_n).await;
-    let x_wires = carried_wires(&x, &y, began);
-    let y_wires = carried_wires(&y, &x, began);
+    let x_wires = wires(&business(&lifecycle(&x, &y, began), "list_response_received"));
+    let y_wires = wires(&business(&lifecycle(&y, &x, began), "list_response_sent"));
     let two_asks = x.journal(Some(&y)).iter().any(|row| {
         row["e"] == "hop"
             && row["at"]
@@ -248,10 +282,32 @@ pub(super) async fn run() {
         }
         tokio::time::sleep(Duration::from_millis(200)).await;
     }
+    // Path journal rows are deduplicated across a peer's connections and
+    // cannot identify the business owner. Require every completed list on
+    // both ends, matching stream ids, one wire per end and one uninterrupted
+    // outer attachment. The first response must precede M's restoration.
+    let x_rows = lifecycle(&x, &y, began);
+    let y_rows = lifecycle(&y, &x, began);
+    let received = business(&x_rows, "list_response_received");
+    let sent = business(&y_rows, "list_response_sent");
+    let expected = samples + 1;
     let continuous = x_wires.len() == 1
         && y_wires.len() == 1
-        && carried_wires(&x, &y, began) == x_wires
-        && carried_wires(&y, &x, began) == y_wires
+        && received.len() == expected
+        && sent.len() == expected
+        && wires(&received) == x_wires
+        && wires(&sent) == y_wires
+        && streams(&received).len() == expected
+        && streams(&received) == streams(&sent)
+        && received[0]["at"].as_u64().is_some_and(|at| at <= restored)
+        && sent[0]["at"].as_u64().is_some_and(|at| at <= restored)
+        && received.iter().all(|row| {
+            row["details"]["measurements"].as_array().is_some_and(|paths| {
+                paths.iter().any(|path| path["selected"] == true && path["carried"] == true)
+            })
+        })
+        && carrier_held(&x_rows, restored)
+        && carrier_held(&y_rows, restored)
         && !retired(&x, &y, &x_wires, restored)
         && !retired(&y, &x, &y_wires, restored);
     let ok = first_error.is_none()
@@ -276,9 +332,10 @@ pub(super) async fn run() {
         s,
         ok,
         format!(
-            "activation_to_content={first_response:?} request={first_time:?} error={first_error:?} M_stopped={stopped} two_asks={two_asks} via_N={} samples={samples} hold={:?} continuous={continuous} x_wires={x_wires:?} y_wires={y_wires:?}",
+            "activation_to_content={first_response:?} request={first_time:?} error={first_error:?} M_stopped={stopped} two_asks={two_asks} via_N={} samples={samples} hold={:?} continuous={continuous} x_wires={x_wires:?} y_wires={y_wires:?} received={} sent={} matching_streams={}",
             carried.is_some(),
-            hold.elapsed()
+            hold.elapsed(),
+            received.len(), sent.len(), streams(&received) == streams(&sent)
         ),
     );
     assert!(ok, "{s}: prepared race and actual carried continuity");

@@ -3856,7 +3856,7 @@ impl Node {
                         .await
                         .ok()?
                         .ok()?;
-                    proto::answer(&bytes).ok()
+                    Some((proto::answer(&bytes).ok()?, send.id()))
                 })
             }));
             match early.handshake_completed().await.map_err(of_connecting)? {
@@ -4090,9 +4090,24 @@ impl Node {
                         )
                         .await;
                         match answer {
-                            Ok(Ok(Some(resp))) => {
+                            Ok(Ok(Some((resp, stream)))) => {
                                 guard.disarm();
                                 self.wires.heard(&d.id, wires::Proto::Main, &conn);
+                                if matches!(req, Request::Ls { .. })
+                                    && matches!(&resp, Response::Dir { .. })
+                                {
+                                    khor_net::carry::observe_lifecycle(
+                                        conn.remote_id(),
+                                        "list_response_received",
+                                        || {
+                                            serde_json::json!({
+                                                "wire": conn.stable_id(),
+                                                "stream": stream.to_string(), "early": true,
+                                                "measurements": khor_net::path::path_facts(&conn),
+                                            })
+                                        },
+                                    );
+                                }
                                 Early::Answered(resp)
                             }
                             Err(_) => Early::Failed(DialFailure::CallerExpired),
@@ -4265,7 +4280,6 @@ impl Node {
                 .store(crate::now_ms(), std::sync::atomic::Ordering::Relaxed);
             let (node, ep, remote, mut done) =
                 (self.clone(), ep.clone(), remote.clone(), done.clone());
-            #[cfg(test)]
             let reply_wire = conn.stable_id();
             tokio::spawn(async move {
                 let mut seat = Some(seat);
@@ -4278,6 +4292,7 @@ impl Node {
                 // as it goes, not once — through the same gate as every
                 // other request.
                 let question = proto::question(&bytes);
+                let listing = matches!(&question, Ok(Request::Ls { .. }));
                 if let Ok(Request::Watch { scope }) = question {
                     if early && *done.borrow() != Some(true) {
                         while done.borrow().is_none() {
@@ -4418,7 +4433,19 @@ impl Node {
                 if send.write_all(&frame).await.is_ok() {
                     #[cfg(test)]
                     documents::flow_tests::reply_written(&wire_tag, &_resp);
-                    let _ = send.finish();
+                    let finished = send.finish();
+                    if listing && matches!(&_resp, Response::Dir { .. }) && finished.is_ok() {
+                        khor_net::carry::observe_lifecycle(
+                            &remote,
+                            "list_response_sent",
+                            || {
+                                serde_json::json!({
+                                    "wire": reply_wire, "stream": send.id().to_string(),
+                                    "early": early,
+                                })
+                            },
+                        );
+                    }
                 }
             });
         }
@@ -13054,11 +13081,20 @@ async fn exchange_inner(
             .read_to_end(MAX_FRAME)
             .await
             .map_err(|e| lost(msg::no_answer(e)))?;
-        match attempt.as_deref_mut() {
+        let response = match attempt.as_deref_mut() {
             Some(attempt) => proto::answer_doc_observed(&bytes, &mut attempt.response_body),
             None => proto::answer(&bytes),
         }
-        .map_err(Miss::Garbled)
+        .map_err(Miss::Garbled)?;
+        if matches!(req, Request::Ls { .. }) && matches!(&response, Response::Dir { .. }) {
+            khor_net::carry::observe_lifecycle(conn.remote_id(), "list_response_received", || {
+                serde_json::json!({
+                    "wire": conn.stable_id(), "stream": send.id().to_string(), "early": false,
+                    "measurements": khor_net::path::path_facts(conn),
+                })
+            });
+        }
+        Ok(response)
     };
     tokio::pin!(work);
     let mut beat = tokio::time::interval(LIVENESS_BEAT);

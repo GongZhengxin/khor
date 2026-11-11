@@ -673,3 +673,8 @@ ff743已复用已有 Recovery 分支，使目标缺可用 wire 的判断先于�
 
 
 2026-11-11 09:43 UTC：静态待真实合同验证的下一N2所有权问题：open_hop_in_epoch在status OK后调用made_in_epoch；旧token在made中只早退，但调用方继续到carry策略/attach。已有旧快照/旧failure合同不独立证明“旧ask的成功回复”也会被拒绝。优先补真实旧ask先pending、新middle完成真实TLS/echo并正常释放后才返回旧OK，要求不发布旧carrier/不误记成功，保留caller3秒与原fixture。释放后变体可避开现有低ID互让门掩盖风险；再覆盖仍有消费者和SSH竞争。若真红，提交需要在原路由所有者锁内原子验证context并发布，只有检查cache还不够；同时审查Links策略检查/attach是否有并发空隙。此段为静态风险与验收方向，不是已经复现或已修原因。先完成当前hint87合同和a73物理全9；不把该风险悄悄删出完整N2。
+
+
+2026-11-11 11:36 UTC：原scoped握手候选963已Mac全12和vendor443/58/11绿，Turing四peer三轮首内容1.22–1.25秒/后续30请求全成功，但原连续性判据缺wire仍三红；原f4控制2059/2325ms超门、业务最长5.2/4.9秒也保留。下一测量须绑定实际Ls/Dir已完成响应的双方wire与stream，而非去重后的Path started/selected标签。新诊断仅环境开关开启时构造，不记录请求路径/响应内容，不加常驻状态/任务/计时器；normal在decode成功后，early仅在握手Accepted且响应成功后，服务端完整write+FIN成功后记录。fixture要求31事件/不同stream两端一一匹配、同wire、首响应与carriercommit早于M恢复、每次客户端成功时carried、两端单一外层serial无I/O结束/替换，未满足仍红；原1.5秒/10秒/30请求门不变。旧a653原红不可追认。此为待远端编译/真实验收的测量增强，不作行为修复或整体验收。
+
+已存在carrier时仍欠独立initial-route机会：新准备分支的!had_carried保护使旧carrier可能仍被共享Relay初始选择遮住。拟在原两slot/原caller+拨号期限内保留genericDirect与显式Custom的有限竞争，early替代仍普通握手且先取消原早发owner，无写重放扩大；必须先补真实已有carrier/更快Direct与取消合同再实施，不把newly-prepared场景覆盖外推到这里。旧f4红也须按实际请求/路径/第一腿恢复时间分解，不能通过放宽门关闭。

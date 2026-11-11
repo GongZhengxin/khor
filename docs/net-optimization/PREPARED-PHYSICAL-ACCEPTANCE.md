@@ -26,3 +26,8 @@ X和Y位于不能直接互通的严格NAT，M和N是两个可达的非递归midd
 ## 后续扩展
 
 再覆盖某middle经公共Relay到Y、只有一个middle真正能到Y、目标或middle独立IPv4/IPv6变化，以及旧/新协议混合。当前hint单元六合同只证明准入缓存上下文，尚不证明新物理第二腿被使用。最终与iPhone自动换网、交互/批量共存、后台成本一起接受。
+
+
+## 连续性观测修订 v2（2026-11-11 11:36 UTC，待验）
+
+v1的f4r实际三轮首内容1.22–1.25秒、后续各30次成功，但started-only helper未获得wire，三项原红保留。Path journal对同peer多连接去重，标签started或selected不是业务所有权凭证。v2增加实际Ls/Dir完成时的lifecycle收据：normal decode成功、early握手Accepted后成功响应、server完整write/FIN成功；记录连接/stream身份与客户端路径事实，不含路径参数和内容。要求首请求加30持续请求双方31收据、stream集合严格一一匹配、各端只有同一个wire、首响应/单一carriercommit在M恢复前，随后无outer detach/I/O结束/新commit/业务wire退休，每次成功时carried且两端viaN。原业务、时间和次数门完全保留。此case显式开启lifecycle，即使从无诊断的suite调用也含日志成本；原三case模式与正文不改，不把该case作为无日志SLO。v1原记录与v2不能合成同一测量版本的前后对照；迟到M OK、输家取消和完整成本仍独立未证。

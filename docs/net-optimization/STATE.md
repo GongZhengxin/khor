@@ -1,6 +1,16 @@
 # feat/net 当前状态与接续入口
 
-更新于2026-11-11 11:16 UTC。完整N0–N5目标“完成计划”active，上一目标轮取得同源hint双端结果并归档，本轮取得迟到成功真实红→绿及新四节点fixture源码，属于进展。未完成、未阻塞，不派发子智能体。此前STATE逐字归档于[上一状态](HISTORY-20261111-through-hint-verification.md)，SHA `617b316640985eb22785a7d5ccf3d558355d3a1da24ed6479f1ff8224b7c54f1`，继续链接全部旧失败与历史；原始日志/准确收据优先，不凭摘要覆盖原改动。
+更新于2026-11-11 11:36 UTC。完整N0–N5目标“完成计划”active，上一目标轮取得同源hint双端结果并归档，本轮取得迟到成功真实红→绿及新四节点fixture源码，属于进展。未完成、未阻塞，不派发子智能体。此前STATE逐字归档于[上一状态](HISTORY-20261111-through-hint-verification.md)，SHA `617b316640985eb22785a7d5ccf3d558355d3a1da24ed6479f1ff8224b7c54f1`，继续链接全部旧失败与历史；原始日志/准确收据优先，不凭摘要覆盖原改动。
+
+## 当前结论与唯一在途任务（11:36 UTC）
+
+完整N0–N5仍active。最新冻结源9634737a/tree52c536154a3a51829c64e5c167ac7965b2792a93/snapshote48e12746c900206c4c8b59d0b9c010a234a7018，Mac节点Actions43010224456全12组已核（hop89/net68+1ignored/budget28），新Custom初始路径、错误身份明确拒绝与未提供Custom拒绝两个真实合同均绿；准确artifact13849868782/ZIP SHAfb4cbc64ee87d635473d7d41eda38e48edc2007e41167b454bf2bb860d06f354。Mac vendor Actions43012074442/request0a3a7c7906f448fb8ce14436739ffaa4也已终态、exact13850403233/ZIP SHA5307a4609011bc80d83efd7f11680bbc05ca3a6c5755e871e5ad82f5de7679c9，13files/11controls/identity，443Noq/58path/11home绿。两份per-run verification和ledger已完成；这些过滤器不证明58补丁全部专项或手机验收。
+
+同源Turing物理a653cfe2已745.480秒终态101、37files/identity/原group空，三轮新f4r首内容1.251580165/1.224817780/1.218185943秒，均M仍stopped、two_asks/viaN=true，随后30请求全成功、保持14.980/15.138/15.216秒；但三项**原结果仍红**，连续性helper只筛started，实际path身份出现在selected且全peer去重，x/y wire sets为空。不得追认三绿。原f4控制一/三轮也红：first-leg-heard后2059/2325ms超1.5秒门，最长业务5.2/4.9秒；第二绿/最长3.5秒。全部6结果与原logSHA在a653cfe2/physical-result-v1.json，不能以“CPU忙”作已证因果。
+
+当前唯一Turing任务 **turing-20261111T113141Z-3fc797b0**，PID3961114，11:32:02 UTC launch，net-node/source963/control68cadb57a0ed72d40a4ca9a843e86b9c6797bf34；stage exec87484终态，实际ps仍运行，net68+1ignored已绿，剩余组待。同receipt/execution/PID继续，不重复提交；无Mac在途、无手机采样。当前工作树新增仅诊断测量与fixture，尚未提交/远端检查：实际目录响应在双方完成时记录wire/stream，早发仅握手认证且被接受后记客户端响应；要求31真实响应/流一一匹配、每端同一wire、每次完成时选中carried、单一外层serial且无拆除/替换。不能把started改成selected就宣告连续性。f4r显式启用lifecycle日志，含此开销，不冒充普通延迟SLO；原三场景正文和模式保持。
+
+后续顺序：收齐963 Linux全12；冻结新测量版本、远端格式/编译和实际四peer重新验收；追2059/2325ms旧f4红以及已有carrier仍可能被共享初始路径遮住的问题。继续完整移动、取消/迟到、N3混合负载与成本、N4第二腿Relay/混合版本、N5专项与手机，不因局部绿结束。以下带时点段落为原始历史，不用其中旧“当前/待验证”覆盖本节。
 
 ## 位置与授权
 

@@ -1,5 +1,7 @@
 # Vendor 补丁覆盖与退出审计
 
+2026-11-11 11:36 UTC：源9634737a的Mac节点全12与vendor443/58path/11home均已identity/准确产物验证（Actions43010224456、43012074442）；Iroh48 scoped握手合同含错误目标身份明确拒绝已过。Turing四peer首业务三轮1.22–1.25秒，但连续性缺证仍三红，原停顿控制还两红；同源Linux全12在3fc797b0运行。不能从筛选单元绿接受48或消除历史严重stall/Noq1、5专项缺口。主仍58、42–44隔离；新业务完成收据只增强观测，不改vendor行为。
+
 2026-11-11 11:02 UTC：主候选现 **58项**（Iroh1–41/45–48、Noq1–13，42–44仍隔离）。新增48是每次握手显式指定初始Custom载体及Node有限竞争，准确实现/合同在STATE与vendor/iroh/KHOR.md；尚待同源双OS Node、完整vendor与冻结四peer协议/成本，不作为已接受项。先前只解除“无活连接”selected_path的d521在Mac43005910530通过443/58/11过滤器，但Turing9d655e7f四peer三轮仍红，live=true/registered=1保护未触发，后继已撤回该行为；单元绿不补产品恢复证据。以下旧计数和“当前”段落均按其原时点保留，不覆盖旧严重stall/Noq1、5等缺口。
 
 2026-11-11 06:35 UTC：当前主候选仍57项（Iroh1–41/45–47、Noq1–13，42–44隔离）。Iroh47实际旧41c2/b0146293为Noq443绿/path56绿2红；候选8cd/c350为443/58/11绿，8cd准确双OS全12，原动态27/0与长稳4/0均已核。固定物理C-B/B-C四项收齐：两C分别Go3569.426/3536.190ms与3820.207/3533.388ms、各124业务与warm51全过；B一次初始业务超时未replug、一次Go7499.610/3473.251ms且warm11/51失败。三个实际replug均4innercopies、原3+3探测预算及8方向byte进展，成本完整边界和selected-road驻留差异保留。详见证据根confirmation-copy-identity-physical-fixed-four-result.json和STATE。两C样本少且贴4秒门，不作p99/可靠性/全N1接受，6aa严重stall未重现/闭环，quiet/stalls/手机/能耗和57项专项审计仍欠。Iroh47只统一samples_after与quality/age的代表copy，原quality选择/预算不改；上游未核等价，退出仍需对应原合同/成本/实际场景。下文带旧时点的“尚未验证”等为历史，当前以本段和STATE为准。
