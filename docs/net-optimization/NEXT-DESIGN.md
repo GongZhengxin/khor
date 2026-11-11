@@ -627,3 +627,10 @@ packet-age下一合同已加入：真实认证/echo使rx计数确实改变，只
 当前hop_ahead在构造picked前检查MISSED，只有本机Wires hop_epoch变化会使旧miss无效。新live middle而自身网络未变仍可能被30秒门挡住；此为静态缺口，尚未有新真实红。下一合同必须先实际NO_ROUTE，再改变候选实际可达性、建立新Tunnel/carried TLS/echo；无变化/Rtt-only噪声不能解除原退避，旧候选未完成的失败不能覆盖新候选上下文。
 
 设计倾向是按目标持有稳定的候选context，以eligible ID集合/确实可用的首腿/地址事实区分变化，排除排序与每个ACK/RTT变化；真实网络epoch仍保留。不能直接在所有adopt、正向RPC或每个routebook更新调用forgive_all，这会让在线middle对睡眠目标不断NO_ROUTE。新context由Wires唯一持强token，操作/缓存只Weak的方案仍需对目标数量、删除、并发和late完成取证；尚未添加字段或map，不是已批准的最终实现。LOST还缺本机identity namespace与地址context，不能把MISSED局部修复当整个缓存完成。
+
+
+2026-11-11 NoRelay 缺提示恢复入口待验证
+
+当前 no_relay 是 Egress 对中继可达性的观测标志。hop_ahead 先按本端或对端标志选 NoRelay/ToNoRelay，只有两端均未置位才按目标缺 live wire 选 Recovery。前两分支在 roadbook 没有第二腿记录时筛掉候选。五个新回归从真实入口验证三个标志组合的缺提示情况、已知 Direct 正控和递归拒绝控制，正在 macserver 执行。
+
+拟复用已有 Recovery 分支，使目标缺可用 wire 的判断先于中继观测标志。已有分支负责未知第二腿的有限准入及 live middle 排序，实际第二腿由中间节点验证。现有 hop 开关、可信设备、暂停、单跳、两候选和总预算继续负责准入。本项修改等待原行为测试结果，尚未实施。完整两腿 Relay 与移动换网仍由 N4 实际网络场景验证。

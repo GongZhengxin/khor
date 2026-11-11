@@ -156,3 +156,7 @@ v5 ef0bfa7e/tree d635e42951140ed36ca0e41f586bfc9569940cb1/snapshot31e10e49c71361
 22:28 UTC当前唯一重型 **turing-20261110T222723Z-c350f32c**，PID2996638，22:27:45 UTC启动，Iroh47候选8cd58f8ea707991f23b10ac05d6c8388a61dd519/tree4c4d7be8de2c615c35de9b5ca6f3db0cce47a78c/snapshot4e900db337c5c4356cb4b27b0de2880210bcf67f/control68cad。尚未终态，当前vendor范围57候选，无额外physical/Mac/phone。
 
 2026-11-11 05:06 UTC 已准备 NoRelay/ToNoRelay 三个缺第二腿提示回归，加已知 Direct 可达及递归拒绝两控制，共五项。真实 hop_ahead、Tunnel、内层 TLS/echo，使用原 Publication 适配中间节点。原 sole_peer 文件仅末尾新增模块，原正文逐字保留。fixture SHA9629a261389cc6152b7938a6e6d02697121e031432f4c0c00a47accb769cb01b，证据 no-relay-missing-hint-fixture-v1.json。生产行为未改，先在独立 macserver 取旧行为结果。Turing 动态 3d36cba8 的 PID/进程组与 netlab 子进程已实核存活，仍在首轮 p7。
+
+2026-11-11 05:08 UTC 原动态首轮9项日志已报通过，p3最慢回显532.3ms/零失败，活跃p7恢复约2.6–2.8秒；第二轮仍在跑，完整终态及三轮审计待采集。同一控制版本的独立Mac run42963573470正在验证NoRelay旧行为，source2cd67b9c/tree01cc7ec7/snapshot23930497，request9153492ce97547bf8a66b2a8a3739d18，ledger已登记。矩阵允许独立Mac构建的说明已纠正，Turing仍独占。
+
+2026-11-11 05:12 UTC NoRelay旧Mac42963573470已终态failure，exact13830014031/zip2adeb885、10files/11control blobs/identity核。fmt/net67（原1ignored）绿；hop60项57pass/3FAIL，三个缺提示组合都未实际offer，原55和已知Direct/recursive控制过。fixture SHA9629...原样保持。候选仅将无目标wire的Recovery判断置于NoRelay/ToNoRelay标志前，复用已有live排序和有限第二腿验证。未新增谓词/任务/预算，等待Mac同整回归。Turing继续跑冻结8cd动态，尚未采终态。

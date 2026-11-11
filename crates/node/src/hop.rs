@@ -585,10 +585,12 @@ impl Node {
                     )
                 })
                 .collect();
+            // Relay availability reports cannot exclude bounded recovery when
+            // there is no usable target wire. The middle checks its second leg.
             let legs = match (self.no_relay(), y.no_relay) {
+                _ if self.wires.link(&y.id).road.is_none() => Legs::Recovery,
                 (true, _) => Legs::NoRelay,
                 (false, true) => Legs::ToNoRelay,
-                (false, false) if self.wires.link(&y.id).road.is_none() => Legs::Recovery,
                 (false, false) => Legs::Dial,
             };
             let mut picked: Vec<String> = middles_with_cost(
