@@ -1,6 +1,6 @@
 # feat/net 当前状态与接续入口
 
-更新于2026-11-11 06:22 UTC。完整N0–N5未完成，目标“完成计划”active。用户U14要求持续推进，不以调度面板paused或阶段完成作为停止条件。root串行，不派发子智能体。此前逐字STATE保存在[最近历史](HISTORY-20261111-through-snapshot-and-stability.md)，SHA `974f95530ba857f2d2e9669b91728f7210d2efc7fb1c1aad11c251d108df4a7c`，它继续链接更早历史与失败。收据、进程和实际工作树优先。
+更新于2026-11-11 06:32 UTC。完整N0–N5未完成，目标“完成计划”active。用户U14要求持续推进，不以调度面板paused或阶段完成作为停止条件。root串行，不派发子智能体。此前逐字STATE保存在[最近历史](HISTORY-20261111-through-snapshot-and-stability.md)，SHA `974f95530ba857f2d2e9669b91728f7210d2efc7fb1c1aad11c251d108df4a7c`，它继续链接更早历史与失败。收据、进程和实际工作树优先。
 
 ## 位置、授权与当前源
 
@@ -12,11 +12,11 @@
 
 ## 当前运行任务：先查同一收据
 
-**Turing turing-20261111T062035Z-817adf28**，`netlab-peer-mobility-samples`，PID **3471108**，06:20:57 UTC已实际launch。这是固定C-B/B-C对照第4项candidate8cd，**最后一项，不跑第5次**。源8cd58f8ea707991f23b10ac05d6c8388a61dd519/tree4c4d7be8de2c615c35de9b5ca6f3db0cce47a78c/snapshot4e900db337c5c4356cb4b27b0de2880210bcf67f，control68cad。先核execution/PID；观察超时不重发。
+**Turing turing-20261111T063108Z-52af3091**，`net-node`，PID **3483765**，06:31:30 UTC实际launch。准确6e5/tree3ac48/snapshot12ef/control68cad，与已核Mac42969959757相同源码。固定四轮物理对照已结束并收齐，当前可做Linux重型回归。先查同一PID和receipt，不重发。
 
-计划 `confirmation-copy-identity-physical-plan-v1.json` 固定4次、retries0，顺序候选8cd→baseline2892→baseline2892→候选8cd。原第3项已通过prepare并完成换址，warm与Go红但8方向有进展、无severe absence，因此未触发stop，连续准备失败数归零。第4项结束后完整集合即收口，不因某项红而追加。保留第2初始业务超时、第3恢复7.50秒；任何缺失诊断保持unknown，不能称稳定。
+**Mac42972830373**，test-only6331dd1ecb107940f9d346f12008ff61385c0c53/tree7cddaea98fc1caa906b3aba9da0c413414657b00/snapshotd70e6f9ce3ad59e0b3235e7a9ce76d5c9c68335b/control68cad，已failure终态并采集，9files/11controls/identity核，exactartifact13833962234，zipSHA ca9372be03c182d57fc766600960eed0baae65ff10ef46b79459ff7ab2ac2296。仅format.patch，未执行单元；已git apply --check后原样应用，b1ce797b仅测试格式变化。它保持6e5生产逻辑，新增两个成功后旧快照合同；原67测试正文不变。尚无新两合同的行为结果，原格式失败不算行为红。
 
-Mac42969959757已success终态、采集并核实际全12组。当前无Mac待核构建、无phone采样。
+当前无phone采样。Mac42969959757已success终态并核全12，是6e5的原67合同验证。
 
 ## 本轮取得的实际证据
 
@@ -40,14 +40,14 @@ Mac42969959757已success终态、采集并核实际全12组。当前无Mac待核
 
 长稳 turing-20261111T052125Z-088e00f9：2475.166秒、11files/identity/空group，原1线程1轮p1/p1j/p1s/p5 **4/0**。p1/p1j/p1s各600秒、0切路0退役；p1s20次300msCPU停顿，最慢回显578.7ms。p5原150/300/600ms×4、各30秒间隔，均0Relay切换/0punch，最慢299.1/495.3/948.5ms。original-stability-verification-v1.json保存原行和SHA。原matrix计划已completed；非phone/p99/peer-replug接受。
 
-### Iroh47物理固定对照：第4项运行中
+### Iroh47物理固定四项已收齐
 
 C=8cd、B=2892。原20ms双腿、真实middle IPv4 replug、150秒prepare/10秒holds/124业务、warm与独立Go4秒、3probes/250ms/2秒/25%gain/Moving2秒及v5诊断均保持。两源vendor与双OS全12、8cd原动态/长稳前置已实核。Turing计时独占，独立Mac构建可穿插。
 
 1. **C turing-20261111T060457Z-62030f1b**：178.369秒、16files/identity/空group，124业务全过，warm51/51，双向Go **3569.426/3536.190ms**，原探测3+3，4innercopies相邻成本界完整，8流方向单调且均有postreplug字节进展。不是6aa重现。一处本地分析误把decision reader与selection writer并行，读空JSON失败；原空文件/stderr及analysis-dependency-race-v1.json保留，依赖顺序纠正后只重做数据分析，未重跑产品/改门。正式decision双绿。
 2. **B turing-20261111T061130Z-fe19c4ed**：103.987秒、16files/identity/空group，原test29.90秒初始业务连接y超时10.028585秒。尚未进入prepare holds/replug，attempt error1，warm/Go未验证，不能解释成换址恢复红或C胜B的性能证据。是本固定集第一准备失败。
 3. **B turing-20261111T061509Z-a43e01ff**：170.363秒、16files/identity/空group，124业务全过；warm51中11失败，双向Go **7499.610/3473.251ms**，一向超过原4秒。8流方向单调并均有postreplug进展，无severe absence。既有analyze-prompt-ack-physical.py只作同合同数据分析，源身份2892原样保留；它的旧输出名prompt-ack也保留，计划统一summary指向confirmation-copy-identity-physical-observation.json。该项非prepare失败，不触发连续两prepare停止。
-4. **C turing-20261111T062035Z-817adf28**：见顶部live，固定最后一项。
+4. **C turing-20261111T062035Z-817adf28**：220.569秒、16files/identity/空group，124业务全过，warm51/51，双向Go **3820.207/3533.388ms** 均过4秒。8流方向单调并均有postreplug进展，仍非6aa重现。
 
 每项summary为各目录confirmation-copy-identity-physical-observation.json。原whole日志不修补，缺少边界计unknown。原计划与ledger单写。分析依赖必须顺序：collect→identity→calibrate→selection→decision；budget/stream/cost在calibrate后可独立分析。已有ops/analyze-prompt-ack-physical.py按顺序组织，但它会重做calibrate，不覆盖已有分析。
 
@@ -62,7 +62,7 @@ C=8cd、B=2892。原20ms双腿、真实middle IPv4 replug、150秒prepare/10秒h
 
 ## 下一步与完整范围
 
-1. 先查C2 817adf28 PID/execution，终态collect/identity/calibrate及原warm/decision/stream/probe/cost；完成固定最后一项后统一四项数据/成本/源对照，保留第2初始失败和第3恢复红，不追加第5次。不要用小集合宣称p99或全N1。
+1. 固定四项已结束，完整结果confirmation-copy-identity-physical-fixed-four-result.json已核，原C-B/B-C/retries0。保留B1初始失败、B2恢复红，不追加第5次；后续按独立新问题/原矩阵推进。当前先采集Mac42972830373实际合同，再跟踪同源Linux52af3091。
 2. Turing计时集合结束后跑**最新6e5同源Linux net-node**；Mac全12已过。保留NoRelay与7个候选/快照合同。不要在活计时期间穿插Turing构建。
 3. N2先补**新context成功后旧selection晚登记**的真实合同；当前made删除表项会使观察高水位寿命变短，不能仅凭67绿断言此边界。再覆盖同ID真实新Tunnel/IPv4/IPv6地址变化、LOST本机identity namespace及相关地址context。DeviceInfo.addrs是拨号hint Vec<String>（sync/devices.rs315）；net/endpoint.rs963的dial_addr统一解析IP/Relay并合并nearby，地址相同而来源/顺序不同不应取消冷却。实际live bool不覆盖同wire换地址。
 4. N1继续peer-relay4秒稳定性/单向stall、quiet/stalls与成本原矩阵，按证据收敛机制；N0最终体验目标/足够样本p99与完整前后对照未收齐。
@@ -77,3 +77,8 @@ MacLab与Turing同LAN；构建macserver另一台、用户报告异网。iPhone l
 Turing仅UID1110的/tmp/khor-netlab-feat-net-1110、flock、user/netns、Rust1.95、jobs16/nice10、50GiB起40GiB停及90min门；无sudo/host网络改动。Mac原jobs2/单cache/50–40GiB/100GiB guard，独立构建可与Turing计时并行。SSH BatchMode、ForwardAgent=no、StrictHostKeyChecking，不转发凭据。stage helperSHAff09d4efb50656136d60f5ab58bc190d978923aab8519dc3b49d071208a14c1c，只增已被固定control允许的stability allowlist，原guard不变。
 
 stage-launch只一次，结束exec session后做依赖动作。记录exact收据后查同一PID，不凭旧running文件/观察超时重发。Turing终态控制树scripts/collect-network-ssh.py RECEIPT，再ops/verify-turing-record.py RUN_DIR，之后核原日志合同。Mac exactartifact下载、ZIP SHA、安全解包、11control blobs与每组实际总结核。source-refs单写，stage writer未完成不启动其他ledger写入。依赖分析按顺序，缺失数据不补零，失败原件不删除。Ready bytes=0不是无byteflow；v5累计read/written/last进度与outer绑定分别判断。
+
+
+2026-11-11 06:32 UTC：固定四轮集合已收齐：两C均warm/Go绿，共248业务成功；B一次初始业务超时、一次124业务但warm11/51失败且一向Go7499.610ms。三个实际replug均8方向有进展、4innercopies、原3+3 probe，完整相邻成本界。reads_finished enclosing aggregate innerTX datagrams依次C328/B312/C337，字节23357/22403/23740，IMMEDIATE_ACK37/39/37；选路驻留阶段与相邻边界不同，不能全归为补丁额外开销/单probe/整网或手机能耗。完整result JSON含原边界和source。两C样本太少且较慢值3820ms贴门，不称可靠性/p99或全N1。
+
+成功后旧快照新fixture candidate_success_tests SHA0b81c4384956ac4d240ec3a65959b4009fa209f2d25e584575979d3da0d87ea0，真实新middle、内层carried TLS/echo/adopt，分别保持consumer活跃或实际close+detach再放旧selection，要求没有旧middle额外请求、本机网络epoch不变。旧candidate_snapshot测试文件逐字前缀保留，仅追加module。candidate-success-miss-fixture-v1.json注册，尚未改made/生产缓存逻辑。元数据准备时源已冻结后因缺Path import停止，只完成后续metadata并匹配实际HEAD/tree，未重建/覆盖source或发生产品运行。

@@ -360,3 +360,6 @@ Iroh47冻结8cd/control68cad的原动态三轮27/0与长稳四项4/0已收齐，
 候选变化缓存旧92c530在Mac42966906265为63/2红；候选1d448已将原65全过，但新旧快照晚登记合同在Mac42968959558为66/1红。观察顺序修复6e5/tree3ac48/snapshot12ef在Mac42969959757已实际全12组绿，hop67/wires16/budget26/resume1，exactartifact13832933221及zipSHA54b210ac9fa7861e3fdbe7af9b2455db03053d81ac9152a53f4d202de59bf66e核。Linux与同ID地址/成功后旧快照合同待验。
 
 Iroh47的固定物理C-B/B-C仍在第4项：C62030f1b为124业务/warm51全过、双Go3569.426/3536.190ms；Bfe19c4ed在初始业务10.028585秒超时、未replug；Ba43e01ff有124业务但warm11/51失败、Go7499.610/3473.251ms。已测两次换址8流方向均有进展，不是6aa单向停顿重现。第4候选817adf28运行中，禁止追加第5次，当前不作全N1/p99/手机/能耗或统计显著结论。下一步按STATE同源Linux与完整N0–N5推进。
+
+
+2026-11-11 06:35 UTC：Iroh47固定第四候选817adf28已收齐，warm51/51、124业务、Go3820.207/3533.388ms。四次至此固定结束、extra retries0，报告confirmation-copy-identity-physical-fixed-four-result.json保存所有源/失败/原成本边界。三个实际replug均4innercopies与3+3探测；reads_finished enclosing aggregate innerTX datagrams为C328/B312/C337，字节23357/22403/23740，IMMEDIATE_ACK37/39/37。选路驻留与相邻边界不同，数字是整段inner业务/ACK/control/keepalive汇总，不能全归因补丁/单probe、外层整网或手机能耗。两C小样本不作p99/可靠性或全N1结论。最新缓存源6e5同源Linux52af3091在跑；另外成功后旧selection两fixture仍为test-only、先验证原行为，不把格式失败当行为红。
