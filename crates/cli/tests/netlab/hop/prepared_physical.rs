@@ -28,9 +28,11 @@ async fn warm_tunnel(from: &LabNode, to: &LabNode) {
     .expect("the resident completes its bounded tunnel probe");
     tokio::time::timeout(Duration::from_secs(2), async {
         loop {
-            if from.journal(Some(to)).iter().any(|row| {
-                row["e"] == "dial" && row["tunnel"] == true && !row["won"].is_null()
-            }) {
+            if from
+                .journal(Some(to))
+                .iter()
+                .any(|row| row["e"] == "dial" && row["tunnel"] == true && !row["won"].is_null())
+            {
                 break;
             }
             tokio::time::sleep(Duration::from_millis(50)).await;
@@ -57,15 +59,25 @@ fn retired(node: &LabNode, peer: &LabNode, wires: &BTreeSet<u64>, since: u64) ->
     node.journal(Some(peer)).iter().any(|row| {
         row["e"] == "retired"
             && row["at"].as_u64().is_some_and(|at| at >= since)
-            && row["wire"].as_u64().is_some_and(|wire| wires.contains(&wire))
+            && row["wire"]
+                .as_u64()
+                .is_some_and(|wire| wires.contains(&wire))
     })
 }
 
-async fn measured_candidates(x: &LabNode, y: &LabNode, m: &LabNode, n: &LabNode) -> Option<(u32, u32)> {
+async fn measured_candidates(
+    x: &LabNode,
+    y: &LabNode,
+    m: &LabNode,
+    n: &LabNode,
+) -> Option<(u32, u32)> {
     let (target, first, second) = (y.id.clone(), m.id.clone(), n.id.clone());
     x.with(move |node| async move {
         let devices = node.devices().ok()?;
-        if !devices.iter().any(|device| device.id == target && device.hop_staged) {
+        if !devices
+            .iter()
+            .any(|device| device.id == target && device.hop_staged)
+        {
             return None;
         }
         let links = node.links().await.ok()?;
@@ -96,8 +108,18 @@ pub(super) async fn run() {
     );
     let dx = lab.add_device("x").uplink(rx.id()).build().await.unwrap();
     let dy = lab.add_device("y").uplink(ry.id()).build().await.unwrap();
-    let dm = lab.add_device("m").uplink(public.id()).build().await.unwrap();
-    let dn = lab.add_device("n").uplink(public.id()).build().await.unwrap();
+    let dm = lab
+        .add_device("m")
+        .uplink(public.id())
+        .build()
+        .await
+        .unwrap();
+    let dn = lab
+        .add_device("n")
+        .uplink(public.id())
+        .build()
+        .await
+        .unwrap();
     for device in [&dx, &dy, &dm] {
         slow(device, LEG).await;
     }
@@ -139,8 +161,14 @@ pub(super) async fn run() {
     })
     .await
     .expect("prepared hint and both actual two-leg road facts arrive");
-    assert!(costs.0 < costs.1, "{s}: frozen M is actually ranked ahead of N");
-    eprintln!("[netlab-prepared] {s} x={} y={} m={} n={} costs={costs:?}", x.id, y.id, m.id, n.id);
+    assert!(
+        costs.0 < costs.1,
+        "{s}: frozen M is actually ranked ahead of N"
+    );
+    eprintln!(
+        "[netlab-prepared] {s} x={} y={} m={} n={} costs={costs:?}",
+        x.id, y.id, m.id, n.id
+    );
 
     cut_as(&x.dev, relay.dev.ip().unwrap(), "prepared_no_relay");
     let name = y.name.clone();
@@ -152,7 +180,11 @@ pub(super) async fn run() {
         .await
         .unwrap();
     // No carried link has ever been allowed in this fresh fixture.
-    assert!(x.link(&y).await.is_none_or(|link| link.hop != Hop::Forwarded));
+    assert!(
+        x.link(&y)
+            .await
+            .is_none_or(|link| link.hop != Hop::Forwarded)
+    );
     m.freeze();
     x.freeze();
     y.freeze();
@@ -188,7 +220,9 @@ pub(super) async fn run() {
     let y_wires = carried_wires(&y, &x, began);
     let two_asks = x.journal(Some(&y)).iter().any(|row| {
         row["e"] == "hop"
-            && row["at"].as_u64().is_some_and(|at| at >= began && at <= restored)
+            && row["at"]
+                .as_u64()
+                .is_some_and(|at| at >= began && at <= restored)
             && row["via"].as_str() == Some(n.id.as_str())
             && row["tried"] == 2
     });
@@ -235,7 +269,17 @@ pub(super) async fn run() {
     for owner in [&x, &y, &m, &n] {
         sample_diagnostics(s, owner);
     }
-    eprintln!("[netlab-prepared-limits] {s} late_M_OK=unobserved cancellation=unobserved cpu=unknown bytes=unknown; restoring M does not prove a late admission occurred");
-    result(s, ok, format!("activation_to_content={first_response:?} request={first_time:?} error={first_error:?} M_stopped={stopped} two_asks={two_asks} via_N={} samples={samples} hold={:?} continuous={continuous} x_wires={x_wires:?} y_wires={y_wires:?}", carried.is_some(), hold.elapsed()));
+    eprintln!(
+        "[netlab-prepared-limits] {s} late_M_OK=unobserved cancellation=unobserved cpu=unknown bytes=unknown; restoring M does not prove a late admission occurred"
+    );
+    result(
+        s,
+        ok,
+        format!(
+            "activation_to_content={first_response:?} request={first_time:?} error={first_error:?} M_stopped={stopped} two_asks={two_asks} via_N={} samples={samples} hold={:?} continuous={continuous} x_wires={x_wires:?} y_wires={y_wires:?}",
+            carried.is_some(),
+            hold.elapsed()
+        ),
+    );
     assert!(ok, "{s}: prepared race and actual carried continuity");
 }

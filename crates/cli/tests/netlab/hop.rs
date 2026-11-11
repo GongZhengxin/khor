@@ -28,10 +28,10 @@ use crate::nat::{Net, router};
 
 #[path = "hop/mobility.rs"]
 mod mobility;
-#[path = "hop/reference.rs"]
-mod reference;
 #[path = "hop/prepared_physical.rs"]
 mod prepared_physical;
+#[path = "hop/reference.rs"]
+mod reference;
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 6)]
 async fn f4_a_prepared_second_middle_serves_before_the_first_middle_resumes() {
