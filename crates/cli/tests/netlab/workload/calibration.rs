@@ -17,6 +17,50 @@ const WARM: usize = 4;
 const ECHOES: usize = 64;
 const CALLER: Duration = Duration::from_secs(2);
 
+#[derive(Clone, Copy)]
+struct Model {
+    case: &'static str,
+    revision: &'static str,
+    size: usize,
+    rtt_ms: u64,
+    mbit: u64,
+    min_rtt_us: [u64; 2],
+    goodput_mbit: [f64; 2],
+    bulk_limit: Duration,
+    condition: fn() -> patchbay::LinkCondition,
+}
+
+const LOW: Model = Model {
+    case: "w0",
+    revision: REVISION,
+    size: SIZE,
+    rtt_ms: 40,
+    mbit: 8,
+    min_rtt_us: [35000, 80000],
+    goodput_mbit: [6.4, 9.6],
+    bulk_limit: Duration::from_secs(120),
+    condition: super::condition,
+};
+
+const HIGH: Model = Model {
+    case: "h0",
+    revision: "workload_kernel_tcp_calibration_high_v1",
+    size: 96 * 1024 * 1024,
+    rtt_ms: 300,
+    mbit: 50,
+    min_rtt_us: [270000, 420000],
+    goodput_mbit: [40.0, 60.0],
+    bulk_limit: Duration::from_secs(240),
+    condition: high_condition,
+};
+
+fn high_condition() -> patchbay::LinkCondition {
+    patchbay::LinkCondition::new()
+        .latency_ms(150)
+        .rate_mbit(50)
+        .buffer_ms(40)
+}
+
 fn emit(row: Value) {
     eprintln!("[netlab-workload-calibration] {row}");
 }
@@ -69,7 +113,7 @@ fn qdiscs_present(capture: &Value) -> bool {
             .all(|key| capture[*key]["ok"] == true)
 }
 
-async fn serve(mut stream: TcpStream, payload: &[u8]) -> Result<(), String> {
+async fn serve(mut stream: TcpStream, payload: &[u8], model: Model) -> Result<(), String> {
     stream.set_nodelay(true).map_err(|e| e.to_string())?;
     let mut mode = [0];
     stream
@@ -89,7 +133,7 @@ async fn serve(mut stream: TcpStream, payload: &[u8]) -> Result<(), String> {
             }
         }
         b'u' => {
-            let mut received = vec![0; SIZE];
+            let mut received = vec![0; model.size];
             stream
                 .read_exact(&mut received)
                 .await
@@ -124,7 +168,7 @@ async fn connect(addr: std::net::SocketAddr, mode: u8) -> Result<TcpStream, Stri
     Ok(stream)
 }
 
-async fn client(addr: std::net::SocketAddr, payload: Arc<Vec<u8>>) -> Vec<Value> {
+async fn client(addr: std::net::SocketAddr, payload: Arc<Vec<u8>>, model: Model) -> Vec<Value> {
     let epoch = Instant::now();
     let mut rows = Vec::new();
     let connected = tokio::time::timeout(CALLER, connect(addr, b'e')).await;
@@ -134,7 +178,7 @@ async fn client(addr: std::net::SocketAddr, payload: Arc<Vec<u8>>) -> Vec<Value>
         Err(_) => (None, Some("echo connection deadline".into())),
     };
     emit(
-        json!({"schema":1,"revision":REVISION,"event":"connect","operation":"echo",
+        json!({"schema":1,"revision":model.revision,"event":"connect","operation":"echo",
         "ok":stream.is_some(),"error":connect_error}),
     );
     let mut broken = stream.is_none();
@@ -163,7 +207,7 @@ async fn client(addr: std::net::SocketAddr, payload: Arc<Vec<u8>>) -> Vec<Value>
         };
         broken |= outcome != "ok";
         let ended_us = epoch.elapsed().as_micros();
-        let row = json!({"schema":1,"revision":REVISION,"event":"echo","index":index,
+        let row = json!({"schema":1,"revision":model.revision,"event":"echo","index":index,
             "warmup":index<WARM,"started_us":started_us,"ended_us":ended_us,
             "elapsed_us":ended_us-started_us,"outcome":outcome,"error":error,"bytes":64});
         emit(row.clone());
@@ -184,7 +228,7 @@ async fn client(addr: std::net::SocketAddr, payload: Arc<Vec<u8>>) -> Vec<Value>
                     return Err("peer rejected upload bytes".into());
                 }
             } else {
-                let mut received = vec![0; SIZE];
+                let mut received = vec![0; model.size];
                 s.read_exact(&mut received)
                     .await
                     .map_err(|e| e.to_string())?;
@@ -194,16 +238,15 @@ async fn client(addr: std::net::SocketAddr, payload: Arc<Vec<u8>>) -> Vec<Value>
             }
             Ok::<_, String>(())
         };
-        let (outcome, error) = match tokio::time::timeout(Duration::from_secs(120), transfer).await
-        {
+        let (outcome, error) = match tokio::time::timeout(model.bulk_limit, transfer).await {
             Ok(Ok(())) => ("ok", None),
             Ok(Err(e)) => ("error", Some(e)),
             Err(_) => ("timeout", Some("bulk caller deadline".into())),
         };
         let ended_us = epoch.elapsed().as_micros();
-        let row = json!({"schema":1,"revision":REVISION,"event":"bulk","direction":direction,
+        let row = json!({"schema":1,"revision":model.revision,"event":"bulk","direction":direction,
             "started_us":started_us,"ended_us":ended_us,"elapsed_us":ended_us-started_us,
-            "bytes":SIZE,"exact_bytes":outcome=="ok","outcome":outcome,"error":error});
+            "bytes":model.size,"exact_bytes":outcome=="ok","outcome":outcome,"error":error});
         emit(row.clone());
         rows.push(row);
     }
@@ -221,6 +264,16 @@ async fn on(device: &Device) -> Value {
 #[tokio::test(flavor = "multi_thread", worker_threads = 6)]
 #[ignore = "kernel TCP calibration, alone under the guarded workload calibration task"]
 async fn w0_kernel_tcp_confirms_the_workload_bottleneck_in_both_directions() {
+    run(LOW).await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 6)]
+#[ignore = "high-BDP kernel calibration, run alone under its fixed guarded task"]
+async fn h0_kernel_tcp_confirms_the_high_bdp_bottleneck_in_both_directions() {
+    run(HIGH).await;
+}
+
+async fn run(model: Model) {
     let lab = Lab::new().await.unwrap();
     let rx = router(&lab, "pubx", Net::Public).await;
     let ry = router(&lab, "puby", Net::Public).await;
@@ -228,12 +281,12 @@ async fn w0_kernel_tcp_confirms_the_workload_bottleneck_in_both_directions() {
     let y = lab.add_device("y").uplink(ry.id()).build().await.unwrap();
     x.default_iface()
         .unwrap()
-        .set_condition(super::condition(), LinkDirection::Both)
+        .set_condition((model.condition)(), LinkDirection::Both)
         .await
         .unwrap();
     let mut seed = 0x6d697865646c6f61u64;
     let payload = Arc::new(
-        (0..SIZE)
+        (0..model.size)
             .map(|_| {
                 seed ^= seed << 13;
                 seed ^= seed >> 7;
@@ -243,9 +296,10 @@ async fn w0_kernel_tcp_confirms_the_workload_bottleneck_in_both_directions() {
             .collect::<Vec<_>>(),
     );
     emit(
-        json!({"schema":1,"revision":REVISION,"event":"manifest","warmup":WARM,"echoes":ECHOES,
-        "echo_bytes":64,"bulk_bytes":SIZE,"rtt_ms":40,"mbit_each_direction":8,"queue_ms":40,
-        "min_rtt_us_bounds":[35000,80000],"goodput_mbit_bounds":[6.4,9.6],
+        json!({"schema":1,"revision":model.revision,"event":"manifest","warmup":WARM,"echoes":ECHOES,
+        "echo_bytes":64,"bulk_bytes":model.size,"rtt_ms":model.rtt_ms,"mbit_each_direction":model.mbit,"queue_ms":40,
+        "min_rtt_us_bounds":model.min_rtt_us,"goodput_mbit_bounds":model.goodput_mbit,
+        "bulk_caller_us":model.bulk_limit.as_micros(),
         "layer":"kernel_TCP","residents":false,"slo":false,"qdisc_units_review_required":true}),
     );
     let xb = on(&x).await;
@@ -256,7 +310,7 @@ async fn w0_kernel_tcp_confirms_the_workload_bottleneck_in_both_directions() {
         .unwrap();
     for (name, capture) in [("x_before", &xb), ("gateway_before", &rb)] {
         emit(
-            json!({"schema":1,"revision":REVISION,"event":"capture","name":name,"capture":capture}),
+            json!({"schema":1,"revision":model.revision,"event":"capture","name":name,"capture":capture}),
         );
     }
     let (tx, ready_rx) = tokio::sync::oneshot::channel();
@@ -267,12 +321,11 @@ async fn w0_kernel_tcp_confirms_the_workload_bottleneck_in_both_directions() {
             tx.send(listener.local_addr().unwrap().port()).unwrap();
             let mut outcomes = Vec::new();
             for _ in 0..3 {
-                let connection =
-                    tokio::time::timeout(Duration::from_secs(120), listener.accept()).await;
+                let connection = tokio::time::timeout(model.bulk_limit, listener.accept()).await;
                 let outcome = match connection {
                     Ok(Ok((stream, _))) => tokio::time::timeout(
-                        Duration::from_secs(120),
-                        serve(stream, &server_payload),
+                        model.bulk_limit,
+                        serve(stream, &server_payload, model),
                     )
                     .await
                     .map_err(|_| "server transfer deadline".to_owned())
@@ -292,7 +345,7 @@ async fn w0_kernel_tcp_confirms_the_workload_bottleneck_in_both_directions() {
         .unwrap();
     let addr = std::net::SocketAddr::from((y.ip().unwrap(), port));
     let rows = x
-        .spawn(move |_| async move { client(addr, payload).await })
+        .spawn(move |_| async move { client(addr, payload, model).await })
         .unwrap()
         .await
         .unwrap();
@@ -308,7 +361,7 @@ async fn w0_kernel_tcp_confirms_the_workload_bottleneck_in_both_directions() {
         .unwrap();
     for (name, capture) in [("x_after", &xa), ("gateway_after", &ra)] {
         emit(
-            json!({"schema":1,"revision":REVISION,"event":"capture","name":name,"capture":capture}),
+            json!({"schema":1,"revision":model.revision,"event":"capture","name":name,"capture":capture}),
         );
     }
     let min_rtt = rows
@@ -319,11 +372,13 @@ async fn w0_kernel_tcp_confirms_the_workload_bottleneck_in_both_directions() {
     let rates: Vec<f64> = rows
         .iter()
         .filter(|r| r["event"] == "bulk")
-        .map(|r| SIZE as f64 * 8.0 / r["elapsed_us"].as_u64().unwrap().max(1) as f64)
+        .map(|r| model.size as f64 * 8.0 / r["elapsed_us"].as_u64().unwrap().max(1) as f64)
         .collect();
-    let bounds_ok = min_rtt.is_some_and(|v| (35000..=80000).contains(&v))
+    let min_rtt_range = model.min_rtt_us[0]..=model.min_rtt_us[1];
+    let goodput_range = model.goodput_mbit[0]..=model.goodput_mbit[1];
+    let bounds_ok = min_rtt.is_some_and(|v| min_rtt_range.contains(&v))
         && rates.len() == 2
-        && rates.iter().all(|v| (6.4..=9.6).contains(v));
+        && rates.iter().all(|v| goodput_range.contains(v));
     let commands_ok = [&xb, &rb, &xa, &ra].iter().all(|v| qdiscs_present(v));
     let ok = rows.len() == 70
         && rows.iter().all(|r| r["outcome"] == "ok")
@@ -331,12 +386,12 @@ async fn w0_kernel_tcp_confirms_the_workload_bottleneck_in_both_directions() {
         && commands_ok
         && bounds_ok;
     emit(
-        json!({"schema":1,"revision":REVISION,"event":"complete","functional_and_bounds_ok":ok,
+        json!({"schema":1,"revision":model.revision,"event":"complete","functional_and_bounds_ok":ok,
         "samples":rows.len(),"server_ok":server_ok,"qdiscs_present":commands_ok,"bounds_ok":bounds_ok,
         "min_rtt_us":min_rtt,"goodput_mbit":rates,"calibrated":false,"qdisc_units_review_required":true,"slo":false}),
     );
     result(
-        "w0",
+        model.case,
         ok,
         format!(
             "kernel TCP min_rtt_us={min_rtt:?} rates={rates:?} exact_bytes/server={server_ok} qdiscs_present={commands_ok}; readback unit review still required"
@@ -344,6 +399,7 @@ async fn w0_kernel_tcp_confirms_the_workload_bottleneck_in_both_directions() {
     );
     assert!(
         ok,
-        "w0: complete independent kernel data and frozen physical bounds"
+        "{}: complete independent kernel data and frozen physical bounds",
+        model.case
     );
 }
