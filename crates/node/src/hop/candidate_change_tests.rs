@@ -331,3 +331,6 @@ mod comparison_context;
 
 #[path = "hint_context_tests.rs"]
 mod hint_context;
+
+#[path = "late_success_tests.rs"]
+mod late_success;
