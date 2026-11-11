@@ -4,7 +4,7 @@
 
 ## 位置、授权与当前源
 
-产品 `/Volumes/disk0/Khor/worktrees/current/khor-net`，branch `feat/net`。最新候选 **c2b615fedc928dfc87c1cc088ca2c06dfb3cb550**，tree **7ebc172d2cb2a77839379beb57390fe7997fd748**，snapshot **80f65c7fa67534b0a26f1ce953bfe2accb506653**，candidate-prepared-race-source-v2.json。它含真正最多2候选prepared竞争、正向双端新协议识别和同总预算legacy fallback，原76测试保留、另加3真实流量合同；Turing084053Z-8d9819ab已准确同源全部12组/hop79通过，Mac同源及原物理转发矩阵待核。
+产品 `/Volumes/disk0/Khor/worktrees/current/khor-net`，branch `feat/net`。最新候选 **c2b615fedc928dfc87c1cc088ca2c06dfb3cb550**，tree **7ebc172d2cb2a77839379beb57390fe7997fd748**，snapshot **80f65c7fa67534b0a26f1ce953bfe2accb506653**，candidate-prepared-race-source-v2.json。它含真正最多2候选prepared竞争、正向双端新协议识别和同总预算legacy fallback，原76测试保留、另加3真实流量合同；Turing084053Z-8d9819ab已准确同源全部12组/hop79通过，Mac同源也已全部12组/hop79核，原物理转发矩阵在途。
 
 上一候选 **7d06d5e1360f3c08ef3fa1a7c30fd6ec48bd34f7**，treeb70f871326ed3f9fb3abc7c1a5dfbf93b6b2e47f/snapshotd2ff22b80e928611469a1023cbb1b8b11ae993c2，修legacy公平准备/完整首帧receiver提交；Turing082952Z-dae9993c已全部12组/hop76绿，Mac42987755071也已准确同源全部12组/hop76绿、归档/11controls/identity实核。此前已核双OS全12的1bd地址修复/hop73与287成功观察寿命仍保留，不跨源外推。
 
@@ -109,3 +109,13 @@ root已提交hop.rs每middle失败作用域候选b344→格式fcc7（尚未验�
 - 8ecc只提交一次Turingstage，exec **60061**，前驱dae9993c，role candidate。先恢复同session/实际receipt，不重发。此时尚未验证格式/编译/行为。最新同源双OS全12已核仍1bd，7d的Mac待artifact核。
 
 当前完整计划active，前轮为代码与实际证据进展，非等待/无进展。后续先核8ecc并收7d的Mac，再完成prepared源两OS/实际原hop矩阵；之后消除30秒全局比较阻塞（需复用原cache/所有者、保持成本门）、同wire迁移/目标有效hint/LOST identity、N3交互共存与成本、N4两腿移动、N5最终审计/真机。不要收缩为新79项测试通过即完成。无phone部署/采样，原所有红保持。
+
+
+2026-11-11 09:01 UTC：当前新源码 **19cceb230928bb985b4e11c3b0347a29f1b432cb**，treef8d843344b9b24b28fb2b42209769cee873ddfa7/snapshotd9d80f26a1cf66ed83a0f1d07271ee8c5baad32e，candidate-comparison-context-source-v1.json。去掉全局LAST_COMPARE，在原HopCandidate增attempted_at；同network同实际wire保留比较工作30秒，实际变化即新候选可比。begin_middle在原MISSED锁内原子claim，拒绝旧weak epoch/过期caller；正常恢复不受比较30秒周期门约束，原失败退避不变。made成功保留该工作记录。比较只筛到期候选再取TRIES2，未试第三个不会被前两个的比较窗口一起挡住。增加两个路由事实所有权合同，含真实carried成功后成本门不被清掉；原79正文保留。comparison-context-source-audit-v1.json记录成本范围变化：从全局门变为每middle门可能改变总后台工作，1/3/5设备成本与真实前后矩阵必须验，不称成本已接受。
+
+19cceb只提交一次Mac，exec **49452**，先恢复同会话/实际request收据，不重发。当前Turing仍是c2b基线 **084720Z-2463e1e5/PID3657082**，禁止穿插Turing构建。08:59实核同PID11分08秒活着，首轮3green、521.22秒；f4最慢echo3.7秒、回carried3.9秒（leg heard后0.2）；f4i回peer28.2秒（Relay已可用口径）；f4s无观察切换且最慢9.1秒，never不是零恢复。第二轮在跑，完整9项尚未收齐。
+
+c2b Mac **42989990177**已success，exactartifact13841233618/ZIP SHA88745ebf8c498eec2356977fd677762be5abe0ea6c1b259d69ffd6c5e144bae9，archive collector exec75354待核恢复；之后verify-mac-record再逐组核/ledger，不提前双OS声明。目标hint/LOST/samewire变址与N3/N4/N5继续未完成。
+
+
+2026-11-11 09:03 UTC：c2b Mac42989990177现已exactartifact13841233618、20files/11controls/identity和全部12组实际总结核齐，hop79/wires16/budget26/resume1；node-regression-verification-v1.json与ledger终态，prepared-race fixture状态both_os_actual_all79_all12_verified_physical_pending。7d/c2b分别双OS绿，不外推19cceb。比较候选19cceb Mac Actions **42991598937**，request47e2276e765a479bbdf6d531a4274682、准确treef8d843/snapshotd9d80，exec49452/32788均已退出并登记；09:02 API仍in_progress，先查同run，不重发。当前没有新Turing提交，C物理计时继续。

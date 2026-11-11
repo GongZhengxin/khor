@@ -665,3 +665,8 @@ ff743已复用已有 Recovery 分支，使目标缺可用 wire 的判断先于�
 
 
 2026-11-11 08:51 UTC：下一步comparison admission设计。当前compare_roads在任何实际事实之前受进程全局LAST_COMPARE/30秒阻塞，一个peer甚至不同Node会消耗彼此时间；原f4i回peer尾巴13.6–31.6秒尚未闭环。拟去掉全局gate，把比较时间放原MISSED每(this,target)记录，只有当前network/candidate弱token匹配时登记；相同事实维持原30秒成本门，实际网络/候选/首腿事实改变则同cache entry换context并立即可比。沿原resident beat与note_roads，不增map/task/timer，不把每次ACK/RTT读数当连接性变化，不变30秒周期值。made成功保留该比较时间；旧epoch/旧观察不能重置它。完整物理矩阵c2b此时正在跑，作为修改前准确基线；不要在其Turing计时期间构建。此段是设计待验，未实现/未声称解决全部尾巴。
+
+
+2026-11-11 09:01 UTC：目标/中间设备有效hint上下文仍欠。源码实核contact_version只是正向contact，Wires::back每次heard都会递增，并非网络/地址epoch；不应纳入MISSED/LOST造成持续解除退避。effective hints应沿net::endpoint::dial_addr解析有效IP/Relay并合并nearby，规范化去重；不能因原字符串顺序/重复/无效项或来源变化取消冷却。目标hint变化影响原第二腿失败，须重置目标下相关middle；只有某middle有效hint变化则仅重置该middle，保留其他实际未变的失败和比较工作。读all/roster前的观察序号约束继续，不能用更新前的DeviceInfo覆盖较新上下文；禁止在MISSED锁内读取文档/await。
+
+先将比较候选19cceb格式/单元与原C物理基线隔离冻结，再追加此合同和实现，避免把两组改变混作一个性能归因。源19cceb此时只提交独立Mac（Turing C矩阵在途），未验证。拟实际合同：同wire同本机network epoch，NO_ROUTE后真实同身份新IPv4/IPv6有效hint可以重新准入并完成carried TLS/echo；纯顺序/重复/无效项不取消冷却。新有效hint的真实TLS前置与物理完整第二腿仍分层记录，不用adapter代替N4。

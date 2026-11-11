@@ -316,7 +316,10 @@ fn begin_middle(
         return false;
     };
     if middle.cooling()
-        || (comparison && middle.attempted_at.is_some_and(|at| at.elapsed() < COMPARE_EVERY))
+        || (comparison
+            && middle
+                .attempted_at
+                .is_some_and(|at| at.elapsed() < COMPARE_EVERY))
     {
         return false;
     }
@@ -984,7 +987,8 @@ impl Node {
         let Some(epoch) = self.hop_miss_epoch(&y.id, picked, observation) else {
             return false;
         };
-        self.open_hop_in_epoch(ep, y, all, picked, epoch, false).await
+        self.open_hop_in_epoch(ep, y, all, picked, epoch, false)
+            .await
     }
 
     /// **Opens a hop to `y` through the first of `picked` that answers**
@@ -1025,10 +1029,14 @@ impl Node {
             picked
                 .iter()
                 .filter(|id| {
-                    miss.candidates
-                        .iter()
-                        .any(|middle| &middle.id == *id && !middle.cooling()
-                            && (!comparison || middle.attempted_at.is_none_or(|at| at.elapsed() >= COMPARE_EVERY)))
+                    miss.candidates.iter().any(|middle| {
+                        &middle.id == *id
+                            && !middle.cooling()
+                            && (!comparison
+                                || middle
+                                    .attempted_at
+                                    .is_none_or(|at| at.elapsed() >= COMPARE_EVERY))
+                    })
                 })
                 .take(TRIES)
                 .collect::<Vec<_>>()
