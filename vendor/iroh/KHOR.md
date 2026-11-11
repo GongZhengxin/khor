@@ -12,6 +12,14 @@
 
 ## 补丁
 
+### 49. 单一实际路径不被另一连接的首选路径遮住（2026-11-11，候选未验收）
+
+PathStateSender.record_selected原本把peer共享的preferred四元组在每条conn的open path表匹配；另一活IP连接保持首选而新conn只有Custom时，后者实际已完成端到端业务，观察却selected=None，Node路型Unknown。真实Node四合同中源166的两端普通/early均answered=true、requests=1但routeUnknown，旧573则answered=false/requests=0；原断言和旧原红保留。
+
+修正仅在共享preferred不属于本conn且它只有一条established/open路径时报告该路径为有效数据路。Noq PathStatus::Backup文档（vendor/noq-proto/src/connection/paths.rs）明确无Available路径时Backup承担数据；该单路径即当前实际可用的唯一调度选择。不改变peer共享选路、Noq path status、数据发送、质量算法或其余连接。零路/多个路径未匹配时仍Unknown，不能把候选地址当已选。无新常驻状态、任务或计时器。
+
+保持Node四个完整TLS/业务/快Direct负控与原1秒gate逐字不变复验；随后同冻结四peer1.5秒/30请求/双端wire和outer连续性、vendor筛选及其他N1恢复。rtt_of会读到这条实际路的RTT，须核原预算/恢复与quiet成本，不称纯显示无影响。上游等价实现未核，退出需保留上述实际多连接数据/零多路边界并验证等价effective route语义。主候选现59项（Iroh1–41/45–49+Noq1–13），42–44仍隔离；尚未验收。
+
 ### 48. 新承载握手有独立的初始路径（2026-11-11，候选未验收）
 
 四真实resident双middle场景874eb4c4三轮均实测：N在约300ms准备成功、实际Hop为viaN/tried2，但1.5秒目录请求超时；middle未收到承载字节，目标3秒首帧lease结束。只解除“无活连接”的selected_path候选d521在9d655e7f仍红；诊断live=true/registered=1、旧选路为Relay、reset=false，另一条活连接的共享初始选路不能被全局清除。该行为候选已从后继源码撤回，原失败/同源vendor绿保留，不当作修复。

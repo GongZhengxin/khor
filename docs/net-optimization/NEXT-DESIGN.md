@@ -681,3 +681,8 @@ ff743已复用已有 Recovery 分支，使目标缺可用 wire 的判断先于�
 
 
 2026-11-11 11:51 UTC：b1a物理前两轮的新业务wire/stream收据已能匹配，但第一持续样本两端Link条件失败而早停，不能外推30样本成功。首响应时只有Custom path且selected=false，现有Wires::carrier_in_use也处理此情况；先区分actual received wire、served/outgoing slot和cached settled word，不直接把v2判据放宽。静态已有carrier initial gap假设与反向Link新拨一致，新增真实四合同在旧活IP旁安装只提供Custom的同身份端点，分别只许Direct或Custom接受新handshake，用Node普通/early完整SessionRows验证原caller内首响应、路由、唯一请求与旧IP/既有carrier保留。先取test-only旧行为，负控/fixture需真实通过。
+
+
+2026-11-11 12:21 UTC：旧573在Linux5df和Mac43017591561已到真实最终业务断言，两项answered=false/pathNone/requests0，快Direct负控及旧IP/既有carrier均过；原412清理失败不再称产品红。候选166已实现有限installed-carrier竞争，正在同源两端net-node，不提前接受。4个合同没有放宽。
+
+下一独立N1/N4观测问题需正式决策：iroh PathStateSender.record_selected把peer共享preferred fourtuple投射到各connection，找不到则selected=None，即使这个已认证conn只有一个实际Custom路径并已完成数据。Noq1.3.0公开Connection没有selected-path getter；vendor/noq-proto paths.rs1085–1095规定没有Available时Backup承担数据，PathStats有每path frame_tx/frame_rx.stream和udp计数。根business-continuity-decomposition-v1.json三轮中的第三轮有31匹配实际业务流/同wire/单outer，但首回复唯一Custom且selectedfalse，v2原红必须保留。可选方向：修provider在共享preferred未落到本conn且仅一个已open/已承载数据路径时报告有效数据路；或另记录effective data route/每path流帧事实，保持共享preferred和实际传输概念明确。前者需要先查path_watcher现有空/多路/不存在preferred的合同，并以实际数据/Noq调度证明，不能把“有候选”伪装成已选；后者须冻结新观测版本而非直接宽松selected gate。无论哪一种，旧v2和当前166物理原门保留，不提前重记绿。先收166全12/四新合同，再做独立变更与同物理对照，不把元数据修正当真实stall/能耗解决。

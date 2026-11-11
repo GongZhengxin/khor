@@ -1,5 +1,7 @@
 # Vendor 补丁覆盖与退出审计
 
+2026-11-11 12:26 UTC：新增Iroh49候选，仅修每connection effective路观测：共享preferred不在本conn且只有一条established路径时报告Noq实际Backup fallback，零/多条未匹配仍Unknown，不改实际shared选路/PathStatus。源166双OS实际两项已有carrier内容已成功且各1响应，但same final route断言Unknown仍红，准确原件/部分证明见STATE。新49尚待同四合同转绿、全12、vendor/四peer/恢复成本；主现在59=Iroh1–41/45–49+Noq1–13，42–44隔离。之前58/57计数按各源时点保留。
+
 2026-11-11 11:36 UTC：源9634737a的Mac节点全12与vendor443/58path/11home均已identity/准确产物验证（Actions43010224456、43012074442）；Iroh48 scoped握手合同含错误目标身份明确拒绝已过。Turing四peer首业务三轮1.22–1.25秒，但连续性缺证仍三红，原停顿控制还两红；同源Linux全12在3fc797b0运行。不能从筛选单元绿接受48或消除历史严重stall/Noq1、5专项缺口。主仍58、42–44隔离；新业务完成收据只增强观测，不改vendor行为。
 
 2026-11-11 11:02 UTC：主候选现 **58项**（Iroh1–41/45–48、Noq1–13，42–44仍隔离）。新增48是每次握手显式指定初始Custom载体及Node有限竞争，准确实现/合同在STATE与vendor/iroh/KHOR.md；尚待同源双OS Node、完整vendor与冻结四peer协议/成本，不作为已接受项。先前只解除“无活连接”selected_path的d521在Mac43005910530通过443/58/11过滤器，但Turing9d655e7f四peer三轮仍红，live=true/registered=1保护未触发，后继已撤回该行为；单元绿不补产品恢复证据。以下旧计数和“当前”段落均按其原时点保留，不覆盖旧严重stall/Noq1、5等缺口。
@@ -148,3 +150,8 @@ Noq1/5缺少专门行为覆盖的状态不变。没有升级、删补丁或发�
 | 保留目标 | 当前证据与缺口 | 退出条件 |
 | --- | --- | --- |
 | 新准备的carrier能作为一次握手的初始路，另一活连接不遮住；保留TLS、正常读取/写边界和总期限 | 874eb4c4与d521/9d655e7f冻结四peer各3个真实业务红，后者明确旧Relay的live注册保护。4eff候选新增显式地址API，未提供该地址拒绝；Node合同拟验证活IP旁新Custom Path0/TLS/echo、错误身份拒绝与旧IP存续，当前未执行。普通拨号<=2活动/先join再复用slot，早发替代不发early业务，失败不领取另一carrier预算；实际额外握手字节/CPU尚欠 | 上游同语义实现尚未核，不据“支持自定义transport”或方法同名认定等价。必须验证每次初始目的地址、有活连接负控、身份错误/暂停/取消/原deadline/零新增写重放、真实唯一/多个middle两腿、移动与N3成本。全部调用者可迁移后退出；不能用本项窄绿删除其他57项 |
+
+
+## Iroh49：每connection单一已建立路径的有效传输观测（候选）
+
+来源是源166的真实Node普通/early最终断言：内容成功/唯一响应，但路型Unknown；同源两端均重现，fastDirect/旧IP保持负控绿。Noq无Available时使用Backup；仅一个已建立路径且共享preferred未匹配时报告该路径，不将零/多路猜成某类型，不改Noq状态/共享质量/探测预算。原四合同与所有时限保持，同源Node、vendor、四peer/动态/成本还待。上游是否等价未核，不凭同名API退出；退出需真实多连接/数据/空多路边界和原预算、恢复/手机成本矩阵。

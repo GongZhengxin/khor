@@ -87,3 +87,10 @@ Turing5df2c88e已355.398秒终态101、14files/identity/原group空，hop89/net6
 现将原两文件草稿提交为候选：普通第二个已有slot与early一个父借用future为已安装carrier提供显式Custom普通握手，原genericDirect/early先快者仍可胜，缓存路失败不取消尚在途carrier，认证resting仍决定。最多2活动、原拨号/caller期限、writes/0RTT门保持；已有快速Direct不等待新carrier。性能成本未测，不能称零开销。新四合同逐字保持，必须同一最终断言转绿。四peer额外sample hop/via与组件输出仅采证，held累计false仍失败且1.5秒/10秒/30样本不变；其新增失败后继续采样不回写旧v2绿。未做provider selected修复、未改v2 selected_every门。
 
 先冻结新source并单次提交Mac/Turing net-node，回收准确同源全部12/四新合同；Turing前驱5df已结束，允许下一串行任务。继而四peer验证、provider实际数据路径与共享selected观测语义、旧f4恢复长尾及N3/N4/N5，完整目标active。
+
+
+## 12:26 UTC：166真实业务已成功，same route门仍红；49有效路径观测候选
+
+Linux9dccad92已357.467秒终态101、14files/identity/空group，budget34pass/2FAIL；Mac43019072595 exact13853922587/ZIP SHA5d2e01a442c41ffcfcbd3247f5fa9aa4a7f612c433927613f75c18871895243b，13files/11controls/identity、budget30pass/2FAIL。两端两项same第310行均 **answered=true、path=Some(Unknown)、requests=1**，普通/early原期限内业务成功；fastDirect两负控/旧IP/保留carrier和原30/26其他合同绿，但最终路型不符仍原红。per-run installed-carrier-partial-v1.json/ledger终态，不把它叫全12。
+
+已新增Iroh49小候选（尚未编译）：PathStateSender.record_selected若peer preferred不在本conn且只有1条established/open路径，报告这条Noq实际fallback；Backup在无Available时传数据的语义见Noq paths.rs1085–1095。保留shared选择/PathStatus/发送/其他连接，不猜空/多路。原四Node合同逐字不变；不是删掉path断言来过门。rtt_of现在有真实路RTT，会影响原Patience输入，须全回归/物理/成本。vendor主59、42–44隔离，上游未核。无Turing/Mac在途（以上两run已终态收齐），下一步提交冻结49源，单次双OS全12和独立vendor，然后原四peer新diagnostic采证/held等门不变，再完整N0–N5。

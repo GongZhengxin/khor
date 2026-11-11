@@ -276,7 +276,7 @@ impl PathStateSender {
         }
     }
 
-    /// Updates the selected transmission path.
+    /// Updates the effective transmission path of this connection.
     pub(super) fn record_selected(&self, network_path: &transports::FourTuple) {
         let remote_addr: TransportAddr = network_path.remote().into();
         let local_addr = network_path.local();
@@ -286,7 +286,18 @@ impl PathStateSender {
                 .list
                 .iter()
                 .find(|p| p.remote_addr == remote_addr && p.local_addr == local_addr)
-                .map(|p| p.handle.id());
+                .map(|p| p.handle.id())
+                .or_else(|| {
+                    // khor patch 49: a peer's preferred tuple can belong to
+                    // another connection. With one established path here,
+                    // noq uses it even when marked Backup (there is no
+                    // Available alternative). Report that actual fallback;
+                    // zero or multiple unmatched paths remain unknown.
+                    match state.list.as_slice() {
+                        [only] => Some(only.handle.id()),
+                        _ => None,
+                    }
+                });
             if selected_path_id != state.selected {
                 state.selected = selected_path_id;
                 selected_path_id.map(|path_id| PathEvent::Selected {
