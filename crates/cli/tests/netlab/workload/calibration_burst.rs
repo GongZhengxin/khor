@@ -15,7 +15,7 @@ impl Drop for Owner {
     }
 }
 
-async fn command(args: &[String]) -> Value {
+pub(super) async fn command(args: &[String]) -> Value {
     let mut command = tokio::process::Command::new("tc");
     command.kill_on_drop(true).args(args);
     match tokio::time::timeout(Duration::from_secs(2), command.output()).await {

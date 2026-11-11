@@ -40,7 +40,7 @@ def capture(value):
                 interface_rx_bytes=iface[0]['stats64']['rx']['bytes'], interface_tx_bytes=iface[0]['stats64']['tx']['bytes'])
 
 
-def case(path, revision=REVISION, allow_bounds_failure=False, bulk_bytes=BYTES):
+def case(path, revision=REVISION, allow_bounds_failure=False, bulk_bytes=BYTES, profile_reader=None):
     text = path.read_text()
     marker = '[netlab-workload-calibration] '
     lines = [line for line in text.splitlines() if marker in line]
@@ -63,16 +63,19 @@ def case(path, revision=REVISION, allow_bounds_failure=False, bulk_bytes=BYTES):
     assert all(r['bytes'] == bulk_bytes for r in bulk)
     assert all(r['ended_us'] >= r['started_us'] and r['elapsed_us'] == r['ended_us']-r['started_us'] for r in echoes+bulk)
     assert all(r['elapsed_us'] > 0 for r in bulk)
-    assert len(captures) == 4 and {r['name'] for r in captures} == {'x_before', 'gateway_before', 'x_after', 'gateway_after'}
-    reads = {r['name']: capture(r['capture']) for r in captures}
-    counters = {}
-    for side in ['x', 'gateway']:
-        before, after = reads[side+'_before'], reads[side+'_after']
-        assert all(before[k] == after[k] for k in ['interface', 'actual_burst_bytes', 'actual_netem_limit'])
-        delta = {k:after[k]-before[k] for k in ['netem_bytes', 'netem_drops', 'tbf_bytes', 'tbf_drops', 'interface_rx_bytes', 'interface_tx_bytes']}
-        assert all(v >= 0 for v in delta.values()) and delta['netem_bytes'] >= bulk_bytes
-        assert delta['interface_rx_bytes'] >= bulk_bytes and delta['interface_tx_bytes'] >= bulk_bytes
-        counters[side] = dict(before=before, after=after, delta=delta)
+    if profile_reader is not None:
+        counters = profile_reader(captures, bulk_bytes)
+    else:
+        assert len(captures) == 4 and {r['name'] for r in captures} == {'x_before', 'gateway_before', 'x_after', 'gateway_after'}
+        reads = {r['name']: capture(r['capture']) for r in captures}
+        counters = {}
+        for side in ['x', 'gateway']:
+            before, after = reads[side+'_before'], reads[side+'_after']
+            assert all(before[k] == after[k] for k in ['interface', 'actual_burst_bytes', 'actual_netem_limit'])
+            delta = {k:after[k]-before[k] for k in ['netem_bytes', 'netem_drops', 'tbf_bytes', 'tbf_drops', 'interface_rx_bytes', 'interface_tx_bytes']}
+            assert all(v >= 0 for v in delta.values()) and delta['netem_bytes'] >= bulk_bytes
+            assert delta['interface_rx_bytes'] >= bulk_bytes and delta['interface_tx_bytes'] >= bulk_bytes
+            counters[side] = dict(before=before, after=after, delta=delta)
     successful = [r['elapsed_us'] for r in echoes if not r['warmup'] and r['outcome'] == 'ok']
     minimum = min(successful) if successful else None
     rates = [bulk_bytes*8/r['elapsed_us'] for r in bulk]

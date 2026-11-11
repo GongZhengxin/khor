@@ -13,6 +13,8 @@ use crate::nat::{Net, router};
 
 #[path = "calibration_burst.rs"]
 mod burst;
+#[path = "calibration_queues.rs"]
+mod queues;
 #[path = "calibration_sockets.rs"]
 mod sockets;
 
@@ -36,6 +38,7 @@ struct Model {
     socket_diagnostic: bool,
     socket_plan: &'static [u64],
     burst_bytes: Option<u32>,
+    separate_queues: bool,
 }
 
 const LOW: Model = Model {
@@ -51,6 +54,7 @@ const LOW: Model = Model {
     socket_diagnostic: false,
     socket_plan: &[3, 8, 15, 25],
     burst_bytes: None,
+    separate_queues: false,
 };
 
 const HIGH: Model = Model {
@@ -66,6 +70,7 @@ const HIGH: Model = Model {
     socket_diagnostic: false,
     socket_plan: &[3, 8, 15, 25],
     burst_bytes: None,
+    separate_queues: false,
 };
 
 const HIGH_SOCKETS: Model = Model {
@@ -94,6 +99,13 @@ const HIGH_BURST_B: Model = Model {
     case: "hb0",
     burst_bytes: Some(65536),
     ..HIGH_BURST_A
+};
+
+const HIGH_QUEUES: Model = Model {
+    case: "hq0",
+    revision: "workload_kernel_tcp_queues_v1",
+    separate_queues: true,
+    ..HIGH_BURST_B
 };
 
 fn high_condition() -> patchbay::LinkCondition {
@@ -354,18 +366,28 @@ async fn hb0_high_bdp_tcp_with_sixty_four_kib_token_bucket() {
     run(HIGH_BURST_B).await;
 }
 
+#[tokio::test(flavor = "multi_thread", worker_threads = 6)]
+#[ignore = "forwarding queue topology diagnostic under its fixed guarded task"]
+async fn hq0_high_bdp_tcp_with_separate_forwarding_rate_and_delay_queues() {
+    run(HIGH_QUEUES).await;
+}
+
 async fn run(model: Model) {
     let lab = Lab::new().await.unwrap();
     let rx = router(&lab, "pubx", Net::Public).await;
     let ry = router(&lab, "puby", Net::Public).await;
     let x = lab.add_device("x").uplink(rx.id()).build().await.unwrap();
     let y = lab.add_device("y").uplink(ry.id()).build().await.unwrap();
-    x.default_iface()
-        .unwrap()
-        .set_condition((model.condition)(), LinkDirection::Both)
-        .await
-        .unwrap();
-    if model.burst_bytes.is_some() {
+    if model.separate_queues {
+        queues::configure(&x, &y, &rx, &ry, model).await;
+    } else {
+        x.default_iface()
+            .unwrap()
+            .set_condition((model.condition)(), LinkDirection::Both)
+            .await
+            .unwrap();
+    }
+    if model.burst_bytes.is_some() && !model.separate_queues {
         let client = x
             .spawn(move |_| async move { burst::apply(model, "x").await })
             .unwrap();
@@ -394,6 +416,7 @@ async fn run(model: Model) {
         "socket_diagnostic":model.socket_diagnostic,
         "socket_plan_seconds":model.socket_plan,
         "requested_burst_bytes":model.burst_bytes,
+        "separate_queues":model.separate_queues,
         "layer":"kernel_TCP","residents":false,"slo":false,"qdisc_units_review_required":true}),
     );
     let xb = on(&x).await;
@@ -407,6 +430,7 @@ async fn run(model: Model) {
             json!({"schema":1,"revision":model.revision,"event":"capture","name":name,"capture":capture}),
         );
     }
+    let extra_before = queues::extra_captures(&y, &ry, model, "before").await;
     let (tx, ready_rx) = tokio::sync::oneshot::channel();
     let server_payload = payload.clone();
     let mut server = Server(
@@ -458,6 +482,7 @@ async fn run(model: Model) {
             json!({"schema":1,"revision":model.revision,"event":"capture","name":name,"capture":capture}),
         );
     }
+    let extra_after = queues::extra_captures(&y, &ry, model, "after").await;
     let min_rtt = rows
         .iter()
         .filter(|r| r["event"] == "echo" && r["warmup"] == false && r["outcome"] == "ok")
@@ -473,7 +498,16 @@ async fn run(model: Model) {
     let bounds_ok = min_rtt.is_some_and(|v| min_rtt_range.contains(&v))
         && rates.len() == 2
         && rates.iter().all(|v| goodput_range.contains(v));
-    let commands_ok = [&xb, &rb, &xa, &ra].iter().all(|v| qdiscs_present(v));
+    let commands_ok = if model.separate_queues {
+        queues::valid_capture(&xb, false)
+            && queues::valid_capture(&xa, false)
+            && queues::valid_capture(&rb, true)
+            && queues::valid_capture(&ra, true)
+            && extra_before
+            && extra_after
+    } else {
+        [&xb, &rb, &xa, &ra].iter().all(|v| qdiscs_present(v))
+    };
     let ok = rows.len() == 70
         && rows.iter().all(|r| r["outcome"] == "ok")
         && server_ok
