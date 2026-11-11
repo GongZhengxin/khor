@@ -1816,7 +1816,9 @@ impl Node {
                             } else if conn.alpn() == endpoint::TUNNEL_ALPN {
                                 let _ = n.serve_tunnel(conn, e).await;
                             } else {
-                                let _ = n.handle(conn, remote, e, done).await;
+                                let observed_alpn = std::env::var_os("KHOR_NET_DIAGNOSTICS")
+                                    .map(|_| conn.alpn().to_vec());
+                                let _ = n.handle(conn, remote, e, done, observed_alpn).await;
                             }
                             return;
                         };
@@ -1830,7 +1832,9 @@ impl Node {
                                 }
                             });
                         }
-                        let _ = n.handle(early, remote.to_string(), e, done).await;
+                        let observed_alpn = std::env::var_os("KHOR_NET_DIAGNOSTICS")
+                            .and_then(|_| early.alpn());
+                        let _ = n.handle(early, remote.to_string(), e, done, observed_alpn).await;
                     });
                 }
                 accepted = handoffs.accept() => {
@@ -4291,6 +4295,7 @@ impl Node {
         remote: String,
         ep: std::sync::Arc<iroh::Endpoint>,
         done: tokio::sync::watch::Receiver<Option<bool>>,
+        observed_alpn: Option<Vec<u8>>,
     ) -> Result<(), String> {
         let seats = std::sync::Arc::new(tokio::sync::Semaphore::new(STREAMS_AT_ONCE));
         while let Ok((mut send, mut recv)) = conn.accept_bi().await {
@@ -4319,7 +4324,11 @@ impl Node {
             let (node, ep, remote, mut done) =
                 (self.clone(), ep.clone(), remote.clone(), done.clone());
             let reply_wire = conn.stable_id();
-            let reply_alpn = accepted_at.map(|_| String::from_utf8_lossy(conn.alpn()).into_owned());
+            // ALPN is exposed on the concrete established/early states at
+            // admission, rather than on Connection<T>'s generic interface.
+            let reply_alpn = observed_alpn
+                .as_ref()
+                .map(|alpn| String::from_utf8_lossy(alpn).into_owned());
             tokio::spawn(async move {
                 let mut seat = Some(seat);
                 let mut content_response = None;
