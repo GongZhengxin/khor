@@ -279,6 +279,16 @@ async fn observe_installed(early: bool, direct_answers: bool) {
     let carrier_kept = node.carry.has(&carried.id());
     check_warm_ip(&warm, &warm_remote).await;
     let total = requests.load(Ordering::SeqCst);
+    // A server still waiting for an unreachable handshake is cancelled
+    // before endpoint shutdown. Closing its endpoint first makes accept()
+    // return None and hides the actual business assertion behind cleanup.
+    serving.0.as_ref().unwrap().abort();
+    if let Err(error) = serving.0.as_mut().unwrap().await {
+        assert!(
+            error.is_cancelled(),
+            "scratch response owner must not panic"
+        );
+    }
     node.carry
         .detach_attached(&carried.id(), Carrier::Hop { via }, local.serial());
     links.detach_attached(&ep.id(), Carrier::Hop { via }, remote.serial());
@@ -288,13 +298,6 @@ async fn observe_installed(early: bool, direct_answers: bool) {
     .await
     .unwrap();
     tokio::join!(ep.close(), direct.close(), carried.close());
-    serving.0.as_ref().unwrap().abort();
-    if let Err(error) = serving.0.as_mut().unwrap().await {
-        assert!(
-            error.is_cancelled(),
-            "scratch response owner must not panic"
-        );
-    }
     let expected = if direct_answers {
         khor_net::path::PathKind::Direct
     } else {
