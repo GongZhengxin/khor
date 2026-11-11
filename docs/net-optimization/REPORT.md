@@ -344,3 +344,10 @@ v1曾在0f8a81d0两读取都成功却warm server is_0rtt=false，40/1失败保�
 
 
 22:24 UTC Noq13固定C-B,B-C四次终态，未接受N1。C f8 7307.560/3517.794ms、warm10/51失败；B 8f3 原业务/hold/replug通过但x最后非决策IO记录截断，原严格解析失败保留，独立Go5437.441/5401.818ms均晚，warm/cost未算；B fe3 3386.396/3596.237ms与C e712 3703.047/3670.630ms均双门通过。各124成功，496/496只是可用性。完整3次流均见字节推进，未再现6aa单向停顿。C1实测返约90.353ms的probe copy后另一copy100.025ms代表，采样预算用尽；仍需独立验证代表质量/确认一致性，不据相关性归因。第二对同4copies，reads_finished enclosing C353/B313 innerTX datagrams，IMMEDIATE_ACK C47/B16；样本少、选路阶段不同、非逐探针或能耗归因。没有第五次，未安装/合并/发布。
+
+
+2026-11-11 05:26 UTC 接续结果
+
+Iroh47准确8cd/tree4c4d/snapshot4e900在Turing3d36cba8的原动态三轮全部通过，共27项，15files与空进程组及身份已核。p2切换937.1–990.5ms，p3最慢481.3–546.6ms且各轮零失败。稳定性088e00f9正在执行。
+
+NoRelay缺第二腿提示在旧2cd/Mac42963573470中三个真实入口合同失败，原55与已知Direct/递归控制通过。ff743调整Recovery guard顺序后，同fixture在Mac42964365563全12组/hop60过，exact13830134613/20files/11controls核。Linux及物理两腿验证继续进行。源码审计核生产只调整模式判断顺序，原N1的7.31秒和6aa单向停顿继续列为未闭合。
