@@ -815,35 +815,30 @@ impl Node {
         picked: &[String],
         observation: MissObservation,
     ) -> Option<MissEpoch> {
-        miss_context(
-            self.device_str(),
-            to,
-            observation,
-            || {
-                picked
-                    .iter()
-                    .map(|id| {
-                        let mut conns: Vec<_> = self
-                            .wires
-                            .live(id, Proto::Tunnel)
-                            .or_else(|| self.wires.live(id, Proto::Main))
-                            .into_iter()
-                            .collect();
-                        if conns.is_empty() {
-                            conns = self.wires.incoming_for_hop(id);
-                        }
-                        let mut wires: Vec<_> = conns.iter().filter_map(HopWire::observed).collect();
-                        wires.sort_unstable_by_key(|wire| wire.id);
-                        wires.dedup_by_key(|wire| wire.id);
-                        HopCandidate {
-                            id: id.clone(),
-                            live: self.road_for_hop(id, &[]).is_some(),
-                            wires,
-                        }
-                    })
-                    .collect()
-            },
-        )
+        miss_context(self.device_str(), to, observation, || {
+            picked
+                .iter()
+                .map(|id| {
+                    let mut conns: Vec<_> = self
+                        .wires
+                        .live(id, Proto::Tunnel)
+                        .or_else(|| self.wires.live(id, Proto::Main))
+                        .into_iter()
+                        .collect();
+                    if conns.is_empty() {
+                        conns = self.wires.incoming_for_hop(id);
+                    }
+                    let mut wires: Vec<_> = conns.iter().filter_map(HopWire::observed).collect();
+                    wires.sort_unstable_by_key(|wire| wire.id);
+                    wires.dedup_by_key(|wire| wire.id);
+                    HopCandidate {
+                        id: id.clone(),
+                        live: self.road_for_hop(id, &[]).is_some(),
+                        wires,
+                    }
+                })
+                .collect()
+        })
     }
 
     #[cfg(test)]
