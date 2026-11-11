@@ -1,18 +1,34 @@
 # feat/net 当前状态与接续入口
 
-更新于2026-11-11 17:48 UTC（本地11月12日）。完整目标“完成计划”仍 **active、未完成、未阻塞**；完整范围是 [PLAN](PLAN.md) 的N0–N5，root串行，不派发子智能体。此页是唯一当前入口；历史逐字保存在 [上一状态](HISTORY-20261111-through-policy-readback-v2.md)，SHA `07431681a2838546487bace0ed68dbc314cd68469cc33f3f98bf88ada80e539b`，它继续链接此前全部证据/失败。实际worktree/收据/原始日志优先，不按摘要覆盖未提交内容。
+更新于2026-11-11 18:35 UTC（本地11月12日）。完整目标“完成计划”仍 **active、未完成、未阻塞**；完整范围是 [PLAN](PLAN.md) 的N0–N5，root串行，不派发子智能体。此页是唯一当前入口；历史逐字保存在 [上一状态](HISTORY-20261111-through-low-policy-comparison-v3.md)，SHA `5d9c15a79d7e4d3a70e5dc15cf609bbbeabb39a3c271b7cbbf99b0fa248052c5`，它继续链接此前全部证据/失败。实际worktree/收据/原始日志优先，不按摘要覆盖未提交内容。
 
 ## 当前在途与下一步
 
-**目前没有Turing或Mac在途任务。** h0 **turing-20261111T173405Z-3747b66c** 已302.367秒、原退出101，17files/identity/原group空；准确源 **96ae5eb73b32b49710e885bfcbb5d4cf531774ec** / tree **dcf57e97618d55fa326819a1008e91985f4c2cf2** / snapshot **d988d415695f69bd2dc4c2651c02449144e56482**，candidate-kernel-high-source-v1.json、clean/0excluded；control **abfadd4b13b705b4c56aa0a828b9f1bf684e95c8**。stage exec44671终态，已经collect/identity/独立failure proof/ledger终态，不重发。
+**目前没有Turing或Mac在途任务。** 最新一次延长TCP传输诊断 **turing-20261111T182504Z-cde36230** 已完成、collect、identity、独立原始人口/字节/吞吐核验、ledger终态；不要重发。原退出 **101**、266.067秒、13files、原group空，物理校准仍不接受。完整目标active，有可执行工作，不设blocked/complete。
 
-高profile三轮全部204echo成功、六份96MiB全字节/server成功、min RTT300483–300514us；实际rate6250000B/s/delay0.15秒/lat40000微秒。**upload25.214–25.301、download26.049–26.144Mbit/s，三轮全部未达40–60，校准不接受。** 原job/contract/red/物理门不改；high-kernel-bounds-failure-v1.json独立保留人口/单位/计数。TBF实际burst4093B，x drops287/252/211、gateway236/227/241，netem也有28–45drop；根因仍未证，不称CPU/Noq问题、不将零配置loss当零drop。
+| 输入 | 精确值 |
+| --- | --- |
+| product | **c5ec8b6f90b79869e9128da9bacf5a1947752c09** / tree **67888ea203bf588807130f1df9e3be518437d586** / snapshot **53132d6975a75e43e955d9cfcafb66aa6f2919f1**；candidate-kernel-long-source-v1.json，clean/0excluded |
+| control | **c731fb00f21dc4913928daa64bb8ec25f349895d**；control-kernel-long-input-audit-v1.json，原UID/flock/netns/资源/期限门不变 |
+| diagnostic | 固定ONE fresh hl0；双向各384MiB；原300ms/50Mbit/40ms、2秒echo/240秒whole-file、默认TCP算法/window、32kbit TBF burst不改 |
+| evidence | kernel-long-verification-v1.json、socket-flow-age-summary-v1.json、workload-kernel-long-contracts.json、identity-verified.json与ledger终态 |
 
-同准确源LOW回归 **turing-20261111T174224Z-40546e83** 已95.427秒0、17files/identity/原group空，stage exec65714终态；原三轮68echo/双向8MiB、12份实际TC读回、min RTT40265–40373us、双向约7.519/7.544–7.553Mbit，全在原LOW门。kernel-low-model-regression-v1.json/ledger终态。它证明Model保留LOW实际条件，不证明HIGH通过。旧profile-verifier的源字面调用断言不适合Model函数指针；新的证明核源码LOW->原condition，同时复用未改/未放宽的实际profile checker，原旧工具与记录不改。
+**最新结果：68 echo全部成功（含4 warmup）、双向384MiB全字节/server成功，min RTT300551us，平均upload32.900532/download32.432250Mbit/s。仍未达到40–60Mbit门。** 两端/两方向的3/8/15/25/50/80秒共24个实际tuple socket快照全部通过；诊断观察成功不把Rust101改成0，也不算N3或HIGH模型接受。
 
-下一步按[HIGH-BDP诊断计划](HIGH-BDP.md)实现**只观察、不改参数**的h0窗口cohort：client/server两端、upload/download，在3/8/15/25秒对实际连接采ss -tinm，前两次应有，后两次随实际完成结束；由原父future借用并poll，命令kill_on_drop，不启动游离task，不改caller/配置/原burst/门。明确诊断开销，不与旧h0或Node策略混算。先看cwnd/rtt/接收窗/socket缓冲/重传/交付率，再考虑另版单因素模型对照。**诊断未实现/运行**，当前无下一run ID；不要按旧在途记录重发。
+同端ACKed字节计数、当地capture起止不确定性算得：sender upload25–50秒38.213–38.245、50–80秒34.802–34.829Mbit；sender download相应34.899–34.931与35.293–35.332。CUBIC窗口/交付率确实随flow age变化，但晚期仍没达到40Mbit；不能仅用96MiB太短解释全部缺口，也不能由这一轮认定唯一原因。缺失可选字段保持unknown；rcv_space不是peer advertised window，不跨host时钟相减。TBF实际burst4093B、x/gateway TBF drops991/1258、netem159/205原样保留。没有改burst/window/算法/验收门。
 
-h0实现/校验器已提交96ae5eb7，control任务已提交abfadd4b：固定三fresh h0、单线程、关闭诊断、首非零保留；OPS单task allowlist审计control-kernel-high-helper-audit-v1.json，UID/资源/flock/netns/期限门保持。source metadata **12项1.392秒绿**、其中高校验21合成子例；control metadata **13项14.078秒绿**；无本地Rust/格式器/产品。高profileNode混合场景及prefetch矩阵尚未实现/运行。完整目标仍active、有可执行工作，不设blocked/complete。
+**下一步：先单独验证整形/排队模型，再推进高profile Node优先级与独立prefetch矩阵。** 先按原始TC拓扑、实际计数与权威实现核定burst/排队假设，预注册单因素校准对照；目前未实现/提交该对照、没有下一run ID。不要直接放宽HIGH吞吐门或把长流结果混入旧96MiB cohort。不重复低profile18场景，不提前选定priority -1为最终策略。
+
+### 本轮诊断链（全部已终态）
+
+- HIGH原h0 **turing-20261111T173405Z-3747b66c**：96ae5eb73b32b49710e885bfcbb5d4cf531774ec / tree dcf57e97618d55fa326819a1008e91985f4c2cf2 / snapshot d988d415695f69bd2dc4c2651c02449144e56482；control abfadd4b13b705b4c56aa0a828b9f1bf684e95c8。302.367秒101，17files/identity/原group空；204echo与六份96MiB完整，但upload25.214–25.301/download26.049–26.144Mbit，三轮全红。high-kernel-bounds-failure-v1.json，不接受。
+- LOW Model回归 **turing-20261111T174224Z-40546e83**：相同准确source/control；95.427秒0、17files/identity/原group空；原三w0、204echo与双向8MiB、12实际TC读回通过，min RTT40265–40373us、upload约7.519/download7.544–7.553Mbit。kernel-low-model-regression-v1.json；不证明HIGH通过。旧verifier源字面调用断言不适合Model函数指针，新proof核LOW指向原condition，复用未改的实际profile checker，旧件保留。
+- socket source-v1 **turing-20261111T180259Z-02b34436**：3b96b308326d56657e29d5091dd2bc9616e31937，46.9998秒1、10files/identity/原group空，仅format失败、零行为；准确one-helper换行patch按原件校验应用31d30ed8，旧红保留。
+- socket source-v2 **turing-20261111T180530Z-c21b02bc**：**31d30ed834711bf8c6de63011ae008d6dcfad24e** / tree **b3ee9ebdb57d6a11c7070b4fe40c46b55d94ff5e** / snapshot **0bfcf23f3d9fda3065e937bbe24735bad9b8886a**；control **d4752d05e04d63116f278904282541c358cb5fff**。300.255秒101、17files/identity/原group空；三hd0、204echo/六份96MiB完整，48个两端/两方向tuple快照有效。upload25.192–25.324/download26.035–26.095Mbit，物理红不变。kernel-sockets-verification-v1.json与socket-flow-age-summary-v1.json。发送端实际CUBIC、持续有待发字节、cwnd/pacing随时间增长；不据此认定唯一拥塞/缓冲/CPU原因。
+
+socket observer由实际transfer父future借用，在同一select中poll；未spawn游离task、command kill_on_drop/1秒界限，实际transfer结束即取消余下观察。只在隔离namespace对匹配实际tuple执行ss -tinm，含命令时钟/状态/stdout，不含业务payload。延长诊断只增加一轮时间/文件量与50/80秒计划；不是同条件性能对照。
+
+本批已完成source metadata **14项1.516秒绿**（HIGH21/socket18/long9合成子例）、control metadata **13项14.143秒绿**（固定6tasks×3 stub modes、first-failure保留），bash语法/diff通过；最新Turing实际format/compile/transport已执行，physical gate仍红。无本机Rust/格式器/Node/Xcode/产品执行。高profile Node混合与prefetch矩阵未实现/运行。
 
 ## 已完成的低profile优先级对照
 
@@ -31,7 +47,7 @@ root串行自动编排 **exec90703已正常终态**，全部六block均原退出
 
 A/block1/场景2终端p95 **416.984ms** 原样保留，其余A78.819–83.736ms，B79.896–83.922ms。原因未证；终端在另一Tunnel，不能由一个异常推定同Main优先级对终端的直接因果效果或CPU/I/O原因。全phase/实际transfer区间/九对差值/条件成功分布/完整失败分母/文件时间及payload率均保留。仅小链路目录局部方向性收益，不报p99/显著性、不自动选胜；严格优先级仍是实验候选，公平/前台完整文件/背压/成本和全部N0–N5未闭。
 
-[HIGH-BDP](HIGH-BDP.md)保持预注册：300ms/50Mbit、96MiB、400ms计划、先独立kernel校准，再Node策略及独立prefetch1/2/8。目前仅h0校准实现/入口已编译并启动，**高profileNode混合场景及prefetch矩阵尚未实现/运行**。不改变原v4/2秒/120秒门，不混用cohort，也不把本次局部结果当最终设计。
+[HIGH-BDP](HIGH-BDP.md)保持预注册：300ms/50Mbit、96MiB、400ms计划、先独立kernel校准，再Node策略及独立prefetch1/2/8。h0校准与两个socket诊断已执行并终态，物理门仍红；**高profileNode混合场景及prefetch矩阵尚未实现/运行**。不改变原v4/2秒/120秒门，不混用cohort，也不把本次局部结果当最终设计。
 
 ## 冻结源码与前置证据
 
@@ -71,7 +87,7 @@ Mac/B实际编译源是source-v2 **8371dbb024502c8a0fea952b0ea96fbff6a41f39** / 
 - **N0**：最终分场景UX门、足量尾部人口、同条件完整前后与成本报告；当前不是p99或最终最优设计证明。
 - **N1**：严重/quiet/恢复长尾、跨连接质量与比较成本，原启动/配对失败定位，同故障fallback参照。
 - **N2**：同一真实连接独立/同时IPv4/IPv6地址迁移、LOST身份、完整取消/owner/迟到/撤销，以及carrier在调用开始后到达。
-- **N3**：完成当前18场景对照，再独立比较prefetch1/2/8、大BDP300ms/50Mbit（先kernel校准/预注册新模型）、前台完整文件/预览、连续控制下bulk公平、共享/分连接、背压/取消、独立host/child退出、1/3/5设备CPU/字节/唤醒/能耗。小链路收益不能自动接受全部范围。
+- **N3**：当前低profile18场景对照已完成；独立比较prefetch1/2/8、大BDP300ms/50Mbit（先kernel校准/预注册新模型）、前台完整文件/预览、连续控制下bulk公平、共享/分连接、背压/取消、独立host/child退出、1/3/5设备CPU/字节/唤醒/能耗。小链路收益不能自动接受全部范围。
 - **N4**：两腿Direct/Relay/peer relay/SSH、唯一/多middle、prepared/混合版本、middle自身v4/v6移动、整机/出口/登记故障域及基于数据的中继布局/运维设计。
 - **N5**：全部59 vendor的上游/退出、Noq1/物理Noq5、最终准确集成源码Quality/native/proxy、多机/iPhone与能耗、统一决策报告。
 

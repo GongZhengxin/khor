@@ -123,3 +123,12 @@ reported pacing_rate约34.7–35.3Mbit、delivery_rate约28.6–28.7Mbit；同�
 - 预计峰值内存保守按约1.2GiB安排，执行前确认Turing MemAvailable至少8GiB，仍走原UID/资源/锁/netns/期限门。
 
 该长度对照在任何新运行结果前保存；**未实现/未运行**。
+
+
+### 2026-11-11 18:34 UTC 延长诊断实际结果
+
+预注册的单fresh hl0已按准确c5ec8b6f/c731fb00在Turing运行：turing-20261111T182504Z-cde36230，266.067秒、原退出101、13files/identity/原group空。双向384MiB、68echo与server完整；24个两端/两方向3/8/15/25/50/80秒实际tuple快照有效；min RTT300551us、平均32.900532/32.432250Mbit，**仍未达40–60，物理校准不接受**。原job与门不改。
+
+使用同一端点同一tuple/本地payload时钟的bytes_acked差值，含capture起止误差，upload25–50秒38.213–38.245、50–80秒34.802–34.829Mbit；download相应34.899–34.931、35.293–35.332。晚期仍低于40，因此不能把全部缺口归于96MiB流太短；CUBIC随flow age改变也不是唯一因果证明。实际burst4093B、TBF drops991/1258与netem159/205保留。rcv_space不当作对端advertised window，缺失字段保持unknown，不跨host相减时钟。
+
+准确来源和证明见STATE及该run的kernel-long-verification-v1.json、socket-flow-age-summary-v1.json；后一工具是数据分析，不运行产品。96MiB三轮socket诊断c21与384MiB单轮不混作同条件策略对照。下一步先核定实际TC拓扑/整形与排队假设并预注册单因素校准，尚未改burst/window/算法、未启动下一run，高profile Node/prefetch仍未开始。
