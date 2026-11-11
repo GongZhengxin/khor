@@ -1,10 +1,10 @@
 # feat/net 当前状态与接续入口
 
-更新于2026-11-11 09:49 UTC。完整N0–N5目标“完成计划”active，本轮是代码与实际证据进展，未完成/未阻塞。root串行，不派发子智能体。此前逐字STATE在[上一状态](HISTORY-20261111-through-comparison-and-hints.md)，SHA `e0ad47c3c71a3b8c0adecf54314b542bea81544114e2b395c806451663fba867`，继续链接此前全部原始失败与历史。真实worktree、diff、receipt与进程优先，不凭调度paused/观察超时停止或重发。
+更新于2026-11-11 10:00 UTC。完整N0–N5目标“完成计划”active，本轮是代码与实际证据进展，未完成/未阻塞。root串行，不派发子智能体。此前逐字STATE在[上一状态](HISTORY-20261111-through-comparison-and-hints.md)，SHA `e0ad47c3c71a3b8c0adecf54314b542bea81544114e2b395c806451663fba867`，继续链接此前全部原始失败与历史。真实worktree、diff、receipt与进程优先，不凭调度paused/观察超时停止或重发。
 
 ## 位置、授权与源码
 
-产品 `/Volumes/disk0/Khor/worktrees/current/khor-net`，branch `feat/net`。最新hint候选 **0d1c0330036d42a3529e4e7f073c330fe9abda9e**，tree **a650622220a3d62a59ad4a13049085d1789250f0**，snapshot **84b75533a9a4781cce1c08437aa6be16666ce4af**，candidate-hint-context-candidate-source-v2.json，clean/0excluded。它仅逐字应用80cf首轮返回的hop.rs format.patch；产品逻辑与六fixture不变，尚待实际87合同。80cf source-v1 dirty文档且当时未包含未暂存N4计划，相关准确源/格式-only原件仍保留；不把v1结果外推为行为验证。后续文档提交另核HEAD/diff。
+产品 `/Volumes/disk0/Khor/worktrees/current/khor-net`，branch `feat/net`。最新hint候选 **0d1c0330036d42a3529e4e7f073c330fe9abda9e**，tree **a650622220a3d62a59ad4a13049085d1789250f0**，snapshot **84b75533a9a4781cce1c08437aa6be16666ce4af**，candidate-hint-context-candidate-source-v2.json，clean/0excluded。它仅逐字应用80cf首轮返回的hop.rs format.patch；产品逻辑与六fixture不变，已核双OS实际87合同及全部12组；见末尾10:00 checkpoint。80cf source-v1 dirty文档且当时未包含未暂存N4计划，相关准确源/格式-only原件仍保留；不把v1结果外推为行为验证。后续文档提交另核HEAD/diff。
 
 最新已核双OS全部12组的是比较源 **a73b9cae0f9d147cb4ec445d32190e395ca97244**，tree **6a2ec5cfcb0a8b93bf50779aa9178feca2af5eff**，snapshot **337b232e46cf436d534155349aaeff18e51948e0**，candidate-comparison-context-source-v2.json，hop81。它早于hint实现，原物理前后对照冻结在该源，不能混入hint改变。
 
@@ -42,7 +42,7 @@ a73移除进程全局LAST_COMPARE。原HopCandidate加入attempted_at，同netwo
 
 初版19cceb Mac42991598937仅格式，exact13841773241/ZIP SHA669330aaa09884cd970f935969fdc4b81f458989ee52c20aff4acf078be2541d，9files/11controls/identity、0测试组，精确patch应用为a73，不算行为红。
 
-### 3. 有效地址hint仍阻塞旧退避：已真红，候选待验
+### 3. 有效地址hint仍阻塞旧退避：旧真红，候选双OS已通过
 
 test-only旧格式源 **e2658a4a3699ca62b49b9b3ff3cfddb5f4dd1071**，treedd847b8ec12554f7f805de00d87e6654125ef1a4/snapshot e1c4333216fa29cad16bd3908ddfb8a6fb215818，candidate-hint-context-old-source-v2.json。Mac **42994929836** exact13843238785/ZIP SHAca31dc7a6ceb91399892f47541d3d2fcaed3911b9e2eb7f6ad1b6067b672ca81，10files/11controls/identity；真实hop **83pass/4FAIL**，原81与两normalization控制过，四个target/middle独立IPv4/IPv6有效hint恢复均在最终assert红，net67+1ignored过，后续组未跑。
 
@@ -83,3 +83,12 @@ MacLab与Turing同LAN；macserver为另一台、用户报告异网。iPhone loca
 
 
 原物理对照最终：a73 a59e4d3f已1285.299秒、15files/identity/空group、原三轮各3green/全9；f4i8.1/8.6/8.1秒，对应c2b28.2/17.8/34.6。f4最慢echo3.4/3.5/3.4，f4s8.7/8.5/9.6（第三比baseline9.3更慢，非全部指标单调改善）；第二f4s含Idle@5.277→Forwarded@8.412。comparison-context-original-hop-result-v1.json绑定两source/原日志SHA/差值和所有限制，物理计划已终态。约8秒残余、瞬态与总成本都未接受；原3peer仅一middle不能证明prepared双middle wire协议。之后才提交一次Turing0d1c新单位，未在任何活计时期间穿插构建。
+
+
+## 10:00 UTC checkpoint：hint候选双OS核齐，迟到成功合同正在补
+
+Mac42997902740已success；exact artifact13845256654，ZIP SHA **2c51a6d97f77a8cf3f304db46e3a05bdd83f4c07aca8c1740db4ef2a23174827**，20files/11control文件核对、identity准确同0d1c/treea650/snapshot84b755。Turingfb91c212已348.004秒终态0、21files/identity/原进程组为空。两端实际全部12组通过、hop87（Mac budget26/Turing30、net67+1ignored、wires16、resume1），各node-regression-verification-v1.json逐组保存日志SHA，ledger已终态。旧四个hint行为红到同合同候选绿已成立；不宣称完整物理第二腿、同connection地址迁移或手机通过。上述旧“在途”段落现由本节替代；不再轮询或重发这两job。
+
+当前HEAD仍d4dd29b7；仅新增未提交late_success_tests.rs与candidate_change_tests.rs模块声明，产品逻辑未改。两合同用实际旧Ask挂起、新middle真正carried TLS/echo及同network epoch，分别要求旧OK不能替换新活消费者、不能在新消费者结束后重新发布。尚未远端编译/执行，不能声称实际红；活消费者case可能已有ID tie保护，结束后case拟测旧epoch提交漏洞。下一步冻结test-only、远端取真实行为，再决定最小原子提交修复，不凭静态风险直接记成根因。
+
+用户再次询问进度与时间：本轮已核双OS新87与物理对照，但全N0–N5未完成，不给虚构百分比。仍需约8秒尾巴/迟到成功、四peer双middle生产协议、真实移动/成本与最终真机。此前按小时的整体估计不足；当前仍只宜按数天估计，不能把下一批回归完成当整体交付。无外部阻塞，goal active；执行继续，未合并/发布/安装候选。
