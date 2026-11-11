@@ -135,9 +135,7 @@ fn missed_wait(n: u32) -> Duration {
 
 fn same_miss_epoch(a: Option<&MissEpoch>, b: Option<&MissEpoch>) -> bool {
     match (a, b) {
-        (Some(a), Some(b)) => {
-            a.network.ptr_eq(&b.network) && a.candidates.ptr_eq(&b.candidates)
-        }
+        (Some(a), Some(b)) => a.network.ptr_eq(&b.network) && a.candidates.ptr_eq(&b.candidates),
         (None, None) => true,
         _ => false,
     }
@@ -224,13 +222,11 @@ fn made_in_epoch(me: &str, to: &str, epoch: Option<&MissEpoch>) {
 fn missed_lately_in_epoch(me: &str, to: &str, epoch: Option<&MissEpoch>) -> bool {
     let all = MISSED.lock().unwrap_or_else(|p| p.into_inner());
     current_miss_epoch(epoch)
-        && all
-            .get(&(me.to_owned(), to.to_owned()))
-            .is_some_and(|e| {
-                e.count > 0
-                    && same_miss_epoch(e.epoch.as_ref(), epoch)
-                    && e.at.elapsed() < missed_wait(e.count)
-            })
+        && all.get(&(me.to_owned(), to.to_owned())).is_some_and(|e| {
+            e.count > 0
+                && same_miss_epoch(e.epoch.as_ref(), epoch)
+                && e.at.elapsed() < missed_wait(e.count)
+        })
 }
 
 // The original pure backoff contract exercises the same production core
