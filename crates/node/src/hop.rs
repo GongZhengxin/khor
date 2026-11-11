@@ -158,7 +158,8 @@ struct HopCandidate {
 
 impl HopCandidate {
     fn cooling(&self) -> bool {
-        self.missed.is_some_and(|(count, at)| at.elapsed() < missed_wait(count))
+        self.missed
+            .is_some_and(|(count, at)| at.elapsed() < missed_wait(count))
     }
 }
 
@@ -258,10 +259,17 @@ fn miss_context(
     // A new candidate may get admission without retrying unchanged
     // middles that already refused. Only the same live wire in the same
     // network can carry its own failure forward into the new context.
-    if miss.epoch.as_ref().is_some_and(|epoch| epoch.network.ptr_eq(&observation.network)) {
+    if miss
+        .epoch
+        .as_ref()
+        .is_some_and(|epoch| epoch.network.ptr_eq(&observation.network))
+    {
         for candidate in &mut candidates {
             if let Some(previous) = miss.candidates.iter().find(|previous| {
-                same_candidates(std::slice::from_ref(previous), std::slice::from_ref(candidate))
+                same_candidates(
+                    std::slice::from_ref(previous),
+                    std::slice::from_ref(candidate),
+                )
             }) {
                 candidate.missed = previous.missed;
             }
@@ -323,7 +331,9 @@ fn missed_in_epoch(me: &str, to: &str, epoch: Option<MissEpoch>, attempted: &[&s
     e.at = std::time::Instant::now();
     for middle in &mut e.candidates {
         if attempted.contains(&middle.id.as_str()) {
-            let count = middle.missed.map_or(1, |(count, _)| count.saturating_add(1));
+            let count = middle
+                .missed
+                .map_or(1, |(count, _)| count.saturating_add(1));
             middle.missed = Some((count, e.at));
         }
     }
@@ -922,9 +932,15 @@ impl Node {
             {
                 return false;
             }
-            picked.iter().filter(|id| {
-                miss.candidates.iter().any(|middle| &middle.id == *id && !middle.cooling())
-            }).take(TRIES).collect::<Vec<_>>()
+            picked
+                .iter()
+                .filter(|id| {
+                    miss.candidates
+                        .iter()
+                        .any(|middle| &middle.id == *id && !middle.cooling())
+                })
+                .take(TRIES)
+                .collect::<Vec<_>>()
         };
         if eligible.is_empty() {
             return false;
