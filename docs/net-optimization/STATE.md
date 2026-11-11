@@ -1,6 +1,6 @@
 # feat/net 当前状态与接续入口
 
-更新于2026-11-11 14:55 UTC。完整目标“完成计划”仍 **active、未完成、未阻塞**，范围为 [PLAN](PLAN.md) 的 N0–N5，root串行，不派发子智能体。本页替代旧页中所有“当前/在途/下一步”。上一份STATE逐字保存于 [完整历史](HISTORY-20261111-through-kernel-calibration.md)，SHA `8172caf6900ae2196273ecdf86a4b8d17572537299392bfa1b5b1322eefbe540`；它继续链接此前所有历史与失败原件。历史段落只代表当时，实际worktree、收据、日志优先，不按摘要覆盖未提交内容。
+更新于2026-11-11 15:19 UTC。完整目标“完成计划”仍 **active、未完成、未阻塞**，范围为 [PLAN](PLAN.md) 的 N0–N5，root串行，不派发子智能体。本页替代旧页中所有“当前/在途/下一步”。上一份STATE逐字保存于 [完整历史](HISTORY-20261111-through-kernel-calibration.md)，SHA `8172caf6900ae2196273ecdf86a4b8d17572537299392bfa1b5b1322eefbe540`；它继续链接此前所有历史与失败原件。历史段落只代表当时，实际worktree、收据、日志优先，不按摘要覆盖未提交内容。
 
 ## 当前执行入口：观察器六轮已核，最新生产长稳在途
 
@@ -15,6 +15,14 @@
 协议 **resident_mixed_workload_v4** 详见 [WORKLOAD](WORKLOAD.md)。真实目录/PTY/16MiB，原三阶段各两类120请求/100ms计划/每类一个在途、调用2秒/bulk120秒/程序就绪与预热10秒总界均保持。两模式相同内存与父future定时探针；仅逐条打印或阶段末打印不同，flush单独计时。Attempt guard保留ok/error/timeout/blocked/cancelled/aborted，drop拥有者abort真实任务；无后台游离测量任务。缺样本/缺summary/探针上限/溢出不能通过。三次/模式、奇数配对只部分平衡，**不是产品加速、p99、完整N3或手机能耗接受**。close仍只是API成功，独立host/child退出待补。
 
 control纯Python/shell stub **13项9.707秒绿**（含固定顺序、guard失败阻止后续、case失败不中断全人口/保留首错误），source metadata **1项18子例0.698秒绿**，bash语法/diff过，零本地Rust/产品执行。精确SHA/检查见证据根 `control-workload-observer-tests-v1.json`；OPS仅加入固定task allowlist，原UID/锁/namespace/资源/期限/launch/ledger门不变，helper审计 `control-workload-observer-helper-audit-v1.json`。
+
+## 新业务流诊断源码与Mac在途
+
+源 **baeef657a08084c087c79ac49a55d06a765ee5d0** / tree **01a49ed80c8919acc5422350c53ab84b60002190** / snapshot **7638d2484dc8ea21a5113ef5945bdcb8eb6c6e78**，clean/0excluded，`candidate-workload-wires-source-v1.json`。仅在原有opt-in lifecycle诊断下增加实际业务wire/stream/协商ALPN、slice offset/字节数和server accept后各阶段clock；普通/early reply原事件保留，native Tunnel成功status与远端收到target也留实际wire。server准入检查与seat等待分开记，write_all不是到达/ACK、accept前QUIC排队未观察。没有队列/选路/写入/0RTT/认证/生命周期政策改变，无新task/timer/map；默认增加env查询但不取这些时钟/写这些日志，成本仍须实测。工作负载仅增加计时后保留双方serve.log，完整物理/人口/边界保持。
+
+Mac **Actions43046964107**，request **eedbf0fe8c4248f195ae092e3e52e249**，tasknet-node / 原control68cadb57 / revisionworkload-wire-stages-mac-v1；submit exec10597与register exec97507均终态，已准确pin source/ref/ledger。15:18实际workflow in_progress。尚无格式、编译或行为接受，不重发；按同run/artifact收据恢复。Turing唯一仍de04bcc1，15:16实际PID活，p1原600秒已绿、p1j在途；不缩短NETLAB_LONG_S或注入次数，不穿插Turing构建/计时。
+
+新控制 **71f1eeb4e18d5ea6e4c04ac5348c43eb52b4bd89**（本地未push）增加SSH-only固定 `netlab-workload-wires`：先w3 guard，成功后三个Buffered/lifecycle真实完整场景，一轮失败不丢后两轮、保留首非零状态，source-owned parser核全部原件。guard失败跳过三轮但仍保留parser失败；原UID/锁/namespace/资源/期限门不变。control stub **13项10.765秒绿**（两task各success/case失败/guard失败）；wire metadata **14子例0.034秒绿**，源9项metadata/control stub总0.989秒绿，bash/diff过，无本地Rust/产品执行。`control-workload-wires-tests-v1.json` / `control-workload-wires-helper-audit-v1.json`保存SHA/范围。**此新诊断尚未在Turing调度/运行**，须de04终态后按新冻结源和control提交；不把纯metadata或旧六轮当本版诊断已验。
 
 ## 最新已核终态
 
@@ -60,7 +68,7 @@ MacLab/Turing同LAN；macserver是另一构建机，用户报告异网。localho
 
 ## 执行约束与下一步
 
-产品 `/Volumes/disk0/Khor/worktrees/current/khor-net` branch feat/net；控制 `/Volumes/disk0/Khor/worktrees/current/khor-build-net` branch feat/net本地HEAD7e439456，旧两个untracked pycache保留。新control仅用于observer等指定SSH任务；原Mac/full/physical/生产dynamic继续 **68cadb57a0ed72d40a4ca9a843e86b9c6797bf34**。控制未push，stage用准确本地Git对象；Mac admission/GH dispatch原门未改。
+产品 `/Volumes/disk0/Khor/worktrees/current/khor-net` branch feat/net；控制 `/Volumes/disk0/Khor/worktrees/current/khor-build-net` branch feat/net本地HEAD71f1eeb4，旧两个untracked pycache保留。新control仅用于observer等指定SSH任务；原Mac/full/physical/生产dynamic继续 **68cadb57a0ed72d40a4ca9a843e86b9c6797bf34**。控制未push，stage用准确本地Git对象；Mac admission/GH dispatch原门未改。
 
 本机source-only，无Cargo/Rust/Node/Xcode/fmt/产品执行；Git/Python源码元数据和control stub允许。Turing严格串行UID1110/flock/user-netns `/tmp/khor-netlab-feat-net-1110`，Rust1.95/jobs16/nice10/50GiB起40停/90min原门，无sudo/host网改动；Mac独立jobs2/shared cache/原门可并行。SSH BatchMode/ForwardAgent=no/StrictHostKeyChecking。实现与上述验证已授权，无main合并/发布/采购/生产部署、已装App/config/store/resident修改授权；fixture仅namespace scratch。隔离Iroh42–44树detached2ef6bee5不动。
 
