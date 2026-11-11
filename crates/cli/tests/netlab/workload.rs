@@ -20,7 +20,10 @@ mod calibration;
 
 /// Shared by the resident workload and its independent kernel TCP calibration.
 fn condition() -> LinkCondition {
-    LinkCondition::new().latency_ms(20).rate_mbit(8).buffer_ms(40)
+    LinkCondition::new()
+        .latency_ms(20)
+        .rate_mbit(8)
+        .buffer_ms(40)
 }
 
 const REVISION: &str = "resident_mixed_workload_v3";
