@@ -241,8 +241,8 @@ pub(super) async fn run() {
         .await;
         samples += 1;
         held &= error.is_none()
-            && x.link(&y).await.is_some_and(via_n)
-            && y.link(&x).await.is_some_and(via_n);
+            && x.link(&y).await.as_ref().is_some_and(via_n)
+            && y.link(&x).await.as_ref().is_some_and(via_n);
         if !held {
             break;
         }
