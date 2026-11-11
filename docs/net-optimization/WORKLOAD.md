@@ -71,3 +71,30 @@ x设备与入口网关各自namespace内，在测量前后保存`tc -s -j qdisc 
 计划在同一冻结source/control跑三对，顺序Streaming→Buffered、Buffered→Streaming、Streaming→Buffered，3次/模式；这是有限顺序对照，奇数配对不能称完全平衡或最终性能接受。先过独立w3拥有者/记录器校准，再执行六个完整场景；后续完整统计仍需多seed/更充分顺序平衡与长尾人口。此处已提前记录顺序，不因结果选择性重跑。
 
 2026-11-11 14:55 UTC：冻结源0b945447/tree725b442271fd07d85a8aeaaac84598cd3f5028e5，control7e439456，实际任务 `turing-20261111T145336Z-bc4dbca9` 已启动。先w3取消/记录校准，再上述固定六轮，尚未有终态结论。Rust与 `turing-20261111T144048Z-f970f1d5` 的a9ef源逐字相同，后者已编译全fixture并通过三w0独立kernel校准，但没有运行w3或w1/w2，不能替代本次运行。控制13项stub及source metadata的18子例仅验证调度/解析合同；全部本机检查未运行产品。原始收据、后续结果与完整范围见STATE。
+
+## v4首次六轮原件与观察器结论（2026-11-11 15:02 UTC）
+
+`turing-20261111T145336Z-bc4dbca9`，源0b945447/tree725b442271fd07d85a8aeaaac84598cd3f5028e5，control7e439456，389.740秒0、25files/identity/原group空。独立guard两模式各1取消+1成功；固定S B B S S B六轮各720、共4320全ok/0错误/0timeout/0blocked/0cancelled/0aborted，六份16MiB逐字节一致，每类实际bulk overlap120/120；24份实际TC读回和双侧流量已核。完整 `observer-comparison-v1.json` 根据原始行独立重算，保留日志SHA与自动contract/source/identity；不是完整N3性能接受。
+
+下表为每轮服务p95（毫秒）；计划→完成仍另报，不删失败或积压：
+
+| 轮次/模式 | 空载目录 | bulk目录 | 空载终端 | bulk终端 | bulk目录计划→完成p95 | bulk定时探针p95 | bulk阶段flush |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 Streaming | 62.642 | 109.986 | 43.537 | 81.529 | 192.635 | 1.780 | 4.088 |
+| 2 Buffered | 67.492 | 111.394 | 47.410 | 81.866 | 355.357 | 1.381 | 78.350 |
+| 3 Buffered | 62.824 | 109.951 | 45.090 | 81.169 | 388.340 | 2.056 | 81.424 |
+| 4 Streaming | 62.736 | 112.573 | 43.525 | 82.671 | 330.387 | 1.323 | 4.144 |
+| 5 Streaming | 62.670 | 112.013 | 43.722 | 81.129 | 119.609 | 1.992 | 2.634 |
+| 6 Buffered | 62.486 | 109.217 | 43.417 | 82.576 | 290.233 | 1.374 | 76.060 |
+
+bulk实际18.645/18.900/18.928/19.106/19.228/18.666秒。缓冲落盘没有稳定改善目录或终端bulk服务p95；当前三对不证明统计等价或显著性，也不能解释两模式共同的探针/记录成本。Buffered约76–86ms阶段末flush保留为实际开销，位于各计时窗口之外，不能称免费。18阶段探针只有第三轮bulk跳过1tick、max29.116ms，其余max1.875–12.573ms；不支持把数百毫秒目录计划积压全部归因观察器runtime停顿，但不能据此推定resident runtime、CPU或I/O无停顿。
+
+原始逐条重新分解固定100ms计划：`开始迟到 = max(0,前一操作结束−本次计划) + (本次开始−max(前一结束,本次计划))`。bulk目录前一操作积压p95为92.635/255.357/288.340/230.387/19.609/190.233ms，对应残余dispatch p95仅1.764/1.415/2.086/1.246/2.054/1.337ms；每轮有16/26/18/33/18/19次目录服务超过100ms。因此计划积压大部分是这个每类一个在途模型的前一请求未完成，不能直接叫Node内部排队或当作增加观察器并发即可改善用户体验。后续须把实际wire/stream、server permit/read/dispatch/encode/write和网络排队核清，再做策略对照。
+
+## 下一份实际业务流诊断协议（workload_wire_stages_v1，尚未运行）
+
+保持w2 Buffered整个真实PTY/目录/16MiB、三个阶段/720人口、condition、原2秒/120秒/10秒边界和关闭API，不变动生产选路或队列策略。独立 `netlab-workload-wires` 固定先w3 guard、再三个完整w2串行；新增字段仅在既有KHOR_NET_DIAGNOSTICS开关下取时间/写日志，不增加定时任务、探测、常驻map或强Node。原有list事件名及字段保持，补实际协商ALPN、同进程wire与stream、FetchPath offset/响应长度；不记录文件名、target或payload。实际两端serve.log在测量结束后保留。
+
+每轮源parser要求完整720请求/全部实际profile与probe，以及client/server各360目录和64个256KiB切片成功响应，流ID逐一匹配、slice offset覆盖0到16MiB、wire映射一致。目录按已知每类一个在途/三阶段各120的响应次序分组；切片用唯一offset匹配。记录真实是否共享单一Main，不强迫共享假说通过；唯一终端Tunnel需有实际成功status、正确ALPN、双方同stream且wire与Main不同。异常/重试导致额外或缺少流时诊断完整性报红，原始logical outcomes与全部日志继续保留，不视为产品失败或选择性删除流。
+
+服务端以实际accept_bi返回为零点，记开始等待seat、拿到seat、读完request、dispatch准备完成、编码完成、write_all完成。差分分别包含暂停/准入检查、实际seat等待、读请求与任务调度、解析/认证/早数据等待/dispatch、编码及本地write；不能把它们全叫磁盘时间或网络队列。accept之前的QUIC排队未测，write_all是本地发送缓冲接受，不是收到/ACK。client早数据时长从early dial开始、普通时长从exchange开始，保留origin不混减跨进程时钟。生命周期日志本身有扰动，三轮是定位cohort，不能与此前六轮直接当生产策略收益、p99、完整取消/进程退出/能耗或N3接受。之后基于原件决定是否需要调优stream优先级、批量inflight或连接布局。

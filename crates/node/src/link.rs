@@ -4126,21 +4126,9 @@ impl Node {
                             Ok(Ok(Some((resp, stream)))) => {
                                 guard.disarm();
                                 self.wires.heard(&d.id, wires::Proto::Main, &conn);
-                                if matches!(req, Request::Ls { .. })
-                                    && matches!(&resp, Response::Dir { .. })
-                                {
-                                    khor_net::carry::observe_lifecycle(
-                                        conn.remote_id(),
-                                        "list_response_received",
-                                        || {
-                                            serde_json::json!({
-                                                "wire": conn.stable_id(),
-                                                "stream": stream.to_string(), "early": true,
-                                                "measurements": khor_net::path::path_facts(&conn),
-                                            })
-                                        },
-                                    );
-                                }
+                                observe_workload_reply(&conn, req, &resp, stream, true, || {
+                                    started.elapsed()
+                                });
                                 Early::Answered(resp)
                             }
                             Err(_) => Early::Failed(DialFailure::CallerExpired),
@@ -4249,6 +4237,9 @@ impl Node {
             let paired =
                 !crate::pause::peer_on(self.root(), &remote) && self.admit(&remote).is_ok();
             let incoming = conn.weak_handle();
+            let reply_wire = conn.stable_id();
+            let reply_alpn = std::env::var_os("KHOR_NET_DIAGNOSTICS")
+                .map(|_| String::from_utf8_lossy(conn.alpn()).into_owned());
             let (node, ep, remote) = (self.clone(), ep.clone(), remote.clone());
             tokio::spawn(async move {
                 let Ok(target) = crate::tunnel::read_target(&mut recv).await else {
@@ -4261,6 +4252,10 @@ impl Node {
                             .await
                     }
                     None => {
+                        khor_net::carry::observe_lifecycle(&remote, "tunnel_target_accepted", || {
+                            serde_json::json!({"wire": reply_wire, "stream": send.id().to_string(),
+                                "alpn": reply_alpn, "paired": paired})
+                        });
                         let _ = crate::tunnel::serve_target(send, recv, &target, paired).await;
                     }
                 }
@@ -4295,6 +4290,10 @@ impl Node {
     ) -> Result<(), String> {
         let seats = std::sync::Arc::new(tokio::sync::Semaphore::new(STREAMS_AT_ONCE));
         while let Ok((mut send, mut recv)) = conn.accept_bi().await {
+            // Opt-in facts on this actual stream, with no timer or observer
+            // task. These clocks are absent from ordinary resident work.
+            let accepted_at = std::env::var_os("KHOR_NET_DIAGNOSTICS")
+                .map(|_| std::time::Instant::now());
             // 按机器暂停 (SHELL.md 第五轮 第 3 条): a machine this one has
             // paused gets no answer — the connection is closed, the way
             // a machine that is not there closes nothing. Asked per
@@ -4305,15 +4304,19 @@ impl Node {
                 conn.close(0u32.into(), b"paused");
                 return Ok(());
             }
+            let permit_asked_at = accepted_at.map(|_| std::time::Instant::now());
             let Ok(seat) = seats.clone().acquire_owned().await else {
                 return Ok(());
             };
+            let seated_at = accepted_at.map(|_| std::time::Instant::now());
             // A machine reached this one: these ears work (round NET-11).
             self.reached_at
                 .store(crate::now_ms(), std::sync::atomic::Ordering::Relaxed);
             let (node, ep, remote, mut done) =
                 (self.clone(), ep.clone(), remote.clone(), done.clone());
             let reply_wire = conn.stable_id();
+            let reply_alpn = accepted_at
+                .map(|_| String::from_utf8_lossy(conn.alpn()).into_owned());
             tokio::spawn(async move {
                 let mut seat = Some(seat);
                 let mut content_response = None;
@@ -4321,11 +4324,16 @@ impl Node {
                 let Ok(bytes) = recv.read_to_end(MAX_FRAME).await else {
                     return;
                 };
+                let request_read_at = accepted_at.map(|_| std::time::Instant::now());
                 // **A watch keeps its stream** (`crate::watch`): answered
                 // as it goes, not once — through the same gate as every
                 // other request.
                 let question = proto::question(&bytes);
                 let listing = matches!(&question, Ok(Request::Ls { .. }));
+                let fetch_offset = match &question {
+                    Ok(Request::FetchPath { offset, .. }) => Some(*offset),
+                    _ => None,
+                };
                 if let Ok(Request::Watch { scope }) = question {
                     if early && *done.borrow() != Some(true) {
                         while done.borrow().is_none() {
@@ -4437,14 +4445,16 @@ impl Node {
                         }
                         Err(e) => Response::Refused { why: e },
                     };
+                    let prepared_at = accepted_at.map(|_| std::time::Instant::now());
                     let Ok(frame) = proto::encode_response(&resp) else {
                         return None;
                     };
+                    let encoded_at = accepted_at.map(|_| std::time::Instant::now());
                     #[cfg(test)]
                     if content_response.is_some() {
                         crate::session_content::wire_tests::pause_response(node.root()).await;
                     }
-                    Some((frame, resp))
+                    Some((frame, resp, prepared_at, encoded_at))
                 };
                 let frame = if interruptible {
                     tokio::select! {
@@ -4462,16 +4472,30 @@ impl Node {
                 } else {
                     prepare.await
                 };
-                let Some((frame, _resp)) = frame else { return };
+                let Some((frame, _resp, prepared_at, encoded_at)) = frame else { return };
                 if send.write_all(&frame).await.is_ok() {
+                    let written_at = accepted_at.map(|_| std::time::Instant::now());
                     #[cfg(test)]
                     documents::flow_tests::reply_written(&wire_tag, &_resp);
                     let finished = send.finish();
-                    if listing && matches!(&_resp, Response::Dir { .. }) && finished.is_ok() {
-                        khor_net::carry::observe_lifecycle(&remote, "list_response_sent", || {
+                    let observed = match (listing, fetch_offset, &_resp) {
+                        (true, _, Response::Dir { .. }) => Some(("list_response_sent", "directory")),
+                        (_, Some(_), Response::PathSlice { .. }) => Some(("path_slice_response_sent", "fetch_path")),
+                        _ => None,
+                    };
+                    if let Some((event, operation)) = observed.filter(|_| finished.is_ok()) {
+                        khor_net::carry::observe_lifecycle(&remote, event, || {
+                            let after_accept = |at| accepted_at.zip(at)
+                                .map(|(a, b): (std::time::Instant, std::time::Instant)| b.duration_since(a).as_micros());
                             serde_json::json!({
                                 "wire": reply_wire, "stream": send.id().to_string(),
-                                "early": early,
+                                "alpn": reply_alpn,
+                                "early": early, "operation": operation, "offset": fetch_offset,
+                                "frame_bytes": frame.len(), "timing_origin": "stream_accepted",
+                                "permit_asked_us": after_accept(permit_asked_at),
+                                "seated_us": after_accept(seated_at), "request_read_us": after_accept(request_read_at),
+                                "prepared_us": after_accept(prepared_at), "encoded_us": after_accept(encoded_at),
+                                "written_us": after_accept(written_at),
                             })
                         });
                     }
@@ -13063,6 +13087,36 @@ async fn exchange(
     .map_err(|_| Miss::CallerExpired)?
 }
 
+/// Completed business replies in the existing opt-in lifecycle trace. Never
+/// includes a path or payload. An early answer's clock starts at its dial;
+/// an ordinary answer's starts at exchange, so those durations stay labelled.
+fn observe_workload_reply(
+    conn: &iroh::endpoint::Connection,
+    req: &Request,
+    response: &Response,
+    stream: impl std::fmt::Display,
+    early: bool,
+    elapsed: impl FnOnce() -> Duration,
+) {
+    let (event, operation, offset, payload_bytes) = match (req, response) {
+        (Request::Ls { .. }, Response::Dir { .. }) =>
+            ("list_response_received", "directory", None, None),
+        (Request::FetchPath { offset, .. }, Response::PathSlice { bytes, .. }) =>
+            ("path_slice_received", "fetch_path", Some(*offset), Some(bytes.len())),
+        _ => return,
+    };
+    khor_net::carry::observe_lifecycle(conn.remote_id(), event, || {
+        serde_json::json!({
+            "wire": conn.stable_id(), "stream": stream.to_string(), "early": early,
+            "alpn": String::from_utf8_lossy(conn.alpn()),
+            "operation": operation, "offset": offset, "payload_bytes": payload_bytes,
+            "elapsed_us": elapsed().as_micros(),
+            "timing_origin": if early { "early_dial_started" } else { "exchange_started" },
+            "measurements": khor_net::path::path_facts(conn),
+        })
+    });
+}
+
 async fn exchange_inner(
     conn: &iroh::endpoint::Connection,
     who: &str,
@@ -13096,7 +13150,10 @@ async fn exchange_inner(
         khor_net::carry::observe_lifecycle(conn.remote_id(), "request_stream_opened", || {
             serde_json::json!({
                 "wire": conn.stable_id(), "stream": send.id().to_string(),
+                "alpn": String::from_utf8_lossy(conn.alpn()),
                 "reading": req.is_reading(), "measurements": khor_net::path::path_facts(conn),
+                "operation": match req { Request::Ls { .. } => "directory", Request::FetchPath { .. } => "fetch_path", _ => "other" },
+                "exchange_us": sent.elapsed().as_micros(),
             })
         });
         send.write_all(&frame)
@@ -13115,14 +13172,7 @@ async fn exchange_inner(
             None => proto::answer(&bytes),
         }
         .map_err(Miss::Garbled)?;
-        if matches!(req, Request::Ls { .. }) && matches!(&response, Response::Dir { .. }) {
-            khor_net::carry::observe_lifecycle(conn.remote_id(), "list_response_received", || {
-                serde_json::json!({
-                    "wire": conn.stable_id(), "stream": send.id().to_string(), "early": false,
-                    "measurements": khor_net::path::path_facts(conn),
-                })
-            });
-        }
+        observe_workload_reply(conn, req, &response, send.id(), false, || sent.elapsed());
         Ok(response)
     };
     tokio::pin!(work);

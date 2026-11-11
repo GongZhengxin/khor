@@ -372,6 +372,10 @@ async fn run(mode: Mode) {
         "bulk":bulk,"calibrated":false,"slo":false,"p99_claimed":false,
         "x_journal":x.journal(Some(&y)),"y_journal":y.journal(Some(&x))}),
     );
+    // Lifecycle runs are a separate diagnostic cohort. Preserve both actual
+    // residents' stream facts after measurement and before scratch cleanup.
+    crate::lab::sample_diagnostics(s, &x);
+    crate::lab::sample_diagnostics(s, &y);
     result(
         s,
         ok,

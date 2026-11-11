@@ -2,9 +2,11 @@
 
 更新于2026-11-11 14:55 UTC。完整目标“完成计划”仍 **active、未完成、未阻塞**，范围为 [PLAN](PLAN.md) 的 N0–N5，root串行，不派发子智能体。本页替代旧页中所有“当前/在途/下一步”。上一份STATE逐字保存于 [完整历史](HISTORY-20261111-through-kernel-calibration.md)，SHA `8172caf6900ae2196273ecdf86a4b8d17572537299392bfa1b5b1322eefbe540`；它继续链接此前所有历史与失败原件。历史段落只代表当时，实际worktree、收据、日志优先，不按摘要覆盖未提交内容。
 
-## 唯一在途：观察器六轮固定对照
+## 当前执行入口：观察器六轮已核，最新生产长稳在途
 
-**turing-20261111T145336Z-bc4dbca9**，PID **49814** / child **50044**，14:53:57 UTC launch；task **netlab-workload-observer** / revision **workload-observer-v3** / role **diagnostic**。stage/launch本地exec94555已终态，14:56实际ps活、execution running/network-driver。原始w3已绿，两模式各一次真实任务取消及成功结果均保留；前两完整场景Streaming/Buffered各720、exact_bytes=true、实际overlap120/120、close API成功，第三场景在途。**尚非六轮终态、未收齐identity/完整parser/独立复核**。只查同receipt/实际PID/execution，不重发、不穿插Turing构建或计时。
+**turing-20261111T145336Z-bc4dbca9** 已389.740秒0、25files/identity/原group空，固定六轮全绿，共4320请求全ok、六份16MiB完全一致、实际TC/探针/全部人口已按原始行独立复核。`observer-comparison-v1.json`、helper audit、ledger均终态，不重发。两模式bulk目录p95均109–113ms、终端81–83ms；记录方式没有稳定改善。probe多数p95 1–2ms；目录数百ms计划迟到主要是前一请求未完成形成的串行积压，残余dispatch p95约1.2–2.1ms。完整数表/分解与限制在WORKLOAD；不当完整N3、CPU/I/O、p99或手机接受。
+
+**唯一新Turing：turing-20261111T150352Z-de04bcc1**，PID **67067**，15:04:14 UTC launch；task `netlab-stability` / revision `effective-route-stability-v3` / candidate / 原control68cadb57。stage exec85417已终态。准确源是已核Mac/Linux/四peer/动态27/恢复6的生产3de冻结source-v3，下文SHA不变；执行原p1/p1j/p1s/p5单场景串行矩阵，包含指定stall/busy，不与其他Turing构建或计时混跑。当前尚未终态，不重发。root同时可source-only增加现有opt-in诊断字段、保留实际业务wire/stream和server各阶段事实；不会据此直接改队列策略或放宽UX门。
 
 冻结源 **0b9454472767d16bc4ff0e44b14bcf3a10256e3c** / tree **725b442271fd07d85a8aeaaac84598cd3f5028e5** / snapshot **2a969d8cb0b75d48cba18792d40bffbd04df024c**，clean/0excluded，证据根 `candidate-workload-observer-source-v3.json`。控制 **7e439456cd5941607270add201d33589ebb371ba**。本页随后docs-only提交不改变冻结实验。Rust fixture与已在Linux编译通过的a9ef逐字相同；新增最后提交仅严格parser/18子例，不能把编译或kernel运行当w3/w1/w2运行绿。
 
@@ -64,4 +66,4 @@ MacLab/Turing同LAN；macserver是另一构建机，用户报告异网。localho
 
 图谱先行，本树无.codegraph不擅建，CRG部分/滞后，0flow不证明无影响；explore/debug/review技能已使用。source-refs.json仅root单写，stage/register未终态前不并行ledger写；timeout/EOF不是终态，查同receipt/PID/Actions不重发。当前stage已终态。
 
-下一步核bc4dbca9真实w3及六轮；终态后收原件/identity/原group，再独立核全部4320人口、相同profile/探针/成功与失败分母/实际bulk与16MiB/close API，审阅源parser的contract，不凭自动绿单独接受。若失败区分fixture/产品/控制事实、保留全部后续轮，不选择性重跑。随后基于真实wire/许可/队列定位瓶颈并继续完整N0–N5，目标active，无外部阻塞。
+下一步查de04bcc1原矩阵/PID/execution，终态收原件/identity并独立核原四项门；root source-only补充opt-in真实wire/stream/阶段事实与固定诊断任务，之后基于真实许可/队列定位瓶颈。继续完整N0–N5，目标active，无外部阻塞。
