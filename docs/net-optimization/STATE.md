@@ -1,6 +1,6 @@
 # feat/net 当前状态与接续入口
 
-更新于2026-11-11 15:25 UTC。完整目标“完成计划”仍 **active、未完成、未阻塞**，范围为 [PLAN](PLAN.md) 的 N0–N5，root串行，不派发子智能体。本页替代旧页中所有“当前/在途/下一步”。上一份STATE逐字保存于 [完整历史](HISTORY-20261111-through-kernel-calibration.md)，SHA `8172caf6900ae2196273ecdf86a4b8d17572537299392bfa1b5b1322eefbe540`；它继续链接此前所有历史与失败原件。历史段落只代表当时，实际worktree、收据、日志优先，不按摘要覆盖未提交内容。
+更新于2026-11-11 15:41 UTC。完整目标“完成计划”仍 **active、未完成、未阻塞**，范围为 [PLAN](PLAN.md) 的 N0–N5，root串行，不派发子智能体。本页替代旧页中所有“当前/在途/下一步”。上一份STATE逐字保存于 [完整历史](HISTORY-20261111-through-kernel-calibration.md)，SHA `8172caf6900ae2196273ecdf86a4b8d17572537299392bfa1b5b1322eefbe540`；它继续链接此前所有历史与失败原件。历史段落只代表当时，实际worktree、收据、日志优先，不按摘要覆盖未提交内容。
 
 ## 当前执行入口：观察器六轮已核，最新生产长稳在途
 
@@ -18,13 +18,19 @@ control纯Python/shell stub **13项9.707秒绿**（含固定顺序、guard失败
 
 ## 新业务流诊断源码与Mac在途
 
-当前冻结源 **1a4816fcc77556043105a6da28bdb6ae96dd66cd** / tree **7bfd97b5fff07ee020e858db1484f7af6ccf5a29** / snapshot **2a9f08d080cbf682573bf232e81dba7f6df84b3a**，clean/0excluded，`candidate-workload-wires-source-v2.json`。仅在原有opt-in lifecycle诊断下增加实际业务wire/stream/协商ALPN、slice offset/字节数和server accept后各阶段clock；普通/early reply原事件保留，native Tunnel成功status与远端收到target也留实际wire。server准入检查与seat等待分开记，write_all不是到达/ACK、accept前QUIC排队未观察。没有队列/选路/写入/0RTT/认证/生命周期政策改变，无新task/timer/map；默认增加env查询但不取这些时钟/写这些日志，成本仍须实测。工作负载仅增加计时后保留双方serve.log，完整物理/人口/边界保持。
+当前业务流诊断冻结源 **04c67d8ea0a41988bf070d9f7b66d328bca85874** / tree **acc229f8aa046ac6c1bdac041434351e3bbb6693** / snapshot **35e4e3c016c2bf26fbfc593c72995acd3838e2d4**，clean/0excluded，`candidate-workload-wires-source-v3.json`。此前source-v2的泛型Connection<T>不能直接读alpn；修正为已知具体状态的既有serve入口传入实际ALPN，普通/early分开取值，原握手完成/认证/0RTT门不变。只在原有opt-in lifecycle诊断下增加实际业务wire/stream/协商ALPN、slice offset/字节数和server accept后阶段clock；没有改队列/选路或写入语义，无新task/timer/map，默认env查询成本仍须测量。工作负载仅在计时后保留双方日志。
 
-初始源baeef657/tree01a49ed80c8919acc5422350c53ab84b60002190/snapshot7638d2484dc8ea21a5113ef5945bdcb8eb6c6e78 的Mac **43046964107** 已终态failure：exact artifact **13868680296** / ZIP SHA **1813c2b93b74c3fb0c988ce8dc65ef1832e4a6a35d4ede31a59362cab4c3a434**，9files/11controls/identity，**只根格式红、0编译/行为样本**；patch仅link.rs，SHA b2316cc7d38eb24b3f03f145a63bda2c5cef0afb854c291f4db66547055723e3，已准确check/apply提交1a4816fc。`format-only-verification-v1.json`/ledger终态，原红不改，不重发旧source-v1。
+初始源baeef657的Mac **43046964107**：exact13868680296/ZIP SHA1813c2b93b74c3fb0c988ce8dc65ef1832e4a6a35d4ede31a59362cab4c3a434，9files/11controls/identity，仅link.rs格式红，精确patch已应用1a4816fc。source-v2 Mac **43047897939**：exact13866949683/ZIP SHAb8d627cf19cf6c200a27fa4da751907b839be496eab9832f2a138843ef045957，10files/11controls/identity，格式通过、net68绿+1原ignored，但Node在泛型ALPN处E0599，**0 Node行为样本**。原失败/partial proof/ledger均终态；首次identity检查早于artifact解包完成报FileNotFound，接受的是collection终态后的成功identity检查，不改原件。旧v1/v2不重发。
 
-唯一新Mac **Actions43047897939**，request **2e55aafb4d7b478eb13cf2381977fa93**，tasknet-node / 原control68cadb57 / revisionworkload-wire-stages-mac-v2，准确source-v2如上；submit exec58800已终态，register helper按此request准确pin。尚无编译或行为接受，只查同run/artifact，不重发。Turing唯一仍de04bcc1，15:21实际PID活/原四项矩阵在途，p1原600秒已绿、p1j在途；不缩短NETLAB_LONG_S或注入次数，不穿插Turing构建/计时。
+修正源 **Mac43048859146**（requestef579fec765949ce808ff51114beb9a0，tasknet-node，原control68cadb57）已 **success、20files/11controls/identity**；exact **13869072265** / ZIP SHA **fe354a6d94271e347926b11c1162e8318b57a23135907f877b438be54878e580**。固定任务全12绿：budget32/hop89/net68+1原ignored/wires16/journal30/IPC18+六单项；六initialCustom/两incoming真实执行，新增诊断已在Mac编译，`node-suite-verification-v1.json`逐原log重核，ledger终态。它不是所有1378 Node测试、Linux业务流诊断或手机接受。
 
-新控制 **71f1eeb4e18d5ea6e4c04ac5348c43eb52b4bd89**（本地未push）增加SSH-only固定 `netlab-workload-wires`：先w3 guard，成功后三个Buffered/lifecycle真实完整场景，一轮失败不丢后两轮、保留首非零状态，source-owned parser核全部原件。guard失败跳过三轮但仍保留parser失败；原UID/锁/namespace/资源/期限门不变。control stub **13项10.765秒绿**（两task各success/case失败/guard失败）；wire metadata **14子例0.034秒绿**，源9项metadata/control stub总0.989秒绿，bash/diff过，无本地Rust/产品执行。`control-workload-wires-tests-v1.json` / `control-workload-wires-helper-audit-v1.json`保存SHA/范围。**此新诊断尚未在Turing调度/运行**，须de04终态后按当前source-v2（或后续有明确理由的新版本）和control71f1eeb4提交；不把纯metadata或旧六轮当本版诊断已验。
+Turing唯一仍 **de04bcc1**，15:31原PID/child活，p1、p1j各原600秒已绿，均零切换/零退役；p1j10轮punch，仍需p1s/p5完整原门。不缩短观察或注入，不穿插Turing构建/计时。结束后才按**诊断source-v3 / control71f1eeb4**运行workload-wires；本段没有重发或提前调度Linux新任务。
+
+新控制 **71f1eeb4e18d5ea6e4c04ac5348c43eb52b4bd89**（本地未push）增加SSH-only固定 `netlab-workload-wires`：先w3 guard，成功后三个Buffered/lifecycle真实完整场景，一轮失败不丢后两轮、保留首非零状态，source-owned parser核全部原件。guard失败跳过三轮但仍保留parser失败；原UID/锁/namespace/资源/期限门不变。control stub **13项10.765秒绿**（两task各success/case失败/guard失败）；wire metadata **14子例0.034秒绿**，源9项metadata/control stub总0.989秒绿，bash/diff过，无本地Rust/产品执行。`control-workload-wires-tests-v1.json` / `control-workload-wires-helper-audit-v1.json`保存SHA/范围。**此新诊断尚未在Turing调度/运行**，须de04终态后按当前诊断source-v3和control71f1eeb4提交；不把纯metadata或旧六轮当本版诊断已验。
+
+## Noq5缺失的专属合同（源码已写、尚未远端运行）
+
+提交ea986be7新增四项，仅cfg(test)模块和测试入口，不改Noq生产采样/保留策略，主59补丁数量不变。先真实TLS/发PING，再用真实包号allocator/retention构造ACK-only尾部单位账目，实际回收首尾记录；ACK较低真实PING+已回收最大号不应造RTT样本，正常保留最大号一次采样、重复ACK不再采样、纯ACK-only不采样、未分配最大号须精确PROTOCOL_VIOLATION。尾部是unit账目，**不是1000份线上包**。协议在VENDOR-AUDIT；当前未编译/运行，不把逻辑推演记成绿。下一步在Mac独立vendor任务运行同冻结source，再以相同完整fixture的隔离旧采样门验证预期红；Noq1及全部59上游/成本缺口保持。
 
 ## 最新已核终态
 
