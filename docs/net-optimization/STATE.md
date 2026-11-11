@@ -1,12 +1,12 @@
 # feat/net 当前状态与恢复入口
 
-更新于 2026-11-11 05:46 UTC。此前逐字状态在 [最近历史](HISTORY-20261111-through-original-dynamic.md)，SHA 9d789f1ac24504e3d56c813a9858272219b62e95326ffa1839a183717088113b。历史内继续链接更早状态和失败记录。当前句柄、收据和实际工作树优先。
+更新于 2026-11-11 05:50 UTC。此前逐字状态在 [最近历史](HISTORY-20261111-through-original-dynamic.md)，SHA 9d789f1ac24504e3d56c813a9858272219b62e95326ffa1839a183717088113b。历史内继续链接更早状态和失败记录。当前句柄、收据和实际工作树优先。
 
 ## 当前目标与位置
 
 完整 N0–N5 持续实施，活动目标为“完成计划”。用户 U14 明确要求持续推进。上次误将目标调度面板状态作为停止条件，本轮已纠正并推进原矩阵。root 串行，不派发子智能体。速度、体验和个人可信设备网为范围，peer relay、IPv4/IPv6 变址为必验项。
 
-产品位于 `/Volumes/disk0/Khor/worktrees/current/khor-net`，branch `feat/net`。最新生产候选为 `17346a1366ee76a519cb872aebf8dd5d60976f2e`，tree `6c0bbe6974e8a089d7639eb45e501f0730b34eed`，snapshot `0fa8e675b3f10f564208c0c484314dfbf8233d55`。此前NoRelay模式顺序修复为ff743。其后文档提交须另核 HEAD/diff。
+产品位于 `/Volumes/disk0/Khor/worktrees/current/khor-net`，branch `feat/net`。最新生产候选为 `4b02c53ff928ed02ab50a1bb3cfa1b9f6f16d45a`，tree `d2c4cabb4bbe12bf614ae232e47a4da33fb54063`，snapshot `4d46d3009ffab2429f06f1df28258fdfa9eb9315`。17346为其格式修正前行为相同候选。此前NoRelay模式顺序修复为ff743。其后文档提交须另核 HEAD/diff。
 
 控制位于 `/Volumes/disk0/Khor/worktrees/current/khor-build-net`，固定 `68cadb57a0ed72d40a4ca9a843e86b9c6797bf34`，原两个 untracked pycache 保留。原 N1 隔离位于 `/Volumes/disk0/Khor/worktrees/current/khor-net-recovery-deadlines`，detached `2ef6bee5a5aaf841af066f4edb5c894769d4539d`，Iroh42–44仍隔离。
 
@@ -18,7 +18,7 @@
 
 此任务冻结源码为 Iroh47候选 `8cd58f8ea707991f23b10ac05d6c8388a61dd519`，tree `4c4d7be8de2c615c35de9b5ca6f3db0cce47a78c`，snapshot `4e900db337c5c4356cb4b27b0de2880210bcf67f`，control68cad。原 p1/p1j/p1s/p5 前缀、单线程、一轮，原持续时间和故障注入保留。计划 `confirmation-copy-identity-original-matrix-plan-v1.json` 已登记两项任务，动态已终态，此稳定性尚在跑。
 
-Mac42964365563已结束并采集。最新候选Mac42967869816（net-node，source17346/tree6c0b/snapshot0fa8/control68cad）已实际提交；先查同一run，未验证，不能重复提交。旧行为Mac42966906265已采集并核身份，hop63/2红。独立 macserver 可穿插便携构建，依据 ACCEPTANCE 的开发加速规则，Turing 本机计时保持独占。此前过度保守的“所有Mac重型均等待”条件已在矩阵计划中纠正。
+Mac42964365563已结束并采集。最新候选Mac42968221420（net-node，source4b02/tree d2c4/snapshot4d46/control68cad）已实际提交，验证待核；先查同一run，不能重复提交。Mac42967869816已终态并采集，仅格式patch，未跑单元。旧行为Mac42966906265已采集并核身份，hop63/2红。独立 macserver 可穿插便携构建，依据 ACCEPTANCE 的开发加速规则，Turing 本机计时保持独占。此前过度保守的“所有Mac重型均等待”条件已在矩阵计划中纠正。
 
 ## 本轮完成的证据
 
@@ -61,7 +61,7 @@ f8记录某probe副本回到90.353ms后，另副本100.025ms代表，原预算�
 ## 下一步与全计划缺口
 
 1. 先监控当前stability088e00f9，终态后collect、核identity/空进程组、原测量模式、每个原case及波动/探测/CPU结果。原矩阵源保持8cd。随后安排最新NoRelay源码的Linux回归。
-2. N2真实候选变化合同已写并取得旧行为红；17346缓存候选在Mac42967869816验证中。先采集实际结果和格式/编译证据，保持原五fixture不变，随后同源Linux。候选事实仅IDs与实际首腿可达性；同ID地址变化、LOST namespace/address context仍未覆盖，不能由此宣告完整N2。
+2. N2真实候选变化合同已写并取得旧行为红；17346缓存候选经格式修正后在Mac42968221420验证中。先采集实际结果和格式/编译证据，保持原五fixture不变，随后同源Linux。候选事实仅IDs与实际首腿可达性；同ID地址变化、LOST namespace/address context仍未覆盖，不能由此宣告完整N2。
 3. ASKING为计数而非互斥，不能据它假定open_hop串行。候选context须排除每ACK/RTT排序噪声、覆盖真实可达性与地址变化、保护late完成，保持有界和弱所有权。LOST还缺本机identity namespace及地址context。
 4. 继续N1 peer-relay四秒/单向停顿、原quiet/stalls/成本矩阵，按证据决定下一策略，失败保留。N0最终SLO/样本量/p99仍欠。
 5. N3保留交互与批量共享/分连接比较、背压公平、1/3/5设备、CPU/字节/唤醒/手机能耗。N4覆盖真实两腿Relay/唯一middle/断腿/多middle、独立IPv4/IPv6及同时变址、Wi-Fi↔蜂窝和自动恢复。N5完成全部vendor审计、最终Quality/native/proxy/多设备/phone。
@@ -89,3 +89,7 @@ stage helper仅新增已被固定control允许的stability条目，SHA `ff09d4ef
 生产17346只改hop.rs：MISSED在构建候选后按规范化middle ID集合及真实首腿可达bool登记context；RTT与排序不改变context。原MISSED表持有唯一candidate Arc，操作仅弱token，网络owner仍Wires弱token。替换context/成功移除使旧完成失效，读写均在原MISSED锁核代际；不增新表、常驻task、timer或Node/Connection强所有权。已死亡网络条目在登记时回收。原30秒起指数退避/10分钟上限、TRIES2、HOP_WITHIN3秒、caller期限及信任/暂停/单跳门均保留。compare_roads保持原近期miss旁路，只捕获明确context传入open_hop。没有把RTT噪声当新路。
 
 此为候选，尚不能声称修复验收通过。源审计candidate-change-miss-source-audit-v1.json、fixture与旧证据在证据根。除晚完成之外，旧候选快照在多线程登记时的观察顺序还需独立审查；同ID地址变化/实际两腿/手机/成本矩阵仍未收口。用户问“做完了？”已明确答未完成，并说明原动态27绿、恢复四秒门仍有失败。没有新的精确完成时点承诺。
+
+2026-11-11 05:50 UTC：Mac42967869816为格式门失败，9files/11controls/identity核，exact artifact13832540054，zip SHA5ce77a3d1c2530f2608352aa8da81fce209a566efce2961181a91a6f1be7c6de。没有执行单元，不能算行为红。已用git apply --check后原样应用远端format.patch，4b02只有hop.rs格式变化，原五fixture SHA不变。新Mac42968221420已登记ledger，源为4b02/tree d2c4cabb4bbe12bf614ae232e47a4da33fb54063/snapshot4d46d3009ffab2429f06f1df28258fdfa9eb9315。新run未核结果，旧收据均保留。
+
+Turing088同一PID3381428在05:48实核running、27分02秒。已读原p1及p1j各600秒green、0切路/0退役，正在p1s原CPU停顿注入；p5未开始。未collect，不声称全长稳通过。结束后按原收据采集和逐case验证，不混入最新cache候选源码结论。
