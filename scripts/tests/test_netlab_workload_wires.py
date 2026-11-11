@@ -26,6 +26,26 @@ def fixture():
 
 
 class WireEvidence(unittest.TestCase):
+    def test_actual_priority_readback_preserves_first_content_and_controls(self):
+        for priority in [0, -1]:
+            for mutation in ['success', 'first_slice_low', 'continued_wrong', 'directory_low', 'not_applied', 'missing_readback']:
+                with self.subTest(priority=priority, mutation=mutation):
+                    client, server = fixture()
+                    for row in server[:-1]:
+                        d = row['details']
+                        d.update(priority_applied=True, response_priority=priority if d['operation']=='fetch_path' and d['offset']>0 else 0)
+                    if mutation=='first_slice_low':server[360]['details']['response_priority']=-1
+                    elif mutation=='continued_wrong':server[361]['details']['response_priority']=1
+                    elif mutation=='directory_low':server[0]['details']['response_priority']=-1
+                    elif mutation=='not_applied':server[361]['details']['priority_applied']=False
+                    elif mutation=='missing_readback':del server[361]['details']['response_priority']
+                    if mutation=='success':
+                        result=wires.wire_evidence(client,server,continued_priority=priority)
+                        self.assertEqual(result['matched_streams'],424)
+                    else:
+                        with self.assertRaises((AssertionError,KeyError)):
+                            wires.wire_evidence(client,server,continued_priority=priority)
+
     def test_raw_business_identity_and_stage_facts_are_required(self):
         for mutation in ['success','missing_directory','missing_fetch','duplicate_offset','bad_stream','bad_Main_alpn',
                          'reused_stream','missing_tunnel','bad_tunnel_alpn','shared_tunnel_wire','unpaired','negative_clock','reversed_clock','wrong_bytes']:

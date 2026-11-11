@@ -4,6 +4,7 @@ import hashlib
 import importlib.util
 import json
 from pathlib import Path
+import re
 import sys
 
 spec = importlib.util.spec_from_file_location('observer', Path(__file__).with_name('netlab-observer.py'))
@@ -21,7 +22,7 @@ def records(path):
     return rows
 
 
-def wire_evidence(client, server):
+def wire_evidence(client, server, continued_priority=None):
     replies = [r for r in client if r['phase'] in ['list_response_received', 'path_slice_received']]
     sent = [r for r in server if r['phase'] in ['list_response_sent', 'path_slice_response_sent']]
     assert Counter(r['details']['operation'] for r in replies) == {'directory': 360, 'fetch_path': 64}
@@ -42,6 +43,9 @@ def wire_evidence(client, server):
         assert d['timing_origin'] == 'stream_accepted' and d['frame_bytes'] > 0
         stages = [d[k] for k in STAGES]
         assert all(isinstance(v, int) and v >= 0 for v in stages) and stages == sorted(stages)
+        if continued_priority is not None:
+            expected = continued_priority if d['operation'] == 'fetch_path' and d['offset'] > 0 else 0
+            assert d['priority_applied'] is True and d['response_priority'] == expected
     pairs = []
     for op in ['directory', 'fetch_path']:
         a = [r for r in replies if r['details']['operation'] == op]
@@ -104,7 +108,12 @@ def verify(report):
                 paths = [log.parent/'diagnostics'/f'w2-buffer-{name}.log' for name in ['x', 'y']]
                 assert all('mode=lifecycle samples=off' in p.read_text() for p in paths)
                 row['diagnostic_sha256'] = {str(p.relative_to(report)):hashlib.sha256(p.read_bytes()).hexdigest() for p in paths}
-                row['wires'] = wire_evidence(*(records(p) for p in paths))
+                text = (Path(__file__).resolve().parents[1]/'crates/node/src/link.rs').read_text()
+                priority = re.findall(r'^const CONTINUED_FILE_RESPONSE_PRIORITY: i32 = (-?\d+);$', text, re.M)
+                assert len(priority) <= 1
+                expected = int(priority[0]) if priority else None
+                row['wires'] = wire_evidence(*(records(p) for p in paths), continued_priority=expected)
+                row['wires']['expected_continued_priority'] = expected
                 row['valid'] = row['workload']['functional_ok']
             except (AssertionError, KeyError, ValueError, TypeError, IndexError, OSError) as error:
                 row['error'] = type(error).__name__+': '+str(error)

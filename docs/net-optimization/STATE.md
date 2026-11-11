@@ -1,8 +1,20 @@
 # feat/net 当前状态与接续入口
 
-更新于2026-11-11 16:13 UTC。完整目标“完成计划”仍 **active、未完成、未阻塞**，范围为 [PLAN](PLAN.md) 的 N0–N5，root串行，不派发子智能体。本页替代旧页中所有“当前/在途/下一步”。上一份STATE逐字保存于 [完整历史](HISTORY-20261111-through-kernel-calibration.md)，SHA `8172caf6900ae2196273ecdf86a4b8d17572537299392bfa1b5b1322eefbe540`；它继续链接此前所有历史与失败原件。历史段落只代表当时，实际worktree、收据、日志优先，不按摘要覆盖未提交内容。
+更新于2026-11-11 16:40 UTC。完整目标“完成计划”仍 **active、未完成、未阻塞**，范围为 [PLAN](PLAN.md) 的 N0–N5，root串行，不派发子智能体。本页顶部是唯一当前入口，后续时间段保存历史，不据旧“在途”重发。上一份STATE逐字保存于 [完整历史](HISTORY-20261111-through-kernel-calibration.md)，SHA `8172caf6900ae2196273ecdf86a4b8d17572537299392bfa1b5b1322eefbe540`；它继续链接此前所有历史与失败原件。实际worktree、收据、日志优先，不按摘要覆盖未提交内容。
 
-## 当前执行入口：长稳与业务流已核，稳态路径参照在途
+## 当前执行入口：参照失败保留，准备单因素调度对照
+
+**目前没有Turing或Mac在途任务。** 原唯一Turing **turing-20261111T161025Z-0354726c** 已 **1248.401秒、退出101**。21files/source/control/identity核实；原九场景 **6绿/3失败**：首轮fr-carried配对90秒超时、fr-relay启动60秒超时；第三轮fr-carried启动60秒超时。其余六场景实际测得384对started/finished全部ok（含bootstrap/setup），不能用这些成功人口掩盖三个未进入业务测量的失败。`steady-reference-failure-v1.json`保留逐轮分布/失败原文，ledger终态；不是f4s同故障窗口对照。主机load记录保留，不据此认定CPU根因。
+
+首次collection正确拒收：原group163255还活着四个scratch keeper/serve，均继承原163013的build.lock。确认UID1110、原PGID、start ticks、exe、scratch home、精确NETLAB_RUN_DIR及锁inode后，逐pidfd TERM，四份stderr原件和`fixture-residue-v1/cleanup.json`先后留证，最终group空才重新收集/identity核实。第一次cleanup helper本地embedded-null停止，第二次因原后代仍持锁而未进入修改；没有删除锁或改原日志。手工回收不算自动清理通过。**bc519eeb** 修复fixture在spawn后立即拥有Reaped、先停keeper再删home；仍待Linux实际编译/取消回归，原60/90/120秒门未改。
+
+新的优先级候选和协议见 [SCHEDULING](SCHEDULING.md)。**尚未有该策略计时/收益结论**：固定PULL_AHEAD=8，只比较后续PathSlice响应priority0/-1；首切片/目录0，两树只允许该const一行不同。先Mac固定net-node和A/B实际setter/getter/lifecycle readback，再关闭诊断按预先固定 **A B B A A B** 六block、每block三fresh场景，共18场景/每arm九轮。原v4 fixture、完整失败人口、实际TC/探针/字节门保持；高BDP/prefetch/前台完整文件/饥饿/共享分连接/设备规模/能耗仍独立待验，不把这个候选当最终设计。
+
+本机只运行metadata：control `test_network*.py` **13项12.951秒绿**（三个task各success/case失败/guard失败），source `test_netlab_workload*.py` **3项0.268秒绿**（包括真实priority readback的12合成子例与policy的8合成子例），bash语法/diff过。新control task `netlab-workload-policy` 显式NETLAB_DIAGNOSTICS=0/unset KHOR_NET_DIAGNOSTICS，保持UID/锁/namespace/资源/期限和失败继续/首非零状态；OPS allowlist audit `control-workload-policy-helper-audit-v1.json`。没有本地Rust/格式器/产品执行；合成绿不能替代远端编译或真实策略结果。
+
+下一步：提交/冻结准确候选、原control68cad Mac net-node；隔离Git对象构造相同fixture的priority0控制并核唯一行diff。Turing空槽先验证fixture回收和两arm真实priority readback，再开始预注册计时。当前没有新run ID，不凭本段预调度重发。严重同故障fallback对照、原启动/配对原因、完整N0–N5继续保持。
+
+## 16:13 UTC及此前已核结果
 
 **turing-20261111T145336Z-bc4dbca9** 已389.740秒0、25files/identity/原group空，固定六轮全绿，共4320请求全ok、六份16MiB完全一致、实际TC/探针/全部人口已按原始行独立复核。`observer-comparison-v1.json`、helper audit、ledger均终态，不重发。两模式bulk目录p95均109–113ms、终端81–83ms；记录方式没有稳定改善。probe多数p95 1–2ms；目录数百ms计划迟到主要是前一请求未完成形成的串行积压，残余dispatch p95约1.2–2.1ms。完整数表/分解与限制在WORKLOAD；不当完整N3、CPU/I/O、p99或手机接受。
 

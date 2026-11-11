@@ -1010,6 +1010,11 @@ pub fn dial_budget_seconds() -> u64 {
 /// machine answers at once (`STREAMS_AT_ONCE`).
 const PULL_AHEAD: u64 = 8;
 
+/// Experimental continued-file response class. The first slice keeps ordinary
+/// priority. A foreground file may need all slices: acceptance still requires
+/// first-usable-content, throughput and starvation checks.
+const CONTINUED_FILE_RESPONSE_PRIORITY: i32 = -1;
+
 /// How often a drop's asker asks how far it got (`Node::drop_file`):
 /// often enough for a progress line to move, and each ask is one small
 /// frame.
@@ -4343,7 +4348,8 @@ impl Node {
                 let question = proto::question(&bytes);
                 let listing = matches!(&question, Ok(Request::Ls { .. }));
                 let fetch_offset = match &question {
-                    Ok(Request::FetchPath { offset, .. }) => Some(*offset),
+                    Ok(Request::FetchPath { offset, .. })
+                    | Ok(Request::SatFetchPath { offset, .. }) => Some(*offset),
                     _ => None,
                 };
                 if let Ok(Request::Watch { scope }) = question {
@@ -4487,6 +4493,13 @@ impl Node {
                 let Some((frame, _resp, prepared_at, encoded_at)) = frame else {
                     return;
                 };
+                let continued_file = fetch_offset.is_some_and(|offset| offset > 0)
+                    && matches!(&_resp, Response::PathSlice { .. });
+                let priority_applied = !continued_file
+                    || send.set_priority(CONTINUED_FILE_RESPONSE_PRIORITY).is_ok();
+                // Read before the first write/FIN, and only for the opt-in
+                // trace. Both experimental sources have the same readback.
+                let observed_priority = accepted_at.and_then(|_| send.priority().ok());
                 if send.write_all(&frame).await.is_ok() {
                     let written_at = accepted_at.map(|_| std::time::Instant::now());
                     #[cfg(test)]
@@ -4514,6 +4527,7 @@ impl Node {
                                 "wire": reply_wire, "stream": send.id().to_string(),
                                 "alpn": reply_alpn,
                                 "early": early, "operation": operation, "offset": fetch_offset,
+                                "response_priority": observed_priority, "priority_applied": priority_applied,
                                 "frame_bytes": frame.len(), "timing_origin": "stream_accepted",
                                 "permit_asked_us": after_accept(permit_asked_at),
                                 "seated_us": after_accept(seated_at), "request_read_us": after_accept(request_read_at),
