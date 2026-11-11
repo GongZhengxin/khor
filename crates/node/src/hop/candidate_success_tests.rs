@@ -41,10 +41,7 @@ async fn observe_success(release_carrier: bool) {
     let conn = tokio::time::timeout(
         Duration::from_secs(5),
         f.ep.connect(
-            iroh::EndpointAddr::from_parts(
-                f.target_ep.id(),
-                [transport_addr(&f.target_ep.id())],
-            ),
+            iroh::EndpointAddr::from_parts(f.target_ep.id(), [transport_addr(&f.target_ep.id())]),
             INNER_ALPN,
         ),
     )
@@ -58,7 +55,10 @@ async fn observe_success(release_carrier: bool) {
     );
     f.node.wires.adopt(&f.target.id, Proto::Main, conn.clone());
     let via = middle.ep.id();
-    let before = (asks.load(Ordering::SeqCst), middle.asks.load(Ordering::SeqCst));
+    let before = (
+        asks.load(Ordering::SeqCst),
+        middle.asks.load(Ordering::SeqCst),
+    );
     if release_carrier {
         conn.close(0u32.into(), b"successful consumer complete");
         tokio::time::timeout(Duration::from_secs(2), f.echo_task.0.take().unwrap())
@@ -76,7 +76,10 @@ async fn observe_success(release_carrier: bool) {
     }
     release_old.send(()).unwrap();
     completed(&mut older).await;
-    let after = (asks.load(Ordering::SeqCst), middle.asks.load(Ordering::SeqCst));
+    let after = (
+        asks.load(Ordering::SeqCst),
+        middle.asks.load(Ordering::SeqCst),
+    );
     let still_answered = release_carrier || echo(&conn).await;
     let outer_open = f.outer_local.close_reason().is_none()
         && middle.local.close_reason().is_none()
