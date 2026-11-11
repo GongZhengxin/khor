@@ -253,6 +253,11 @@ async fn run(mode: Mode, spec: Spec) {
     let ry = router(&lab, "puby", Net::Public).await;
     let dx = lab.add_device("x").uplink(rx.id()).build().await.unwrap();
     let dy = lab.add_device("y").uplink(ry.id()).build().await.unwrap();
+    // The high profile is a cold fixed model, not a change from an unshaped
+    // resident. Keep the original low-profile ordering for its regressions.
+    if spec.high {
+        profile::configure(&dx, &dy, &rx, &ry, spec).await;
+    }
     let x = node(s, dx, "x", &[&r], &[("SHELL", "/bin/sh")]).await;
     let y = node(s, dy, "y", &[&r], &[("SHELL", "/bin/sh")]).await;
     mesh(&[&x, &y]).await;
@@ -275,7 +280,9 @@ async fn run(mode: Mode, spec: Spec) {
         })
         .collect();
     std::fs::write(source.join("payload.bin"), &payload).unwrap();
-    profile::configure(&x.dev, &y.dev, &rx, &ry, spec).await;
+    if !spec.high {
+        profile::configure(&x.dev, &y.dev, &rx, &ry, spec).await;
+    }
     let path = source.display().to_string();
     let cwd = path.clone();
     let capture_before = profile::captures(&x.dev, &y.dev, &rx, &ry, spec, mode, "before").await;
@@ -308,6 +315,7 @@ async fn run(mode: Mode, spec: Spec) {
             "nominal_rtt_ms":if spec.high {300} else {40},"mbit_per_direction":if spec.high {50} else {8},"queue_ms":40,"random_loss_pct":0,
             "connection_layout":"directory_and_fetch_Main__terminal_Tunnel","slo":false,
             "network_profile":if spec.high {"forwarding_split_300ms_50mbit"} else {"combined_40ms_8mbit"},
+            "impairment_installed_before_residents":spec.high,
             "calibrated":false,"seed":"6d697865646c6f61","diagnostic_recording":true}));
         let (mut rows, _, _) = phase(&node, &mut stream, &path, &landed, epoch, "idle_before", false, mode, spec).await;
         let (during, bulk, destination) = phase(&node, &mut stream, &path, &landed, epoch, "bulk", true, mode, spec).await;

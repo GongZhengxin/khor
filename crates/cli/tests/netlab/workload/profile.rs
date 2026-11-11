@@ -24,7 +24,7 @@ pub(super) const LOW: Spec = Spec {
 };
 
 pub(super) const HIGH: Spec = Spec {
-    revision: "resident_mixed_workload_high_v2",
+    revision: "resident_mixed_workload_high_v3",
     bytes: 192 * 1024 * 1024,
     period: Duration::from_millis(400),
     bulk_limit: Duration::from_secs(240),

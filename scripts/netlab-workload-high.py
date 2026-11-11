@@ -15,7 +15,7 @@ def module(name, file):
 policy = module('workload_policy', 'netlab-workload-policy.py')
 queues = module('queue_profile', 'netlab-kernel-queues.py')
 observer = policy.observer
-REVISION = 'resident_mixed_workload_high_v2'
+REVISION = 'resident_mixed_workload_high_v3'
 BYTES = 192*1024*1024
 
 
@@ -55,6 +55,7 @@ def case(path):
     rows = observer.records(path, revision=REVISION, allow_failed=True)
     manifest = observer.one(rows, 'manifest'); bulk = observer.one(rows, 'bulk'); done = observer.one(rows, 'complete')
     assert manifest['network_profile'] == 'forwarding_split_300ms_50mbit'
+    assert manifest['impairment_installed_before_residents'] is True
     assert manifest['nominal_rtt_ms'] == 300 and manifest['mbit_per_direction'] == 50
     assert manifest['queue_ms'] == 40 and manifest['random_loss_pct'] == 0
     assert manifest['connection_layout'] == 'directory_and_fetch_Main__terminal_Tunnel'

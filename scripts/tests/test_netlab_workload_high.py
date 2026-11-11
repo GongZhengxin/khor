@@ -18,7 +18,7 @@ def fixture():
     for r in rows:
         event = r['event']
         if event == 'manifest':
-            r.update(period_us=400000,bulk_bytes=high.BYTES,network_profile='forwarding_split_300ms_50mbit',
+            r.update(period_us=400000,bulk_bytes=high.BYTES,impairment_installed_before_residents=True,network_profile='forwarding_split_300ms_50mbit',
                 nominal_rtt_ms=300,mbit_per_direction=50,queue_ms=40,random_loss_pct=0,
                 phases=high.observer.PHASES,operations=['directory','terminal'],seed='6d697865646c6f61',
                 connection_layout='directory_and_fetch_Main__terminal_Tunnel',diagnostic_recording=True)
@@ -74,7 +74,7 @@ def write_high(path, rows, failed=False):
 class HighResidentEvidence(unittest.TestCase):
     def test_full_population_low_regression_and_single_download_path(self):
         mutations=['success','missing_guard','missing_low','missing_high','wrong_size','wrong_period','wrong_deadline',
-            'wrong_revision','wrong_profile','wrong_rate','missing_right_router','short_payload_path','wrong_install',
+            'wrong_revision','late_impairment','wrong_profile','wrong_rate','missing_right_router','short_payload_path','wrong_install',
             'same_operation_overlap','payload_not_exact','missing_sample','diagnostics','source_inflight_changed','source_priority_invalid','rpc_timeout']
         for mutation in mutations:
             with self.subTest(mutation=mutation), tempfile.TemporaryDirectory() as temporary:
@@ -94,6 +94,7 @@ class HighResidentEvidence(unittest.TestCase):
                         elif mutation=='wrong_period':m['period_us']=100000
                         elif mutation=='wrong_deadline':b['caller_ms']=480000;done['bulk']=copy.deepcopy(b)
                         elif mutation=='wrong_revision':m['revision']='old'
+                        elif mutation=='late_impairment':m['impairment_installed_before_residents']=False
                         elif mutation=='wrong_profile':m['network_profile']='combined'
                         elif mutation=='wrong_rate':
                             c=next(r['capture'] for r in rs if r['event']=='capture' and r['name']=='gateway_after');q=json.loads(c['qdisc_json']['stdout']);next(x for x in q if x['kind']=='tbf')['options']['rate']=50000000;c['qdisc_json']['stdout']=json.dumps(q)
