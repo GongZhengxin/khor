@@ -1,6 +1,6 @@
 # 真实 Node 混合负载基线
 
-2026-11-11，`resident_mixed_workload_v3`。这是 N3 的可复现实验协议，v3已取得下列三轮功能基线；不替代完整 N3 或最终用户体验门。沿用 Linux namespace / scratch resident / 原资源门，独立串行三轮，运行时冻结产品 tree、control、原始日志。产品调度和连接策略不随此实验修改。
+2026-11-11，当前观察器协议 `resident_mixed_workload_v4` 尚未验证；v3已取得下列三轮功能基线，不能视为v4证据。这不替代完整 N3 或最终用户体验门。沿用 Linux namespace / scratch resident / 原资源门，运行时冻结产品 tree、control、原始日志。产品调度和连接策略不随此实验修改。
 
 固定两个真实 resident，公开 IPv4，配对后先达到 Direct。仅 x 接口双向配置：单向20ms、每方向8Mbit/s、40ms队列、零随机丢包。该配置的实际吞吐尚未独立校准，日志明确 `calibrated:false`；第一轮是测量入口和功能合同验证，不能把名义速率当实际容量、测得差异当拥塞控制收益。
 
@@ -59,3 +59,13 @@ x设备与入口网关各自namespace内，在测量前后保存`tc -s -j qdisc 
 该独立证明只接受共享condition对应的kernel TCP模型，full_N3_accepted=false。原自动报告仍calibrated:false（保留其“需单位复核”的原始阶段），旧Node三轮仍是原来的未校准diagnostic cohort，不能追填旧样本已做实际读回。下一版Node测量也要在它自己的真实namespace保存前后读回，补观察器定时/记录成本、真实wire/排队与进程退出事实。
 
 此前同源run turing-20261111T140243Z-bd7e5f6c的三项Rust功能门均绿，但总job1/原报告false：校验器用startswith漏读被Rust test名称前缀接在同一行的manifest。原件/红状态完整保留于validator-prefix-failure-v1.json；新control修正为唯一标记后解析、仍要求manifest恰1及原样本/全部门，新增harness_prefix正例与其余反例（12个子例），完整control stub12项8.578秒绿。新parser仅在原始日志副本中回放验证（control-workload-calibration-prefix-replay-v1.json）后，以上独立重跑三轮才取得新的0/通过收据；没有改写旧报告或放宽物理门。
+
+## v4观察器对照（实现中，尚未编译/执行）
+
+保持真实PTY/目录/16MiB、三阶段各两类120请求、原2秒请求和120秒bulk上界、原程序就绪10秒总界、同condition。仅改变测量记录方式：w1 Streaming逐条输出，w2 Buffered在每阶段测量结束后输出；两者都持有相同最多512行的内存记录。缓冲flush耗时另记，不悄悄当作零开销；不同phase仍保留原计划与每类一个在途，积压不删除。
+
+实际测量future由测试本身的Owned JoinHandle持有，drop即abort；每个逻辑请求有Attempt guard，完成、错误、超时、blocked或被丢弃时的cancelled/aborted都留同一人口。阶段未正常结束时Store drop输出已完成记录和logger_aborted，进程被强杀时缺summary/缺样本仍使校验失败，不能算成功。新增w3独立校准会真实启动并取消任务，检验两记录模式都保留取消与成功结果；它不是产品网络取消/进程退出证明。
+
+每阶段同一观察器runtime增加父future借用的20ms定时探针，不新起任务、不逐tick打印，保留计划/实际时间对，明确Skip和被跳过的计划间隔。最多20000个tick（每阶段约320KiB原始时间对），到上限或logger overflow不能通过。v4两模式都有相同探针，**不可把v3/v4不同观察器直接当产品改进**。在实际Node实验自己的x/gateway命名空间，前后保存TC JSON/文本/接口计数，与kernel独立校准分开核对。close仍只是API回复，host/child独立退出与真实wire/许可/排队证据仍待补。
+
+计划在同一冻结source/control跑三对，顺序Streaming→Buffered、Buffered→Streaming、Streaming→Buffered，3次/模式；这是有限顺序对照，奇数配对不能称完全平衡或最终性能接受。先过独立w3拥有者/记录器校准，再执行六个完整场景；后续完整统计仍需多seed/更充分顺序平衡与长尾人口。此处已提前记录顺序，不因结果选择性重跑。

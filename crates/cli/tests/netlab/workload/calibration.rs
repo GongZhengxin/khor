@@ -30,7 +30,7 @@ impl Drop for Server {
     }
 }
 
-async fn snapshot() -> Value {
+pub(super) async fn snapshot() -> Value {
     let mut captures = serde_json::Map::new();
     for (name, args) in [
         ("qdisc_json", vec!["-s", "-j", "qdisc", "show"]),

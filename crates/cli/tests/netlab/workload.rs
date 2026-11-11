@@ -17,6 +17,9 @@ use crate::nat::{Net, router};
 
 #[path = "workload/calibration.rs"]
 mod calibration;
+#[path = "workload/observer.rs"]
+mod observer;
+use observer::{Log, Mode, Owned};
 
 /// Shared by the resident workload and its independent kernel TCP calibration.
 fn condition() -> LinkCondition {
@@ -26,7 +29,7 @@ fn condition() -> LinkCondition {
         .buffer_ms(40)
 }
 
-const REVISION: &str = "resident_mixed_workload_v3";
+const REVISION: &str = "resident_mixed_workload_v4";
 const SAMPLES: usize = 120;
 const PERIOD: Duration = Duration::from_millis(100);
 // Measurement bounds, not user-approved UX targets. Failed/blocked samples
@@ -84,41 +87,17 @@ async fn output_until(stream: &mut TcpStream, expected: &str, trace: bool) -> Re
     }
 }
 
-fn sample(
-    epoch: Instant,
-    phase: &str,
-    operation: &str,
-    index: usize,
-    scheduled_us: u64,
-    started_us: u64,
-    outcome: &str,
-    error: Option<String>,
-) -> Value {
-    let ended_us = at(epoch);
-    let row = json!({
-        "schema": 1, "revision": REVISION, "event": "sample",
-        "phase": phase, "operation": operation, "index": index,
-        "scheduled_us": scheduled_us, "started_us": started_us,
-        "ended_us": ended_us, "elapsed_us": ended_us - started_us,
-        "schedule_lag_us": started_us.saturating_sub(scheduled_us),
-        "caller_us": CALLER.as_micros(), "outcome": outcome, "error": error,
-    });
-    emit(row.clone());
-    row
-}
-
 async fn directory(
     node: &Node,
     path: &str,
-    epoch: Instant,
     phase_start: Instant,
-    phase: &str,
+    log: &Log,
 ) -> Vec<Value> {
     let mut rows = Vec::with_capacity(SAMPLES);
     for index in 0..SAMPLES {
         let scheduled = phase_start + PERIOD * index as u32;
         tokio::time::sleep_until(scheduled.into()).await;
-        let started_us = at(epoch);
+        let attempt = log.start("directory", index, scheduled);
         let (outcome, error) = match tokio::time::timeout(CALLER, node.ls_of("y", path)).await {
             Ok(Ok((_, entries, false)))
                 if entries
@@ -131,36 +110,23 @@ async fn directory(
             Ok(Err(e)) => ("error", Some(e)),
             Err(_) => ("timeout", Some("directory caller deadline".into())),
         };
-        rows.push(sample(
-            epoch,
-            phase,
-            "directory",
-            index,
-            scheduled
-                .duration_since(epoch)
-                .as_micros()
-                .try_into()
-                .unwrap(),
-            started_us,
-            outcome,
-            error,
-        ));
+        rows.push(attempt.finish(outcome, error));
     }
     rows
 }
 
 async fn terminal(
     stream: &mut TcpStream,
-    epoch: Instant,
     phase_start: Instant,
     phase: &str,
+    log: &Log,
 ) -> Vec<Value> {
     let mut rows = Vec::with_capacity(SAMPLES);
     let mut broken = false;
     for index in 0..SAMPLES {
         let scheduled = phase_start + PERIOD * index as u32;
         tokio::time::sleep_until(scheduled.into()).await;
-        let started_us = at(epoch);
+        let attempt = log.start("terminal", index, scheduled);
         let (outcome, error) = if broken {
             (
                 "blocked",
@@ -179,20 +145,7 @@ async fn terminal(
                 }
             }
         };
-        rows.push(sample(
-            epoch,
-            phase,
-            "terminal",
-            index,
-            scheduled
-                .duration_since(epoch)
-                .as_micros()
-                .try_into()
-                .unwrap(),
-            started_us,
-            outcome,
-            error,
-        ));
+        rows.push(attempt.finish(outcome, error));
     }
     rows
 }
@@ -205,12 +158,14 @@ async fn phase(
     epoch: Instant,
     name: &str,
     bulk: bool,
+    mode: Mode,
 ) -> (Vec<Value>, Value, Option<PathBuf>) {
     // Snapshots are outside the sample window, on this resident's actual IPC.
     let before = node.wire_counts().await.map_err(|e| format!("{e:?}"));
     let phase_start = Instant::now();
+    let log = Log::new(epoch, name, mode);
     emit(
-        json!({"schema":1,"revision":REVISION,"event":"phase_started","phase":name,"at_us":at(epoch),"wire_counts":before}),
+        json!({"schema":1,"revision":REVISION,"event":"phase_started","phase":name,"mode":mode.name(),"at_us":at(epoch),"wire_counts":before}),
     );
     let pull = async {
         if !bulk {
@@ -227,22 +182,32 @@ async fn phase(
             Ok(Err(e)) => ("error", Some(e), None, None),
             Err(_) => ("timeout", Some("bulk caller deadline".into()), None, None),
         };
-        let row = json!({"schema":1,"revision":REVISION,"event":"bulk","phase":name,
+        let row = json!({"schema":1,"revision":REVISION,"event":"bulk","phase":name,"mode":mode.name(),
             "started_us":started_us,"ended_us":ended_us,"moved":moved,"expected":BYTES,
             "outcome":outcome,"error":error,"caller_ms":120000});
-        emit(row.clone());
+        log.push(row.clone());
         (row, dest)
     };
     // All three futures are borrowed by this parent: no detached measurement
     // tasks or extra endpoints sharing the resident's identity.
-    let (mut directories, terminals, (bulk_row, dest)) = tokio::join!(
-        directory(node, path, epoch, phase_start, name),
-        terminal(stream, epoch, phase_start, name),
-        pull,
-    );
+    let measured = async {
+        tokio::join!(
+            directory(node, path, phase_start, &log),
+            terminal(stream, phase_start, name, &log),
+            pull,
+        )
+    };
+    let ((mut directories, terminals, (bulk_row, dest)), timing) =
+        observer::probe(epoch, phase_start, name, mode, measured).await;
+    let flush_started = Instant::now();
+    let (_, overflow) = log.finish();
+    let record_flush_us = flush_started.elapsed().as_micros();
+    let probe_capped = timing["capped"] == true;
+    emit(timing);
+    assert!(!overflow && !probe_capped, "bounded observer retained the entire phase");
     directories.extend(terminals);
     emit(
-        json!({"schema":1,"revision":REVISION,"event":"phase_finished","phase":name,
+        json!({"schema":1,"revision":REVISION,"event":"phase_finished","phase":name,"mode":mode.name(),"logger_overflow":overflow,"probe_capped":probe_capped,"record_flush_us":record_flush_us,
         "at_us":at(epoch),"wire_counts":node.wire_counts().await.map_err(|e|format!("{e:?}"))}),
     );
     (directories, bulk_row, dest)
@@ -251,7 +216,17 @@ async fn phase(
 #[tokio::test(flavor = "multi_thread", worker_threads = 6)]
 #[ignore = "real resident workload baseline; run alone through the guarded netlab task"]
 async fn w1_real_terminal_and_directory_during_a_resident_file_pull() {
-    let s = "w1";
+    run(Mode::Streaming).await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 6)]
+#[ignore = "paired buffered observer mode; guarded workload observer task"]
+async fn w2_buffered_terminal_and_directory_during_a_resident_file_pull() {
+    run(Mode::Buffered).await;
+}
+
+async fn run(mode: Mode) {
+    let s = if mode == Mode::Streaming { "w1-stream" } else { "w2-buffer" };
     let lab = Lab::new().await.unwrap();
     let r = relay(&lab, s, "relay", None).await;
     let rx = router(&lab, "pubx", Net::Public).await;
@@ -290,7 +265,13 @@ async fn w1_real_terminal_and_directory_during_a_resident_file_pull() {
         .unwrap();
     let path = source.display().to_string();
     let cwd = path.clone();
-    let (rows, bulk, destination, closed) = x.with(move |node| async move {
+    let before_x = x.dev.spawn(|_| async { calibration::snapshot().await }).unwrap().await.unwrap();
+    let before_gateway = rx.spawn(|_| async { calibration::snapshot().await }).unwrap().await.unwrap();
+    for (name, capture) in [("x_before", before_x), ("gateway_before", before_gateway)] {
+        emit(json!({"schema":1,"revision":REVISION,"event":"capture","mode":mode.name(),"name":name,"capture":capture}));
+    }
+    let node = x.with(|node| async move { node }).await;
+    let mut benchmark = Owned(x.dev.spawn(move |_| async move {
         // Match the existing real-terminal integration entry (term_echo.rs).
         // CLI _host currently omits KHOR_HOST_STARTUP; its separate startup
         // API must not be a prerequisite for measuring a real PTY's network.
@@ -312,21 +293,27 @@ async fn w1_real_terminal_and_directory_during_a_resident_file_pull() {
             echo(&mut stream, "warmup-unique").await
         }).await.expect("bounded PTY startup").expect("a real shell response, not input echo");
         let epoch = Instant::now();
-        emit(json!({"schema":1,"revision":REVISION,"event":"manifest","samples_per_operation_per_phase":SAMPLES,
+        emit(json!({"schema":1,"revision":REVISION,"event":"manifest","mode":mode.name(),"probe_period_us":20000,"logger_capacity":512,"samples_per_operation_per_phase":SAMPLES,
             "phases":["idle_before","bulk","idle_after"],"operations":["directory","terminal"],
             "period_us":PERIOD.as_micros(),"caller_us":CALLER.as_micros(),"bulk_bytes":BYTES,
             "nominal_rtt_ms":40,"mbit_per_direction":8,"queue_ms":40,"random_loss_pct":0,
             "connection_layout":"directory_and_fetch_Main__terminal_Tunnel","slo":false,
             "calibrated":false,"seed":"6d697865646c6f61","diagnostic_recording":true}));
-        let (mut rows, _, _) = phase(&node, &mut stream, &path, &landed, epoch, "idle_before", false).await;
-        let (during, bulk, destination) = phase(&node, &mut stream, &path, &landed, epoch, "bulk", true).await;
+        let (mut rows, _, _) = phase(&node, &mut stream, &path, &landed, epoch, "idle_before", false, mode).await;
+        let (during, bulk, destination) = phase(&node, &mut stream, &path, &landed, epoch, "bulk", true, mode).await;
         rows.extend(during);
-        let (after, _, _) = phase(&node, &mut stream, &path, &landed, epoch, "idle_after", false).await;
+        let (after, _, _) = phase(&node, &mut stream, &path, &landed, epoch, "idle_after", false, mode).await;
         rows.extend(after);
         drop(stream);
         let closed = tokio::time::timeout(Duration::from_secs(10), node.close_on("y", &id)).await.is_ok_and(|r|r.is_ok());
         (rows, bulk, destination, closed)
-    }).await;
+    }).unwrap());
+    let (rows, bulk, destination, closed) = (&mut benchmark.0).await.expect("owned workload completes");
+    let after_x = x.dev.spawn(|_| async { calibration::snapshot().await }).unwrap().await.unwrap();
+    let after_gateway = rx.spawn(|_| async { calibration::snapshot().await }).unwrap().await.unwrap();
+    for (name, capture) in [("x_after", after_x), ("gateway_after", after_gateway)] {
+        emit(json!({"schema":1,"revision":REVISION,"event":"capture","mode":mode.name(),"name":name,"capture":capture}));
+    }
     let exact_bytes = destination
         .as_ref()
         .and_then(|p| std::fs::read(p).ok())
@@ -354,7 +341,7 @@ async fn w1_real_terminal_and_directory_during_a_resident_file_pull() {
         && overlap("directory") >= 30
         && overlap("terminal") >= 30;
     emit(
-        json!({"schema":1,"revision":REVISION,"event":"complete","functional_ok":ok,
+        json!({"schema":1,"revision":REVISION,"event":"complete","mode":mode.name(),"functional_ok":ok,
         "samples":rows.len(),"all_answers":all_answers,"exact_bytes":exact_bytes,"closed":closed,
         "direct_after":direct_after,"directory_overlap":overlap("directory"),"terminal_overlap":overlap("terminal"),
         "bulk":bulk,"calibrated":false,"slo":false,"p99_claimed":false,
