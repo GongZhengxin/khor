@@ -1,16 +1,18 @@
 # feat/net 当前状态与接续入口
 
-更新于2026-11-11 17:36 UTC（本地11月12日）。完整目标“完成计划”仍 **active、未完成、未阻塞**；完整范围是 [PLAN](PLAN.md) 的N0–N5，root串行，不派发子智能体。此页是唯一当前入口；历史逐字保存在 [上一状态](HISTORY-20261111-through-policy-readback-v2.md)，SHA `07431681a2838546487bace0ed68dbc314cd68469cc33f3f98bf88ada80e539b`，它继续链接此前全部证据/失败。实际worktree/收据/原始日志优先，不按摘要覆盖未提交内容。
+更新于2026-11-11 17:48 UTC（本地11月12日）。完整目标“完成计划”仍 **active、未完成、未阻塞**；完整范围是 [PLAN](PLAN.md) 的N0–N5，root串行，不派发子智能体。此页是唯一当前入口；历史逐字保存在 [上一状态](HISTORY-20261111-through-policy-readback-v2.md)，SHA `07431681a2838546487bace0ed68dbc314cd68469cc33f3f98bf88ada80e539b`，它继续链接此前全部证据/失败。实际worktree/收据/原始日志优先，不按摘要覆盖未提交内容。
 
 ## 当前在途与下一步
 
-**唯一Turing：turing-20261111T173405Z-3747b66c**，PID **343665** / child **343914**，17:34:26 UTC launch；task **netlab-workload-high-calibrate** / revision **workload_kernel_tcp_calibration_high_v1** / diagnostic / control **abfadd4b13b705b4c56aa0a828b9f1bf684e95c8**。stage exec44671已终态；准确前驱52f是低profile最后一组，已collect/identity/原group空。17:35同receipt观察：格式过、完整netlab实际编译13.01秒成功，正在第一个h0独立kernel场景，**尚无三轮校准终态/通过结论**。不重发，不穿插Turing构建/计时。没有Mac在途；下面的exec90703已终态，当前ledger写入权回root。
+**目前没有Turing或Mac在途任务。** h0 **turing-20261111T173405Z-3747b66c** 已302.367秒、原退出101，17files/identity/原group空；准确源 **96ae5eb73b32b49710e885bfcbb5d4cf531774ec** / tree **dcf57e97618d55fa326819a1008e91985f4c2cf2** / snapshot **d988d415695f69bd2dc4c2651c02449144e56482**，candidate-kernel-high-source-v1.json、clean/0excluded；control **abfadd4b13b705b4c56aa0a828b9f1bf684e95c8**。stage exec44671终态，已经collect/identity/独立failure proof/ledger终态，不重发。
 
-h0准确冻结源 **96ae5eb73b32b49710e885bfcbb5d4cf531774ec** / tree **dcf57e97618d55fa326819a1008e91985f4c2cf2** / snapshot **d988d415695f69bd2dc4c2651c02449144e56482**，clean/0excluded，`candidate-kernel-high-source-v1.json`。Model把原LOW的8MiB/40ms/8Mbit/120秒/4预热64echo/同condition保留，另加HIGH的96MiB/300ms/50Mbit/240秒；仅cfg(test)校准，不运行resident/Noq，不修改产品选路/请求或原低profile工作负载。LOW的运行回归仍应在当前校准结束后按准确新源执行，不能把高profile通过当LOW自动通过。
+高profile三轮全部204echo成功、六份96MiB全字节/server成功、min RTT300483–300514us；实际rate6250000B/s/delay0.15秒/lat40000微秒。**upload25.214–25.301、download26.049–26.144Mbit/s，三轮全部未达40–60，校准不接受。** 原job/contract/red/物理门不改；high-kernel-bounds-failure-v1.json独立保留人口/单位/计数。TBF实际burst4093B，x drops287/252/211、gateway236/227/241，netem也有28–45drop；根因仍未证，不称CPU/Noq问题、不将零配置loss当零drop。
 
-新source-owned `netlab-kernel-high.py`核三轮全人口/双向字节/物理区间/实际TC JSON+文本+接口和字节/丢弃增量，实际burst/limit留证，不假造零drop。高kernel校验合成21子例过；source `test_netlab*.py` **12项1.392秒绿**，control `test_network*.py` **13项14.078秒绿**（四task各成功/中途失败/首失败，high仍继续3轮/保留首非零），bash/diff过。零本地Rust/格式器/产品执行。OPS单task allowlist变化审计`control-kernel-high-helper-audit-v1.json`；原UID/锁/namespace/资源/期限门不变。
+同准确源LOW回归 **turing-20261111T174224Z-40546e83** 已95.427秒0、17files/identity/原group空，stage exec65714终态；原三轮68echo/双向8MiB、12份实际TC读回、min RTT40265–40373us、双向约7.519/7.544–7.553Mbit，全在原LOW门。kernel-low-model-regression-v1.json/ledger终态。它证明Model保留LOW实际条件，不证明HIGH通过。旧profile-verifier的源字面调用断言不适合Model函数指针；新的证明核源码LOW->原condition，同时复用未改/未放宽的实际profile checker，原旧工具与记录不改。
 
-接续：查同3747 receipt/PID。等真实completed且collect终态后才verify-turing-record，随后逐原件复核3个h0的64稳态+4预热、两个96MiB方向、全部实际TC单位/计数及物理门；保留任何原红/失败人口，不事后改270–420ms/40–60Mbit区间。原report calibrated:false仍保留，独立核实另写proof。完成后root写ledger终态，再按同源执行原LOW kernel校准回归，之后实现高profileNode混合场景。它不是Noq/Node策略吞吐、手机或完整N3接受。
+下一步按[HIGH-BDP诊断计划](HIGH-BDP.md)实现**只观察、不改参数**的h0窗口cohort：client/server两端、upload/download，在3/8/15/25秒对实际连接采ss -tinm，前两次应有，后两次随实际完成结束；由原父future借用并poll，命令kill_on_drop，不启动游离task，不改caller/配置/原burst/门。明确诊断开销，不与旧h0或Node策略混算。先看cwnd/rtt/接收窗/socket缓冲/重传/交付率，再考虑另版单因素模型对照。**诊断未实现/运行**，当前无下一run ID；不要按旧在途记录重发。
+
+h0实现/校验器已提交96ae5eb7，control任务已提交abfadd4b：固定三fresh h0、单线程、关闭诊断、首非零保留；OPS单task allowlist审计control-kernel-high-helper-audit-v1.json，UID/资源/flock/netns/期限门保持。source metadata **12项1.392秒绿**、其中高校验21合成子例；control metadata **13项14.078秒绿**；无本地Rust/格式器/产品。高profileNode混合场景及prefetch矩阵尚未实现/运行。完整目标仍active、有可执行工作，不设blocked/complete。
 
 ## 已完成的低profile优先级对照
 

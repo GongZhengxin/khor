@@ -60,3 +60,38 @@ Mac运行时证据只可在完整Git零runtime差异证明支持时复用；高f
 n/p50/p95/max、完整文件秒数/有验证的payload率、实际传输重叠人口和探针/flush成本。
 无自动选胜。单纯高吞吐或小profile低延迟都不能替代完整前台文件/预览、连续控制下bulk公平推进、
 共享/分连接、Direct/Relay/peer relay/SSH、1/3/5设备成本及手机/能耗验收。
+
+## h0 v1实际失败与后续诊断（2026-11-11 17:48 UTC）
+
+源96ae5eb7/controlabfadd4，`turing-20261111T173405Z-3747b66c`已302.367秒、退出101，
+17files/identity/原group空。三轮各68echo（含4预热）全部ok，两方向各96MiB逐字节一致、server均成功，
+实际配置读回为rate6250000B/s、单向delay0.15秒、TBF lat40000微秒；三轮min RTT300483–300514us。
+但是upload25.214–25.301Mbit/s、download26.049–26.144Mbit/s，**全部未达40–60门**。
+原job/contract保持失败，独立`high-kernel-bounds-failure-v1.json`核全部原始人口和物理失败，
+不把功能数据完整当校准通过，不降低已冻结的物理区间，也不执行/接受未校准的高profileNode性能。
+
+TBF实际burst均4093B；x三轮TBF drops增量287/252/211，gateway236/227/241，netem也有28–45个drop。
+因此零配置随机loss不等于零实际drop。[patchbay代码](../../vendor/patchbay/src/qdisc.rs)的add_tbf
+固定传`burst 32kbit`；[上游iproute2 TBF手册](https://raw.githubusercontent.com/iproute2/iproute2/main/man/man8/tc-tbf.8)
+指出较高速率通常需要较大burst。它支持检查该参数，**不证明当前内核/计时器或本次瓶颈主因**。
+当前还没有传输中的TCP窗口/拥塞/缓冲事实，不能仅按速率恰好约一半就改burst、socket窗口或队列。
+
+同准确源的LOW回归 `turing-20261111T174224Z-40546e83`已95.427秒0，17files/identity/原group空；
+三轮min RTT40265–40373us、upload约7.519Mbit/s、download7.544–7.553Mbit/s，
+原35–80ms/6.4–9.6Mbit门、全部双向8MiB、12份实际qdisc读回都通过。
+`kernel-low-model-regression-v1.json`保留Model->原condition的源连接与未放宽的实际profile checker；
+旧verifier的字面调用字符串已不适合新的函数指针写法，原件不改。LOW通过不接受HIGH。
+
+### 先补窗口诊断，保持物理参数
+
+下一cohort只在h0独立TCP传输增加有界观察，不先改300ms/50Mbit/40ms/原burst、96MiB、2秒连接或240秒总界。
+在client与server的upload/download有效传输期间，计划在本地payload阶段开始后3/8/15/25秒读取
+`ss -tinm`，按实际TCP四元组限定本次ESTABLISHED socket；保留命令状态/原始输出/实际时刻与方向/端。
+每方向/每端至少应有3秒与8秒两次有效观察；15/25秒仅在传输仍未完成时采样，不能因更早完成判失败。
+记录cwnd/rtt/rcv_space、socket缓冲与可用的重传/交付率/窗口限制字段，不从字段缺失臆造数值。
+
+观察future由原父future借用，与真实传输一起poll；不启动游离任务，命令kill_on_drop，
+传输完成或原caller取消时观察结束。额外命令/日志有开销，标明diagnostic cohort，
+不混入旧h0或Node策略计时，不改变原物理失败门或改写旧report。
+须先看这两端事实再决定是否需要单因素burst/队列/窗口对照；任何后续模型变化另冻版本、重新校准。
+此节是已冻结的诊断计划，**尚未实现或运行**。
