@@ -371,3 +371,6 @@ Iroh47的固定物理C-B/B-C仍在第4项：C62030f1b为124业务/warm51全过�
 
 
 2026-11-11 07:55 UTC：287候选现已准确同源Mac/Turing全12通过；原6e5三轮hop9green已收齐但f4i回peer收敛17.7/31.6/13.6秒，非首业务响应。新增同ID真实IPv4/IPv6换Tunnel合同旧行为两OS均仅这两项失败，cold自建Tunnel与不变首腿控制通过。首腿事实候选6c3首轮仅format失败，逐字应用远端补丁为1bd9692，双OS已各提交一次待核；无候选phone接受。完整范围/失败/准确收据见STATE，不能称完成。
+
+
+2026-11-11 08:49 UTC：每middle作用域、总期限公平legacy准备与完整首帧receiver提交已经7d源双OS准确全部12组/hop76通过，旧第三middle/挂起/receiver覆盖实际红均保留。真正prepared有界竞争候选c2b在Turing084053Z-8d9819ab准确全部12组/hop79绿（343.488秒、21files/identity/空group）；三新合同为挂起第一status仍由第二胜出、两个Ready仅1次真实数据提交并取消输家、过期hint拒绝后legacy实际TLS/echo救通。Mac同源和原3轮物理hop矩阵只提交一次待核，不能外推为完整N2/N4。DESIGN已按实际所有者和证据更新，预算分割/receiver等待仍需高RTT与成本验收；完整N0–N5 active。

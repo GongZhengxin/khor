@@ -1,12 +1,12 @@
 # feat/net 当前状态与接续入口
 
-更新于2026-11-11 08:13 UTC。完整N0–N5未完成，用户“完成计划”目标active；root串行，不派发子智能体。此前逐字STATE保存在[上一状态](HISTORY-20261111-through-first-leg-facts.md)，SHA `0e424f63d4f2fcee7f40961de1ddb666f7dd90647032f4a0f4eec5e89aa5ee70`，继续链接此前原始历史及失败。收据、真实进程和实际worktree优先，不能把观察超时或调度paused当作停止/重发依据。
+更新于2026-11-11 08:48 UTC。完整N0–N5未完成，用户“完成计划”目标active；root串行，不派发子智能体。此前逐字STATE保存在[上一状态](HISTORY-20261111-through-first-leg-facts.md)，SHA `0e424f63d4f2fcee7f40961de1ddb666f7dd90647032f4a0f4eec5e89aa5ee70`，继续链接此前原始历史及失败。收据、真实进程和实际worktree优先，不能把观察超时或调度paused当作停止/重发依据。
 
 ## 位置、授权与当前源
 
-产品 `/Volumes/disk0/Khor/worktrees/current/khor-net`，branch `feat/net`。最新生产候选 **fcc7b990e22f3f78d0c06f6fa39f71e76a93bb5f**，tree **fb5d342a06c6de011d95da6cc16aaad1613a2e90**，snapshot **18dbd112a4cc7d7386c396392c9407a8153330cd**；每middle失败作用域修复，尚待实际行为。source `candidate-admission-per-middle-source-v2.json`，原73测试+两个admission测试正文不变。
+产品 `/Volumes/disk0/Khor/worktrees/current/khor-net`，branch `feat/net`。最新候选 **c2b615fedc928dfc87c1cc088ca2c06dfb3cb550**，tree **7ebc172d2cb2a77839379beb57390fe7997fd748**，snapshot **80f65c7fa67534b0a26f1ce953bfe2accb506653**，candidate-prepared-race-source-v2.json。它含真正最多2候选prepared竞争、正向双端新协议识别和同总预算legacy fallback，原76测试保留、另加3真实流量合同；Turing084053Z-8d9819ab已准确同源全部12组/hop79通过，Mac同源及原物理转发矩阵待核。
 
-最新已经准确同源双OS全12通过的是 **1bd9692aac088026436a0c1044296e54b43344d6**，tree407ab1b825e3cc9c4db5bcb3e58fa53c0cf86e36，snapshot5bd853bbf58cd3a873b6b67207905aced483c448，Mac42983120010/Turing075404Z-9850241b均hop73/全部12组。它修同ID真实新Tunnel的IPv4/IPv6地址事实，不包括同一connection迁移、并发admission、完整N2或phone。更早287成功观察寿命修复亦有双OS全12，不跨源外推。
+上一候选 **7d06d5e1360f3c08ef3fa1a7c30fd6ec48bd34f7**，treeb70f871326ed3f9fb3abc7c1a5dfbf93b6b2e47f/snapshotd2ff22b80e928611469a1023cbb1b8b11ae993c2，修legacy公平准备/完整首帧receiver提交；Turing082952Z-dae9993c已全部12组/hop76绿，Mac42987755071也已准确同源全部12组/hop76绿、归档/11controls/identity实核。此前已核双OS全12的1bd地址修复/hop73与287成功观察寿命仍保留，不跨源外推。
 
 控制树 `/Volumes/disk0/Khor/worktrees/current/khor-build-net`，固定68cadb57a0ed72d40a4ca9a843e86b9c6797bf34，原两个untracked pycache保留。Iroh42–44隔离树 `/Volumes/disk0/Khor/worktrees/current/khor-net-recovery-deadlines`，detached2ef6bee5a5aaf841af066f4edb5c894769d4539d，未动。证据根 `/Volumes/disk0/Khor/evidence/net`，ops同根/ops，source-refs.json由root单写。
 
@@ -14,9 +14,13 @@
 
 ## 正在进行：先查同一收据，不重复提交
 
-**Turing turing-20261111T081044Z-ee0e2887**，net-node，PID **3616894**，child待核，08:11:06 UTC launch，role candidate。准确fcc7/treefb5d/snapshot18db/control68cad，receipt同名目录；stage exec8773已终态成功退出，不重发。此次候选只处理第三middle未试作用域，挂起第一middle合同预期仍红，不允许隐藏或当全绿；需要核原73和第三middle回归后继续有界竞争的目标提交所有权设计。
+**Turing turing-20261111T084720Z-2463e1e5**，netlab-hop prepared-race-original-hop，PID3657082，08:47:41 UTC launch，已只提交一次，exec67726已成功退出，准确c2b6/tree7ebc/snapshot80f65/control68cad，前驱084053Z-8d9819ab已终态采集核空group。先查该准确receipt、execution与PID，不重发。原1线程、3轮、f4_/f4s_/f4i_、原门/拓扑/持续时间不变，retries0；计划prepared-race-original-hop-plan-v1.json。它也是后续30秒全局比较优化前的原矩阵基线；正常日志不能仅凭新源码就推断prepared协议实际被选中，需实核。Turing计时期间不插入其构建。
 
-Mac当前无待核候选，无phone采样。1bd同源双OS全12已归档/identity/逐组核并终态分类。Mac42983791997和Turing080050Z-aee8f512只是admission fixture格式失败；Turing080317Z-f15d8284旧行为实际73绿/2新红已核，候选b344的080850Z-d430a9ef只是生产格式失败，精确patch应用为当前fcc7；原件和ledger均保留。下文历史“待”标记由此节和末尾checkpoint替代。
+**Mac当前c2b prepared-race候选**同源只提交一次，exec **46780**，request826ae7425d3f480a895eadddc0fe8f9f（正在上传bundle），先查同session/私库request实际receipt，不重复；拿Actions ID后待Turingstage writer退出再register。Mac独立构建可与Turing计时并行。无phone采样/部署。
+
+前版7d Mac42987755071已实核全部12组/hop76/wires16/budget26/resume1，exactartifact13840183335/zipSHA95f312db1281c7c89b61aa89f00ddb26906c27f56b97701d51505dca80ccd542，20files/11controls/identity，node-regression-verification-v1.json与ledger终态；7d双OS全12已核。当前c2b Turing084053Z-8d9819ab已343.488秒终态，21files/identity/空group，全部12组绿，hop79/wires16/budget30/resume1；已保存同名verification并终态分类，不能提前外推Mac/完整N2。
+
+初版8ecc的083753Z-246963c4仅格式失败47.019秒、10files/identity/空group，精确远端patch应用为c2b。原73、74/1、74/2旧行为红和全12/hop76、hop79候选绿原件保留。下文历史“待”由此节和后续实核替代。
 
 ## 最新证据与实现
 
