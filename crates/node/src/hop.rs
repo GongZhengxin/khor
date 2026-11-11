@@ -384,18 +384,25 @@ fn missed_in_epoch(me: &str, to: &str, epoch: Option<MissEpoch>, attempted: &[&s
     }
 }
 
-fn made_in_epoch(me: &str, to: &str, epoch: Option<&MissEpoch>) {
+/// Commit while the existing routing owner still owns this answer. A
+/// rejected publication does not clear waits or retire a newer context.
+fn commit_in_epoch<T>(
+    me: &str,
+    to: &str,
+    epoch: Option<&MissEpoch>,
+    by: Option<tokio::time::Instant>,
+    commit: impl FnOnce() -> Option<T>,
+) -> Option<T> {
     let mut all = MISSED.lock().unwrap_or_else(|p| p.into_inner());
     let key = (me.to_owned(), to.to_owned());
-    if !current_miss_epoch(epoch) {
-        return;
+    if crate::deadline::expired(by) || !current_miss_epoch(epoch) {
+        return None;
     }
-    let Some(miss) = all.get_mut(&key) else {
-        return;
-    };
+    let miss = all.get_mut(&key)?;
     if !same_miss_epoch(miss.epoch.as_ref(), epoch) {
-        return;
+        return None;
     }
+    let committed = commit()?;
     if let Some(epoch) = epoch {
         // Success clears the wait, not the newest observation. Replacing
         // its token also retires every answer still using the old one.
@@ -412,6 +419,7 @@ fn made_in_epoch(me: &str, to: &str, epoch: Option<&MissEpoch>) {
     } else {
         all.remove(&key);
     }
+    Some(committed)
 }
 
 /// The unchanged backoff applies only to the context that observed it.
@@ -437,7 +445,7 @@ fn missed(me: &str, to: &str) {
 
 #[cfg(test)]
 fn made(me: &str, to: &str) {
-    made_in_epoch(me, to, None);
+    let _ = commit_in_epoch(me, to, None, None, || Some(()));
 }
 
 #[cfg(test)]
@@ -1178,29 +1186,38 @@ impl Node {
             }
             return false;
         };
-        made_in_epoch(&me, &y.id, Some(&epoch));
-        // A link came in while this one opened: ssh, which a hop never
-        // replaces, or the far end's own hop, which stands when the far
-        // end's id is the lower ([`Asking`]).
-        match self.carry.carrier(&peer) {
-            Some(Carrier::Ssh) => return false,
-            Some(Carrier::Hop { .. }) if y.id < me => return false,
-            _ => {}
-        }
+        // Lock order is network generation -> routing owner -> Links.
+        // No await or document I/O: forgiveness, a new candidate context,
+        // or a protected carrier cannot split validation from publication.
+        let attached = self.wires.with_hop_epoch(&epoch.network, || {
+            commit_in_epoch(&me, &y.id, Some(&epoch), Some(by), || {
+                stream_trace::attach_if(
+                    &self.carry,
+                    peer,
+                    Carrier::Hop { via },
+                    Some(outer_wire),
+                    "initiator",
+                    (send, recv),
+                    |current| {
+                        !crate::deadline::expired(Some(by))
+                            && match current {
+                                Some(Carrier::Ssh) => false,
+                                Some(Carrier::Hop { .. }) if y.id < me => false,
+                                _ => true,
+                            }
+                    },
+                )
+            })
+        });
+        let Some(attached) = attached.flatten() else {
+            return false;
+        };
         self.wires.note(
             Some(&y.id),
             crate::journal::What::Hop {
                 via: Some(via.to_string()),
                 tried,
             },
-        );
-        let attached = stream_trace::attach(
-            &self.carry,
-            peer,
-            Carrier::Hop { via },
-            Some(outer_wire),
-            "initiator",
-            (send, recv),
         );
         let attachment = attached.serial();
         let (handoff, handed) = tokio::sync::oneshot::channel::<HopHandoff>();

@@ -134,31 +134,33 @@ impl<T: AsyncWrite + Unpin> AsyncWrite for Tap<T> {
 }
 
 /// The normal branch retains the original I/O types and hot path.
-pub(super) fn attach(
+pub(super) fn attach_if(
     links: &khor_net::carry::Links,
     peer: EndpointId,
     carrier: Carrier,
     wire: Option<usize>,
     role: &'static str,
     pair: (SendStream, RecvStream),
-) -> khor_net::carry::Attached {
+    allow: impl FnOnce(Option<Carrier>) -> bool,
+) -> Option<khor_net::carry::Attached> {
     let (send, recv) = pair;
     if std::env::var_os("KHOR_NET_DIAGNOSTICS").is_none() {
-        return links.attach(peer, carrier, recv, send);
+        return links.attach_if(peer, carrier, recv, send, allow);
     }
     let send_id = format!("{:?}", send.id());
     let recv_id = format!("{:?}", recv.id());
-    let attached = links.attach(
+    let attached = links.attach_if(
         peer,
         carrier,
         Tap::new(recv, peer, role, wire, recv_id.clone()),
         Tap::new(send, peer, role, wire, send_id.clone()),
-    );
+        allow,
+    )?;
     khor_net::carry::observe_lifecycle(peer, "hop_stream_bound", || {
         serde_json::json!({"role": role, "wire": wire, "attachment": attached.serial(),
             "send_stream": send_id, "recv_stream": recv_id})
     });
-    attached
+    Some(attached)
 }
 
 /// Wait for one complete transport frame without publishing its stream.

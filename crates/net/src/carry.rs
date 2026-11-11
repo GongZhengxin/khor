@@ -248,16 +248,38 @@ impl Links {
         R: AsyncRead + Unpin + Send + 'static,
         W: AsyncWrite + Unpin + Send + 'static,
     {
-        let (out, out_rx) = mpsc::channel::<Bytes>(QUEUE);
-        let (stop, stopped) = oneshot::channel();
-        let serial = self.0.serial.fetch_add(1, Relaxed);
-        observe_lifecycle(peer, "link_attached", || {
-            serde_json::json!({
-                "serial": serial, "carrier": format!("{carrier:?}"),
-            })
-        });
-        {
+        self.attach_if(peer, carrier, r, w, |_| true)
+            .expect("unconditional attachment")
+    }
+
+    /// Checks the current carrier and replaces it under the same registry
+    /// lock. A rejected stream is dropped without changing the live owner.
+    /// `allow` must not reenter this Links table.
+    pub fn attach_if<R, W>(
+        &self,
+        peer: EndpointId,
+        carrier: Carrier,
+        r: R,
+        w: W,
+        allow: impl FnOnce(Option<Carrier>) -> bool,
+    ) -> Option<Attached>
+    where
+        R: AsyncRead + Unpin + Send + 'static,
+        W: AsyncWrite + Unpin + Send + 'static,
+    {
+        let (out_rx, stopped, serial) = {
             let mut map = self.lock();
+            if !allow(map.get(&peer).map(|link| link.carrier)) {
+                return None;
+            }
+            let (out, out_rx) = mpsc::channel::<Bytes>(QUEUE);
+            let (stop, stopped) = oneshot::channel();
+            let serial = self.0.serial.fetch_add(1, Relaxed);
+            observe_lifecycle(peer, "link_attached", || {
+                serde_json::json!({
+                    "serial": serial, "carrier": format!("{carrier:?}"),
+                })
+            });
             let previous_serial = map.get(&peer).map(|l| l.serial);
             map.insert(
                 peer,
@@ -274,12 +296,13 @@ impl Links {
                     "carrier": format!("{carrier:?}"),
                 })
             });
-        }
-        self.0
-            .last
-            .lock()
-            .unwrap_or_else(|p| p.into_inner())
-            .insert(peer, carrier);
+            self.0
+                .last
+                .lock()
+                .unwrap_or_else(|p| p.into_inner())
+                .insert(peer, carrier);
+            (out_rx, stopped, serial)
+        };
         let (done, gone) = oneshot::channel();
         let links = self.clone();
         tokio::spawn(async move {
@@ -301,10 +324,10 @@ impl Links {
             drop(map);
             let _ = done.send(());
         });
-        Attached {
+        Some(Attached {
             serial,
             ended: gone,
-        }
+        })
     }
 
     async fn read_frames<R: AsyncRead + Unpin>(&self, peer: EndpointId, mut r: R) {
@@ -965,6 +988,56 @@ mod tests {
             "another transport's"
         );
         assert_eq!(id_of(&CustomAddr::from((CARRY, &[1u8, 2][..]))), None);
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn a_rejected_carrier_keeps_the_protected_stream_and_its_owner() {
+        let links = Links::new(iroh::SecretKey::generate().public());
+        let peer = iroh::SecretKey::generate().public();
+        let via = iroh::SecretKey::generate().public();
+        let (here, mut remote) = tokio::io::duplex(64);
+        let (r, w) = tokio::io::split(here);
+        let original = links.attach(peer, Carrier::Ssh, r, w);
+        let (loser, mut rejected) = tokio::io::duplex(64);
+        let (r, w) = tokio::io::split(loser);
+        assert!(
+            links
+                .attach_if(peer, Carrier::Hop { via }, r, w, |current| {
+                    current != Some(Carrier::Ssh)
+                })
+                .is_none()
+        );
+        assert_eq!(links.lock().get(&peer).unwrap().serial, original.serial());
+        assert_eq!(links.last_carrier(&peer), Some(Carrier::Ssh));
+        let mut byte = [0; 1];
+        assert_eq!(rejected.read(&mut byte).await.unwrap(), 0);
+        links
+            .lock()
+            .get(&peer)
+            .unwrap()
+            .out
+            .try_send(Bytes::from_static(b"protected stream"))
+            .unwrap();
+        let mut bytes = [0; 16];
+        tokio::time::timeout(Duration::from_secs(1), remote.read_exact(&mut bytes))
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(&bytes, b"protected stream");
+        assert!(links.detach_attached(&peer, Carrier::Ssh, original.serial()));
+        tokio::time::timeout(Duration::from_secs(1), original.ended())
+            .await
+            .unwrap();
+        let (next, next_remote) = tokio::io::duplex(64);
+        let (r, w) = tokio::io::split(next);
+        let accepted = links
+            .attach_if(peer, Carrier::Hop { via }, r, w, |current| current.is_none())
+            .unwrap();
+        assert_eq!(links.carrier(&peer), Some(Carrier::Hop { via }));
+        drop(next_remote);
+        tokio::time::timeout(Duration::from_secs(1), accepted.ended())
+            .await
+            .unwrap();
     }
 
     /// Detaching or replacing a link must stop its owned I/O even when

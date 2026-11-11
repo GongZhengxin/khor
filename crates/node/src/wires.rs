@@ -1866,6 +1866,24 @@ impl Wires {
         )
     }
 
+    /// A synchronous publication either belongs to this network or does
+    /// not happen. Network forgiveness cannot split its check and commit.
+    /// The callback must not reenter the network-generation methods.
+    pub(crate) fn with_hop_epoch<T>(
+        &self,
+        epoch: &std::sync::Weak<()>,
+        commit: impl FnOnce() -> T,
+    ) -> Option<T> {
+        let current = self
+            .hop_generation
+            .lock()
+            .unwrap_or_else(|p| p.into_inner());
+        if !epoch.ptr_eq(&Arc::downgrade(&current)) {
+            return None;
+        }
+        Some(commit())
+    }
+
     /// Every wait the pump was keeping is forgiven: the dials that failed
     /// may have failed on the old network.
     pub(crate) fn forgive_all(&self) {
