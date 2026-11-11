@@ -1,5 +1,7 @@
 # Vendor 补丁覆盖与退出审计
 
+2026-11-11 15:25 UTC：同生产候选3de新增动态三轮27/27、恢复三轮6/6原门均绿，原件与实际业务人口已收齐（f2f17750、ce3b1222）。最新同源完整长稳de04bcc1在途，p1原600秒已绿，其余未完成。当前工作负载六轮4320功能绿是观察器实验，不是vendor吞吐/能耗或严重stall关闭；新业务流诊断仅扩原opt-in字段，未改任何vendor源码。以下Noq1/5专项、严重6aa、quiet/成本与全部59上游/退出缺口保持，详STATE。
+
 2026-11-11 13:22 UTC：Iroh48/49与已有carrier拨号候选 **3de372a0** 已取得同源 Mac43022962905 / Linux5c2a0339 全12绿、Mac43023967463 的443Noq/58path/11home绿，Turing6970ad46四peer三轮全6绿（每轮31匹配实际响应流/同business wire/单outer无detach；首内容1.2630/1.2532/1.2230秒、各30持续样本超过15秒）。准确原件/identity/逐门proof/ledger已收齐，见STATE。只接受上述已测scope，不将筛选回归称59补丁全部专项或完整上游/退出接受，不回填旧3.6–5.2秒业务尾巴、严重stall、Noq1/5、移动/quiet成本或N5。当前主仍59，42–44隔离；新N3测量代码无生产vendor diff，正在单独baseline验证。下面各时点“尚待”按历史理解。
 
 2026-11-11 12:26 UTC：新增Iroh49候选，仅修每connection effective路观测：共享preferred不在本conn且只有一条established路径时报告Noq实际Backup fallback，零/多条未匹配仍Unknown，不改实际shared选路/PathStatus。源166双OS实际两项已有carrier内容已成功且各1响应，但same final route断言Unknown仍红，准确原件/部分证明见STATE。新49尚待同四合同转绿、全12、vendor/四peer/恢复成本；主现在59=Iroh1–41/45–49+Noq1–13，42–44隔离。之前58/57计数按各源时点保留。

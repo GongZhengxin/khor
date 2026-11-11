@@ -1,6 +1,6 @@
 # feat/net 当前状态与接续入口
 
-更新于2026-11-11 15:19 UTC。完整目标“完成计划”仍 **active、未完成、未阻塞**，范围为 [PLAN](PLAN.md) 的 N0–N5，root串行，不派发子智能体。本页替代旧页中所有“当前/在途/下一步”。上一份STATE逐字保存于 [完整历史](HISTORY-20261111-through-kernel-calibration.md)，SHA `8172caf6900ae2196273ecdf86a4b8d17572537299392bfa1b5b1322eefbe540`；它继续链接此前所有历史与失败原件。历史段落只代表当时，实际worktree、收据、日志优先，不按摘要覆盖未提交内容。
+更新于2026-11-11 15:25 UTC。完整目标“完成计划”仍 **active、未完成、未阻塞**，范围为 [PLAN](PLAN.md) 的 N0–N5，root串行，不派发子智能体。本页替代旧页中所有“当前/在途/下一步”。上一份STATE逐字保存于 [完整历史](HISTORY-20261111-through-kernel-calibration.md)，SHA `8172caf6900ae2196273ecdf86a4b8d17572537299392bfa1b5b1322eefbe540`；它继续链接此前所有历史与失败原件。历史段落只代表当时，实际worktree、收据、日志优先，不按摘要覆盖未提交内容。
 
 ## 当前执行入口：观察器六轮已核，最新生产长稳在途
 
@@ -18,11 +18,13 @@ control纯Python/shell stub **13项9.707秒绿**（含固定顺序、guard失败
 
 ## 新业务流诊断源码与Mac在途
 
-源 **baeef657a08084c087c79ac49a55d06a765ee5d0** / tree **01a49ed80c8919acc5422350c53ab84b60002190** / snapshot **7638d2484dc8ea21a5113ef5945bdcb8eb6c6e78**，clean/0excluded，`candidate-workload-wires-source-v1.json`。仅在原有opt-in lifecycle诊断下增加实际业务wire/stream/协商ALPN、slice offset/字节数和server accept后各阶段clock；普通/early reply原事件保留，native Tunnel成功status与远端收到target也留实际wire。server准入检查与seat等待分开记，write_all不是到达/ACK、accept前QUIC排队未观察。没有队列/选路/写入/0RTT/认证/生命周期政策改变，无新task/timer/map；默认增加env查询但不取这些时钟/写这些日志，成本仍须实测。工作负载仅增加计时后保留双方serve.log，完整物理/人口/边界保持。
+当前冻结源 **1a4816fcc77556043105a6da28bdb6ae96dd66cd** / tree **7bfd97b5fff07ee020e858db1484f7af6ccf5a29** / snapshot **2a9f08d080cbf682573bf232e81dba7f6df84b3a**，clean/0excluded，`candidate-workload-wires-source-v2.json`。仅在原有opt-in lifecycle诊断下增加实际业务wire/stream/协商ALPN、slice offset/字节数和server accept后各阶段clock；普通/early reply原事件保留，native Tunnel成功status与远端收到target也留实际wire。server准入检查与seat等待分开记，write_all不是到达/ACK、accept前QUIC排队未观察。没有队列/选路/写入/0RTT/认证/生命周期政策改变，无新task/timer/map；默认增加env查询但不取这些时钟/写这些日志，成本仍须实测。工作负载仅增加计时后保留双方serve.log，完整物理/人口/边界保持。
 
-Mac **Actions43046964107**，request **eedbf0fe8c4248f195ae092e3e52e249**，tasknet-node / 原control68cadb57 / revisionworkload-wire-stages-mac-v1；submit exec10597与register exec97507均终态，已准确pin source/ref/ledger。15:18实际workflow in_progress。尚无格式、编译或行为接受，不重发；按同run/artifact收据恢复。Turing唯一仍de04bcc1，15:16实际PID活，p1原600秒已绿、p1j在途；不缩短NETLAB_LONG_S或注入次数，不穿插Turing构建/计时。
+初始源baeef657/tree01a49ed80c8919acc5422350c53ab84b60002190/snapshot7638d2484dc8ea21a5113ef5945bdcb8eb6c6e78 的Mac **43046964107** 已终态failure：exact artifact **13868680296** / ZIP SHA **1813c2b93b74c3fb0c988ce8dc65ef1832e4a6a35d4ede31a59362cab4c3a434**，9files/11controls/identity，**只根格式红、0编译/行为样本**；patch仅link.rs，SHA b2316cc7d38eb24b3f03f145a63bda2c5cef0afb854c291f4db66547055723e3，已准确check/apply提交1a4816fc。`format-only-verification-v1.json`/ledger终态，原红不改，不重发旧source-v1。
 
-新控制 **71f1eeb4e18d5ea6e4c04ac5348c43eb52b4bd89**（本地未push）增加SSH-only固定 `netlab-workload-wires`：先w3 guard，成功后三个Buffered/lifecycle真实完整场景，一轮失败不丢后两轮、保留首非零状态，source-owned parser核全部原件。guard失败跳过三轮但仍保留parser失败；原UID/锁/namespace/资源/期限门不变。control stub **13项10.765秒绿**（两task各success/case失败/guard失败）；wire metadata **14子例0.034秒绿**，源9项metadata/control stub总0.989秒绿，bash/diff过，无本地Rust/产品执行。`control-workload-wires-tests-v1.json` / `control-workload-wires-helper-audit-v1.json`保存SHA/范围。**此新诊断尚未在Turing调度/运行**，须de04终态后按新冻结源和control提交；不把纯metadata或旧六轮当本版诊断已验。
+唯一新Mac **Actions43047897939**，request **2e55aafb4d7b478eb13cf2381977fa93**，tasknet-node / 原control68cadb57 / revisionworkload-wire-stages-mac-v2，准确source-v2如上；submit exec58800已终态，register helper按此request准确pin。尚无编译或行为接受，只查同run/artifact，不重发。Turing唯一仍de04bcc1，15:21实际PID活/原四项矩阵在途，p1原600秒已绿、p1j在途；不缩短NETLAB_LONG_S或注入次数，不穿插Turing构建/计时。
+
+新控制 **71f1eeb4e18d5ea6e4c04ac5348c43eb52b4bd89**（本地未push）增加SSH-only固定 `netlab-workload-wires`：先w3 guard，成功后三个Buffered/lifecycle真实完整场景，一轮失败不丢后两轮、保留首非零状态，source-owned parser核全部原件。guard失败跳过三轮但仍保留parser失败；原UID/锁/namespace/资源/期限门不变。control stub **13项10.765秒绿**（两task各success/case失败/guard失败）；wire metadata **14子例0.034秒绿**，源9项metadata/control stub总0.989秒绿，bash/diff过，无本地Rust/产品执行。`control-workload-wires-tests-v1.json` / `control-workload-wires-helper-audit-v1.json`保存SHA/范围。**此新诊断尚未在Turing调度/运行**，须de04终态后按当前source-v2（或后续有明确理由的新版本）和control71f1eeb4提交；不把纯metadata或旧六轮当本版诊断已验。
 
 ## 最新已核终态
 
@@ -31,7 +33,7 @@ Mac **Actions43046964107**，request **eedbf0fe8c4248f195ae092e3e52e249**，task
 | 验证 | 精确句柄 | 结果和边界 |
 | --- | --- | --- |
 | 最新生产动态三轮 | **turing-20261111T141304Z-f2f17750** | 1309.406秒0，15files；p2/p3/p7及相位矩阵 **27绿**，每个实际RPC started/finished匹配且ok，p3全在原1秒门。`dynamic-result-v1.json`。空闲回好路仍16–17秒（原20秒门内），活跃约2.2–3.15秒；绿不等于极致体验、严重stall或长稳关闭。 |
-| 观察器Linux编译+独立kernel三轮 | **turing-20261111T144048Z-f970f1d5** | 104.751秒0，17files；源a9ef/tree699cf94ccd2dd7f8bc97487019aa032181b27201/snapshota5bb7fe0754f296cd80c3f03713f0bb60dadda9c，controlea44ab27af3011821d188e0a500ad91b20ed17b1。完整fixture编译，三w0 kernel绿；**未执行w3/w1/w2**。实际TC单位/两方向数据另核 `kernel-profile-verification-v1.json`，full_N3_accepted=false。它是下一Turing任务的准确predecessor。 |
+| 观察器Linux编译+独立kernel三轮 | **turing-20261111T144048Z-f970f1d5** | 104.751秒0，17files；源a9ef/tree699cf94ccd2dd7f8bc97487019aa032181b27201/snapshota5bb7fe0754f296cd80c3f03713f0bb60dadda9c，controlea44ab27af3011821d188e0a500ad91b20ed17b1。完整fixture编译，三w0 kernel绿；**未执行w3/w1/w2**。实际TC单位/两方向数据另核 `kernel-profile-verification-v1.json`，full_N3_accepted=false。它是bc4dbca9启动时使用的准确predecessor；当前接班以de04终态收据为准。 |
 | Mac观察器格式 | **43039285003** | request42116d54606f427d8931f52920d208fc，exact artifact13864796317，ZIP SHAd542cdc8b352f44494f944f83953427b25d89b30b6906da6cca0d00a3bd735e6；9files/11controls/identity，**仅格式失败、0行为样本**。`format-only-verification-v1.json`。准确patch已check/apply提交5b57160c13cf764fd0ff0a111ef7838c1e846335，随后a9ef编译通过。旧失败未改绿。 |
 | 独立kernel原三轮 | **turing-20261111T140913Z-141b0ea2** | 94.220秒0，17files，df5b3f6a/controlea44；三w0全字节一致、实际12份TC JSON/文本、minRTT40.2ms和双向约7.52/7.55Mbit/s。JSON rate bytes/s、delay秒、lat微秒相互核对；真实qdisc drops18/21每轮保留，零随机loss不等于零drop。仅校准kernel模型。 |
 | 生产恢复三轮 | **turing-20261111T134417Z-ce3b1222** | 568.791秒0，15files，p2/p3全6绿；p3黑洞后228/225/227真实目录RPC、worst644.5/664.6/590.5ms、0失败/0retired。`recovery-result-v1.json`，不是PTY或全部移动。 |
