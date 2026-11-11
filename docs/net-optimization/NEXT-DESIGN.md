@@ -637,3 +637,6 @@ ff743已复用已有 Recovery 分支，使目标缺可用 wire 的判断先于�
 
 
 2026-11-11 05:46 UTC：五个真实候选变化合同已在92c530旧行为取得63/2红，原60与无变化/成本变化/旧失败晚回三控制通过。17346候选将候选context合入同一MISSED表，表唯一拥有Arc token，操作只持弱引用；不另加Presence字段/全局map或定时任务。候选ID集合+实际首腿可达性排序规范化，不含RTT和尝试顺序。原网络弱epoch继续独立保护本机换网；旧完成只可写其仍有效的context，成功删除同时使旧操作token过期。Mac42967869816实际验证待核。该窄合同不包括同ID新地址、LOST namespace/地址context与实际第二腿；还需审查多线程旧候选快照的登记顺序。原fixture未改，源审计与行为证据见STATE。
+
+
+2026-11-11 06:22 UTC：candidate context缓存的首个五合同已在1d448/Mac42968959558实际全过，但新增旧picked晚登记合同66/1红。生产6e5在roster/roadbook读取前捕获monotonic观察序号与弱网络token，原MISSED锁内拒绝旧快照覆盖；两个生产入口均携带其原观察，cfg(test) open_hop保留旧四参适配到真实core。Mac42969959757准确源6e5/tree3ac48/snapshot12ef已实际全12/hop67/wires16/budget26/resume1绿，原fixture相对1d448不改，Linux待跑。尚欠成功made删除entry后观察高水位寿命合同，同ID新Tunnel与IP/Relayhint内容变化、v4/v6独立变化和LOST本机namespace/context。DeviceInfo.addrs是hint Vec<String>，dial_addr统一解析并合并nearby；后续应按有效地址内容而非来源/排列/RTT噪声构建事实。当前bool可达性不等于地址世代。完整N0–N5保持。
