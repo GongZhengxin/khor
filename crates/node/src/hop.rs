@@ -948,7 +948,8 @@ impl Node {
         let asked = Asking::new(&me, &y.id);
         let mut attempted = Vec::with_capacity(TRIES);
         let tries = async {
-            for b in eligible {
+            let slots = eligible.len();
+            for (index, b) in eligible.into_iter().enumerate() {
                 let Some(middle) = all.iter().find(|d| &d.id == b) else {
                     continue;
                 };
@@ -956,27 +957,30 @@ impl Node {
                     continue;
                 };
                 attempted.push(b.as_str());
-                // Boxed: the middle's wire is a dial, and a dial may hop.
-                let line = Box::pin(crate::journal::BY.scope(
-                    crate::journal::By::Hop,
-                    self.line_to_inner(ep, middle, Proto::Tunnel, None, false),
-                ));
-                let Ok(line) = line.await else {
-                    continue;
+                // Share the existing deadline. A silent first admission
+                // cannot consume the opportunity of every other middle.
+                // Expiring this preparation does not retire its outer wire.
+                let now = tokio::time::Instant::now();
+                let left = by.saturating_duration_since(now);
+                let slice = left / u32::try_from(slots - index).unwrap_or(u32::MAX);
+                let attempt_by = now + slice;
+                let attempt = async {
+                    // Boxed: the middle's wire is a dial, and a dial may hop.
+                    let line = Box::pin(crate::journal::BY.scope(
+                        crate::journal::By::Hop,
+                        self.line_to_inner(ep, middle, Proto::Tunnel, None, false),
+                    )).await.ok()?;
+                    if let Some(wire) = HopWire::observed(&line.conn) {
+                        used_middle(&me, &y.id, &epoch, b, wire);
+                    }
+                    let (send, recv) =
+                        crate::tunnel::dial(&line.conn, &Ask::To(peer).words()).await.ok()?;
+                    Some((via, line.conn.stable_id(), line.conn.weak_handle(), send, recv))
                 };
-                if let Some(wire) = HopWire::observed(&line.conn) {
-                    used_middle(&me, &y.id, &epoch, b, wire);
-                }
-                if let Ok((send, recv)) =
-                    crate::tunnel::dial(&line.conn, &Ask::To(peer).words()).await
-                {
-                    return Some((
-                        via,
-                        line.conn.stable_id(),
-                        line.conn.weak_handle(),
-                        send,
-                        recv,
-                    ));
+                if let Ok(Some(prepared)) = crate::deadline::wait(
+                    Some(attempt_by), crate::deadline::scope(attempt_by, attempt),
+                ).await {
+                    return Some(prepared);
                 }
             }
             None
@@ -1381,13 +1385,31 @@ impl Node {
                 if send.write_all(&[OK]).await.is_err() {
                     return;
                 }
-                let attached = stream_trace::attach(
+                // OK admits a preparation, not a replacement carrier.
+                // Only the chosen initiator publishes its transport and
+                // writes a complete framed datagram. A status-only loser
+                // can therefore finish late without replacing live traffic.
+                let mut recv = recv;
+                let Ok(Some(prefix)) = tokio::time::timeout(
+                    HOP_WITHIN, stream_trace::first_frame(&mut recv),
+                ).await else {
+                    return;
+                };
+                if !self.hop_on() || self.carrying().is_none()
+                    || !member(&asker)
+                    || matches!(self.carry.carrier(&x), Some(Carrier::Ssh))
+                    || (me < asker && asking(&me, &asker))
+                {
+                    return;
+                }
+                let attached = stream_trace::attach_prefixed(
                     &self.carry,
                     x,
                     Carrier::Hop { via: from_id },
                     incoming_wire,
                     "receiver",
                     (send, recv),
+                    prefix,
                 );
                 khor_net::carry::observe_lifecycle(&asker, "hop_outer_bound", || {
                     serde_json::json!({

@@ -161,6 +161,51 @@ pub(super) fn attach(
     attached
 }
 
+/// Wait for one complete transport frame without publishing its stream.
+/// The existing u16 framing bounds this preparation to at most 65537 bytes.
+pub(super) async fn first_frame(recv: &mut RecvStream) -> Option<Vec<u8>> {
+    let mut header = [0; 2];
+    recv.read_exact(&mut header).await.ok()?;
+    let len = usize::from(u16::from_be_bytes(header));
+    if len == 0 {
+        return None;
+    }
+    let mut prefix = vec![0; len + 2];
+    prefix[..2].copy_from_slice(&header);
+    recv.read_exact(&mut prefix[2..]).await.ok()?;
+    Some(prefix)
+}
+
+/// Preserve the first frame when a prepared receiver commits its stream.
+pub(super) fn attach_prefixed(
+    links: &khor_net::carry::Links,
+    peer: EndpointId,
+    carrier: Carrier,
+    wire: Option<usize>,
+    role: &'static str,
+    pair: (SendStream, RecvStream),
+    prefix: Vec<u8>,
+) -> khor_net::carry::Attached {
+    use tokio::io::AsyncReadExt;
+    let (send, recv) = pair;
+    if std::env::var_os("KHOR_NET_DIAGNOSTICS").is_none() {
+        return links.attach(peer, carrier, std::io::Cursor::new(prefix).chain(recv), send);
+    }
+    let send_id = format!("{:?}", send.id());
+    let recv_id = format!("{:?}", recv.id());
+    let attached = links.attach(
+        peer,
+        carrier,
+        Tap::new(std::io::Cursor::new(prefix).chain(recv), peer, role, wire, recv_id.clone()),
+        Tap::new(send, peer, role, wire, send_id.clone()),
+    );
+    khor_net::carry::observe_lifecycle(peer, "hop_stream_bound", || {
+        serde_json::json!({"role": role, "wire": wire, "attachment": attached.serial(),
+            "send_stream": send_id, "recv_stream": recv_id, "prepared_frame": true})
+    });
+    attached
+}
+
 /// Same two copies, finish calls and cancellation choice as the normal splice.
 pub(super) async fn splice(
     a: (SendStream, RecvStream),
