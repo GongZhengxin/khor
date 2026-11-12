@@ -1,38 +1,25 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-12 12:12 UTC。用户已恢复“继续”，完整目标“完成计划”仍为[PLAN](PLAN.md) N0–N5，**未完成**；root串行，不派发子智能体。用户“我没有验收 打错了”有效，没有新的Lab/真机接受。最新U18授权跟进最新稳定iroh并尽量减少custom；旧AGENTS仅规划状态已被后续授权覆盖。
+更新于 2026-11-12 12:18 UTC。用户已恢复“继续”，完整目标“完成计划”仍为[PLAN](PLAN.md) N0–N5，**未完成**；root串行，不派发子智能体。用户“我没有验收 打错了”有效，没有新的Lab/真机接受。最新U18授权跟进最新稳定iroh并尽量减少custom；旧AGENTS仅规划状态已被后续授权覆盖。
 原STATE逐字保存于[本次历史](HISTORY-20261112-iroh-upgrade-through-mcp-preparation.md)，SHA256 `3ed8de20f1d15b0088559416195ff5ac0070398554387c3993c43f7094ea17ec`；其中继续链接原stream准备/暂停/恢复历史与完整旧证据，不按摘要覆盖未提交内容。
 
 ## 当前执行与下一步
 
-**turing-20261112T120641Z-9f6d1a8a** 在途，task `netlab-workload-pipeline` / revision `iroh14_workload_v1-block6-new`，role candidate，pid1786019。新稳定source **02807c79e04a92c46fb2e6c14d2ecf107b98336c** / tree **f87d31f97b89474fe52297d87e3827de33550493** / snapshot **dc21d783909981141bd197c0b2ad1bdc22da150f**，control **d28538241f29a1608a7fed606da25d2fde57470f**。这是最后block6，先核对receipt/execution，禁止重复提交。只读E/ops/poll-iroh14-workload-v1.py；终态collect→verify-turing-record→`iroh14-workload-block-v1.py verify 6`，随后才能运行E/ops/summarize-iroh14-workload-v1.py生成独立summary（已AST检查，未运行），看全部人口/失败和文件/终端取舍，不加p99或全局最优。
-Block5旧 **115843Z-91e3c95f** 已0/320.124912s、17原files/1440交互全ok/2file完整，proof/ledger/campaign终态。当前5/6完整、7200交互、10file；前四轮历史见下，不按单轮得出升级胜出。
+**turing-20261112T121515Z-e8d79c86** 在途，task `netlab-peer-mobility-samples` / revision `iroh14_peer_pending_cancellation_v1`，role diagnostic，pid1810041。被动诊断source **08ecab50f81f5e9e357a73614dface145feef432** / tree **bb049e979141bd90bc1ab4a980b232fa78a0b99e** / snapshot **84b69692f39fe9473a0da4316ac59334e77dbdac**；control **69d23d4f912c2e3674d47010eea5b2577230e182**。先核对receipt/execution，禁止重复提交。仅DEBUG取消/Rest补点，原算法和原物理/四秒门不改，尚未编译/行为终态，**不是修复或接受**。
 
-Block3新 **114310Z-d73d001a** 0/372.576940s、block4旧 **115011Z-bc4d5a19** 0/422.281576s，各17原files/1440交互全ok/2file完整，proof/ledger/campaign已终态。此为完成block4时的4/6状态，当前以顶层5/6/campaign为准。block3 high终端service p95 **681495us/max1102768us**，有长尾未解释，不因功能绿接受体验；borrowed probe bulk maxlag21857us，不证明resident/PTY/网络唯一原因。
+**普通性能对照已全部终态。** [结果](IROH-WORKLOAD-RESULTS.md)与[冻结协议](IROH-WORKLOAD-COMPARISON.md)：旧dc738/新028、rolling8/priority0、37份fixture/metadata逐字相同，ABBAAB六block共8640交互全ok、12file完整、102原report SHA独立核对。E/iroh14-workload-comparison-v1.json SHA **940dda764a0f7787bf2439194b9bed6802ee3dbeed3736d60fe709358328732a**。全部proof/ledger/campaign终态。
+low file中位19.222→18.798s，high75.729→66.124s；low bulk终端单轮p95中位84.194→90.816ms、目录115.843→125.784ms。新block3 high终端service p95/max681.495/1102.768ms、scheduled-to-end p95 1893.762ms；新block6 low idle_before终端p95另有246.149ms。全失败/人口保持，少量fresh/共享宿主负载/终端长尾使它仍非N3/p99/全局最优/手机接受；不以文件优势宣布升级胜出。
 
-**升级候选仍有严格恢复红：** 在已完整收件的peer旧110236与新110840日志上，准确冻结netlab-peer-selection.py/decision.py原4秒门本地重算（零新产品run）。旧两门均过，决策3472631/3462188us；新两门均红，决策**9301772/9349684us**，52个eligible warm请求中15个AB仍未选carried。E/iroh14-peer-strict-gate-comparison-v1.json，两个ledger entry追加additional_contracts；原availability scope proof保持，不能把business成功升级为最佳路接受。
-E/iroh14-peer-recovery-sample-gap-v1.json绑定原行：新X request-open事实中，carried质量111.16ms从2.535s到6.998s未更新、age增至4.835s，Relay约135ms；原25%gain门不选该值（静态/data推断），7.372s附近新carried约98ms后才重启2s确认。需查测量代表copy与真正probe copy、bounded recovery/Moving取消后的刷新、外层积压/调度；**尚无唯一根因或修复，原4秒/3probe/2s/250ms及新鲜性门不得为此放宽**。保持性能冻结源028不动，先收完原六轮。
+**严格peer恢复门仍红。** 旧110236与新110840完整日志本地应用准确frozen原4秒selection/decision门（零新产品run）：旧两门过，Go3472631/3462188us；新两门红，Go **9301772/9349684us**，52个eligible warm请求中15个AB未选carried。E/iroh14-peer-strict-gate-comparison-v1.json，ledger additional_contracts保留原availability的独立scope。原物理business124全ok并不接受最佳路及时恢复；新028首次setup超时原红105138同样保留，尚未注入换网。
+E/iroh14-peer-recovery-sample-gap-v1.json绑定原行：新X可见carried质量111.16ms在2.535–6.998s未刷新，age增到4.835s，Relay约135ms；原25%gain门不选该值是源码/data推断，7.372s附近新carried约98ms后才重启2s确认。查pending被取消/Rest、测量代表copy/probe copy、有界恢复预算、外层积压与调度，**无唯一根因/修复，四秒/3probe/2s/250ms和新鲜性规则不得为此放宽**。
 
-Block2新源 **113449Z-094d6494** 原0/430.464791s，17原files，low/high各720完整交互全ok、两file完整，准确metadata/独立人口/原hash/source/control/group空核验；iroh14-workload-block-verification-v1.json、ledger/campaign终态。这是旧阶段2/6状态，当前以顶层4/6及campaign为准；未比较成组性能或声称N3通过。
+最新已闭地址场景均准确028：roam三场景102059Z-2a7ba71e（372逻辑请求），IPv6同前缀overlap两合同111507Z-d7912aa7（248），实际QUIC NAT端口111859Z-de624e0b（124，30/30 warm实际streams选中新tuple，mismatch0），全部proof/ledger终态，详见下表；不是同连接/逐packet/手机/完整N2。
 
-Block1旧源 **112653Z-818e0026** 原0/438.341972s，17原files，low/high各720完整交互全ok、两file完整。准确frozen metadata+独立人口/时间运算/原hash/source/control/group空核验；iroh14-workload-block-verification-v1.json、ledger/campaign终态。新helper已用此真实block成功验证。首轮完成时曾估剩余五轮约30–40分钟，仅此组估时；共享宿主负载保留，未声称独占整机。
+下一步收取当前诊断：terminal→collect→verify-turing-record→calibrate-peer-mobility→准确源selection/decision两parser，独立解析新增pending-cancel/Rest与pivot；原失败保留。没有假设时不原样重跑挑绿，先根据事实形成最小修复及原门回归。冻结普通源028及旧sourcequad不动。
+混版后续优先复用crates/cli/tests/sync_mixed.rs与scratch::pair_built；需准确旧/新CLI及OLD_KHOR非skip执行标记，缺OLD_KHOR直接返回不能算接受；该fixture只覆盖双向session row/pin，不扩称peer relay/全RPC。其余完整N0–N5和补丁退出继续。
 
-新独立[升级体验对照](IROH-WORKLOAD-COMPARISON.md)已冻结：E/iroh14-workload-plan-v1.json SHA a5a6565df56b75e176f689da2dc886f77efad6bdc5bb671ab1798d6bd1803226；campaign动态E/iroh14-workload-campaign-v1.json，顺序old/new/new/old/old/new、两profile各fresh，均rolling8/priority0。37份fixture/metadata逐字相同，crates/scripts差异只有两依赖Cargo.toml。旧24完全不动。
-Root仅串行用E/ops/iroh14-workload-block-v1.py：每block终态后collect→verify-turing-record→`verify INDEX`（准确metadata+独立人口/hash，写proof/ledger/campaign），仅完整人口才`launch NEXT PREDECESSOR_RECEIPT`；未知stage先恢复receipt，不重发；无完整计时人口停止审查，不补跑替代。该helper已AST检查并验证首个真实block；后续任何校验错保留原始结果先定位。混版后续优先复用crates/cli/tests/sync_mixed.rs和scratch::pair_built；必须准确旧/新CLI、OLD_KHOR实际设置与非skip marker，默认缺OLD_KHOR早返回不能算验收；现有fixture为双向session row/pin，非peer relay/全RPC。不要在计时中编译它。
-
-最新NAT **turing-20261112T111859Z-de624e0b** 已0/99.774935s、18原files；r0真实NAT端口校准+r1远端先请求，124请求/248起止全ok；IPv4/IPv6本地地址不变、外部UDP映射50001→50002、旧conntrack删除及新QUIC tuple被记录，30/30 warm远端请求的实际stream-open选中新tuple、tuple mismatch0。两准确冻结metadata与独立校准/stream合同重算、原source/control/hash/进程组空核验；proof `iroh14-nat-rebind-verification-v1.json`与ledger终态。非逐packet/同QUIC连接/手机或完整N2。
-
-当前推进新栈同条件混合工作负载对照，约30–40分钟仅指此组；不把它当完整目标完成估时。保留peer首次连接间歇红；不能因确认绿称解决。
-IPv6同前缀overlap两合同 **111507Z-d7912aa7** 已0/165.659413s、13原files、2tests/248逻辑请求/496起止全ok；IPv4 eth0隔离规则、内核新旧地址共存→旧地址删除、远端先请求期间无mover前台、完整原始attempts/frozen parser及hash/group空核验。proof `iroh14-ipv6-overlap-verification-v1.json`与ledger终态。不是前缀轮转、手机、同连接或完整N2接受。
-
-Peer relay原样确认 **110840Z-1e90b3dd** 已0/339.290546s、16原files、124请求全ok，middle IPv4实际更改、变前连续carried≥10s/变后再观察carried；proof `peer-mobility-availability-verification-v1.json`及ledger终态。首换网后AB/BA单次708565/750866us，非p99/SLO。
-旧dc738同control **110236Z-baeba5f5** 也0/213.826096s、124请求全ok。E/iroh14-peer-mobility-comparison-v1.json独立确认5份完整fixture/metadata逐字相同，并绑定新红→旧绿→新绿三轮原proof。**首连间歇红未解决/不豁免**；新确认启动load144.61高于首红90.18（128逻辑CPU），所以不能用单一host load解释或归因上游。无第三次原样重试计划，后续需有具体诊断假设。
-
-新028的 **turing-20261112T105138Z-c9de2969** 原101/150.987066s，16原files；唯一Rust case失败，只有第一笔setup读取（10.039537s，error），**尚未注入middle换网**。准确frozen attempts重算、原source/control/hash/group空通过；`peer-mobility-preparation-failure-v1.json`与ledger终态。不得把此红写成换网恢复失败，也不在旧版同条件对照前归因上游。
-新028静默first-action **100747Z-15afeb63** 与三换网 **102059Z-2a7ba71e** 已收件/核验/ledger终态，详见下表。其余本轮run同样终态。
-
-继续IPv6重叠/实际QUIC NAT端口恢复，并保留peer relay首次请求间歇红为待定位；随后做新栈负载体验与补丁退出。新依赖尚无同条件性能接受，不借旧性能证明新源。Mac当前50GiB启动余量门红，原Mac退出对照不重发/不改门；已有worker-storage只读inventory工作流 **43205919189** 被GitHub账户付款/额度在prepare开始前拒绝（原check annotation保存在E/mac-storage-inventory-43205919189/receipt.json），storage skipped、零库存/产品测试。首不可解析旧SHA调度422同样零job；已用同脚本private control ref纠正。已异步请求用户恢复Actions或给可用常规SSH；Turing继续。未清缓存/改guard。
-root为E/source-refs.json唯一串行原子writer；submit/launch/collect/verify必须待真实exec会话终态，unknown handle先恢复receipt。
+Mac仍50GiB启动余量门红；只读库存43205919189又被GitHub付款/额度在prepare前拒绝（E/mac-storage-inventory-43205919189/receipt.json），storage skipped、零Mac操作。已异步请求恢复Actions或常规SSH，无回复；最新一次SSH仍banner timeout255。Turing继续，不降门/清未知缓存。
+root为E/source-refs.json唯一串行原子writer；submit/launch/collect/verify待真实exec会话终态，unknown handle先恢复receipt。源/任务与所有旧证据范围见下文，不因阶段结束停止完整目标。
 
 ## 升级位置与授权边界
 
@@ -176,8 +163,8 @@ E/iroh14-event-buffer-exit-audit-v1.json为补丁21容量覆盖的后续退出�
 E/iroh14-ios-notification-static-audit-v1.json核对OS callback→resident→iroh/有界恢复链存在；callback去重键仅status+接口类型，同Wi-Fi地址-only不独立穿过该去重；iroh另有监控，不能判漏通知或现场根因。手机须记录地址/前缀/地址族变化、事件所有权及remote-first/休眠顺序，未获真机接受。详见IROH-UPGRADE末两节，运行时均未改。
 
 
-## 已准备的最小peer取消诊断（尚未远端执行）
+## 最小peer取消诊断源（已启动，编译/诊断在途）
 
 隔离树 `/Volumes/disk0/Khor/worktrees/current/khor-net-iroh-peer-diagnostic-v1`，branch experiment/net-iroh-peer-diagnostic-v1，源 **08ecab50f81f5e9e357a73614dface145feef432** / tree **bb049e979141bd90bc1ab4a980b232fa78a0b99e** / snapshot **84b69692f39fe9473a0da4316ac59334e77dbdac**，clean。descriptor E/iroh14-peer-diagnostic-source-v1.json，两refs refs/khor/net-experiments/iroh14-peer-diagnostic-v1/{source,snapshot}已保留。
 仅在原khor_net_samples DEBUG下补confirm_move因selector无候选/保持当前而clear时的pending/requested/current/since/now/readings/silent；Moving在已有pending进入Rest时补一次原日志。两文件差异为18行日志/谓词和KHOR说明。E/iroh14-peer-diagnostic-source-audit-v1.json逐字证明去掉新增诊断/日志谓词后生产Rust复原028，Noq/app/锁/原物理fixture/两严格parser均不变；这只是结构证明，**尚未编译/格式/运行，不是修复或新的验收**。
-六轮普通计时全部终态、收件/核验之后，才用原control69d23d4f、task netlab-peer-mobility-samples、revision iroh14_peer_pending_cancellation_v1、该descriptor、最后block6 receipt为predecessor启动一次诊断，保持原4秒门及所有预算，记录失败/成功，不原样无限重跑。重点区分pending取消/Rest、采样copy与probe copy、外层恢复质量；不要在原因不明时改gain/样本门/预算。当前没有启动此run或改canonical/冻结性能源。
+六轮普通计时全部终态、收件/核验之后，已用原control69d23d4f、task netlab-peer-mobility-samples、revision iroh14_peer_pending_cancellation_v1、该descriptor、最后block6 receipt为predecessor启动顶层唯一诊断，保持原4秒门及所有预算，记录失败/成功，不原样无限重跑。重点区分pending取消/Rest、采样copy与probe copy、外层恢复质量；不要在原因不明时改gain/样本门/预算。当前诊断已启动，canonical/冻结性能源未改，尚无修复。

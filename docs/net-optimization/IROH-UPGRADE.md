@@ -32,7 +32,7 @@
 
 新源 **105138Z-c9de2969** 原101/150.987066s：第一笔setup读取10.039537s超时，**尚未注入middle换网**；16原files和准确attempts核验，原失败保留。
 旧dc738同control69d23d4f的 **110236Z-baeba5f5** 原0/213.826096s：124请求全ok，middle实际IPv4变化，变前carried连续报告≥10s、变后再观察carried。
-新红启动load90.18/128逻辑CPU，旧绿9.78；这只是差异，不能据一次对照归因上游或负载。新源原样确认 **110840Z-1e90b3dd** 已0/339.290546s，124请求全ok且变后再观测carried；源/控制/原hash/进程组空/行为已核验。其启动load144.61比首红更高，不能以单一host load解释。三轮及5份完整相同fixture绑定在E/iroh14-peer-mobility-comparison-v1.json。**首连间歇红未定位/未豁免**；不再无假设原样重跑挑绿。IPv6 overlap两合同111507Z-d7912aa7已0/165.659413s，248请求/496起止全ok、内核地址/隔离/remote-first核验；同前缀替换，不称手机/同连接或完整N2。实际QUIC NAT端口合同111859Z-de624e0b也已0/99.774935s：124请求全ok、30/30 warm远端stream选中新tuple、mismatch0，两个frozen metadata/原source/hash/进程组空核验。未证明同连接/逐packet/手机。下一步独立冻结新栈同条件混合负载对照，唯一状态见STATE。
+新红启动load90.18/128逻辑CPU，旧绿9.78；这只是差异，不能据一次对照归因上游或负载。新源原样确认 **110840Z-1e90b3dd** 已0/339.290546s，124请求全ok且变后再观测carried；源/控制/原hash/进程组空/行为已核验。其启动load144.61比首红更高，不能以单一host load解释。三轮及5份完整相同fixture绑定在E/iroh14-peer-mobility-comparison-v1.json。**首连间歇红未定位/未豁免**；不再无假设原样重跑挑绿。IPv6 overlap两合同111507Z-d7912aa7已0/165.659413s，248请求/496起止全ok、内核地址/隔离/remote-first核验；同前缀替换，不称手机/同连接或完整N2。实际QUIC NAT端口合同111859Z-de624e0b也已0/99.774935s：124请求全ok、30/30 warm远端stream选中新tuple、mismatch0，两个frozen metadata/原source/hash/进程组空核验。未证明同连接/逐packet/手机。同条件普通负载六block对照现已结束，8640交互全ok/12file完整；有文件收益/轻载交互代价和终端长尾，见IROH-WORKLOAD-RESULTS，未接受N3。唯一在途见STATE。
 
 ## 已补查的原四秒恢复门：新候选红
 
@@ -65,3 +65,8 @@ peer relay前置红定位、实际QUIC NAT端口及IPv6重叠恢复、新栈同�
 
 E/iroh14-ios-notification-static-audit-v1.json核对旧/新三文件逐字相同：watch_the_path已从生命周期入口启动，callback→link::network_changed→resident Wake::Network(Path)→wires恢复/iroh network_change/有界round的链存在；resting期间Network交由Resume处理。
 该callback去重键只有status和Wi-Fi/cellular/wired类型集合，同interface内仅地址/地址族变化不单独穿过这一去重。iroh自身另有监控，所以**不能由静态代码判为漏事件或现场故障原因**。必须在真机记录同Wi-Fi的IPv4/IPv6地址/前缀/地址族变化、callback/iroh事件归属、remote-first与休眠恢复顺序；Linux场景未执行此iOS回调。当前零新增产品实现或手机接受。
+
+## 当前普通对照与独立诊断
+
+六block源028普通对照已闭：[完整结果](IROH-WORKLOAD-RESULTS.md)，E/iroh14-workload-comparison-v1.json SHA940dda764a0f7787bf2439194b9bed6802ee3dbeed3736d60fe709358328732a，8640交互/12file完整，所有人口保留，吞吐/交互有取舍，非N3/最优接受。
+随后已启动121515Z-e8d79c86，独立源08ecab50仅补原DEBUG下pending取消/Rest事实，不改变算法。结构审计E/iroh14-peer-diagnostic-source-audit-v1.json，原物理/严格parser逐字相同；尚无编译/行为终态或修复。此诊断源不是原性能源，也不晋升canonical。
