@@ -1,28 +1,27 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-12 03:41 UTC。完整目标“完成计划”仍 **active、未完成、未阻塞**；范围为 [PLAN](PLAN.md) N0–N5，root 串行，不派发子智能体。
+更新于 2026-11-12 03:50 UTC。完整目标“完成计划”仍 **active、未完成、未阻塞**；范围为 [PLAN](PLAN.md) N0–N5，root 串行，不派发子智能体。
 此页只列当前状态与关键证据；此前全部原状态逐字保存在 [历史状态](HISTORY-20261112-through-stream-preparation.md)，SHA256 `dbe4b053534a6483528f89656cd4c9e808450fcb95b6acd65182594c0f15136e`，并继续链接更早全部历史。实际 worktree、收据与原日志优先，不按摘要覆盖未提交内容。
 
-## 当前唯一运行与立即下一步
+## 当前状态与立即下一步
 
-**Turing：turing-20261112T033334Z-a09450d0，netlab-first-action-streams，first_foreground_stream_witness_v2-formatted，已唯一 launch。**
-source **5064fe2a435d9cf68389c97d7dbb95d5bdf2c715** / tree **9bf94eed4355b0eb9b96f6c99a0f9b284dd07923** / snapshot **05a7bab4a6b24a324aa2906d8bdc86c8a51c63d3**。
-control **73fa35f5954175e5e20373c858691315d4a3e6fe**，pid **1002716** / child **1002934**；03:38 UTC实际ps确认live、format/编译过，前置两guard执行中。
-这是带full日志的静默诊断，ordinary_latency_samples=0；不得混入原普通计时数据。Mac无在途任务。
+**当前Turing与Mac均无在途任务。** 最新 **turing-20261112T033334Z-a09450d0** 已原0/339.545858秒、29files/identity/原group空/准确冻结metadata与独立原始计数时间窗/ledger终态。
+source **5064fe2a435d9cf68389c97d7dbb95d5bdf2c715** / tree **9bf94eed4355b0eb9b96f6c99a0f9b284dd07923** / snapshot **05a7bab4a6b24a324aa2906d8bdc86c8a51c63d3**，control **73fa35f5954175e5e20373c858691315d4a3e6fe**。
+原两guard+六读全过；十二准备见证、十二≥10秒静默见证与十二真实请求阳性对照全过。proof **E/turing-20261112T033334Z-a09450d0/stream-quiet-verification-v2.json**；完整表和接受边界见IDLE-ACTION末节。
+这是带full日志的诊断准入，ordinary_latency_samples=0，不是普通性能/手机/完整N1接受；原v1静默失败和旧普通六观测的证据边界保持。
 
-1. 只读轮询：`python3 -B /Volumes/disk0/Khor/evidence/net/ops/poll-turing-streams-v1.py turing-20261112T033334Z-a09450d0`。
-2. 真实终态后，在CONTROL执行 `python3 -B scripts/collect-network-ssh.py /Volumes/disk0/Khor/evidence/net/turing-20261112T033334Z-a09450d0/receipt.json`。
-3. 等collector实际session终态；原非零仍有完整报告时继续核原失败，不因退出1停止归档或改绿。在PRODUCT执行 `ops/verify-turing-record.py RUN_DIR`（ops前缀为上方evidence/net/ops）。
-4. 准确Git source提取三份metadata `netlab-first-action-streams.py` / `netlab-first-action.py` / `netlab-idle-action-guard.py` 到临时目录复算。比较前做JSON roundtrip规范化：STREAM counters以整数conn id作dict key，原JSON键是字符串；这不是放宽数据门。
-5. 独立核原两guard、六case/十二caller/十二resident日志、真实Rust计数、准备阶段实际稳定快照、整候选窗计数/连接集合/actor不变、双方真实请求阳性对照、原配置/计数/全部文件SHA与原group空。
-6. 只有实际证明通过才接受此诊断层；失败完整保留，不补漂亮样本。root唯一更新source-refs.json终态；stage/launch/register尚未终态时不另开ledger writer。
+**下一步回到既定N3匹配batch/rolling**：先准备priority0、相同fixture/helper/长files_wire载荷的两arm与宽度8/2四树，保留原batch函数；补真实RPC已发/完成/待提交与补齐、取消所有权合同，再按PIPELINE-COMPARISON原8→2、各ABBAAB/low+high的24fresh顺序执行。当前rolling计时0，不拿旧prefetch当baseline。完整N0–N5剩余范围见下，未改为只完成这一组实验。
 
-上一个predecessor **turing-20261112T032645Z-37e89511** 已原1/182.291534秒、10files/identity/原group空/ledger终态；只一处wall_us链式格式差异、零实际测试。原patch已精确映射为当前5064源码，format-only-verification-v1.json保存原失败。
-旧stage/launch/advance及Mac提交均终态，不重复。观察超时不是任务终态，按同receipt恢复。
+最近可用predecessor为已收件 **turing-20261112T033334Z-a09450d0/receipt.json**；所有本轮stage/launch/advance/Mac提交均终态，不重复。新任务用准确source/control与唯一measurement revision。
+只读轮询工具 `E/ops/poll-turing-streams-v1.py RUN`；CONTROL `scripts/collect-network-ssh.py RECEIPT` 需等实际session终态后才验证。
+采集原非零有完整报告时继续核原失败；PRODUCT用 `E/ops/verify-turing-record.py RUN_DIR`核身份，再做相应实际行为/人口/原SHA验证。
+准确冻结STREAM metadata比较前需JSON roundtrip规范整数conn-id字典键。root为source-refs.json唯一串行原子writer；观察超时不是终态，按同receipt恢复，不重发。
+
+上一个 **turing-20261112T032645Z-37e89511** 原1/182.291534秒、10files/identity/原group空/ledger终态，仅wall_us链式格式差异、零行为；原patch精确映射成5064源码，format-only-verification-v1.json保存原失败。
 
 ## 工作位置、执行与授权
 
-- PRODUCT `/Volumes/disk0/Khor/worktrees/current/khor-net`，branch **feat/net**，创建基线6485cb83；当前代码提交5064fe2a，之后STATE文档提交不冒充重新测试的源码。
+- PRODUCT `/Volumes/disk0/Khor/worktrees/current/khor-net`，branch **feat/net**，创建基线6485cb83；当前已测代码提交5064fe2a，之后STATE/历史文档提交不冒充重新测试的源码。
 - CONTROL `/Volumes/disk0/Khor/worktrees/current/khor-build-net`，HEAD仍 **5d3691f252f9dee0297fa3c494374be6119bca29**。新控制只建Git对象/ref，不移动HEAD；现有两个未跟踪__pycache__保留。
 - 隔离rolling原型 `/Volumes/disk0/Khor/worktrees/current/khor-net-pipeline-v1`，branch experiment/net-pipeline-v1，clean **57ffe973ed11d03dc76c5fa01904719b27651b36**；未集成、priority仍-1，不能直接与当前priority0比较。
 - EVIDENCE `/Volumes/disk0/Khor/evidence/net`，ops在其下ops；canonical ledger `source-refs.json`仅root串行原子写。
@@ -51,7 +50,7 @@ control **73fa35f5954175e5e20373c858691315d4a3e6fe**，pid **1002716** / child *
 - alpha phase0/14/5首次读取297.685/327.577/321.867ms；beta230.688/265.406/250.937ms。实际phase与两端事后Relay路径、全部接口差值见first-action-verification-v2.json；每格只有一个fresh，无p95/p99/显著性/唯一因果或能耗结论。
 - quiet-scope-audit-v1.json绑定上述proof：没有主动前台调用不证明无后台STREAM；完整N1/quiet未接受。普通source-owned输出显式continuous_stream_silence_verified=false/full_quiet_contract_accepted=false。
 
-**Iroh50被动见证与v1真实红**：
+**Iroh50被动见证、v1真实红与v2准入绿**：
 
 - 只在原250ms reselect已有stats读取上加DEBUG快照：所有受跟踪连接STREAM tx/rx、actor序号、增删代数及单调/墙钟；连接在采样间新建关闭也会改代数。原合计/ActiveRefresh/策略/生产计时器不改，无新任务/定时器。
 - source **09374004906a9a400004874fa957726e857bef1f** / tree b23ff21f / snapshot8ee7e55c，control **1bdb2272f23bfd59961af79cbebf04242791ce33**；**turing-20261112T030608Z-15ebb293** 原1/305.229247秒/29files/identity/原group空。
@@ -64,7 +63,7 @@ control **73fa35f5954175e5e20373c858691315d4a3e6fe**，pid **1002716** / child *
 - 仅诊断模式、候选窗之前只读双方serve.log，实际counter/actor/registry签名连续≥1秒相同、快照年龄≤1秒、总准备期限10秒。无请求、无Node状态查询、无关闭后台任务。
 - 记录准备起止和各端实际稳定快照；外部逐条绑定原日志。随后原12秒候选窗、固定500ms边界内≥10秒完整见证、整窗恒定、最大1秒采样间隔/100ms时钟增量差、原phase0/14/5与30秒caller、六fresh顺序及阳性门全部不改；候选失败不重试挑窗。
 - 普通模式仍10秒/off且不等待此诊断准备，诊断不作为普通计时/CPU/能耗样本。
-- 11种见证+6种准备+19种first-action+9种guard合成数据，4 unittest已过；6种调度stub保持guard off→action full与首原73/79失败。全部只是工具合成准入，真实v2以当前run为准，尚未宣告通过。
+- 11种见证+6种准备+19种first-action+9种guard合成数据，4 unittest已过；6种调度stub保持guard off→action full与首原73/79失败。全部只是工具合成准入，真实v2已按顶层run/proof通过该诊断准入；完整N1/ordinary性能仍未接受。
 
 ## Mac默认vendor与其他回归
 
