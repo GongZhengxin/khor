@@ -1,11 +1,13 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-12 11:38 UTC。用户已恢复“继续”，完整目标“完成计划”仍为[PLAN](PLAN.md) N0–N5，**未完成**；root串行，不派发子智能体。用户“我没有验收 打错了”有效，没有新的Lab/真机接受。最新U18授权跟进最新稳定iroh并尽量减少custom；旧AGENTS仅规划状态已被后续授权覆盖。
+更新于 2026-11-12 11:46 UTC。用户已恢复“继续”，完整目标“完成计划”仍为[PLAN](PLAN.md) N0–N5，**未完成**；root串行，不派发子智能体。用户“我没有验收 打错了”有效，没有新的Lab/真机接受。最新U18授权跟进最新稳定iroh并尽量减少custom；旧AGENTS仅规划状态已被后续授权覆盖。
 原STATE逐字保存于[本次历史](HISTORY-20261112-iroh-upgrade-through-mcp-preparation.md)，SHA256 `3ed8de20f1d15b0088559416195ff5ac0070398554387c3993c43f7094ea17ec`；其中继续链接原stream准备/暂停/恢复历史与完整旧证据，不按摘要覆盖未提交内容。
 
 ## 当前执行与下一步
 
-**turing-20261112T113449Z-094d6494** 在途，task `netlab-workload-pipeline` / revision `iroh14_workload_v1-block2-new`，role candidate，pid1711227。新稳定source **02807c79e04a92c46fb2e6c14d2ecf107b98336c** / tree **f87d31f97b89474fe52297d87e3827de33550493** / snapshot **dc21d783909981141bd197c0b2ad1bdc22da150f**，control **d28538241f29a1608a7fed606da25d2fde57470f**。这是block2，先核对receipt/execution，禁止重复提交。
+**turing-20261112T114310Z-d73d001a** 在途，task `netlab-workload-pipeline` / revision `iroh14_workload_v1-block3-new`，role candidate，pid1728762。新稳定source **02807c79e04a92c46fb2e6c14d2ecf107b98336c** / tree **f87d31f97b89474fe52297d87e3827de33550493** / snapshot **dc21d783909981141bd197c0b2ad1bdc22da150f**，control **d28538241f29a1608a7fed606da25d2fde57470f**。这是block3，先核对receipt/execution，禁止重复提交。只读进度用E/ops/poll-iroh14-workload-v1.py，不用旧pipeline campaign poller。
+Block2新源 **113449Z-094d6494** 原0/430.464791s，17原files，low/high各720完整交互全ok、两file完整，准确metadata/独立人口/原hash/source/control/group空核验；iroh14-workload-block-verification-v1.json、ledger/campaign终态。当前两block/2880交互/4file完整；未比较成组性能或声称N3通过。
+
 Block1旧源 **112653Z-818e0026** 原0/438.341972s，17原files，low/high各720完整交互全ok、两file完整。准确frozen metadata+独立人口/时间运算/原hash/source/control/group空核验；iroh14-workload-block-verification-v1.json、ledger/campaign终态。新helper已用此真实block成功验证。剩余五轮按首轮耗时约30–40分钟，仅此组估时；共享宿主负载保留，未声称独占整机。
 
 新独立[升级体验对照](IROH-WORKLOAD-COMPARISON.md)已冻结：E/iroh14-workload-plan-v1.json SHA a5a6565df56b75e176f689da2dc886f77efad6bdc5bb671ab1798d6bd1803226；campaign动态E/iroh14-workload-campaign-v1.json，顺序old/new/new/old/old/new、两profile各fresh，均rolling8/priority0。37份fixture/metadata逐字相同，crates/scripts差异只有两依赖Cargo.toml。旧24完全不动。
@@ -159,3 +161,9 @@ prefetch-comparison-v1.json SHA **7dede5f2c580d46aff0e6138b968da2550db2e095d6de3
 ### 2026-11-12 04:03 UTC 状态回复与估计
 
 用户再次询问；明确尚未完成，普通性能与iPhone自动换网/peer relay/能耗未接受。下一批真实RPC合同加24匹配场景暂按4–8小时预留（含排队与构建、低置信度、不是承诺），完整计划仍数天且无可信日期；此前估计偏乐观，不从本次回复重新起算。全部N0–N5范围保持。
+
+
+## 本轮补丁与手机静态审查补充
+
+E/iroh14-event-buffer-exit-audit-v1.json为补丁21容量覆盖的后续退出候选：已有上游Lagged/paths快照和app选择恢复，但mine/Openings库存尚未在Lagged对账，需真实burst消费落后回归；主动ping另评估，未删补丁/未跑新产品测试。
+E/iroh14-ios-notification-static-audit-v1.json核对OS callback→resident→iroh/有界恢复链存在；callback去重键仅status+接口类型，同Wi-Fi地址-only不独立穿过该去重；iroh另有监控，不能判漏通知或现场根因。手机须记录地址/前缀/地址族变化、事件所有权及remote-first/休眠顺序，未获真机接受。详见IROH-UPGRADE末两节，运行时均未改。

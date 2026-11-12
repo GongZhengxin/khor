@@ -54,3 +54,8 @@ peer relay前置红定位、实际QUIC NAT端口及IPv6重叠恢复、新栈同�
 静态审查E/iroh14-event-buffer-exit-audit-v1.json绑定候选028和准确上游1.4.1文件SHA：上游已有PathEvent::Lagged与Connection::paths快照恢复，容量8；本地容量64。roads::follow已在Lagged时记录漏事件并读取当前选择，但该分支没有对账其mine/Openings直接路径库存；它只用于日志去重，不据此归因选路故障。
 
 先用真实连接让消费方落后超过8个事件，验证当前选择、库存对账、日志与关闭清理，再考虑退出64覆盖。优先使用上游现有快照API，不增加定时器。同一历史21的Path::ping是另一项能力，不能因容量恢复就把整条21记为删除。当前仅静态退出候选，零新增产品测试/实现；冻结性能源不改。
+
+## iOS通知链仍须真机核对
+
+E/iroh14-ios-notification-static-audit-v1.json核对旧/新三文件逐字相同：watch_the_path已从生命周期入口启动，callback→link::network_changed→resident Wake::Network(Path)→wires恢复/iroh network_change/有界round的链存在；resting期间Network交由Resume处理。
+该callback去重键只有status和Wi-Fi/cellular/wired类型集合，同interface内仅地址/地址族变化不单独穿过这一去重。iroh自身另有监控，所以**不能由静态代码判为漏事件或现场故障原因**。必须在真机记录同Wi-Fi的IPv4/IPv6地址/前缀/地址族变化、callback/iroh事件归属、remote-first与休眠恢复顺序；Linux场景未执行此iOS回调。当前零新增产品实现或手机接受。
