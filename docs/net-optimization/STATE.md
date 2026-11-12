@@ -1,6 +1,6 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-12 16:22 UTC（本地2026-11-13）。完整目标 [PLAN](PLAN.md) N0–N5 **未完成**。
+更新于 2026-11-12 16:44 UTC（本地2026-11-13）。完整目标 [PLAN](PLAN.md) N0–N5 **未完成**。
 用户“继续”“我没有验收 打错了”和U18跟进最新稳定iroh、尽量减少custom均有效。
 root串行，不派发子智能体；阶段结束、旧AGENTS仅规划状态或目标服务paused都不是当前停止授权。
 
@@ -12,7 +12,7 @@ root串行，不派发子智能体；阶段结束、旧AGENTS仅规划状态或�
 - run **turing-20261112T155449Z-56a8ac18**，PID **2128254**，15:55:10 UTC启动。
 - task `netlab-stability`，revision `iroh14_policy_stability_baseline_v1`。
 - control **f862ab2defb48d21236c2bdcca736c9a3d108773**，baseline source **515e99f0d886de8035801801a10e7587167cf78b**。
-- receipt及E/source-refs.json已存，启动exec已终态。最近只读仍running，p1已原600秒绿（两端0move/0retired/0punch、四journal完整），p1h也已原600秒绿（65±5ms each way、两端0move/0retired、10punch），p1j在途；不要重复提交。
+- receipt及E/source-refs.json已存，启动exec已终态。最近只读仍running，p1已原600秒绿（两端0move/0retired/0punch、四journal完整），p1h/p1j/p1s也已各原600秒绿，p5在途（4/5原结果，未最终收件）；p1s含20次300ms spike，模拟交互最长4.7s。原门只验切换/退役，不能据green接受交互尾部，该4.7s须与候选同场景对照并继续定位；不要重复提交。
 - 先baseline完整终态、收件、identity和行为核验，再candidate **一次**。两组各约50–60分钟，原90分钟守护不变；失败全留、零替代重试。
 - 计时期间不插入自己的其他Turing编译、产品测试或共享source-cache写入。本地源码/文档/证据审计可继续。
 
