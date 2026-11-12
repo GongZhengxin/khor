@@ -1,11 +1,15 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-12 03:50 UTC。完整目标“完成计划”仍 **active、未完成、未阻塞**；范围为 [PLAN](PLAN.md) N0–N5，root 串行，不派发子智能体。
+更新于 2026-11-12 04:03 UTC。完整目标“完成计划”仍 **active、未完成、未阻塞**；范围为 [PLAN](PLAN.md) N0–N5，root 串行，不派发子智能体。
 此页只列当前状态与关键证据；此前全部原状态逐字保存在 [历史状态](HISTORY-20261112-through-stream-preparation.md)，SHA256 `dbe4b053534a6483528f89656cd4c9e808450fcb95b6acd65182594c0f15136e`，并继续链接更早全部历史。实际 worktree、收据与原日志优先，不按摘要覆盖未提交内容。
 
 ## 当前状态与立即下一步
 
-**当前Turing与Mac均无在途任务。** 最新 **turing-20261112T033334Z-a09450d0** 已原0/339.545858秒、29files/identity/原group空/准确冻结metadata与独立原始计数时间窗/ledger终态。
+**Turing在途：turing-20261112T040138Z-5f783fc8**，原批量实现真实RPC负控，PID1031171/child1031399；Mac无在途。source **2f5366dbb9206ac07aa314d7a1229a0247a7c24e** / tree **e7a7e8099dd448f67cb3072c889e1f0ff4cda5de** / snapshot **74aaebf784f642c9aa36314aa1c1ae41ac5fee80**，control **916b2770a11e2fdefbe1a121b8fcdcee35741592** / task net-node-pipeline-batch。
+隔离v2树 `/Volumes/disk0/Khor/worktrees/current/khor-net-pipeline-v2`，experiment/net-pipeline-v2。共同helper/四逻辑/长files_wire逐字来自57ff，生产batch函数未改；新增三真实Node pull_into→QUIC FetchPath合同，观察远端已解码请求、原lifecycle客户端解码回复与part实际提交，分别慢头/慢尾/丢弃。最后一项只测原future drop→远端STOP_SENDING与同wire独立请求，不替代Job stop、生产server/host-child。
+首次远端format已报告差异、尚未终态；先收原结果/准确格式patch后重提，不重复此run。rolling性能计时仍0。控制只加两个固定contract lane，原资源/UID/flock/期限不变，C HEAD仍5d3691f。
+
+最近已完成 **turing-20261112T033334Z-a09450d0** 已原0/339.545858秒、29files/identity/原group空/准确冻结metadata与独立原始计数时间窗/ledger终态。
 source **5064fe2a435d9cf68389c97d7dbb95d5bdf2c715** / tree **9bf94eed4355b0eb9b96f6c99a0f9b284dd07923** / snapshot **05a7bab4a6b24a324aa2906d8bdc86c8a51c63d3**，control **73fa35f5954175e5e20373c858691315d4a3e6fe**。
 原两guard+六读全过；十二准备见证、十二≥10秒静默见证与十二真实请求阳性对照全过。proof **E/turing-20261112T033334Z-a09450d0/stream-quiet-verification-v2.json**；完整表和接受边界见IDLE-ACTION末节。
 这是带full日志的诊断准入，ordinary_latency_samples=0，不是普通性能/手机/完整N1接受；原v1静默失败和旧普通六观测的证据边界保持。
@@ -100,3 +104,7 @@ prefetch-comparison-v1.json SHA **7dede5f2c580d46aff0e6138b968da2550db2e095d6de3
 历史动态f2f1775027、恢复ce3b12226、长稳de04bcc1、四peer6970ad46、模型容量c50ab6ef和cold high5d27f45e等既有证据在历史入口完整保留；warm v2路径失败、启动/配对超时及旧严重红项也保留，不能拿新窄场景覆盖。没有用户iPhone候选安装/最终接受。
 
 进度估计：此前2–4天为低置信度估计，不因compact/session重新起算；目前没有可信完成日期。完成必须设计、状态职责、持续矩阵与同条件报告均有准确版本证据。未获准的合并/发布/采购不自动执行。
+
+### 2026-11-12 04:03 UTC 状态回复与估计
+
+用户再次询问；明确尚未完成，普通性能与iPhone自动换网/peer relay/能耗未接受。下一批真实RPC合同加24匹配场景暂按4–8小时预留（含排队与构建、低置信度、不是承诺），完整计划仍数天且无可信日期；此前估计偏乐观，不从本次回复重新起算。全部N0–N5范围保持。
