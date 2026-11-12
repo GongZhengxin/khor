@@ -59,3 +59,9 @@ v2协议在继续前明确额外边界：原improves的<=比较符保持，因�
 准确67候选三轮已全部终态：141018 R1原warm/decision过，Go3403177/3646386us；141413 R2与142410 R3各124业务全ok但后续没有持续carried，原warm/decision均失败、双向无Go。身份、输入hash、原group空、proof与ledger全闭。结果E/iroh14-single-hysteresis-physical-results-v1.json SHA92e5b6e59c46691d8c845f9f961e8cda7a591292479366e1f20e1ae0cdffdfda，固定三轮停止、accepted=false，不晋升。
 
 降低已测路资格门并保留原准备成本门，虽通过全部276应用合同，仍不足以保证物理恢复。先读取R2/R3的carrier退役、内层样本及外层路径事实；不直接追加同源采样挑绿，也不以此进入长稳接受。首连问题、完整N0–N5与Mac/混版/手机保持。physical-plan-v3只修v2数据审核把final carried成功当先决断言的问题，v3 auditor记录失败并照常运行同一原四秒解析器，未改产品或门。
+
+## 同app策略、旧依赖诊断对照（已冻结，未出结果）
+
+为缩小因果范围，old I dc738应用准确028→67三文件patch，得到16e943d8；与新67相比全部crates树只有net/node两Cargo清单不同，应用Rust/测试/物理/scripts全部逐字一致，旧vendor/锁保持iroh1.2/Noq1.3。source-audit-v1 SHA9286dc4460c8d9fdb4606214228af5c9e19334fea12faee0b2b1446718261877。compile-only143631在途；随后原control69三固定物理诊断，原七文件/四秒门/期限不动，全部结果保留、三轮停止，不增加新67采样。
+
+E/iroh14-single-hysteresis-dependency-comparison-plan-v1.json SHA7122efcde90f4d44cbac5f3aebb8835d0c955eaf054882d5b40a827106a889f5，在源和执行前明确这是观察失败后选择的诊断对照；不能宣告唯一上游回归、失败率或旧栈最优。新67仍拒绝晋升。
