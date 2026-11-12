@@ -65,3 +65,9 @@ v2协议在继续前明确额外边界：原improves的<=比较符保持，因�
 为缩小因果范围，old I dc738应用准确028→67三文件patch，得到16e943d8；与新67相比全部crates树只有net/node两Cargo清单不同，应用Rust/测试/物理/scripts全部逐字一致，旧vendor/锁保持iroh1.2/Noq1.3。source-audit-v1 SHA9286dc4460c8d9fdb4606214228af5c9e19334fea12faee0b2b1446718261877。compile-only143631在途；随后原control69三固定物理诊断，原七文件/四秒门/期限不动，全部结果保留、三轮停止，不增加新67采样。
 
 E/iroh14-single-hysteresis-dependency-comparison-plan-v1.json SHA7122efcde90f4d44cbac5f3aebb8835d0c955eaf054882d5b40a827106a889f5，在源和执行前明确这是观察失败后选择的诊断对照；不能宣告唯一上游回归、失败率或旧栈最优。新67仍拒绝晋升。
+
+## 旧依赖同策略诊断结论与下一步
+
+旧16的三fixed全部终态：144049/144427/144738各124全ok，原四秒warm/decision均过，双向Go3423765–3730444us。三轮后停止。新67原固定三轮一过两红保持，result SHA608b6c78e26a269ace71a28b78597f9a1403dc7b480bbe072372d620af2145c7。观察新失败后选择、顺序不匹配和小样本，不能声称失败率或唯一上游因果；两个候选都不因此接受。
+
+接下来bc3064af只改CLI opt-in日志filter，复用原生Noq路径/STREAM trace，无新vendor/state/timer/probe/策略；两fixed诊断capture后停止，日志开销不作为性能接受。原七文件/四秒parsers/期限保持，准确source与在途见STATE。先辨别路径容量、实际path-open/本地status、排队STREAM偏移/重传/接收推进；共享质量或写入flush不能独立证明交付。
