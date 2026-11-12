@@ -1,12 +1,14 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-12 13:12 UTC。用户已恢复“继续”，完整目标“完成计划”仍为[PLAN](PLAN.md) N0–N5，**未完成**；root串行，不派发子智能体。用户“我没有验收 打错了”有效，没有新的Lab/真机接受。最新U18授权跟进最新稳定iroh并尽量减少custom；旧AGENTS仅规划状态已被后续授权覆盖。
+更新于 2026-11-12 13:16 UTC。用户已恢复“继续”，完整目标“完成计划”仍为[PLAN](PLAN.md) N0–N5，**未完成**；root串行，不派发子智能体。用户“我没有验收 打错了”有效，没有新的Lab/真机接受。最新U18授权跟进最新稳定iroh并尽量减少custom；旧AGENTS仅规划状态已被后续授权覆盖。
 原STATE逐字保存于[本次历史](HISTORY-20261112-iroh-upgrade-through-mcp-preparation.md)，SHA256 `3ed8de20f1d15b0088559416195ff5ac0070398554387c3993c43f7094ea17ec`；其中继续链接原stream准备/暂停/恢复历史与完整旧证据，不按摘要覆盖未提交内容。
 
 ## 当前执行与下一步
 
-**当前在途 turing-20261112T131057Z-45f84a73**：task netlab-peer-mobility-samples / control69d23d4f912c2e3674d47010eea5b2577230e182，pid1916460，独立首连阶段被动诊断R1。准确源 **c2b814933a20d69bddf73593a91cb9481baba6a5** / tree **c60f2db2e6263b1b01d3354ba0aae283001d32a7** / snapshot **31a848ab9990c6d6a66d713ee54e4fd692c16512**，worktree khor-net-iroh-hop-preparation-diagnostic-v1，branch experiment/net-iroh-hop-preparation-diagnostic-v1。先查receipt/execution，不重复提交。仅原observe_lifecycle的10类被动阶段点，原逻辑文本还原一致审计E/iroh14-hop-preparation-diagnostic-source-audit-v1.json；**无新增依赖/算法/timer/预算/fixture**，尚无编译/行为终态，非修复/接受。
-固定3fresh协议 `E/iroh14-hop-preparation-diagnostic-plan-v2.json`（v1未执行，v2说明复用既有hook避免引入tracing依赖）。R1/R2/R3全部保留，三轮后停止批次；无首连失败也不原样加轮挑结果。仍以原四秒门独立报告恢复，不扩称SLO/能耗。collect实际会话终态后才能跑后续proof/ledger mutation；校准后按准确新source原parsers及新增hop阶段做数据分析。
+**当前在途 turing-20261112T131430Z-375bb729**：task netlab-peer-mobility-samples / control69d23d4f912c2e3674d47010eea5b2577230e182，pid1919351，独立首连阶段被动诊断formatted R1。准确源 **d52cceb1825384ad05b778d8c8f352c89ce8120a** / tree **47e88396abefd410ebcbd8adee3d21c46e58d873** / snapshot **7ab4e5e07b2e984c1188a93b16b6a7d06e5b8085**，worktree khor-net-iroh-hop-preparation-diagnostic-v1，branch experiment/net-iroh-hop-preparation-diagnostic-v1。先查receipt/execution，禁止重复提交。
+仅原observe_lifecycle的10类被动阶段点，无新依赖/算法/timer/预算/fixture；格式化后去掉观察调用和inspect_err空wrapper，保留所有原非空白token/字符串一致，E/iroh14-hop-preparation-diagnostic-source-audit-v2.json。原7份物理输入/严格parsers逐字相同。尚无编译/行为终态，非修复/接受。
+首次source c2b81493提交 **131057Z-45f84a73** 原1/45.831063s被rustfmt拒绝，**零产品执行**、10原files与原返回format.patch/hash/identity/group空核验，proof/ledger终态，原失败不替换。已在本独立树应用准确远端formatter-only patch，c2与原snapshot留refs。v1协议未执行；v2只提交过这个格式前置失败，没有产品fresh。v3在任何产品执行前明确记录该修正与完整前置失败，冻结准确formatted source及三产品slot，`E/iroh14-hop-preparation-diagnostic-plan-v3.json` SHA **8424a60cb587f9f1310e32a4ee17c1690048cee6890d442bff65f9488c38bad6**；原两版保留。
+formatted R1/R2/R3全部结果保留，三轮后停止，不因未捕获首连红加轮。runtime terminal后collect并等待实际会话终态，再identity→calibrate-peer-mobility→`ops/verify-hop-preparation-diagnostic-v1.py RUN`；后者按准确新源原selection/decision parsers、frozen attempts重算和原始hop阶段行留证并串行闭ledger。阶段记录保留重复，不自动配对并发attempt；有缺编译/前置时先按实际失败范围记录，不能假造availability/strict门。
 
 **确认copy候选80aeeff9不接纳。** 固定三轮物理验证已全部终态：R1 **125445Z-23ca34d4** 首setup10271172us超时，原101/197.619032s、尚未换网；R2 **125919Z-c38e8c1d** 原0/150.511588s、124请求全ok，但四秒selection/decision红，X/Y Go5522531/7762941us；R3 **130239Z-456f9489** 原0/150.388833s、124请求全ok，两门过，Go3375083/3613151us。各16原files、准确源/control/原hash/frozen attempts/group空核验，proof/ledger全部终态；没有补跑替换失败。
 结果 `E/iroh14-confirm-copy-physical-results-v1.json` SHA **7a80dc776d5244aa0a3422b2ef167b06f3f53ce94f1a0e5c29ad4a0e9a3c17b5**，accepted=false。候选 **80aeeff919aa641dae55ba1a18b2020fead3e05e** / tree f857f33c60e45cb7fee862c47c510cf5a8a27765 / snapshot bc35d760bc6d0cf9d47aeee390e1913c175b8a10 保留为失败实验，不晋升canonical或普通性能源。固定原7份输入/解析器及四秒门未改。
