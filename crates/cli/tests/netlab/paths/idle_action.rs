@@ -55,8 +55,15 @@ async fn p8g_cancelled_with_call_releases_the_device_future() {
             .expect("old detached control exits after release")
             .expect("device future drop was observed");
     }
-    result(s, stopped, format!("caller_drop_released_device_future {stopped}"));
-    assert!(stopped, "dropping the caller must release its device future");
+    result(
+        s,
+        stopped,
+        format!("caller_drop_released_device_future {stopped}"),
+    );
+    assert!(
+        stopped,
+        "dropping the caller must release its device future"
+    );
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
@@ -91,6 +98,10 @@ async fn p8g_detached_device_future_is_detected_and_reaped() {
             .expect("raw detached control is reaped")
             .expect("raw device future drop was observed");
     }
-    result(s, detected, format!("detached_future_detected_and_reaped {detected}"));
+    result(
+        s,
+        detected,
+        format!("detached_future_detected_and_reaped {detected}"),
+    );
     assert!(detected, "the guard detects a deliberately detached future");
 }
