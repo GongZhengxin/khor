@@ -53,3 +53,9 @@ v2协议在继续前明确额外边界：原improves的<=比较符保持，因�
 该新负例当前只是执行前设计提醒，未新增源码/运行或改变原门。旧/新必须各自同一fixture overlay、准确source/provenance与串行计时；新建中继成本门已恢复，已存在carrier保留的实际成本仍需静默/交互并行负载对照。
 
 完整12命令门140132Z-2d53d83b已0/363.333291s、276过/原ignored1，原命名人口+新增3合同、原取消合同、21原hash/source/control/group空核验，proof/ledger闭。已启动准确同67源三fresh物理R1：141018Z-445b94fe/pid1979830。保留原10秒持续前后条件和四秒双向decision/stream门，当前尚未终态；未接受策略。
+
+## 固定物理screen结论（2026-11-12 14:31 UTC）
+
+准确67候选三轮已全部终态：141018 R1原warm/decision过，Go3403177/3646386us；141413 R2与142410 R3各124业务全ok但后续没有持续carried，原warm/decision均失败、双向无Go。身份、输入hash、原group空、proof与ledger全闭。结果E/iroh14-single-hysteresis-physical-results-v1.json SHA92e5b6e59c46691d8c845f9f961e8cda7a591292479366e1f20e1ae0cdffdfda，固定三轮停止、accepted=false，不晋升。
+
+降低已测路资格门并保留原准备成本门，虽通过全部276应用合同，仍不足以保证物理恢复。先读取R2/R3的carrier退役、内层样本及外层路径事实；不直接追加同源采样挑绿，也不以此进入长稳接受。首连问题、完整N0–N5与Mac/混版/手机保持。physical-plan-v3只修v2数据审核把final carried成功当先决断言的问题，v3 auditor记录失败并照常运行同一原四秒解析器，未改产品或门。
