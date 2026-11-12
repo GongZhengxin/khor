@@ -1,10 +1,10 @@
 # feat/net 当前状态与接续入口
 
-更新于2026-11-12 00:29 UTC（本地11月12日）。完整目标“完成计划”仍 **active、未完成、未阻塞**；完整范围为[PLAN](PLAN.md) N0–N5，root串行，不派发子智能体。此页是唯一当前入口。上一页原样保存在[high v2前状态](HISTORY-20261111-through-high-resident-v2.md)，SHA 560d77e0f02b553ebda7b3ac0282a54b0220a0bb1dc1b44a3063f702abf1b172；继续链接更早全部证据。实际worktree/收据/原始日志优先，不按摘要覆盖未提交内容。
+更新于2026-11-12 00:31 UTC（本地11月12日）。完整目标“完成计划”仍 **active、未完成、未阻塞**；完整范围为[PLAN](PLAN.md) N0–N5，root串行，不派发子智能体。此页是唯一当前入口。上一页原样保存在[high v2前状态](HISTORY-20261111-through-high-resident-v2.md)，SHA 560d77e0f02b553ebda7b3ac0282a54b0220a0bb1dc1b44a3063f702abf1b172；继续链接更早全部证据。实际worktree/收据/原始日志优先，不按摘要覆盖未提交内容。
 
 ## 当前状态与下一步
 
-**当前唯一Turing任务：turing-20261112T002305Z-57037233，prefetch block1/ahead8，priority固定0，pid762125/child762485。** high priority六组18/18已全部收件复核/campaign与ledger终态；下一prefetch三树与顺序已冻结、首组真实launch。Mac无任务；同源码一次确认43126157862已真实失败终态/归档/身份/逐scope/ledger终态，复现与43124311515相同的唯一Finder回收站超时；四窗口逻辑和两个真实wire仍过，整轮保持失败、不再盲目重复相同确认。 high v3冷模型预检 **turing-20261111T223651Z-5d27f45e** 已 **813.212秒、原退出0、25files**，两个真实w3、三low与三high全部通过；共4320业务请求成功、三份16MiB与三份192MiB完整，目录/终端各120完整落在实际文件传输内。独立提取准确冻结metadata复算、原始人口/时间戳、八TC读回/安装/下载路径字节与静态配置先于两resident/配对均核验通过。旧v2的路径失败不改绿，N1延迟突变选路仍待查。
+**当前唯一Turing任务：turing-20261112T002946Z-9278969b，prefetch block2/ahead1，priority固定0，pid772511/child772739；block1/ahead8已完整收件复核终态通过（2/18场景）。** high priority六组18/18已全部收件复核/campaign与ledger终态；下一prefetch三树与顺序已冻结、首组真实launch。Mac无任务；同源码一次确认43126157862已真实失败终态/归档/身份/逐scope/ledger终态，复现与43124311515相同的唯一Finder回收站超时；四窗口逻辑和两个真实wire仍过，整轮保持失败、不再盲目重复相同确认。 high v3冷模型预检 **turing-20261111T223651Z-5d27f45e** 已 **813.212秒、原退出0、25files**，两个真实w3、三low与三high全部通过；共4320业务请求成功、三份16MiB与三份192MiB完整，目录/终端各120完整落在实际文件传输内。独立提取准确冻结metadata复算、原始人口/时间戳、八TC读回/安装/下载路径字节与静态配置先于两resident/配对均核验通过。旧v2的路径失败不改绿，N1延迟突变选路仍待查。
 
 | cold v3准入证据 | 值 |
 | --- | --- |
@@ -32,9 +32,9 @@
 
 六组均终态，所有advance1–6与旧exec90703都不能重复。high-response-priority-comparison-v1.json已汇总18/18、12960全ok、零缺失/重复/全部文件；完整phase/实际传输人口/位置差值/原SHA保留，无winner/p99/显著性或N3接受。低profile另以response-priority-comparison-raw-audit-v1.json重新准确冻结metadata与独立原始时间戳/人口/114原文件核验，无新低profile数据。
 
-**已选下一prefetch固定priority0，仅控制因素，不是最终最优策略**：response-priority-decision-v1.json绑定两份原comparison SHA。low目录服务p95九对均改善6.725–15.628ms，文件无一致改善；high九个对应位置文件、目录/终端服务p95均6对B更慢/3更快，文件差值−11.172至+22.376秒。high目录计划到完成有5对更慢/4更快、终端7对更慢/2更快；不将独立fresh位置差值当逐请求因果。先按PREFETCH原协议冻结1/2/8三树、记录准确source/control/单行差异与campaign，然后唯一启动首8。尚无三树或prefetch真实数据；完整N0–N5继续。
+**已选下一prefetch固定priority0，仅控制因素，不是最终最优策略**：response-priority-decision-v1.json绑定两份原comparison SHA。low目录服务p95九对均改善6.725–15.628ms，文件无一致改善；high九个对应位置文件、目录/终端服务p95均6对B更慢/3更快，文件差值−11.172至+22.376秒。high目录计划到完成有5对更慢/4更快、终端7对更慢/2更快；不将独立fresh位置差值当逐请求因果。PREFETCH三树/campaign已冻结，首8已真实收件复核通过、第二组1已唯一launch，准确输入与下一步见下节；完整N0–N5继续。
 
-### 批量prefetch1/2/8真实对照（首组8在途）
+### 批量prefetch1/2/8真实对照（首8终态，第二组1在途）
 
 [PREFETCH](PREFETCH.md)原顺序和全部期限/人口/字节门保持；完整priority数据后0d564280先保存固定priority0理由，随后freeze-prefetch-triple-v1.py才创建三树/campaign。
 **完整树仅差PULL_AHEAD一行，priority0、所有fixture/metadata/Noq/iroh完全匹配，rolling排除**；prefetch-source-triple-v1.json保存单行diff、fixture SHA、两份comparison/decision SHA与准确refs。
@@ -48,15 +48,19 @@
 
 控制固定 **5d3691f252f9dee0297fa3c494374be6119bca29**、task netlab-workload-prefetch，准备audit证明只增固定task/allowlist，原资源/UID/flock/netns/期限门逐字未动。
 low/high各原顺序 **8,1,2,1,2,8,2,8,1**，共9组18fresh；每组两真实w3，再low/high各1，分别low-prefetch/high-prefetch，low失败也执行high并留首非零。
-**当前block1/ahead8 turing-20261112T002305Z-57037233**，measurement workload_prefetch_v1-block1-ahead8，stage session12716已真实终态，pid762125/child762485；禁止重发首组。
-实际format空/编译42.68秒/w3两守卫已过；low原Rust720全ok、16MiB完整/关闭/Direct/120重叠全过、57.14秒。
-high原始bulk显示192MiB完整、90.184775秒，仍在idle_after，未有整组contract/收件/独立复核结论。后8组未提交。
+**block1/ahead8 turing-20261112T002305Z-57037233 已335.242秒、原退出0、17files/identity/原group空、prefetch-block-verification-v1.json与ledger/campaign终态。**
+准确冻结source metadata与原contract逐字段相同，独立raw population/单调时间戳low/high各720全ok、零缺失/重复；16/192MiB完整/关闭/Direct/目录与终端各120实际重叠均通过。
+low文件18.894779秒/7.103429Mbit，high90.184775秒/17.859031Mbit，两个profile独立；仅首组通过，不代表全矩阵或最终N3。
 
-**下一步**：ops/poll-turing-prefetch-v1.py观察同receipt；真实终态后CONTROL collect-network-ssh.py→ops/verify-turing-record.py→**ops/verify-prefetch-block-v1.py RUN 1**。
-准确冻结source复算与独立原始人口/时间戳两profile完整后，**ops/advance-prefetch-campaign-v1.py 1**先终态ledger/campaign，再唯一launch block2/ahead1。
+**当前block2/ahead1 turing-20261112T002946Z-9278969b**，measurement workload_prefetch_v1-block2-ahead1，source9abc4cbb/tree2707d231/snapshot444b1146，control5d；pid772511/child772739已实际ps确认live，正在network-driver。
+advance1 session54818已真实终态，不能重复；后7组尚未提交。stage/advance1都不能因观察超时重发。
+
+**下一步**：ops/poll-turing-prefetch-v1.py观察同block2 receipt；真实终态后CONTROL collect-network-ssh.py→ops/verify-turing-record.py→**ops/verify-prefetch-block-v1.py RUN 2**。
+准确冻结source复算与独立原始人口/时间戳两profile完整后，**ops/advance-prefetch-campaign-v1.py 2**先终态ledger/campaign，再唯一launch block3/ahead2。
 720人口完整的业务失败留在原位置并继续预定矩阵；缺profile/缺人口/guard失败则needs_review，不自动补跑。
 提交不确定时只恢复同measurement revision已有receipt；root唯一ledger writer，stage/advance/register未终态不能另写ledger。
 第9组终态后才用ops/summarize-prefetch-campaign-v1.py汇总全部原文件hash与18轮数据，low/high独立、失败保留，不自动选winner/p99/最终N3。
+
 
 原low v4 16MiB/120秒/100ms、cold high v3 192MiB/240秒/400ms、各operation单在途/2秒caller/原PTY10秒、三phase每类各120、probe/日志cap不变。
 失败文件仅按固定几何/单调计数分析，不伪要求完整payload；仍functional=false，区间caller_attempt、无verified payload rate，timeout明确由原caller界截断。
@@ -64,7 +68,7 @@ high原始bulk显示192MiB完整、90.184775秒，仍在idle_after，未有整�
 
 辅助工具纯数据测试prefetch-audit-helper-test-v1.json：5项（完整、low/high超时保留各720、缺high停止、原metadata损坏拒绝）0.824秒通过，另6项人口损坏拒绝；不替代当前真实run。
 prefetch-freeze-admission-test-v1.json还证明high未终态前冻结被拒绝且未创建任何源/campaign。旧low完整独立复核在response-priority-comparison-raw-audit-v1.json（18轮/12960/114文件），原摘要不覆盖、不重跑。
-准备metadata13项/21.435秒、dispatch38路径/43.257秒、原默认validator逐字段兼容证明仍保留。新辅助工具即将首次真实验证，尚不称首组通过。
+准备metadata13项/21.435秒、dispatch38路径/43.257秒、原默认validator逐字段兼容证明仍保留。新辅助工具已在首组真实数据上准确复现原metadata并独立核720×2人口；后续值仍未验证。
 
 后续滚动比较协议[PIPELINE-COMPARISON](PIPELINE-COMPARISON.md)已在任何rolling计时数据前保存：primary同宽8、priority0、匹配未调用helper与载荷，A B B A A B每block low/high各1，共12fresh；补充宽度选择须在首个rolling数据前依据完整prefetch记录理由。完整预览/公平/背压、取消/remote任务/host-child、成本与手机范围均保持，不能把这12场景当最终N3。
 
