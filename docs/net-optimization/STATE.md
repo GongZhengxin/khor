@@ -1,10 +1,10 @@
 # feat/net 当前状态与接续入口
 
-更新于2026-11-12 00:31 UTC（本地11月12日）。完整目标“完成计划”仍 **active、未完成、未阻塞**；完整范围为[PLAN](PLAN.md) N0–N5，root串行，不派发子智能体。此页是唯一当前入口。上一页原样保存在[high v2前状态](HISTORY-20261111-through-high-resident-v2.md)，SHA 560d77e0f02b553ebda7b3ac0282a54b0220a0bb1dc1b44a3063f702abf1b172；继续链接更早全部证据。实际worktree/收据/原始日志优先，不按摘要覆盖未提交内容。
+更新于2026-11-12 00:52 UTC（本地11月12日）。完整目标“完成计划”仍 **active、未完成、未阻塞**；完整范围为[PLAN](PLAN.md) N0–N5，root串行，不派发子智能体。此页是唯一当前入口。上一页原样保存在[high v2前状态](HISTORY-20261111-through-high-resident-v2.md)，SHA 560d77e0f02b553ebda7b3ac0282a54b0220a0bb1dc1b44a3063f702abf1b172；继续链接更早全部证据。实际worktree/收据/原始日志优先，不按摘要覆盖未提交内容。
 
 ## 当前状态与下一步
 
-**当前唯一Turing任务：turing-20261112T002946Z-9278969b，prefetch block2/ahead1，priority固定0，pid772511/child772739；block1/ahead8已完整收件复核终态通过（2/18场景）。** high priority六组18/18已全部收件复核/campaign与ledger终态；下一prefetch三树与顺序已冻结、首组真实launch。Mac无任务；同源码一次确认43126157862已真实失败终态/归档/身份/逐scope/ledger终态，复现与43124311515相同的唯一Finder回收站超时；四窗口逻辑和两个真实wire仍过，整轮保持失败、不再盲目重复相同确认。 high v3冷模型预检 **turing-20261111T223651Z-5d27f45e** 已 **813.212秒、原退出0、25files**，两个真实w3、三low与三high全部通过；共4320业务请求成功、三份16MiB与三份192MiB完整，目录/终端各120完整落在实际文件传输内。独立提取准确冻结metadata复算、原始人口/时间戳、八TC读回/安装/下载路径字节与静态配置先于两resident/配对均核验通过。旧v2的路径失败不改绿，N1延迟突变选路仍待查。
+**当前唯一Turing任务：turing-20261112T005001Z-4235b46a，prefetch block4/ahead1，priority固定0，pid801874/child802091。前三组6/18场景已完整收件复核，其中4通过、2个high文件在原240秒期限超时；4320交互请求全ok，失败保留。** high priority18/18早已全部收件复核/campaign与ledger终态，不重复。Mac无任务；两次原Finder超时保留；新只读host观察43128627304已归档/身份/metadata/ledger终态，零产品测试，非Mac全绿。 high v3冷模型预检 **turing-20261111T223651Z-5d27f45e** 已 **813.212秒、原退出0、25files**，两个真实w3、三low与三high全部通过；共4320业务请求成功、三份16MiB与三份192MiB完整，目录/终端各120完整落在实际文件传输内。独立提取准确冻结metadata复算、原始人口/时间戳、八TC读回/安装/下载路径字节与静态配置先于两resident/配对均核验通过。旧v2的路径失败不改绿，N1延迟突变选路仍待查。
 
 | cold v3准入证据 | 值 |
 | --- | --- |
@@ -32,9 +32,9 @@
 
 六组均终态，所有advance1–6与旧exec90703都不能重复。high-response-priority-comparison-v1.json已汇总18/18、12960全ok、零缺失/重复/全部文件；完整phase/实际传输人口/位置差值/原SHA保留，无winner/p99/显著性或N3接受。低profile另以response-priority-comparison-raw-audit-v1.json重新准确冻结metadata与独立原始时间戳/人口/114原文件核验，无新低profile数据。
 
-**已选下一prefetch固定priority0，仅控制因素，不是最终最优策略**：response-priority-decision-v1.json绑定两份原comparison SHA。low目录服务p95九对均改善6.725–15.628ms，文件无一致改善；high九个对应位置文件、目录/终端服务p95均6对B更慢/3更快，文件差值−11.172至+22.376秒。high目录计划到完成有5对更慢/4更快、终端7对更慢/2更快；不将独立fresh位置差值当逐请求因果。PREFETCH三树/campaign已冻结，首8已真实收件复核通过、第二组1已唯一launch，准确输入与下一步见下节；完整N0–N5继续。
+**已选下一prefetch固定priority0，仅控制因素，不是最终最优策略**：response-priority-decision-v1.json绑定两份原comparison SHA。low目录服务p95九对均改善6.725–15.628ms，文件无一致改善；high九个对应位置文件、目录/终端服务p95均6对B更慢/3更快，文件差值−11.172至+22.376秒。high目录计划到完成有5对更慢/4更快、终端7对更慢/2更快；不将独立fresh位置差值当逐请求因果。PREFETCH三树/campaign已冻结，前三组已收件复核（首8全过、1/2各high文件超时），第四组1已唯一launch，准确输入与下一步见下节；完整N0–N5继续。
 
-### 批量prefetch1/2/8真实对照（首8终态，第二组1在途）
+### 批量prefetch1/2/8真实对照（前三组终态，第四组1在途）
 
 [PREFETCH](PREFETCH.md)原顺序和全部期限/人口/字节门保持；完整priority数据后0d564280先保存固定priority0理由，随后freeze-prefetch-triple-v1.py才创建三树/campaign。
 **完整树仅差PULL_AHEAD一行，priority0、所有fixture/metadata/Noq/iroh完全匹配，rolling排除**；prefetch-source-triple-v1.json保存单行diff、fixture SHA、两份comparison/decision SHA与准确refs。
@@ -52,12 +52,19 @@ low/high各原顺序 **8,1,2,1,2,8,2,8,1**，共9组18fresh；每组两真实w3�
 准确冻结source metadata与原contract逐字段相同，独立raw population/单调时间戳low/high各720全ok、零缺失/重复；16/192MiB完整/关闭/Direct/目录与终端各120实际重叠均通过。
 low文件18.894779秒/7.103429Mbit，high90.184775秒/17.859031Mbit，两个profile独立；仅首组通过，不代表全矩阵或最终N3。
 
-**当前block2/ahead1 turing-20261112T002946Z-9278969b**，measurement workload_prefetch_v1-block2-ahead1，source9abc4cbb/tree2707d231/snapshot444b1146，control5d；pid772511/child772739已实际ps确认live，正在network-driver。
-advance1 session54818已真实终态，不能重复；后7组尚未提交。stage/advance1都不能因观察超时重发。
+**block2/ahead1 turing-20261112T002946Z-9278969b** 已487.890秒、原101、17files/identity/原group空/准确冻结metadata复现/独立人口与时间戳/ledger/campaign终态。
+**block3/ahead2 turing-20261112T003850Z-7ba0cbc8** 已485.850秒、原101、同17files/完整核验/终态。
+两组low/high各720交互全ok；low文件分别21.471010秒/6.251114Mbit与19.516496秒/6.877143Mbit，原关闭/Direct/120重叠门全过。
+high分别在 **240.001799/240.000663秒** 触发原240秒caller，文件moved=null/完整性失败、functional=false；720请求仍全ok、关闭/Direct/120重叠保持。
+失败区间caller_attempt、completion_censored=true、verified payload rate=null；不得把240秒当完成时间或推算有验证吞吐，不能重跑替换失败。仅六场景完整记录（4功能通过/2文件超时），不是完整矩阵或统计结论。
 
-**下一步**：ops/poll-turing-prefetch-v1.py观察同block2 receipt；真实终态后CONTROL collect-network-ssh.py→ops/verify-turing-record.py→**ops/verify-prefetch-block-v1.py RUN 2**。
-准确冻结source复算与独立原始人口/时间戳两profile完整后，**ops/advance-prefetch-campaign-v1.py 2**先终态ledger/campaign，再唯一launch block3/ahead2。
+**当前block4/ahead1 turing-20261112T005001Z-4235b46a**，measurement workload_prefetch_v1-block4-ahead1，source9abc4cbb/tree2707d231/snapshot444b1146，control5d；pid801874/child802091已实际ps确认live。
+编译43.00秒、两个真实w3守卫已过，正在low。advance1–3均已实际终态（最近session10592），不能重复；后5组尚未提交。
+
+**下一步**：ops/poll-turing-prefetch-v1.py观察同block4 receipt；真实终态后CONTROL collect-network-ssh.py→ops/verify-turing-record.py→**ops/verify-prefetch-block-v1.py RUN 4**。
+准确冻结source复算与独立原始人口/时间戳两profile完整后，**ops/advance-prefetch-campaign-v1.py 4**先终态ledger/campaign，再唯一launch block5/ahead2。
 720人口完整的业务失败留在原位置并继续预定矩阵；缺profile/缺人口/guard失败则needs_review，不自动补跑。
+collect会返回原101，但有实际report时继续核其原失败；不能因原非零跳过证据复核或把它改绿。
 提交不确定时只恢复同measurement revision已有receipt；root唯一ledger writer，stage/advance/register未终态不能另写ledger。
 第9组终态后才用ops/summarize-prefetch-campaign-v1.py汇总全部原文件hash与18轮数据，low/high独立、失败保留，不自动选winner/p99/最终N3。
 
@@ -68,7 +75,7 @@ advance1 session54818已真实终态，不能重复；后7组尚未提交。stag
 
 辅助工具纯数据测试prefetch-audit-helper-test-v1.json：5项（完整、low/high超时保留各720、缺high停止、原metadata损坏拒绝）0.824秒通过，另6项人口损坏拒绝；不替代当前真实run。
 prefetch-freeze-admission-test-v1.json还证明high未终态前冻结被拒绝且未创建任何源/campaign。旧low完整独立复核在response-priority-comparison-raw-audit-v1.json（18轮/12960/114文件），原摘要不覆盖、不重跑。
-准备metadata13项/21.435秒、dispatch38路径/43.257秒、原默认validator逐字段兼容证明仍保留。新辅助工具已在首组真实数据上准确复现原metadata并独立核720×2人口；后续值仍未验证。
+准备metadata13项/21.435秒、dispatch38路径/43.257秒、原默认validator逐字段兼容证明仍保留。新辅助工具已在前三组真实数据（包括两个文件超时）准确复现原metadata并独立核全部720×6人口；后续重复仍未验证。
 
 后续滚动比较协议[PIPELINE-COMPARISON](PIPELINE-COMPARISON.md)已在任何rolling计时数据前保存：primary同宽8、priority0、匹配未调用helper与载荷，A B B A A B每block low/high各1，共12fresh；补充宽度选择须在首个rolling数据前依据完整prefetch记录理由。完整预览/公平/背压、取消/remote任务/host-child、成本与手机范围均保持，不能把这12场景当最终N3。
 
@@ -92,6 +99,26 @@ artifact **13903142211** / ZIP SHA **8a856f8b43f712e84d8d7f6dbb3aa15e39756079413
 4scope始终全部执行、保留首非零；7条合成control路径原已过。scratch Node“phone”不是用户iPhone。共享Mac资源/90分钟/其他控制文件保持，隔离control不改变当前Turing5eb输入。当前只有窗口/真实scratch文件范围的正面证据，无吞吐收益、服务端取消、最终N3/N5或手机验收。
 
 用户本次进度问询时（00:02 UTC）已明确：**还没有可让用户验收的最终iPhone版本**。按当前每组11–12分钟及归档复核开销，高profile完整对照暂估再30–45分钟；完整N0–N5仍暂估2–4天、低置信度，不能将这段计时实验的剩余时间当完整完成承诺。peer relay自动接管、独立/同时IPv4/IPv6变化、完整负载/后台成本、最终源码与真实手机能耗等全部范围保持；继续有可执行工作，active。
+
+### Mac只读依赖观察（零产品测试）
+
+host观察 **43128627304** / request **cfb20ca0fbc9489f8443288a15eb2597** / source57ffe/tree5e93 / snapshot **34698354428bff953875c0d83cdc9d73b846bd60**，actualcontrol **2c3c012224b349d4a5bb5c2cdc2db78ccddee4d3**，私库隔离feat/net-mac-host-observe-v1。
+只增固定只读观察分支，剥离后network.sh逐字等于原4bad，其他control/workflow/shared guard/资源门全相同；CONTROL HEAD仍5d，当前Turing冻结输入未动。
+artifact **13904621128** / ZIP SHA **73f5034b84a1d3bf6ad362cccff829f28ea2266eb1aced5245d131a4dac3460c**，9files/11controls/source/bundle核验，host-observation-verification-v1.json与ledger终态。
+workflow success仅表示观察完成，**actual_product_tests=0、format未执行、apple_events_sent=0、host_changes=false、behavior_verified=false**；不改变前两次整轮失败。
+当前build uid/euid与console owner均501，gui/501查询成功，Finder PID454/uid501存在、osascript0；.Trash元数据uid501/mode0700，read access advisory=false、write/search=true。
+只读metadata没有目录条目、TCC DB、凭据、进程参数/环境；没有Finder重启/GUI配置更改/回收站操作。
+这些只证明采样时存在会话/进程，不证明失败当时的状态、Finder响应或AppleEvent权限，也不能把目录advisory直接归因TCC；唯一根因仍未证。
+后续继续在原构建通道定位响应/授权边界，保留原门；没有无限同源码确认重跑，也不把此局部依赖当完整网络目标blocked。
+
+### N1空闲到首次操作测量审计
+
+idle-first-action-static-audit-v1.json绑定当前56df7940与四源文件SHA，图谱partial/stale未覆盖vendor，实际源码逐段核。
+原p7 inactive只每200ms查询两端选路、不发echo；active才在循环中调用原30秒caller的目录echo，原route门active10秒/idle20秒不变。
+源码备用keepalive15秒/idle timeout45秒；STREAM activity触发每peer最多5秒一次refresh，活跃窗5秒且PING/ACK不自续。这和旧16–17秒idle的量级相符，**不是唯一因果证明**。
+下一必需测量是好路恢复后、任何Node状态轮询或别的业务预热之前的首次前台读取；分开idle/first-action的wire总字节/包区间，不能称probe-only或能耗。
+保留所有首请求结果/原caller与旧p7门；LabNode.with使用Device.spawn后await，其取消所有权须审查，不能新增无主任务。
+当前只有静态证据，**零新N1 run、未改变任何生产timer/策略、不是N1接受**。完整首响应/严重/quiet/跨连接/成本和原失败仍待。
 
 ### 并行完成的Mac vendor默认库回归
 
@@ -200,7 +227,7 @@ Mac/B实际编译源是source-v2 **8371dbb024502c8a0fea952b0ea96fbff6a41f39** / 
 - **N0**：最终分场景UX门、足量尾部人口、同条件完整前后与成本报告；当前不是p99或最终最优设计证明。
 - **N1**：严重/quiet/恢复长尾、跨连接质量与比较成本，原启动/配对失败定位，同故障fallback参照。
 - **N2**：同一真实连接独立/同时IPv4/IPv6地址迁移、LOST身份、完整取消/owner/迟到/撤销，以及carrier在调用开始后到达。
-- **N3**：低profile18场景及独立UDP容量诊断已完成；旧TCP门仍红，分层模型判读v2已明确，先真实高profile预检，再独立比较prefetch1/2/8、大BDP300ms/50Mbit（先kernel校准/预注册新模型）、前台完整文件/预览、连续控制下bulk公平、共享/分连接、背压/取消、独立host/child退出、1/3/5设备CPU/字节/唤醒/能耗。小链路收益不能自动接受全部范围。
+- **N3**：low/high priority各18轮与独立UDP容量诊断已完成；旧TCP门仍红、分层模型判读保留。prefetch1/2/8矩阵已记录6/18场景（4通过/2个high文件超时），当前第4组在途；之后同宽batch/rolling、前台完整文件/预览、连续控制下bulk公平、共享/分连接、背压/取消、独立host/child退出、1/3/5设备CPU/字节/唤醒/能耗仍必须完成。局部吞吐/门绿不能替代全部范围。
 - **N4**：两腿Direct/Relay/peer relay/SSH、唯一/多middle、prepared/混合版本、middle自身v4/v6移动、整机/出口/登记故障域及基于数据的中继布局/运维设计。
 - **N5**：默认库Noq447/iroh184已过（iroh有1原ignored），全部59 vendor的上游/退出与其他feature/integration/物理覆盖、Noq1/物理Noq5、最终准确集成源码Quality/native/proxy、多机/iPhone与能耗、统一决策报告。
 
