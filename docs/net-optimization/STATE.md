@@ -1,9 +1,19 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-12 07:11 UTC。用户暂停后已明确“继续”，执行已恢复；用户随后澄清“我没有验收 打错了”，没有新Lab/真机验收结果，完整目标“完成计划”**未完成**；范围仍为[PLAN](PLAN.md) N0–N5，root串行，不派发子智能体。
+更新于 2026-11-12 08:57 UTC。用户暂停后已明确“继续”，执行已恢复；用户随后澄清“我没有验收 打错了”，没有新Lab/真机验收结果，完整目标“完成计划”**未完成**；范围仍为[PLAN](PLAN.md) N0–N5，root串行，不派发子智能体。
 暂停前后完整原STATE逐字保存于[历史状态](HISTORY-20261112-pipeline-start-and-pause.md)，SHA256 `9a774440c70f3c3ca851b37aadcce9a867a2a22ca9bb687016a1091cf7856948`；该历史继续链接更早完整证据，不按摘要覆盖未提交内容。
 
 ## 当前执行与下一步
+
+**稳定版库门已完成，当前仅两项回归在途。** 库门 **turing-20261112T084724Z-35d6dfe3** 原0/226.384657s、17原files完整核验；Noq467/iroh197过、iroh原flaky ignored1，node lib/tests编译过，三锁与冻结源一致，post-check diff为空。stable-upgrade-gate-verification-v1.json，root ledger终态；新增[升级说明](IROH-UPGRADE.md)及E/iroh-upgrade-patch-ledger-v2.json。补丁22源码已用上游且库合同过，59项仍待逐项审查，不把pending写成全部必要。
+当前Turing应用固定12：**turing-20261112T085339Z-ab57a92e**，同source02807c79/tree f87d31f9/snapshotdc21d783、control68cadb57。Mac同树库门：**43186999295** / request2bbd0ca023644131880d97030df1e8a9，snapshot82206b8f、controlbd13e1e7；E/mac-iroh-upgrade-43186999295，bootstrap过，driver在途。两者独立host，未并发Turing计时bench。全N0–N5及真机未闭。
+
+**历史库门启动（现已终态）：turing-20261112T084724Z-35d6dfe3。** source **02807c79** / tree **f87d31f9** / snapshot **dc21d783**；control **bd13e1e7f8b2f12a6089978a69180d108eec4f14**。根锁及vendor锁均已确认iroh1.4.1、Noq1.4.0；保持原准确源码，Noq全lib→iroh全lib→node lib/tests编译，尚无新源行为结论。
+
+准备轮 **turing-20261112T071440Z-2f31345c** 原101/226.706692s：已生成锁/格式patch，Noq stats重复导入FxHashMap编译红，零行为接受。19原files/SHA/source/bundle/原group空核验，dependency-preparation-verification-v1.json；准确patch c719b20fe841b3df6e453a91e5a567b2c01c1eb52a709ae0a4ec462c81a06d01应用到候选并删重复导入得到02807c79。
+原首gate **turing-20261112T072057Z-c53a26f8** 原1/0.645742s，准备轮修改了共享source cache，materialize保护拒绝、零测试；2原files身份/SHA/原group空及cache-guard-failure-verification-v1.json，整轮失败保留。root在独占build.lock下核对旧HEAD/tree与完整patch SHA，将source和owner marker整体改名保存在原准备run/work/preserved-preparation-source，未删除/reset任何内容，E/iroh-upgrade-cache-preservation-v1.json。恢复空缓存后才提交当前gate；后续准备control **94b1a637f51d272c4472d28d3ef0af435a70b70b** 改为一次性clone，bash -n过、未提交运行。两原run ledger均终态；当前仅上述gate在途。
+
+**历史：iroh升级候选建立及首准备轮（已终态，见上）。** `/Volumes/disk0/Khor/worktrees/current/khor-net-iroh-upgrade-v1` / `experiment/net-iroh-upgrade-v1`，source **60620d0e** / tree **aa767462** / snapshot **a6644dc7**；control **54cfeb034c6bd17e8d9a046c9ddaf571eb32a2ae**，run **turing-20261112T071440Z-2f31345c**（pid1326978）。仅准备锁/格式并诊断编译，输出patch必须应用后再冻结验收，不记当前原源码行为绿。已校验发布archive SHA，完成三方迁移7处冲突；保留旧新增函数名iroh158/Noq33（仅语法存在证明）。补丁22改上游IPv6 QAD，待新源测试。60项初始迁移账目E/iroh-upgrade-patch-ledger-v1.json不把pending写成全部必要。candidate说明见其IROH-UPGRADE.md。canonical仍原依赖/运行时，原24性能源不变。
 
 **最新用户决定U18：实施最新稳定版升级，优先减少custom。** 已重新确认官方Latest为iroh1.4.1，配套Noq1.4.0。下一步从已验整合候选dc73837e建立隔离升级树，复用已校验的发布源码，先盘点最小应用接口与补丁专属合同，再逐项迁移/退出。原性能冻结树、原红项与N0–N5范围保持。尚无升级候选构建或手机验收。
 
