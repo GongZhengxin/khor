@@ -98,18 +98,18 @@ def interval(before, after):
                 includes_snapshot_gap=True, probe_only=False)
 
 
-def case(row, attempts):
+def case(row, attempts, *, revision=REVISION, quiet_ms=10000, diagnostic='off'):
     name = row['case']
     side, phase = CASES[name]
     peer = 'beta' if side == 'alpha' else 'alpha'
-    for key, expected in dict(schema=1, revision=REVISION, phase_s=phase, direct_before_ms=300,
-                              direct_restored_ms=0, relay_edge_ms=40, quiet_ms=10000,
-                              caller_ms=30000, diagnostic='off', full_N1_accepted=False).items():
+    for key, expected in dict(schema=1, revision=revision, phase_s=phase, direct_before_ms=300,
+                              direct_restored_ms=0, relay_edge_ms=40, quiet_ms=quiet_ms,
+                              caller_ms=30000, diagnostic=diagnostic, full_N1_accepted=False).items():
         need(row[key] == expected, 'first-action configuration: '+key)
     need(row['from'] == side and row['to'] == peer, 'first-action direction')
     times = {key: integer(row[key]) for key in ['quiet_started_us', 'restore_started_us',
              'restore_ended_us', 'request_started_us', 'request_ended_us', 'caller_elapsed_us', 'paths_observed_us']}
-    need(times['restore_started_us']-times['quiet_started_us'] >= 10000000, 'quiet interval shortened')
+    need(times['restore_started_us']-times['quiet_started_us'] >= quiet_ms*1000, 'quiet interval shortened')
     need(times['restore_ended_us'] >= times['restore_started_us'], 'restore ordering')
     need(times['request_started_us']-times['restore_ended_us'] >= phase*1000000, 'nominal phase shortened')
     need(times['request_ended_us']-times['request_started_us'] >= times['caller_elapsed_us'], 'caller elapsed')

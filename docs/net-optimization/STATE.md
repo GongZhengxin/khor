@@ -1,12 +1,12 @@
 # feat/net 当前状态与接续入口
 
-更新于2026-11-12 02:40 UTC（本地11月12日）。完整目标“完成计划”仍 **active、未完成、未阻塞**；完整范围为[PLAN](PLAN.md) N0–N5，root串行，不派发子智能体。此页是唯一当前入口。上一页原样保存在[high v2前状态](HISTORY-20261111-through-high-resident-v2.md)，SHA 560d77e0f02b553ebda7b3ac0282a54b0220a0bb1dc1b44a3063f702abf1b172；继续链接更早全部证据。实际worktree/收据/原始日志优先，不按摘要覆盖未提交内容。
+更新于2026-11-12 03:05 UTC（本地11月12日）。完整目标“完成计划”仍 **active、未完成、未阻塞**；完整范围为[PLAN](PLAN.md) N0–N5，root串行，不派发子智能体。此页是唯一当前入口。上一页原样保存在[high v2前状态](HISTORY-20261111-through-high-resident-v2.md)，SHA 560d77e0f02b553ebda7b3ac0282a54b0220a0bb1dc1b44a3063f702abf1b172；继续链接更早全部证据。实际worktree/收据/原始日志优先，不按摘要覆盖未提交内容。
 
 ## 当前状态与下一步
 
 本次进度答复（01:50 UTC）：当前prefetch最后一组加归档汇总暂估15–25分钟，仅指本轮实验；完整交付仍是数天级、低置信度，尚无可信完成日期。此前2–4天估计不因compact或session重新起算，也不能当承诺。用户报告的自动接管失败、地址族换网与真实手机能耗尚未全部验收，没有最终iPhone候选可交付。
 
-**当前Turing无在途任务；prefetch9组/18场景已全部终态/归档/准确metadata和独立原始人口核验。12功能通过、6个high文件240秒超时；12960交互请求全ok，153原report文件hash已核。** prefetch-comparison-v1.json SHA **7dede5f2c580d46aff0e6138b968da2550db2e095d6de351652a56d8a7e537b0**；所有advance1–9终态不能重复。Mac无任务；e471准确源码Mac固定12门已过。N1旧所有权guard **turing-20261112T015902Z-e8569de4** 已真实重现caller取消后设备future继续，detached负控绿；90.034秒/原101/13files/identity/原group空/准确冻结metadata与独立原件/ledger终态。LabNode.with所有权修复 **0a8b90d9986d3426f65b61ae9d994083f1fa3321** 已在 **turing-20261112T020453Z-b9c5278d** 复验两项全绿；原guard逐字相同、control相同，53.827秒/原0/13files/identity/原group空/准确metadata与独立原件/旧红hash/ledger终态。首操作v1配置准入失败原样保留；补second路由器读回的v2 **turing-20261112T023151Z-8d7b0ea1** 已六场景读取与配置/人口/成本全核验，原0/224.643秒/17files/原group空/ledger终态。原连续STREAM静默10秒仍缺独立证据，不能称完整quiet或N1接受；生产Node/Noq/iroh不改。两次Finder超时仍未闭。 high v3冷模型预检 **turing-20261111T223651Z-5d27f45e** 已 **813.212秒、原退出0、25files**，两个真实w3、三low与三high全部通过；共4320业务请求成功、三份16MiB与三份192MiB完整，目录/终端各120完整落在实际文件传输内。独立提取准确冻结metadata复算、原始人口/时间戳、八TC读回/安装/下载路径字节与静态配置先于两resident/配对均核验通过。旧v2的路径失败不改绿，N1延迟突变选路仍待查。
+**当前Turing无在途任务；prefetch9组/18场景已全部终态/归档/准确metadata和独立原始人口核验。12功能通过、6个high文件240秒超时；12960交互请求全ok，153原report文件hash已核。** prefetch-comparison-v1.json SHA **7dede5f2c580d46aff0e6138b968da2550db2e095d6de351652a56d8a7e537b0**；所有advance1–9终态不能重复。Mac无任务；e471准确源码Mac固定12门已过。N1旧所有权guard **turing-20261112T015902Z-e8569de4** 已真实重现caller取消后设备future继续，detached负控绿；90.034秒/原101/13files/identity/原group空/准确冻结metadata与独立原件/ledger终态。LabNode.with所有权修复 **0a8b90d9986d3426f65b61ae9d994083f1fa3321** 已在 **turing-20261112T020453Z-b9c5278d** 复验两项全绿；原guard逐字相同、control相同，53.827秒/原0/13files/identity/原group空/准确metadata与独立原件/旧红hash/ledger终态。首操作v1配置准入失败原样保留；补second路由器读回的v2 **turing-20261112T023151Z-8d7b0ea1** 已六场景读取与配置/人口/成本全核验，原0/224.643秒/17files/原group空/ledger终态。原连续STREAM静默10秒仍缺独立证据，不能称完整quiet或N1接受；本轮增加Iroh50只读STREAM诊断，生产选路/探测/计时器参数不改；尚待实际诊断与准确源码Mac vendor回归。两次Finder超时仍未闭。 high v3冷模型预检 **turing-20261111T223651Z-5d27f45e** 已 **813.212秒、原退出0、25files**，两个真实w3、三low与三high全部通过；共4320业务请求成功、三份16MiB与三份192MiB完整，目录/终端各120完整落在实际文件传输内。独立提取准确冻结metadata复算、原始人口/时间戳、八TC读回/安装/下载路径字节与静态配置先于两resident/配对均核验通过。旧v2的路径失败不改绿，N1延迟突变选路仍待查。
 
 | cold v3准入证据 | 值 |
 | --- | --- |
@@ -150,6 +150,11 @@ alpha phase0/14/5首读取297.685/327.577/321.867ms；beta230.688/265.406/250.93
 **静默硬合同未闭**：没有显式前台调用与aggregate counters不证明连续10秒无STREAM；resident后台未逐帧区分。quiet-scope-audit-v1.json独立绑定此次proof，continuous_stream_silence_verified=false、full_quiet_contract_accepted=false、完整N1未接受。后继source-owned输出补这两个false字段并以原19种数据检查复验；原冻结报告不改写。接续必须独立观测/建立该静默窗口，不能把六个配置/首操作观测替代原完整quiet要求。
 
 **当前Turing与Mac均无在途任务**，最近可用predecessor为已收件8d7b0ea1。所有本轮source/control/task和ledger已终态，不重复stage/launch。下一步继续quiet合同的独立观测，同时准备按既定宽度8→2的匹配batch/rolling源与控制；首个rolling数据仍为0，独立24场景协议不变。完整N0–N5原剩余范围保持，尚无最终候选手机安装/验收。
+
+**当前接续：被动STREAM诊断已备源码，零真实见证**。Iroh50在现有250ms refresh_candidates原stats读数上增加仅DEBUG日志：所有受跟踪连接STREAM累计tx/rx、actor序号、连接增删代数与单调/墙钟。原帧合计/ActiveRefresh/计时器/策略不改，无新任务或定时器；关闭日志时无快照分配或观测时钟读取。主vendor为原59项+观测50，共60，42–44仍隔离；N5新增项不得漏验。
+独立first_foreground_stream_witness_v1 / task netlab-first-action-streams保持六fresh顺序/原拓扑/phase/30秒caller，仅诊断层候选窗12秒以留固定500ms观测边界，严格核完整10秒STREAM静默与真实请求阳性对照；普通计时仍10秒/off，诊断不混入原六普通样本。完整协议IDLE-ACTION末节。
+新source-owned netlab-first-action-streams.py及11种见证合成输入已过，原19种first-action和9种guard同步过；6种控制stub 0.314秒证明guard off→actions full与首原失败保留，均非真实静默证据。新control **1bdb2272f23bfd59961af79cbebf04242791ce33** / local feat/net-first-action-streams-v1 / parent2cfce，仅固定task/allowlist/分支，UID/flock/netns/资源/期限原样；CONTROL HEAD5d未动。first-action-stream-control-input-v1.json/control-test-v1.json。
+当前无在途任务，准备提交准确源码后以已收件8d7b0ea1作predecessor启动该诊断；格式门过后可独立Mac runner执行同source vendor默认库，不能借已有代码的绿替代新增IROH50编译/回归。所有旧stage/launch/ledger均终态，不重复。完整N0–N5和既定rolling宽度8→2各12场景保持。
 
 随后继续严重/quiet/跨连接/完整N0–N5；完整prefetch后、rolling计时前优先补测，理由是前台恢复体验与测量所有权缺口。
 必要基础回归具备后可并行准备隔离的可信候选构建以取得早期真机反馈，但早期反馈不代替最终矩阵；中央GUI合并/发布授权不套到本任务，已装App变更仍需具体交接。

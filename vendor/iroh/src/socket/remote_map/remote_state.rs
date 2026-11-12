@@ -244,6 +244,8 @@ type AddrEvents = MergeUnbounded<
 pub(super) struct RemoteStateActor {
     /// All connections we have to this remote endpoint.
     connections: FxHashMap<ConnId, ConnectionState>,
+    diagnostic_actor_serial: u64,
+    diagnostic_registry_epoch: u64,
     /// State of the actor and hooks into the rest of the remote endpoint.
     ///
     /// This is on a separate struct so that we can have parallel mutable borrows to
@@ -353,8 +355,14 @@ impl RemoteStateActor {
         rounds: tokio::sync::broadcast::Sender<HolepunchRound>,
         peer_observed: PeerObserved,
     ) -> Self {
+        let diagnostic_actor_serial = if tracing::enabled!(target: "khor_net_samples", tracing::Level::DEBUG) {
+            static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
+            NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+        } else { 0 };
         Self {
             connections: FxHashMap::default(),
+            diagnostic_actor_serial,
+            diagnostic_registry_epoch: 0,
             state: State {
                 endpoint_id,
                 metrics: metrics.clone(),
@@ -662,6 +670,9 @@ impl RemoteStateActor {
         self.state.metrics.num_conns_opened.inc();
         // Remove any conflicting stable_ids from the local state.
         let conn_id = ConnId(conn.stable_id());
+        if tracing::enabled!(target: "khor_net_samples", tracing::Level::DEBUG) {
+            self.diagnostic_registry_epoch = self.diagnostic_registry_epoch.saturating_add(1);
+        }
         self.connections.remove(&conn_id);
 
         // Hook up paths, NAT addresses and connection closed event streams.
@@ -763,6 +774,9 @@ impl RemoteStateActor {
         );
 
         if let Some(conn_state) = self.connections.remove(&conn_id) {
+            if tracing::enabled!(target: "khor_net_samples", tracing::Level::DEBUG) {
+                self.diagnostic_registry_epoch = self.diagnostic_registry_epoch.saturating_add(1);
+            }
             self.state.metrics.num_conns_closed.inc();
             conn_state.path_state.close(closed);
         }
@@ -1271,12 +1285,28 @@ impl RemoteStateActor {
     /// connections; the probes' ACKs cannot extend the activity window.
     fn refresh_candidates(&mut self) {
         let now = Instant::now();
-        let frames = self.connections.values().filter_map(|c| c.handle.upgrade())
-            .map(|c| {
+        let diagnose = tracing::enabled!(target: "khor_net_samples", tracing::Level::DEBUG);
+        let mut stream_counters = Vec::new();
+        let frames = self.connections.iter().filter_map(|(id, c)| c.handle.upgrade().map(|c| (id, c)))
+            .map(|(id, c)| {
                 let s = c.stats();
+                if diagnose {
+                    stream_counters.push((id.0, s.frame_tx.stream, s.frame_rx.stream));
+                }
                 s.frame_tx.stream.saturating_add(s.frame_rx.stream)
             })
             .fold(0u64, |n, frames| n.saturating_add(frames));
+        if diagnose {
+            static BEGAN: std::sync::OnceLock<std::time::Instant> = std::sync::OnceLock::new();
+            let monotonic_us = BEGAN.get_or_init(std::time::Instant::now).elapsed().as_micros() as u64;
+            let unix_us = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_micros() as u64;
+            stream_counters.sort_unstable_by_key(|row| row.0);
+            debug!(target: "khor_net_samples", peer = %self.state.endpoint_id,
+                monotonic_us, unix_us, actor_serial = self.diagnostic_actor_serial,
+                registry_epoch = self.diagnostic_registry_epoch,
+                counters = ?stream_counters, "khor_stream_snapshot_v1");
+        }
         self.state.refresh.observe(frames, now);
         if !self.state.refresh.ready(now) {
             return;

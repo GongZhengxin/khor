@@ -108,3 +108,26 @@ resident后台流量未被关闭或逐帧区分，总字节/包不能证明其�
 quiet-scope-audit-v1.json绑定本次proof并保留该缺口；这六个有效配置/首次调用/成本观测不等于完整quiet恢复接受。
 后继校验输出显式continuous_stream_silence_verified=false与full_quiet_contract_accepted=false；
 完整N1仍须独立观测/建立连续STREAM静默、严重尾部与完整原范围。
+
+
+## 被动STREAM见证协议（首次诊断数据前）
+
+新增独立revision first_foreground_stream_witness_v1和固定task netlab-first-action-streams，
+沿用原六fresh名称/顺序、拓扑、Direct300→0、Relay约80、phase0/14/5及原30秒caller。
+先以诊断off执行原两p8g；全部绿后才以NETLAB_DIAGNOSTICS=1执行六场景并保存双方resident原日志。
+本层是full诊断，不充当新的普通性能或能耗样本。
+
+Iroh补丁50只在原有250ms采样周期读取原连接stats，增加STREAM tx/rx、actor序号、
+连接集合增删代数与单调/墙钟快照，不发请求，不新增定时器。全连接集合在采样之间新建又关闭也会改变代数。
+候选静默窗为12秒（原合同至少10秒）；固定取起止各留500ms边界的首末快照，
+单调跨度须至少10,000,000us，并要求整个候选窗的两端所有受跟踪连接、代数、actor和计数不变。
+不从变化窗内挑好看的子段；最大快照间隔1秒，单调/墙钟相邻增量差最多100ms作为观测有效性门。
+每个方向随后原真实目录读取必须在双方相同actor/原连接上产生STREAM增长，形成阳性对照；
+请求完成后多等1秒仅供现有采样周期观察并保存日志，不算操作延迟。
+
+source-owned校验要求全部六case/十二caller/十二resident日志、原配置/计数与实际Rust人口齐全；
+见证失败与读取失败分开，Rust六读绿不能覆盖STREAM见证红。缺日志/错对端/时钟跳变标不完整，
+有完整观测但业务或见证失败则完整保留为失败，不自动补样本。普通模式仍原10秒/diagnostic off。
+已通过11种见证合成输入与原19种first-action、9种guard输入；6种调度stub验证先guard off再action full、
+guard红不进业务、首原非零73/79保留。它们都不是实际STREAM静默证据。
+本次只补静默观测合同，不是严重/quiet全尾部、迁移、手机恢复、能耗或完整N1接受。

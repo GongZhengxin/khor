@@ -12,6 +12,23 @@
 
 ## 补丁
 
+### 50. 隔离诊断的STREAM计数与连接集合见证（2026-11-12，尚待实际验证）
+
+N1首次前台操作已有有效配置/成本数据，但十秒没有前台调用并不证明传输层STREAM静默。
+复用原250ms reselect中的refresh_candidates与其原有每连接stats读取，仅在khor_net_samples DEBUG开启时，
+记录对端所有受跟踪连接的stable id、STREAM tx/rx累计计数、actor序号、连接增删代数、单调/墙钟时间。
+连接集合代数覆盖采样间新建又关闭；actor序号防止重建与计数复位假装稳定。
+原STREAM合计、ActiveRefresh、探测/选路、队列及全部生产计时器保持；无新增任务或计时器。
+普通不开日志时不分配快照Vec、不读取观测时钟、不累加诊断序号；两个诊断字段保持零值。
+不记录密钥或包载荷。日志有成本，真实静默见证必须与普通计时/CPU/能耗数据分开。
+
+新固定诊断六fresh保持原方向/phase/30秒caller，静默候选窗12秒，在两端日志内核十秒完整内窗、
+稳定actor/registry/连接集合/STREAM计数及真实请求后的计数增长。缺失、时钟跳变或STREAM活动保留为失败。
+纯Python见证校验合成红绿已过，Linux实际诊断与Mac vendor回归尚待；不能从新代码存在宣告静默/N1已接受。
+目前主候选增至60项（Iroh1–41/45–50与Noq1–13；42–44仍隔离），本项是观测补丁。
+未核上游同语义替代；诊断结束可删除本观测器，或在验证等价的全连接计数/生命周期代数后替换。
+删除不改变选路参数，但须保留原始记录与普通/诊断分层，重新验证依赖该观测器的验收工具。
+
 ### 49. 单一实际路径不被另一连接的首选路径遮住（2026-11-11，候选未验收）
 
 PathStateSender.record_selected原本把peer共享的preferred四元组在每条conn的open path表匹配；另一活IP连接保持首选而新conn只有Custom时，后者实际已完成端到端业务，观察却selected=None，Node路型Unknown。真实Node四合同中源166的两端普通/early均answered=true、requests=1但routeUnknown，旧573则answered=false/requests=0；原断言和旧原红保留。
