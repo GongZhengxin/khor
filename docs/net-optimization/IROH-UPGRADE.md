@@ -70,3 +70,9 @@ E/iroh14-ios-notification-static-audit-v1.json核对旧/新三文件逐字相同
 
 六block源028普通对照已闭：[完整结果](IROH-WORKLOAD-RESULTS.md)，E/iroh14-workload-comparison-v1.json SHA940dda764a0f7787bf2439194b9bed6802ee3dbeed3736d60fe709358328732a，8640交互/12file完整，所有人口保留，吞吐/交互有取舍，非N3/最优接受。
 独立源08ecab50仅补原DEBUG下pending取消/Rest事实，不改变算法，结构审计E/iroh14-peer-diagnostic-source-audit-v1.json。121515Z-e8d79c86与预先冻结的追加122705Z-1248c9ae/123405Z-8a26c7cf共三轮均已终态，各124请求全ok；首轮Y缺Go保留decision红，追加两轮原四秒两门绿（X/Y约3.51/3.51s、3.28/3.54s）。E/iroh14-pending-cancel-two-diagnostics-results-v1.json绑定全部proof，批次按两追加轮上限关闭。没有重现9.3s或捕获目标Relay→Custom取消，不证明根因/修复，也不晋升canonical。原失败X确认质量代表和实际probe的副本不同，下一步检查同PTO tie-break与测量所有权，不能据绿诊断豁免。
+
+## 确认copy候选未通过物理门
+
+[独立设计与全证据](IROH-CONFIRM-COPY.md)：原日志证明同PTO副本质量来源与probe不一致；等价抽取源9f3a6ee6新增行为回归真实红，其余原197/467过。修复源80aeeff9仅equal-PTO tie-break，准确全库125007Z-645fe88c绿（Noq467/iroh198，原ignored1）。但固定三轮物理批次125445/125919/130239为首连失败、恢复5.52/7.76s失败、3.38/3.61s通过，全部保留。E/iroh14-confirm-copy-physical-results-v1.json accepted=false；不以单位绿晋升，028原红保持。
+
+下一步首连阶段诊断从028独立派生，复用已有opt-in observe_lifecycle，不增加依赖/恢复状态或改变预算。固定3fresh协议/准确当前run以STATE为准，不继续原样跑80挑绿。混版/Quality/真机与其余补丁退出仍开放。

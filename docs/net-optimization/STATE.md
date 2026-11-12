@@ -1,15 +1,18 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-12 13:00 UTC。用户已恢复“继续”，完整目标“完成计划”仍为[PLAN](PLAN.md) N0–N5，**未完成**；root串行，不派发子智能体。用户“我没有验收 打错了”有效，没有新的Lab/真机接受。最新U18授权跟进最新稳定iroh并尽量减少custom；旧AGENTS仅规划状态已被后续授权覆盖。
+更新于 2026-11-12 13:12 UTC。用户已恢复“继续”，完整目标“完成计划”仍为[PLAN](PLAN.md) N0–N5，**未完成**；root串行，不派发子智能体。用户“我没有验收 打错了”有效，没有新的Lab/真机接受。最新U18授权跟进最新稳定iroh并尽量减少custom；旧AGENTS仅规划状态已被后续授权覆盖。
 原STATE逐字保存于[本次历史](HISTORY-20261112-iroh-upgrade-through-mcp-preparation.md)，SHA256 `3ed8de20f1d15b0088559416195ff5ac0070398554387c3993c43f7094ea17ec`；其中继续链接原stream准备/暂停/恢复历史与完整旧证据，不按摘要覆盖未提交内容。
 
 ## 当前执行与下一步
 
-**当前在途 turing-20261112T125919Z-c38e8c1d**：task netlab-peer-mobility-samples / control69d23d4f912c2e3674d47010eea5b2577230e182，pid1892500，固定三轮物理验证R2。候选 **80aeeff919aa641dae55ba1a18b2020fead3e05e** / tree **f857f33c60e45cb7fee862c47c510cf5a8a27765** / snapshot **bc35d760bc6d0cf9d47aeee390e1913c175b8a10**。先查receipt/execution，未知handle恢复不重发。E/iroh14-confirm-copy-physical-plan-v1.json（SHA d29f61b405ecab22250f7878848e70c47c0247165828eb3d86d95d51b373da25）冻结3fresh、原7份输入/解析器SHA、原4秒门；每轮全结果保留且三轮后停止。计时期间无另一owned Turing编译/测试。
-物理R1 **125445Z-23ca34d4** 原101/197.619032s、16files终态；首setup请求10271172us超时，尚未开始prepare hold或换网，业务1error/2起止。identity/原hash/准确frozen attempts/group空核对、availability false/strict两门未执行，proof/ledger闭。这是原先首连红的同类失败，候选不能验收；固定R2/R3继续保留全结果，不替换失败或改源/门。
+**当前在途 turing-20261112T131057Z-45f84a73**：task netlab-peer-mobility-samples / control69d23d4f912c2e3674d47010eea5b2577230e182，pid1916460，独立首连阶段被动诊断R1。准确源 **c2b814933a20d69bddf73593a91cb9481baba6a5** / tree **c60f2db2e6263b1b01d3354ba0aae283001d32a7** / snapshot **31a848ab9990c6d6a66d713ee54e4fd692c16512**，worktree khor-net-iroh-hop-preparation-diagnostic-v1，branch experiment/net-iroh-hop-preparation-diagnostic-v1。先查receipt/execution，不重复提交。仅原observe_lifecycle的10类被动阶段点，原逻辑文本还原一致审计E/iroh14-hop-preparation-diagnostic-source-audit-v1.json；**无新增依赖/算法/timer/预算/fixture**，尚无编译/行为终态，非修复/接受。
+固定3fresh协议 `E/iroh14-hop-preparation-diagnostic-plan-v2.json`（v1未执行，v2说明复用既有hook避免引入tracing依赖）。R1/R2/R3全部保留，三轮后停止批次；无首连失败也不原样加轮挑结果。仍以原四秒门独立报告恢复，不扩称SLO/能耗。collect实际会话终态后才能跑后续proof/ledger mutation；校准后按准确新source原parsers及新增hop阶段做数据分析。
+
+**确认copy候选80aeeff9不接纳。** 固定三轮物理验证已全部终态：R1 **125445Z-23ca34d4** 首setup10271172us超时，原101/197.619032s、尚未换网；R2 **125919Z-c38e8c1d** 原0/150.511588s、124请求全ok，但四秒selection/decision红，X/Y Go5522531/7762941us；R3 **130239Z-456f9489** 原0/150.388833s、124请求全ok，两门过，Go3375083/3613151us。各16原files、准确源/control/原hash/frozen attempts/group空核验，proof/ledger全部终态；没有补跑替换失败。
+结果 `E/iroh14-confirm-copy-physical-results-v1.json` SHA **7a80dc776d5244aa0a3422b2ef167b06f3f53ce94f1a0e5c29ad4a0e9a3c17b5**，accepted=false。候选 **80aeeff919aa641dae55ba1a18b2020fead3e05e** / tree f857f33c60e45cb7fee862c47c510cf5a8a27765 / snapshot bc35d760bc6d0cf9d47aeee390e1913c175b8a10 保留为失败实验，不晋升canonical或普通性能源。固定原7份输入/解析器及四秒门未改。
 修改后全库门 **125007Z-645fe88c** 已0/233.761110s终态：Noq467过、iroh198过（含新增）/原ignored1，node lib/tests编译、三锁/原hash/source diff/group空核验；17原files，E/run/confirm-copy-library-verification-v1.json，ledger已闭。未从unit绿接受物理/手机或完整N2。
 红回归源9f3a6ee6的 **124312Z-e33e746e** 已101/338.074690s终态：Noq467全过，iroh原197过/原ignored1，仅新增quality-copy行为回归真实红（实际90ms、应85ms）；node lib/tests编译/三锁/源码diff与17原hash/group空均核对通过，proof/ledger已闭。红绿回归文件逐字相同，源码差异仅probe_priority/doc，E/iroh14-confirm-copy-source-audit-v1.json。原失败行2118/2119证明两copy在同tick均PTO0；+2298.518ms moving仍pending，+2551.014ms已None/restNone，E/iroh14-confirm-copy-observation-v1.json；精确取消调用仍非原日志直接观测。
-全库门后固定三轮原物理peer replug/原四秒selection+decision门，全部结果保留；不是唯一根因/完整恢复或升级接受。最小设计与反例见[IROH-CONFIRM-COPY](IROH-CONFIRM-COPY.md)。
+全库绿只证实窄probe/质量单位合同；三轮物理未过，不能用该修复关闭首连/9.3s/完整恢复。设计、反例与实际结果见[IROH-CONFIRM-COPY](IROH-CONFIRM-COPY.md)。
 
 **前一固定被动诊断批次已全部终态。** 源 **08ecab50f81f5e9e357a73614dface145feef432** / tree **bb049e979141bd90bc1ab4a980b232fa78a0b99e** / snapshot **84b69692f39fe9473a0da4316ac59334e77dbdac**，control **69d23d4f912c2e3674d47010eea5b2577230e182**，仅DEBUG取消/Rest补点，算法、物理和四秒门均不改，不晋升。
 首轮 **121515Z-e8d79c86**：0/261.855773s、16files/124请求全ok；warm门过51请求，X Go3285193us，Y没有Go，原decision门红保持。5条取消均是当前Custom/Ip→候选Relay，未捕获目标Relay→Custom取消。固定追加两轮计划 `E/iroh14-pending-cancel-two-diagnostics-plan-v1.json` 已执行并关闭：R1 **122705Z-1248c9ae** 0/167.663671s，两门过，X/Y Go3505368/3506880us；R2 **123405Z-8a26c7cf** 0/179.241810s，两门过，X/Y Go3283424/3538071us。各16原files/124请求，identity/hash/frozen attempts独立重算/group空核对，proof/ledger全部终态；原失败不豁免。
@@ -23,7 +26,7 @@ E/iroh14-peer-recovery-sample-gap-v1.json绑定原行：新X可见carried质量1
 
 最新已闭地址场景均准确028：roam三场景102059Z-2a7ba71e（372逻辑请求），IPv6同前缀overlap两合同111507Z-d7912aa7（248），实际QUIC NAT端口111859Z-de624e0b（124，30/30 warm实际streams选中新tuple，mismatch0），全部proof/ledger终态，详见下表；不是同连接/逐packet/手机/完整N2。
 
-下一步依据原失败精确copy事实形成最小可证伪回归：X在+2051.718ms发起Relay→Custom确认时，质量代表为Conn140064923605712/Path1（95.483590ms），实际候选probe却取Conn140065527340576/Path1（当时138.971123ms）；后者的新111.157583ms成为代表，收益门随后不再满足。此为原行可观察的copy不一致，不独立证明全部停顿原因。核查同PTO副本tie-break与测量所有权，保留故障副本优先、候选低PTO、原freshness/预算/四秒门及反例。冻结普通源028及旧sourcequad不动。
+下一步把两条独立链分开定位：首连红中，原journal记录hop尝试1于约3秒结束、总dial约10秒超时，生命周期没有hop_splice_bound；可用的M两腿先前业务均有观测，但首连缺具体失败阶段，不能直接归因上游、负载或目标不可达。准备独立的被动hop阶段诊断源（由冻结028派生，仅日志），不再原样跑80挑绿。恢复时R2的X到+3.522s才开始最终两秒确认，Y +1.511s开始后又重启到+5.762s；gain判据/质量窗口/连续确认的叠加仍待审查，原budget/freshness/四秒门不放宽。冻结普通源028及旧sourcequad不动。
 混版后续优先复用crates/cli/tests/sync_mixed.rs与scratch::pair_built；需准确旧/新CLI及OLD_KHOR非skip执行标记，缺OLD_KHOR直接返回不能算接受；该fixture只覆盖双向session row/pin，不扩称peer relay/全RPC。其余完整N0–N5和补丁退出继续。
 
 Mac仍50GiB启动余量门红；只读库存43205919189又被GitHub付款/额度在prepare前拒绝（E/mac-storage-inventory-43205919189/receipt.json），storage skipped、零Mac操作。已异步请求恢复Actions或常规SSH，无回复；最新一次SSH仍banner timeout255。Turing继续，不降门/清未知缓存。

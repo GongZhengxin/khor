@@ -23,3 +23,9 @@ E/iroh14-confirm-copy-observation-v1.json另绑定行2118/2119（同tick两copy�
 5. 只有单位合同、原负例和实际物理门证据匹配准确最终源，才能评价本项；不能以绿unit宣告手机/WAN/全N2或整体优化完成，不改canonical/已装App。
 
 机器可读协议 E/iroh14-confirm-copy-plan-v1.json SHA256 `0b12e7438b85f4a6a9c3dcd2f60eb44482be49bc7e66ee377842a8210a5a1df9`。固定普通性能源028保持，原性能不能自动借给修改后的候选。运行状态以STATE为接续入口。
+
+## 固定物理结果：不接纳
+
+三轮全部完成，未替换失败：R1 125445首setup10.271172s失败、未注入换网；R2 125919业务124ok但两严格门红，X/Y Go5.522531/7.762941s；R3 130239业务124ok、两门绿，Go3.375083/3.613151s。各16原files和source/control/精确attempts/原hash/group空核验，proof/ledger全闭。结果E/iroh14-confirm-copy-physical-results-v1.json SHA256 `7a80dc776d5244aa0a3422b2ef167b06f3f53ce94f1a0e5c29ad4a0e9a3c17b5`。
+
+候选80aeeff9不接纳，保留独立分支，不合canonical。单位合同的修正不足以关闭真实恢复；首连问题独立诊断，恢复质量/收益门与连续确认仍需重新核对。没有因为结果失败调低门或增大probe预算。
