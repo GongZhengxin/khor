@@ -155,3 +155,5 @@ class FirstActionEvidence(unittest.TestCase):
                     self.assertEqual(result['cases'][0]['counters']['alpha']['action']['delta']['eth0']['rx']['packets'], 10)
                 self.assertFalse(result['full_N1_accepted'])
                 self.assertFalse(result['energy_measured'])
+                self.assertFalse(result['continuous_stream_silence_verified'])
+                self.assertFalse(result['full_quiet_contract_accepted'])

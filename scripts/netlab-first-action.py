@@ -167,6 +167,7 @@ def verify(report):
     result = dict(schema=1, suite=REVISION, source=json.loads((report/'source.json').read_text()),
                   complete=False, passed=False, cases=[], actual_first_action_samples=0,
                   p99_claimed=False, full_N1_accepted=False, energy_measured=False,
+                  continuous_stream_silence_verified=False, full_quiet_contract_accepted=False,
                   limits=['One fresh case per direction/phase; no latency SLO or tail estimate',
                           'Interface totals include all wire traffic and snapshot gaps; not probe-only',
                           'Endpoint counters overlap the same traffic; do not sum endpoints as unique bytes',

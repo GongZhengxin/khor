@@ -80,3 +80,31 @@ v2只增加保留second Router句柄与调用者持有的只读采样任务，�
 原网络配置、六fresh顺序、准备和静默/phase时间、30秒caller与操作数量不改；revision显式升到
 first_foreground_after_idle_v2，原v1数据不充作已通过的v2样本。
 新增router读回会有独立观测开销，记录各命令时间与快照间隙，不能当作零开销前后对照。
+
+
+## v2六场景观测结果与静默证据边界
+
+实际run turing-20261112T023151Z-8d7b0ea1，source5a5d7e84、control2cfce93d；
+原0/224.643秒、17原report文件身份/hash、原进程组空、准确冻结metadata及独立原人口/时间/计数差值均核验。
+原两guard与六个首读取全部通过，共6个逻辑caller/12条起止、162条只读快照命令，均有原件。
+每个方向/phase只有一个fresh，不能由此推p95/p99、显著性、最终SLO或手机能耗。
+
+| 方向 / 名义phase秒 | 恢复到实际调用秒 | 首读取ms | 操作后alpha / beta路径 |
+| --- | --- | --- | --- |
+| p8-alpha-0 | 0.019104 | 297.685 | Relay / Relay |
+| p8-alpha-14 | 14.025917 | 327.577 | Relay / Relay |
+| p8-alpha-5 | 5.020709 | 321.867 | Relay / Relay |
+| p8-beta-0 | 0.021565 | 230.688 | Relay / Relay |
+| p8-beta-14 | 14.020498 | 265.406 | Relay / Relay |
+| p8-beta-5 | 5.025363 | 250.937 | Relay / Relay |
+
+完整接口差值见first-action-verification-v2.json与原first-action-contracts.json；
+所有端点/路由器都是同一流量的不同观察点，不能相加为唯一字节。
+原v1配置失败不覆盖，不拿v1替代v2。操作后仍Relay只是一项路径事实，
+不能单独证明Direct实际不可达、某一计时器或IPC是唯一瓶颈。
+
+**原协议的连续STREAM静默10秒尚未独立证实。** 本fixture只证明没有显式前台预热调用；
+resident后台流量未被关闭或逐帧区分，总字节/包不能证明其中没有STREAM。
+quiet-scope-audit-v1.json绑定本次proof并保留该缺口；这六个有效配置/首次调用/成本观测不等于完整quiet恢复接受。
+后继校验输出显式continuous_stream_silence_verified=false与full_quiet_contract_accepted=false；
+完整N1仍须独立观测/建立连续STREAM静默、严重尾部与完整原范围。
