@@ -340,6 +340,15 @@ pub fn sample_diagnostics(scenario: &str, n: &LabNode) {
     assert!(initialized, "{} has no requested diagnostics", n.name);
 }
 
+/// Keep device work owned by the caller even when its future is cancelled.
+struct DeviceTask(tokio::task::AbortHandle);
+
+impl Drop for DeviceTask {
+    fn drop(&mut self) {
+        self.0.abort();
+    }
+}
+
 impl LabNode {
     /// Runs `f` with this machine's `Node`, on the device's own runtime.
     pub async fn with<T, F, Fut>(&self, f: F) -> T
@@ -349,11 +358,12 @@ impl LabNode {
         Fut: Future<Output = T> + Send + 'static,
     {
         let client = self.client.clone();
-        self.dev
+        let task = self
+            .dev
             .spawn(move |_| async move { f(client).await })
-            .unwrap()
-            .await
-            .unwrap()
+            .unwrap();
+        let _owned = DeviceTask(task.abort_handle());
+        task.await.unwrap()
     }
 
     /// What this machine reads for `peer` now.

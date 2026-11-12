@@ -36,6 +36,7 @@
 需要原始配置/计数单调性、收据、进程组空、全部源/报告hash和source-owned复算；
 缺测和失败保留，不按好看的首请求筛样本。
 
-当前只有静态审计与新guard源码；Linux格式/编译/guard红绿均待远端执行，零新增首次操作数据。
-当前prefetch9组仍使用原冻结源/control，不能混入新guard或在其计时内编译。
+prefetch9组已按原冻结源/control全部结束，guard随后单独执行，未混入计时。
+Linux实际format/编译成功、主所有权断言红、detached负控绿；旧红原件见STATE。
+当前补调用者持有的AbortHandle Drop，待以逐字相同guard复验绿；零新增首次操作数据。
 完整N0–N5、严重/quiet/跨连接质量、peer relay与移动、最终UX与真实手机能耗范围保持。
