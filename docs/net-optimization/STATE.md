@@ -1,15 +1,18 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-12 16:57 UTC（本地2026-11-13）。完整目标 [PLAN](PLAN.md) N0–N5 **未完成，当前按用户明确指令暂停**。
-用户“我没有验收 打错了”、U18最新稳定iroh/减少custom与其他历史约束保留；本次显式暂停优先于旧“继续”。
-root串行，不派发子智能体；恢复前不做本任务实施或自动调度。
+更新于 2026-11-12 18:05 UTC（本地2026-11-13）。用户“定好目标，开始”已恢复执行；完整目标 [GOAL](GOAL.md) 与 [PLAN](PLAN.md) N0–N5 **未完成**。
+用户ToDesk级体验、iroh/Rust极致优化及原约束均已记入GOAL/PLAN v3。root串行，不派发子智能体。目标服务旧paused状态不覆盖本次明确恢复授权。
 
 此前STATE逐字保存在 [上轮完整状态](HISTORY-20261113-iroh-recovery-and-stability-preparation.md)，其中继续链接所有更早历史、原失败、收据及冻结输入。
 历史SHA256 `3e1fe2e38c7f7d90fa34166977390a8e2918564a7ab2370d01cf5c906f970753`。本页只描述当前事实和下一步；历史中“当前在途”按其时点理解，不能再次启动已关闭批次。
 
-## 用户暂停（2026-11-13 00:57，本地）
+## 恢复后的当前执行
 
-用户已将目标暂停，暂停优先于下文所有旧“继续/唯一在途”时点。coordinator61277已按准确命令身份停止；candidate长稳 turing-20261112T164807Z-a0e7a1d2 由其owned runner SIGTERM正常清理，原返回1/KeyboardInterrupt，原files收件、identity及group空已核验，ledger终态user_cancelled_partial_run，**不是产品回归或长稳接受**。baseline完整5/0与28journal/22CPU/32目录请求原证据保留；candidate部分观察不构成完整配对结果，未启动混版。当前没有本任务自动推进；恢复必须先核该取消收据并显式修订中断后的协议，不能盲目重启已消耗的fixed arm。
+暂停现场已核：coordinator61277不存在，原candidate用户取消已完成收件/identity/group空，ledger无pending，Turing原独占锁可取。保留baseline完整5/0、28journal、22CPU与32目录请求原证据；按E/iroh14-policy-stability-resume-plan-v1.json（SHA a67d29b161db39ea368f55b916d2ca2c0f1251ef55c5aa917de9810705bb1a9e）只补一轮完整candidate。源码/控制/五原case/600秒/原门/资源均不改，原用户取消部分保留；不重跑baseline，不追加失败替代。随后执行mixed，再建立Release性能基线。当前在准备该补齐run，准确run以ledger revision iroh14_policy_stability_candidate_resume_v1恢复。
+
+## 历史暂停（2026-11-13 00:57，本地）
+
+以下描述历史暂停；本次18:05 UTC明确恢复已覆盖停止授权。coordinator61277已按准确命令身份停止；candidate长稳 turing-20261112T164807Z-a0e7a1d2 由其owned runner SIGTERM正常清理，原返回1/KeyboardInterrupt，原files收件、identity及group空已核验，ledger终态user_cancelled_partial_run，**不是产品回归或长稳接受**。baseline完整5/0与28journal/22CPU/32目录请求原证据保留；candidate部分观察不构成完整配对结果，未启动混版。当前没有本任务自动推进；恢复必须先核该取消收据并显式修订中断后的协议，不能盲目重启已消耗的fixed arm。
 
 ## 暂停前执行时点：两组长稳对照
 
