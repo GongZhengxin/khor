@@ -45,3 +45,9 @@ v2协议在继续前明确额外边界：原improves的<=比较符保持，因�
 当前source **67c320135b40fb2e34d3d9a37523af2d912304e9** / tree **4077911ceb2c45a8c2ce990a5fd7ca5b35401779** / snapshot **c0d1c50fda47e827e21a7d43fa34ed4adaaa4834**，新增跨层合同要求同一104/131案例在已测路可入确认、新建估计仍保留成本门。生产只改switch_margin和hop::beats；后者重现原准备成本公式，其他生产token/vendor/锁不动，source-audit-v4机械核对。没有新增恢复状态、计时器或probe预算。
 
 完整12门140132Z-2d53d83b在途，预期原273命名人口+net2/hop1=276/ignored1；尚未终态。原physical-plan-v1绑定3f、未执行物理slot；新的physical-plan-v2在任何产品测量前冻结67的三fresh/原7输入/原四秒门与v2 auditor，失败全留、三轮停止。未出准确physical/健康噪声/静默成本前不采用。保留carrier的实际成本可能变化，不能由预算不变宣称能耗不变。
+
+## 后续健康负对照的覆盖提醒（尚未执行）
+
+原p1/p1j/p1s的RTT约2/20/2ms，其25%项通常不高于5/10ms绝对底；只重跑这些例子不足以覆盖本次改动真正改变的高RTT区间。因此若三轮原peer物理screen显示收益，除了保留原10分钟健康/jitter/共同停顿窗口，还应给旧/新同样加入一个约130ms、同均速带小幅jitter的负例，直接复用one_speed现有拓扑、持续时间、最多一次切换和零wire退役断言。不能缩短原窗口或把低RTT绿扩称高RTT稳定。
+
+该新负例当前只是执行前设计提醒，未新增源码/运行或改变原门。旧/新必须各自同一fixture overlay、准确source/provenance与串行计时；新建中继成本门已恢复，已存在carrier保留的实际成本仍需静默/交互并行负载对照。
