@@ -82,3 +82,5 @@ E/iroh14-ios-notification-static-audit-v1.json核对旧/新三文件逐字相同
 [官方Tor文档](https://docs.iroh.computer/transports/tor)与[BLE文档](https://docs.iroh.computer/transports/bluetooth)均明确custom transport API及相应crate仍为experimental。它们提供新的承载方式，不能由此推出khor的两腿选择、信任、单跳、deadline或自动接管已由上游实现。本轮不扩展到新承载，优先复用上游已有API、核查可删除的vendor覆盖，并守住个人网实际体验。
 
 [官方release policy](https://docs.iroh.computer/about/release-policy)承诺同major内minor wire兼容。这支持开展1.2↔1.4混版验证，但不替代应用协议、本地vendor补丁、会话生命周期或具体已安装iPhone版本的互通证据。现有sync_mixed可复用；必须注入真实准确旧CLI且检查非skip标记。
+
+首连阶段被动诊断794（由028派生）固定三轮132402/132802/133218已全部终态，每轮124请求全ok、各16原files；未捕获首连红，三轮原decision门仍红（Y约7.61/7.59/5.45s，另有X缺Go）。批次停止，E/iroh14-hop-preparation-diagnostic-results-v1.json完整留证，不晋升/不宣告修复。原首连105138/125445与恢复110840红保持；下一项设计提议见IROH-HYSTERESIS，尚未实现。
