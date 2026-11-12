@@ -1,9 +1,17 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-12 04:17 UTC。完整目标“完成计划”仍 **active、未完成、未阻塞**；范围为 [PLAN](PLAN.md) N0–N5，root 串行，不派发子智能体。
+更新于 2026-11-12 04:23 UTC。用户明确要求“停下吧 我先lab验收”，完整目标“完成计划”已 **paused、未完成**；范围为 [PLAN](PLAN.md) N0–N5，root 串行，不派发子智能体。
 此页只列当前状态与关键证据；此前全部原状态逐字保存在 [历史状态](HISTORY-20261112-through-stream-preparation.md)，SHA256 `dbe4b053534a6483528f89656cd4c9e808450fcb95b6acd65182594c0f15136e`，并继续链接更早全部历史。实际 worktree、收据与原日志优先，不按摘要覆盖未提交内容。
 
 ## 当前状态与立即下一步
+
+**用户暂停（优先于下列旧执行记录）：不继续修改、构建或自动调度。** 用户先做Lab验收，恢复需等用户明确继续。
+本次暂停核对：Turing **turing-20261112T041552Z-e46a2819** 已实际completed/原0/345.480199秒，原runner PID已消失；Mac **43153603327** network-mac及共享guard已实际completed/success。两项都已自然结束，没有取消或新发任务。尚未采集/完整验证本组原件，不能把原0/CI成功当整体验收。
+首block仍停在原位置，**没有运行advance 1或提交block 2**。E/pipeline-campaign-v1.json标记用户暂停；ledger pending代表证据待收口，不代表远端任务还活着。
+被打断工具已创建 `/Volumes/disk0/Khor/worktrees/current/khor-net-pull-cancel-v1`，branch experiment/net-pull-cancel-v1，HEAD e5527f93；仅创建干净副本，未写取消合同或产品改动，保留现场。canonical仍无rolling集成或App部署。
+恢复后先收集这两个已结束任务、核验原件，再由用户决定接续；不重发旧run，也不凭下文旧“在途”记录调度。
+
+以下为暂停前执行记录：
 
 **当前两项在途（已提交，不重复）：**
 
