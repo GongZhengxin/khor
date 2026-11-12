@@ -1,53 +1,39 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-12 04:23 UTC。用户明确要求“停下吧 我先lab验收”，完整目标“完成计划”已 **paused、未完成**；范围为 [PLAN](PLAN.md) N0–N5，root 串行，不派发子智能体。
-此页只列当前状态与关键证据；此前全部原状态逐字保存在 [历史状态](HISTORY-20261112-through-stream-preparation.md)，SHA256 `dbe4b053534a6483528f89656cd4c9e808450fcb95b6acd65182594c0f15136e`，并继续链接更早全部历史。实际 worktree、收据与原日志优先，不按摘要覆盖未提交内容。
+更新于 2026-11-12 04:40 UTC。用户在暂停Lab验收后已明确“继续”，执行已恢复，完整目标“完成计划”**未完成**；范围仍为[PLAN](PLAN.md) N0–N5，root串行，不派发子智能体。
+暂停前后完整原STATE逐字保存于[历史状态](HISTORY-20261112-pipeline-start-and-pause.md)，SHA256 `9a774440c70f3c3ca851b37aadcce9a867a2a22ca9bb687016a1091cf7856948`；该历史继续链接更早完整证据，不按摘要覆盖未提交内容。
 
-## 当前状态与立即下一步
+## 当前执行与下一步
 
-**用户暂停（优先于下列旧执行记录）：不继续修改、构建或自动调度。** 用户先做Lab验收，恢复需等用户明确继续。
-本次暂停核对：Turing **turing-20261112T041552Z-e46a2819** 已实际completed/原0/345.480199秒，原runner PID已消失；Mac **43153603327** network-mac及共享guard已实际completed/success。两项都已自然结束，没有取消或新发任务。尚未采集/完整验证本组原件，不能把原0/CI成功当整体验收。
-首block仍停在原位置，**没有运行advance 1或提交block 2**。E/pipeline-campaign-v1.json标记用户暂停；ledger pending代表证据待收口，不代表远端任务还活着。
-被打断工具已创建 `/Volumes/disk0/Khor/worktrees/current/khor-net-pull-cancel-v1`，branch experiment/net-pull-cancel-v1，HEAD e5527f93；仅创建干净副本，未写取消合同或产品改动，保留现场。canonical仍无rolling集成或App部署。
-恢复后先收集这两个已结束任务、核验原件，再由用户决定接续；不重发旧run，也不凭下文旧“在途”记录调度。
+**Turing：block3 / 宽8 rolling在途。** `turing-20261112T043815Z-c69a3018`，PID1074231，source e5527f93/tree78bb8acf/snapshot4fb2adef，control **d28538241f29a1608a7fed606da25d2fde57470f**。已唯一advance 1和2，不能重复；本轮不重发暂停前run。
 
-以下为暂停前执行记录：
+既定24场景已核验4场景（2blocks）；各profile每场景720，**2880交互全部ok、四文件完整**。逐次准确metadata与独立原始人口/时间戳、17files/hash、identity/原group空和ledger终态已核。
 
-**当前两项在途（已提交，不重复）：**
+| block | 宽度/arm | run | 原结果 | low/high文件秒 |
+| --- | --- | --- | --- | --- |
+| 1 | 8/batch | turing-20261112T041552Z-e46a2819 | 0 /345.480199s | 18.737180 /84.314138 |
+| 2 | 8/rolling | turing-20261112T043119Z-eb6c2320 | 0 /327.143174s | 19.548505 /76.611212 |
 
-- **Turing：turing-20261112T041552Z-e46a2819**，PID1044381/child1044594，netlab-workload-pipeline / workload_pipeline_v1-block1-source8-batch；宽8A首block，实际running/network-driver，format已过，尚无场景已收件接受。source0c4e4e35/treeaf0c558c/snapshot45306634，controld2853824。
-- **Mac：43153603327**，request36ef1faf8c2c4a7aa5c16cbc91e57e58，network-mac共享guard步骤in_progress；sourcee5527f93/tree78bb8acf/snapshota5e2b8c3，准确control **68cadb57a0ed72d40a4ca9a843e86b9c6797bf34** / feat/net-node-priority0-v1。固定12 net-node回归，尚未完成；不含Finder files库，不豁免旧Finder红项。E/mac-pipeline-node-43153603327已登记，artifact下载/行为验证待终态。
+两份pipeline-block-verification-v1.json原population/hash/准确source冻结复算保持，不能用每arm当前1fresh宣称性能优胜、显著性或p99。
+campaign **E/pipeline-campaign-v1.json** 按用户继续从paused_by_user恢复running，保留原pause记录与resume_instruction。仍先宽8再宽2、各ABBAAB、每block真实w3 guard2→low1/high1，总24；旧prefetch不作baseline，期限/失败门不变。
 
-**宽8和宽2真实RPC合同四arm全部通过。** 隔离v2树 `/Volumes/disk0/Khor/worktrees/current/khor-net-pipeline-v2` / experiment/net-pipeline-v2，HEAD e5527f93；canonical未集成rolling。
+只读 `E/ops/poll-turing-pipeline-campaign-v1.py turing-20261112T043815Z-c69a3018`。当前真实terminal后CONTROL收件，等exec实际终态；PRODUCT `verify-turing-record.py E/RUN` → `verify-pipeline-block-v1.py RUN 3`。完整人口复核后 `advance-pipeline-campaign-v1.py 3` **仅一次**；缺人口先调查，不补跑。source-refs.json仅root串行原子写。
 
-- 原批量source **b020a80163240c5ed90df4fc8195b0d8e90d53bc** / tree86271ca6 / snapshot9ffaa90f；**turing-20261112T040425Z-36a4357d** 原0/108.097333秒、13files。
-- rolling source **b774671bbc4e723d4b39c43b08b090dab881bfbd** / tree2cf168cc / snapshot17971742；**turing-20261112T040708Z-436c6664** 原0/90.080052秒、13files。
-- 两轮固定control **916b2770a11e2fdefbe1a121b8fcdcee35741592**，各原四逻辑/三真实Node pull_into→QUIC FetchPath合同全过；准确冻结metadata、原人口与文件hash、identity/原group空及ledger终态，各pipeline-wire-verification-v1.json。
-- 慢尾：batch已发9/客户端解码8/提交1片；rolling已发11/解码8/提交8片，尾片仍未释放，真实补齐不同。慢头两arm已发9/解码8/提交1片且未超开。取消两arm八条等待流都收到STOP_SENDING，同wire独立Sessions仍响应。
-- 只证明控制responder与原future drop；不替代生产server/Job stop/host-child或普通性能/手机。
-- 原 **turing-20261112T040138Z-5f783fc8** 原1/45.810095秒、10files，仅格式、零行为；远端补丁准确应用为b020a801，原失败/format-only-verification/identity与ledger终态保留。
+**Mac固定12已完成**：**43153603327** / request36ef1faf8c2c4a7aa5c16cbc91e57e58，sourcee5527f93/tree78bb8acf/snapshota5e2b8c3，control **68cadb57a0ed72d40a4ca9a843e86b9c6797bf34**。
+artifact13915416046、ZIP **28ca97ce700577496fd9024916e58225a228061cc15912a561257b96402a8262**，E/mac-pipeline-node-43153603327/（原件在artifact/）。20files/11controls/完整原footer/hash/source/bundle身份与ledger终态，node-suite-verification-v1.json。
+net68+原identity创建worker ignored1、hop89/wires16/journal30/budget35/IPC18+六single全部过。budget包含三新pull真实RPC测试；此固定lane没有nocapture，成功RPC原marker未保留，Mac只接受三命名Rust断言，独立计数证据仍在四个Turing合同run。不扩称Mac四Window逻辑、files_wire、全部Node或N5；旧Finder红项不豁免。
 
-首个rolling计时前已冻结四树 **E/pipeline-source-quad-v1.json**：宽8A **0c4e4e35**、B **e5527f93**；宽2A **ea414bfc**、B **2438172c**。四份E/pipeline-w{8,2}-{batch,rolling}-source-v1.json。A原生产batch函数逐字不动，B pull函数逐字来自57ff原型；同helper/逻辑/真实合同/长files_wire/所有vendor锁，pair只有该函数调度差、跨宽只有PULL常量8→2；priority0。
-新增共同source-owned pipeline metadata只复用原recorder并准确标记本轮，原期限/失败/全部人口门不改。独立timing control **d28538241f29a1608a7fed606da25d2fde57470f** / feat/net-pipeline-campaign-v1，只加固定netlab-workload-pipeline分支；原prefetch分支逐字保留，C HEAD5d不动。宽2batch **turing-20261112T041034Z-0a61687c** 原0/90.094105秒、sourceea414bfc/tree9ffedafc/snapshot74fee44c；宽2rolling **turing-20261112T041334Z-19528761** 原0/94.184242秒、source2438172c/treeada3cd2a/snapshot204945db。各13files、四逻辑/三真实全过；准确metadata、独立原人口/hash、identity/原group空与ledger终态，各pipeline-wire-verification-v1.json。
-四树已在首个timing前保存；宽8合同源相对计时源只有新增的共同Python wrapper，crates/vendor/Cargo逐字相同。完整campaign **E/pipeline-campaign-v1.json** 已冻结12blocks/24cases、先8后2、各ABBAAB、low/high独立，首block已启动，未完成任何timed block。
-工具准入 **E/pipeline-tools-synthetic-check-v1.json**：新control固定分支相对原prefetch只改显式标签与wrapper，原守卫/low/high/失败/期限/诊断off调度逐字一致；六dispatch stub+九wrapper数据stub过，零产品/网络/普通计时样本。
+**取消合同隔离准备**：`/Volumes/disk0/Khor/worktrees/current/khor-net-pull-cancel-v1` / experiment/net-pull-cancel-v1，source **8d44285b**。只增测试与metadata、首片held fixture，不改生产Job/pull函数；冻结性能四树保持。两个新合同直接road.stop命名Job，保持caller活着观察500ms内返回及part/note清理，再单独观察后续fixture drop→远端STOP及同wire控制。尚无真实红/绿，不把静态疑点当根因。
+新Mac固定control **9690e99032d0f651a799313b5c0fec1b1ebb98cb** / feat/net-pull-job-stop-v1，只跑这两个合同并保留nocapture/首原失败；C HEAD5d不动，原资源/共享guard/期限保持。唯一提交工具exec **86827**尚需收完实际request/run；不得重提或修改该提交源。其后register等ledger writer须等本地stage/advance句柄终态。
 
-立即接续：只读 `E/ops/poll-turing-pipeline-campaign-v1.py turing-20261112T041552Z-e46a2819`。等当前实际terminal后，CONTROL `scripts/collect-network-ssh.py E/RUN/receipt.json`，等collector实际session终态；PRODUCT `verify-turing-record.py E/RUN` → `verify-pipeline-block-v1.py RUN 1`。两profile各720完整人口/原hash及冻结metadata复算后，`advance-pipeline-campaign-v1.py 1` **只执行一次**，它先关闭ledger/campaign再唯一stage/launch下一block。任一缺失人口先调查，不补样本；业务超时保留，不改绿。
-Mac以现request/run查GitHub jobs/artifact；下载、身份和实际固定12日志验证后才关闭ledger。所有stage/launch/register工具session已终态，两个远端job仍在途；无待恢复本地exec句柄。
+## 已冻结输入与四真实RPC合同
 
-最近已完成 **turing-20261112T033334Z-a09450d0** 已原0/339.545858秒、29files/identity/原group空/准确冻结metadata与独立原始计数时间窗/ledger终态。
-source **5064fe2a435d9cf68389c97d7dbb95d5bdf2c715** / tree **9bf94eed4355b0eb9b96f6c99a0f9b284dd07923** / snapshot **05a7bab4a6b24a324aa2906d8bdc86c8a51c63d3**，control **73fa35f5954175e5e20373c858691315d4a3e6fe**。
-原两guard+六读全过；十二准备见证、十二≥10秒静默见证与十二真实请求阳性对照全过。proof **E/turing-20261112T033334Z-a09450d0/stream-quiet-verification-v2.json**；完整表和接受边界见IDLE-ACTION末节。
-这是带full日志的诊断准入，ordinary_latency_samples=0，不是普通性能/手机/完整N1接受；原v1静默失败和旧普通六观测的证据边界保持。
+E/pipeline-source-quad-v1.json：宽8A0c4e4e35/B e5527f93、宽2A ea414bfc/B2438172c；E/pipeline-w{8,2}-{batch,rolling}-source-v1.json完整四树。priority0、A原batch函数逐字不改，B函数逐字来自57ff原型；同helper/逻辑/长files_wire/所有vendor锁，宽度内只有调度循环/必要短读重启差异，跨宽只有PULL常量。共同Python wrapper只标记本轮，沿用原recorder全部人口/期限/失败门。
+宽8batch36a4357d、rolling436c6664、宽2batch0a61687c、rolling19528761各四逻辑/三真实合同全过，13原files/准确metadata/独立人口/hash/identity/原group空与ledger终态，各pipeline-wire-verification-v1.json。
+宽8慢尾A已发9/客户端解码8/提交1片，B已发11/解码8/提交8片；慢头两者已发9/解码8/提交1片未超开。两宽两armfuture drop均收到全部等待流STOP_SENDING且同wire独立Sessions成功。
+这只证明控制responder与原future drop，**不替代生产server、Job stop、host-child或最终N3**。首格式红5f783fc8原1/零行为、原patch准确映射b020a801与原证据保持。
 
-**下一步回到既定N3匹配batch/rolling**：先准备priority0、相同fixture/helper/长files_wire载荷的两arm与宽度8/2四树，保留原batch函数；补真实RPC已发/完成/待提交与补齐、取消所有权合同，再按PIPELINE-COMPARISON原8→2、各ABBAAB/low+high的24fresh顺序执行。当前rolling计时0，不拿旧prefetch当baseline。完整N0–N5剩余范围见下，未改为只完成这一组实验。
-
-当前Turing e46a2819在途，不能跳过它另行launch；其前件19528761已收件验证终态。更早a09450d0等与四contract全部终态，不能重复。新任务用准确source/control与唯一measurement revision。
-只读轮询工具 `E/ops/poll-turing-streams-v1.py RUN`；CONTROL `scripts/collect-network-ssh.py RECEIPT` 需等实际session终态后才验证。
-采集原非零有完整报告时继续核原失败；PRODUCT用 `E/ops/verify-turing-record.py RUN_DIR`核身份，再做相应实际行为/人口/原SHA验证。
-准确冻结STREAM metadata比较前需JSON roundtrip规范整数conn-id字典键。root为source-refs.json唯一串行原子writer；观察超时不是终态，按同receipt恢复，不重发。
-
-上一个 **turing-20261112T032645Z-37e89511** 原1/182.291534秒、10files/identity/原group空/ledger终态，仅wall_us链式格式差异、零行为；原patch精确映射成5064源码，format-only-verification-v1.json保存原失败。
+N1诊断静默最新a09450d0原0/339.545858s/29files，十二准备/十二≥10秒静默/十二真实请求阳性见证过；仅full日志诊断准入，不是ordinary性能、手机或完整N1。旧v1静默红、普通静默缺证与全剩余范围保留在下文及历史。
 
 ## 工作位置、执行与授权
 
@@ -115,7 +101,7 @@ Noq完整默认库447过/0忽略/0筛除；Iroh完整默认库184过/原1忽略/
 prefetch-comparison-v1.json SHA **7dede5f2c580d46aff0e6138b968da2550db2e095d6de351652a56d8a7e537b0**；全部advance1–9与旧high1–6终态不能重复。
 
 [rolling协议](PIPELINE-COMPARISON.md)及prefetch-to-pipeline-decision-v1.json在任何rolling计时前冻结：**先宽8，再独立宽2**，priority0，每宽A B B A A B、每block原w3两项再low/high各1，共12/宽、总24fresh。宽2在low的完成/交互取舍值得保留但high原超时，不能直接设全网默认。
-四源码与campaign已冻结且首block在Turing执行，0 timed block已收件接受。匹配baseline/candidate包含同一未调用helper/四逻辑/大于八片的files_wire载荷；A原batch函数不动、B仅rolling循环及必需短读重启；四树审全部Git/runtime/fixture/参数，只在相同宽度比较。不拿旧prefetch当新baseline，原失败/完整人口/期限门不改。
+四源码与campaign已冻结；当前两个block/四场景已收件接受，第三block在途。匹配baseline/candidate包含同一未调用helper/四逻辑/大于八片的files_wire载荷；A原batch函数不动、B仅rolling循环及必需短读重启；四树审全部Git/runtime/fixture/参数，只在相同宽度比较。不拿旧prefetch当新baseline，原失败/完整人口/期限门不改。
 后续还需真实RPC的已发/完成/待提交上限与补齐时刻，服务端/用户取消/host-child等所有权，而非只看逻辑future被poll；全前台预览、公平/背压/连接架构/规模成本仍必需。
 
 ## 完整剩余范围（不以已有绿项缩减）
