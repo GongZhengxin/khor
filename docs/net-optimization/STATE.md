@@ -1,14 +1,14 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-12 13:16 UTC。用户已恢复“继续”，完整目标“完成计划”仍为[PLAN](PLAN.md) N0–N5，**未完成**；root串行，不派发子智能体。用户“我没有验收 打错了”有效，没有新的Lab/真机接受。最新U18授权跟进最新稳定iroh并尽量减少custom；旧AGENTS仅规划状态已被后续授权覆盖。
+更新于 2026-11-12 13:19 UTC。用户已恢复“继续”，完整目标“完成计划”仍为[PLAN](PLAN.md) N0–N5，**未完成**；root串行，不派发子智能体。用户“我没有验收 打错了”有效，没有新的Lab/真机接受。最新U18授权跟进最新稳定iroh并尽量减少custom；旧AGENTS仅规划状态已被后续授权覆盖。
 原STATE逐字保存于[本次历史](HISTORY-20261112-iroh-upgrade-through-mcp-preparation.md)，SHA256 `3ed8de20f1d15b0088559416195ff5ac0070398554387c3993c43f7094ea17ec`；其中继续链接原stream准备/暂停/恢复历史与完整旧证据，不按摘要覆盖未提交内容。
 
 ## 当前执行与下一步
 
-**当前在途 turing-20261112T131430Z-375bb729**：task netlab-peer-mobility-samples / control69d23d4f912c2e3674d47010eea5b2577230e182，pid1919351，独立首连阶段被动诊断formatted R1。准确源 **d52cceb1825384ad05b778d8c8f352c89ce8120a** / tree **47e88396abefd410ebcbd8adee3d21c46e58d873** / snapshot **7ab4e5e07b2e984c1188a93b16b6a7d06e5b8085**，worktree khor-net-iroh-hop-preparation-diagnostic-v1，branch experiment/net-iroh-hop-preparation-diagnostic-v1。先查receipt/execution，禁止重复提交。
-仅原observe_lifecycle的10类被动阶段点，无新依赖/算法/timer/预算/fixture；格式化后去掉观察调用和inspect_err空wrapper，保留所有原非空白token/字符串一致，E/iroh14-hop-preparation-diagnostic-source-audit-v2.json。原7份物理输入/严格parsers逐字相同。尚无编译/行为终态，非修复/接受。
-首次source c2b81493提交 **131057Z-45f84a73** 原1/45.831063s被rustfmt拒绝，**零产品执行**、10原files与原返回format.patch/hash/identity/group空核验，proof/ledger终态，原失败不替换。已在本独立树应用准确远端formatter-only patch，c2与原snapshot留refs。v1协议未执行；v2只提交过这个格式前置失败，没有产品fresh。v3在任何产品执行前明确记录该修正与完整前置失败，冻结准确formatted source及三产品slot，`E/iroh14-hop-preparation-diagnostic-plan-v3.json` SHA **8424a60cb587f9f1310e32a4ee17c1690048cee6890d442bff65f9488c38bad6**；原两版保留。
-formatted R1/R2/R3全部结果保留，三轮后停止，不因未捕获首连红加轮。runtime terminal后collect并等待实际会话终态，再identity→calibrate-peer-mobility→`ops/verify-hop-preparation-diagnostic-v1.py RUN`；后者按准确新源原selection/decision parsers、frozen attempts重算和原始hop阶段行留证并串行闭ledger。阶段记录保留重复，不自动配对并发attempt；有缺编译/前置时先按实际失败范围记录，不能假造availability/strict门。
+**当前在途 turing-20261112T131834Z-88311c28**：task net-node / control e532f19a4bb8939a14a921eaf3d954ccdd77cf5e（原有准确netlab目标compile-only入口），pid1922759。准确被动源 **c218b4932eed1f389d05f5c45744462b1b9138ec** / tree **61ca00be869081f6aa448352ec1958664a0139dd** / snapshot **d3340383b726c05d9e6f096805ecbbdd9f4cb077**，worktree khor-net-iroh-hop-preparation-diagnostic-v1 / branch experiment/net-iroh-hop-preparation-diagnostic-v1。先查receipt/execution，不重复提交；本任务预定runtime0，只验编译，不能称产品诊断轮。
+前置两次均零产品runtime并完整留证：**131057Z-45f84a73** 原1/45.831063s，c2源被rustfmt拒绝（10原files/format.patch）；应用返回formatter后 **131430Z-375bb729** 原1/51.854522s，d52源因日志把无Display/Debug的DialFailure写to_string编译失败（12原files）。identity/原hash/group空和各preparation proof/ledger均终态，未替换成业务结果。现c218仅改日志为显式caller_expired/timed_out/refused/asleep分类；没有给错误类型新增trait或改业务处理。
+仅复用原observe_lifecycle的10类阶段点，无新依赖/算法/timer/预算/fixture。E/iroh14-hop-preparation-diagnostic-source-audit-v3.json去观察调用/inspect_err后，原非空白token/字符串一致；原7份物理输入/parsers仍逐字相同。尚未成功编译，不是修复/接受。v1–v3协议及原源/snapshot留refs；**产品fresh累计0**，v3旧source d52不可再提交。先完成当前compile-only，准确成功源后冻结后续三产品slot新协议，再进入运行；不拿格式/编译失败当首连结果，也不扩称p99/普通性能。
+collect待实际exec会话终态后才identity/proof/ledger mutation。现`verify-hop-preparation-diagnostic-v1.py`仍绑定旧v3计划/d52，不得用于c218；后续运行前按新协议保存新auditor并绑定SHA。
 
 **确认copy候选80aeeff9不接纳。** 固定三轮物理验证已全部终态：R1 **125445Z-23ca34d4** 首setup10271172us超时，原101/197.619032s、尚未换网；R2 **125919Z-c38e8c1d** 原0/150.511588s、124请求全ok，但四秒selection/decision红，X/Y Go5522531/7762941us；R3 **130239Z-456f9489** 原0/150.388833s、124请求全ok，两门过，Go3375083/3613151us。各16原files、准确源/control/原hash/frozen attempts/group空核验，proof/ledger全部终态；没有补跑替换失败。
 结果 `E/iroh14-confirm-copy-physical-results-v1.json` SHA **7a80dc776d5244aa0a3422b2ef167b06f3f53ce94f1a0e5c29ad4a0e9a3c17b5**，accepted=false。候选 **80aeeff919aa641dae55ba1a18b2020fead3e05e** / tree f857f33c60e45cb7fee862c47c510cf5a8a27765 / snapshot bc35d760bc6d0cf9d47aeee390e1913c175b8a10 保留为失败实验，不晋升canonical或普通性能源。固定原7份输入/解析器及四秒门未改。
