@@ -1013,7 +1013,7 @@ const PULL_AHEAD: u64 = 8;
 /// Experimental continued-file response class. The first slice keeps ordinary
 /// priority. A foreground file may need all slices: acceptance still requires
 /// first-usable-content, throughput and starvation checks.
-const CONTINUED_FILE_RESPONSE_PRIORITY: i32 = -1;
+const CONTINUED_FILE_RESPONSE_PRIORITY: i32 = 0;
 
 /// How often a drop's asker asks how far it got (`Node::drop_file`):
 /// often enough for a progress line to move, and each ask is one small

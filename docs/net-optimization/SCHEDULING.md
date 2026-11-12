@@ -161,3 +161,12 @@ cold high v3按原A B B A A B六block、每block三fresh完成，A=priority0、B
 后续继续预取1/2/8、同宽batch/rolling、完整前台内容、公平/背压、共享/分连接与成本；
 滚动候选当前仅窗口/真实scratch文件有正面证据，Mac整轮有Finder超时红项，且仍是priority-1，不能直接与下一priority0批量源比较。
 完整N0–N5、动态/peer relay/IPv4+IPv6移动、真机自动恢复与能耗均未由本表接受。
+
+## 开发候选恢复原priority0（2026-11-12）
+
+完整low/high对照后，feat/net也恢复CONTINUED_FILE_RESPONSE_PRIORITY=0作为通用参考。
+low的局部目录收益不足以支持全网默认-1；high对应位置的文件/目录/终端并无稳定改善，原始数据全部保留。
+冻结的A/B源、全部已跑和正在跑的prefetch输入不变；-1仍可由原实验ref复现。
+这一行恢复原值，不改变PULL_AHEAD、调用预算、信任、0-RTT、连接或任务数，也不宣称0是全局最优。
+后续仍比较滚动补齐、完整前台内容、公平/背压、共享/分连接和成本，最终策略需完整证据。
+新的准确源码必须经过Mac网络回归与最终Quality/native；旧源码回归不冒称本次重新执行。
