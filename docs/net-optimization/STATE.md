@@ -1,13 +1,17 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-12 16:44 UTC（本地2026-11-13）。完整目标 [PLAN](PLAN.md) N0–N5 **未完成**。
-用户“继续”“我没有验收 打错了”和U18跟进最新稳定iroh、尽量减少custom均有效。
-root串行，不派发子智能体；阶段结束、旧AGENTS仅规划状态或目标服务paused都不是当前停止授权。
+更新于 2026-11-12 16:57 UTC（本地2026-11-13）。完整目标 [PLAN](PLAN.md) N0–N5 **未完成，当前按用户明确指令暂停**。
+用户“我没有验收 打错了”、U18最新稳定iroh/减少custom与其他历史约束保留；本次显式暂停优先于旧“继续”。
+root串行，不派发子智能体；恢复前不做本任务实施或自动调度。
 
 此前STATE逐字保存在 [上轮完整状态](HISTORY-20261113-iroh-recovery-and-stability-preparation.md)，其中继续链接所有更早历史、原失败、收据及冻结输入。
 历史SHA256 `3e1fe2e38c7f7d90fa34166977390a8e2918564a7ab2370d01cf5c906f970753`。本页只描述当前事实和下一步；历史中“当前在途”按其时点理解，不能再次启动已关闭批次。
 
-## 当前唯一在途：两组长稳对照的baseline
+## 用户暂停（2026-11-13 00:57，本地）
+
+用户已将目标暂停，暂停优先于下文所有旧“继续/唯一在途”时点。coordinator61277已按准确命令身份停止；candidate长稳 turing-20261112T164807Z-a0e7a1d2 由其owned runner SIGTERM正常清理，原返回1/KeyboardInterrupt，原files收件、identity及group空已核验，ledger终态user_cancelled_partial_run，**不是产品回归或长稳接受**。baseline完整5/0与28journal/22CPU/32目录请求原证据保留；candidate部分观察不构成完整配对结果，未启动混版。当前没有本任务自动推进；恢复必须先核该取消收据并显式修订中断后的协议，不能盲目重启已消耗的fixed arm。
+
+## 暂停前执行时点：两组长稳对照
 
 - run **turing-20261112T155449Z-56a8ac18**，PID **2128254**，15:55:10 UTC启动。
 - task `netlab-stability`，revision `iroh14_policy_stability_baseline_v1`。
