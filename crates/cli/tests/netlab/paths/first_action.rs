@@ -22,10 +22,15 @@ async fn capture(node: &LabNode, epoch: Instant) -> Value {
                     "status":output.status.code(),"stdout":String::from_utf8_lossy(&output.stdout),
                     "stderr":String::from_utf8_lossy(&output.stderr)}),
                 Ok(Err(error)) => json!({"ok":false,"timed_out":false,"error":error.to_string()}),
-                Err(_) => json!({"ok":false,"timed_out":true,"error":"first-action snapshot deadline"}),
+                Err(_) => {
+                    json!({"ok":false,"timed_out":true,"error":"first-action snapshot deadline"})
+                }
             };
-            commands.insert(name.into(), json!({"started_us":began,
-                "ended_us":epoch.elapsed().as_micros(),"command":value}));
+            commands.insert(
+                name.into(),
+                json!({"started_us":began,
+                "ended_us":epoch.elapsed().as_micros(),"command":value}),
+            );
         }
         json!({"started_us":started,"ended_us":epoch.elapsed().as_micros(),"commands":commands})
     })

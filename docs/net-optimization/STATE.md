@@ -1,6 +1,6 @@
 # feat/net 当前状态与接续入口
 
-更新于2026-11-12 02:18 UTC（本地11月12日）。完整目标“完成计划”仍 **active、未完成、未阻塞**；完整范围为[PLAN](PLAN.md) N0–N5，root串行，不派发子智能体。此页是唯一当前入口。上一页原样保存在[high v2前状态](HISTORY-20261111-through-high-resident-v2.md)，SHA 560d77e0f02b553ebda7b3ac0282a54b0220a0bb1dc1b44a3063f702abf1b172；继续链接更早全部证据。实际worktree/收据/原始日志优先，不按摘要覆盖未提交内容。
+更新于2026-11-12 02:20 UTC（本地11月12日）。完整目标“完成计划”仍 **active、未完成、未阻塞**；完整范围为[PLAN](PLAN.md) N0–N5，root串行，不派发子智能体。此页是唯一当前入口。上一页原样保存在[high v2前状态](HISTORY-20261111-through-high-resident-v2.md)，SHA 560d77e0f02b553ebda7b3ac0282a54b0220a0bb1dc1b44a3063f702abf1b172；继续链接更早全部证据。实际worktree/收据/原始日志优先，不按摘要覆盖未提交内容。
 
 ## 当前状态与下一步
 
@@ -136,7 +136,7 @@ idle-action-ownership-verification-v1.json已准确冻结metadata复现、独立
 原红完整保留。两项绿只准入fixture caller→device所有权，不替代服务端RPC/host-child/网络恢复或手机。原workload.phase filepull父future直接借用tokio::join!，未走LabNode.with，不能据此改写prefetch结果。
 
 **下一步实际首次操作**：新paths/first_action.rs与固定filter paths::first_action::p8_的六fresh源码已实现，精确顺序/计数/时间/配置/原caller合同见IDLE-ACTION新节；guard文件仍逐字不动。source-owned netlab-first-action.py要求原两p8g全绿、六case/十二caller起止/实际Rust计数、初始alpha双向150ms netem且恢复清空、两端eth0/eth1原计数和全部时间单调；失败保留、快照间隙显式、无p99/最终SLO/手机能耗。
-本机纯Python 1 unittest/16输入情形0.043秒通过；新control分支6种stub调度0.415秒（guard红阻止业务、业务原非零79保留、metadata红、format红）通过，均非产品执行。独立control **28e46b3b5e9768046e28aea7d8b1ec4e8bd8d50e** / local feat/net-first-action-v1，parent e9，C HEAD5d未变；只加固定task/allowlist，UID/flock/netns/资源/期限原样。first-action-control-input-v1.json/control-test-v1.json。准备提交准确源码，使用最近已收件的b9c5278d receipt作predecessor；当前无真实首操作样本。
+本机纯Python 1 unittest/16输入情形0.043秒通过；新control分支6种stub调度0.415秒（guard红阻止业务、业务原非零79保留、metadata红、format红）通过，均非产品执行。独立control **28e46b3b5e9768046e28aea7d8b1ec4e8bd8d50e** / local feat/net-first-action-v1，parent e9，C HEAD5d未变；只加固定task/allowlist，UID/flock/netns/资源/期限原样。first-action-control-input-v1.json/control-test-v1.json。首轮 **turing-20261112T021752Z-e6569ee7** / source **725e12f78cd23697f65b600872eacc74e89ff67a** / tree **8e0f6ec6045ec2adf3c3202279b80936f9ddc67e** / snapshot **6fbe0f60a24a838e6df73727663ea4de863f9f11** 已45.889547秒/原1、10files/identity/原group空/ledger终态；仅first_action.rs两个格式位置，零实际guard/首操作。format-only-verification-v1.json逐项精确映射原patch（match arm分组、多行调用和可选尾逗号），原失败保留。已应用原补丁，准备新source同control复验；下一predecessor用此e6569ee7收据，当前首操作样本仍0。
 
 随后继续严重/quiet/跨连接/完整N0–N5；完整prefetch后、rolling计时前优先补测，理由是前台恢复体验与测量所有权缺口。
 必要基础回归具备后可并行准备隔离的可信候选构建以取得早期真机反馈，但早期反馈不代替最终矩阵；中央GUI合并/发布授权不套到本任务，已装App变更仍需具体交接。
