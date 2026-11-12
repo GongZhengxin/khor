@@ -1,6 +1,6 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-12 18:47 UTC（本地2026-11-13）。用户“定好目标，开始”已恢复执行；完整目标 [GOAL](GOAL.md) 与 [PLAN](PLAN.md) N0–N5 **未完成**。
+更新于 2026-11-12 19:58 UTC（本地2026-11-13）。用户“定好目标，开始”已恢复执行；完整目标 [GOAL](GOAL.md) 与 [PLAN](PLAN.md) N0–N5 **未完成**。
 用户ToDesk级体验、iroh/Rust极致优化及原约束均已记入GOAL/PLAN v3。root串行，不派发子智能体。目标服务旧paused状态不覆盖本次明确恢复授权。
 
 此前STATE逐字保存在 [上轮完整状态](HISTORY-20261113-iroh-recovery-and-stability-preparation.md)，其中继续链接所有更早历史、原失败、收据及冻结输入。
@@ -8,19 +8,29 @@
 
 ## 恢复后的当前执行
 
+混版首个真实runtime **已结束并闭批**：`turing-20261112T192613Z-c2c8ebe2`，19:26:35 UTC，source3b734073，control **ce4998f58fe1cc70d8b84e1854582d8828d27223**，revision `iroh14_actual_mixed_version_resume_v1`。**controller1/187.838121s，原Rust测试1过/0失败/0忽略，runtime138.35s**；old/new两方向row/pin均实际同步且唯一正marker，观察到的65个owner正常退出，无timeout/强制清理/remaining footprint，21原files/hash/identity/group空核验。原后置门要求的old/new两个长存host只见证到old，198行断言失败，故**完整混版协议未过，accepted=false**，不是全绿。原源码/frame/CLI与copy hash、tracked diff在停止后只读复核均保持。proof E/该run/mixed-runtime-screen-v1.json；ledger已闭，不重复提交。当前无本任务Turing在途。
+
+下一步先定位缺少new host见证：原observer只跟踪采样到的祖先，且在每次poll对活host完整ELF重复哈希（约264MB），存在漏掉快速分离子进程的可能；这是源码可见的框架缺口，**尚未证明就是本次唯一原因**，不能放宽原host/child门。可用私有controller subreaper和一次ELF缓存的独立小fixture核验，再声明修正后的观测协议；不得把旧原业务成功或新测试替代旧红。所有原数据已留，零新产品执行的审计不算再次互通。
+
+混版第一次准备 `turing-20261112T190345Z-5b6f85b7`，control054/source3b，1/459.251317s，26files/hash/identity/group空已核；**没有mixed-runtime.log或contract，零互通runtime**。错误是控制脚本139行假定cargo test不会重建CLI，普通build ELF dcd289与实际test producer的418df3不同；原old/new只读copy均保持原hash。失败原样保存，E/该run/mixed-preflight-failure-v1.json，ledger闭controller_preflight_failure，不是产品互通红。E/iroh14-mixed-resume-plan-v1.json SHA7d388c89dba9d0067283e70def0a2188fae81eb166d577a248989b871a9d3601声明只复用已准入old只读ELF、从原verified test producer选择实际CLI，用原require_provenance再次核文件/源码/context；不改verifier，不再编译，原runtime/host/child/断言body逐字相同（SHA11f48a3e67608f0f543bd07d707a2a91db4e1b1912a91bdb9e279b61abc6603a），允许实际runtime一次/替代零。ctrl/proof在E/iroh14-mixed-resume-control-v1.json。
+
+## 已收齐的长稳对照
+
 暂停现场已核：coordinator61277不存在，原candidate用户取消已完成收件/identity/group空，ledger无pending，Turing原独占锁可取。保留baseline完整5/0、28journal、22CPU与32目录请求原证据；按E/iroh14-policy-stability-resume-plan-v1.json（SHA a67d29b161db39ea368f55b916d2ca2c0f1251ef55c5aa917de9810705bb1a9e）只补一轮完整candidate。源码/控制/五原case/600秒/原门/资源均不改，原用户取消部分保留；不重跑baseline，不追加失败替代。随后执行mixed，再建立Release性能基线。准确补齐run **turing-20261112T180542Z-c09f6a3c**，PID2328430，18:06:03 UTC启动，revision iroh14_policy_stability_candidate_resume_v1，control f862/source adf39a4c。启动exec已终态，root恢复为唯一串行ledger writer，旧coordinator不再启动；计时期间不插入自己的其他Turing重型任务。
 
-18:44 UTC只读确认同run仍running/network-driver；p1/p1h/p1j三个原600秒绿，两端均零move/retired/network change。alpha包/字节分别2743/275576、5683/1028707、3284/413481；punch分别0/10/10。p1s及p5尚未完整结束。p1h成本高于baseline的4242包/745939字节，先保留原观察，待收件后同条件分析，不因稳定门绿就接受成本或交互尾部。
+该candidate现已 **0/3138.550709s、5过/0失败/0忽略**，11原reportfiles收件/hash/identity/group空、原resume专属审计及ledger闭；28journal覆盖与CPU64上22记录过。两arm原p1/p1h/p1j/p1s零move/retired/network changes，p5每档四次150/300/600ms零Relay/零punch。原取消candidate已52.58秒重编，恢复直接复用同树adf已有构建，build0.54s；不是跳过不同源码的编译验证。
+
+E/iroh14-policy-stability-resume-results-v1.json为完整描述性对照：两边各64原始attempt记录/32逻辑目录请求全ok；p1s最大4690364→868648us，p5最大828673→920018us；p1h alpha包4242→5683（+33.970%）、字节745939→1028707（+37.908%）。这些含本地IPC/目录处理、单端计数与中断后时序差异；不能宣称全局延迟改善、成本最优、p99、能耗或单补丁因果。批次完整关闭，accepted/promotion均false，不追加同源挑绿。
 
 ## Actions已通过公开khor-build恢复
 
 用户问能否通过公开仓库恢复Actions。只读查明私库colehank/khor-build的43205919189被付款/额度拦截、prepare零step；macserver最新SSH仍banner timeout255。colehank/khor已经public，私库失败后其公开release43227326496仍成功。其现有Developer Lab（410114960，workflow blob404aed5fddbe4c8ecd9b8569ec9d4afcb4d25d9f）含ubuntu前端/检查与macos-26标准托管原生构建，可作为待确认的替代路线；不触发release。
 
-用户“开放吧”并澄清“为什么让khor-build开放不行？”，已按原意将 **colehank/khor-build改为public**，GitHub API复核public/admin；全部既有分支和历史保留。原复用公开产品库khor的提议已被此决定取代，没有向产品库khor推送快照或dispatch。E/khor-build-visibility-transition-v1.json绑定授权与结果。此前付款失败和SSH超时保留，不把建议私有误作永久技术限制。
+用户“开放吧”并澄清“为什么让khor-build开放不行？”，已按原意将 **colehank/khor-build改为public**，GitHub API复核public/admin；全部既有分支和历史保留。原复用公开产品库khor的提议已被此决定取代，没有向产品库khor推送快照或dispatch。E/khor-build-visibility-transition-v1.json绑定授权与结果。 控制库README已同步公开约定，docs-only commit9b671817e34846df9e14c213a562ab88309cb45a；未改任何workflow或产品main，原Lab run仍绑定6ed3ce控制版本。此前付款失败和SSH超时保留，不把建议私有误作永久技术限制。
 
 公开前核466个远端branch、8819个可达对象、4606个普通blob及212个bundle头，后者均指向已可达源码图，无额外prerequisite；唯一密钥格式命中是与公开main逐字相同的vendor/tiny_http示例TLS key。无tag，历史工作流无外部PR/评论等代码触发器，默认token只读；自托管runner存在，现有任务均手动dispatch。E/khor-build-publication-source-audit-v1.json及actions/branches-before保留；这只是已知格式源码检查，不宣称全日志/历史artifact凭据排除。
 
-已在该公开构建库上传准确3b候选snapshot4a688a33，request **e6c996efe74043858e4b0d2c000c2c7b**，完整Lab **43282299770**，control main **6ed3ce0429f767525319b6ace6c374919a48ce16** / workflow blob **9c9a39eaa9c01f00b0e0f00c9b9cd4fda2651555**；port23962，仅候选包。18:47 UTC frontend成功，native131410459446及checks131410459531在途；实际已执行多个step，**计费拦截已解除，不代表整轮Lab/网络目标完成**。E/khor-build-public-lab-request-v1.json为准，零替代重复提交，保留已有Lab23961。
+已在该公开构建库上传准确3b候选snapshot4a688a33，request **e6c996efe74043858e4b0d2c000c2c7b**，完整Lab **43282299770**，control main **6ed3ce0429f767525319b6ace6c374919a48ce16** / workflow blob **9c9a39eaa9c01f00b0e0f00c9b9cd4fda2651555**；port23962。**FIRSTATTEMPT四job全部成功**（frontend/native/checks/retire），计费拦截已解除。E/public-native-lab-3b-v1/verification.json核准确源码/native_contract、GH原archive hash及内层native-host.zip hash；native manifest Darwin arm64/独立Lab identifier/managed_frontend+real_backend_verified，GH原生probe source/tree一致。前端原validator通过，浏览器results48及hot通过；完整Quality/手机/本地原生接受仍未完成，**本机原生执行零；尚需配置managed Lab供用户验收**。三原ZIP/原manifest/probe均留E/public-native-lab-3b-v1，已有其他任务Lab23961保持。E/khor-build-public-lab-request-v1.json为准，零替代重复提交。
 
 提交工具已在 **45044a84f1dfac9339bfc934a8c4c3341b1864b3** 修复：CLI和Lab共享require_source_builder，仅显式授权的colehank/khor-build同时匹配请求名与GitHub实际full_name时允许public；其他公开库仍在snapshot/upload前拒绝，原私库流程保留。真实CLI已成功提交工具验证run **43283055508**；control验证分支commit **adc701423672e2ea2136e781fbdac6a3e6461897**，未改control main。GH托管Linux三suite **3+14+15=32通过**，artifact13972678652 SHA **7cce5b4a6198ae81994c614e5789763f42551e2d62243b68713c9ac4cdc03282**、source45044/tree624dce/snapshot8410dbe逐项核验，proof E/khor-build-public-tooling-v1/verification.json。本机只做AST/diff结构检查；此结果不是完整Quality或3b原生Lab接受。
 
@@ -129,6 +139,8 @@ E/iroh-upgrade-patch-ledger-v4.json：60历史项=1上游替代库验证、2移�
 混版协议和control已在本地准备：[IROH-MIXED](IROH-MIXED.md)。E/iroh14-mixed-version-plan-v1.json / mixed-control-v1.json，control **05419f73cadb7787ee5c4356004b79f672a2c1c7**（仅原d07eec56 net-node分支）。旧dc738/new3b准确CLI native来源→不可写副本→真实sync_mixed唯一正标记/两方向row+pin、独立两host/child观测与退出。原fixture/helper/native工具两源逐字相同，Python AST/bash syntax已查；**零新远端编译/产品执行/互通接受**。两长稳全部终态收件核验后再执行一次，不抢Turing计时。旧owned run110236的bundle/package须核SHA；缺OLD_KHOR直接绿不接受，短唯一TMPDIR/只碰私有tmux，保留homes以免兜底reap隐藏close失败。
 E/turing-build-tools-inventory-20261112-v1.json确认Git2.25.1/tmux3.0a/libevent.pc缺失，只有只读库存；未安装/编译新工具，长测中不可用准备名义插入重型执行。
 Mac Finder trash原AppleEvent−1712（32/33）重复确认已用尽，保留失败；权限/响应根因未证，不盲目同源重跑。
+
+Release性能仍为准备，**零Release产品执行/尚无控制任务**。E/release-workload-plan-v1.json在任何测量前补齐：原低/高负载与ABBAAB六block保持，两arm独立target以避免CARGO_BIN_EXE_khor互相覆盖；每arm只构建一次、计时期间零编译，共享下载缓存。每case新声明600秒harness守护（不是原netlab.sh已有门），原120/240秒文件/业务预算及90分钟campaign守护保持。当前old dc738对3b为interim比较，不冒充最终main集成前后性能或N3接受。
 
 ## 完整剩余范围与完成定义
 
