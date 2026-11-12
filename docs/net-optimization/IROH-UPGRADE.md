@@ -48,3 +48,9 @@ E/iroh-upgrade-patch-ledger-v4.json的60项历史账目为：**1项上游替代�
 ## 仍需完成
 
 peer relay前置红定位、实际QUIC NAT端口及IPv6重叠恢复、新栈同条件负载体验对照、其余补丁语义/退出核查、完整原生Quality与Lab/真机/能耗验收仍开放。官网BLE/Tor/Nym扩展未接入本轮；上游custom transport不替代khor的两腿选择、信任或自动接管。
+
+## 下一项缩减候选：把补丁21的两种行为分开
+
+静态审查E/iroh14-event-buffer-exit-audit-v1.json绑定候选028和准确上游1.4.1文件SHA：上游已有PathEvent::Lagged与Connection::paths快照恢复，容量8；本地容量64。roads::follow已在Lagged时记录漏事件并读取当前选择，但该分支没有对账其mine/Openings直接路径库存；它只用于日志去重，不据此归因选路故障。
+
+先用真实连接让消费方落后超过8个事件，验证当前选择、库存对账、日志与关闭清理，再考虑退出64覆盖。优先使用上游现有快照API，不增加定时器。同一历史21的Path::ping是另一项能力，不能因容量恢复就把整条21记为删除。当前仅静态退出候选，零新增产品测试/实现；冻结性能源不改。
