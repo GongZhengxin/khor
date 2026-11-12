@@ -1,4 +1,4 @@
-"""Submit tracked source snapshots to the private development worker; no Node/Rust/SSH needed."""
+"""Submit tracked source snapshots to the development worker; no Node/Rust/SSH needed."""
 import argparse
 from datetime import datetime, timezone
 import hashlib
@@ -21,6 +21,14 @@ def command(*args, cwd=None, env=None, timeout=180):
 
 def git(*args, **kwargs):
     return command("git", *args, **kwargs)
+
+
+def require_source_builder(repository, details):
+    # The owner explicitly made this builder and its source snapshots public.
+    known_public = (repository.casefold() == "colehank/khor-build"
+                    and details.get("full_name", "").casefold() == "colehank/khor-build")
+    if not details["private"] and not known_public:
+        raise ValueError("Public source snapshots are enabled only for colehank/khor-build")
 
 
 def root():
@@ -164,8 +172,7 @@ def submit(args):
     if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repository):
         raise ValueError("Expected owner/repository")
     details = json.loads(command("gh", "api", f"repos/{repository}"))
-    if not details["private"]:
-        raise ValueError("Source snapshots must go to a PRIVATE build-control repository")
+    require_source_builder(repository, details)
     builder_ref = getattr(args, "builder_ref", "main")
     git("check-ref-format", "refs/heads/" + builder_ref)
     info = snapshot()
