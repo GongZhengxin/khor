@@ -6,7 +6,7 @@
 
 原新栈028的`110840Z-1e90b3dd`里，X在middle重接后+2051.718ms开始Relay→Custom确认。完整DEBUG行2122的质量代表为Conn140064923605712/Path1，95.483590ms、近期样本1；另一Conn140065527340576/Path1当时138.971123ms、近期样本0。紧接2124的确认probe选择后者（PTO0），未刷新正在尝试确认的质量来源。随后另一副本111.157583ms的新样本成为代表，request-open持续到约7秒仍报告这一质量；后续才重启确认并于9.301772s Go。原双向四秒门失败保持。
 
-这证明probe和代表copy不同；并未直接观察原selector取消日志，不能把全部停顿唯一归因。三轮被动诊断未捕获目标方向取消，固定两轮追加已关闭，见STATE与E/iroh14-pending-cancel-two-diagnostics-results-v1.json。
+E/iroh14-confirm-copy-observation-v1.json另绑定行2118/2119（同tick两copy均PTO0）、moving在+2298.518ms仍pending而+2551.014ms已None/restNone的原始行。这证明probe和代表copy不同；并未直接观察原selector取消日志，不能把全部停顿唯一归因。三轮被动诊断未捕获目标方向取消，固定两轮追加已关闭，见STATE与E/iroh14-pending-cancel-two-diagnostics-results-v1.json。
 
 ## 最小候选与反例
 
@@ -18,8 +18,8 @@
 
 1. 从冻结028独立建`khor-net-iroh-confirm-copy-v1` / `experiment/net-iroh-confirm-copy-v1`。先只抽取原priority计算（常数后缀保证排序不变），增加确认探测真正刷新其质量来源的行为回归。已有samples_after和Moving合同保持。
 2. 红源 **9f3a6ee6682ad87d94961194c30d60cc5c116fa4** / tree **a2eb303894b8c4464c7f8d1851b5c0ef9fd2fe2f** / snapshot **b27ca9efdfeabaa65f78de8aeb0b0be76922191a**。E/iroh14-confirm-copy-red-source-audit-v1.json文本还原核对原生产行为；本机零Rust执行。
-3. 当前全vendor门 **turing-20261112T124312Z-e33e746e**，task net-vendor / control **bd13e1e7f8b2f12a6089978a69180d108eec4f14** / pid1861918，目标是确认新回归真实红、其余原门保持。编译/格式错误不得冒充行为红。
-4. 只有行为红确立后再修改equal-PTO tie-break，并执行同全vendor门；再固定三轮原物理peer replug/原selection与decision四秒门，保留每轮全部结果，三轮后停止该批。
+3. 红全vendor门 **turing-20261112T124312Z-e33e746e** 已终态101/338.074690s：Noq467过，iroh原197过/原ignored1，仅新增行为回归红（实际90ms、预期85ms），node lib/tests编译过；三锁/原文件hash/source diff/group空核对。E/run/confirm-copy-library-verification-v1.json绑定命名人口，非编译或格式假红。
+4. 红后候选 **80aeeff919aa641dae55ba1a18b2020fead3e05e** / tree **f857f33c60e45cb7fee862c47c510cf5a8a27765** / snapshot **bc35d760bc6d0cf9d47aeee390e1913c175b8a10**；仅equal-PTO tie-break，回归fixture逐字不变。E/iroh14-confirm-copy-source-audit-v1.json证明primary PTO公式、应用/锁/物理输入未改。当前同control全库门 **125007Z-645fe88c** / pid1875236；之后固定三轮原物理peer replug/原selection与decision四秒门，全部保留、三轮后停止该批。
 5. 只有单位合同、原负例和实际物理门证据匹配准确最终源，才能评价本项；不能以绿unit宣告手机/WAN/全N2或整体优化完成，不改canonical/已装App。
 
 机器可读协议 E/iroh14-confirm-copy-plan-v1.json SHA256 `0b12e7438b85f4a6a9c3dcd2f60eb44482be49bc7e66ee377842a8210a5a1df9`。固定普通性能源028保持，原性能不能自动借给修改后的候选。运行状态以STATE为接续入口。
