@@ -1,6 +1,6 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-12 18:05 UTC（本地2026-11-13）。用户“定好目标，开始”已恢复执行；完整目标 [GOAL](GOAL.md) 与 [PLAN](PLAN.md) N0–N5 **未完成**。
+更新于 2026-11-12 18:29 UTC（本地2026-11-13）。用户“定好目标，开始”已恢复执行；完整目标 [GOAL](GOAL.md) 与 [PLAN](PLAN.md) N0–N5 **未完成**。
 用户ToDesk级体验、iroh/Rust极致优化及原约束均已记入GOAL/PLAN v3。root串行，不派发子智能体。目标服务旧paused状态不覆盖本次明确恢复授权。
 
 此前STATE逐字保存在 [上轮完整状态](HISTORY-20261113-iroh-recovery-and-stability-preparation.md)，其中继续链接所有更早历史、原失败、收据及冻结输入。
@@ -8,7 +8,17 @@
 
 ## 恢复后的当前执行
 
-暂停现场已核：coordinator61277不存在，原candidate用户取消已完成收件/identity/group空，ledger无pending，Turing原独占锁可取。保留baseline完整5/0、28journal、22CPU与32目录请求原证据；按E/iroh14-policy-stability-resume-plan-v1.json（SHA a67d29b161db39ea368f55b916d2ca2c0f1251ef55c5aa917de9810705bb1a9e）只补一轮完整candidate。源码/控制/五原case/600秒/原门/资源均不改，原用户取消部分保留；不重跑baseline，不追加失败替代。随后执行mixed，再建立Release性能基线。当前在准备该补齐run，准确run以ledger revision iroh14_policy_stability_candidate_resume_v1恢复。
+暂停现场已核：coordinator61277不存在，原candidate用户取消已完成收件/identity/group空，ledger无pending，Turing原独占锁可取。保留baseline完整5/0、28journal、22CPU与32目录请求原证据；按E/iroh14-policy-stability-resume-plan-v1.json（SHA a67d29b161db39ea368f55b916d2ca2c0f1251ef55c5aa917de9810705bb1a9e）只补一轮完整candidate。源码/控制/五原case/600秒/原门/资源均不改，原用户取消部分保留；不重跑baseline，不追加失败替代。随后执行mixed，再建立Release性能基线。准确补齐run **turing-20261112T180542Z-c09f6a3c**，PID2328430，18:06:03 UTC启动，revision iroh14_policy_stability_candidate_resume_v1，control f862/source adf39a4c。启动exec已终态，root恢复为唯一串行ledger writer，旧coordinator不再启动；计时期间不插入自己的其他Turing重型任务。
+
+18:26 UTC只读确认同run仍running/network-driver；p1原600秒绿，两端零move/retired/network change/punch，alpha2743packets/275576bytes；p1h在途。未最终收件，不宣称整轮通过。
+
+## Actions恢复方案（等待源码公开确认）
+
+用户问能否通过公开仓库恢复Actions。只读查明私库colehank/khor-build的43205919189被付款/额度拦截、prepare零step；macserver最新SSH仍banner timeout255。colehank/khor已经public，私库失败后其公开release43227326496仍成功。其现有Developer Lab（410114960，workflow blob404aed5fddbe4c8ecd9b8569ec9d4afcb4d25d9f）含ubuntu前端/检查与macos-26标准托管原生构建，可作为待确认的替代路线；不触发release。
+
+建议只公开准确3b734073候选的parentless snapshot4a688a33，再运行现有完整Lab，保留私库及其历史。E/public-ci-recovery-proposal-v1.json已固定方案；E/public-ci-source-preflight-v1.json核snapshot仅含source、树473ee06d、无父历史，针对与本地main差异的541个现存blob未命中三种已知凭据格式/敏感文件名（不是无凭据保证）。scripts/dev.py及khor_lab/builders.py现有私库保护不修改。已异步询问是否允许公开本轮候选源码，**尚未获明确同意；零visibility变更、零public push、零dispatch**。用户答复前继续不依赖公开的工作，不重复询问。公开标准Runner免费不能保证解除账号级付款锁；实际run才是恢复证据。
+
+该3b候选不是最新GUI发行源；只能作为首个网络候选Lab。已对本地main57a69f8d与3b进行git merge-tree预览，自动合并无冲突，所得tree3a76346eb1a26c8d7cee2fe3f96cf90f005120d1；没有创建新分支/worktree或合并main。最终产品集成及同源Quality/真机验收仍待，不把旧候选测试挪作最终合并源验证。现有其他任务Lab23961保持。
 
 ## 历史暂停（2026-11-13 00:57，本地）
 
