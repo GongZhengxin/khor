@@ -1,12 +1,14 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-12 12:00 UTC。用户已恢复“继续”，完整目标“完成计划”仍为[PLAN](PLAN.md) N0–N5，**未完成**；root串行，不派发子智能体。用户“我没有验收 打错了”有效，没有新的Lab/真机接受。最新U18授权跟进最新稳定iroh并尽量减少custom；旧AGENTS仅规划状态已被后续授权覆盖。
+更新于 2026-11-12 12:12 UTC。用户已恢复“继续”，完整目标“完成计划”仍为[PLAN](PLAN.md) N0–N5，**未完成**；root串行，不派发子智能体。用户“我没有验收 打错了”有效，没有新的Lab/真机接受。最新U18授权跟进最新稳定iroh并尽量减少custom；旧AGENTS仅规划状态已被后续授权覆盖。
 原STATE逐字保存于[本次历史](HISTORY-20261112-iroh-upgrade-through-mcp-preparation.md)，SHA256 `3ed8de20f1d15b0088559416195ff5ac0070398554387c3993c43f7094ea17ec`；其中继续链接原stream准备/暂停/恢复历史与完整旧证据，不按摘要覆盖未提交内容。
 
 ## 当前执行与下一步
 
-**turing-20261112T115843Z-91e3c95f** 在途，task `netlab-workload-pipeline` / revision `iroh14_workload_v1-block5-old`，role baseline，pid1768966。旧整合source **dc73837e5bf33238b5cc2ed80ba8719fbb793601** / tree **dabe98b202d0c1d1fb95e1b8de659073618bf26e** / snapshot **fc6103037468b4de4c1164047f0e0a95192e15ea**，control **d28538241f29a1608a7fed606da25d2fde57470f**。这是block5，先核对receipt/execution，禁止重复提交。只读进度用E/ops/poll-iroh14-workload-v1.py；最终E/ops/summarize-iroh14-workload-v1.py只允许六block全部终态后生成新独立summary（已AST检查，未运行）。
-Block3新 **114310Z-d73d001a** 0/372.576940s、block4旧 **115011Z-bc4d5a19** 0/422.281576s，各17原files/1440交互全ok/2file完整，proof/ledger/campaign已终态。当前4/6完整、5760交互、8file；余block5旧/block6新。block3 high终端service p95 **681495us/max1102768us**，有长尾未解释，不因功能绿接受体验；borrowed probe bulk maxlag21857us，不证明resident/PTY/网络唯一原因。
+**turing-20261112T120641Z-9f6d1a8a** 在途，task `netlab-workload-pipeline` / revision `iroh14_workload_v1-block6-new`，role candidate，pid1786019。新稳定source **02807c79e04a92c46fb2e6c14d2ecf107b98336c** / tree **f87d31f97b89474fe52297d87e3827de33550493** / snapshot **dc21d783909981141bd197c0b2ad1bdc22da150f**，control **d28538241f29a1608a7fed606da25d2fde57470f**。这是最后block6，先核对receipt/execution，禁止重复提交。只读E/ops/poll-iroh14-workload-v1.py；终态collect→verify-turing-record→`iroh14-workload-block-v1.py verify 6`，随后才能运行E/ops/summarize-iroh14-workload-v1.py生成独立summary（已AST检查，未运行），看全部人口/失败和文件/终端取舍，不加p99或全局最优。
+Block5旧 **115843Z-91e3c95f** 已0/320.124912s、17原files/1440交互全ok/2file完整，proof/ledger/campaign终态。当前5/6完整、7200交互、10file；前四轮历史见下，不按单轮得出升级胜出。
+
+Block3新 **114310Z-d73d001a** 0/372.576940s、block4旧 **115011Z-bc4d5a19** 0/422.281576s，各17原files/1440交互全ok/2file完整，proof/ledger/campaign已终态。此为完成block4时的4/6状态，当前以顶层5/6/campaign为准。block3 high终端service p95 **681495us/max1102768us**，有长尾未解释，不因功能绿接受体验；borrowed probe bulk maxlag21857us，不证明resident/PTY/网络唯一原因。
 
 **升级候选仍有严格恢复红：** 在已完整收件的peer旧110236与新110840日志上，准确冻结netlab-peer-selection.py/decision.py原4秒门本地重算（零新产品run）。旧两门均过，决策3472631/3462188us；新两门均红，决策**9301772/9349684us**，52个eligible warm请求中15个AB仍未选carried。E/iroh14-peer-strict-gate-comparison-v1.json，两个ledger entry追加additional_contracts；原availability scope proof保持，不能把business成功升级为最佳路接受。
 E/iroh14-peer-recovery-sample-gap-v1.json绑定原行：新X request-open事实中，carried质量111.16ms从2.535s到6.998s未更新、age增至4.835s，Relay约135ms；原25%gain门不选该值（静态/data推断），7.372s附近新carried约98ms后才重启2s确认。需查测量代表copy与真正probe copy、bounded recovery/Moving取消后的刷新、外层积压/调度；**尚无唯一根因或修复，原4秒/3probe/2s/250ms及新鲜性门不得为此放宽**。保持性能冻结源028不动，先收完原六轮。
@@ -172,3 +174,10 @@ prefetch-comparison-v1.json SHA **7dede5f2c580d46aff0e6138b968da2550db2e095d6de3
 
 E/iroh14-event-buffer-exit-audit-v1.json为补丁21容量覆盖的后续退出候选：已有上游Lagged/paths快照和app选择恢复，但mine/Openings库存尚未在Lagged对账，需真实burst消费落后回归；主动ping另评估，未删补丁/未跑新产品测试。
 E/iroh14-ios-notification-static-audit-v1.json核对OS callback→resident→iroh/有界恢复链存在；callback去重键仅status+接口类型，同Wi-Fi地址-only不独立穿过该去重；iroh另有监控，不能判漏通知或现场根因。手机须记录地址/前缀/地址族变化、事件所有权及remote-first/休眠顺序，未获真机接受。详见IROH-UPGRADE末两节，运行时均未改。
+
+
+## 已准备的最小peer取消诊断（尚未远端执行）
+
+隔离树 `/Volumes/disk0/Khor/worktrees/current/khor-net-iroh-peer-diagnostic-v1`，branch experiment/net-iroh-peer-diagnostic-v1，源 **08ecab50f81f5e9e357a73614dface145feef432** / tree **bb049e979141bd90bc1ab4a980b232fa78a0b99e** / snapshot **84b69692f39fe9473a0da4316ac59334e77dbdac**，clean。descriptor E/iroh14-peer-diagnostic-source-v1.json，两refs refs/khor/net-experiments/iroh14-peer-diagnostic-v1/{source,snapshot}已保留。
+仅在原khor_net_samples DEBUG下补confirm_move因selector无候选/保持当前而clear时的pending/requested/current/since/now/readings/silent；Moving在已有pending进入Rest时补一次原日志。两文件差异为18行日志/谓词和KHOR说明。E/iroh14-peer-diagnostic-source-audit-v1.json逐字证明去掉新增诊断/日志谓词后生产Rust复原028，Noq/app/锁/原物理fixture/两严格parser均不变；这只是结构证明，**尚未编译/格式/运行，不是修复或新的验收**。
+六轮普通计时全部终态、收件/核验之后，才用原control69d23d4f、task netlab-peer-mobility-samples、revision iroh14_peer_pending_cancellation_v1、该descriptor、最后block6 receipt为predecessor启动一次诊断，保持原4秒门及所有预算，记录失败/成功，不原样无限重跑。重点区分pending取消/Rest、采样copy与probe copy、外层恢复质量；不要在原因不明时改gain/样本门/预算。当前没有启动此run或改canonical/冻结性能源。
