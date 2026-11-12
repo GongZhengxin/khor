@@ -1,13 +1,17 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-12 11:24 UTC。用户已恢复“继续”，完整目标“完成计划”仍为[PLAN](PLAN.md) N0–N5，**未完成**；root串行，不派发子智能体。用户“我没有验收 打错了”有效，没有新的Lab/真机接受。最新U18授权跟进最新稳定iroh并尽量减少custom；旧AGENTS仅规划状态已被后续授权覆盖。
+更新于 2026-11-12 11:29 UTC。用户已恢复“继续”，完整目标“完成计划”仍为[PLAN](PLAN.md) N0–N5，**未完成**；root串行，不派发子智能体。用户“我没有验收 打错了”有效，没有新的Lab/真机接受。最新U18授权跟进最新稳定iroh并尽量减少custom；旧AGENTS仅规划状态已被后续授权覆盖。
 原STATE逐字保存于[本次历史](HISTORY-20261112-iroh-upgrade-through-mcp-preparation.md)，SHA256 `3ed8de20f1d15b0088559416195ff5ac0070398554387c3993c43f7094ea17ec`；其中继续链接原stream准备/暂停/恢复历史与完整旧证据，不按摘要覆盖未提交内容。
 
 ## 当前执行与下一步
 
-当前无产品run在途。最新NAT **turing-20261112T111859Z-de624e0b** 已0/99.774935s、18原files；r0真实NAT端口校准+r1远端先请求，124请求/248起止全ok；IPv4/IPv6本地地址不变、外部UDP映射50001→50002、旧conntrack删除及新QUIC tuple被记录，30/30 warm远端请求的实际stream-open选中新tuple、tuple mismatch0。两准确冻结metadata与独立校准/stream合同重算、原source/control/hash/进程组空核验；proof `iroh14-nat-rebind-verification-v1.json`与ledger终态。非逐packet/同QUIC连接/手机或完整N2。
+**turing-20261112T112653Z-818e0026** 在途，task `netlab-workload-pipeline` / revision `iroh14_workload_v1-block1-old`，role baseline，pid1694831。旧整合source **dc73837e5bf33238b5cc2ed80ba8719fbb793601** / tree **dabe98b202d0c1d1fb95e1b8de659073618bf26e** / snapshot **fc6103037468b4de4c1164047f0e0a95192e15ea**，control **d28538241f29a1608a7fed606da25d2fde57470f**。先核对receipt/execution，禁止重复提交。
+新独立[升级体验对照](IROH-WORKLOAD-COMPARISON.md)已冻结：E/iroh14-workload-plan-v1.json SHA a5a6565df56b75e176f689da2dc886f77efad6bdc5bb671ab1798d6bd1803226；campaign动态E/iroh14-workload-campaign-v1.json，顺序old/new/new/old/old/new、两profile各fresh，均rolling8/priority0。37份fixture/metadata逐字相同，crates/scripts差异只有两依赖Cargo.toml。旧24完全不动。
+Root仅串行用E/ops/iroh14-workload-block-v1.py：每block终态后collect→verify-turing-record→`verify INDEX`（准确metadata+独立人口/hash，写proof/ledger/campaign），仅完整人口才`launch NEXT PREDECESSOR_RECEIPT`；未知stage先恢复receipt，不重发；无完整计时人口停止审查，不补跑替代。该helper已AST检查，尚未拿真实block验证；任何校验错保留原始结果先定位。
 
-下一步为新栈同条件混合工作负载对照：旧整合dc738与新028，同一rolling8/priority0应用与冻结工作负载/解析器，先冻结新独立campaign再调度，原24场景完全不动。保留peer首次连接间歇红；不能因确认绿称解决。
+最新NAT **turing-20261112T111859Z-de624e0b** 已0/99.774935s、18原files；r0真实NAT端口校准+r1远端先请求，124请求/248起止全ok；IPv4/IPv6本地地址不变、外部UDP映射50001→50002、旧conntrack删除及新QUIC tuple被记录，30/30 warm远端请求的实际stream-open选中新tuple、tuple mismatch0。两准确冻结metadata与独立校准/stream合同重算、原source/control/hash/进程组空核验；proof `iroh14-nat-rebind-verification-v1.json`与ledger终态。非逐packet/同QUIC连接/手机或完整N2。
+
+当前推进新栈同条件混合工作负载对照，约30–40分钟仅指此组；不把它当完整目标完成估时。保留peer首次连接间歇红；不能因确认绿称解决。
 IPv6同前缀overlap两合同 **111507Z-d7912aa7** 已0/165.659413s、13原files、2tests/248逻辑请求/496起止全ok；IPv4 eth0隔离规则、内核新旧地址共存→旧地址删除、远端先请求期间无mover前台、完整原始attempts/frozen parser及hash/group空核验。proof `iroh14-ipv6-overlap-verification-v1.json`与ledger终态。不是前缀轮转、手机、同连接或完整N2接受。
 
 Peer relay原样确认 **110840Z-1e90b3dd** 已0/339.290546s、16原files、124请求全ok，middle IPv4实际更改、变前连续carried≥10s/变后再观察carried；proof `peer-mobility-availability-verification-v1.json`及ledger终态。首换网后AB/BA单次708565/750866us，非p99/SLO。
