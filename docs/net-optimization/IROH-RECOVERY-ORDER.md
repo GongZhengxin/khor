@@ -31,3 +31,5 @@ E/iroh14-recovery-ack-order-plan-v1.json SHA cad768d3783b0428764ba098e73c4e23952
 当前候选3b734073b410ec4130b4b57def3bf096b10c3e7a/tree473ee06d1a836d56d9e39bd10a7a4016fdacf530/snapshot4a688a33bd3da7f095cd8880ed1fd9519fb5ce09，只把complete_read三行调整为原recovery_probes先评估、mark_silent后完成。反转此三行与红源逐字一致，测试段完整不变，source-audit SHAa814baae82dab7b97cc92c24b620c8ee08647104f5d6a155d7c20c75bc2d2f5d。151200Z-d504e81e原full vendor在途，未出结果前不记库绿或实际恢复已修。
 
 完整库候选151200已0/180.387027s、Noq467/iroh198及原ignored1通过，node test compile、准确三锁/source/hash/identity/group空/proof/ledger闭；原197库人口+新回归逐名保持。当前151523原12app门在途，276预期尚未终态。physical-plan-v1 SHA3133989963aed36e49181bad258aff99db29f975ae9a430202380035ab5b71be在任何物理运行前冻结准确source3b三fresh，必须绑定两准确绿proof；原物理/4秒门/期限/全部失败保持，三轮后停止，尚零执行。
+
+准确同源151523的12命令已0/379.316808s、276过/原ignored1，原命名人口/七取消合同/hash/identity/group空、proof/ledger闭。已按先验三轮启动物理R1 152244Z-802bb00c（control69/source3b），尚无终态；收件后保留原门并只读复算实际recovery reservation/ping请求次数，其他confirmation/keepalive/wake不混计。
