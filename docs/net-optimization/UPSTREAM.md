@@ -4,6 +4,47 @@
 
 逐项覆盖/退出账目见[VENDOR-AUDIT](VENDOR-AUDIT.md)：全部45项已做第一轮覆盖盘点，明确Noq 1/4/5/6的专属覆盖缺口。随后Noq4独立ACK与Noq6保活计时、iroh选家/QAD/网桥9项已有对应源绿，具体边界查VENDOR-AUDIT/STATE。逐函数上游等价性和隔离候选行为复验尚未完成；泛化单元绿不替代缺失的专属回归。
 
+
+## 2026-11-12：版本与官网多传输复核
+
+用户要求确认是否最新、核查官网列出的连接模式。本节仅复核，不升级依赖、不增加BLE/Tor/Nym实现，不改此前失败与验收范围。
+此前本页已记录1.4.1，但升级候选尚未实施。今天再次打开官方Latest，仍指向
+[iroh v1.4.1](https://github.com/n0-computer/iroh/releases/tag/v1.4.1)。
+main（57a69f8d）、feat/net（a60b5640）和整合候选dc73837e均是本地vendor **iroh1.2.0 + noq-proto1.3.0**；
+根patch与Cargo.lock仍选择本地目录，iroh-base/dns的1.3.0不能当作iroh整体已升到1.3。
+1.4.1的[官方Cargo](https://github.com/n0-computer/iroh/blob/v1.4.1/iroh/Cargo.toml)要求Noq/noq-proto/noq-udp1.4.0。
+精确本地ref/依赖记录在E/iroh-version-transports-audit-20261112.json；这不是设备已安装二进制的版本证明。
+
+| 官网能力 | 交付边界 | khor现状与本轮判断 |
+| --- | --- | --- |
+| IP直连、Wi-Fi/蜂窝/Ethernet/LAN | 同一QUIC连接可使用多路径；具体可用性仍取决于系统/网络和应用集成 | 已有IPv4/IPv6与iroh路径管理，完整移动/能耗验收仍未完成 |
+| 公共/自建Relay | 原生中继后备；通常经HTTPS/WebSocket连接 | 已有，继续测真实端到端体验；官网direct-first文字不替代用户已确认的速度优先 |
+| Custom transports | 仍为unstable-custom-transports，需注册具体后端 | khor已经用Links承载SSH和peer hop；升级不替代peer选择、两腿路由、信任与自动接管 |
+| Bluetooth BLE | 单独iroh-ble-transport，官方文档明确实验性；不是更新iroh后默认开启 | 当前依赖/注册未接入；可评估附近离线后备，优先级低于现有故障收口 |
+| Tor / Nym | 分别接独立扩展及配套网络；同样实验性，目标主要是隐私 | 当前未接入；Nym官方明确不适合实时/高吞吐，不作为本轮低延迟主路 |
+| LoRa / HaLow等 | 官网展示可扩展方向/承载；本次未找到两者默认可用后端的交付保证 | 不据宣传图宣称khor现已支持；另有硬件/系统/适配工作，不扩本轮范围 |
+
+来源：[首页](https://www.iroh.computer/)、[兼容表](https://docs.iroh.computer/compatibility)、
+[BLE](https://docs.iroh.computer/transports/bluetooth)、[Tor](https://docs.iroh.computer/transports/tor)、
+[Nym](https://docs.iroh.computer/transports/nym)、[网络配置](https://docs.iroh.computer/configuring-networks)。
+官网多模式宣传并不证明khor的问题是“少开一个功能”。本地bind_pinned已调用add_custom_transport；
+Carrier::Ssh/Hop和Node.carrying仍承担具体承载与策略。
+
+### 与现有故障相关的上游变化
+
+- [1.3.0](https://github.com/n0-computer/iroh/releases/tag/v1.3.0)的#4512保持Initial发送期间remote actor响应，#4547暴露批量datagram接口。
+- [1.4.0](https://www.iroh.computer/blog/iroh-1-4-0)的#4605在无Relay本地网络变化时立即刷新发布地址；#4551对pending_open_paths去重防增长；#4573保留Relay接收输出并在丢弃后重新唤醒；还包含安全依赖和代理修正。
+- 这些与移动/局域网/中继停滞相关，尚未用我们的原故障同fixture证明解决。Khor补丁1已有更复杂的有界与恢复逻辑、补丁22已有IPv6字面地址QAD修正，必须比语义后再删，不能把所有上游新项当本地完全缺失。
+- 1.4发布文章把按stream选择/排序路径的stream affinity列为后续计划；不按官网叙述当作1.4.1已交付API。
+
+### 升级判断
+
+建议将独立1.4.1/Noq1.4.0基线对照提前：先核完整依赖与custom transport API，逐条映射当前60项主候选补丁，
+迁移仍依赖的接口和行为，仅在相同回归/成本/体验证据成立后退出重叠补丁。既有1.2候选与所有原红保留。
+[官方兼容政策](https://docs.iroh.computer/about/release-policy)保证同major minor间wire兼容，
+但不能据此推出不稳定custom API或本地补丁行为等价，也不能代替1.2/1.4混版真实连接验收。
+本次没有更新Cargo.toml、Cargo.lock、vendor、构建、部署或采购；这项建议不是升级已完成。
+
 ## 固定来源与证据
 
 通过GitHub连接器读官方源码/PR，官方发布页及crates.io registry交叉核对。GitHub Noq的Latest标签仍指向1.1.0，不能代替registry的最新稳定版本。
