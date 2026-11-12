@@ -1,13 +1,12 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-12 05:23 UTC。用户暂停后已明确“继续”，执行已恢复；用户随后澄清“我没有验收 打错了”，没有新Lab/真机验收结果，完整目标“完成计划”**未完成**；范围仍为[PLAN](PLAN.md) N0–N5，root串行，不派发子智能体。
+更新于 2026-11-12 06:00 UTC。用户暂停后已明确“继续”，执行已恢复；用户随后澄清“我没有验收 打错了”，没有新Lab/真机验收结果，完整目标“完成计划”**未完成**；范围仍为[PLAN](PLAN.md) N0–N5，root串行，不派发子智能体。
 暂停前后完整原STATE逐字保存于[历史状态](HISTORY-20261112-pipeline-start-and-pause.md)，SHA256 `9a774440c70f3c3ca851b37aadcce9a867a2a22ca9bb687016a1091cf7856948`；该历史继续链接更早完整证据，不按摘要覆盖未提交内容。
 
 ## 当前执行与下一步
 
-**Turing：block8 / 宽2 rolling在途。** `turing-20261112T051657Z-96f322fb`，PID1132537，source2438172c/treeada3cd2a/snapshot204945db，control **d28538241f29a1608a7fed606da25d2fde57470f**。advance 1–7均唯一终态，不重发。
-
-既定24场景已收件核验14场景（7blocks），13文件完整、1个high文件原240秒超时；**10080交互全部ok**。每block两profile各720，准确冻结metadata/独立人口与时间戳/17原files及hash/identity/原group空/ledger终态保持，超时不冒充文件完成或verified rate。
+**Turing：block11 / 宽2 batch在途。** `turing-20261112T055818Z-dbf52df1`，PID1226104，sourceea414bfc/tree9ffedafc/snapshot74fee44c，control **d28538241f29a1608a7fed606da25d2fde57470f**。advance 1–10均唯一终态，不重发。
+既定24场景已收件核验20场景（10blocks），18文件完整、2个high文件原240秒超时；**14400交互全部ok**。每block两profile各720，准确冻结metadata/独立人口与时间戳/17原files及hash/identity/原group空/ledger终态保持，超时不冒充文件完成或verified rate。
 
 | block | 宽度/arm | run | 原结果 | low/high文件秒或attempt |
 | --- | --- | --- | --- | --- |
@@ -18,12 +17,18 @@
 | 5 | 8/batch | turing-20261112T045513Z-6ec94f5a | 0 /284.840748s | 18.808332 /82.563249 |
 | 6 | 8/rolling | turing-20261112T050117Z-b72c7a40 | 0 /308.945589s | 18.791625 /61.708015 |
 | 7 | 2/batch | turing-20261112T050750Z-7f2df1ec | 101 /489.697986s | 19.614184 /240.001025 timeout，未完成 |
+| 8 | 2/rolling | turing-20261112T051657Z-96f322fb | 0 /419.470064s | 18.482548 /170.928677 |
+| 9 | 2/rolling | turing-20261112T052628Z-e17ce649 | 0 /438.903209s | 18.776145 /181.190526 |
+| 10 | 2/batch | turing-20261112T054019Z-099afff5 | 101 /487.764855s | 19.571980 /240.000902 timeout，未完成 |
+
+block9 low idle_before实际延至bulk start20.002024s（不是常见12秒），terminal overlap117；原门≥30仍过，全部720人口保留，不删除该run或将调度停顿改成网络因果。host load_after9.73/free473999843328仅观测，未证明唯一原因。
+
 
 宽8完整12cases/8640交互/102原件hash与全部准确冻结metadata、独立人口重算已保存 **E/pipeline-width8-comparison-v1.json**，由E/ops/summarize-pipeline-campaign-v1.py --width8生成，未选winner、不声称显著性/p99/N3接受。
 low batch文件18.737180–18.808332s、rolling18.791625–19.548505s；high batch82.563249–85.975258s、rolling61.708015–76.625635s。high文件对应位置三次均rolling较快，但bulk终端service p95对应位置两次更慢、一次更快；目录与计划延迟也有取舍，不以文件速度定默认。
 
 campaign **E/pipeline-campaign-v1.json** 保留原pause/resume记录，用户“继续”恢复running；先8后2、各ABBAAB、每block真实w3 guard2→low1/high1，总24，旧prefetch不作baseline，原期限/失败门保持。无新人工Lab/手机接受。
-只读 `E/ops/poll-turing-pipeline-campaign-v1.py turing-20261112T051657Z-96f322fb`。实际terminal后CONTROL收件，等待collector实际句柄终态（原非零继续核原失败）；PRODUCT `verify-turing-record.py E/RUN` → `verify-pipeline-block-v1.py RUN 8`。完整人口后 `advance-pipeline-campaign-v1.py 8` **仅一次**；不补跑失败/缺失人口。root为source-refs.json唯一串行原子writer。
+只读 `E/ops/poll-turing-pipeline-campaign-v1.py turing-20261112T055818Z-dbf52df1`。实际terminal后CONTROL收件，等待collector实际句柄终态（原非零继续核原失败）；PRODUCT `verify-turing-record.py E/RUN` → `verify-pipeline-block-v1.py RUN 11`。完整人口后 `advance-pipeline-campaign-v1.py 11` **仅一次**；不补跑失败/缺失人口。block12是最后宽2 rolling，尚未提交。root为source-refs.json唯一串行原子writer。
 
 **Mac固定12已完成**：**43153603327** / request36ef1faf8c2c4a7aa5c16cbc91e57e58，sourcee5527f93/tree78bb8acf/snapshota5e2b8c3，control **68cadb57a0ed72d40a4ca9a843e86b9c6797bf34**。
 artifact13915416046、ZIP **28ca97ce700577496fd9024916e58225a228061cc15912a561257b96402a8262**，E/mac-pipeline-node-43153603327/（原件在artifact/）。20files/11controls/完整原footer/hash/source/bundle身份与ledger终态，node-suite-verification-v1.json。
@@ -43,7 +48,13 @@ net68+原identity创建worker ignored1、hop89/wires16/journal30/budget35/IPC18+
 - 新 **43159900154** / request5a17596eee744acaa7a852174b510b8e，sourcef3ccd2f8/treee2c417d0/snapshotb9a40bc9，同control74e6；Rust29过、准确frozen RPC v2/独立35真实RPC人口与三peer核验通过。18原files/11control/完整SHA/source/bundle/身份及ledger终态，E/mac-pull-job-regressions-43159900154/regression-verification-v2.json。新两个Notify unit覆盖预先停止与8个已注册后暂停poll的waiter，stop和cut各验证，全部过。
 - 新artifact13917950334 / ZIP751e41bd6974d4f59c66617606e1d26b817d75c4d7210c80fa289a640a2c3d37；原失败artifact13917575466 / ZIPdfc6fcd332f73451d0016396d2c25f09ef4be69d8a3962b98dab70786e50faf8均保留。没有Finder、全Node、最终Native/手机、Linux新取消源或完整N5接受。
 
-当前Mac无在途；本轮全部本地stage/advance/register/collector/verify句柄已终态。只有上面的Turing block8仍需接续，不能按旧run重发。
+**真实鉴权Stop RPC隔离测试**：`/Volumes/disk0/Khor/worktrees/current/khor-net-pull-stop-rpc-v1` / experiment/net-pull-stop-rpc-v1，从f3ccd2f8创建；测试/fixture/metadata变更，没有相对f3的新生产改动。真实receiver Node.handle→dispatch，独立已准入controller和未准入stranger，控制文件source持有8片；验证未配对/畸形token拒绝、错误token不停止目标、正确token与重复Stop、8流停止和landing清理。设备表预准入，不声称配对协议或生产文件server/host-child/移动已验。
+
+- control **91d804e74b1a2ce2cbc87f3df0b9b60eef9e12a5** / feat/net-pull-stop-rpc-v1，仅固定一个Stop RPC测试、nocapture/full_diag，准确source-owned metadata pull_stop_rpc_v1。
+- 首run **43164711650** / request8ef0779e2f8c4015b2cd0c71acf6aa51，source0476639b/tree460cb041/snapshotede655e2：格式门失败，**零行为测试**。artifact13919103982/ZIPe2f88767643a6c0a2c6beca76f6ecff5d973cb37d592cf81bbc5c18fc80c6813；9原files/11controls/source/bundle身份/SHA及准确formatter patch映射，E/mac-pull-stop-rpc-43164711650/format-only-verification-v1.json与ledger终态。
+- 精确应用可信formatter patch后source **17755002397c16016aa2bae565966ad24b28a23f**（treeab3f474e），再次同control提交中，本地句柄4544；先恢复receipt，不重发。未有任何真实Stop RPC通过结果。
+
+当前Turing只有block11计时在途；Mac只有上述格式修正后的提交在途。性能四树不纳入该取消修复，原预声明输入保持。
 
 ## 已冻结输入与四真实RPC合同
 
@@ -120,7 +131,7 @@ Noq完整默认库447过/0忽略/0筛除；Iroh完整默认库184过/原1忽略/
 prefetch-comparison-v1.json SHA **7dede5f2c580d46aff0e6138b968da2550db2e095d6de351652a56d8a7e537b0**；全部advance1–9与旧high1–6终态不能重复。
 
 [rolling协议](PIPELINE-COMPARISON.md)及prefetch-to-pipeline-decision-v1.json在任何rolling计时前冻结：**先宽8，再独立宽2**，priority0，每宽A B B A A B、每block原w3两项再low/high各1，共12/宽、总24fresh。宽2在low的完成/交互取舍值得保留但high原超时，不能直接设全网默认。
-四源码与campaign已冻结；当前七个block/十四场景已收件核验（含一个原high文件超时），第八block在途。匹配baseline/candidate包含同一未调用helper/四逻辑/大于八片的files_wire载荷；A原batch函数不动、B仅rolling循环及必需短读重启；四树审全部Git/runtime/fixture/参数，只在相同宽度比较。不拿旧prefetch当新baseline，原失败/完整人口/期限门不改。
+四源码与campaign已冻结；当前十个block/二十场景已收件核验（含两个原high文件超时），第十一block在途。匹配baseline/candidate包含同一未调用helper/四逻辑/大于八片的files_wire载荷；A原batch函数不动、B仅rolling循环及必需短读重启；四树审全部Git/runtime/fixture/参数，只在相同宽度比较。不拿旧prefetch当新baseline，原失败/完整人口/期限门不改。
 后续还需真实RPC的已发/完成/待提交上限与补齐时刻，服务端/用户取消/host-child等所有权，而非只看逻辑future被poll；全前台预览、公平/背压/连接架构/规模成本仍必需。
 
 ## 完整剩余范围（不以已有绿项缩减）
