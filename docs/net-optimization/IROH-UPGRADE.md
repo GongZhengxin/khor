@@ -53,7 +53,7 @@ E/iroh-upgrade-patch-ledger-v4.json的60项历史账目为：**1项上游替代�
 
 ## 仍需完成
 
-peer relay前置红定位、实际QUIC NAT端口及IPv6重叠恢复、新栈同条件负载体验对照、其余补丁语义/退出核查、完整原生Quality与Lab/真机/能耗验收仍开放。官网BLE/Tor/Nym扩展未接入本轮；上游custom transport不替代khor的两腿选择、信任或自动接管。
+peer relay前置红与四秒恢复红定位、其余补丁语义/退出核查、完整原生Quality与Lab/真机/能耗验收仍开放。实际QUIC NAT端口/IPv6 overlap已有上述限定场景证据，同条件普通负载对照已闭；它们不关闭完整N2/N3。官网BLE/Tor/Nym扩展未接入本轮；上游custom transport不替代khor的两腿选择、信任或自动接管。
 
 ## 下一项缩减候选：把补丁21的两种行为分开
 
@@ -69,4 +69,4 @@ E/iroh14-ios-notification-static-audit-v1.json核对旧/新三文件逐字相同
 ## 当前普通对照与独立诊断
 
 六block源028普通对照已闭：[完整结果](IROH-WORKLOAD-RESULTS.md)，E/iroh14-workload-comparison-v1.json SHA940dda764a0f7787bf2439194b9bed6802ee3dbeed3736d60fe709358328732a，8640交互/12file完整，所有人口保留，吞吐/交互有取舍，非N3/最优接受。
-随后已启动121515Z-e8d79c86，独立源08ecab50仅补原DEBUG下pending取消/Rest事实，不改变算法。结构审计E/iroh14-peer-diagnostic-source-audit-v1.json，原物理/严格parser逐字相同；尚无编译/行为终态或修复。此诊断源不是原性能源，也不晋升canonical。
+独立源08ecab50仅补原DEBUG下pending取消/Rest事实，不改变算法，结构审计E/iroh14-peer-diagnostic-source-audit-v1.json。121515Z-e8d79c86与预先冻结的追加122705Z-1248c9ae/123405Z-8a26c7cf共三轮均已终态，各124请求全ok；首轮Y缺Go保留decision红，追加两轮原四秒两门绿（X/Y约3.51/3.51s、3.28/3.54s）。E/iroh14-pending-cancel-two-diagnostics-results-v1.json绑定全部proof，批次按两追加轮上限关闭。没有重现9.3s或捕获目标Relay→Custom取消，不证明根因/修复，也不晋升canonical。原失败X确认质量代表和实际probe的副本不同，下一步检查同PTO tie-break与测量所有权，不能据绿诊断豁免。

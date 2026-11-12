@@ -1,14 +1,13 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-12 12:35 UTC。用户已恢复“继续”，完整目标“完成计划”仍为[PLAN](PLAN.md) N0–N5，**未完成**；root串行，不派发子智能体。用户“我没有验收 打错了”有效，没有新的Lab/真机接受。最新U18授权跟进最新稳定iroh并尽量减少custom；旧AGENTS仅规划状态已被后续授权覆盖。
+更新于 2026-11-12 12:40 UTC。用户已恢复“继续”，完整目标“完成计划”仍为[PLAN](PLAN.md) N0–N5，**未完成**；root串行，不派发子智能体。用户“我没有验收 打错了”有效，没有新的Lab/真机接受。最新U18授权跟进最新稳定iroh并尽量减少custom；旧AGENTS仅规划状态已被后续授权覆盖。
 原STATE逐字保存于[本次历史](HISTORY-20261112-iroh-upgrade-through-mcp-preparation.md)，SHA256 `3ed8de20f1d15b0088559416195ff5ac0070398554387c3993c43f7094ea17ec`；其中继续链接原stream准备/暂停/恢复历史与完整旧证据，不按摘要覆盖未提交内容。
 
 ## 当前执行与下一步
 
-**turing-20261112T123405Z-8a26c7cf** 在途，task `netlab-peer-mobility-samples` / revision `iroh14_peer_pending_cancellation_r2`，role diagnostic，pid1844988。被动诊断source **08ecab50f81f5e9e357a73614dface145feef432** / tree **bb049e979141bd90bc1ab4a980b232fa78a0b99e** / snapshot **84b69692f39fe9473a0da4316ac59334e77dbdac**；control **69d23d4f912c2e3674d47010eea5b2577230e182**。先核对receipt/execution，禁止重复提交。仅DEBUG取消/Rest补点，算法和原物理/四秒门不改，**不是修复或升级接受**。
-
-首轮被动诊断 **121515Z-e8d79c86** 已终态：0/261.855773s、16原files、124请求全ok；warm selection过51请求，X Go3285193us，Y没有Go，原decision门保留红。日志可见Y仍选择Custom，但缺少连续状态证明，不将缺事件算通过。5条取消均是当前Custom/Ip→候选Relay，未捕获原先目标Relay→Custom取消；没有重现9.3s停顿。
-固定追加两轮计划 `E/iroh14-pending-cancel-two-diagnostics-plan-v1.json` 已先冻结，**两轮后停止该批采样，不因未捕获延长**。其中R1 **122705Z-1248c9ae** 已终态：0/167.663671s、16files/124请求全ok，frozen attempts独立重算、identity/hash/group空核对通过；原warm门与decision门均绿，X/Y Go3505368/3506880us。唯一取消是M当前Ip→Relay，与原停顿方向不同。R1 proof/ledger已闭。当前R2为这批最后一轮，保留所有结果，不挑绿晋升。
+**固定被动诊断批次已全部终态，无在途Turing任务。** 源 **08ecab50f81f5e9e357a73614dface145feef432** / tree **bb049e979141bd90bc1ab4a980b232fa78a0b99e** / snapshot **84b69692f39fe9473a0da4316ac59334e77dbdac**，control **69d23d4f912c2e3674d47010eea5b2577230e182**，仅DEBUG取消/Rest补点，算法、物理和四秒门均不改，不晋升。
+首轮 **121515Z-e8d79c86**：0/261.855773s、16files/124请求全ok；warm门过51请求，X Go3285193us，Y没有Go，原decision门红保持。5条取消均是当前Custom/Ip→候选Relay，未捕获目标Relay→Custom取消。固定追加两轮计划 `E/iroh14-pending-cancel-two-diagnostics-plan-v1.json` 已执行并关闭：R1 **122705Z-1248c9ae** 0/167.663671s，两门过，X/Y Go3505368/3506880us；R2 **123405Z-8a26c7cf** 0/179.241810s，两门过，X/Y Go3283424/3538071us。各16原files/124请求，identity/hash/frozen attempts独立重算/group空核对，proof/ledger全部终态；原失败不豁免。
+结果 `E/iroh14-pending-cancel-two-diagnostics-results-v1.json` SHA **60fc1b2c7003109b2976f854231d3f6d5da65dff5f82e7ee0810e14131ec6b2a**。两轮后按预先计划停止采样，**未重现9.3s/未捕获目标取消，无唯一根因/修复**。继续分析原失败日志，不能再原样重跑挑绿。
 
 **普通性能对照已全部终态。** [结果](IROH-WORKLOAD-RESULTS.md)与[冻结协议](IROH-WORKLOAD-COMPARISON.md)：旧dc738/新028、rolling8/priority0、37份fixture/metadata逐字相同，ABBAAB六block共8640交互全ok、12file完整、102原report SHA独立核对。E/iroh14-workload-comparison-v1.json SHA **940dda764a0f7787bf2439194b9bed6802ee3dbeed3736d60fe709358328732a**。全部proof/ledger/campaign终态。
 low file中位19.222→18.798s，high75.729→66.124s；low bulk终端单轮p95中位84.194→90.816ms、目录115.843→125.784ms。新block3 high终端service p95/max681.495/1102.768ms、scheduled-to-end p95 1893.762ms；新block6 low idle_before终端p95另有246.149ms。全失败/人口保持，少量fresh/共享宿主负载/终端长尾使它仍非N3/p99/全局最优/手机接受；不以文件优势宣布升级胜出。
@@ -18,7 +17,7 @@ E/iroh14-peer-recovery-sample-gap-v1.json绑定原行：新X可见carried质量1
 
 最新已闭地址场景均准确028：roam三场景102059Z-2a7ba71e（372逻辑请求），IPv6同前缀overlap两合同111507Z-d7912aa7（248），实际QUIC NAT端口111859Z-de624e0b（124，30/30 warm实际streams选中新tuple，mismatch0），全部proof/ledger终态，详见下表；不是同连接/逐packet/手机/完整N2。
 
-下一步收取R2：terminal→collect→verify-turing-record→calibrate-peer-mobility→准确源selection/decision两parser，独立解析新增pending-cancel/Rest与pivot，随后关闭固定两轮诊断。原失败保留；根据组合证据形成可证伪的最小回归/修复，禁止无限原样重跑挑绿。冻结普通源028及旧sourcequad不动。
+下一步依据原失败精确copy事实形成最小可证伪回归：X在+2051.718ms发起Relay→Custom确认时，质量代表为Conn140064923605712/Path1（95.483590ms），实际候选probe却取Conn140065527340576/Path1（当时138.971123ms）；后者的新111.157583ms成为代表，收益门随后不再满足。此为原行可观察的copy不一致，不独立证明全部停顿原因。核查同PTO副本tie-break与测量所有权，保留故障副本优先、候选低PTO、原freshness/预算/四秒门及反例。冻结普通源028及旧sourcequad不动。
 混版后续优先复用crates/cli/tests/sync_mixed.rs与scratch::pair_built；需准确旧/新CLI及OLD_KHOR非skip执行标记，缺OLD_KHOR直接返回不能算接受；该fixture只覆盖双向session row/pin，不扩称peer relay/全RPC。其余完整N0–N5和补丁退出继续。
 
 Mac仍50GiB启动余量门红；只读库存43205919189又被GitHub付款/额度在prepare前拒绝（E/mac-storage-inventory-43205919189/receipt.json），storage skipped、零Mac操作。已异步请求恢复Actions或常规SSH，无回复；最新一次SSH仍banner timeout255。Turing继续，不降门/清未知缓存。
