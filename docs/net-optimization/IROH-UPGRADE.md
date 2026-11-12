@@ -34,6 +34,12 @@
 旧dc738同control69d23d4f的 **110236Z-baeba5f5** 原0/213.826096s：124请求全ok，middle实际IPv4变化，变前carried连续报告≥10s、变后再观察carried。
 新红启动load90.18/128逻辑CPU，旧绿9.78；这只是差异，不能据一次对照归因上游或负载。新源原样确认 **110840Z-1e90b3dd** 已0/339.290546s，124请求全ok且变后再观测carried；源/控制/原hash/进程组空/行为已核验。其启动load144.61比首红更高，不能以单一host load解释。三轮及5份完整相同fixture绑定在E/iroh14-peer-mobility-comparison-v1.json。**首连间歇红未定位/未豁免**；不再无假设原样重跑挑绿。IPv6 overlap两合同111507Z-d7912aa7已0/165.659413s，248请求/496起止全ok、内核地址/隔离/remote-first核验；同前缀替换，不称手机/同连接或完整N2。实际QUIC NAT端口合同111859Z-de624e0b也已0/99.774935s：124请求全ok、30/30 warm远端stream选中新tuple、mismatch0，两个frozen metadata/原source/hash/进程组空核验。未证明同连接/逐packet/手机。下一步独立冻结新栈同条件混合负载对照，唯一状态见STATE。
 
+## 已补查的原四秒恢复门：新候选红
+
+E/iroh14-peer-strict-gate-comparison-v1.json把原frozen selection/decision门用于上述两轮完整日志，零新产品执行。旧110236两门过，inner Go3472631/3462188us；新110840两门红，Go9301772/9349684us，52个eligible warm请求中15个AB仍在错误选择。原availability通过仅限业务可达，不代表最佳路及时恢复。新候选不能验收或合入canonical。
+
+原行绑定与后续假设见E/iroh14-peer-recovery-sample-gap-v1.json：carried质量111.16ms在2.535–6.998s间未刷新（age增到4.835s），Relay约135ms，原25%gain门保留Relay；新carried约98ms后才于7.3s重启2s确认。这是request-open观测与源码/data推断，仍需定位采样代表copy、probe copy、取消后的有界刷新及外层/调度，不能当唯一上游原因。原四秒门/探测预算/新鲜性规则保持，冻结性能源028不改。
+
 ## 补丁退出与原失败
 
 E/iroh-upgrade-patch-ledger-v4.json的60项历史账目为：**1项上游替代库验证、2项保护由删除对照支持保留、57项待逐项退出核查**。57不代表全部必要；各项原原因/覆盖/退出合同见[UPSTREAM](UPSTREAM.md)和[VENDOR-AUDIT](VENDOR-AUDIT.md)。

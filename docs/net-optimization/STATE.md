@@ -1,17 +1,22 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-12 11:46 UTC。用户已恢复“继续”，完整目标“完成计划”仍为[PLAN](PLAN.md) N0–N5，**未完成**；root串行，不派发子智能体。用户“我没有验收 打错了”有效，没有新的Lab/真机接受。最新U18授权跟进最新稳定iroh并尽量减少custom；旧AGENTS仅规划状态已被后续授权覆盖。
+更新于 2026-11-12 12:00 UTC。用户已恢复“继续”，完整目标“完成计划”仍为[PLAN](PLAN.md) N0–N5，**未完成**；root串行，不派发子智能体。用户“我没有验收 打错了”有效，没有新的Lab/真机接受。最新U18授权跟进最新稳定iroh并尽量减少custom；旧AGENTS仅规划状态已被后续授权覆盖。
 原STATE逐字保存于[本次历史](HISTORY-20261112-iroh-upgrade-through-mcp-preparation.md)，SHA256 `3ed8de20f1d15b0088559416195ff5ac0070398554387c3993c43f7094ea17ec`；其中继续链接原stream准备/暂停/恢复历史与完整旧证据，不按摘要覆盖未提交内容。
 
 ## 当前执行与下一步
 
-**turing-20261112T114310Z-d73d001a** 在途，task `netlab-workload-pipeline` / revision `iroh14_workload_v1-block3-new`，role candidate，pid1728762。新稳定source **02807c79e04a92c46fb2e6c14d2ecf107b98336c** / tree **f87d31f97b89474fe52297d87e3827de33550493** / snapshot **dc21d783909981141bd197c0b2ad1bdc22da150f**，control **d28538241f29a1608a7fed606da25d2fde57470f**。这是block3，先核对receipt/execution，禁止重复提交。只读进度用E/ops/poll-iroh14-workload-v1.py，不用旧pipeline campaign poller。
-Block2新源 **113449Z-094d6494** 原0/430.464791s，17原files，low/high各720完整交互全ok、两file完整，准确metadata/独立人口/原hash/source/control/group空核验；iroh14-workload-block-verification-v1.json、ledger/campaign终态。当前两block/2880交互/4file完整；未比较成组性能或声称N3通过。
+**turing-20261112T115843Z-91e3c95f** 在途，task `netlab-workload-pipeline` / revision `iroh14_workload_v1-block5-old`，role baseline，pid1768966。旧整合source **dc73837e5bf33238b5cc2ed80ba8719fbb793601** / tree **dabe98b202d0c1d1fb95e1b8de659073618bf26e** / snapshot **fc6103037468b4de4c1164047f0e0a95192e15ea**，control **d28538241f29a1608a7fed606da25d2fde57470f**。这是block5，先核对receipt/execution，禁止重复提交。只读进度用E/ops/poll-iroh14-workload-v1.py；最终E/ops/summarize-iroh14-workload-v1.py只允许六block全部终态后生成新独立summary（已AST检查，未运行）。
+Block3新 **114310Z-d73d001a** 0/372.576940s、block4旧 **115011Z-bc4d5a19** 0/422.281576s，各17原files/1440交互全ok/2file完整，proof/ledger/campaign已终态。当前4/6完整、5760交互、8file；余block5旧/block6新。block3 high终端service p95 **681495us/max1102768us**，有长尾未解释，不因功能绿接受体验；borrowed probe bulk maxlag21857us，不证明resident/PTY/网络唯一原因。
 
-Block1旧源 **112653Z-818e0026** 原0/438.341972s，17原files，low/high各720完整交互全ok、两file完整。准确frozen metadata+独立人口/时间运算/原hash/source/control/group空核验；iroh14-workload-block-verification-v1.json、ledger/campaign终态。新helper已用此真实block成功验证。剩余五轮按首轮耗时约30–40分钟，仅此组估时；共享宿主负载保留，未声称独占整机。
+**升级候选仍有严格恢复红：** 在已完整收件的peer旧110236与新110840日志上，准确冻结netlab-peer-selection.py/decision.py原4秒门本地重算（零新产品run）。旧两门均过，决策3472631/3462188us；新两门均红，决策**9301772/9349684us**，52个eligible warm请求中15个AB仍未选carried。E/iroh14-peer-strict-gate-comparison-v1.json，两个ledger entry追加additional_contracts；原availability scope proof保持，不能把business成功升级为最佳路接受。
+E/iroh14-peer-recovery-sample-gap-v1.json绑定原行：新X request-open事实中，carried质量111.16ms从2.535s到6.998s未更新、age增至4.835s，Relay约135ms；原25%gain门不选该值（静态/data推断），7.372s附近新carried约98ms后才重启2s确认。需查测量代表copy与真正probe copy、bounded recovery/Moving取消后的刷新、外层积压/调度；**尚无唯一根因或修复，原4秒/3probe/2s/250ms及新鲜性门不得为此放宽**。保持性能冻结源028不动，先收完原六轮。
+
+Block2新源 **113449Z-094d6494** 原0/430.464791s，17原files，low/high各720完整交互全ok、两file完整，准确metadata/独立人口/原hash/source/control/group空核验；iroh14-workload-block-verification-v1.json、ledger/campaign终态。这是旧阶段2/6状态，当前以顶层4/6及campaign为准；未比较成组性能或声称N3通过。
+
+Block1旧源 **112653Z-818e0026** 原0/438.341972s，17原files，low/high各720完整交互全ok、两file完整。准确frozen metadata+独立人口/时间运算/原hash/source/control/group空核验；iroh14-workload-block-verification-v1.json、ledger/campaign终态。新helper已用此真实block成功验证。首轮完成时曾估剩余五轮约30–40分钟，仅此组估时；共享宿主负载保留，未声称独占整机。
 
 新独立[升级体验对照](IROH-WORKLOAD-COMPARISON.md)已冻结：E/iroh14-workload-plan-v1.json SHA a5a6565df56b75e176f689da2dc886f77efad6bdc5bb671ab1798d6bd1803226；campaign动态E/iroh14-workload-campaign-v1.json，顺序old/new/new/old/old/new、两profile各fresh，均rolling8/priority0。37份fixture/metadata逐字相同，crates/scripts差异只有两依赖Cargo.toml。旧24完全不动。
-Root仅串行用E/ops/iroh14-workload-block-v1.py：每block终态后collect→verify-turing-record→`verify INDEX`（准确metadata+独立人口/hash，写proof/ledger/campaign），仅完整人口才`launch NEXT PREDECESSOR_RECEIPT`；未知stage先恢复receipt，不重发；无完整计时人口停止审查，不补跑替代。该helper已AST检查并验证首个真实block；后续任何校验错保留原始结果先定位。
+Root仅串行用E/ops/iroh14-workload-block-v1.py：每block终态后collect→verify-turing-record→`verify INDEX`（准确metadata+独立人口/hash，写proof/ledger/campaign），仅完整人口才`launch NEXT PREDECESSOR_RECEIPT`；未知stage先恢复receipt，不重发；无完整计时人口停止审查，不补跑替代。该helper已AST检查并验证首个真实block；后续任何校验错保留原始结果先定位。混版后续优先复用crates/cli/tests/sync_mixed.rs和scratch::pair_built；必须准确旧/新CLI、OLD_KHOR实际设置与非skip marker，默认缺OLD_KHOR早返回不能算验收；现有fixture为双向session row/pin，非peer relay/全RPC。不要在计时中编译它。
 
 最新NAT **turing-20261112T111859Z-de624e0b** 已0/99.774935s、18原files；r0真实NAT端口校准+r1远端先请求，124请求/248起止全ok；IPv4/IPv6本地地址不变、外部UDP映射50001→50002、旧conntrack删除及新QUIC tuple被记录，30/30 warm远端请求的实际stream-open选中新tuple、tuple mismatch0。两准确冻结metadata与独立校准/stream合同重算、原source/control/hash/进程组空核验；proof `iroh14-nat-rebind-verification-v1.json`与ledger终态。非逐packet/同QUIC连接/手机或完整N2。
 
