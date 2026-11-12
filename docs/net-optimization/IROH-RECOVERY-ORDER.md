@@ -33,3 +33,9 @@ E/iroh14-recovery-ack-order-plan-v1.json SHA cad768d3783b0428764ba098e73c4e23952
 完整库候选151200已0/180.387027s、Noq467/iroh198及原ignored1通过，node test compile、准确三锁/source/hash/identity/group空/proof/ledger闭；原197库人口+新回归逐名保持。当前151523原12app门在途，276预期尚未终态。physical-plan-v1 SHA3133989963aed36e49181bad258aff99db29f975ae9a430202380035ab5b71be在任何物理运行前冻结准确source3b三fresh，必须绑定两准确绿proof；原物理/4秒门/期限/全部失败保持，三轮后停止，尚零执行。
 
 准确同源151523的12命令已0/379.316808s、276过/原ignored1，原命名人口/七取消合同/hash/identity/group空、proof/ledger闭。已按先验三轮启动物理R1 152244Z-802bb00c（control69/source3b），尚无终态；收件后保留原门并只读复算实际recovery reservation/ping请求次数，其他confirmation/keepalive/wake不混计。
+
+## 物理screen已闭，转长稳负对照
+
+三fresh物理152244/152638/153157均原warm/decision过，372业务全ok、final carried均true；六个Go3532073–3798379us，原hash/identity/清理与proof/ledger全闭，三后停止。结果SHAf1a4c7ef3eb61470fb5f5c377265c224ecdebde91b460d1a80eb41296136e5d8仅screen_passed，accepted/promotion仍false。
+
+长稳plan-v2 SHA08c27588260363d228c415769d4e96fa01ec71217379e7292eeeae51ccc63b0c在运行前固定：同最新依赖的028原策略与3b候选分别加相同25行CLI fixture overlay（高RTT/jitter wrapper及原测量后journal导出），原600秒/CPU停顿/p5门保持、0诊断、单线程，各arm一次。准确两个覆盖源与control见STATE；先两次compile-only，后旧/新各50–60分钟。此批只审churn/retired及报告有限scope的traffic，不能扩称全echo/真正静默/手机能耗。
