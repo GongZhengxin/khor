@@ -1,6 +1,6 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-12 16:04 UTC（本地2026-11-13）。完整目标 [PLAN](PLAN.md) N0–N5 **未完成**。
+更新于 2026-11-12 16:22 UTC（本地2026-11-13）。完整目标 [PLAN](PLAN.md) N0–N5 **未完成**。
 用户“继续”“我没有验收 打错了”和U18跟进最新稳定iroh、尽量减少custom均有效。
 root串行，不派发子智能体；阶段结束、旧AGENTS仅规划状态或目标服务paused都不是当前停止授权。
 
@@ -12,9 +12,12 @@ root串行，不派发子智能体；阶段结束、旧AGENTS仅规划状态或�
 - run **turing-20261112T155449Z-56a8ac18**，PID **2128254**，15:55:10 UTC启动。
 - task `netlab-stability`，revision `iroh14_policy_stability_baseline_v1`。
 - control **f862ab2defb48d21236c2bdcca736c9a3d108773**，baseline source **515e99f0d886de8035801801a10e7587167cf78b**。
-- receipt及E/source-refs.json已存，启动exec已终态。最近只读仍running，p1原600秒窗口中；不要重复提交。
+- receipt及E/source-refs.json已存，启动exec已终态。最近只读仍running，p1已原600秒绿（两端0move/0retired/0punch、四journal完整），p1h也已原600秒绿（65±5ms each way、两端0move/0retired、10punch），p1j在途；不要重复提交。
 - 先baseline完整终态、收件、identity和行为核验，再candidate **一次**。两组各约50–60分钟，原90分钟守护不变；失败全留、零替代重试。
 - 计时期间不插入自己的其他Turing编译、产品测试或共享source-cache写入。本地源码/文档/证据审计可继续。
+
+**串行自动衔接已运行**：本机coordinator PID **61277**，exec session **48333**，脚本E/ops/run-policy-stability-pair-v1.py。**接续先读 E/iroh14-policy-stability-progress-v1.json，实际phase/run优先于本页静态时点**；完整结果固定写E/iroh14-policy-stability-results-v1.json。local flock防第二个coordinator。该进程活着时，它是root唯一ledger writer，模型只读，不能另行stage/launch/collect/specialized verify或启动其他Turing重型任务。
+它等待现有baseline，顺序收件/identity/原stability审计、在准确原receipt/group空后只stage/launch一次candidate，再顺序收件/核验/输出描述性成本对照。任一控制/元数据错误停止并保存原receipt，不重复提交；原产品红可按冻结协议保留后测另一arm。十次只读SSH连续失败或超过100分钟未观察终态会停协调而不替代原run，远端90分钟守护不变。协调器只执行本批，不晋升、不改源码、不自动派发混版。源码/语法/合成比较准备记录E/iroh14-policy-stability-coordinator-preparation-v1.json；两份原proof始终为行为依据，不凭自动化宣称接受。
 
 执行前冻结输入：E/iroh14-policy-stability-execution-v1.json绑定双方源码、control、readiness与四份协议/审计/物理结果SHA。
 协议v1 SHA **e89aaa0c657e0bb26e7dfd3f01312a417c9de0f87bd1bff41cc61407b0aa86c6**；v2 SHA **08c27588260363d228c415769d4e96fa01ec71217379e7292eeeae51ccc63b0c**。
@@ -100,7 +103,7 @@ E/iroh-upgrade-patch-ledger-v4.json：60历史项=1上游替代库验证、2移�
 - 无本任务main合并、发布、生产Relay采购/部署、已装App替换授权。中央GUI授权不套用。
 - 图谱缺失/partial/stale或不覆盖vendor时，0节点不是安全证明；先用已有图谱，再定向源读，不自建CodeGraph索引。
 
-混版后续可用sync_mixed，但缺OLD_KHOR直接返回绿，必须准确旧/新CLI、非skip标记与原双向session row/pin。scratch tmux固定socket要短且唯一TMPDIR、按本run服务器/子进程所有权清理；尚无mixed control/执行，不能借用可变cache binary。旧owned source bundle110236可核SHA后构建。
+混版协议和control已在本地准备：[IROH-MIXED](IROH-MIXED.md)。E/iroh14-mixed-version-plan-v1.json / mixed-control-v1.json，control **05419f73cadb7787ee5c4356004b79f672a2c1c7**（仅原d07eec56 net-node分支）。旧dc738/new3b准确CLI native来源→不可写副本→真实sync_mixed唯一正标记/两方向row+pin、独立两host/child观测与退出。原fixture/helper/native工具两源逐字相同，Python AST/bash syntax已查；**零新远端编译/产品执行/互通接受**。两长稳全部终态收件核验后再执行一次，不抢Turing计时。旧owned run110236的bundle/package须核SHA；缺OLD_KHOR直接绿不接受，短唯一TMPDIR/只碰私有tmux，保留homes以免兜底reap隐藏close失败。
 E/turing-build-tools-inventory-20261112-v1.json确认Git2.25.1/tmux3.0a/libevent.pc缺失，只有只读库存；未安装/编译新工具，长测中不可用准备名义插入重型执行。
 Mac Finder trash原AppleEvent−1712（32/33）重复确认已用尽，保留失败；权限/响应根因未证，不盲目同源重跑。
 
