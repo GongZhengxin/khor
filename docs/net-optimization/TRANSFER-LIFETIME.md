@@ -9,7 +9,7 @@
 | Path拉取的caller future被丢弃 | 控制QUIC responder收到全部等待流的显式STOP_SENDING，同wire Sessions仍可回答 | 生产文件server和宿主进程资源 |
 | road.stop / Job.cut的异步通知 | 停止前后订阅、多waiter已注册后暂停poll；Path首片和8片等待的真实红→绿 | 所有产品停止入口、最终提交竞争 |
 | 远程DropStop | 实际receiver Node.handle/dispatch；签名roster准入；陌生设备/畸形token/错误token负控；正确与重复Stop | 配对协议、生产文件source、移动网络 |
-| 会话文件停止与发送端cut | 已发现stop_sent绕过Notify，pull_one仍等待整批join_all；四个真实Offer合同已提交 | 先保留未修复源结果，再改同入口；run_take完整清理仍要单独验 |
+| 会话文件停止与发送端cut | 四项首片/八片真实Offer等待红→绿；同fixture/期限；stop_sent统一通知，pull_one借用等待通知 | run_take完整清理、最终发布竞争、生产source与host-child |
 
 Path的rolling测量与Notify修复是不同冻结源，不能互相冒充性能或功能验证。Offer目前仍使用自己的Fetch批量循环；Path的对照结果不能直接推广给它。
 

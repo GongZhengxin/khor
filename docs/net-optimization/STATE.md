@@ -1,6 +1,6 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-12 06:31 UTC。用户暂停后已明确“继续”，执行已恢复；用户随后澄清“我没有验收 打错了”，没有新Lab/真机验收结果，完整目标“完成计划”**未完成**；范围仍为[PLAN](PLAN.md) N0–N5，root串行，不派发子智能体。
+更新于 2026-11-12 06:35 UTC。用户暂停后已明确“继续”，执行已恢复；用户随后澄清“我没有验收 打错了”，没有新Lab/真机验收结果，完整目标“完成计划”**未完成**；范围仍为[PLAN](PLAN.md) N0–N5，root串行，不派发子智能体。
 暂停前后完整原STATE逐字保存于[历史状态](HISTORY-20261112-pipeline-start-and-pause.md)，SHA256 `9a774440c70f3c3ca851b37aadcce9a867a2a22ca9bb687016a1091cf7856948`；该历史继续链接更早完整证据，不按摘要覆盖未提交内容。
 
 ## 当前执行与下一步
@@ -74,7 +74,9 @@ net68+原identity创建worker ignored1、hop89/wires16/journal30/budget35/IPC18+
 
 **隔离整合回归**：`/Volumes/disk0/Khor/worktrees/current/khor-net-transfer-integration-v1` / experiment/net-transfer-integration-v1，HEAD **dc73837e5bf33238b5cc2ed80ba8719fbb793601**，从canonical068ba267整合U/S。只有共用test Fixture的构造入口冲突，合并为with_options(kind,offered,node_identity)，保留原new/build/with_identity接口；所有named tests/metadata不改。生产link/road与已绿8de4511a字节相同，未合入canonical feat/net，更未main/发布。
 
-新control **69d23d4f912c2e3674d47010eea5b2577230e182** / feat/net-transfer-integration-v1，原74e6固定29项+独立原Job2/Offer4/StopRPC1，**36个唯一测试**，各source-owned metadata分目录；原wire3只增加显式skip三个独立suite以免混计，其他任务/资源门保持，CONTROL HEAD不动。E/transfer-integration-control-v1.json。Mac提交中，本地句柄70277，request22fda3178df34d6c8eb2d3f7678eb6fc，source treedabe98b2/snapshotfc610303；先恢复收据/run再注册，不重发。Turing无在途。性能四树不纳入该取消修复，原预声明输入保持。
+新control **69d23d4f912c2e3674d47010eea5b2577230e182** / feat/net-transfer-integration-v1，原74e6固定29项+独立原Job2/Offer4/StopRPC1，**36个唯一测试**，各source-owned metadata分目录；原wire3只增加显式skip三个独立suite以免混计，其他任务/资源门保持，CONTROL HEAD不动。E/transfer-integration-control-v1.json。Mac **43168695982** / request22fda3178df34d6c8eb2d3f7678eb6fc，source treedabe98b2/snapshotfc610303，在途且已注册，提交句柄70277终态，不重发。
+
+**Turing同源固定12回归在途**：`turing-20261112T063227Z-f69d52c8`，PID1289672；同source dc73837e/treedabe98b2/snapshotfc610303，E/transfer-integration-source-v1.json；control **68cadb57a0ed72d40a4ca9a843e86b9c6797bf34**，task net-node/revision transfer_integration_node_suite_v1。诊断三次已终态后才启动，无计时负载重叠。只读E/ops/poll-turing-node-v1.py RUN；固定12与旧Mac相同，dial_budget将包含新Job2/Offer4/StopRPC1，不把此lane无成功nocapture的命名断言当独立RPC计数；Mac36提供独立marker。两项均需要收原artifact/identity/hash/实际行为证明再关闭ledger。性能四树不纳入该取消修复，原预声明输入保持。
 
 ## 已冻结输入与四真实RPC合同
 
