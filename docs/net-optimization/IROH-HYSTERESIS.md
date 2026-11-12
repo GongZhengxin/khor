@@ -21,3 +21,11 @@ app的相对25%收益门与vendor的连续2秒、双边决定后实测确认是�
 独立源与预先冻结的旧/新对照；原四秒物理门完整人口；健康同速/小幅噪声/短峰值与共同调度停顿的原场景；有限probe成本、静默与无收益切换统计。若只是让一个正例过而提高抖动或闲置成本，不能接受。先收敛两个防抖层的职责，避免为每个样本再加一个补丁、计时器或预算。
 
 混版、Mac可信Quality、真实手机换网和能耗依旧独立。即使本设计实验成功，也不替代全N0–N5或授权发布。
+
+## 已冻结的独立实验准备
+
+E/iroh14-single-hysteresis-plan-v1.json（SHA `dd135369ae663b8f3e798683001bc0e16309da2be745b85a71ca728742360af3`）在修改前记录源、显式合同变化与原负例/成本要求。新worktree khor-net-iroh-single-hysteresis-v1 / experiment/net-iroh-single-hysteresis-v1 从028建立，不包含80的失败修复或794的被动日志。
+
+红准备源c4ff13cf仅在net carry/path加入两个104vs131ms行为合同，生产实现、旧相对门断言、vendor/锁/物理输入全部保持；准确tree1f174846444c23edb46633aef57a0e7b2254e317 / snapshot506701e7bd3544106c27c009fb25d3df73ba2df5。当前远端net-unit先验格式/编译与预期行为红，未出结果前不记通过或实际修复。
+
+调用范围核对：improves还被Node hop::beats与path::selected_beats_carried使用。本实验保留API形状并一致采用同一底线；因此旧60→48、450→500、29→35的分类将有意改变。必须保留旧源/原结果，在候选里显式更新这些设计断言，不能声称新旧行为等价。更容易触发准备/更久保留carrier可能增加实际成本，预算未增加不构成能耗接受。

@@ -1,11 +1,14 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-12 13:37 UTC。用户已恢复“继续”，完整目标“完成计划”仍为[PLAN](PLAN.md) N0–N5，**未完成**；root串行，不派发子智能体。用户“我没有验收 打错了”有效，没有新的Lab/真机接受。最新U18授权跟进最新稳定iroh并尽量减少custom；旧AGENTS仅规划状态已被后续授权覆盖。
+更新于 2026-11-12 13:44 UTC。用户已恢复“继续”，完整目标“完成计划”仍为[PLAN](PLAN.md) N0–N5，**未完成**；root串行，不派发子智能体。用户“我没有验收 打错了”有效，没有新的Lab/真机接受。最新U18授权跟进最新稳定iroh并尽量减少custom；旧AGENTS仅规划状态已被后续授权覆盖。
 原STATE逐字保存于[本次历史](HISTORY-20261112-iroh-upgrade-through-mcp-preparation.md)，SHA256 `3ed8de20f1d15b0088559416195ff5ac0070398554387c3993c43f7094ea17ec`；其中继续链接原stream准备/暂停/恢复历史与完整旧证据，不按摘要覆盖未提交内容。
 
 ## 当前执行与下一步
 
-**当前无在途Turing任务；固定首连阶段诊断三轮已全部终态，停止该批。** source794ceaf6/tree2a60fb17/snapshotedcb9c70，control69d23d4f，原7份物理输入/parsers及四秒门均未改。R1 **132402Z-b119bebd** 0/158.415076s，R2 **132802Z-17e9011a** 0/150.328287s，R3 **133218Z-4d9c8c05** 0/146.301250s，各16原files/124请求全ok，identity/hash/frozen attempts/group空/proof/ledger均闭。
+**当前在途 turing-20261112T134302Z-887434b9**：task net-unit / controlbd13e1e7f8b2f12a6089978a69180d108eec4f14，pid1952632，role diagnostic。独立单一防抖合同红准备源 **c4ff13cf47f0297afcd9fa115c7462e46022b274** / tree **1f174846444c23edb46633aef57a0e7b2254e317** / snapshot **506701e7bd3544106c27c009fb25d3df73ba2df5**；worktree khor-net-iroh-single-hysteresis-v1 / branch experiment/net-iroh-single-hysteresis-v1。仅新增两个104vs131ms合同，生产/旧相对门断言/vendor/锁/物理输入不变，文本还原source-audit在E。先查receipt/execution，编译/格式失败不得当行为红，未知handle不重发。
+该策略实验在改前冻结E/iroh14-single-hysteresis-plan-v1.json SHA **dd135369ae663b8f3e798683001bc0e16309da2be745b85a71ca728742360af3**，见[IROH-HYSTERESIS](IROH-HYSTERESIS.md)。shared improves影响selector、Node hop准备及carrier清理；有意改变旧60→48/450→500/29→35三类设计断言，不得静默改后声称原负例全绿。原2秒/决定后实测/失败快通道/vendor预算/四秒门保持。尚无提议策略生产实现或接受；physical有收益后仍须完整健康/抖动/停顿原时长与成本对照。首连未定位与其他全计划范围保持。
+
+**前一固定首连阶段诊断三轮已全部终态，停止该批。** source794ceaf6/tree2a60fb17/snapshotedcb9c70，control69d23d4f，原7份物理输入/parsers及四秒门均未改。R1 **132402Z-b119bebd** 0/158.415076s，R2 **132802Z-17e9011a** 0/150.328287s，R3 **133218Z-4d9c8c05** 0/146.301250s，各16原files/124请求全ok，identity/hash/frozen attempts/group空/proof/ledger均闭。
 三轮warm sampled门过但decision均红：R1 X/Y Go3369982/7610709us；R2 X无Go（原门失败、缺事件不豁免）/Y7593836us；R3 X/Y3708399/5447209us。未捕获首连失败，不能宣告首连已修；在已有原红105138/125445基础上没有新唯一根因。阶段原始记录保留重复且不自动配对并发preparation；其他候选胜出取消是已存在的正常路径，不能由缺完成日志单独归因。
 结果 `E/iroh14-hop-preparation-diagnostic-results-v1.json` SHA **ed9091d8dad5cab131cb121a68b82e11b280a79949e07ffd8fbeb14ce45b0c67**，runtime3/additional0/product_fix=false/accepted=false。794仅被动观察，不晋升canonical；不用原样追加采样挑结果。
 同准确源compile-only **132102Z-7c5d5c82** 已0/69.945424s终态：format、locked netlab集成目标编译/Cargo artifact JSON/versions1.4组、源码diff空、15原files/hash/identity/group空核验，proof/ledger闭；binary SHA4d0d55aad86f5fce4aa3861045beb516b55ec1e35b7b694a1a26614dde86931b，**runtime0、不是native_provenance或产品接受**。v4 source audit证明v3 token等价审计后只应用准确远端formatter patch；无新依赖/算法/timer/预算/fixture，原7份物理输入/parsers逐字相同。
