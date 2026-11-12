@@ -23,3 +23,9 @@ E/iroh14-recovery-ack-order-plan-v1.json SHA cad768d3783b0428764ba098e73c4e23952
 ## 接受范围
 
 红→绿须同一原full vendor/全部旧命名测试及原ignored；之后准确源固定12应用命令。物理screen另在运行前冻结，保留所有失败，不能因单元绿晋升。修复漏建episode会增加此前漏掉的实际probe，原预算不变不等于流量/能耗不变；仍须健康噪声、静默与成本对照。完整N0–N5、Mac、混版、真机和原67无carried失败保持。
+
+## 红已证实，最小候选在途（15:13 UTC）
+
+150712Z-549ba3dd终态101/200.479139s，17files：Noq467原通过/iroh197原通过逐名保持、原ignored1，仅新增合同红（left131ms/right85ms）；node test compile过。准确三锁/source diff空/hash/identity/group空、proof/ledger闭。红不是格式或编译失败。
+
+当前候选3b734073b410ec4130b4b57def3bf096b10c3e7a/tree473ee06d1a836d56d9e39bd10a7a4016fdacf530/snapshot4a688a33bd3da7f095cd8880ed1fd9519fb5ce09，只把complete_read三行调整为原recovery_probes先评估、mark_silent后完成。反转此三行与红源逐字一致，测试段完整不变，source-audit SHAa814baae82dab7b97cc92c24b620c8ee08647104f5d6a155d7c20c75bc2d2f5d。151200Z-d504e81e原full vendor在途，未出结果前不记库绿或实际恢复已修。
