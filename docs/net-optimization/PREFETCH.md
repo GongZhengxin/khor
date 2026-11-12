@@ -27,3 +27,13 @@ timeout标明完成时间被原caller界截断，不能把它当作一份已完�
 本实验只判断固定批量实现的在途量取舍。join_all批量屏障是另一个待测因素，
 不改入这三树；滚动补齐若要实验，另冻结相同上限、顺序写入/mtime/续传/取消/所有权合同。
 prefetch实验不是完整前台预览、公平/背压、设备规模/能耗或N3最终验收。
+
+
+## 固定priority记录（首个prefetch数据前，2026-11-12）
+
+低/high两套完整18轮均已收件、冻结metadata和原始人口核验后，下一因素固定 **priority0**。
+low目录p95的九对改善没有稳定延续到high；high九个对应位置文件/目录服务/终端服务均6对B更慢、3对更快。
+这是下一因素的中性原实现对照，不是全局最优或统计显著性结论，理由和两份comparison SHA见
+外部response-priority-decision-v1.json与[SCHEDULING](SCHEDULING.md)完整表。
+冻结三树前再次审计全部runtime/fixture只差PULL_AHEAD一行，原顺序、期限、失败人口和独立profile规则保持。
+滚动窗口候选仍隔离，不能加入这三树；其后比较还须把priority、并发上限和所有输入匹配。
