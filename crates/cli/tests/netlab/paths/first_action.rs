@@ -3,47 +3,61 @@ use super::*;
 
 use serde_json::{Value, json};
 
-const REVISION: &str = "first_foreground_after_idle_v1";
+const REVISION: &str = "first_foreground_after_idle_v2";
+
+struct Owned<T>(tokio::task::JoinHandle<T>);
+
+impl<T> Drop for Owned<T> {
+    fn drop(&mut self) {
+        self.0.abort();
+    }
+}
 
 async fn capture(node: &LabNode, epoch: Instant) -> Value {
-    node.with(move |_| async move {
-        let started = epoch.elapsed().as_micros();
-        let mut commands = serde_json::Map::new();
-        for (name, program, args) in [
-            ("interfaces", "ip", vec!["-s", "-j", "link", "show"]),
-            ("qdisc_json", "tc", vec!["-s", "-j", "qdisc", "show"]),
-            ("qdisc_text", "tc", vec!["-s", "-d", "qdisc", "show"]),
-        ] {
-            let began = epoch.elapsed().as_micros();
-            let mut command = tokio::process::Command::new(program);
-            command.kill_on_drop(true).args(args);
-            let value = match tokio::time::timeout(Duration::from_secs(2), command.output()).await {
-                Ok(Ok(output)) => json!({"ok":output.status.success(),"timed_out":false,
-                    "status":output.status.code(),"stdout":String::from_utf8_lossy(&output.stdout),
-                    "stderr":String::from_utf8_lossy(&output.stderr)}),
-                Ok(Err(error)) => json!({"ok":false,"timed_out":false,"error":error.to_string()}),
-                Err(_) => {
-                    json!({"ok":false,"timed_out":true,"error":"first-action snapshot deadline"})
-                }
-            };
-            commands.insert(
-                name.into(),
-                json!({"started_us":began,
-                "ended_us":epoch.elapsed().as_micros(),"command":value}),
-            );
-        }
-        json!({"started_us":started,"ended_us":epoch.elapsed().as_micros(),"commands":commands})
-    })
-    .await
+    node.with(move |_| capture_commands(epoch)).await
+}
+
+async fn capture_commands(epoch: Instant) -> Value {
+    let started = epoch.elapsed().as_micros();
+    let mut commands = serde_json::Map::new();
+    for (name, program, args) in [
+        ("interfaces", "ip", vec!["-s", "-j", "link", "show"]),
+        ("qdisc_json", "tc", vec!["-s", "-j", "qdisc", "show"]),
+        ("qdisc_text", "tc", vec!["-s", "-d", "qdisc", "show"]),
+    ] {
+        let began = epoch.elapsed().as_micros();
+        let mut command = tokio::process::Command::new(program);
+        command.kill_on_drop(true).args(args);
+        let value = match tokio::time::timeout(Duration::from_secs(2), command.output()).await {
+            Ok(Ok(output)) => json!({"ok":output.status.success(),"timed_out":false,
+                "status":output.status.code(),"stdout":String::from_utf8_lossy(&output.stdout),
+                "stderr":String::from_utf8_lossy(&output.stderr)}),
+            Ok(Err(error)) => json!({"ok":false,"timed_out":false,"error":error.to_string()}),
+            Err(_) => {
+                json!({"ok":false,"timed_out":true,"error":"first-action snapshot deadline"})
+            }
+        };
+        commands.insert(
+            name.into(),
+            json!({"started_us":began,
+            "ended_us":epoch.elapsed().as_micros(),"command":value}),
+        );
+    }
+    json!({"started_us":started,"ended_us":epoch.elapsed().as_micros(),"commands":commands})
 }
 
 async fn snapshots(pair: &SpeedPair, epoch: Instant) -> Value {
-    let (a, b) = tokio::join!(capture(&pair.a, epoch), capture(&pair.b, epoch));
-    json!({"alpha":a,"beta":b})
+    let mut router = Owned(pair.second.spawn(move |_| capture_commands(epoch)).unwrap());
+    let (a, b, second) = tokio::join!(
+        capture(&pair.a, epoch),
+        capture(&pair.b, epoch),
+        &mut router.0,
+    );
+    json!({"alpha":a,"beta":b,"second":second.unwrap()})
 }
 
 fn captures_ok(value: &Value) -> bool {
-    ["alpha", "beta"].iter().all(|side| {
+    ["alpha", "beta", "second"].iter().all(|side| {
         ["interfaces", "qdisc_json", "qdisc_text"]
             .iter()
             .all(|name| value[*side]["commands"][*name]["command"]["ok"] == true)

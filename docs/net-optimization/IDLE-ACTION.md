@@ -52,8 +52,11 @@ control先执行原两项p8g所有权guard；任一失败则不进入首次操�
 采before_action、只发一次原30秒目录读取、采after_action，最后才查询两端路径。
 实际restore前后、请求前后、命令前后均用同一单调epoch记录；没有准备后的Node状态轮询或另一端业务预热。
 
-每次只读快照记录ip -s -j link及tc JSON/text。读回必须包含两端eth0/eth1原始字节/包/错误/丢弃计数；
-初始alpha的eth1出口和入口各150ms netem，beta无netem，无额外TBF；恢复后两端均无netem。
+每次只读快照记录ip -s -j link及tc JSON/text。v1只采两个端点，错误地要求alpha命名空间内有两个netem；该轮metadata失败原样保留。
+v2读回包含两端eth0/eth1及second路由器各端口的原始字节/包/错误/丢弃计数。
+初始alpha eth1出口一个150ms netem，其入口对应second路由器的peer veth一个150ms netem；
+beta无netem、无额外TBF；恢复后两个端点和second均无netem。
+须以两端ifindex/link_index双向匹配绑定router peer，不能仅靠名称或队列数猜测对应端口。
 实际JSON秒单位与text 150ms交叉核验，不用请求模型参数代替安装读回。
 每条命令原2秒观察界、kill_on_drop、调用者持有Device任务；命令失败原样保留。
 
@@ -64,3 +67,16 @@ control先执行原两项p8g所有权guard；任一失败则不进入首次操�
 idle/action按各设备和接口分别计算差值，包含快照间隙，时间用实际命令界给范围；
 两端重复观测同一批数据，不能相加当唯一字节，也不能称probe-only、CPU、唤醒或手机能耗。
 6个样本仅作首次操作探索，无p99、最终恢复SLO或完整N1接受。
+
+
+## v1配置缺口与v2修正（首个v2数据前）
+
+v1六次读取均成功，但整轮因缺少入口安装读回而失败；不能按原Rust六项绿宣称模型通过。
+实际vendored patchbay src/iface.rs::apply_condition把Egress装在device命名空间eth1，
+Ingress装在所属router命名空间的veth。该文件SHA256为
+`2e819ab15361340e8558b281627f6a768626169955ceafa9641f1fbd925c475f`，
+根Cargo.toml用vendor/patchbay；读取到的registry同名文件逐字相同，但实际证据以vendored源为准。
+v2只增加保留second Router句柄与调用者持有的只读采样任务，以及对应配置/计数核验。
+原网络配置、六fresh顺序、准备和静默/phase时间、30秒caller与操作数量不改；revision显式升到
+first_foreground_after_idle_v2，原v1数据不充作已通过的v2样本。
+新增router读回会有独立观测开销，记录各命令时间与快照间隙，不能当作零开销前后对照。

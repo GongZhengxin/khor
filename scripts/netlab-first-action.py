@@ -6,14 +6,15 @@ from pathlib import Path
 import re
 import sys
 
-REVISION = 'first_foreground_after_idle_v1'
+REVISION = 'first_foreground_after_idle_v2'
+SIDES = ['alpha', 'beta', 'second']
 CASES = {f'p8-{side}-{phase}': (side, phase)
          for side in ['alpha', 'beta'] for phase in [0, 14, 5]}
 MODE = dict(layer='node_first_action_measurement', measurement_revision=REVISION,
             diagnostic='off', test_threads=1, ignored=True, slo=False,
             guard_filter='paths::idle_action::p8g_', expected_guard_tests=2,
             action_filter='paths::first_action::p8_', expected_action_tests=6,
-            cases=list(CASES), full_N1_accepted=False)
+            cases=list(CASES), vantage_points=SIDES, full_N1_accepted=False)
 
 
 def need(ok, message):
@@ -41,8 +42,15 @@ def snapshot(value, side, slow):
         need(command['ok'] is True and command['timed_out'] is False and command['status'] == 0,
              'snapshot command failed')
     interfaces = json.loads(commands['interfaces']['command']['stdout'])
-    selected = {r['ifname']: r['stats64'] for r in interfaces if r['ifname'] in ['eth0', 'eth1']}
-    need(set(selected) == {'eth0', 'eth1'}, 'both outer interfaces required')
+    selected_rows = [r for r in interfaces if r['ifname'] != 'lo' and
+                     (side == 'second' or r['ifname'] in ['eth0', 'eth1'])]
+    selected = {r['ifname']: r['stats64'] for r in selected_rows}
+    if side == 'second':
+        need(len(selected) >= 2, 'router ports required')
+    else:
+        need(set(selected) == {'eth0', 'eth1'}, 'both outer interfaces required')
+    links = {r['ifname']: dict(ifindex=integer(r['ifindex']), link_index=r.get('link_index'))
+             for r in selected_rows}
     for stats in selected.values():
         for direction in ['rx', 'tx']:
             for key in ['bytes', 'packets', 'errors', 'dropped']:
@@ -50,9 +58,10 @@ def snapshot(value, side, slow):
     qdiscs = json.loads(commands['qdisc_json']['command']['stdout'])
     nets = [r for r in qdiscs if r['kind'] == 'netem']
     text = commands['qdisc_text']['command']['stdout']
-    if slow and side == 'alpha':
-        need(len(nets) == 2 and sum(r['dev'] == 'eth1' for r in nets) == 1,
-             'initial alpha outgoing and incoming delay required')
+    if slow and side in ['alpha', 'second']:
+        need(len(nets) == 1, 'one delay queue in each endpoint/router namespace required')
+        if side == 'alpha':
+            need(nets[0]['dev'] == 'eth1', 'alpha egress delay on eth1')
         for row in nets:
             need(row['root'] is True and row['options']['delay'] ==
                  dict(delay=.15, jitter=0, correlation=0), 'initial 150ms per direction readback')
@@ -64,7 +73,8 @@ def snapshot(value, side, slow):
     else:
         need(not nets and not re.search(r'^qdisc netem ', text, re.M), 'restored path still delayed')
     need(not any(r['kind'] == 'tbf' for r in qdiscs), 'unexpected rate cap')
-    return dict(started_us=began, ended_us=ended, interfaces=selected,
+    return dict(started_us=began, ended_us=ended, interfaces=selected, links=links,
+                netem_devices=[r['dev'] for r in nets],
                 counter_command_started_us=commands['interfaces']['started_us'],
                 counter_command_ended_us=commands['interfaces']['ended_us'])
 
@@ -72,7 +82,9 @@ def snapshot(value, side, slow):
 def interval(before, after):
     need(before['ended_us'] <= after['started_us'], 'cost snapshots overlap')
     delta = {}
-    for iface in ['eth0', 'eth1']:
+    need(before['links'] == after['links'], 'interface identities changed')
+    need(before['interfaces'].keys() == after['interfaces'].keys(), 'interface population changed')
+    for iface in before['interfaces']:
         delta[iface] = {}
         for direction in ['rx', 'tx']:
             delta[iface][direction] = {}
@@ -102,12 +114,23 @@ def case(row, attempts):
     need(times['request_started_us']-times['restore_ended_us'] >= phase*1000000, 'nominal phase shortened')
     need(times['request_ended_us']-times['request_started_us'] >= times['caller_elapsed_us'], 'caller elapsed')
     reads = {label: {device: snapshot(row[label][device], device, label == 'before_idle')
-                    for device in ['alpha', 'beta']}
+                    for device in SIDES}
              for label in ['before_idle', 'before_action', 'after_action']}
-    for device in ['alpha', 'beta']:
-        prepared = row['prepared_paths'][device]
-        need(prepared['hop'] == 'Relay' and integer(prepared['observed_us']) <= reads['before_idle'][device]['started_us'],
-             'prepared relay path')
+    for label in reads:
+        need(set(row[label]) == set(SIDES), 'snapshot vantage population')
+        for device in ['alpha', 'beta']:
+            endpoint = reads[label][device]['links']['eth1']
+            peers = [name for name, link in reads[label]['second']['links'].items()
+                     if link['ifindex'] == endpoint['link_index'] and link['link_index'] == endpoint['ifindex']]
+            need(len(peers) == 1, 'cross-namespace veth identity')
+            if device == 'alpha':
+                need(reads[label]['second']['netem_devices'] == (peers if label == 'before_idle' else []),
+                     'ingress delay must be on alpha peer veth')
+    for device in SIDES:
+        if device != 'second':
+            prepared = row['prepared_paths'][device]
+            need(prepared['hop'] == 'Relay' and integer(prepared['observed_us']) <= reads['before_idle'][device]['started_us'],
+                 'prepared relay path')
         need(reads['before_idle'][device]['ended_us'] <= times['quiet_started_us'], 'idle start before snapshot')
         need(times['restore_ended_us'] <= reads['before_action'][device]['started_us'], 'pre-action snapshot before restore')
         need(reads['before_action'][device]['ended_us'] <= times['request_started_us'], 'pre-action snapshot after request')
@@ -136,7 +159,7 @@ def case(row, attempts):
                 counters={device: {label: interval(reads[first][device], reads[last][device])
                                   for label, first, last in [('idle', 'before_idle', 'before_action'),
                                                              ('action', 'before_action', 'after_action')]}
-                          for device in ['alpha', 'beta']}, functional_ok=success)
+                          for device in SIDES}, functional_ok=success)
 
 
 def verify(report):

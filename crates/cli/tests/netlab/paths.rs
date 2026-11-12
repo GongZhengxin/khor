@@ -577,6 +577,7 @@ struct SpeedPair {
     relay: crate::lab::Relay,
     a: LabNode,
     b: LabNode,
+    second: Router,
 }
 
 async fn speed_pair(s: &str, direct_ms: u32) -> SpeedPair {
@@ -602,6 +603,7 @@ async fn speed_pair(s: &str, direct_ms: u32) -> SpeedPair {
         relay: r,
         a,
         b,
+        second,
     }
 }
 

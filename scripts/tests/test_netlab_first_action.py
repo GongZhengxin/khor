@@ -23,10 +23,14 @@ guard = load('first_action_guard_test', 'netlab-idle-action-guard.py')
 def capture(start, side, slow, count):
     stats = {direction: dict(bytes=count*100, packets=count, errors=0, dropped=0)
              for direction in ['rx', 'tx']}
-    interfaces = [dict(ifname=name, stats64=copy.deepcopy(stats)) for name in ['eth0', 'eth1']]
+    identity = {'alpha':[('eth0',10,20),('eth1',11,21)],
+                'beta':[('eth0',12,22),('eth1',13,23)],
+                'second':[('v-a',21,11),('v-b',23,13)]}[side]
+    interfaces = [dict(ifname=name, ifindex=index, link_index=peer, stats64=copy.deepcopy(stats))
+                  for name,index,peer in identity]
     nets = [dict(kind='netem', dev=name, root=True,
                  options=dict(delay=dict(delay=.15, jitter=0, correlation=0)))
-            for name in ['eth1', 'ifb1']] if side == 'alpha' and slow else []
+            for name in (['eth1'] if side == 'alpha' else ['v-a'])] if side != 'beta' and slow else []
     text = '\n'.join('qdisc netem 1: dev '+r['dev']+' root refcnt 2 limit 1000 delay 150ms' for r in nets)
     commands = {}
     for i, (name, stdout) in enumerate([('interfaces', json.dumps(interfaces)),
@@ -39,12 +43,12 @@ def capture(start, side, slow, count):
 def sample(name, index):
     side, phase = first.CASES[name]
     peer = 'beta' if side == 'alpha' else 'alpha'
-    before = {d: capture(2, d, True, 10) for d in ['alpha', 'beta']}
+    before = {d: capture(2, d, True, 10) for d in first.SIDES}
     pre_start = 10000050+phase*1000000
-    pre = {d: capture(pre_start, d, False, 20) for d in ['alpha', 'beta']}
+    pre = {d: capture(pre_start, d, False, 20) for d in first.SIDES}
     request_start = pre_start+20
     request_end = request_start+80010
-    after = {d: capture(request_end+10, d, False, 30) for d in ['alpha', 'beta']}
+    after = {d: capture(request_end+10, d, False, 30) for d in first.SIDES}
     row = dict(schema=1, revision=first.REVISION, case=name, **{'from':side}, to=peer,
                from_id=side+'-id', to_id=peer+'-id', phase_s=phase,
                direct_before_ms=300, direct_restored_ms=0, relay_edge_ms=40,
@@ -69,7 +73,8 @@ class FirstActionEvidence(unittest.TestCase):
         mutations = ['green', 'remote_error', 'timeout', 'missing_case', 'duplicate_case',
                      'wrong_phase', 'short_quiet', 'wrong_delay', 'restore_still_delayed',
                      'counter_decrease', 'missing_interface', 'missing_attempt',
-                     'duplicate_attempt', 'early_path_read', 'wrong_footer', 'wrong_mode']
+                     'duplicate_attempt', 'early_path_read', 'wrong_footer', 'wrong_mode',
+                     'missing_router', 'wrong_peer', 'wrong_ingress_delay']
         for mutation in mutations:
             with self.subTest(mutation=mutation), tempfile.TemporaryDirectory() as tmp:
                 report = Path(tmp)
@@ -119,6 +124,15 @@ class FirstActionEvidence(unittest.TestCase):
                     values[1][1][1]['attempt'] = 1
                 elif mutation == 'early_path_read':
                     row['paths_observed_us'] = row['request_started_us']
+                elif mutation == 'missing_router':
+                    del row['before_action']['second']
+                elif mutation == 'wrong_peer':
+                    command = row['before_idle']['second']['commands']['interfaces']['command']
+                    data = json.loads(command['stdout']);data[0]['link_index'] = 111
+                    command['stdout'] = json.dumps(data)
+                elif mutation == 'wrong_ingress_delay':
+                    command = row['before_idle']['second']['commands']['qdisc_json']['command']
+                    command['stdout'] = command['stdout'].replace('0.15', '0.015')
                 lines = []
                 for value, calls in values:
                     lines.extend('[netlab-attempt] '+json.dumps(a) for a in calls)
