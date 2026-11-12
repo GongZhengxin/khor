@@ -1,18 +1,20 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-12 11:11 UTC。用户已恢复“继续”，完整目标“完成计划”仍为[PLAN](PLAN.md) N0–N5，**未完成**；root串行，不派发子智能体。用户“我没有验收 打错了”有效，没有新的Lab/真机接受。最新U18授权跟进最新稳定iroh并尽量减少custom；旧AGENTS仅规划状态已被后续授权覆盖。
+更新于 2026-11-12 11:17 UTC。用户已恢复“继续”，完整目标“完成计划”仍为[PLAN](PLAN.md) N0–N5，**未完成**；root串行，不派发子智能体。用户“我没有验收 打错了”有效，没有新的Lab/真机接受。最新U18授权跟进最新稳定iroh并尽量减少custom；旧AGENTS仅规划状态已被后续授权覆盖。
 原STATE逐字保存于[本次历史](HISTORY-20261112-iroh-upgrade-through-mcp-preparation.md)，SHA256 `3ed8de20f1d15b0088559416195ff5ac0070398554387c3993c43f7094ea17ec`；其中继续链接原stream准备/暂停/恢复历史与完整旧证据，不按摘要覆盖未提交内容。
 
 ## 当前唯一产品在途与下一步
 
-**turing-20261112T110840Z-1e90b3dd**，task `netlab-peer-mobility-samples` / revision `iroh14_peer_relay_replug_confirmation_v1`，role diagnostic，pid1651595。
-source **02807c79e04a92c46fb2e6c14d2ecf107b98336c** / tree **f87d31f97b89474fe52297d87e3827de33550493** / snapshot **dc21d783909981141bd197c0b2ad1bdc22da150f**；control **69d23d4f912c2e3674d47010eea5b2577230e182**。这是原失败的一次不改源码/控制确认，不因通过删除原红；先核对execution，禁止重复提交。
-旧dc738同control **110236Z-baeba5f5** 已0/213.826096s、16原files、124逻辑请求/248起止全ok、内核middle IPv4从198.18.2.2变198.18.3.2、变前两端连续报告carried≥10s，变后再次观察carried。proof `peer-mobility-availability-verification-v1.json`及ledger终态。新红启动load90.18/128逻辑CPU，旧绿9.78；这是观察差异，不是唯一因果/回归归因。
+**turing-20261112T111507Z-d7912aa7**，task `netlab-mobility-node` / revision `iroh14_ipv6_overlap_pair_v1`，role diagnostic，pid1669564。
+source **02807c79e04a92c46fb2e6c14d2ecf107b98336c** / tree **f87d31f97b89474fe52297d87e3827de33550493** / snapshot **dc21d783909981141bd197c0b2ad1bdc22da150f**；control **69d23d4f912c2e3674d47010eea5b2577230e182**。两项IPv6同前缀make-before-break/非移动端先读合同，原门/期限不改；先核对execution，禁止重复提交。
+
+Peer relay原样确认 **110840Z-1e90b3dd** 已0/339.290546s、16原files、124请求全ok，middle IPv4实际更改、变前连续carried≥10s/变后再观察carried；proof `peer-mobility-availability-verification-v1.json`及ledger终态。首换网后AB/BA单次708565/750866us，非p99/SLO。
+旧dc738同control **110236Z-baeba5f5** 也0/213.826096s、124请求全ok。E/iroh14-peer-mobility-comparison-v1.json独立确认5份完整fixture/metadata逐字相同，并绑定新红→旧绿→新绿三轮原proof。**首连间歇红未解决/不豁免**；新确认启动load144.61高于首红90.18（128逻辑CPU），所以不能用单一host load解释或归因上游。无第三次原样重试计划，后续需有具体诊断假设。
 
 新028的 **turing-20261112T105138Z-c9de2969** 原101/150.987066s，16原files；唯一Rust case失败，只有第一笔setup读取（10.039537s，error），**尚未注入middle换网**。准确frozen attempts重算、原source/control/hash/group空通过；`peer-mobility-preparation-failure-v1.json`与ledger终态。不得把此红写成换网恢复失败，也不在旧版同条件对照前归因上游。
 新028静默first-action **100747Z-15afeb63** 与三换网 **102059Z-2a7ba71e** 已收件/核验/ledger终态，详见下表。其余本轮run同样终态。
 
-先完成peer relay前置红的旧版对照与定位；再继续IPv6重叠/实际QUIC NAT端口恢复、负载体验与补丁退出。新依赖尚无同条件性能接受，不借旧性能证明新源。Mac当前50GiB启动余量门红，原Mac退出对照不重发/不改门；已有worker-storage只读inventory工作流 **43205919189** 被GitHub账户付款/额度在prepare开始前拒绝（原check annotation保存在E/mac-storage-inventory-43205919189/receipt.json），storage skipped、零库存/产品测试。首不可解析旧SHA调度422同样零job；已用同脚本private control ref纠正。已异步请求用户恢复Actions或给可用常规SSH；Turing继续。未清缓存/改guard。
+继续IPv6重叠/实际QUIC NAT端口恢复，并保留peer relay首次请求间歇红为待定位；随后做新栈负载体验与补丁退出。新依赖尚无同条件性能接受，不借旧性能证明新源。Mac当前50GiB启动余量门红，原Mac退出对照不重发/不改门；已有worker-storage只读inventory工作流 **43205919189** 被GitHub账户付款/额度在prepare开始前拒绝（原check annotation保存在E/mac-storage-inventory-43205919189/receipt.json），storage skipped、零库存/产品测试。首不可解析旧SHA调度422同样零job；已用同脚本private control ref纠正。已异步请求用户恢复Actions或给可用常规SSH；Turing继续。未清缓存/改guard。
 root为E/source-refs.json唯一串行原子writer；submit/launch/collect/verify必须待真实exec会话终态，unknown handle先恢复receipt。
 
 ## 升级位置与授权边界
