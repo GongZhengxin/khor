@@ -1,12 +1,12 @@
 # feat/net 当前状态与接续入口
 
-更新于2026-11-12 02:04 UTC（本地11月12日）。完整目标“完成计划”仍 **active、未完成、未阻塞**；完整范围为[PLAN](PLAN.md) N0–N5，root串行，不派发子智能体。此页是唯一当前入口。上一页原样保存在[high v2前状态](HISTORY-20261111-through-high-resident-v2.md)，SHA 560d77e0f02b553ebda7b3ac0282a54b0220a0bb1dc1b44a3063f702abf1b172；继续链接更早全部证据。实际worktree/收据/原始日志优先，不按摘要覆盖未提交内容。
+更新于2026-11-12 02:18 UTC（本地11月12日）。完整目标“完成计划”仍 **active、未完成、未阻塞**；完整范围为[PLAN](PLAN.md) N0–N5，root串行，不派发子智能体。此页是唯一当前入口。上一页原样保存在[high v2前状态](HISTORY-20261111-through-high-resident-v2.md)，SHA 560d77e0f02b553ebda7b3ac0282a54b0220a0bb1dc1b44a3063f702abf1b172；继续链接更早全部证据。实际worktree/收据/原始日志优先，不按摘要覆盖未提交内容。
 
 ## 当前状态与下一步
 
 本次进度答复（01:50 UTC）：当前prefetch最后一组加归档汇总暂估15–25分钟，仅指本轮实验；完整交付仍是数天级、低置信度，尚无可信完成日期。此前2–4天估计不因compact或session重新起算，也不能当承诺。用户报告的自动接管失败、地址族换网与真实手机能耗尚未全部验收，没有最终iPhone候选可交付。
 
-**当前Turing无在途任务；prefetch9组/18场景已全部终态/归档/准确metadata和独立原始人口核验。12功能通过、6个high文件240秒超时；12960交互请求全ok，153原report文件hash已核。** prefetch-comparison-v1.json SHA **7dede5f2c580d46aff0e6138b968da2550db2e095d6de351652a56d8a7e537b0**；所有advance1–9终态不能重复。Mac无任务；e471准确源码Mac固定12门已过。N1旧所有权guard **turing-20261112T015902Z-e8569de4** 已真实重现caller取消后设备future继续，detached负控绿；90.034秒/原101/13files/identity/原group空/准确冻结metadata与独立原件/ledger终态。现只修LabNode.with的调用者所有权，guard原样，尚未远端复验绿，首操作样本仍0；生产Node/Noq/iroh不改。两次Finder超时仍未闭。 high v3冷模型预检 **turing-20261111T223651Z-5d27f45e** 已 **813.212秒、原退出0、25files**，两个真实w3、三low与三high全部通过；共4320业务请求成功、三份16MiB与三份192MiB完整，目录/终端各120完整落在实际文件传输内。独立提取准确冻结metadata复算、原始人口/时间戳、八TC读回/安装/下载路径字节与静态配置先于两resident/配对均核验通过。旧v2的路径失败不改绿，N1延迟突变选路仍待查。
+**当前Turing无在途任务；prefetch9组/18场景已全部终态/归档/准确metadata和独立原始人口核验。12功能通过、6个high文件240秒超时；12960交互请求全ok，153原report文件hash已核。** prefetch-comparison-v1.json SHA **7dede5f2c580d46aff0e6138b968da2550db2e095d6de351652a56d8a7e537b0**；所有advance1–9终态不能重复。Mac无任务；e471准确源码Mac固定12门已过。N1旧所有权guard **turing-20261112T015902Z-e8569de4** 已真实重现caller取消后设备future继续，detached负控绿；90.034秒/原101/13files/identity/原group空/准确冻结metadata与独立原件/ledger终态。LabNode.with所有权修复 **0a8b90d9986d3426f65b61ae9d994083f1fa3321** 已在 **turing-20261112T020453Z-b9c5278d** 复验两项全绿；原guard逐字相同、control相同，53.827秒/原0/13files/identity/原group空/准确metadata与独立原件/旧红hash/ledger终态。首操作六场景及source-owned metadata已实现，尚未远端执行、样本0；生产Node/Noq/iroh不改。两次Finder超时仍未闭。 high v3冷模型预检 **turing-20261111T223651Z-5d27f45e** 已 **813.212秒、原退出0、25files**，两个真实w3、三low与三high全部通过；共4320业务请求成功、三份16MiB与三份192MiB完整，目录/终端各120完整落在实际文件传输内。独立提取准确冻结metadata复算、原始人口/时间戳、八TC读回/安装/下载路径字节与静态配置先于两resident/配对均核验通过。旧v2的路径失败不改绿，N1延迟突变选路仍待查。
 
 | cold v3准入证据 | 值 |
 | --- | --- |
@@ -114,14 +114,14 @@ workflow success仅表示观察完成，**actual_product_tests=0、format未执�
 这些只证明采样时存在会话/进程，不证明失败当时的状态、Finder响应或AppleEvent权限，也不能把目录advisory直接归因TCC；唯一根因仍未证。
 后续继续在原构建通道定位响应/授权边界，保留原门；没有无限同源码确认重跑，也不把此局部依赖当完整网络目标blocked。
 
-### N1空闲到首次操作与fixture ownership准入（旧红已实际验证，修复待复验）
+### N1空闲到首次操作（fixture旧红→修复绿已核，六场景待远端执行）
 
 idle-first-action-static-audit-v1.json绑定56df与四源SHA：旧p7 inactive每200ms查两端选路、不发echo；active才调用原30秒caller目录echo，原route门active10秒/idle20秒保持。
 备用keepalive15秒/idle timeout45秒；STREAM活跃刷新每peer最多5秒一次、活跃窗5秒且PING/ACK不自续；和旧16–17秒idle只是量级相符，不是唯一因果证明。
 新测量须在任何状态轮询/别端业务预热前量首次前台读取，并分开idle/action的wire总字节/包；不得当probe-only/唤醒/能耗。完整协议[IDLE-ACTION](IDLE-ACTION.md)。
 
 **a926fbc2936d59592b625115ab0df1bb31797c4b**先提交两个真实Device/Node.with取消诊断（主断言+故意detached负控、先回收再断言）和source-owned metadata；现有LabNode.with与全部生产代码当时逐字不动。
-LabNode.with直接await Device.spawn的JoinHandle；以下准确源码真实旧红已证调用者丢弃后设备future继续。当前补调用者持有的AbortHandle Drop，guard不改、生产runtime不改；尚未远端证明修复绿。
+LabNode.with直接await Device.spawn的JoinHandle；以下准确源码真实旧红已证调用者丢弃后设备future继续。0a8b90d9补调用者持有的AbortHandle Drop，guard不改、生产runtime不改；准确远端两项绿见下。
 新guard固定filter **paths::idle_action::p8g_**、显式--ignored、线程1、诊断off，只有两个fixture guard，不是首操作/真实RPC取消/N1/N2验收。
 metadata本机1 unittest/9合成情形0.005秒（完整绿、完整旧红、缺失/重复/矛盾/错误filter/diagnostics/footer等）；control focused4合成模式0.138秒，保留首Rust非零73、metadata红1、format红不入guard。
 这些是Python数据/stub检查，零Rust/Noq/设备执行。图谱partial/stale的0flows不作覆盖证据，实际source已读。
@@ -131,11 +131,14 @@ v1 a926/tree d516/snapshot559f3b8d保留且从未执行；v2只在它上面恢�
 控制 **e9a443c40f5abf745cc71b9aca0f5363257b90d4** / local ref feat/net-idle-action-guard-v1 / task **netlab-idle-action-guard** 已准备但未launch；相对5d只固定task/allowlist，UID/flock/netns/期限/资源与其余文件逐字保持，Linux SSH准确输入不要求push此control。
 
 **实际旧红**：turing-20261112T015902Z-e8569de4 / measurement idle_action_fixture_ownership_v1-old-e471，准确source-v2/control如上，90.033860秒、原101、13files/identity/原group空。format/编译成功，Rust **1过/1失败/0忽略**：p8g-with-cancel原红caller_drop_released_device_future false，p8g-detached-control绿detached_future_detected_and_reaped true；测试清理后才断言。
-idle-action-ownership-verification-v1.json已准确冻结metadata复现、独立两原marker/footer/全部hash核验、ledger终态。**old_red_observed=true、ownership_fixed尚未远端证绿、actual_first_action_samples=0**。当前仅LabNode.with加入调用者持有的AbortHandle Drop；两guard源必须逐字不变，以同control/相同filter复验。
+idle-action-ownership-verification-v1.json已准确冻结metadata复现、独立两原marker/footer/全部hash核验、ledger终态。**old_red_observed=true**。修复 **0a8b90d9986d3426f65b61ae9d994083f1fa3321** / tree **43890009d5bf9fb673665c069779af5fe3e9cbbc** / snapshot **967147cd84ef317664d832bdc368e9c921a172f9** 在 **turing-20261112T020453Z-b9c5278d** 原0/53.826995秒、13files/identity/原group空、Rust两项全绿。idle-action-ownership-verification-v1.json准确metadata复现、原marker/footer/hash与旧红绑定；guard逐字相同、control e9相同、相对旧源只有lab.rs和文档，ledger终态。**ownership_fixed=true仅fixture、actual_first_action_samples=0**。
 本地submit-turing.py原白名单漏固定task，第一次在创建run-id/receipt/ledger/remote前拒绝，已只补该名；idle-action-local-stager-admission-v1.json保存原/新SHA与单项差异，远端control/资源门不改。成功实际run唯一，不存在重复launch。
-若复验format/编译/启动失败或缺marker，不算所有权绿；原红完整保留。即使两项绿也只准入fixture caller→device所有权，不替代服务端RPC/host-child/网络恢复或手机。原workload.phase filepull父future直接借用tokio::join!，未走LabNode.with，不能据此改写prefetch结果。
+原红完整保留。两项绿只准入fixture caller→device所有权，不替代服务端RPC/host-child/网络恢复或手机。原workload.phase filepull父future直接借用tokio::join!，未走LabNode.with，不能据此改写prefetch结果。
 
-之后补六个方向/phase首次操作及成本，继续严重/quiet/跨连接/完整N0–N5；完整prefetch后、rolling计时前优先补测，理由是前台恢复体验与测量所有权缺口。
+**下一步实际首次操作**：新paths/first_action.rs与固定filter paths::first_action::p8_的六fresh源码已实现，精确顺序/计数/时间/配置/原caller合同见IDLE-ACTION新节；guard文件仍逐字不动。source-owned netlab-first-action.py要求原两p8g全绿、六case/十二caller起止/实际Rust计数、初始alpha双向150ms netem且恢复清空、两端eth0/eth1原计数和全部时间单调；失败保留、快照间隙显式、无p99/最终SLO/手机能耗。
+本机纯Python 1 unittest/16输入情形0.043秒通过；新control分支6种stub调度0.415秒（guard红阻止业务、业务原非零79保留、metadata红、format红）通过，均非产品执行。独立control **28e46b3b5e9768046e28aea7d8b1ec4e8bd8d50e** / local feat/net-first-action-v1，parent e9，C HEAD5d未变；只加固定task/allowlist，UID/flock/netns/资源/期限原样。first-action-control-input-v1.json/control-test-v1.json。准备提交准确源码，使用最近已收件的b9c5278d receipt作predecessor；当前无真实首操作样本。
+
+随后继续严重/quiet/跨连接/完整N0–N5；完整prefetch后、rolling计时前优先补测，理由是前台恢复体验与测量所有权缺口。
 必要基础回归具备后可并行准备隔离的可信候选构建以取得早期真机反馈，但早期反馈不代替最终矩阵；中央GUI合并/发布授权不套到本任务，已装App变更仍需具体交接。
 
 ### 并行完成的Mac vendor默认库回归

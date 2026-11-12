@@ -54,6 +54,8 @@ use crate::lab::{LabNode, mesh, node, qad_relays_dual, relay, result, sample_dia
 mod attempts;
 #[path = "paths/cpu.rs"]
 mod cpu;
+#[path = "paths/first_action.rs"]
+mod first_action;
 #[path = "paths/idle_action.rs"]
 mod idle_action;
 #[path = "paths/mobile.rs"]

@@ -38,5 +38,29 @@
 
 prefetch9组已按原冻结源/control全部结束，guard随后单独执行，未混入计时。
 Linux实际format/编译成功、主所有权断言红、detached负控绿；旧红原件见STATE。
-当前补调用者持有的AbortHandle Drop，待以逐字相同guard复验绿；零新增首次操作数据。
+调用者持有的AbortHandle Drop修复已以逐字相同guard复验绿；旧红与新绿的控制入口相同。
+实际run/source/proof见STATE；这仍只准入fixture所有权，零新增首次操作数据。
 完整N0–N5、严重/quiet/跨连接质量、peer relay与移动、最终UX与真实手机能耗范围保持。
+
+
+## 首批六场景的准确执行协议（首个数据前）
+
+固定filter `paths::first_action::p8_`，显式ignored、线程1、诊断off；按Rust串行名称顺序
+alpha0、alpha14、alpha5、beta0、beta14、beta5，每个均独立fresh speed_pair。
+control先执行原两项p8g所有权guard；任一失败则不进入首次操作。所有旧p7门不改。
+准备阶段分别记录两端实际Relay事实，然后采before_idle；10秒静默后恢复Direct，再等待名义phase秒，
+采before_action、只发一次原30秒目录读取、采after_action，最后才查询两端路径。
+实际restore前后、请求前后、命令前后均用同一单调epoch记录；没有准备后的Node状态轮询或另一端业务预热。
+
+每次只读快照记录ip -s -j link及tc JSON/text。读回必须包含两端eth0/eth1原始字节/包/错误/丢弃计数；
+初始alpha的eth1出口和入口各150ms netem，beta无netem，无额外TBF；恢复后两端均无netem。
+实际JSON秒单位与text 150ms交叉核验，不用请求模型参数代替安装读回。
+每条命令原2秒观察界、kill_on_drop、调用者持有Device任务；命令失败原样保留。
+
+外部source-owned校验需六个完整场景与十二条逻辑请求起止记录、实际Rust六项计数、原p8g两项全绿；
+每case校验配置、方向、阶段/静默实际时间、唯一caller、结果、前后配置与计数单调性。
+请求错误/超时仍算完整失败样本，不从分母删掉；缺日志、缺case或配置不符标不完整，不补跑漂亮样本。
+
+idle/action按各设备和接口分别计算差值，包含快照间隙，时间用实际命令界给范围；
+两端重复观测同一批数据，不能相加当唯一字节，也不能称probe-only、CPU、唤醒或手机能耗。
+6个样本仅作首次操作探索，无p99、最终恢复SLO或完整N1接受。
