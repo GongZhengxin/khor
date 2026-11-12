@@ -1,30 +1,36 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-12 04:40 UTC。用户在暂停Lab验收后已明确“继续”，执行已恢复，完整目标“完成计划”**未完成**；范围仍为[PLAN](PLAN.md) N0–N5，root串行，不派发子智能体。
+更新于 2026-11-12 04:56 UTC。用户在暂停Lab验收后已明确“继续”，执行已恢复，完整目标“完成计划”**未完成**；范围仍为[PLAN](PLAN.md) N0–N5，root串行，不派发子智能体。
 暂停前后完整原STATE逐字保存于[历史状态](HISTORY-20261112-pipeline-start-and-pause.md)，SHA256 `9a774440c70f3c3ca851b37aadcce9a867a2a22ca9bb687016a1091cf7856948`；该历史继续链接更早完整证据，不按摘要覆盖未提交内容。
 
 ## 当前执行与下一步
 
-**Turing：block3 / 宽8 rolling在途。** `turing-20261112T043815Z-c69a3018`，PID1074231，source e5527f93/tree78bb8acf/snapshot4fb2adef，control **d28538241f29a1608a7fed606da25d2fde57470f**。已唯一advance 1和2，不能重复；本轮不重发暂停前run。
+**Turing：block5 / 宽8 batch在途。** `turing-20261112T045513Z-6ec94f5a`，PID1098465，source 0c4e4e35/treeaf0c558c/snapshot45306634，control **d28538241f29a1608a7fed606da25d2fde57470f**。已唯一advance 1–4，不能重复；本轮不重发暂停前run。
 
-既定24场景已核验4场景（2blocks）；各profile每场景720，**2880交互全部ok、四文件完整**。逐次准确metadata与独立原始人口/时间戳、17files/hash、identity/原group空和ledger终态已核。
+既定24场景已核验8场景（4blocks）；各profile每场景720，**5760交互全部ok、八文件完整**。逐次准确metadata与独立原始人口/时间戳、17files/hash、identity/原group空和ledger终态已核。
 
 | block | 宽度/arm | run | 原结果 | low/high文件秒 |
 | --- | --- | --- | --- | --- |
 | 1 | 8/batch | turing-20261112T041552Z-e46a2819 | 0 /345.480199s | 18.737180 /84.314138 |
 | 2 | 8/rolling | turing-20261112T043119Z-eb6c2320 | 0 /327.143174s | 19.548505 /76.611212 |
+| 3 | 8/rolling | turing-20261112T043815Z-c69a3018 | 0 /280.823312s | 18.867576 /76.625635 |
+| 4 | 8/batch | turing-20261112T044402Z-04628dd6 | 0 /335.025722s | 18.765883 /85.975258 |
 
-两份pipeline-block-verification-v1.json原population/hash/准确source冻结复算保持，不能用每arm当前1fresh宣称性能优胜、显著性或p99。
+四份pipeline-block-verification-v1.json原population/hash/准确source冻结复算保持，不能用当前每arm少量fresh宣称性能优胜、显著性或p99。
 campaign **E/pipeline-campaign-v1.json** 按用户继续从paused_by_user恢复running，保留原pause记录与resume_instruction。仍先宽8再宽2、各ABBAAB、每block真实w3 guard2→low1/high1，总24；旧prefetch不作baseline，期限/失败门不变。
 
-只读 `E/ops/poll-turing-pipeline-campaign-v1.py turing-20261112T043815Z-c69a3018`。当前真实terminal后CONTROL收件，等exec实际终态；PRODUCT `verify-turing-record.py E/RUN` → `verify-pipeline-block-v1.py RUN 3`。完整人口复核后 `advance-pipeline-campaign-v1.py 3` **仅一次**；缺人口先调查，不补跑。source-refs.json仅root串行原子写。
+只读 `E/ops/poll-turing-pipeline-campaign-v1.py turing-20261112T045513Z-6ec94f5a`。当前真实terminal后CONTROL收件，等exec实际终态；PRODUCT `verify-turing-record.py E/RUN` → `verify-pipeline-block-v1.py RUN 5`。完整人口复核后 `advance-pipeline-campaign-v1.py 5` **仅一次**；缺人口先调查，不补跑。source-refs.json仅root串行原子写。
 
 **Mac固定12已完成**：**43153603327** / request36ef1faf8c2c4a7aa5c16cbc91e57e58，sourcee5527f93/tree78bb8acf/snapshota5e2b8c3，control **68cadb57a0ed72d40a4ca9a843e86b9c6797bf34**。
 artifact13915416046、ZIP **28ca97ce700577496fd9024916e58225a228061cc15912a561257b96402a8262**，E/mac-pipeline-node-43153603327/（原件在artifact/）。20files/11controls/完整原footer/hash/source/bundle身份与ledger终态，node-suite-verification-v1.json。
 net68+原identity创建worker ignored1、hop89/wires16/journal30/budget35/IPC18+六single全部过。budget包含三新pull真实RPC测试；此固定lane没有nocapture，成功RPC原marker未保留，Mac只接受三命名Rust断言，独立计数证据仍在四个Turing合同run。不扩称Mac四Window逻辑、files_wire、全部Node或N5；旧Finder红项不豁免。
 
-**取消合同隔离准备**：`/Volumes/disk0/Khor/worktrees/current/khor-net-pull-cancel-v1` / experiment/net-pull-cancel-v1，source **8d44285b**。只增测试与metadata、首片held fixture，不改生产Job/pull函数；冻结性能四树保持。两个新合同直接road.stop命名Job，保持caller活着观察500ms内返回及part/note清理，再单独观察后续fixture drop→远端STOP及同wire控制。尚无真实红/绿，不把静态疑点当根因。
-新Mac固定control **9690e99032d0f651a799313b5c0fec1b1ebb98cb** / feat/net-pull-job-stop-v1，只跑这两个合同并保留nocapture/首原失败；C HEAD5d不动，原资源/共享guard/期限保持。唯一提交工具exec **86827**尚需收完实际request/run；不得重提或修改该提交源。其后register等ledger writer须等本地stage/advance句柄终态。
+**取消合同隔离准备**：`/Volumes/disk0/Khor/worktrees/current/khor-net-pull-cancel-v1` / experiment/net-pull-cancel-v1，原红source **87e9356a**（8d44285b经准确远端format patch），现修复候选 **31720fa6**。冻结性能四树保持。两个新合同直接road.stop命名Job，保持caller活着观察500ms内返回及part/note清理，再单独观察后续fixture drop→远端STOP及同wire控制。已真实重现两红（见下）；新Notify修复候选尚待真实绿。
+新Mac固定control **9690e99032d0f651a799313b5c0fec1b1ebb98cb** / feat/net-pull-job-stop-v1，只跑这两个合同并保留nocapture/首原失败；C HEAD5d不动，原资源/共享guard/期限保持。已提交Mac **43156306374** / request05091dd7698f4f4e94b80f447b2f995f，source8d44285b/tree9c375429/snapshot7efd84e9，E/mac-pull-job-stop-43156306374已登记。原job仅格式failure、九原files/identity/hash/原patch准确映射87e9356a、零行为及ledger终态保留；不能重提。
+格式后Mac **43156779606** / requestaee09c7e22ad473b8f50d015c4ab6a7b，source87e9356a/tree2203af1e/snapshot5e5eefe9，control9690e990不变，format/编译通过，实际Rust0过/2失败；11原files/准确冻结metadata/独立10真实RPC人口及caller-before-cleanup顺序/原hash/source/bundle/身份与ledger终态，E/mac-pull-job-stop-43156779606/job-stop-verification-v1.json。
+首片及八片窗口停止Job后502990/503138us仍未返回，原caller未丢弃；随后fixture主动drop才分别收到1/8 STOP_SENDING，同wire控制都正常。只证明当前命名Job取消不会唤醒已挂起的pull，不扩称用户原peer relay问题唯一根因。
+修复候选31720fa6只改生产road.rs/link.rs及两个通知单元：stop/cut设置原atomic并Notify所有waiter，pull复用caller拥有的通知future参与拨号与每片等待；无新timer/task/RPC，原同两故障fixture/metadata逐字不变。未声称生产server、SCP/host-child、Offer所有取消或最终提交竞态已闭。
+新Mac **43157963440** / request8e1e456fed304b01bf71dbb818025b6f，source31720fa6/tree0f7fc0c8/snapshot63d815d2，control9690e990保持；已唯一提交，待真实结果。register本地句柄需等终态，不重复。九种metadata合成数据检查已过（E/pull-job-stop-data-check-v1.json），不算实际行为。
 
 ## 已冻结输入与四真实RPC合同
 
@@ -101,7 +107,7 @@ Noq完整默认库447过/0忽略/0筛除；Iroh完整默认库184过/原1忽略/
 prefetch-comparison-v1.json SHA **7dede5f2c580d46aff0e6138b968da2550db2e095d6de351652a56d8a7e537b0**；全部advance1–9与旧high1–6终态不能重复。
 
 [rolling协议](PIPELINE-COMPARISON.md)及prefetch-to-pipeline-decision-v1.json在任何rolling计时前冻结：**先宽8，再独立宽2**，priority0，每宽A B B A A B、每block原w3两项再low/high各1，共12/宽、总24fresh。宽2在low的完成/交互取舍值得保留但high原超时，不能直接设全网默认。
-四源码与campaign已冻结；当前两个block/四场景已收件接受，第三block在途。匹配baseline/candidate包含同一未调用helper/四逻辑/大于八片的files_wire载荷；A原batch函数不动、B仅rolling循环及必需短读重启；四树审全部Git/runtime/fixture/参数，只在相同宽度比较。不拿旧prefetch当新baseline，原失败/完整人口/期限门不改。
+四源码与campaign已冻结；当前四个block/八场景已收件接受，第五block在途。匹配baseline/candidate包含同一未调用helper/四逻辑/大于八片的files_wire载荷；A原batch函数不动、B仅rolling循环及必需短读重启；四树审全部Git/runtime/fixture/参数，只在相同宽度比较。不拿旧prefetch当新baseline，原失败/完整人口/期限门不改。
 后续还需真实RPC的已发/完成/待提交上限与补齐时刻，服务端/用户取消/host-child等所有权，而非只看逻辑future被poll；全前台预览、公平/背压/连接架构/规模成本仍必需。
 
 ## 完整剩余范围（不以已有绿项缩减）
