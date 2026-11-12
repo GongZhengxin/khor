@@ -1,14 +1,17 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-12 10:11 UTC。用户已恢复“继续”，完整目标“完成计划”仍为[PLAN](PLAN.md) N0–N5，**未完成**；root串行，不派发子智能体。用户“我没有验收 打错了”有效，没有新的Lab/真机接受。最新U18授权跟进最新稳定iroh并尽量减少custom；旧AGENTS仅规划状态已被后续授权覆盖。
+更新于 2026-11-12 11:07 UTC。用户已恢复“继续”，完整目标“完成计划”仍为[PLAN](PLAN.md) N0–N5，**未完成**；root串行，不派发子智能体。用户“我没有验收 打错了”有效，没有新的Lab/真机接受。最新U18授权跟进最新稳定iroh并尽量减少custom；旧AGENTS仅规划状态已被后续授权覆盖。
 原STATE逐字保存于[本次历史](HISTORY-20261112-iroh-upgrade-through-mcp-preparation.md)，SHA256 `3ed8de20f1d15b0088559416195ff5ac0070398554387c3993c43f7094ea17ec`；其中继续链接原stream准备/暂停/恢复历史与完整旧证据，不按摘要覆盖未提交内容。
 
-## 当前唯一在途与下一步
+## 当前唯一产品在途与下一步
 
-**turing-20261112T100747Z-15afeb63**，task `netlab-first-action-streams` / revision `iroh14_first_foreground_stream_witness_v2`，role diagnostic，pid1527361。
-source **02807c79e04a92c46fb2e6c14d2ecf107b98336c** / tree **f87d31f97b89474fe52297d87e3827de33550493** / snapshot **dc21d783909981141bd197c0b2ad1bdc22da150f**；control **73fa35f5954175e5e20373c858691315d4a3e6fe**，沿旧033334Z-a09450d0相同v2合同。
-先2个diagnostics-off guard，再6参数p8 first-action、三观测点，full日志诊断；准备稳定1s/截止10s，静默窗12s、要求至少10s，max snapshot gap1s等原门不变。**不是ordinary时延或完整N1接受**。先查此receipt/execution，禁止重复提交。其他本轮run均已收件/核验/ledger终态。
-后续继续地址/路径恢复、peer relay与负载体验验证；新依赖尚未有同条件性能接受，不借旧性能源证明新源。Mac当前有50GiB余量门红，相关退出对照已转Turing，不改门/不清缓存。
+**turing-20261112T110236Z-baeba5f5**，task `netlab-peer-mobility-samples` / revision `pre_iroh14_peer_relay_replug_v1`，role baseline，pid1639192。
+source **dc73837e5bf33238b5cc2ed80ba8719fbb793601** / tree **dabe98b202d0c1d1fb95e1b8de659073618bf26e** / snapshot **fc6103037468b4de4c1164047f0e0a95192e15ea**；control **69d23d4f912c2e3674d47010eea5b2577230e182**，与新1.4失败同场景/同控制，先核对execution，禁止重复提交。
+
+新028的 **turing-20261112T105138Z-c9de2969** 原101/150.987066s，16原files；唯一Rust case失败，只有第一笔setup读取（10.039537s，error），**尚未注入middle换网**。准确frozen attempts重算、原source/control/hash/group空通过；`peer-mobility-preparation-failure-v1.json`与ledger终态。不得把此红写成换网恢复失败，也不在旧版同条件对照前归因上游。
+新028静默first-action **100747Z-15afeb63** 与三换网 **102059Z-2a7ba71e** 已收件/核验/ledger终态，详见下表。其余本轮run同样终态。
+
+先完成peer relay前置红的旧版对照与定位；再继续IPv6重叠/实际QUIC NAT端口恢复、负载体验与补丁退出。新依赖尚无同条件性能接受，不借旧性能证明新源。Mac当前50GiB启动余量门红，原Mac退出对照不重发/不改门；正在利用已有worker-storage工作流只读inventory查实际占用，首以不可解析旧SHA调度返回422、零job；后改用已存在且脚本/工作流逐字相同的private control ref。未清缓存/改guard。
 root为E/source-refs.json唯一串行原子writer；submit/launch/collect/verify必须待真实exec会话终态，unknown handle先恢复receipt。
 
 ## 升级位置与授权边界
@@ -30,6 +33,10 @@ root为E/source-refs.json唯一串行原子writer；submit/launch/collect/verify
 | 36真实流合同 | turing-20261112T090144Z-223b1901 | 0/31.781419s，31原files；4份准确frozen metadata重算，独立74 Fetch RPC/10peer；273与36人口重叠不相加 |
 | 实际CLI取消合同v2 | turing-20261112T095017Z-a01289cd | 0/186.335657s，21原files；两parent合同/两声明fixture helper，source2795文件独立匹配Git、CLI prior→node provenance/选中binary哈希核对，6不同任务Cancel IPC实际到达；两case4/24观测owner均退出、无强制清理/遗留owner/私有可执行文件足迹 |
 | netlab集成目标编译 | turing-20261112T100217Z-d286d5bb | 0/120.570580s，15原files；锁定1.4组、目标artifact与binary SHA记录、post-compile diff空；**runtime0、非native_provenance或性能接受** |
+| 新稳定版静默first-action | turing-20261112T100747Z-15afeb63 | 0/332.109970s，29原files；2 diagnostics-off guards/6参数fresh读；12准备、12完整≥10s静默与12真实STREAM阳性通过；普通时延样本0，非完整N1/能耗 |
+| 实际接口换网三场景 | turing-20261112T102059Z-2a7ba71e | 0/186.422335s，13原files；dual/v4-NAT/v4→v6实际eth0重接，372逻辑请求/744起止全ok；非移动端先请求、内核地址独立核对；非真实QUIC端口rebind/同连接/手机或完整N2 |
+
+静默proof为`iroh14-stream-quiet-verification-v2.json`；换网为`iroh14-roam-verification-v1.json`。后者各场景首remote单次原us为710238/777650/646640，不构成p99/SLO；UDP reflector使用独立固定端口，不能替代实际QUIC端口重绑定证据。
 
 前述每run的identity/source/bundle/原hash/原group空与behavior/compile proof分别在E/run目录，root ledger均终态。库门proof为stable-upgrade-gate-verification-v1.json；固定12为stable-upgrade-node-suite-verification-v1.json；真实流为stable-upgrade-transfer-verification-v1.json；CLI为actual-mcp-verification-v2.json；编译为netlab-compile-verification-v2.json。
 实际CLI合同用控制Python sidecar，不是真实agent bundle/WAN/手机/能耗。Turing现有conda Python3.13.13（任务临时wrapper -E -S）SHA c46ed00dd978dbb20e32eb34d9e16660775b2ed4fc84395a73120804e3e66379；没有改系统环境。旧Noq447、iroh184等数量只对旧源成立，不把不同平台/重叠套件累加成独立覆盖。
