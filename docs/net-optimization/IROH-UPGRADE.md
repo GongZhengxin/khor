@@ -32,7 +32,7 @@
 
 新源 **105138Z-c9de2969** 原101/150.987066s：第一笔setup读取10.039537s超时，**尚未注入middle换网**；16原files和准确attempts核验，原失败保留。
 旧dc738同control69d23d4f的 **110236Z-baeba5f5** 原0/213.826096s：124请求全ok，middle实际IPv4变化，变前carried连续报告≥10s、变后再观察carried。
-新红启动load90.18/128逻辑CPU，旧绿9.78；这只是差异，不能据一次对照归因上游或负载。新源原样确认 **110840Z-1e90b3dd** 已0/339.290546s，124请求全ok且变后再观测carried；源/控制/原hash/进程组空/行为已核验。其启动load144.61比首红更高，不能以单一host load解释。三轮及5份完整相同fixture绑定在E/iroh14-peer-mobility-comparison-v1.json。**首连间歇红未定位/未豁免**；不再无假设原样重跑挑绿。当前IPv6 overlap两合同111507Z-d7912aa7在途，唯一状态见STATE。
+新红启动load90.18/128逻辑CPU，旧绿9.78；这只是差异，不能据一次对照归因上游或负载。新源原样确认 **110840Z-1e90b3dd** 已0/339.290546s，124请求全ok且变后再观测carried；源/控制/原hash/进程组空/行为已核验。其启动load144.61比首红更高，不能以单一host load解释。三轮及5份完整相同fixture绑定在E/iroh14-peer-mobility-comparison-v1.json。**首连间歇红未定位/未豁免**；不再无假设原样重跑挑绿。IPv6 overlap两合同111507Z-d7912aa7已0/165.659413s，248请求/496起止全ok、内核地址/隔离/remote-first核验；同前缀替换，不称手机/同连接或完整N2。实际QUIC NAT端口合同111859Z-de624e0b也已0/99.774935s：124请求全ok、30/30 warm远端stream选中新tuple、mismatch0，两个frozen metadata/原source/hash/进程组空核验。未证明同连接/逐packet/手机。下一步独立冻结新栈同条件混合负载对照，唯一状态见STATE。
 
 ## 补丁退出与原失败
 
