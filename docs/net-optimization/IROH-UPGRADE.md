@@ -5,7 +5,7 @@
 ## 候选和迁移
 
 隔离树 `khor-net-iroh-upgrade-v1`，分支 `experiment/net-iroh-upgrade-v1`，冻结源 **02807c79e04a92c46fb2e6c14d2ecf107b98336c** / tree **f87d31f97b89474fe52297d87e3827de33550493**。
-使用已核对的最新稳定 **iroh1.4.1 + Noq1.4.0**，根及vendor锁一致。Canonical feat/net仍为旧运行时5064fe2a（iroh1.2.0/Noq-proto1.3.0），尚未合入本候选。
+使用已核对的最新稳定 **iroh1.4.1 + Noq1.4.0**，根及vendor锁一致。[官方latest release](https://github.com/n0-computer/iroh/releases/latest)在2026-11-12复核仍指向v1.4.1；跟踪稳定发布，不将主干或实验transport的更新等同于可发布版本。Canonical feat/net仍为旧运行时5064fe2a（iroh1.2.0/Noq-proto1.3.0），尚未合入本候选。
 
 - 以旧发布包为共同基线三方迁移，7处冲突的逐文件记录为E/iroh-upgrade-source-merge-v1.json。保留本地速度选路、pending队列硬上限/路径ID释放重开、原专属回归，并保留上游并行Initial发送与blocked-Relay回归。
 - 发布包均与registry SHA256一致。解包目录再次逐文件对照原包：iroh85文件、Noq-proto70文件，无不同（E/upstream-20261109/published-directory-audit-20261112-v1.json）。未将修改后的vendor当作上游源码。
@@ -76,3 +76,9 @@ E/iroh14-ios-notification-static-audit-v1.json核对旧/新三文件逐字相同
 [独立设计与全证据](IROH-CONFIRM-COPY.md)：原日志证明同PTO副本质量来源与probe不一致；等价抽取源9f3a6ee6新增行为回归真实红，其余原197/467过。修复源80aeeff9仅equal-PTO tie-break，准确全库125007Z-645fe88c绿（Noq467/iroh198，原ignored1）。但固定三轮物理批次125445/125919/130239为首连失败、恢复5.52/7.76s失败、3.38/3.61s通过，全部保留。E/iroh14-confirm-copy-physical-results-v1.json accepted=false；不以单位绿晋升，028原红保持。
 
 下一步首连阶段诊断从028独立派生，复用已有opt-in observe_lifecycle，不增加依赖/恢复状态或改变预算。固定3fresh协议/准确当前run以STATE为准，不继续原样跑80挑绿。混版/Quality/真机与其余补丁退出仍开放。
+
+## 官网连接模式与兼容政策复核（2026-11-12）
+
+[官方Tor文档](https://docs.iroh.computer/transports/tor)与[BLE文档](https://docs.iroh.computer/transports/bluetooth)均明确custom transport API及相应crate仍为experimental。它们提供新的承载方式，不能由此推出khor的两腿选择、信任、单跳、deadline或自动接管已由上游实现。本轮不扩展到新承载，优先复用上游已有API、核查可删除的vendor覆盖，并守住个人网实际体验。
+
+[官方release policy](https://docs.iroh.computer/about/release-policy)承诺同major内minor wire兼容。这支持开展1.2↔1.4混版验证，但不替代应用协议、本地vendor补丁、会话生命周期或具体已安装iPhone版本的互通证据。现有sync_mixed可复用；必须注入真实准确旧CLI且检查非skip标记。
