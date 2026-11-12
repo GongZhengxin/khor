@@ -1,14 +1,16 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-12 13:54 UTC。用户已恢复“继续”，完整目标“完成计划”仍为[PLAN](PLAN.md) N0–N5，**未完成**；root串行，不派发子智能体。用户“我没有验收 打错了”有效，没有新的Lab/真机接受。最新U18授权跟进最新稳定iroh并尽量减少custom；旧AGENTS仅规划状态已被后续授权覆盖。
+更新于 2026-11-12 14:03 UTC。用户已恢复“继续”，完整目标“完成计划”仍为[PLAN](PLAN.md) N0–N5，**未完成**；root串行，不派发子智能体。用户“我没有验收 打错了”有效，没有新的Lab/真机接受。最新U18授权跟进最新稳定iroh并尽量减少custom；旧AGENTS仅规划状态已被后续授权覆盖。
 原STATE逐字保存于[本次历史](HISTORY-20261112-iroh-upgrade-through-mcp-preparation.md)，SHA256 `3ed8de20f1d15b0088559416195ff5ac0070398554387c3993c43f7094ea17ec`；其中继续链接原stream准备/暂停/恢复历史与完整旧证据，不按摘要覆盖未提交内容。
 
 ## 当前执行与下一步
 
-**当前在途 turing-20261112T135145Z-554511fc**：task net-node / control68cadb57a0ed72d40a4ca9a843e86b9c6797bf34，pid1961403，role candidate。单一防抖隔离源 **3f705a2e07b05ad1e82eee72de6c06cdb12e2a98** / tree **fec60cfb3d627886c48658f3b06bec3ea293b896** / snapshot **0069b5e220fdf95952828c38491485e89470ddd6**；worktree khor-net-iroh-single-hysteresis-v1 / branch experiment/net-iroh-single-hysteresis-v1。现net-unit70过/原ignored1，完整12门仍在编译/执行，先查receipt，不重复提交或把局部门当全过。
-红合同准备源c4ff13cf **134302Z-887434b9** 已101/53.853927s、10files终态：仅两个新104vs131选择/清理合同红，原net-unit68过/原ignored1逐名一致；identity/hash/group空/proof/ledger闭。随后1460c7d7仅简化switch_margin生产逻辑（签名保留），明确更新旧相对门设计断言；其 **134620Z-4f615af3** 原101/37.849456s、10files：新两合同过，但遗漏枚举的旧200/195五毫秒边界断言红，net-unit69过/1红/原ignored1，后续门未执行；原结果/proof/ledger保留。3f705a2e只明确5ms可入确认、4ms仍不够的正负边界，生产与1460逐字不变，E/iroh14-single-hysteresis-source-audit-v3.json。
-改前协议E/iroh14-single-hysteresis-plan-v1.json SHA dd135369ae663b8f3e798683001bc0e16309da2be745b85a71ca728742360af3与明确边界补充v2均保存，见[IROH-HYSTERESIS](IROH-HYSTERESIS.md)。shared improves作用于selector、Node hop准备及carrier清理；旧60→48/450→500/29→35/200→195分类有意改变，**不能称旧负例语义等价**。只移除相对25%资格门，绝对5/10ms底、原vendor两秒/决定后实测/故障快通道/探测预算/四秒物理门、vendor/锁/物理输入均保持；未增加预算不代表实际成本不变。
-完整12门通过后才固定三fresh原peer物理screen，全部结果保留且到三停止；有物理收益后仍须原时长健康/抖动/共同停顿及静默/成本对照，尚无N1/全局最优接受。首连未定位、Mac/混版/手机与全N0–N5保持。普通性能源028、失败80、被动794均冻结不晋升。
+**当前在途 turing-20261112T140132Z-2d53d83b**：task net-node / control68cadb57a0ed72d40a4ca9a843e86b9c6797bf34，pid1971161，role candidate。职责分离后的单一防抖候选 **67c320135b40fb2e34d3d9a37523af2d912304e9** / tree **4077911ceb2c45a8c2ce990a5fd7ca5b35401779** / snapshot **c0d1c50fda47e827e21a7d43fa34ed4adaaa4834**，worktree khor-net-iroh-single-hysteresis-v1 / branch experiment/net-iroh-single-hysteresis-v1。先查receipt/execution，不重复提交；完整12门未终态。
+新67策略明确区分两个职责：已存在路径的使用/保留资格采用5/10ms底+原vendor连续两秒/决定后双边实测确认；**新建middle的估计收益仍保留原25%/5ms成本门**，原Node准备负例断言恢复，并新增一条跨层合同。只改switch_margin和hop::beats两生产体，其他生产token/vendor/锁/物理/parsers不变，E/iroh14-single-hysteresis-source-audit-v4.json SHA1e2830279e0391f40126dc5965389cc9dccc81ca741d0b25c2164971a02bfb37。新code无新state/timer/probe配额，已知carrier保留成本仍待实测。
+保留全部前序：c4 **134302Z-887434b9** 101/53.853927s，原net68/ignored1逐名不变，仅两新104/131合同红；1460 **134620Z-4f615af3** 101/37.849456s，两新合同过但旧200/195边界红，69过/1红/ignored1，后续未跑；3f **135145Z-554511fc** 101/228.604469s，net70过/ignored1，hop88过/1红（a_relay_second_leg...的6ms不应新建middle负例），后续未跑。各identity/hash/group空/proof/ledger全闭。没有改掉这个准备成本负例来选绿；v3协议在继续前记录保留新建成本门、只简化已测路资格。原v1/v2协议/失败源都保留，不声称旧净行为等价。
+当前full gate终态后collect等待实际exec结束→identity→**ops/verify-single-hysteresis-node-v2.py RUN**，预期276过/原ignored1（原273命名保留，net新增2、hop新增1），12命令/原7取消合同保持。旧auditor-v1预期旧3f/275不可用于67。若非这些准确结果，保留实际失败，不直接调断言。
+完整单位门通过后按 **E/iroh14-single-hysteresis-physical-plan-v2.json** SHA **60f8ea18e646cb5a8e4bba7274088ff6ff18e33b4a1f0ff1b0a1b176ba23903e** 固定三fresh原peer物理screen（case revisions iroh14_single_hysteresis_physical_r1/r2/r3），控制69d23d4f/准确source-v3，原7输入/4秒门/预算不改，失败/缺事件均保留，三轮后停止。原physical-plan-v1绑定失败3f未执行任何物理slot，不能再用。
+物理collect→identity→calibrate-peer-mobility→**ops/verify-single-hysteresis-physical-v2.py RUN**；旧physicalauditor-v1不可用于67。screen有收益后仍需原时长健康/抖动/共同停顿、静默和实际成本旧/新对照，不接受N1/N3/最优/phone或合入canonical。普通性能源028、失败80、被动794均冻结。首连未定位、Mac/混版/真机与完整N0–N5保持。
 
 **前一固定首连阶段诊断三轮已全部终态，停止该批。** source794ceaf6/tree2a60fb17/snapshotedcb9c70，control69d23d4f，原7份物理输入/parsers及四秒门均未改。R1 **132402Z-b119bebd** 0/158.415076s，R2 **132802Z-17e9011a** 0/150.328287s，R3 **133218Z-4d9c8c05** 0/146.301250s，各16原files/124请求全ok，identity/hash/frozen attempts/group空/proof/ledger均闭。
 三轮warm sampled门过但decision均红：R1 X/Y Go3369982/7610709us；R2 X无Go（原门失败、缺事件不豁免）/Y7593836us；R3 X/Y3708399/5447209us。未捕获首连失败，不能宣告首连已修；在已有原红105138/125445基础上没有新唯一根因。阶段原始记录保留重复且不自动配对并发preparation；其他候选胜出取消是已存在的正常路径，不能由缺完成日志单独归因。
