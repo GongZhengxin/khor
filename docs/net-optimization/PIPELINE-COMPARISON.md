@@ -60,3 +60,30 @@ Finder红项单独调查并保留，不在本协议中豁免；没有合并、�
 不将原prefetch作为baseline、不混合宽度/profile/失败，也不在看rolling结果后选择补充宽度。
 宽度1不增加滚动计时：单个在途没有本轮要隔离的批量空槽并发差异。
 上述是实验输入选择，不是最终产品参数；准确源对、逻辑/wire/取消与全部N0–N5门保持。
+
+
+## 2026-11-12 04:17 UTC：真实RPC合同闭合与首block
+
+源、原件及四树完整审计在E/pipeline-source-quad-v1.json，调度在E/pipeline-campaign-v1.json。
+宽8A0c4e4e35/B e5527f93，宽2A ea414bfc/B2438172c；priority0，宽度内仅pull_into循环和必要短读重启不同。
+所有helper/四逻辑/三真实合同/长files_wire与vendor锁相同；A原batch函数逐字未改，B函数逐字来自57ff原型。
+新增共同Python wrapper复用原low/high recorder的全部期限/人口/失败门，只准确标记本次pipeline来源和arm；原prefetch结果没有被充作baseline。
+固定timing control d28538241f29a1608a7fed606da25d2fde57470f 保留原prefetch分支，新增分支除标记/wrapper外原调度逐字相同；六dispatcher和九wrapper合成准入通过，合成不算网络行为。
+
+| 宽度/arm | 实际Turing run | 原结果 | 范围 |
+| --- | --- | --- | --- |
+| 8 / batch | turing-20261112T040425Z-36a4357d | 0 /108.097333s | 四逻辑+三真实合同 |
+| 8 / rolling | turing-20261112T040708Z-436c6664 | 0 /90.080052s | 同上 |
+| 2 / batch | turing-20261112T041034Z-0a61687c | 0 /90.094105s | 同上 |
+| 2 / rolling | turing-20261112T041334Z-19528761 | 0 /94.184242s | 同上 |
+
+每run十三原files/准确source metadata复算/客户端已解码回复与远端实际RPC人口/原hash/identity/原group空及ledger终态已核验，各pipeline-wire-verification-v1.json。
+宽8慢尾未释放时，A已发9/解码8/提交1片，B已发11/解码8/提交8片，真实补齐不同；慢头两者已发9/解码8/提交1片且无第十个RPC。
+取消在两宽两arm均为原pull future丢弃→全部等待流STOP_SENDING→同wire独立Sessions成功。这里的responder是受控端，不是生产server、Job stop或外部host-child；这些范围仍未闭。
+两份完整十三片文件逐字一致且无part/note，亦不替代短读/版本变化/恢复/完整预览等其他合同。
+宽8RPC源与最终计时源只差新增共同Python wrapper，crates/vendor/Cargo逐字一致。
+首个未格式化合同源2f5366db的5f783fc8原1/零行为已保存；准确远端patch映射为b020a801，不把格式红算行为过。
+
+首block **turing-20261112T041552Z-e46a2819** 已唯一启动（宽8A，PID1044381/child1044594，source0c4e4e35），尚无timed block已收件验证。
+随后依原8→2、各ABBAAB、各block guard2→low1/high1，总24场景；失败留原位、缺人口不补跑。
+Mac固定12 net-node **43153603327** 正运行准确e552源码；整体验收与旧Finder红项仍保持，当前没有候选手机接受或最终N3/N5完成。
