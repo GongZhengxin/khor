@@ -1,11 +1,13 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-12 12:40 UTC。用户已恢复“继续”，完整目标“完成计划”仍为[PLAN](PLAN.md) N0–N5，**未完成**；root串行，不派发子智能体。用户“我没有验收 打错了”有效，没有新的Lab/真机接受。最新U18授权跟进最新稳定iroh并尽量减少custom；旧AGENTS仅规划状态已被后续授权覆盖。
+更新于 2026-11-12 12:44 UTC。用户已恢复“继续”，完整目标“完成计划”仍为[PLAN](PLAN.md) N0–N5，**未完成**；root串行，不派发子智能体。用户“我没有验收 打错了”有效，没有新的Lab/真机接受。最新U18授权跟进最新稳定iroh并尽量减少custom；旧AGENTS仅规划状态已被后续授权覆盖。
 原STATE逐字保存于[本次历史](HISTORY-20261112-iroh-upgrade-through-mcp-preparation.md)，SHA256 `3ed8de20f1d15b0088559416195ff5ac0070398554387c3993c43f7094ea17ec`；其中继续链接原stream准备/暂停/恢复历史与完整旧证据，不按摘要覆盖未提交内容。
 
 ## 当前执行与下一步
 
-**固定被动诊断批次已全部终态，无在途Turing任务。** 源 **08ecab50f81f5e9e357a73614dface145feef432** / tree **bb049e979141bd90bc1ab4a980b232fa78a0b99e** / snapshot **84b69692f39fe9473a0da4316ac59334e77dbdac**，control **69d23d4f912c2e3674d47010eea5b2577230e182**，仅DEBUG取消/Rest补点，算法、物理和四秒门均不改，不晋升。
+**当前在途 turing-20261112T124312Z-e33e746e**：task net-vendor / control bd13e1e7f8b2f12a6089978a69180d108eec4f14，pid1861918，独立红回归源9f3a6ee6/tree a2eb3038/snapshot b27ca9ef。只抽取原等价priority并加入质量来源行为回归，尚无编译/行为终态，目标是先证实准确新回归红；不是修复/接受。先查receipt，禁止重复调度。最小设计、反例与固定验证步骤见[IROH-CONFIRM-COPY](IROH-CONFIRM-COPY.md)。
+
+**前一固定被动诊断批次已全部终态。** 源 **08ecab50f81f5e9e357a73614dface145feef432** / tree **bb049e979141bd90bc1ab4a980b232fa78a0b99e** / snapshot **84b69692f39fe9473a0da4316ac59334e77dbdac**，control **69d23d4f912c2e3674d47010eea5b2577230e182**，仅DEBUG取消/Rest补点，算法、物理和四秒门均不改，不晋升。
 首轮 **121515Z-e8d79c86**：0/261.855773s、16files/124请求全ok；warm门过51请求，X Go3285193us，Y没有Go，原decision门红保持。5条取消均是当前Custom/Ip→候选Relay，未捕获目标Relay→Custom取消。固定追加两轮计划 `E/iroh14-pending-cancel-two-diagnostics-plan-v1.json` 已执行并关闭：R1 **122705Z-1248c9ae** 0/167.663671s，两门过，X/Y Go3505368/3506880us；R2 **123405Z-8a26c7cf** 0/179.241810s，两门过，X/Y Go3283424/3538071us。各16原files/124请求，identity/hash/frozen attempts独立重算/group空核对，proof/ledger全部终态；原失败不豁免。
 结果 `E/iroh14-pending-cancel-two-diagnostics-results-v1.json` SHA **60fc1b2c7003109b2976f854231d3f6d5da65dff5f82e7ee0810e14131ec6b2a**。两轮后按预先计划停止采样，**未重现9.3s/未捕获目标取消，无唯一根因/修复**。继续分析原失败日志，不能再原样重跑挑绿。
 
