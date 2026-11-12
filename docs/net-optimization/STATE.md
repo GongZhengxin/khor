@@ -1,11 +1,12 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-12 12:56 UTC。用户已恢复“继续”，完整目标“完成计划”仍为[PLAN](PLAN.md) N0–N5，**未完成**；root串行，不派发子智能体。用户“我没有验收 打错了”有效，没有新的Lab/真机接受。最新U18授权跟进最新稳定iroh并尽量减少custom；旧AGENTS仅规划状态已被后续授权覆盖。
+更新于 2026-11-12 13:00 UTC。用户已恢复“继续”，完整目标“完成计划”仍为[PLAN](PLAN.md) N0–N5，**未完成**；root串行，不派发子智能体。用户“我没有验收 打错了”有效，没有新的Lab/真机接受。最新U18授权跟进最新稳定iroh并尽量减少custom；旧AGENTS仅规划状态已被后续授权覆盖。
 原STATE逐字保存于[本次历史](HISTORY-20261112-iroh-upgrade-through-mcp-preparation.md)，SHA256 `3ed8de20f1d15b0088559416195ff5ac0070398554387c3993c43f7094ea17ec`；其中继续链接原stream准备/暂停/恢复历史与完整旧证据，不按摘要覆盖未提交内容。
 
 ## 当前执行与下一步
 
-**当前在途 turing-20261112T125445Z-23ca34d4**：task netlab-peer-mobility-samples / control69d23d4f912c2e3674d47010eea5b2577230e182，pid1882623，固定三轮物理验证R1。候选 **80aeeff919aa641dae55ba1a18b2020fead3e05e** / tree **f857f33c60e45cb7fee862c47c510cf5a8a27765** / snapshot **bc35d760bc6d0cf9d47aeee390e1913c175b8a10**。先查receipt/execution，未知handle恢复不重发。E/iroh14-confirm-copy-physical-plan-v1.json（SHA d29f61b405ecab22250f7878848e70c47c0247165828eb3d86d95d51b373da25）冻结3fresh、原7份输入/解析器SHA、原4秒门；每轮全结果保留且三轮后停止。计时期间无另一owned Turing编译/测试。
+**当前在途 turing-20261112T125919Z-c38e8c1d**：task netlab-peer-mobility-samples / control69d23d4f912c2e3674d47010eea5b2577230e182，pid1892500，固定三轮物理验证R2。候选 **80aeeff919aa641dae55ba1a18b2020fead3e05e** / tree **f857f33c60e45cb7fee862c47c510cf5a8a27765** / snapshot **bc35d760bc6d0cf9d47aeee390e1913c175b8a10**。先查receipt/execution，未知handle恢复不重发。E/iroh14-confirm-copy-physical-plan-v1.json（SHA d29f61b405ecab22250f7878848e70c47c0247165828eb3d86d95d51b373da25）冻结3fresh、原7份输入/解析器SHA、原4秒门；每轮全结果保留且三轮后停止。计时期间无另一owned Turing编译/测试。
+物理R1 **125445Z-23ca34d4** 原101/197.619032s、16files终态；首setup请求10271172us超时，尚未开始prepare hold或换网，业务1error/2起止。identity/原hash/准确frozen attempts/group空核对、availability false/strict两门未执行，proof/ledger闭。这是原先首连红的同类失败，候选不能验收；固定R2/R3继续保留全结果，不替换失败或改源/门。
 修改后全库门 **125007Z-645fe88c** 已0/233.761110s终态：Noq467过、iroh198过（含新增）/原ignored1，node lib/tests编译、三锁/原hash/source diff/group空核验；17原files，E/run/confirm-copy-library-verification-v1.json，ledger已闭。未从unit绿接受物理/手机或完整N2。
 红回归源9f3a6ee6的 **124312Z-e33e746e** 已101/338.074690s终态：Noq467全过，iroh原197过/原ignored1，仅新增quality-copy行为回归真实红（实际90ms、应85ms）；node lib/tests编译/三锁/源码diff与17原hash/group空均核对通过，proof/ledger已闭。红绿回归文件逐字相同，源码差异仅probe_priority/doc，E/iroh14-confirm-copy-source-audit-v1.json。原失败行2118/2119证明两copy在同tick均PTO0；+2298.518ms moving仍pending，+2551.014ms已None/restNone，E/iroh14-confirm-copy-observation-v1.json；精确取消调用仍非原日志直接观测。
 全库门后固定三轮原物理peer replug/原四秒selection+decision门，全部结果保留；不是唯一根因/完整恢复或升级接受。最小设计与反例见[IROH-CONFIRM-COPY](IROH-CONFIRM-COPY.md)。
