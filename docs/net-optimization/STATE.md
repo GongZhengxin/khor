@@ -1,11 +1,22 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-12 08:57 UTC。用户暂停后已明确“继续”，执行已恢复；用户随后澄清“我没有验收 打错了”，没有新Lab/真机验收结果，完整目标“完成计划”**未完成**；范围仍为[PLAN](PLAN.md) N0–N5，root串行，不派发子智能体。
+更新于 2026-11-12 09:27 UTC。用户暂停后已明确“继续”，执行已恢复；用户随后澄清“我没有验收 打错了”，没有新Lab/真机验收结果，完整目标“完成计划”**未完成**；范围仍为[PLAN](PLAN.md) N0–N5，root串行，不派发子智能体。
 暂停前后完整原STATE逐字保存于[历史状态](HISTORY-20261112-pipeline-start-and-pause.md)，SHA256 `9a774440c70f3c3ca851b37aadcce9a867a2a22ca9bb687016a1091cf7856948`；该历史继续链接更早完整证据，不按摘要覆盖未提交内容。
 
 ## 当前执行与下一步
 
-**稳定版库门已完成，当前仅两项回归在途。** 库门 **turing-20261112T084724Z-35d6dfe3** 原0/226.384657s、17原files完整核验；Noq467/iroh197过、iroh原flaky ignored1，node lib/tests编译过，三锁与冻结源一致，post-check diff为空。stable-upgrade-gate-verification-v1.json，root ledger终态；新增[升级说明](IROH-UPGRADE.md)及E/iroh-upgrade-patch-ledger-v2.json。补丁22源码已用上游且库合同过，59项仍待逐项审查，不把pending写成全部必要。
+**当前：完整node旧源对照在途，稳定升级未晋升。** **turing-20261112T092140Z-5216816b**，source **dc73837e** / tree dabe98b2 / snapshotfc610303，沿与新源相同control **340b3243275f961baf2b8c50074908edcf51ede5**，role baseline、1387全库零skip/单线程。先核查现有run，禁止重复提交。新源02807c79完整node原run **turing-20261112T090450Z-bfc82a31** 已终态101/552.029829s，1274过/38失败/75原ignored，12原files/identity/SHA/原group空，stable-upgrade-full-node-failure-v1.json；不记全库接受。嵌套long_load_worker子测试footer保留，不加到1387根人口。20项直接观测Git不识别initial-branch=main；Turing Git2.25.1/tmux3.0a。两项MCP缺KHOR_TEST_MCP_EXECUTABLE；两项账户报runtime missing仅为状态报错，尚不据此唯一归因。当前full-node driver没准备Quality要求的同源CLI、真实agent bundle/运行时/provenance与分进程acceptance，后续须按quality.yml与scripts/run-node-acceptance.py补前置，不能改产品迎合未备齐环境，也不能将38项全归上游。
+
+**Noq5退出已真实证伪。** Turing **turing-20261112T091835Z-cb319e57**，sourcee69b137c/tree78b6f96e/snapshot50a79b50，control958dc554，原101/33.786267s、12原files完整核验。4原fixture三过一红：reclaimed合法已分配发送状态ACK误使样本计数5→6，其余保留最大号正常采样/ACK-only/未发送号拒绝均过。两份fixture与锁相对028逐字不变，仅mod.rs移除patch5保护；baseline新Noq1.4全467中的同四命名均过（Mac/Linux）。noq14-ack-exit-verification-v1.json及E/iroh-noq-ack-exit-comparison-v1.json；保留Noq5，ablation源不晋升。迁移账目v3：1项上游替代库验证，1项明确保留，58项仍待退出核查，不把其全部写必要。
+Noq2退出树 **79d2ca64** / tree373767ae / snapshot25fdf0c0，E/iroh-noq-0rtt-exit-source-v1.json，controlfc6fe1d1，仅准备未执行；待当前baseline终态后Turing执行（Mac仍有50GiB门红，不重发Mac）。
+
+**历史：升级应用固定回归与完整node启动（完整node现已红终态）。** source02807c79/tree f87d31f9保持不变。Turing固定12 **turing-20261112T085339Z-ab57a92e** 原0/385.723121s、21原files，273过/identity辅助ignored1，所有命名人口相对旧整合源逐项一致；stable-upgrade-node-suite-verification-v1.json。真实流合同 **turing-20261112T090144Z-223b1901** 原0/31.781419s、31原files，36命名/4准确frozen metadata重算/独立74Fetch RPC及10peer，stable-upgrade-transfer-verification-v1.json。两lane人口重叠，不相加。
+Mac库门 **43186999295** 已成功核验16原files/11controls/ZIP f8cbf61034871f8591f02bbbea4ff58953ac8c0974ade643cdec2a8278c48024；Noq467/iroh197及原flaky ignored1与Linux命名人口一致，node lib/tests编译过、三锁一致、post-check diff空。E/mac-iroh-upgrade-43186999295/stable-upgrade-gate-verification-v1.json，ledger终态。
+当前完整Linux node库：**turing-20261112T090450Z-bfc82a31**，source02807c79/snapshotdc21d783，control **340b3243275f961baf2b8c50074908edcf51ede5**；先列出1387测试，零skip filter、单线程全库，在途，尚不记全库接受。
+
+**补丁退出对照转Turing，尚未启动测试。** Noq5仅删保护的隔离源 **e69b137c** / tree78b6f96e / `experiment/net-iroh-noq-ack-exit-v1`，两份原ACK fixture字节不变。Mac **43189070840** / request2b678f44a26c4cbe9e801414ab152971 / snapshot50a79b50 / control **958dc5545d2894ef5e448a669cef4f5588b82bab** 被50GiB磁盘门拒绝，零产品测试；5原files/ZIP 4f7ca2212b4ad3968ec775e54e747c6e9f1be01ea0061f6352984a6d5891c981、11control与bundle transport核对，缺source/environment执行证据，identity/behavior均不记接受；disk-admission-failure-verification-v1.json，ledger终态。不改余量门、不清缓存。待完整Turing库终态后执行同一ACK退出对照。另Noq2移除保护候选79d2ca64 / experiment/net-iroh-noq-0rtt-exit-v1仅准备，原双方both resumption fixture不变，control fc6fe1d1，未提交。两ablation源不晋升，稳定版候选始终保留Noq2/5。
+
+**历史：稳定版库门完成、应用回归启动（现已终态）。** 库门 **turing-20261112T084724Z-35d6dfe3** 原0/226.384657s、17原files完整核验；Noq467/iroh197过、iroh原flaky ignored1，node lib/tests编译过，三锁与冻结源一致，post-check diff为空。stable-upgrade-gate-verification-v1.json，root ledger终态；新增[升级说明](IROH-UPGRADE.md)及E/iroh-upgrade-patch-ledger-v2.json。补丁22源码已用上游且库合同过，59项仍待逐项审查，不把pending写成全部必要。
 当前Turing应用固定12：**turing-20261112T085339Z-ab57a92e**，同source02807c79/tree f87d31f9/snapshotdc21d783、control68cadb57。Mac同树库门：**43186999295** / request2bbd0ca023644131880d97030df1e8a9，snapshot82206b8f、controlbd13e1e7；E/mac-iroh-upgrade-43186999295，bootstrap过，driver在途。两者独立host，未并发Turing计时bench。全N0–N5及真机未闭。
 
 **历史库门启动（现已终态）：turing-20261112T084724Z-35d6dfe3。** source **02807c79** / tree **f87d31f9** / snapshot **dc21d783**；control **bd13e1e7f8b2f12a6089978a69180d108eec4f14**。根锁及vendor锁均已确认iroh1.4.1、Noq1.4.0；保持原准确源码，Noq全lib→iroh全lib→node lib/tests编译，尚无新源行为结论。

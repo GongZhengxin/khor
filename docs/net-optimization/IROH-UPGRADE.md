@@ -19,3 +19,11 @@
 - 没有改动net/node的Rust源码；四份原source-owned wire元数据脚本相对dc73837e逐字不变。依赖变化仍须新源应用回归，旧性能结论不自动迁移。
 - 应用固定12 gate：turing-20261112T085339Z-ab57a92e（在途），source02807c79/control68cadb57。
 - macserver库门：43186999295（在途），相同tree f87d31f9、snapshot82206b8f/controlbd13e1e7；独立Mac共享guard，首bootstrap已通过。不是正式发行或App替换。
+
+## 退出与全库诊断的后续边界
+
+- Mac库门43186999295已收件核验：Noq467/iroh197及原ignored1与Linux名单一致，node lib/tests编译过；三锁与冻结树一致，源码diff空。16原files/11controls，stable-upgrade-gate-verification-v1.json。
+- 固定12 Turing 085339Z-ab57a92e 273过/原辅助ignored1；36真实流合同090144Z-223b1901完整通过，独立74Fetch RPC/10peer及4 frozen metadata重算；人口相互重叠，不累加。
+- 完整1387 node新源诊断090450Z-bfc82a31原101，1274过/38失败/75原ignored。20项明确旧Git不识别初始分支参数；还有CLI/agent/native等前置与其他失败。旧源dc738同control完整对照092140Z-5216816b正在跑。全库driver尚未准备Quality原生节点套件的完整前置，不能把原红直接归上游，也不能冒充全库绿。
+- Noq5删除对照091835Z-cb319e57：4原fixture三过一红，已合法分配/回收的ACK-only最大号加更低需ACK包，误增加RTT样本5→6。只删除生产保护、fixture/lock相同；Noq1.4基线同四测试均绿。此保护保留。证据iroh-noq-ack-exit-comparison-v1.json。
+- 60项历史账目v3明确1项上游替代库验证、1项保护由ablation支持保留、58项仍待逐项退出审查。完整设计目标保持开放。
