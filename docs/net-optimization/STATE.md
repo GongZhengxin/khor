@@ -1,6 +1,6 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-12 06:35 UTC。用户暂停后已明确“继续”，执行已恢复；用户随后澄清“我没有验收 打错了”，没有新Lab/真机验收结果，完整目标“完成计划”**未完成**；范围仍为[PLAN](PLAN.md) N0–N5，root串行，不派发子智能体。
+更新于 2026-11-12 06:41 UTC。用户暂停后已明确“继续”，执行已恢复；用户随后澄清“我没有验收 打错了”，没有新Lab/真机验收结果，完整目标“完成计划”**未完成**；范围仍为[PLAN](PLAN.md) N0–N5，root串行，不派发子智能体。
 暂停前后完整原STATE逐字保存于[历史状态](HISTORY-20261112-pipeline-start-and-pause.md)，SHA256 `9a774440c70f3c3ca851b37aadcce9a867a2a22ca9bb687016a1091cf7856948`；该历史继续链接更早完整证据，不按摘要覆盖未提交内容。
 
 ## 当前执行与下一步
@@ -74,9 +74,14 @@ net68+原identity创建worker ignored1、hop89/wires16/journal30/budget35/IPC18+
 
 **隔离整合回归**：`/Volumes/disk0/Khor/worktrees/current/khor-net-transfer-integration-v1` / experiment/net-transfer-integration-v1，HEAD **dc73837e5bf33238b5cc2ed80ba8719fbb793601**，从canonical068ba267整合U/S。只有共用test Fixture的构造入口冲突，合并为with_options(kind,offered,node_identity)，保留原new/build/with_identity接口；所有named tests/metadata不改。生产link/road与已绿8de4511a字节相同，未合入canonical feat/net，更未main/发布。
 
-新control **69d23d4f912c2e3674d47010eea5b2577230e182** / feat/net-transfer-integration-v1，原74e6固定29项+独立原Job2/Offer4/StopRPC1，**36个唯一测试**，各source-owned metadata分目录；原wire3只增加显式skip三个独立suite以免混计，其他任务/资源门保持，CONTROL HEAD不动。E/transfer-integration-control-v1.json。Mac **43168695982** / request22fda3178df34d6c8eb2d3f7678eb6fc，source treedabe98b2/snapshotfc610303，在途且已注册，提交句柄70277终态，不重发。
+新control **69d23d4f912c2e3674d47010eea5b2577230e182** / feat/net-transfer-integration-v1，原74e6固定29项+独立原Job2/Offer4/StopRPC1，**36个唯一测试**，各source-owned metadata分目录；原wire3只增加显式skip三个独立suite以免混计，其他任务/资源门保持，CONTROL HEAD不动。E/transfer-integration-control-v1.json。Mac原 **43168695982** / request22fda3178df34d6c8eb2d3f7678eb6fc，treedabe98b2/snapshotfc610303：测试driver步骤success，GitHub原job131016533263日志九footer36测试全过；但upload-artifact FinalizeArtifact报ECONNRESET，artifact列表为空，whole workflow failure保持。macserver SSH恢复在banner超时，未取得完整report。原job日志SHA **574690eb5d96ea0040e12a6f5735682cd84ed6db648478802f9284d0910f0b98**，E/mac-transfer-integration-43168695982/artifact-transport-failure-v1.json；ledger终态behavior_verified=false，不能冒充完整artifact验证。
 
-**Turing同源固定12回归在途**：`turing-20261112T063227Z-f69d52c8`，PID1289672；同source dc73837e/treedabe98b2/snapshotfc610303，E/transfer-integration-source-v1.json；control **68cadb57a0ed72d40a4ca9a843e86b9c6797bf34**，task net-node/revision transfer_integration_node_suite_v1。诊断三次已终态后才启动，无计时负载重叠。只读E/ops/poll-turing-node-v1.py RUN；固定12与旧Mac相同，dial_budget将包含新Job2/Offer4/StopRPC1，不把此lane无成功nocapture的命名断言当独立RPC计数；Mac36提供独立marker。两项均需要收原artifact/identity/hash/实际行为证明再关闭ledger。性能四树不纳入该取消修复，原预声明输入保持。
+仅此传输故障后同source/control重跑一次 **43169808292** / request21b56402aac94251b92383e1895faa65，base仍dc73837e/treedabe98b2，新snapshot2bb6af91，在途且已注册；提交句柄59733终态，不重发/不持续盲重跑。所有生产/测试/metadata字节保持；不改断言/期限。
+
+**Turing同源固定12回归已终态通过**：`turing-20261112T063227Z-f69d52c8`，原0/375.221223s，同source dc73837e/treedabe98b2/snapshotfc610303，control **68cadb57a0ed72d40a4ca9a843e86b9c6797bf34**，task net-node/revision transfer_integration_node_suite_v1；前一诊断收件后才启动，无计时负载竞争。
+21原files/2controls/原group空/source/bundle/全部SHA与各原footer/七个取消命名断言及ledger终态，node-suite-verification-v1.json。net68+原identity::creation_child ignored1、hop89/wires16/journal30/budget46/IPC18+六single全部过，共273通过；budget比Mac多Linux条件用例，不按Mac35硬编码。不是全Node；成功dial-budget没有nocapture，接受命名Rust断言，不声称该lane独立RPC人口，Mac36补足。
+
+当前Turing无在途；Mac仅上述同源报告传输恢复重跑。原终端秒级尾部未定位，server/host-child/落盘竞态和完整N0–N5仍未完成；不能由本批绿项缩减范围。
 
 ## 已冻结输入与四真实RPC合同
 
