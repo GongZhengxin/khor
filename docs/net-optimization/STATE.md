@@ -1,6 +1,6 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-12 18:29 UTC（本地2026-11-13）。用户“定好目标，开始”已恢复执行；完整目标 [GOAL](GOAL.md) 与 [PLAN](PLAN.md) N0–N5 **未完成**。
+更新于 2026-11-12 18:47 UTC（本地2026-11-13）。用户“定好目标，开始”已恢复执行；完整目标 [GOAL](GOAL.md) 与 [PLAN](PLAN.md) N0–N5 **未完成**。
 用户ToDesk级体验、iroh/Rust极致优化及原约束均已记入GOAL/PLAN v3。root串行，不派发子智能体。目标服务旧paused状态不覆盖本次明确恢复授权。
 
 此前STATE逐字保存在 [上轮完整状态](HISTORY-20261113-iroh-recovery-and-stability-preparation.md)，其中继续链接所有更早历史、原失败、收据及冻结输入。
@@ -10,13 +10,19 @@
 
 暂停现场已核：coordinator61277不存在，原candidate用户取消已完成收件/identity/group空，ledger无pending，Turing原独占锁可取。保留baseline完整5/0、28journal、22CPU与32目录请求原证据；按E/iroh14-policy-stability-resume-plan-v1.json（SHA a67d29b161db39ea368f55b916d2ca2c0f1251ef55c5aa917de9810705bb1a9e）只补一轮完整candidate。源码/控制/五原case/600秒/原门/资源均不改，原用户取消部分保留；不重跑baseline，不追加失败替代。随后执行mixed，再建立Release性能基线。准确补齐run **turing-20261112T180542Z-c09f6a3c**，PID2328430，18:06:03 UTC启动，revision iroh14_policy_stability_candidate_resume_v1，control f862/source adf39a4c。启动exec已终态，root恢复为唯一串行ledger writer，旧coordinator不再启动；计时期间不插入自己的其他Turing重型任务。
 
-18:26 UTC只读确认同run仍running/network-driver；p1原600秒绿，两端零move/retired/network change/punch，alpha2743packets/275576bytes；p1h在途。未最终收件，不宣称整轮通过。
+18:44 UTC只读确认同run仍running/network-driver；p1/p1h/p1j三个原600秒绿，两端均零move/retired/network change。alpha包/字节分别2743/275576、5683/1028707、3284/413481；punch分别0/10/10。p1s及p5尚未完整结束。p1h成本高于baseline的4242包/745939字节，先保留原观察，待收件后同条件分析，不因稳定门绿就接受成本或交互尾部。
 
-## Actions恢复方案（等待源码公开确认）
+## Actions已通过公开khor-build恢复
 
 用户问能否通过公开仓库恢复Actions。只读查明私库colehank/khor-build的43205919189被付款/额度拦截、prepare零step；macserver最新SSH仍banner timeout255。colehank/khor已经public，私库失败后其公开release43227326496仍成功。其现有Developer Lab（410114960，workflow blob404aed5fddbe4c8ecd9b8569ec9d4afcb4d25d9f）含ubuntu前端/检查与macos-26标准托管原生构建，可作为待确认的替代路线；不触发release。
 
-建议只公开准确3b734073候选的parentless snapshot4a688a33，再运行现有完整Lab，保留私库及其历史。E/public-ci-recovery-proposal-v1.json已固定方案；E/public-ci-source-preflight-v1.json核snapshot仅含source、树473ee06d、无父历史，针对与本地main差异的541个现存blob未命中三种已知凭据格式/敏感文件名（不是无凭据保证）。scripts/dev.py及khor_lab/builders.py现有私库保护不修改。已异步询问是否允许公开本轮候选源码，**尚未获明确同意；零visibility变更、零public push、零dispatch**。用户答复前继续不依赖公开的工作，不重复询问。公开标准Runner免费不能保证解除账号级付款锁；实际run才是恢复证据。
+用户“开放吧”并澄清“为什么让khor-build开放不行？”，已按原意将 **colehank/khor-build改为public**，GitHub API复核public/admin；全部既有分支和历史保留。原复用公开产品库khor的提议已被此决定取代，没有向产品库khor推送快照或dispatch。E/khor-build-visibility-transition-v1.json绑定授权与结果。此前付款失败和SSH超时保留，不把建议私有误作永久技术限制。
+
+公开前核466个远端branch、8819个可达对象、4606个普通blob及212个bundle头，后者均指向已可达源码图，无额外prerequisite；唯一密钥格式命中是与公开main逐字相同的vendor/tiny_http示例TLS key。无tag，历史工作流无外部PR/评论等代码触发器，默认token只读；自托管runner存在，现有任务均手动dispatch。E/khor-build-publication-source-audit-v1.json及actions/branches-before保留；这只是已知格式源码检查，不宣称全日志/历史artifact凭据排除。
+
+已在该公开构建库上传准确3b候选snapshot4a688a33，request **e6c996efe74043858e4b0d2c000c2c7b**，完整Lab **43282299770**，control main **6ed3ce0429f767525319b6ace6c374919a48ce16** / workflow blob **9c9a39eaa9c01f00b0e0f00c9b9cd4fda2651555**；port23962，仅候选包。18:47 UTC frontend成功，native131410459446及checks131410459531在途；实际已执行多个step，**计费拦截已解除，不代表整轮Lab/网络目标完成**。E/khor-build-public-lab-request-v1.json为准，零替代重复提交，保留已有Lab23961。
+
+提交工具已在 **45044a84f1dfac9339bfc934a8c4c3341b1864b3** 修复：CLI和Lab共享require_source_builder，仅显式授权的colehank/khor-build同时匹配请求名与GitHub实际full_name时允许public；其他公开库仍在snapshot/upload前拒绝，原私库流程保留。真实CLI已成功提交工具验证run **43283055508**；control验证分支commit **adc701423672e2ea2136e781fbdac6a3e6461897**，未改control main。GH托管Linux三suite **3+14+15=32通过**，artifact13972678652 SHA **7cce5b4a6198ae81994c614e5789763f42551e2d62243b68713c9ac4cdc03282**、source45044/tree624dce/snapshot8410dbe逐项核验，proof E/khor-build-public-tooling-v1/verification.json。本机只做AST/diff结构检查；此结果不是完整Quality或3b原生Lab接受。
 
 该3b候选不是最新GUI发行源；只能作为首个网络候选Lab。已对本地main57a69f8d与3b进行git merge-tree预览，自动合并无冲突，所得tree3a76346eb1a26c8d7cee2fe3f96cf90f005120d1；没有创建新分支/worktree或合并main。最终产品集成及同源Quality/真机验收仍待，不把旧候选测试挪作最终合并源验证。现有其他任务Lab23961保持。
 
@@ -113,7 +119,7 @@ E/iroh-upgrade-patch-ledger-v4.json：60历史项=1上游替代库验证、2移�
 - PRODUCT `/Volumes/disk0/Khor/worktrees/current/khor-net`，branch feat/net，创建基线6485cb83。
 - CONTROL `/Volumes/disk0/Khor/worktrees/current/khor-build-net`，HEAD **5d3691f252f9dee0297fa3c494374be6119bca29**；新controls只建Git对象/ref，不移动HEAD，既有__pycache__不覆盖。
 - EVIDENCE **E=/Volumes/disk0/Khor/evidence/net**。root是source-refs.json唯一串行原子writer。stage/launch/collect/verify须等真实exec会话终态；unknown handle先读receipt，不再提交。
-- 本机source-only：不跑Rust/Cargo/rustfmt/Node/Bun/Xcode或产品。重型Turing/macserver+私库colehank/khor-build；本地Git、stdlib Python源码/元数据和bash -n可用。
+- 本机source-only：不跑Rust/Cargo/rustfmt/Node/Bun/Xcode或产品。重型Turing/macserver+用户明确公开的colehank/khor-build；本地Git、stdlib Python源码/元数据和bash -n可用。
 - Turing原UID1110/flock/private user-netns/Rust1.95/jobs16/nice10、50GiB启动/40停止/90分钟守护保持；不sudo/改宿主网络。
 - Mac50GiB准入保持；43189070840空间门红后43205919189在付款/额度阶段失败、零Mac操作。最新GitHub只读仍该run，无盲目dispatch；16:00后SSH再试仍banner timeout255。异步额度/常规SSH问题未获答复，不降门/清未知缓存。
 - MacLab与Turing同LAN，macserver独立；localhost旧0.2.0 iPhone以前反复关开恢复不算候选自动接管。没有新Lab/手机窗口或候选安装接受。

@@ -31,4 +31,4 @@
 3. 收敛相关改动并构建真实原生Lab候选，交付可操作验收清单；同时继续完整回归和必要custom审计。
 4. 完成全部N0–N5及最终同源验收。候选交付是阶段成果，不缩减最终完成标准。
 
-本机source-only；重型验证使用授权Turing和macserver/私库khor-build。功能测试在隔离且不影响计时的条件下并行；性能与长稳独占。root串行，不派发子智能体。
+本机source-only；重型验证使用授权Turing和macserver/khor-build。2026-11-13用户明确公开khor-build恢复Actions，源码快照、日志与artifact按公开仓库处理；可信原生/发行边界保持。功能测试在隔离且不影响计时的条件下并行；性能与长稳独占。root串行，不派发子智能体。
