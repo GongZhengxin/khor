@@ -87,3 +87,14 @@ Finder红项单独调查并保留，不在本协议中豁免；没有合并、�
 首block **turing-20261112T041552Z-e46a2819** 已唯一启动（宽8A，PID1044381/child1044594，source0c4e4e35），尚无timed block已收件验证。
 随后依原8→2、各ABBAAB、各block guard2→low1/high1，总24场景；失败留原位、缺人口不补跑。
 Mac固定12 net-node **43153603327** 正运行准确e552源码；整体验收与旧Finder红项仍保持，当前没有候选手机接受或最终N3/N5完成。
+
+
+## 2026-11-12：宽8主比较完成、取消链与宽2接续
+
+宽8六block/12fresh/8640交互全ok，所有文件完整；E/pipeline-width8-comparison-v1.json冻结102原件hash、准确metadata与独立原始人口复算。来源、逐场景service/planned/schedule-lag与对应位置差值均保留，没有选winner或显著性/p99声明。
+low文件batch18.737180–18.808332s、rolling18.791625–19.548505s；high文件batch82.563249–85.975258s、rolling61.708015–76.625635s。high对应位置文件三次rolling更快，但终端service p95两次更慢/一次更快，目录/计划时延也有取舍；不能以文件一项决定默认。
+宽2首batch（block7，turing-20261112T050750Z-7f2df1ec）low19.614184s完整，high原240.001025s caller超时、未完整、verified rate为NULL；两profile各720交互全部ok。原101保留，不能把attempt当文件完成。block8 rolling turing-20261112T051657Z-96f322fb在途，继续原ABBAAB且不补样本。
+
+独立取消树31720fa6真实重现并修复public road.stop不能唤醒挂起pull：同fixture/control，Mac43156779606两个红→43157963440两个绿；只变road/link（含通知unit），原文件/metadata gate不变。E/pull-job-stop-red-green-v1.json保存准确绑定。
+新f3ccd2f8仅修观测total与最终短片metadata，生产字节等于31720；Mac43159900154六组29过且独立frozen RPC v2准入过，旧43158565837的原metadata失败不改绿。此修复树不混入冻结性能四树。
+这些只闭public Job→caller与受控responder及相关unit/wire，生产server编码回复/阻塞读任务、远程DropStop RPC、host-child、最终commit等仍须验；全N0–N5与手机/能耗保持未完成。用户澄清没有进行Lab验收，不记人工接受。
