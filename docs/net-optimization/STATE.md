@@ -1,6 +1,6 @@
 # feat/net 当前状态与接续入口
 
-更新于2026-11-12 03:26 UTC（本地11月12日）。完整目标“完成计划”仍 **active、未完成、未阻塞**；完整范围为[PLAN](PLAN.md) N0–N5，root串行，不派发子智能体。此页是唯一当前入口。上一页原样保存在[high v2前状态](HISTORY-20261111-through-high-resident-v2.md)，SHA 560d77e0f02b553ebda7b3ac0282a54b0220a0bb1dc1b44a3063f702abf1b172；继续链接更早全部证据。实际worktree/收据/原始日志优先，不按摘要覆盖未提交内容。
+更新于2026-11-12 03:33 UTC（本地11月12日）。完整目标“完成计划”仍 **active、未完成、未阻塞**；完整范围为[PLAN](PLAN.md) N0–N5，root串行，不派发子智能体。此页是唯一当前入口。上一页原样保存在[high v2前状态](HISTORY-20261111-through-high-resident-v2.md)，SHA 560d77e0f02b553ebda7b3ac0282a54b0220a0bb1dc1b44a3063f702abf1b172；继续链接更早全部证据。实际worktree/收据/原始日志优先，不按摘要覆盖未提交内容。
 
 ## 当前状态与下一步
 
@@ -163,6 +163,9 @@ alpha phase0/14/5首读取297.685/327.577/321.867ms；beta230.688/265.406/250.93
 **当前下一步：有界被动准备STREAM v2**。只在诊断模式，候选窗之前读取serve.log，不发请求/不查询Node；双方全连接/actor/registry/STREAM签名实际快照连续至少1秒相同且新鲜度≤1秒，10秒总界。记录准备起止及每端稳定起止原快照，外部逐条复核；之后原12秒候选窗与≥10秒内窗、原0/5/14 phase/30秒caller/六fresh顺序及全部失败门完全不变，候选失败不重试挑窗。普通模式仍10秒/off。
 新revision **first_foreground_stream_witness_v2**；source-owned新增6种准备证据损坏拒绝、原11见证/19first-action/9guard同步过，4 unittest/0.062秒；同原6控制路径0.344秒过，都是合成数据，actual_v2_runs=0。新control **73fa35f5954175e5e20373c858691315d4a3e6fe** / local feat/net-first-action-streams-v2 / parent1bdb，仅现task MODE literal更新，runner/其他分支/UID/flock/netns/资源/期限逐字相同，C HEAD5d未动。first-action-stream-control-input-v2.json/control-test-v2.json。
 当前Turing/Mac均无在途任务，准备提交v2准确源，predecessor用已收件15ebb293；不要重复任何旧launch。Iroh/Noq运行时代码相对已测093逐字不动（本次仅CLI fixture/metadata/文档），Mac vendor适用性须核完整差异后保留；后续CLI格式/编译与实际v2尚待Turing。完整N0–N5及rolling宽度8→2各12场景保持，首个rolling计时样本0。
+
+**有界准备v2首轮仅格式红**：**turing-20261112T032645Z-37e89511** / source **5db0aa511c7a1c16fe631f71cbaf852daccb9d5a** / tree **0920f373270a8959adbb7b198c261e2bc91560c7** / snapshot **2f31b88fa720bd3822f9792a15601544202c89cf** / control73fa。182.291534秒/原1、10files/identity/原group空/ledger终态；零实际guard/首读取/静默样本。原format.patch仅一处wall_us链式换行，已逐项精确映射并应用；format-only-verification-v1.json与原失败保留。下一source同control继续，predecessor改用已收件37e89511，不重复旧launch。
+相对Mac已过09374004，完整vendor差异仅vendor/iroh/KHOR.md文档，全部Iroh/Noq运行时与锁文件逐字相同；默认库证据适用此未改vendor源码，不当作CLI新准备逻辑已执行。当前无在途任务，需提交格式补丁后启动准确source。
 
 随后继续严重/quiet/跨连接/完整N0–N5；完整prefetch后、rolling计时前优先补测，理由是前台恢复体验与测量所有权缺口。
 必要基础回归具备后可并行准备隔离的可信候选构建以取得早期真机反馈，但早期反馈不代替最终矩阵；中央GUI合并/发布授权不套到本任务，已装App变更仍需具体交接。

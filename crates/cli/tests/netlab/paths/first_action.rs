@@ -105,7 +105,9 @@ async fn drain_preparation(pair: &SpeedPair, epoch: Instant) -> Value {
         {
             if let Some((monotonic, unix, signature)) = stream_sample(node, peer)
                 && unix >= started_at
-                && wall_us().checked_sub(unix).is_some_and(|age| age <= 1_000_000)
+                && wall_us()
+                    .checked_sub(unix)
+                    .is_some_and(|age| age <= 1_000_000)
             {
                 if previous[index].as_ref() != Some(&signature) {
                     since[index] = monotonic;
