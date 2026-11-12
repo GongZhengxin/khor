@@ -4,7 +4,7 @@ use super::*;
 use serde_json::{Value, json};
 
 const REVISION: &str = "first_foreground_after_idle_v2";
-const STREAM_REVISION: &str = "first_foreground_stream_witness_v1";
+const STREAM_REVISION: &str = "first_foreground_stream_witness_v2";
 
 fn wall_us() -> u128 {
     SystemTime::now()
@@ -72,6 +72,67 @@ fn captures_ok(value: &Value) -> bool {
     })
 }
 
+fn stream_sample(node: &LabNode, peer: &LabNode) -> Option<(u128, u128, String)> {
+    let raw = std::fs::read_to_string(node.home.0.join("serve.log")).ok()?;
+    let peer = format!("peer={}", peer.id);
+    let line = raw.lines().rev().find(|line| {
+        line.contains("khor_stream_snapshot_v1")
+            && line.split_whitespace().any(|word| word == peer.as_str())
+    })?;
+    let number = |key: &str| {
+        line.split_whitespace()
+            .find_map(|word| word.strip_prefix(key)?.parse::<u128>().ok())
+    };
+    Some((
+        number("monotonic_us=")?,
+        number("unix_us=")?,
+        line.split_once("actor_serial=")?.1.to_owned(),
+    ))
+}
+
+async fn drain_preparation(pair: &SpeedPair, epoch: Instant) -> Value {
+    let began = Instant::now();
+    let started = epoch.elapsed().as_micros();
+    let started_at = wall_us();
+    let mut previous: [Option<String>; 2] = [None, None];
+    let mut since = [0u128; 2];
+    loop {
+        let mut admitted = true;
+        let mut sides = serde_json::Map::new();
+        for (index, (node, peer)) in [(&pair.a, &pair.b), (&pair.b, &pair.a)]
+            .into_iter()
+            .enumerate()
+        {
+            if let Some((monotonic, unix, signature)) = stream_sample(node, peer)
+                && unix >= started_at
+                && wall_us().checked_sub(unix).is_some_and(|age| age <= 1_000_000)
+            {
+                if previous[index].as_ref() != Some(&signature) {
+                    since[index] = monotonic;
+                    previous[index] = Some(signature.clone());
+                }
+                admitted &= monotonic.saturating_sub(since[index]) >= 1_000_000;
+                sides.insert(
+                    node.name.clone(),
+                    json!({"stable_since_monotonic_us":since[index],
+                    "observed_monotonic_us":monotonic,"observed_at_unix_us":unix,"signature":signature}),
+                );
+            } else {
+                admitted = false;
+            }
+        }
+        assert!(
+            began.elapsed() <= Duration::from_secs(10),
+            "passive preparation drain deadline"
+        );
+        if admitted {
+            return json!({"started_us":started,"ended_us":epoch.elapsed().as_micros(),
+                "started_at_unix_us":started_at,"ended_at_unix_us":wall_us(),"sides":sides});
+        }
+        tokio::time::sleep(Duration::from_millis(250)).await;
+    }
+}
+
 async fn first(s: &str, reverse: bool, phase_s: u64) {
     let diagnose = std::env::var("NETLAB_DIAGNOSTICS").is_ok_and(|mode| mode == "1");
     let quiet_s = if diagnose { 12 } else { 10 };
@@ -89,6 +150,11 @@ async fn first(s: &str, reverse: bool, phase_s: u64) {
                 "observed_us":epoch.elapsed().as_micros()}),
         );
     }
+    let drain = if diagnose {
+        drain_preparation(&pair, epoch).await
+    } else {
+        Value::Null
+    };
     let before_idle = snapshots(&pair, epoch).await;
     let quiet_started = epoch.elapsed().as_micros();
     let quiet_started_at = wall_us();
@@ -144,6 +210,7 @@ async fn first(s: &str, reverse: bool, phase_s: u64) {
             "direct_before_ms":300,"direct_restored_ms":0,"relay_edge_ms":40,
             "quiet_ms":quiet_s*1000,"caller_ms":30000,"diagnostic":if diagnose { "full" } else { "off" },
             "prepared_paths":prepared_paths,
+            "drain":drain,
             "quiet_started_us":quiet_started,"restore_started_us":restore_started,
             "restore_ended_us":restore_ended,"request_started_us":request_started,
             "request_ended_us":request_ended,"caller_elapsed_us":took.as_micros(),

@@ -17,7 +17,7 @@ def load(name, file):
 
 first = load('stream_first_action', 'netlab-first-action.py')
 guard = load('stream_ownership_guard', 'netlab-idle-action-guard.py')
-REVISION = 'first_foreground_stream_witness_v1'
+REVISION = 'first_foreground_stream_witness_v2'
 MODE = dict(layer='node_stream_silence_diagnostic', measurement_revision=REVISION,
             diagnostic='full', test_threads=1, ignored=True, slo=False, quiet_ms=12000,
             guard_filter='paths::idle_action::p8g_', expected_guard_tests=2,
@@ -25,6 +25,8 @@ MODE = dict(layer='node_stream_silence_diagnostic', measurement_revision=REVISIO
             cases=list(first.CASES), vantage_points=first.SIDES,
             required_stream_silence_us=10000000, observer_margin_us=500000,
             max_clock_delta_disagreement_us=100000, max_snapshot_gap_us=1000000,
+            preparation_stability_us=1000000, preparation_deadline_ms=10000,
+            preparation_snapshot_freshness_us=1000000,
             ordinary_latency_samples=0, full_N1_accepted=False)
 
 
@@ -50,6 +52,7 @@ def records(raw, peer):
                        all(type(n) is int and n >= 0 for n in c) for c in counters), 'STREAM counter tuple')
         first.need(len({c[0] for c in counters}) == len(counters), 'duplicate connection')
         row['counters'] = {c[0]: list(c[1:]) for c in counters}
+        row['signature'] = line.split('actor_serial=', 1)[1]
         rows.append(row)
     first.need(len(rows) >= 2, 'STREAM snapshot population missing')
     for a, b in zip(rows, rows[1:]):
@@ -57,6 +60,32 @@ def records(raw, peer):
         first.need(abs((b['unix_us']-a['unix_us'])-(b['monotonic_us']-a['monotonic_us'])) <= 100000,
                    'observer clock disagreement')
     return rows
+
+
+def preparation(raw, peer, row, side):
+    samples = records(raw, peer)
+    drain = row['drain']; evidence = drain['sides'][side]
+    first.need(set(drain['sides']) == {'alpha', 'beta'}, 'preparation population')
+    duration = drain['ended_us']-drain['started_us']
+    first.need(0 <= duration <= 10000000 and
+               abs((drain['ended_at_unix_us']-drain['started_at_unix_us'])-duration) <= 100000,
+               'preparation deadline/clock')
+    first.need(row['prepared_paths'][side]['observed_us'] <= drain['started_us'] <= drain['ended_us'] <=
+               row['before_idle'][side]['started_us'], 'preparation must precede idle baseline')
+    stable = [s for s in samples if evidence['stable_since_monotonic_us'] <= s['monotonic_us'] <=
+              evidence['observed_monotonic_us']]
+    first.need(len(stable) >= 2 and stable[0]['monotonic_us'] == evidence['stable_since_monotonic_us'] and
+               stable[-1]['monotonic_us'] == evidence['observed_monotonic_us'], 'preparation source snapshots')
+    first.need(stable[-1]['monotonic_us']-stable[0]['monotonic_us'] >= 1000000, 'preparation stability')
+    first.need(drain['started_at_unix_us'] <= stable[0]['unix_us'] <= stable[-1]['unix_us'] <=
+               drain['ended_at_unix_us'], 'preparation snapshot time window')
+    first.need(stable[-1]['unix_us'] == evidence['observed_at_unix_us'] and
+               drain['ended_at_unix_us']-stable[-1]['unix_us'] <= 1000000, 'stale preparation snapshot')
+    first.need(stable[-1]['signature'] == evidence['signature'] and stable[0]['counters'] and
+               all(s['signature'] == evidence['signature'] for s in stable), 'preparation STREAM/registry changed')
+    return dict(stable_us=stable[-1]['monotonic_us']-stable[0]['monotonic_us'],
+                snapshot_count=len(stable), actor_serial=stable[-1]['actor_serial'],
+                registry_epoch=stable[-1]['registry_epoch'], passed=True)
 
 
 def witness(raw, peer, row):
@@ -126,6 +155,7 @@ def verify(report):
                 file = diagnostics/(row['case']+'-'+side+'.log'); text = file.read_text()
                 first.need('[khor-net-diagnostics] mode=full samples=debug' in text, 'diagnostic initialization')
                 witnesses[side] = witness(text, ids[peer], row)
+                witnesses[side]['preparation'] = preparation(text, ids[peer], row, side)
                 witnesses[side].update(log=str(file.relative_to(report)), sha256=hashlib.sha256(file.read_bytes()).hexdigest())
             out['cases'].append(dict(case=row['case'], measurement=value, witnesses=witnesses,
                                      passed=value['functional_ok'] and all(w['passed'] for w in witnesses.values())))
