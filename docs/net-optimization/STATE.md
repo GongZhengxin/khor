@@ -1,13 +1,14 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-12 06:25 UTC。用户暂停后已明确“继续”，执行已恢复；用户随后澄清“我没有验收 打错了”，没有新Lab/真机验收结果，完整目标“完成计划”**未完成**；范围仍为[PLAN](PLAN.md) N0–N5，root串行，不派发子智能体。
+更新于 2026-11-12 06:31 UTC。用户暂停后已明确“继续”，执行已恢复；用户随后澄清“我没有验收 打错了”，没有新Lab/真机验收结果，完整目标“完成计划”**未完成**；范围仍为[PLAN](PLAN.md) N0–N5，root串行，不派发子智能体。
 暂停前后完整原STATE逐字保存于[历史状态](HISTORY-20261112-pipeline-start-and-pause.md)，SHA256 `9a774440c70f3c3ca851b37aadcce9a867a2a22ca9bb687016a1091cf7856948`；该历史继续链接更早完整证据，不按摘要覆盖未提交内容。
 
 ## 当前执行与下一步
 
 **原24场景已全部终态并复算。** advance 1–12唯一完成，不重发。[结果与决策](PIPELINE-RESULTS.md)完整记录；全计划未完成。
 
-**Turing新诊断在途**：`turing-20261112T062130Z-c432d9c1`，PID1276232，仍用宽2 rolling准确冻结source2438172c/treeada3cd2a/snapshot204945db；control **8b8620ace473657c10ba2cd1bc062c1dd015a058** / feat/net-terminal-tail-v1。固定2 guard off→low诊断3fresh/lifecycle，原人口/期限不改，E/terminal-tail-diagnostic-protocol-v1.json实施前冻结；不混普通24/不循环重跑至绿。源与runner/资源门不变，control仅相应task分支替换。只读E/ops/poll-turing-terminal-tail-v1.py RUN；尚未收件，勿重发。
+**Turing三次诊断已终态**：`turing-20261112T062130Z-c432d9c1`，原0/210.563419s；仍用宽2 rolling准确冻结source2438172c/treeada3cd2a/snapshot204945db，control **8b8620ace473657c10ba2cd1bc062c1dd015a058**。固定2 guard off→low诊断3fresh/lifecycle，E/terminal-tail-diagnostic-protocol-v1.json在实施前冻结；未混普通24/未重试挑绿。25原files/2control/原group空、source/bundle/hash、准确frozen control内Python与frozen source observer重算、独立2160人口/6resident日志hash和mode及ledger终态；terminal-tail-diagnostic-verification-v1.json。
+三次终端service最大84.365/87.069/83.094ms，未重现原长尾；没有修复/唯一因果结论，原block9问题保持，不能因这三次通过而关闭。Turing当前无在途。
 既定24场景已收件核验24场景（12blocks），21文件完整、3个high文件原240秒超时；**17280交互全部ok**。每block两profile各720，准确冻结metadata/独立人口与时间戳/17原files及hash/identity/原group空/ledger终态保持，超时不冒充文件完成或verified rate。
 
 | block | 宽度/arm | run | 原结果 | low/high文件秒或attempt |
@@ -66,9 +67,14 @@ net68+原identity创建worker ignored1、hop89/wires16/journal30/budget35/IPC18+
 - control **76e71b4f59f7a6216a756caf785c01fe29ef3bb1** / feat/net-pull-offer-stop-v1，原9690仅net-node分支固定四个offer_stop测试/full_diag/nocapture，其他任务/资源门不改，CONTROL HEAD不动。
 - **43166380936** / request4a5e90ae301d4b6e86e2038cd04cb1c4，tree3685e137/snapshotd3963043：原formatter红，零行为；9原件/11control/identity/SHA/准确patch与ledger终态，source90a70a61精确应用。
 - **43167054406** / request7c3e9796e8644ed2855e7386cafb5b39，source90a70a61/tree470040ef/snapshot33e7c8e6：真实Rust0过/4红；四caller停止500696–502453us仍pending，后fixture drop才收到1/8STOP，同wire control正常。11原件/11control/准确frozen metadata/独立20个已发Fetch人口和先caller后cleanup/identity/SHA/ledger终态；offer-stop-verification-v1.json。artifact13920582350/ZIPaa9606e02e5e083516627998b36ab8b097e09f2656eefa01f99fe53ea94f1a55。
-- **43167824001** / requestfaabef6ec75544d68cd12a18b68ede1a，source8de4511a/tree6e741650/snapshota61d93c2，同control76e7，Mac在途。Job.request_stop仅改crate可见，stop_sent两处改用它；pull_one一个borrowed stopped future参与原join_all，不新任务/timer/RPC，不改Offer调度/原partial与cut规则。真实pull_offer/pull_one分别在首片/八片挂住时，经Node.stop_sent（running Job）或Job.cut取消；500ms内调用者仍保留，后续fixture drop单独观察。控制source是真实QUIC自建responder，partial必须原长度留给run_take owner、marker在自行返回时退役；不声称run_take完整清理、配对或生产source合同。原红已保存，绿源四fixture/metadata字节不改；尚未有绿行为结果。
+- **43167824001** / requestfaabef6ec75544d68cd12a18b68ede1a，source8de4511a/tree6e741650/snapshota61d93c2，同control76e7：Rust4全过，stop first/window57/378us、cut first/window58/244us调用者自行返回，marker退役/partial原长度、1/8STOP和同wire控制正常。11原files/11controls/准确frozen metadata/独立20 Fetch人口及phase顺序/source/bundle/SHA/ledger终态，offer-stop-verification-v1.json；artifact13919884421/ZIP334a11be661c05a12ed41037551c73da4581877a1e8337ad5693826a69da98e1。
+- E/pull-offer-stop-red-green-v1.json绑定四fixture/metadata逐字相同、同control、仅生产road/link差异；不冒充run_take完整清理或全N3。
 
-当前Turing只有三次终端尾部诊断在途；Mac只有上述Offer四项修复源在途。性能四树不纳入该取消修复，原预声明输入保持。
+- **43167824001** / requestfaabef6ec75544d68cd12a18b68ede1a，source8de4511a/tree6e741650/snapshota61d93c2，同control76e7。Job.request_stop仅改crate可见，stop_sent两处改用它；pull_one一个borrowed stopped future参与原join_all，不新任务/timer/RPC，不改Offer调度/原partial与cut规则。真实pull_offer/pull_one分别在首片/八片挂住时，经Node.stop_sent（running Job）或Job.cut取消；500ms内调用者仍保留，后续fixture drop单独观察。控制source是真实QUIC自建responder，partial必须原长度留给run_take owner、marker在自行返回时退役；不声称run_take完整清理、配对或生产source合同。原红已保存，绿源四fixture/metadata字节不改；四项实际红→绿已闭，其他范围仍待验。
+
+**隔离整合回归**：`/Volumes/disk0/Khor/worktrees/current/khor-net-transfer-integration-v1` / experiment/net-transfer-integration-v1，HEAD **dc73837e5bf33238b5cc2ed80ba8719fbb793601**，从canonical068ba267整合U/S。只有共用test Fixture的构造入口冲突，合并为with_options(kind,offered,node_identity)，保留原new/build/with_identity接口；所有named tests/metadata不改。生产link/road与已绿8de4511a字节相同，未合入canonical feat/net，更未main/发布。
+
+新control **69d23d4f912c2e3674d47010eea5b2577230e182** / feat/net-transfer-integration-v1，原74e6固定29项+独立原Job2/Offer4/StopRPC1，**36个唯一测试**，各source-owned metadata分目录；原wire3只增加显式skip三个独立suite以免混计，其他任务/资源门保持，CONTROL HEAD不动。E/transfer-integration-control-v1.json。Mac提交中，本地句柄70277，request22fda3178df34d6c8eb2d3f7678eb6fc，source treedabe98b2/snapshotfc610303；先恢复收据/run再注册，不重发。Turing无在途。性能四树不纳入该取消修复，原预声明输入保持。
 
 ## 已冻结输入与四真实RPC合同
 
