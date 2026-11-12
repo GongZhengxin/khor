@@ -42,3 +42,6 @@ scheduled-to-end包含前序操作变慢后形成的串行积压；不称这些�
 先以原宽2 rolling准确冻结源码，独立预声明3个low诊断fresh；原w3 guards与所有期限/人口保持，开启现有lifecycle并保存两端resident日志，诊断结果不混回普通性能24样本。无论能否重现都保留三次，不能反复跑到想要的结果。若当前记录不能定位，增加最小分层观察后另立诊断合同。
 
 同时补齐会话Offer取消遗漏；生产server/阻塞worker、最终发布竞争、前台预览、公平/背压、1/3/5设备成本、真实换网/peer relay和手机能耗仍按完整PLAN执行。
+
+
+三次独立诊断已完成：turing-20261112T062130Z-c432d9c1（source2438172c、control8b8620ac），25原files/6resident日志、准确冻结metadata与2160交互人口已核验。三次终端service最大84.365/87.069/83.094ms，未重现原尾部；没有修复或唯一因果结论，普通24和block9均不改。完整接续见STATE。

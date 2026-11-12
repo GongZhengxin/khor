@@ -1,6 +1,6 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-12 06:41 UTC。用户暂停后已明确“继续”，执行已恢复；用户随后澄清“我没有验收 打错了”，没有新Lab/真机验收结果，完整目标“完成计划”**未完成**；范围仍为[PLAN](PLAN.md) N0–N5，root串行，不派发子智能体。
+更新于 2026-11-12 06:45 UTC。用户暂停后已明确“继续”，执行已恢复；用户随后澄清“我没有验收 打错了”，没有新Lab/真机验收结果，完整目标“完成计划”**未完成**；范围仍为[PLAN](PLAN.md) N0–N5，root串行，不派发子智能体。
 暂停前后完整原STATE逐字保存于[历史状态](HISTORY-20261112-pipeline-start-and-pause.md)，SHA256 `9a774440c70f3c3ca851b37aadcce9a867a2a22ca9bb687016a1091cf7856948`；该历史继续链接更早完整证据，不按摘要覆盖未提交内容。
 
 ## 当前执行与下一步
@@ -76,12 +76,17 @@ net68+原identity创建worker ignored1、hop89/wires16/journal30/budget35/IPC18+
 
 新control **69d23d4f912c2e3674d47010eea5b2577230e182** / feat/net-transfer-integration-v1，原74e6固定29项+独立原Job2/Offer4/StopRPC1，**36个唯一测试**，各source-owned metadata分目录；原wire3只增加显式skip三个独立suite以免混计，其他任务/资源门保持，CONTROL HEAD不动。E/transfer-integration-control-v1.json。Mac原 **43168695982** / request22fda3178df34d6c8eb2d3f7678eb6fc，treedabe98b2/snapshotfc610303：测试driver步骤success，GitHub原job131016533263日志九footer36测试全过；但upload-artifact FinalizeArtifact报ECONNRESET，artifact列表为空，whole workflow failure保持。macserver SSH恢复在banner超时，未取得完整report。原job日志SHA **574690eb5d96ea0040e12a6f5735682cd84ed6db648478802f9284d0910f0b98**，E/mac-transfer-integration-43168695982/artifact-transport-failure-v1.json；ledger终态behavior_verified=false，不能冒充完整artifact验证。
 
-仅此传输故障后同source/control重跑一次 **43169808292** / request21b56402aac94251b92383e1895faa65，base仍dc73837e/treedabe98b2，新snapshot2bb6af91，在途且已注册；提交句柄59733终态，不重发/不持续盲重跑。所有生产/测试/metadata字节保持；不改断言/期限。
+仅此传输故障后同source/control重跑一次 **43169808292** / request21b56402aac94251b92383e1895faa65，base仍dc73837e/treedabe98b2，新snapshot2bb6af91：在可信control bootstrap读取阶段JSONDecodeError（Unterminated string），源码未materialize、driver skipped，**零产品测试**。artifact13920659924/ZIP194bd691d6055c1ac30c708aa75c85b46892909cd7cc35cb9ea9895b25548c30，3原files和job131020141739原日志保留，bootstrap-fetch-failure-v1.json及ledger终态，identity/behavior均不接受。未证网络唯一因果；不继续盲重跑Mac，也不把该失败记产品回归。
 
 **Turing同源固定12回归已终态通过**：`turing-20261112T063227Z-f69d52c8`，原0/375.221223s，同source dc73837e/treedabe98b2/snapshotfc610303，control **68cadb57a0ed72d40a4ca9a843e86b9c6797bf34**，task net-node/revision transfer_integration_node_suite_v1；前一诊断收件后才启动，无计时负载竞争。
 21原files/2controls/原group空/source/bundle/全部SHA与各原footer/七个取消命名断言及ledger终态，node-suite-verification-v1.json。net68+原identity::creation_child ignored1、hop89/wires16/journal30/budget46/IPC18+六single全部过，共273通过；budget比Mac多Linux条件用例，不按Mac35硬编码。不是全Node；成功dial-budget没有nocapture，接受命名Rust断言，不声称该lane独立RPC人口，Mac36补足。
 
-当前Turing无在途；Mac仅上述同源报告传输恢复重跑。原终端秒级尾部未定位，server/host-child/落盘竞态和完整N0–N5仍未完成；不能由本批绿项缩减范围。
+**Turing同源36整合合同已终态通过**：`turing-20261112T064251Z-04c926ef`，原0/31.735045s，同source dc73837e/treedabe98b2/snapshotfc610303、同control **69d23d4f912c2e3674d47010eea5b2577230e182**，task net-node/revision transfer_integration_wire_v1。前一个Linux固定12已收件后启动，原UID/flock/资源/期限不改。
+31原files/2controls/原group空/source/bundle/全部SHA及九footer、36个唯一命名测试、四套准确frozen source-owned metadata重算，独立74个实际已发Fetch/10个source peer人口均过；transfer-integration-verification-v1.json和ledger终态。它补齐Linux完整相关合同，不冒充Mac原件已恢复、全Node、生产source/host-child、完整run_take清理、最终rename竞争、移动/手机或全N3/N5。
+
+**当前所有已提交任务与本地句柄均终态，source-refs.json无pending。** candidate只在隔离整合树dc73837e，canonical feat/net仍是5064运行时代码，之后仅文档提交；尚未集成/发布/变更已装App。下一步仍按[资源归属设计](TRANSFER-LIFETIME.md)补真实server/worker与最终提交边界、定位终端尾部，再扩完整矩阵，不重复已闭的24探索和控制responder取消测试。
+
+原终端秒级尾部未定位，server/host-child/落盘竞态和完整N0–N5仍未完成；不能由本批绿项缩减范围。用户澄清未做Lab验收，真机与Lab均保持未接受。
 
 ## 已冻结输入与四真实RPC合同
 
@@ -159,14 +164,14 @@ prefetch-comparison-v1.json SHA **7dede5f2c580d46aff0e6138b968da2550db2e095d6de3
 
 [rolling协议](PIPELINE-COMPARISON.md)及prefetch-to-pipeline-decision-v1.json在任何rolling计时前冻结：**先宽8，再独立宽2**，priority0，每宽A B B A A B、每block原w3两项再low/high各1，共12/宽、总24fresh。宽2在low的完成/交互取舍值得保留但high原超时，不能直接设全网默认。
 四源码与campaign已冻结；当前十二个block/二十四场景均收件核验（含三个原high文件超时）；原campaign终态，独立尾部诊断不算新普通样本。匹配baseline/candidate包含同一未调用helper/四逻辑/大于八片的files_wire载荷；A原batch函数不动、B仅rolling循环及必需短读重启；四树审全部Git/runtime/fixture/参数，只在相同宽度比较。不拿旧prefetch当新baseline，原失败/完整人口/期限门不改。
-后续还需真实RPC的已发/完成/待提交上限与补齐时刻，服务端/用户取消/host-child等所有权，而非只看逻辑future被poll；全前台预览、公平/背压/连接架构/规模成本仍必需。
+真实RPC的已发/完成/待提交上限、补齐与caller drop已有四源码合同，用户Job/DropStop/Offer stop/cut本轮真实合同已闭，但控制responder不替代生产source。后续仍需生产server/worker、完整run_take与host-child、最终发布所有权；全前台预览、公平/背压/连接架构/规模成本仍必需。
 
 ## 完整剩余范围（不以已有绿项缩减）
 
 - N0：最终分场景UX门、充分尾部样本与p99、相同条件完整前后对照、观测成本与成本前沿；对载荷/调度/模型作实际记录。
 - N1：严重/quiet/recovery尾部、跨连接独立质量/旧样本、恢复后固定好路径匹配参考、启动/配对旧失败根因、动态模型延迟突变问题、真实静默及后台成本。旧16–17秒/单轮绿不算极致接受。
 - N2：同一实际连接独立/同时IPv4与IPv6地址/前缀/NAT映射变化、换网/睡眠/黑洞/LOST，owner/cancel/late/revoke与carrier在调用开始后失效；身份、总期限、写入/0RTT不重放。
-- N3：上述24rolling探索；完整前台文件/预览、已发现的终端尾部、持续公平/饥饿/背压、共享与分连接实测、真实server和独立host-child取消/退出、1/3/5设备CPU/字节/唤醒/能耗。文件快不代替其他行为。
+- N3：上述24rolling探索已闭；仍需完整前台文件/预览、已发现的终端尾部、持续公平/饥饿/背压、共享与分连接实测、真实server和独立host-child取消/退出、1/3/5设备CPU/字节/唤醒/能耗。文件快不代替其他行为。
 - N4：Direct/公共Relay/peer relay/SSH双腿，唯一可达middle自动救通（第二腿可Relay或旧信息）、多个/移动middle、独立双栈变化、北京/香港整机/单出口/寻址故障域，自家relay约束、双家与地域/容量/运维设计。部署采购另授权。
 - N5：主60项（Iroh1–41/45–50+Noq1–13；42–44仍隔离）的逐项上游等价/保留退出，其他feature/integration/physical/Noq1+physical5；最终准确源码Quality/完整Node/native/proxy、Finder依赖、多设备/手机自动换网/peer relay与真实能耗及一致报告。
 
