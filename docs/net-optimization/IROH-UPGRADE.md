@@ -27,3 +27,7 @@
 - 完整1387 node新源诊断090450Z-bfc82a31原101，1274过/38失败/75原ignored。20项明确旧Git不识别初始分支参数；还有CLI/agent/native等前置与其他失败。旧源dc738同control完整对照092140Z-5216816b正在跑。全库driver尚未准备Quality原生节点套件的完整前置，不能把原红直接归上游，也不能冒充全库绿。
 - Noq5删除对照091835Z-cb319e57：4原fixture三过一红，已合法分配/回收的ACK-only最大号加更低需ACK包，误增加RTT样本5→6。只删除生产保护、fixture/lock相同；Noq1.4基线同四测试均绿。此保护保留。证据iroh-noq-ack-exit-comparison-v1.json。
 - 60项历史账目v3明确1项上游替代库验证、1项保护由ablation支持保留、58项仍待逐项退出审查。完整设计目标保持开放。
+
+## 已核对的前后对照
+
+旧源092140Z-5216816b与新源090450Z-bfc82a31同control/1387命名人口/75ignored，均1274过、同38失败，两个方向独有失败均空（iroh-upgrade-full-node-comparison-v1.json）。这是缺完整Quality前置的同条件诊断，不接受全库或豁免原红。Noq2保护移除同fixture也红：双方reporting保持both时，服务端响应前实际发出一条不允许的0-RTT地址报告；基线同命名绿。iroh-noq-zero-rtt-exit-comparison-v1.json。迁移账目v4为1项上游替代、2项保留、57项待查。

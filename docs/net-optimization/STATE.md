@@ -1,11 +1,17 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-12 09:27 UTC。用户暂停后已明确“继续”，执行已恢复；用户随后澄清“我没有验收 打错了”，没有新Lab/真机验收结果，完整目标“完成计划”**未完成**；范围仍为[PLAN](PLAN.md) N0–N5，root串行，不派发子智能体。
+更新于 2026-11-12 09:44 UTC。用户暂停后已明确“继续”，执行已恢复；用户随后澄清“我没有验收 打错了”，没有新Lab/真机验收结果，完整目标“完成计划”**未完成**；范围仍为[PLAN](PLAN.md) N0–N5，root串行，不派发子智能体。
 暂停前后完整原STATE逐字保存于[历史状态](HISTORY-20261112-pipeline-start-and-pause.md)，SHA256 `9a774440c70f3c3ca851b37aadcce9a867a2a22ca9bb687016a1091cf7856948`；该历史继续链接更早完整证据，不按摘要覆盖未提交内容。
 
 ## 当前执行与下一步
 
-**当前：完整node旧源对照在途，稳定升级未晋升。** **turing-20261112T092140Z-5216816b**，source **dc73837e** / tree dabe98b2 / snapshotfc610303，沿与新源相同control **340b3243275f961baf2b8c50074908edcf51ede5**，role baseline、1387全库零skip/单线程。先核查现有run，禁止重复提交。新源02807c79完整node原run **turing-20261112T090450Z-bfc82a31** 已终态101/552.029829s，1274过/38失败/75原ignored，12原files/identity/SHA/原group空，stable-upgrade-full-node-failure-v1.json；不记全库接受。嵌套long_load_worker子测试footer保留，不加到1387根人口。20项直接观测Git不识别initial-branch=main；Turing Git2.25.1/tmux3.0a。两项MCP缺KHOR_TEST_MCP_EXECUTABLE；两项账户报runtime missing仅为状态报错，尚不据此唯一归因。当前full-node driver没准备Quality要求的同源CLI、真实agent bundle/运行时/provenance与分进程acceptance，后续须按quality.yml与scripts/run-node-acceptance.py补前置，不能改产品迎合未备齐环境，也不能将38项全归上游。
+**当前唯一在途：真实CLI取消合同前置/执行 turing-20261112T094221Z-91240bdf。** source02807c79 / treef87d31f9 / snapshotdc21d783，control **21b3990597853288b44f1bfef75a4433fa804905**，tasknet-node/revisioniroh14_actual_mcp_workers_v1，pid1489353。目标只补两个先前因缺CLI失败的MCP/remote-cancel命名合同：同源CLI/node test二进制按scripts/native_provenance.py prepare/verify（CLI prior→node）构建；借用源码run-node-acceptance.py的PID/PGID所有权与清理run/require_test_success，每用例独立进程，控制Python sidecar，**不是完整真实agent bundle验收**。已读现有Turing conda Python3.13.13，固定二进制SHA c46ed00dd978dbb20e32eb34d9e16660775b2ed4fc84395a73120804e3e66379，任务内临时wrapper用-E -S，系统环境不改。尚不记编译/合同过，先查询此run，禁止重复调度。
+
+**完整node诊断前后名单完全一致。** 旧源 **turing-20261112T092140Z-5216816b** 原101/636.509801s、12原files完整核验；与新源090450Z-bfc82a31同control340b3243、同1387人口、同75ignored，均1274过/38失败；new-only与baseline-only失败均空。E/iroh-upgrade-full-node-comparison-v1.json，原两个红轮保持；不能据此豁免原失败或接受完整N5。两项明确缺KHOR_TEST_MCP_EXECUTABLE；另外两项账户是runtime状态失败，不能仅按消息唯一归因“未安装”。当前新run只补前两项，其他Quality前置/原失败保持。
+
+**Noq2退出同样证伪。** **turing-20261112T093340Z-deb1f7de** / source79d2ca64/tree373767ae/snapshot25fdf0c0 / controlfc6fe1d1，原101/37.609123s、12原files完整核验。保持双方both、服务端尚未提供握手响应的相同原fixture，移除两道生产保护后ObservedAddr TX=1而应0；原Noq1.4基线467中同命名过。fixture及锁字节不变，仅mod.rs改；noq14-zero-rtt-exit-verification-v1.json与E/iroh-noq-zero-rtt-exit-comparison-v1.json。保留Noq2，ablation不晋升。账目v4：1项上游替代库验证、2项实证保留、57历史条目待逐项退出核查。所有前述run ledger已终态，只有当前094221在途。
+
+**历史：完整node旧源对照启动（现已同红终态），稳定升级未晋升。** **turing-20261112T092140Z-5216816b**，source **dc73837e** / tree dabe98b2 / snapshotfc610303，沿与新源相同control **340b3243275f961baf2b8c50074908edcf51ede5**，role baseline、1387全库零skip/单线程。先核查现有run，禁止重复提交。新源02807c79完整node原run **turing-20261112T090450Z-bfc82a31** 已终态101/552.029829s，1274过/38失败/75原ignored，12原files/identity/SHA/原group空，stable-upgrade-full-node-failure-v1.json；不记全库接受。嵌套long_load_worker子测试footer保留，不加到1387根人口。20项直接观测Git不识别initial-branch=main；Turing Git2.25.1/tmux3.0a。两项MCP缺KHOR_TEST_MCP_EXECUTABLE；两项账户报runtime missing仅为状态报错，尚不据此唯一归因。当前full-node driver没准备Quality要求的同源CLI、真实agent bundle/运行时/provenance与分进程acceptance，后续须按quality.yml与scripts/run-node-acceptance.py补前置，不能改产品迎合未备齐环境，也不能将38项全归上游。
 
 **Noq5退出已真实证伪。** Turing **turing-20261112T091835Z-cb319e57**，sourcee69b137c/tree78b6f96e/snapshot50a79b50，control958dc554，原101/33.786267s、12原files完整核验。4原fixture三过一红：reclaimed合法已分配发送状态ACK误使样本计数5→6，其余保留最大号正常采样/ACK-only/未发送号拒绝均过。两份fixture与锁相对028逐字不变，仅mod.rs移除patch5保护；baseline新Noq1.4全467中的同四命名均过（Mac/Linux）。noq14-ack-exit-verification-v1.json及E/iroh-noq-ack-exit-comparison-v1.json；保留Noq5，ablation源不晋升。迁移账目v3：1项上游替代库验证，1项明确保留，58项仍待退出核查，不把其全部写必要。
 Noq2退出树 **79d2ca64** / tree373767ae / snapshot25fdf0c0，E/iroh-noq-0rtt-exit-source-v1.json，controlfc6fe1d1，仅准备未执行；待当前baseline终态后Turing执行（Mac仍有50GiB门红，不重发Mac）。
