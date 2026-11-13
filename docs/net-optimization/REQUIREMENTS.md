@@ -27,7 +27,7 @@
 | N4.1 | 两端完整路径及不对称可达性 | 实验室 p6 有完整测量；用户已澄清MacLab/Turing同LAN，构建macserver另机且A/B依用户异网报告；A/B公共Relay目录/正文120/120通过，Direct/NAT/v6穿透未验；localhost iPhone历史旧安装版已采样，新候选跨网/换网未接受 | 部分 |
 | N4.2 | 中继整机/出口/登记故障域验证 | 完整baseline曾取证；本轮静态确认北京双URL同机、默认自家登记集中北京，实际双端故障/冷启动仍缺 | 待做 |
 | N4.3 | 单家/双家必要性与成本实证 | 尚未定案 | 待做 |
-| N4.4 | 移动IPv4/NAT映射与IPv6地址/前缀独立或同时变化；Wi-Fi↔移动网、地址族切换、双方与peer-relay移动；缓存/发布/发现收敛 | U12明确；210生产通知真实红→211 Linux/212 Mac原整fixture绿，原1秒不变；215又完成同prefix IPv6实替换/IPv4保持的物理注入校准；Node业务、前缀/IPv4/NAT与真机矩阵未执行 | 部分 |
+| N4.4 | 移动IPv4/NAT映射与IPv6地址/前缀独立或同时变化；Wi-Fi↔移动网、地址族切换、双方与peer-relay移动；缓存/发布/发现收敛 | U12明确；210生产通知真实红→211 Linux/212 Mac原整fixture绿，原1秒不变；215又完成同prefix IPv6实替换/IPv4保持的物理注入校准；当前I2/R普通Release163223Z-b6d7f5c7原3项已闭：同prefix IPv6替换/IPv4地址保持（Node两侧真实阻断IPv4数据）、原包校准、Both与Remote-first共248读全成功，首远端1.22/1.73秒；见MOBILITY-RELEASE。前缀/IPv4/NAT/地址族/peer-middle原4项同源当前在途；双方同时变化、发布/hint与新连接、真机矩阵仍未齐 | 部分 |
 | N4.5 | 有测量支持的中继布局、容量与运维设计 | 部署/采购单列，当前未执行 | 待做 |
 | N5.1 | 每项 vendor 补丁的原因/覆盖/上游/退出条件 | 已升独立产品候选至iroh1.4.1/Noq1.4.0，canonical尚未合。E/iroh-upgrade-patch-ledger-v5.json的60历史项为1上游替代已验、2Noq移除红保留、1 iroh38实际NAT移除红保留、56待退出核查；不得说56均必要。patch38移除前后Mac完整iroh库均198/0/原ignored1，名称与结果一致；真实NAT固定6块/12场景/744读全成功，基线3/3强oracle过、移除臂0/3并有215个cached/actual mismatch，因此在所测当前源保留；见TUPLE-REFRESH-EXIT。部分vendor及应用/物理恢复专属证据见STATE，逐项退出仍未齐。 | 部分 |
 | N5.2 | 稳定短回归、完整矩阵、长时间与重复 | 稳定性前后各5case、600秒与32真实目录请求、原取消及成本回退已闭；最新产品Quality13/13首次通过、唯一middle Debug3/ReleaseABBAAB闭证。原完整NET-16/移动/成本/最终同源矩阵未全齐，不以短绿代全绿。 | 部分 |

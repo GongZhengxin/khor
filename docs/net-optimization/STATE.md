@@ -1,12 +1,18 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-13T16:18:03.580389+00:00。完整目标 [GOAL](GOAL.md) / [PLAN](PLAN.md) N0–N5 **未完成**；逐项缺口见 [REQUIREMENTS](REQUIREMENTS.md)。root 串行，不派子智能体。用户已授权持续实施与远端验证，不因阶段完成停工。
+更新于 2026-11-13T17:05:21.775054+00:00。完整目标 [GOAL](GOAL.md) / [PLAN](PLAN.md) N0–N5 **未完成**；逐项缺口见 [REQUIREMENTS](REQUIREMENTS.md)。root 串行，不派子智能体。用户已授权持续实施与远端验证，不因阶段完成停工。
 
 E=`/Volumes/disk0/Khor/evidence/net`；工作树均在 `/Volumes/disk0/Khor/worktrees/current/`。此前 STATE 逐字存 [HISTORY-through-terminal-direction-launch](HISTORY-20261113-through-terminal-direction-launch.md)，SHA256 `b6712ae6174fb1be910c4f43f4b11424d6be545645358fc2a7d50c63c4eded47`；其中更早历史链接保留。历史 pending/PID 不能用来重新派发。
 
 ## 当前执行与紧接工作
 
-**当前唯一pending为当前I2源IPv6 compile-only turing-20261113T161712Z-1ed9c2c3 / PID560415**，revision current_ipv6_mobility_native_compile_v3、control **a032fff514df739b224ba62ed939105a31539498**。source tree **90a1d7813377d611ea93b3276a36d3876e28e09c** / snapshot **b6cb41a3adcc51abb175d8c92fcc008d7341eedc**。E/current-ipv6-mobility-native-compile-plan-v4.json、E/ops/verify-current-ipv6-mobility-native-compile-v4.py；完成后先collect/identity/native来源闭证再绑定运行。无其他远端任务/本地协调器，root唯一ledger writer。
+**当前唯一pending为同源原4项换网普通Release运行 turing-20261113T170134Z-6a92a593 / PID599981**，revision current_replug_original4_release_v1、control **8ffcfaa8f977576939d79dc0049360600d8f68ec**。同tree90a1d7813377d611ea93b3276a36d3876e28e09c/snapshotb6cb41a3adcc51abb175d8c92fcc008d7341eedc，产品源未变。协议E/current-replug-runtime-plan-v1.json SHA **508f2799f7bf4ba433fe63f4c896264a49deaa5979c69fe7078c65c9477b0f8d**；固定IPv4/NAT、双栈/前缀、IPv4→IPv6-only远端先发起3项＋peer-middle自身换网1项，每项124读含2setup，总496；无替代/运行编译。原read30s、Node setup120s/scenario240s、peer setup150s/scenario360s/原前置hold预算45s/后观察60s保持；owned前三300s、peer600s仅覆盖原scenario+topology/cleanup。peer native可用性与carried_observed_again分开，摘要不是包级最优性证明。完整后collect→verify-turing-record.py→E/ops/verify-current-replug-block-v1.py；若partial/unsafe先保留并分类，不硬跑完整块验证。root唯一ledger writer。
+
+**同源完整netlab producer 165200Z-a2a62249 0/234.868713s**已闭21files/identity/native来源，CLI实际fresh=true、精确SHA **7e8c52bc4d21a3471e3c0592ad1a874147a7d024c067bda23a7f4d08213b34df**；完整test SHA **e4f2f52c7c1ff7f17b5e970c20c1aab5d40d5620dd118fc8491631ee8fa84913**。E/run/current-full-netlab-native-compile-verification-v1.json。未改source/fixture，仅编译已有--test netlab；同test-root dev依赖scope重用旧CLI证明，未独立apply bin准备、未touch main，严格validator不变。这次完整fixture重用核心库与CLI，不需每种场景改source再重建。E/ops/fix-same-source-full-netlab-prepare-v2.py记录发起前修正；v1草案未stage。闭证协调器PID51522已完成退出，state E/full-netlab-native-close-coordinator-v1.json phase=completed、sole_ledger_writer=false；无运行中的本地协调器/另一个远端任务。
+
+**当前I2 IPv6原3项 163223Z-b6d7f5c7 0/108.146424s**已闭15files/identity/native来源/CPU/owned，原7正＋1负包校准、Node Both/Remote-first各124/124，合248读（含4setup）全部成功。实际IPv6同prefix替换/IPv4快照不变、Node两侧eth0 IPv4真实nft阻断、旧新包检查、远端先发顺序及原30/120/240/300s均核。换址首次Both a→b/b→a **258230/1217614us**；Remote-first b→a **1732189us**，随后a→b13665us。各只有1次，不作SLO/分位数/完整N4接受。E/run/current-ipv6-mobility-block-verification-v1.json、[MOBILITY-RELEASE](MOBILITY-RELEASE.md)。原native producer161712Z-1ed9c2c3 0/550.152129s/Rust8m20s/23files闭，IPv6小test fc36e3fe、CLI同7e8。测试树clean a5de56858c7ad727fd6d5f6bfe4646e1bf3295d0，两个bridge35行，原mobile/mobility/lab/attempts逐字未改。
+
+
 
 持续会话 **154840Z-ed908e42 0/1000.028494s**已闭14files/identity/native来源/CPU/全部owned清理，**4800/4800 ok**，原shell/capture各同一真实PTY持续10窗口，各2400ok，无bulk；capture2404条连续无丢前缀、输入/回复各1201、epoch bracket120ns，替代/运行编译0。E/terminal-persistence-comparison-verification-v1.json与run下terminal-persistence-block-verification-v1.json。TTY scheduled p95原/capture **303409/303297us**；目录 **305919/305500us**；仅描述，不重现旧超时、不证明修复或bulk唯一因果。测试树clean **04c14e88f599ea522efabe84fd23c035104f7fd1** / tree3f6cb2c3bedfd350f06315cc7cb8a70d742c008f；producer154317Z-37b038ce 0/234.732497s、22files闭，testSHAbb4447a85abe251bac4fb9ce8e269c6f3b381c60a114897548f1e6df8fdc4fe0、CLI a7原样。7纯元数据检查绿、helper原4远端检查重用。
 
@@ -20,7 +26,7 @@ IPv6构建前两个控制器失败已分别闭证并保留：**160635Z-a6060fe0 
 
 [TERMINAL-DIRECTION](TERMINAL-DIRECTION.md)保留解释边界：at_ns在I/O后采，是完成上界；只有早于观测超时下界的reply_written证明程序已写出；晚stamp不能证明晚到/晚写。summary只验证第一summary前连续无丢前缀，保留其后原行；缺input最多证明程序截至summary未处理完整行，不推成包未到内核。要求同time namespace、epoch bracket≤1ms、无读错/溢出。helper远端4绿、元数据合成检查6绿，不代业务修复。
 
-当前IPv6任务设计：E/current-ipv6-mobility-design-v2.json，复用原packet校准1项与Node IPv6 overlap两项，固定3场/248预期真实目录读（含每个Node场景2个setup读）。准确I2 runtime不变（含R窄修复），独立树khor-net-current-ipv6-mobility-v1 / experiment/net-current-ipv6-mobility-v1，HEAD3093f866、2 staged；只加Release入口/bridge，原mobile.rs、mobility.rs及helpers不改。tree90a1d7813377d611ea93b3276a36d3876e28e09c / snapshotb6cb41a3adcc51abb175d8c92fcc008d7341eedc；当前准确control/plan/verifier/run见本页顶部，先核实际source-refs，不重派；计时与编译分离。原30秒读/120秒setup/240秒scenario/300秒owned保持，不代UX SLO、双栈fallback、前缀变化/双端/peer-relay/真机验收。新R Release CLI实际SHA须由producer核出，不沿用A a7；该版验证器已明确绑定I2 hop源而非要求旧CLI。
+当前IPv6任务设计：E/current-ipv6-mobility-design-v2.json，复用原packet校准1项与Node IPv6 overlap两项，固定3场/248预期真实目录读（含每个Node场景2个setup读）。准确I2 runtime不变（含R窄修复），独立树khor-net-current-ipv6-mobility-v1 / experiment/net-current-ipv6-mobility-v1，clean a5de5685；只加Release入口/bridge，原mobile.rs、mobility.rs及helpers不改。tree90a1d7813377d611ea93b3276a36d3876e28e09c / snapshotb6cb41a3adcc51abb175d8c92fcc008d7341eedc；当前准确control/plan/verifier/run见本页顶部，先核实际source-refs，不重派；计时与编译分离。原30秒读/120秒setup/240秒scenario/300秒owned保持，不代UX SLO、双栈fallback、前缀变化/双端/peer-relay/真机验收。新R Release CLI实际SHA须由producer核出，不沿用A a7；该版验证器已明确绑定I2 hop源而非要求旧CLI。
 
 ## 产品源与当前接受边界
 
