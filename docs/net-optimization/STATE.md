@@ -1,6 +1,6 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-13T04:12:21.138564+00:00。活动目标仍是[GOAL](GOAL.md)和[PLAN](PLAN.md)完整N0–N5，**未完成**。本轮继续实际推进Release性能与最新Mac Lab验收，root串行，不派发子智能体。
+更新于 2026-11-13T04:33:54.787160+00:00。活动目标仍是[GOAL](GOAL.md)和[PLAN](PLAN.md)完整N0–N5，**未完成**。已发现Release高BDP共存原红，不能验收；root串行。
 
 此前STATE逐字保存于[完整历史](HISTORY-20261113-through-product-quality-and-sole-peer.md)，SHA256 `778295b28a3de7a9d18c732891cc257e2e8335a802d59701d68ad369420f134d`；该历史继续链接全部更早收据、失败、中断和旧协议。历史中的“在途”只按原时点理解，不重启已关闭批次。
 
@@ -80,3 +80,11 @@ E/workload-release-comparison-plan-v1.json固定公开main对117c39，12份共�
 原未执行runtime协议v1把旧冷TCP平均吞吐误作唯一模型准入；首次物理case前已逐字留存并以 **E/workload-release-comparison-plan-v2.json** 明确纠正，沿既有MODEL-DECISION分层准入，并增加每arm独立UDP case，preflight共5个（2owned guard+lowTCP+highTCP参照+highUDP）。不改原TCP断言/区间/退出结果；若仅旧冷TCP平均吞吐门红，仍原Rust101/原controller1，不冒称其绿；必须完整TCP双payload/68echo/server/300ms RTT/实际几何和独立UDP人口/pacer/容量全验才允许应用测量。队列/burst/datagrams与旧校准逐字相同；capacity仅capture可见性变pub(super)、正文同，双方仍做fresh校准，不用旧数据代新。
 
 baseline preflight040811Z-091f51be已原件收齐/identity/独立data审计/ledger闭：两个真实取消guard与lowTCP、highUDP通过，highTCP原红，平均35.541/35.918Mbit，RTT300229μs、完整70操作/双payload及几何过；UDP两个方向steady48.30912Mbit、每方向145833/145833发送/无pacer skip，全部丢包分母保留。原return1不改；专属proof给**分层模型准入true**，非产品/完整N3接受。candidate preflight041049Z-1d454085在途，以实际progress为准。之后每case原raw人口、超时、阻塞、取消/清理必须全留，缺人口不能补零或只挑成功算p99。
+
+### 实时关键红与下一批源码准备（2026-11-13T04:33:54.786857+00:00）
+
+Release business首baseline041330Z-0ae9a3ec low/high均过。首candidate041753Z-362039e0 low过，**high原Rust101**：720原逻辑记录为600ok/2timeout/118blocked；bulk terminal index1与directory index2各超2秒，其后该phase118 terminal记录阻塞，16/192MiB实际完整payload照实保留，不能抹掉原红或把blocked零耗时当低延迟。后一candidate042344Z-6df2674e两profile原绿不抵销首红。原始/独立metadata全核，所有owner干净；coordinator仍按原固定顺序继续，不增替代轮。root曾在未读首candidate最终proof时错误更新“首组候选通过”，已向用户明确更正。新候选**未接受**。
+
+失败发生在bulk初段；客户端借用probe在三个phase最大lag1857/2366/3266μs、相邻tick最大20.8/20.9/21.9ms，不支持客户端Tokio整体2秒停顿这一解释，**不证明resident/传输/整机原因**。终端断开/重连也未由该数据独立证明。先闭完整固定人口，再设计单一诊断/修复对照，不因后续绿忽略红。E/ops/summarize-workload-release-v2.py已加完整分母、失败/缺失拒绝误判、有限n nearest-rank分位及完整文件独立计量；两个业务超时不能把真实完整文件误记未完成。stdlib合成边界守卫通过，非产品运行。
+
+新test-only树 **khor-net-sole-cache-v1 / experiment/net-sole-cache-v1** 基于干净117c39，三新测试文件staged（未提交、未format/编译/运行）。E/sole-peer-cache-physical-plan-v1.json在新物理case前冻结4case×3fresh：unusable第二腿hint（明确null不可解析、非字面删除字段）、stale Direct第二腿、X历史Direct、真实M暂停Y→X实际失败→恢复M-Y后新显式X读取；只用现有公开DeviceDoc/store与pause API，真实Direct/Relay两腿/隔离/唯一marker，hint前后保持，无prod hook或适配transport。恢复阶段从unpause开始同一总5秒，含middle-ready与最后读取，X PID不变；初始失败不得重试重放写。该批**只准备源码**，不能冒充NET-16已过；真正缺字段、多middle、递归/未信任等其余矩阵仍待。N3 coordinator运行期间不在Turing编译/测试/动cache，不动性能源I/B/C。
