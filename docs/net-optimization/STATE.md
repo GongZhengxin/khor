@@ -82,3 +82,12 @@ baseline low/high各3/3；candidate low3/3、high **1/3**。candidate high共192
 copy-wake消融source已冻结 f5faf2a2fef7fd64f09908fc53c73b24bb2eae4d / 8780bf503d753b820a7236931357b2dcebfa42a6，W所有更改已staged。library控制39ffdc8079f5bbe4bf7f023963e51ca2ce41e545，run063044Z-bf939c7b已0/154.431210s、完整iroh lib **198/0/原ignored1**、0filter，15files/metadata实际vendoredNoq-proto1.4路径与iroh1.4.1/noq1.4/source/hash/identity/owner核、ledger闭。Graph旧a3e07且不覆盖vendor，定向diff/源码人工核补，不擅建CodeGraph。编译约含下载跨平台metadata的开销；未来metadata应filter host。只是库行为，不是实际spike/黑洞/Release性能或N3接受；Noq算法本轮无diff，不重复其原已闭whole suite。
 
 T新增sp7源码和 E/sole-peer-cache-resume-plan-v3.json 已预先固定3、替代0：10s setup有界等实际M错误包含peer_paused_refusal，成功的旧缓存响应/无关超时不算策略拒绝；恢复时M实际可用观察也含在原总5s，然后一次新X业务读。原sp5/sp6及所有分母保持。当前仅新增sp7源码（staged）待remote格式，**无v3编译/runtime**。预格式source9a2b273289c8d6df030d250f5732fc274fb759d1 / 057b0bbcbdca90f0621091ed53c413205342e6b0，controlad92cab61aed98696ca776f4db0b80cb3757739d。prep已经提交exec31550（仅提交）；真实run句柄以最新receipt为准。root唯一ledger writer，先核当前prep终态再发新任务。
+
+
+### NET-16应用策略后恢复：有效三红已闭（2026-11-13T06:55:00.619059+00:00）
+
+T3/sp7格式063455Z-c208e81b、编译063838Z-cdb6f871均成功，tree8ff93012943b0b6c6b598142559b74e682e58829 / snapshot2c66f25350ecc698cc91b4dc180717261a3e5d4b；T三个测试文件staged，产品117c39未改。原native verifier/20unit与同producer CLI/test/source/identity/hash/owner全核。CLI仍f129a57c，证明fixture修正未改产品。
+
+runtime064222Z-57c213de，controlf4f202bf62ab9bfed86ddfec69d063bba8cc19a9，原1/114.475143s、18files/source/hash/identity/原group空与三个case-owned干净，ledger已闭。三个case前置**全部为真**：实际M暂停拒绝、X负向读、五次X→M真实读、首腿live、same caller PID、hint held；unpause后M在441358/337646/554797us读到真实Y内容，但一次新X请求仍耗尽原总5s（5008873/5026542/5008990us），实际两腿未形成。每case仅暂停期间有一次hop(tried1)，恢复后无新hop。proof E/turing-20261113T064222Z-57c213de/sole-cache-resume-physical-verification-v3.json。**这是有效产品恢复红，非sp5/6前置失败。**原red全保留，不追加不变病例。
+
+当前优先查明/修复NET-16失败缓存对救通的压制。已核hop_ahead全走每candidate cooling过滤，MISSED_FIRST30s；journal::By区分Pump/Forced/Ask，有限deadline单独不能代前台来源。尚未宣称唯一根因或已修复。需要隔离新candidate，对活首腿的有界需求恢复放行，同时保留背景指数退避、并发/epoch/期限/策略/信任/单跳及写不重放。W消融库198过仍非物理/性能接受，暂后于确定的NET-16红。root唯一ledger writer，无pending。完整N0–N5未完成，I原N3高BDP拒绝不变。

@@ -31,3 +31,10 @@ sp5所有三次middle_down=false，前两次first_leg_up=false，末次middle_re
 runtime061644Z-077fb72d、control59e3774eb74c7311ff446df472d458441302c715，原1/100.191668秒；3固定case均在“actual M-to-Y policy refuses target content”前置断言退出。各真实M→Y和X→M正控制成功，紧接外部暂停API后的M→Y请求仍成功（68802/66116/65028us）。三次未进入X→Y负向或恢复测量，不能称产品负向缓存红，也不能当恢复通过。18原files/source/hash/identity/owner核、ledger闭；所有日志/3个原Rust失败保持，替代0，专属proof E/turing-20261113T061644Z-077fb72d/sole-cache-resume-physical-verification-v2.json。
 
 静态核pause.rs：resident进程使用自己的POLLED缓存，外部observer setter更新其文件/自身缓存；link.rs的PAUSE_POLL=500ms。正常跨进程轮询窗口是当前时序解释，尚未直接捕获resident cache内部状态。下一版必须有界等待实际M请求明确被暂停策略拒绝，才开始X负向读；恢复时也须在**原同一总5秒内**等实际M恢复内容，再做一次新X读取。不是把业务期限加长，也不是重跑旧v2挑绿。E/sole-peer-cache-resume-v3-proposal.json只为新方案提议，尚无新Rust/source freeze/编译/运行。
+
+
+## v3/sp7：前置成立后的产品恢复三红
+
+T3 tree8ff93012943b0b6c6b598142559b74e682e58829 / snapshot2c66f25350ecc698cc91b4dc180717261a3e5d4b，只新增有界等待实际暂停拒绝，原5s恢复期限保持。格式063455Z-c208e81b 0/47.923686s、compile063838Z-cdb6f871 0/75.911366s；相同产品CLI f129a57c，20unit及原native proof核。
+
+runtime064222Z-57c213de原1/114.475143s，固定3、替代0、前置3/3成立、恢复0/3。M恢复真实内容441358/337646/554797us；X总恢复5008873/5026542/5008990us后仍timeout。首腿五次读/活路、PID及hint不变，无新hop journal（仅暂停时一次tried1）。三case owner干净，18file/source/hash/identity/ledger闭，准确proof E/turing-20261113T064222Z-57c213de/sole-cache-resume-physical-verification-v3.json。证明产品恢复失败，具体失败缓存机制待隔离修复验证；旧sp5/6失效前置和旧sp2/3/4各3绿均保留，不重置分母。
