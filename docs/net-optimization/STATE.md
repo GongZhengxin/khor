@@ -6,7 +6,9 @@
 
 ## 当前执行器与紧接工作
 
-当前无pending，未有后台协调器。Relay可用性隔离固定6场 **132935Z-b055e94a 1/1161.211608s**已闭18files/identity/native来源/CPU/全部owned清理。control78f4657adb796765bf3317a044d2829ba0296096；协议SHA d901305ab1f394b08c403d9478475955fef5aec10f465a9408a6064b51426983。六场前置均有效、4320完整意图、替代0、运行编译0。可用Relay组原1/3、2095ok/2timeout/63blocked；不可用组3/3、2160ok，6个192MiB文件均完整。两次原2秒TTY超时分别idle_after index82与idle_before index93（后者起始调度lag10.444035秒），不能单按大文件挤占带宽解释。bulk TTY两组360个全成功，但scheduled p95 **5.874877/0.336874秒**；目录 **0.786266/0.506660秒**；文件中位23.302977/23.427441Mbit/s。失败相位的成功分位数是条件统计，blocked非网络超时。
+内建选择器控制的compile-only已按E/builtin-selector-native-compile-plan-v1.json派发；准确新run/PID核source-refs唯一pending与receipt，不重派。control **bac52241d515e6bc9fcdbc71cae14926d6c3a942**，source tree **ceca08abc132f807e74fe0b463a231b26d942645** / snapshot **b41ec41e2d76e0b753562bafe90c5737f07aebe1**，worktree khor-net-builtin-selector-v1 / experiment/net-builtin-selector-v1，HEADf6b9、1 staged。只删endpoint的RoadOrder注册一行；BBR、vendor、全部夹具与配置逐字原A，内建仍含vendor补丁且默认Relay=backup，仅诊断、不晋升。预冻E/builtin-selector-design-v1.json：当前RoadOrder/内建/内建/RoadOrder/RoadOrder/内建六场，所有Relay可用，原4320意图/6文件/2秒caller及资源门保持。producer闭后才绑定固定runtime。无后台协调器。
+
+上一Relay可用性隔离固定6场 **132935Z-b055e94a 1/1161.211608s**已闭18files/identity/native来源/CPU/全部owned清理。control78f4657adb796765bf3317a044d2829ba0296096；协议SHA d901305ab1f394b08c403d9478475955fef5aec10f465a9408a6064b51426983。六场前置均有效、4320完整意图、替代0、运行编译0。可用Relay组原1/3、2095ok/2timeout/63blocked；不可用组3/3、2160ok，6个192MiB文件均完整。两次原2秒TTY超时分别idle_after index82与idle_before index93（后者起始调度lag10.444035秒），不能单按大文件挤占带宽解释。bulk TTY两组360个全成功，但scheduled p95 **5.874877/0.336874秒**；目录 **0.786266/0.506660秒**；文件中位23.302977/23.427441Mbit/s。失败相位的成功分位数是条件统计，blocked非网络超时。
 
 完整[RELAY-AVAILABILITY](RELAY-AVAILABILITY.md)及E/relay-availability-comparison-verification-v1.json。实际CLI与原超时C producer040254Z-2e151f7f逐字同SHAa7e3565f，绝非新修复；只收敛到可用Relay/传输/选路交互，未定具体根因，不建议产品禁用Relay。源实验已clean commit **f6b9a75633485b8ab29f187479506f186ba88618**，tree953fd88f5f39fa99bc726296e5a84559996ce5cc、snapshot90d743c8保留，旧D前置失败原件保持。
 
