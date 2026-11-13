@@ -110,3 +110,9 @@ compile-only control **e7343cf520f6c3ade6fe24e82b342de05af51048** / E/ops/worklo
 v2 control **5a8c50ab20998e13635802e81c88e947c1ac0c2b**改用每run唯一refs/khor/qlog-release-compile/<run_id>；旧保全目录存在时按原SHA/owner/只读模式核验后复用，不覆盖。当前真正native compile-only为 **045808Z-c6558108**，exec83973已仅提交终态0，remotePID **3340475**/child **3340905**，receipt E/turing-20261113T045808Z-c6558108/receipt.json。05:00UTC仍running，已实际编译n0-qlog/Noq/iroh/khor-net等；Root唯一ledger writer。编译源码仍Q d372d293/7e328dc5；不是新测量轮、不动原失败分母。
 
 后续数据工具已source-only准备：E/ops/verify-qlog-release-compile-v1.py、workload-qlog-runtime-v1.py（COMPILE_BINDINGS仍空，必须等真实producer闭后填入/另冻control，绝不能直接跑）。runtime采用原native ownership/subreaper，700MiB trace保护只向Popen-owned test group发TERM；若触发则保留全部原trace/错误并停止，不降collector门或当业务根因。原首caller2秒/whole file240秒/owned600秒、三fresh上限保持。test-onlysole-cache v1仍仅本地源码、未fmt/编译/运行。
+
+### qlog三轮已闭、未定因（2026-11-13T05:29:59.701796+00:00）
+
+详[WORKLOAD-QLOG](WORKLOAD-QLOG.md)。compile045808Z-c6558108已0/617.837255s、19files/原native Release opt3/qlog feature/20first-party units/同producer CLI与test/source/hash/identity/group空闭证。runtime control64e1374e650659c2bcd0dc9506ef684a23929ac9按其准确ELF冻结；固定051025Z-5907dd5c、052027Z-1edb3353、052344Z-509f2cd6各720ok、三whole file，总2160/2160，替代0。8trace/case，分别326868694/333501091/330356066字节；EOF末条不完整6/6/5均明确标注/hash保留，没有触发采集cap。三次未复现原超时，**对原故障未定因**，停止追加相同instrumented试验；原unlogged候选high1/3与3timeout/232blocked保持，117c39仍拒绝，完整N3及N0–N5未完成。
+
+coordinator E/ops/run-workload-qlog-final-two-v1.py exec68965/PID40415已终态0，progress/results completed、source-refs无pending，root恢复唯一writer；不重启旧任务。下一步检查真实TTY数据流及调度/恢复改动，形成有界新诊断或消融问题，再动参数；sole-cache准备源仍未编译/运行。元数据最新稳定iroh1.4.1/Noq1.4.0已于05:25UTC独立registry复核。
