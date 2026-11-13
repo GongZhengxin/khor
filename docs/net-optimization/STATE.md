@@ -1,18 +1,20 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-13T12:41:53.615174+00:00。完整目标是[GOAL](GOAL.md)、[PLAN](PLAN.md)的N0–N5，**未完成**；逐项缺口见[REQUIREMENTS](REQUIREMENTS.md)。root串行，不派子智能体。
+更新于 2026-11-13T13:13:54.570622+00:00。完整目标是[GOAL](GOAL.md)、[PLAN](PLAN.md)的N0–N5，**未完成**；逐项缺口见[REQUIREMENTS](REQUIREMENTS.md)。root串行，不派子智能体。
 
 此前STATE逐字归档[HISTORY-20261113-through-current-noq-matrix](HISTORY-20261113-through-current-noq-matrix.md)，SHA256 `8ea6c57858cbf72d124e9ee81eb1fdc3a8c627deb23db89ea3aedb0b55667944`。它的pending/进程描述只适用于原时点，不能据历史重派；更早历史链接亦保留。本页是当前执行入口。
 
 ## 当前执行器与紧接工作
 
-唯一pending是Direct/Relay配置隔离的普通Release compile-only：**turing-20261113T124033Z-8cfa87a1 / PID212526**，receipt=/Volumes/disk0/Khor/evidence/net/turing-20261113T124033Z-8cfa87a1/receipt.json，control **c94834f2c8c6949713eb5e2b538d88af9b36459f**。先核真实remote execution/PID；终态collect→identity→实际producer核验→ledger闭，不重派。source-refs由root唯一writer；旧本机20826/53952两个调度器均已实际退出，无后台协调器。
+当前无pending任务、无后台协调器。root唯一ledger writer；旧20826/53952已实际退出。先前STATE的compile pending已终态闭，不重派。
 
-源在khor-net-direct-isolation-v1 / experiment/net-direct-isolation-v1，HEADd6b97c3d、2文件staged；准确tree **59639aac742bd404fc9bea1618f29345907ac238** / snapshot **5a41f54d37d8755cb54e31478e61a5cddff6c2f4**。endpoint.rs已逐字还原I117的BBR，其他产品runtime亦与I117相同；不含R的hop改动、W唤醒或M38移除。变化仅实验夹具及验证工具。E/direct-isolation-{source,design}-v2.json、E/direct-isolation-native-compile-plan-v2.json。原123643Z-635d197d 1/46.232886s为格式准备红，10files/identity/空owner闭，Rust/业务0；v2仅应用原导出格式补丁，原件保留。
+Direct/Relay配置隔离producer **124033Z-8cfa87a1 0/596.350447s**，普通Release、Rust9m06s、20files/identity/native provenance已闭；source tree **59639aac742bd404fc9bea1618f29345907ac238**，snapshot **5a41f54d37d8755cb54e31478e61a5cddff6c2f4**。test SHA5ba6fa9ea5d828be2fc782fdaac5100f5dcc3474df0d367c1f36e7a260078f98；CLI a7e3565f15ed15d59f5215bceeb3900d153d053dd853846f623d86efbe6e4ac9。实验树khor-net-direct-isolation-v1，HEADd6b97c3d、2 staged；runtime逐字I117 BBR，不含R/W/M38。
 
-问题是允许已配置/实际发布Relay候选，是否改变同一BBR下真实Node交互长尾。预冻normal/direct/direct/normal/normal/direct，6场、各原720记录/192MiB/2秒caller/600秒owned cap，替代0；原before/after Direct、文件/PTY/重叠/全部功能门保持。两个真实endpoint.json须存在且正确解析，normal发布本Lab真实Relay，direct_only不发布Relay。配置/发布不证明同时有两条活Noq copy，须保留journal并限定归因。Main用于目录/文件、Tunnel用于PTY本来就已分连接，不能声称新建这种分离。**仅夹具诊断，不建议在产品禁用Relay**。
+runtime **125829Z-17b3241d 1/195.119839s**，control **801cd2cb052e214505041a7d5598b9e2cc385c8b**，14files/identity/全部owned清理已核，source-refs已闭。固定6场仅执行2场：normal第1场原门通过、720/720业务ok、192MiB完整，bulk目录/TTY scheduled p95 **655612/317657us**，文件25.192292Mbit/s；第2场在计时前前置失败，无manifest/sample/bulk；其余4场未执行、替代0。完整比较**无效**，E/turing-20261113T125829Z-17b3241d/direct-isolation-partial-verification-v1.json；原raw保留，仅按预冻适配移除第1场一个非业务控制记录作原解析。
 
-编译器在改源前以原native_provenance复核并核存上批Noq model选中exe+dep-info；复用旧可信完整CUBIC producer110223Z-34e7344c与model120149Z-9c128417的实际unit key/哈希，原凭据不改。46项验证工具回归只在两份源SHA相同才复用，不再重复。producer闭后冻结实际runtime控制再计时；本配置隔离尚无runtime结果。
+原因已由实际源码确认：node::chosen_relays明确在清单为空时关闭only_mine，恢复内置Relay，是已有兜底设计；并非产品已违反禁用设置。此前把空清单视为禁用开关是夹具假设错误。不能以此构造Direct-only性能结论，也不新增产品禁用开关。紧接改为**相同配置、Relay可用性隔离**：仍只配置相同Lab Relay，两组产品runtime/BBR一致；在实验fixture中停止故障组的真实Relay并核实端口关闭，测有/无可用Relay时原真实Node工作负载。必须先冻结修改后协议/前置，再构建与固定执行；原失败及6场计划保持不变，不回填未执行场。
+
+原配置/发布不证明两条活Noq copy；新实验也必须限制因果解释，保留journal。Main目录/文件与Tunnel PTY本来已分连接，不能声称是新设计。仅实验诊断，不建议产品禁用Relay。编译/计时分离，计时不编译，不改原720记录/192MiB/2秒caller/600秒owned/Direct前后及功能门。
 
 ## 已闭Noq分量矩阵：不全局切CUBIC
 
