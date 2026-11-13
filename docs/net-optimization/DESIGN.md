@@ -1,6 +1,38 @@
 # 网络设计与职责边界
 
-2026-11-11 更新，实施中的设计记录。N1历史段落保留各自源码时点；当前实现、通过范围与未完成项以 STATE 中准确源码证据为准。
+2026-11-13 更新，实施中的设计记录，完整最优设计尚未验收。下文带旧源码编号的段落记录设计演进；当前实现、通过范围与未完成项以 STATE 中准确源码证据为准。
+
+## 当前收敛的结构与决策
+
+候选 `integrate/net-product-v2 @ 3093f866` 使用 iroh1.4.1 / Noq1.4.0，runtime 与已测 R9081b94d 相同，尚未晋升到 canonical feat/net。版本升级不表示已经移除本地补丁。GUI 与 workflow 仍冻结在公开 main c3b098bd，本轮没有界面、安装或发布动作。
+
+```mermaid
+flowchart TD
+    Request[调用方：一个总期限与取消所有者] --> Wires[Node Wires：复用、有限拨号、退役]
+    Wires --> Main[Main连接：目录与文件流]
+    Wires --> Tunnel[Tunnel连接：终端流]
+    Main --> Paths[iroh：共享路径事实与迁移确认]
+    Tunnel --> Paths
+    Paths --> Policy[RoadOrder：有效性、速度收益与稳定保持]
+    Policy --> Transports[IPv4 / IPv6 / Relay / SSH / peer relay]
+    Transports --> QUIC[Noq：ACK、拥塞、丢失与流字节重传]
+    Wires --> Recovery[无目标路时：有限peer relay准备]
+    Recovery --> Transports
+    Address[网络变化：地址发布、发现与上下文失效] --> Wires
+    Address --> Paths
+```
+
+Main/Tunnel 的分离本来就存在，不是本轮新增隔离方案；同一 peer 的质量共享也不意味着每条连接都有同一组已开放路径。目录与文件在 Main 内的排队、实际已发送字节以及外层承载仍需分别测量。
+
+| 问题 | 当前决定及依据 | 仍未据此证明的事情 |
+| --- | --- | --- |
+| 唯一存活邻居被旧失败冷却挡住 | 有限 Ask/Forced、无目标路且首腿真实开放时，复用原3秒hop预算作为实际再试最小间隔；准备、等待与业务仍共用原调用期限。背景比较与死首腿保留退避。R物理3/3恢复及Linux/Mac相同92项通过 | 全部NET16、多middle移动、全网恢复成本 |
+| NAT映射变了但共享tuple过时 | 保留iroh patch38。当前R/M固定6块，R强属性3/3、删补丁0/3且215次cached/actual mismatch；数据交付成功不能替代真实新tuple被选中的合同 | 所有IPv6隐私地址/前缀、双端与middle同时移动 |
+| 拥塞控制是否全局换CUBIC | 不换。当前Noq固定矩阵里2%丢包CUBIC/BBR吞吐中位0.326/10.067Mbit/s，0%的小burst尾延迟也非CUBIC全面占优 | BBR已最优，或Noq模型已解释真实Node的2秒超时 |
+| 是否扩大copy唤醒 | W消融在普通Release仍有原2秒超时和秒级终端排队，拒绝作为修复 | 开更多副本能解决混合负载 |
+| 是否禁用Relay以减少卡顿 | 不新增产品禁用开关。空only_mine清单会按已有设计恢复内置Relay；旧隔离实验前置无效。当前只在私有实验里保持相同有效配置、改变真实Relay的可用性 | 发布了候选就存在活的多路径copy，或生产关闭中继值得采用 |
+
+当前BBR测量包含现有Noq本地补丁，不能叫作“未修改的上游BBR”。选择最新稳定版本、保留哪项补丁、最终选哪条路分别需要证据。待完成的关键决策仍是：真实负载下的质量与稳定性、同连接调度和进一步隔离的收益、1/3/5设备开销、移动恢复与手机能耗，以及逐项custom退出。
 
 ## 体验目标和决策顺序
 
