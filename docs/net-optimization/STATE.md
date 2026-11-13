@@ -1,6 +1,6 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-13 02:14 UTC（下列实际收据时间优先）。用户“定好目标，开始”已恢复执行；完整目标 [GOAL](GOAL.md) 与 [PLAN](PLAN.md) N0–N5 **未完成**。
+更新于 2026-11-13 02:21 UTC（下列实际收据时间优先）。用户“定好目标，开始”已恢复执行；完整目标 [GOAL](GOAL.md) 与 [PLAN](PLAN.md) N0–N5 **未完成**。
 用户ToDesk级体验、iroh/Rust极致优化及原约束均已记入GOAL/PLAN v3。root串行，不派发子智能体。目标服务旧paused状态不覆盖本次明确恢复授权。
 
 此前STATE逐字保存在 [上轮完整状态](HISTORY-20261113-iroh-recovery-and-stability-preparation.md)，其中继续链接所有更早历史、原失败、收据及冻结输入。
@@ -12,15 +12,17 @@
 
 已建立独立集成树 **khor-net-product-integration-v1**、分支 **integrate/net-product-v1**。最初基于本地main57a69；随后核实其是公开main **c3b098bdbf52a9b3b38e887ae74b90155292b544** 的祖先，已将实际公开main合入本任务集成树，绝不将旧GUI候选当最终产品。集成merge **a3e07d34133b3a1b4d4ee66d82fd8d0cab37436e**、tree **da403915d443fe2e52f5f0a2a4d32030dd12244b**，自动合并无冲突，apps/逐字保留公开main；三份锁的iroh1.4.1/Noq1.4.0一致。原feat/net运行时不变，用户main、已安装App、其他任务Lab23961均未动。集成源码尚未经过完整Quality，不晋升或发布。
 
-已同步本轮文档并冻结单父验证源 **117c39e5432741198c924177fae1775ff292eada**，tree **ace4fd8223ed7fcd8d2b29477d9e651a2df53ff2**，唯一parent为公开main c3b098。完整本地merge链保留于 `refs/khor/net-integrations/product-v1-merge` →1cd5092f；集成树HEAD现在117c39且clean，apps/及.github/逐字等于公开main。只推独立 `colehank/khor:verify/net-product-v1`，原生完整Quality **43348869616** 已于01:59:19 UTC FIRSTATTEMPT启动，suite=all/interaction_scope=all，API核准确head/event；截至本次更新10job成功，GUI/node-native/mac-updates仍运行。E/net-product-integration-v1.json为权威收据，不因网页fixture或先前3b原生probe宣称本集成接受。没有main/tag/release/已安装App操作。
+已同步本轮文档并冻结单父验证源 **117c39e5432741198c924177fae1775ff292eada**，tree **ace4fd8223ed7fcd8d2b29477d9e651a2df53ff2**，唯一parent为公开main c3b098。完整本地merge链保留于 `refs/khor/net-integrations/product-v1-merge` →1cd5092f；集成树HEAD现在117c39且clean，apps/及.github/逐字等于公开main。只推独立 `colehank/khor:verify/net-product-v1`，原生完整Quality **43348869616** 已于01:59:19 UTC FIRSTATTEMPT启动，suite=all/interaction_scope=all，API核准确head/event；截至本次更新11job成功，GUI/node-native仍运行。E/net-product-integration-v1.json为权威收据，不因网页fixture或先前3b原生probe宣称本集成接受。没有main/tag/release/已安装App操作。
 
 同时补齐实际唯一middle首个业务场景。独立树 **khor-net-product-sole-peer-v1**、branch **experiment/net-product-sole-peer-v1**，base117c39，仅新增fixture模块与mod声明，产品源码不改。X/M同LAN Direct；X在resident启动前双向阻断其仍配置的Relay，Y双向阻断全部UDP，M→Y只剩真实TCP Relay。通过M配对roster，无X→Y业务预热、不等hop或no-relay长期宣告；后台若已准备好必须如实记录，不称冷前台握手。首个目录请求要求5秒内返回目标独有marker、X→Y确经M、两腿实报Direct/Relay且当时no_relay=false；原3秒hop预算未改。协议E/net-product-sole-peer-plan-v1.json，先compile-only，再预声明三独立runtime/替代零；缺hint/旧Direct/负向策略/能耗及手机仍另验。
 
 首次准备 `turing-20261113T020722Z-4abf5dc7`，source59e2fe9c/control e532：format前置红，**零编译/零产品runtime**，10原files/hash/identity/group空已收且ledger闭；只应用其准确formatter补丁。修正source tree **a448adc27f7502deb7293bbfa376d96de539df3b**、snapshot **08d0afa45e3aaf15ba73b8fd6928c30737f6de37**，描述符E/net-product-sole-peer-source-v2.json。增加原native_provenance实际test producer与同producer CLI准入，未改verifier、业务门或生产源；E/net-product-sole-peer-preexecution-amendment-v2.json保存执行前修订。
 
-**本任务当前唯一Turing在途**：`turing-20261113T021226Z-a2207feb`，02:12:49 UTC、PID3057952，control **ba58e0e3b9828d05f932708013a99d8f94bf2368**，revision net_product_sole_peer_native_compile_v2，compile-only、产品runtime零；启动exec22444已终态。先查询此收据并收件/identity/具体编译来源核验，不重复调度。root是唯一ledger writer；保持原UID1110/flock/50GiB启动/40GiB停止/90分钟守护、Rust1.95/jobs16/nice10与本机source-only。编译通过才能建立runtime控制；无同源重试挑绿。
+compile-only `turing-20261113T021226Z-a2207feb`已 **0/129.161091s**，18原reportfiles/hash/identity/group空、原native verifier test+CLI同producer及三锁版本核验，proof compile-provenance-verification-v2.json与ledger闭。实际test SHA0ce7704b、CLI f129a57c，编译通过不算业务绿。
 
-下一步：完成当前Quality与compile收据；运行冻结唯一middle三次真实业务，继续Release基线、地址变化、手机/原生Lab和custom退出核查。完整N0–N5未完成；最终性能协议在执行前绑定最终arm与原门，不挪旧候选测试作新集成验证。
+**本任务当前唯一Turing在途**：`turing-20261113T022103Z-df6a99d7`，02:21:25 UTC、PID3068389，control **175fdc04afbf86f82f5e6e4714133692eff2647c**，revision net_product_sole_peer_runtime_v1，准确source仍a448adc2/snapshot08d0afa4。启动exec41006已终态。仅复用上述同source已验证实际test producer与CLI，原require_provenance重核全部上下文/源码/实际文件，编译零；每次独立新Lab，固定三次/替代零、首目录5秒、原hop预算3秒。原native进程所有权门保留，复用已校准私有subreaper见证+inode hash缓存，若清理或来源不完整即停批。控制及原输入SHA在E/net-product-sole-peer-runtime-control-v1.json。先查询该收据并收件/identity/原业务+所有权核验，不重复调度。root唯一ledger writer；原UID1110/flock/50GiB启动/40GiB停止/90分钟守护、Rust1.95/jobs16/nice10与本机source-only不改，计时期间不插入其他自己的Turing重型/缓存任务。
+
+下一步：完成当前Quality与冻结唯一middle三次真实业务收据，继续Release基线、地址变化、手机/原生Lab和custom退出核查。完整N0–N5未完成；最终性能协议在执行前绑定最终arm与原门，不挪旧候选测试作新集成验证。
 
 ## 已保留的混版v1失败
 
