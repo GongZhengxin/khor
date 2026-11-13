@@ -1,20 +1,26 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-13T15:43:42.656626+00:00。完整目标 [GOAL](GOAL.md) / [PLAN](PLAN.md) N0–N5 **未完成**；逐项缺口见 [REQUIREMENTS](REQUIREMENTS.md)。root 串行，不派子智能体。用户已授权持续实施与远端验证，不因阶段完成停工。
+更新于 2026-11-13T15:59:59.662411+00:00。完整目标 [GOAL](GOAL.md) / [PLAN](PLAN.md) N0–N5 **未完成**；逐项缺口见 [REQUIREMENTS](REQUIREMENTS.md)。root 串行，不派子智能体。用户已授权持续实施与远端验证，不因阶段完成停工。
 
 E=`/Volumes/disk0/Khor/evidence/net`；工作树均在 `/Volumes/disk0/Khor/worktrees/current/`。此前 STATE 逐字存 [HISTORY-through-terminal-direction-launch](HISTORY-20261113-through-terminal-direction-launch.md)，SHA256 `b6712ae6174fb1be910c4f43f4b11424d6be545645358fc2a7d50c63c4eded47`；其中更早历史链接保留。历史 pending/PID 不能用来重新派发。
 
 ## 当前执行与紧接工作
 
-**当前唯一pending为持续交互 compile-only turing-20261113T154317Z-37b038ce / PID509435**，control0b45019f211dd0bdec36878c0096d5837aab2623；source tree3f6cb2c3bedfd350f06315cc7cb8a70d742c008f / snapshot7dca8534bb9eede8b28bf1e51e5e73ece252176a。只构建、不跑业务；E/terminal-persistence-native-compile-plan-v1.json与E/ops/verify-terminal-persistence-native-compile-v1.py已准备，producer闭后才能冻runtime。无其他后台协调器或Mac任务。 终端方向固定6场 **151349Z-c16a9107 0/1125.157539s** 已闭18files/identity/native来源/CPU/全部owned清理。原shell/capture各3/3、各2160ok、六完整192MiB文件；三个capture各724条完整前缀、输入/回复各361、epoch bracket130ns、无丢记录。替代0、运行编译0。原/capture文件中位22.720202/22.759749Mbit/s只作描述。**未重现原超时，未定位根因，不是修复**。E/terminal-direction-comparison-verification-v1.json、run下terminal-direction-block-verification-v1.json。
+**当前唯一pending为持续交互普通Release固定2场 turing-20261113T154840Z-ed908e42 / PID515080**，control09d8daa7f6b0bd4f6fb33a688d7999a57e3aaf58；source tree3f6cb2c3bedfd350f06315cc7cb8a70d742c008f / snapshot7dca8534bb9eede8b28bf1e51e5e73ece252176a。协议E/terminal-persistence-runtime-plan-v1.json SHA19d6443985fe9a0c1cf6260b0c6b1a4246c4dd7c177abdf33c3df6ddcdf1ba4b；原shell/capture各同一个PTY与两resident持续10窗口、每窗口120×两业务、每项2秒/owned600秒，无bulk、不编译运行、替代0。producer **154317Z-37b038ce 0/234.732497s**、Rust3m03s、22files/identity/native来源已闭，testSHAbb4447a85abe251bac4fb9ce8e269c6f3b381c60a114897548f1e6df8fdc4fe0、CLI仍精确a7e3565f。E/run/terminal-persistence-native-compile-verification-v1.json。根是唯一ledger writer，无后台协调器/Mac任务。
+
+结束后collect receipt→verify-turing-record.py→verify-terminal-persistence-block-v1.py，传该run；最后一个工具已预冻在协议中，会验证2400/场全部意图、原tc几何与计数、实际可用Relay、原caller/owned/CPU/清理、10个无溢出probe窗口、独立capture完整性，并关闭ledger。若原生部分未完成，保留partial，不跑完整块验证器来伪造成功。7项纯元数据检查绿；记录器helper仍逐字原4项远端验证版本。
+
+ 终端方向固定6场 **151349Z-c16a9107 0/1125.157539s** 已闭18files/identity/native来源/CPU/全部owned清理。原shell/capture各3/3、各2160ok、六完整192MiB文件；三个capture各724条完整前缀、输入/回复各361、epoch bracket130ns、无丢记录。替代0、运行编译0。原/capture文件中位22.720202/22.759749Mbit/s只作描述。**未重现原超时，未定位根因，不是修复**。E/terminal-direction-comparison-verification-v1.json、run下terminal-direction-block-verification-v1.json。
 
 已提交测试树 khor-net-terminal-direction-v1 / experiment/net-terminal-direction-v1，clean **ac261817d4d4e897acf2614a286f6e4ead78621c**、tree **776ecc6b2bf358bb9421dbbd5c988cb4f1a52a7b**，snapshotf2131be0；产品CLI精确原a7e3565f。producer145811Z-6f3704a7 0/544.370115s，22files闭、testSHA499340a0655fc827e5e792af7c364ade14188560901a1a8aa332975c05462954。原descriptor提交前basef6b9/dirty=true不重写。control0f50c7bcaa76a37897431f4dc0832ce271579f5a，协议E/terminal-direction-runtime-plan-v1.json SHAa6893aaa724d3f121c3c9f316ccdfbaf7b1808b9e99a5ea37f25f5475c7330ef。
 
 新增纯数据复核 **E/red-terminal-locality-verification-v1.json**：旧Relay可用组case4/5两次TTY超时，2秒窗口内各有100个20ms本地probe；最大tick lag1489/1711us、邻近最大gap20573/20792us。同时Main目录请求仍约303–305ms成功。只排除“这两秒整个本地fixture计时器停了/设备对全部业务都断”的解释，不证明远端PTY或Tunnel健康。scheduled lag包括等待前面串行业务，不是OS调度延迟。
 
-下一轮**持续交互诊断**先冻结 E/terminal-persistence-design-v1.json：同一连接10×120个400ms间隔窗口（约8分钟），只有目录与真实TTY，无bulk；原shell/capture各固定一场，原2秒caller/600秒owned，完整4800意图，不替代。回答长连接持续交互是否也停顿，不与原混合负载互相替代，不作最终SLO/能耗接受。独立测试树khor-net-terminal-persistence-v1 / experiment/net-terminal-persistence-v1，HEADac261817、2 staged，只新增203行persistence.rs及父模块2行声明。已远端固定rustfmt格式化（首次orchestration因远端Python3.8无Path.is_relative_to失败，空audit目录及脚本保持；v2改用relative_to成功），编译已在途，业务尚未执行；准确producer闭后绑定runtime。root唯一source-refs writer，无后台协调器。
+当前**持续交互诊断**已冻结 E/terminal-persistence-design-v1.json：同一连接10×120个400ms间隔窗口（约8分钟），只有目录与真实TTY，无bulk；原shell/capture各固定一场，原2秒caller/600秒owned，完整4800意图，不替代。回答长连接持续交互是否也停顿，不与原混合负载互相替代，不作最终SLO/能耗接受。独立测试树khor-net-terminal-persistence-v1 / experiment/net-terminal-persistence-v1，现clean commit04c14e88f599ea522efabe84fd23c035104f7fd1，准确tree不变，只新增203行persistence.rs及父模块2行声明。已远端固定rustfmt格式化（首次orchestration因远端Python3.8无Path.is_relative_to失败，空audit目录及脚本保持；v2改用relative_to成功），编译已闭并绑定上述唯一runtime；尚无业务结论。root唯一source-refs writer，无后台协调器。
 
 [TERMINAL-DIRECTION](TERMINAL-DIRECTION.md)保留解释边界：at_ns在I/O后采，是完成上界；只有早于观测超时下界的reply_written证明程序已写出；晚stamp不能证明晚到/晚写。summary只验证第一summary前连续无丢前缀，保留其后原行；缺input最多证明程序截至summary未处理完整行，不推成包未到内核。要求同time namespace、epoch bracket≤1ms、无读错/溢出。helper远端4绿、元数据合成检查6绿，不代业务修复。
+
+下一项已准备但**未stage/未launch**：E/current-ipv6-mobility-design-v1.json，复用原packet校准1项与Node IPv6 overlap两项，固定3场/244预期真实目录读。准确I2 runtime不变（含R窄修复），独立树khor-net-current-ipv6-mobility-v1 / experiment/net-current-ipv6-mobility-v1，HEAD3093f866、2 staged；只加Release入口/bridge，原mobile.rs、mobility.rs及helpers不改。tree90a1d7813377d611ea93b3276a36d3876e28e09c / snapshotb6cb41a3adcc51abb175d8c92fcc008d7341eedc；compile controlfdce85c94da0031b3f414e61029b4db94ba46af0，E/current-ipv6-mobility-native-compile-plan-v1.json、E/ops/verify-current-ipv6-mobility-native-compile-v1.py已备。当前持续会话闭证后才stage compile-only，predecessor传当前持续会话receipt，measurement revision `current_ipv6_mobility_native_compile_v1`、task net-node、role diagnostic；先核实际source-refs。不在当前计时中编译。原30秒读/120秒setup/240秒scenario/300秒owned保持，不代UX SLO、双栈fallback、前缀变化/双端/peer-relay/真机验收。新R Release CLI实际SHA须由producer核出，不沿用A a7；该版验证器已明确绑定I2 hop源而非要求旧CLI。
 
 ## 产品源与当前接受边界
 
