@@ -119,3 +119,12 @@ W actual netlab/CLI compile071457Z-c140a37b / control1a01b55207e0da74fe47561d833
 
 W native compile071457Z-c140a37b已0/116.466771s、17files/identity/source/hash/owner/原native verifier20unit/test实际netlab与CLI同producer核、ledger闭；CLIbc47a17b2d3a424690478c42d8d556f66e7e21eee7ea02f1fdf48d24e07ff375，test8116cf8e939cf3a795266b2c6bfccb1e5209267a474794b8c3a0b5da0f72809f，R所有selected五文件含depinfo已只读保全、原bytes核。
 W原控制runtime control94849c5a1748121af392ec68c00d153b4aba4482已提交，exec57768仅提交句柄；最新真实pending [{"run_id": "turing-20261113T071957Z-261fdeee", "pid": 3663224, "submission_state": "launched"}]。每case原native verifier复核，owned supervisor1200s（仅watchdog），原600s/p5每stall4drops/Rust原门不变。planned8：p1s×6→p3→p5，串行fixed0replacement，首红/不安全停后续并显式保留未执行项。状态看report/copy-wake-controls-progress.json，最终copy-wake-original-controls-contract-v1.json。root唯一writer，不重启或另发同源批次。此在途段不等于性能接受。
+
+
+### W原控制v1为执行器中断，v2已修正监督容量
+
+071957Z-261fdeee原1/594.071116s、15files/source/hash/identity核；只执行首p1s至supervisor524.866815s，historical owner inventory513触原512cap，native-15/forced cleanup，未到原600s/Rust verdict，无netlab-result/summary，14个已完成业务观察均ok。**不是W产品回归或接受**。其余7未执行，原结果完整保持，ledger闭。原case出口group_absent=false/8zombies保持；controller终态后独立只读PGID3664371与八个/proc项全消失，专属postmortem proof保留，不覆写原失败清理字段。
+
+v2协议E/copy-wake-original-controls-plan-v2.json：仍p1s×6→p3→p5、原600s/原4drops/原门；保持512同时匹配owner上限，历史birth identity记录另有8192有界cap并记录peak live/history；以纯数据校准2000历史+1活、513活应拒、8193历史应拒。不改产品源/原native verifier，复用同actual producer无需重编。controlc2c2d706799a26585febf3d135d43ca039a7e327，提交exec23870；最新pending [{"run_id": "turing-20261113T073647Z-7e574645", "pid": 3708886, "submission_state": "launched"}]。root唯一writer，先核当前任务，不重开v1。最终report/copy-wake-original-controls-contract-v2.json、在途copy-wake-controls-progress-v2.json。
+
+只读移动链路审计见[MOBILE-ADDRESS-AUDIT](MOBILE-ADDRESS-AUDIT.md)：准确netwatch0.19.3原crate checksum核，iOS有AF_ROUTE地址通知、minor也进iroh重新寻址/通知QUIC。App同interface种类去重不单独证明漏地址事件，须实际移动/发布/epoch/phone测试。无产品修改或N4接受；持续路由事件下250ms debounce只列待测风险，不作为已证根因。
