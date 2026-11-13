@@ -8,9 +8,15 @@
 
 NAT固定对照已完整结束，root串行调度器PID53952及上一Release调度器20826均已核实际退出，两个progress保持completed；root当前是source-refs唯一writer。不能因历史receipt重新派发。
 
-当前唯一pending是普通Release CUBIC编译 **turing-20261113T110223Z-34e7344c / PID4180496**，receipt=E/turing-20261113T110223Z-34e7344c/receipt.json，control **44328e0e755fcec5eae0772e07fcbe59eb9eda48**。本轮核真实remote execution为running/network-driver，实际PID存活；这是compile-only，不是runtime或产品接受。继续先核真实句柄，终态后collect→identity→producer核验→ledger闭，禁止重派。
+CUBIC普通Release固定3 high诊断 **111336Z-865645d6 1/504.032874s**已闭15files、identity/raw/CPU/owner/准确producer及selected还原全核。control **f0975c8945327ae2e1513b4a5e0778446dc680a6**；原协议SHA8dad4d48b065289461f3b3c98d35c5393d7ef272fea662dbd193e0e11c73b539。完整E/cubic-release-diagnostic-verification-v1.json。
 
-编译保留原C父版本全部5个selected ELF/dep-info，准确source tree21f37a7a；原opt3/strip/thinLTO/codegen1、无qlog/diag及原native验证器保持。闭证后冻结实际producer/runtime control，按[CUBIC-ABLATION](CUBIC-ABLATION.md)执行固定3个high场景诊断，原2秒caller、每场720记录与192MiB文件均保持；不能用它替代loss/idle/完整原工程门或最终同源接受。
+2160/2160操作ok、零超时，3个192MiB完整文件且PTY关闭；原native门 **2/3通过**，首轮因direct_after=false失败（其余业务均成功），原红保留。pooled high bulk目录/终端scheduled p95 **351845/334029us**，文件吞吐中位 **36.734944Mbit/s**；先前C对应580146/350138us、24.307740Mbit/s。对冻结早先B/C的六格原延迟界限及吞吐界限都过，但这是非同时交错的诊断参考，**不是最终比较接受或已证根因**。不因业务全通删除选路/profile原门。
+
+CUBIC producer **110223Z-34e7344c 0/586.890585s**已闭20files，实际编译8m54s，control44328e0e…，source tree21f37a7a。test SHA307f9f1759409f734464e07f458355abbcf177d5eb9a10821a6b83ae63647b3a；CLI SHAe1deef755b743684b606c51e2c950a07cc8d2f3a2b0444b0c929853e21dbd74d。原C父版本5个selected ELF/dep-info已保留；CUBIC自身5个selected也已存closed-selected-release-v1/该producer，未删除旧B/C/W。原opt3/strip/thinLTO/codegen1、无qlog/diag及原native验证器保持。
+
+紧接工作：当前Noq1.4的CUBIC/BBR受控丢包、typing后burst和真正无应用请求的idle后短流。沿用已有独立双向FIFO congestion.rs及校准，不把旧Noq1.3数据当当前结论；先绑定准确source/protocol/producer。新测量树khor-net-cc-matrix-v1 / experiment/net-cc-matrix-v1，HEAD117、5文件staged（CUBIC共同fixture加仅congestion.rs测量；无新产品runtime变化），准确tree **25fed870f2637708c85f5a758a583d3d9f44dc65** / snapshot **cd36eaf2a9227c6b01fc49bf23652dab29873e28**。当前唯一pending为compile-only **turing-20261113T113430Z-875ee934 / PID67139**，receipt=/Volumes/disk0/Khor/evidence/net/turing-20261113T113430Z-875ee934/receipt.json，control **9d446a5156082dbc87f2d6ee8636559e9b0009f4**，不得重派。原112934Z-a0f72d29 1/66.149648s是格式准备红、Rust编译/业务计时0，10files/identity/空owner闭证；v2仅应用其导出rustfmt的3行布局，旧源/失败均保留。
+
+E/cc-matrix-design-v2.json预冻0/2/2/0/0/2%双向丢包顺序，300ms/20Mbit/200ms队列、每臂3样本、原20秒bulk、10秒纯应用静默及原10秒Noq层ask；不是Node原2秒门的放宽。复用原Noq直接两控制器及FIFO校准，typing/screen与quiet/短流独立记录。CUBIC相对BBR的分量screen为全成功、每loss吞吐中位≥.9、每phase p95≤1.10×BBR+20ms；纯Noq结果不作最终产品接受。编译闭后才冻结实际producer/runtime control再执行，当前无本矩阵runtime结果。全原工程门、相关恢复/稳定/闲置/手机与最终同源矩阵仍缺，CUBIC未获默认晋升；详[CUBIC-ABLATION](CUBIC-ABLATION.md)。
 
 NAT已闭6块/12原native场景、744次真实逻辑读全部成功、180次暖远端stream-open。R baseline强属性 **3/3**、零mismatch；仅删patch38 helper的M38强属性 **0/3**，累计 **215** cached/actual tuple mismatch。M三轮暖请求正确数分别0/30、30/30、0/30；其中一轮暖读正确仍有其他路径缓存不匹配，不能概括为全部暖请求失败。固定R M M R R M、替代0，全部原业务/来源/实际注入/owner/selected还原均闭证。结论是**当前R/M源与Noq1.4的实测属性下保留patch38**，不泛化到所有移动场景。完整E/tuple-exit-nat-comparison-verification-v1.json、[TUPLE-REFRESH-EXIT](TUPLE-REFRESH-EXIT.md)。
 
@@ -29,7 +35,7 @@ Turing UID1110、排他flock、jobs16/nice10/Rust1.95、原50GiB准入/40GiB停�
 - R khor-net-live-middle-retry-v1：clean **9081b94dce827cbd3fb9b9e7bb13633d762e3cd9**，tree **cf9d172bb92778ccfd97899ddea27bdf0e6d2f6e**。被测dirty snapshot a3cad264与该tree逐字相同。runtime仅hop.rs不同，另有原physical/unit fixture；窄恢复接受，未集成canonical/I。
 - W khor-net-copy-wake-v1：HEAD117、四文件staged；tree **f5faf2a2fef7fd64f09908fc53c73b24bb2eae4d** / snapshot **8780bf503d753b820a7236931357b2dcebfa42a6**。C共同fixture treeadbc7d6a上runtime仅remote_state.rs取消off_direct wake guard，不含R。**本批普通Release真实红，拒绝作为超时修复/默认设计**；保留实验及所有绿/红，不集成。
 - M38 khor-net-tuple-exit-v1：HEAD908、一文件staged；tree **2d702718ff8f664cc1e2fa5db2352e2d8e91ee8d**，snapshot **c5754ef1f3705c3ccfab3180a111bf058a0cca42**；只删patch38 helper/调用，常规select_path_on(true)保持。Mac源container0f11a5f7同tree。**库对照过，但Linux强属性移除臂0/3，保留补丁**。
-- Cubic khor-net-cubic-ablation-v1 / experiment/net-cubic-ablation-v1：HEAD117、四文件staged；tree **21f37a7a2fb96abcd601db486c26b687767cade2** / snapshot **74c762dfffb849b9ec4cb5e68f588dd9698df50d**。以C共同fixture为底，runtime只将endpoint::transport BBR3Config切为原生CubicConfig，无vendor/W/R改动。**远端普通Release编译在途，尚无runtime结果**，详[CUBIC-ABLATION](CUBIC-ABLATION.md)、E/cubic-ablation-{source,design}-v1.json。不能因零丢包模型变好而忽略历史CUBIC丢包吞吐劣势；最终选择仍需完整loss/idle/burst/短流及原工程门。
+- Cubic khor-net-cubic-ablation-v1 / experiment/net-cubic-ablation-v1：HEAD117、四文件staged；tree **21f37a7a2fb96abcd601db486c26b687767cade2** / snapshot **74c762dfffb849b9ec4cb5e68f588dd9698df50d**。以C共同fixture为底，runtime只将endpoint::transport BBR3Config切为原生CubicConfig，无vendor/W/R改动。**固定3 high闭，2160ok但原native2/3；仅诊断，未晋升**，详[CUBIC-ABLATION](CUBIC-ABLATION.md)、E/cubic-ablation-{source,design}-v1.json。不能因零丢包模型变好而忽略历史CUBIC丢包吞吐劣势；最终选择仍需完整loss/idle/burst/短流及原工程门。
 - khor-build-net HEAD **5d3691f252f9dee0297fa3c494374be6119bca29**未移动；仅新增控制Git对象/refs分支，不改默认main。B/C/Q/A/T等旧隔离树与staged原件保留，准确版本/证据见历史和各专题，不按摘要覆盖。
 
 ## 完整Release三臂结论：两候选均不晋升
