@@ -20,3 +20,10 @@ runtime184914Z-5cfe53b4 1/198.559489秒，15files/identity/native/CPU/owned清�
 普通Release producer191019Z-979f0ccd 0/594.656134秒，22files/identity/strict native闭；CLI ef9a3dd1061ab557c4aa1709b9a14901813efff2e91251bbdef5e415f8c49519、test2296f0f2b87910dee724f65b9b52957e7e255bf9e0d9a29ea24fbb63f1816f4b。runtime192107Z-941d6b67 **0/166.445581秒**，15files/identity/native/CPU/owned闭，固定原3场 **126/126成功、零超时**。首个有效响应960623、958965、906570μs，均在原2秒内；基线分别20042371、20040904、20049739μs、30超时。各40故障后真实新marker目录读和2setup均保留。run/relay-silent-demand-repair-runtime-verification-v2.json。
 
 对照不是同期交错A/B；只支持该固定几何里3次红到3次绿与首响应改善，不估总体可靠率/p99，不替代真实iPhone现场。v1仅原生compile保留、因并发deadline风险未运行/晋升。v2七组件回归、慢健康路/Accepted/取消/成本及全部N0–N5仍需完成。
+
+
+## 健康延迟回归拒绝F2全面采用
+
+同产品F2、仅加健康jitter夹具的J2 a199ff48，runtime201418Z-2b427674固定原3场 **1/112.210432秒**，15files/identity/native/CPU/owned闭。124→976ms只加延迟，无drop/reset/换址，42/42实际读成功，但三场原TCP均约1.11秒消失并由新tuple替换，158/159/161改变观测；kernel qdisc/u32/stat/无drop、100ms采样与2秒尾观察、原5秒caller全部独立核。run/relay-health-jitter-runtime-verification-v1.json。因此不能用silent3绿宣布F2整体可用。
+
+F3 7a794274仅改actor，保留两夹具：固定full pong期限，另以RTT早期检查判断完全无回包；收到Relay消息只让过早期检查，不能结束当前pong验证或延长full期限。无新周期timer/额外ping/应用重放。新增3原生合同加原7先验，接着普通Release原silent3与healthy3共同通过，才讨论窄修复晋升；当前候选未验。
