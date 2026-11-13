@@ -1,6 +1,6 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-13 03:00 UTC。活动目标仍是[GOAL](GOAL.md)和[PLAN](PLAN.md)完整N0–N5，**未完成**。上轮是实际进展：准确产品源完整Quality13/13及真实唯一middle固定3次均已闭证，不是整体接受。root串行，不派发子智能体。
+更新于 2026-11-13T03:52:37.515590+00:00。活动目标仍是[GOAL](GOAL.md)和[PLAN](PLAN.md)完整N0–N5，**未完成**。上轮是实际进展：准确产品源完整Quality13/13及真实唯一middle固定3次均已闭证，不是整体接受。root串行，不派发子智能体。
 
 此前STATE逐字保存于[完整历史](HISTORY-20261113-through-product-quality-and-sole-peer.md)，SHA256 `778295b28a3de7a9d18c732891cc257e2e8335a802d59701d68ad369420f134d`；该历史继续链接全部更早收据、失败、中断和旧协议。历史中的“在途”只按原时点理解，不重启已关闭批次。
 
@@ -14,7 +14,7 @@
 
 本机source-only：Git、stdlib Python源码/元数据/数据处理可用，不运行本地Cargo/Rust/Node/Bun/Xcode或下载的原生产物。重型验证用Turing/可信GitHub/macserver。main合并、发布、生产Relay采购部署、替换已安装App仍无本次授权。用户main/真实App/其他任务Lab23961不动；其源98285及服务PID4769/exec18781保留。
 
-## 当前Turing：Release同条件首业务对照，先编译
+## 当前Turing：Release同条件首业务对照已闭
 
 协议 **E/sole-peer-release-comparison-plan-v1.json**：公开产品main与当前集成候选的全分支效应，共同`netlab_sole_peer`独立harness、同一lab.rs observer/owned取消、原sp1业务函数逐字相同。只overlay测试文件，未把候选生产代码塞到baseline。Release原配置strip=true/thin LTO/codegen-units=1/default opt3；独立稳定owned源码与target目录，双方只编译一次，再固定 **A B B A A B** 各3次，零替代试验。原首目录5秒门、原生产hop3秒预算不改；所有错误/超时/清理失败保留。不作全局p99、全部N3、单补丁因果或真机/能耗结论。
 
@@ -25,15 +25,17 @@
 
 描述符E/sole-peer-release-{baseline,candidate}-source-v1.json。公共夹具四文件SHA与零runtime执行前格式归一记录在协议；独立root绕过无关场景的版本API差异，不改所测业务、物理拓扑或验收门。
 
-**唯一Turing在途**：`turing-20261113T025353Z-e298b390`，02:54:15 UTC、PID3101826，revision sole_peer_release_baseline_compile_v1，control **b2974db7aa5c623e41bf641e89e327e163e62f52**。启动exec41588已终态；最近原execution.json仍running，Cargo正在Release编译，format已过、产品runtime零。编译代码E/ops/sole-peer-release-compile-v1.py。稳定owned目录`/tmp/khor-netlab-feat-net-1110/cache/sole-peer-release-comparison-v1/baseline/{source,target,runtime-images}`；原native_provenance准备并验证实际test producer与同producer实际CLI，不假定普通CLI build不被test重建，不改verifier。
+两arm compile-only均已完成并闭证：baseline025353Z-e298b390 **0/630.716674s**，candidate030746Z-850f325b **0/655.111898s**，各17原reportfiles、原native verifier的Release test/同producer CLI、opt3/版本/source/hash/identity/group空核验，runtime零。稳定owned源码/target隔离，无计时中编译。runtime control **ed2ccef843a4ed362d369fec6b70d43a3c9b029a** 只重核原来源，复用已过的format与产物，不再Cargo/formatter。
 
-先查现有receipt，终态后collect、identity、具体Release来源/profile/版本核验并闭ledger，再提交候选compile一次。随后声明准确runtime控制并执行冻结A B B A A B，不在计时中编译/改共享缓存或插入自己的其他Turing重型任务。保持原UID1110/flock/jobs16/nice10/50GiB启动/40GiB停止/90分钟外层守护；native原300秒case guard独立于原5秒首业务门。
+**Release A B B A A B六次已全终态、收件/identity/业务+所有权审计及ledger闭**：[SOLE-PEER-RELEASE](SOLE-PEER-RELEASE.md)，E/sole-peer-release-comparison-verification-v1.json。旧源3次均首目录5秒超时；候选3次实际返回 **345236/366587/366320μs**、经唯一M的Direct/Relay两腿。各case独立新Lab、前态Idle/no_relay=false；所有失败保留，额外试验0，无强制/遗留。旧完成时间是5秒右删失，不能造成功延迟/p99或有限倍数加速；首A与其余约10分钟间隔如实保留。
+
+串行coordinator E/ops/run-sole-peer-release-pair-v1.py **exec72887已终态0**，progress/result均completed，当前无Turing在途/无pending ledger；root恢复唯一writer，旧61277不恢复。原UID1110/flock/jobs16/nice10/50GiB启动/40GiB停止/90分钟守护保持。相同已闭Release或Debug候选不追加挑绿。
 
 ## 当前Mac原生候选：最新集成源，不启动本地App
 
-公开builder的完整Lab **43355810513**，request **ad847c8fb3874591bf786afd5c347a24**，source **117c39**/tree **ace4fd**，snapshot **4140e11e727ee0d43e859a6c1dd8d4659d793744**，native_contract **71e64768d0b001dcf6f8c45deaab341e845b226ae3d58443264bdb3e083ac4d7**，port23963；control main **9b671817e34846df9e14c213a562ab88309cb45a**。source/request已写E/public-native-lab-net-product-v1/request.json，API核workflow_dispatch/准确control，尚未接受。
+公开builder的完整Lab **43355810513**，request **ad847c8fb3874591bf786afd5c347a24**，source **117c39**/tree **ace4fd**，snapshot **4140e11e727ee0d43e859a6c1dd8d4659d793744**，native_contract **71e64768d0b001dcf6f8c45deaab341e845b226ae3d58443264bdb3e083ac4d7**，port23963；control main **9b671817e34846df9e14c213a562ab88309cb45a**。source/request已写E/public-native-lab-net-product-v1/request.json，API核workflow_dispatch/准确control，原生/前端成功，整体检查存在下述失败，尚未接受。
 
-本地仅source快照/上传和artifact数据获取进程，**exec96116仍在途**，脚本E/ops/acquire-product-native-lab-v1.py。它调用原builders.remote，callback只记盘，不建manager/不启动下载的native。先poll原handle及request/run，不重复提交；若脚本断开，用原request恢复获取，不新造build。builder.log、acquired-*.json、acquisition-result/error.json都在该目录。此任务在GitHub与Turing编译独立，不污染Turing测量；旧3b Lab不能代替本集成源。
+本地仅source快照/上传和artifact数据获取进程，**exec96116已终态0**，脚本E/ops/acquire-product-native-lab-v1.py。它调用原builders.remote，callback只记盘，不建manager/不启动下载的native。前端/原生artifact均已获取，acquisition-result.json明确failure；callback未启动本地产品。不重复提交build。builder.log、acquired-*.json、acquisition-result/error.json都在该目录。原native/frontend/retire三job成功；checks在WebKit桌面settings导航data-nav-me元素原15秒稳定性等待超时。62个已落盘浏览器case无errors，原完整检查log与35,419,759字节ZIP/SHA/CRC保存在failed-checks.zip，未隐去失败。无UI源码/断言/期限修改；仅对原失败job131659939275发起**一次**同源受控重跑，API请求范围仅原失败job；attempt2最新job列表也出现新ID的native/frontend成功job，其实际是否重建待logs/payload核实，不预称未重建。见checks-failed-job-only-retry-v1.json；attempt2 checks job131672404119仍在原完整App/WebKit步运行；后续核它，不另造build。旧3b Lab不能代替本集成源。
 
 ## 已闭证据及其范围
 
@@ -49,10 +51,14 @@
 
 N0–N5保持原范围，不把13个Quality或3个namespace病例当作全部接受。接下来依次：
 
-1. 关闭当前两arm Release编译与准确来源准入，执行同夹具ABBAAB首业务对照；保留超时和未能配对，不只看成功分布。
+1. 当前同夹具Release ABBAAB首业务对照已闭，接续原结果、不重复提交；进一步补缺失/过时hint和负向策略等原NET-16范围。
 2. 在最终候选上完成发行配置目录/真实TTY/大文件/同步共存的分段长尾、公平和取消/资源成本；之前旧Debug对照仍有效于其原问题，不能冒充该项。
 3. 唯一middle缺失/过时第二腿hint、旧Direct/失败冷却及策略负向，双方/peer-relay IPv4/IPv6/NAT变址和故障域；已有单元及部分物理结果不替代整个矩阵。
 4. 核最新原生Mac Lab具体payload并准备隔离验收；物理iPhone仍是旧安装版，尚无候选真机/能耗窗口。MacLab/Turing同LAN，构建macserver另机；不把UI模拟器或旧App恢复当新源接受。
 5. 逐项custom退出、状态/职责与中继/寻址/容量运维设计收敛，持续短回归与完整矩阵，最终准确源完整Quality及原生/真机/对照报告。采购/生产部署/main合并/发布按独立授权处理。
 
 旧成功仅复用于其准确源码与范围；原始数据、产品红、控制前置失败、用户取消、未验证分别保留。所有运行/证据先查现有receipt、源码tree与真实进程/Actions状态，观察超时不等于任务终止，禁止盲目重提。
+
+### 下一轮Release共存准备
+
+在已闭首业务两配对树中只加入共同netlab_workload_release测试target及当前workload.rs与8个辅助文件；旧原夹具/receipt保持。已核公开main实际拥有wire_counts、pull_path、open_on、close_on API，**不采纳摘要误报“无wire_counts”**，双方共同workload业务体、observer及wire计数无需修改。尚未发新Turing/未有该批业务运行；协议冻结后复用已owned稳定source/target，原native-provenance prior receipts只允许准确匹配依赖，避免冷重编。当前无Turing pending。
