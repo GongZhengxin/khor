@@ -29,12 +29,31 @@ async fn ask_after_timeout(
     true
 }
 
+async fn both_protocol_endpoint() -> iroh::Endpoint {
+    iroh::Endpoint::builder(iroh::endpoint::presets::Minimal)
+        .relay_mode(iroh::RelayMode::Disabled)
+        .alpns(vec![
+            ALPN.to_vec(),
+            khor_net::endpoint::TUNNEL_ALPN.to_vec(),
+        ])
+        .clear_ip_transports()
+        .bind_addr("127.0.0.1:0")
+        .unwrap()
+        .bind()
+        .await
+        .unwrap()
+}
+
 async fn observe_timeout(early: bool, contact: Contact) {
-    let server = endpoint().await;
-    let other = endpoint().await;
+    observe_timeout_on(early, contact, ALPN).await;
+}
+
+async fn observe_timeout_on(early: bool, contact: Contact, contact_alpn: &[u8]) {
+    let server = both_protocol_endpoint().await;
+    let other = both_protocol_endpoint().await;
     let (_root, node, mut peer, initial_ep) = fixture_for(server.id().to_string()).await;
     initial_ep.close().await;
-    let ep = endpoint().await;
+    let ep = both_protocol_endpoint().await;
     peer.addrs = server
         .addr()
         .addrs
@@ -92,7 +111,7 @@ async fn observe_timeout(early: bool, contact: Contact) {
                 &other
             };
             let (outbound, inbound) = tokio::time::timeout(Duration::from_secs(5), async {
-                tokio::join!(caller.connect(ep.addr(), ALPN), async {
+                tokio::join!(caller.connect(ep.addr(), contact_alpn), async {
                     ep.accept().await.unwrap().accept().unwrap().await
                 })
             })
@@ -100,6 +119,7 @@ async fn observe_timeout(early: bool, contact: Contact) {
             .unwrap();
             let (outbound, inbound) = (outbound.unwrap(), inbound.unwrap());
             assert_eq!(inbound.remote_id(), caller.id());
+            assert_eq!(inbound.alpn(), contact_alpn);
             node.wires.serving(&inbound);
             tokio::time::timeout(Duration::from_secs(5), async {
                 tokio::join!(echo(&outbound), answer_echo(&inbound));
@@ -139,6 +159,7 @@ async fn observe_timeout(early: bool, contact: Contact) {
         serde_json::json!({
             "schema": 1,
             "early": early,
+            "contact_is_main": contact_alpn == ALPN,
             "contact": match contact {
                 Contact::SamePeer => "same_peer",
                 Contact::None => "none",
@@ -159,7 +180,7 @@ async fn observe_timeout(early: bool, contact: Contact) {
         "the old caller must keep its actual timeout"
     );
     let queued_answered = queued_answered.expect("the queued caller must finish within5s");
-    if matches!(contact, Contact::SamePeer) {
+    if matches!(contact, Contact::SamePeer) && contact_alpn == ALPN {
         assert_eq!(
             down_after_old_timeout, None,
             "an old timeout cannot erase newer authenticated contact"
@@ -207,4 +228,14 @@ async fn ordinary_timeout_is_not_invalidated_by_another_peer() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn cold_early_timeout_is_not_invalidated_by_another_peer() {
     observe_timeout(true, Contact::OtherPeer).await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn ordinary_main_timeout_is_not_invalidated_by_a_new_tunnel() {
+    observe_timeout_on(false, Contact::SamePeer, khor_net::endpoint::TUNNEL_ALPN).await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn cold_early_main_timeout_is_not_invalidated_by_a_new_tunnel() {
+    observe_timeout_on(true, Contact::SamePeer, khor_net::endpoint::TUNNEL_ALPN).await;
 }
