@@ -1,6 +1,6 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-13T22:14:11.571930+00:00。完整[GOAL](GOAL.md)/[PLAN](PLAN.md) N0–N5 **未完成**；逐项缺口见[REQUIREMENTS](REQUIREMENTS.md)。用户已授权持续实施/远端验证，root串行、不派子智能体；不因局部通过停止。无main合并、正式发布、生产Relay采购部署或现装App替换授权。
+更新于 2026-11-13T22:39:16.957638+00:00。完整[GOAL](GOAL.md)/[PLAN](PLAN.md) N0–N5 **未完成**；逐项缺口见[REQUIREMENTS](REQUIREMENTS.md)。用户已授权持续实施/远端验证，root串行、不派子智能体；不因局部通过停止。无main合并、正式发布、生产Relay采购部署或现装App替换授权。
 
 E=`/Volumes/disk0/Khor/evidence/net`；全部worktree在`/Volumes/disk0/Khor/worktrees/current/`。此前STATE逐字归档[HISTORY-through-relay-health-v2](HISTORY-20261113-through-relay-health-v2.md)，SHA256 `04c4a8d83d8f48a963f0762581843009788d3f24cdadeebd89f29dc55ce744c5`；其中保留更早全部历史/失败/来源链接。历史pending/PID不用于重派。
 
@@ -22,9 +22,11 @@ E=`/Volumes/disk0/Khor/evidence/net`；全部worktree在`/Volumes/disk0/Khor/wor
 
 **双端换网固定六场220320Z-44d72463已0/218.669043秒闭证，当前Turing无pending。** 18files/identity/native/CPU/owned完整，252/252实际读成功；V4三场首双向0.507–0.509秒，dual三场0.706–1.674秒，各方向原2秒门通过。独立核对两端内核旧/新IPv4与IPv6 /64、外部UDP映射和8份router前后规则、全部42起止/每场40新marker样本，protocol_verified=true。run/dual-replug-runtime-verification-v1.json及E/dual-replug-summary-v1.json，详BOTH-ENDPOINT-MOBILITY。固定V4/dual/dual/V4/V4/dual，无替代/运行编译。只接受两个几何，不冒充IPv6-only两端变化或手机/全N4。
 
-下一Turing工作尚未调度，恢复先查source-refs；可继续N3当前候选对照/成本、N4纯IPv6双方变化及N2/custom缺口，不能因六场绿停掉完整目标。
+**当前N3基线/候选对照已冻结并开始**：E/current-mixed-comparison-plan-v1.json，controlfa5f6f6bf0edfb4f1174dea4784eaf9110e13145，protocol4b1f4b545a7ddfeac4d84ca58105c2eb755ebb44104dde960d5f56cb7af87361。复用已闭证baseline035824Z-400ee7e2与当前DB214246Z-2606e4e9普通Release，无运行编译；两臂11共同workload/observer/calibration文件逐字一致，reduced/full entry均PublicV4，实际模型各自新校准。5项preflight各一组，再ABBAAB六块/每块low-high/总12场8640业务样本；原2秒caller与全部断言不改，p95<=baseline×1.10+20ms、完整文件median>=90%原工程门保持，不代全N3/WAN/能耗。root唯一ledger writer逐块采集/核验，不启后台协调器。当前唯一Turing pending223755Z-939ba0ad：baseline5项preflight，恢复先查本run/source-refs，禁止重派；后续候选preflight与六块尚未调度。
 
-**WebKit菜单四场诊断已唯一发起43515609775**：独立khor-net-webkit-menu-diagnostic-v1 / diagnostic/net-webkit-menu-v1，commit59d72b36b683bd1a53f5199c2436b03bd0b27aca/treecd09ec8137fe17d7a309128a9c2dcba5b7c26b69；仅四个测试mjs变化，产品UI/网络代码0变更。提前E/webkit-menu-diagnostic-design-v1.json固定after_resources/fresh/fresh/after_resources四场，比较同一headless WebKit中资源预览前置/进程历史，使用原settings断言、15秒与popup5秒；仅失败后采集DOM/动画/visibility与有界RAF/JS timer。不是完整77case替代或性能接受。mode=frontend/native_required=false/port23969，request97104fd5e3924002a12ea2030100750f、snapshot7435858bdc141fdd0e4760d000bf8b3508896457，E/public-webkit-menu-diagnostic-v1，收集器OS session27070（仅下载数据、本地产品执行0）。当前frontend已success、native按意图skipped、checks132199036488在途。恢复先查request/run，禁止重派。
+**WebKit菜单原四场诊断43515609775已完整闭证为failure**：准确WD59d72b36/treecd09；checks132199036488，ZIP14080539566 SHA2e739dfa/CRC与4场原log人口逐字核验，E/public-webkit-menu-diagnostic-v1/four-case-crash-verification-v1.json。固定after_resources/fresh/fresh/after_resources实际2fail/2pass，各前置条件一成一败；失败的DOM/RAF/timer返回Target crashed，确认页面进程崩溃。两组资源前置原断言均通过。尚无上游/产品具体根因，资源前置单因假设不受支持；不记完整77case Lab或网络失败。原5秒/15秒未改、无替代。
+
+**稳定引擎版本对照已唯一发起43520578187**：先冻结E/webkit-stable-diagnostic-design-v1.json，随后独立khor-net-webkit-stable-v1 / diagnostic/net-webkit-stable-v1，commitdd56cb306d396bcfdd9c326a65b167b62aef1da8/treea9c639cba42d59f582b9dc69642952a183a6badc。相对WD仅package-lock的playwright-core版本/URL/integrity三行变化，1.62.1/WebKit26.5→官方npm stable1.65.1/WebKit27.2 revision2388，无传递依赖；其余四场、诊断、原5秒/15秒和产品代码逐字不改。官方registry/tag原元数据保存在E/playwright-stable-metadata-20261114-v1.json；只提出引擎版本假设，未认定具体上游issue。modefrontend/nativerequiredfalse/port23971，request700e32f4417f4e6197b917b3071abea2、snapshot465ec78cf9fe67751b5227154db319f3c26185b5，E/public-webkit-stable-diagnostic-v1，收集器OS30509，仅源/数据本地产品执行0。当前frontend在途。四场全过才可申请完整同源Lab验证，不代完整Quality/N5。恢复查现run，禁止原样重派。
 
 首producer213848Z-491c518e **1/43.944155秒**，10files/identity/owned闭，夹具漏#[path]在格式预检被拦，Cargo编译/产品/业务0；run/dual-replug-format-preparation-failure-v1.json保留。修正版仅加符合已有兄弟模块的路径属性；修正版producer与六场业务均已见上闭证。恢复先查source-refs，root唯一ledger writer，禁止按旧pending重派。
 
