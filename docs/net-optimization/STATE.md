@@ -94,3 +94,19 @@ Release business首baseline041330Z-0ae9a3ec low/high均过。首candidate041753Z
 [WORKLOAD-RELEASE](WORKLOAD-RELEASE.md)及E/workload-release-comparison-verification-v2.json绑定全部8run/12业务场景/8640记录/12完整file。coordinator **exec45051/PID71819已终态0**，progress/results均completed，ledger无pending，root恢复唯一writer。原fixed A B B A A B全部保留/额外0；不得再重开相同候选批次挑绿。baseline low/high各3/3；candidate low3/3，high**1/3**。第二红043619Z-e3822070为idle_after terminal index5超2秒及其后114blocked；连同首红，全high候选1925ok/3timeout/232blocked，完整文件三次均成功。low分段工程筛查过，high失败；median高file19.3299→22.4087Mbit/s不抵销交互退化，idle_before TTY计划至完成经验p95 0.303→8.229s。**117c39不具备完整网络接受，勿晋升canonical/main。**
 
 下一优先定位上述Release高BDP退化，先独立诊断，不先改重试/期限/样本或凭一次绿收口。test-onlysole-cache源码准备保留待测。独立诊断树 **khor-net-workload-qlog-v1 / experiment/net-workload-qlog-v1** 基于117c39，普通qlog feature默认关；拟通过上游iroh/Noq qlog能力捕获whole high phase实际恢复/拥塞（新原红还含idle_after，不能只盯bulk启动）。目前仅源码准备：khor-net/Cargo.toml增加qlog feature、transport builder受cfg调用qlog_from_env，测试传每resident隔离QLOGDIR与epoch壁钟/单调锚点；无vendor算法改动/新重试或timer。E/workload-release-qlog-diagnostic-plan-v1.json预先限定三fresh诊断，不能代普通性能；须先remote fmt/lock/deps/trace体积准备再冻结source/producer，当前尚无该诊断产品运行。原1GiB expanded/512MiB压缩collector及40GiB/owner门不降。
+
+### qlog诊断最新在途（2026-11-13T04:55:33.418806+00:00）
+
+source-only准备 **044723Z-7f478bb9** 已0/132.375254s、13files/identity/source/hash/group空闭证，原registry timeout日志留存。只新增上游既有optional **n0-qlog0.2.0 / BSD-2-Clause**，旧lock包及checksum全部保留；原fmt/lock patch已用git apply --check后准确应用Q。源码Q新tree **d372d293f69f4980bc0926797bf99f99ffa60f3a**、snapshot **7e328dc5d000873f1cca809683fa41c0fa472e99**，base117c39，描述符E/workload-release-qlog-source-v1.json。
+
+compile-only control **e7343cf520f6c3ade6fe24e82b342de05af51048** / E/ops/workload-qlog-compile-v1.py，任务workload_qlog_release_compile_v1，提交本地exec55909（只提交，实际远端从最新receipt读）。当前root唯一E/source-refs writer。编译在已闭N3 candidate稳定owned source/target，先按原provenance重新核旧实际产物、把旧N3 test/CLI只读保存在closed-release-workload-v2、记录qlog-source-migration-v1后才切source；实际原wrapper仍030746Z-850f325b，不把proof里的hash当env值。Cargo --release --locked --features khor-net/qlog，CLI和test来自同一producer，要求khor_net unit实际features含qlog；原native verifier不改。仅编译，尚零qlog物理case。原N3源/ELF/完整固定失败不动、不追加挑绿。
+
+下一步：先核该compile终态/原产物/source/hash/owner，再冻其runtime绑定；每job一fresh high原fixture，共固定三job。上游qlog使用per-resident隔离QLOGDIR、完整原phase及时钟锚点；collector原512MiB压缩/1GiB展开不可放宽。诊断controller拟在实际owned test group内对qlog总量700MiB作保护，中止只归类capture/resource未完成，不当产品红/已定因，所有原trace保留。日志开销不并入普通性能。第2原红在idle_after，诊断必须覆盖whole high阶段，不把bulk开启当唯一原因。
+
+### qlog构建前置修订与实际运行句柄（2026-11-13T05:01:58.833011+00:00）
+
+045344Z-11d9f8d9（exec55909提交终态0、远端原1/25.822100s）为**控制引用前置失败**：old N3 ELF已只读保全/核SHA，但沿用旧refs/khor/workload-release-v1拒绝parentless新快照fetch。原引用未覆盖、source迁移0、native编译0、产品运行0；11files/identity/原错误/ledger已闭，专属qlog-compile-preflight-verification-v1.json。不得写成qlog编译或产品红。
+
+v2 control **5a8c50ab20998e13635802e81c88e947c1ac0c2b**改用每run唯一refs/khor/qlog-release-compile/<run_id>；旧保全目录存在时按原SHA/owner/只读模式核验后复用，不覆盖。当前真正native compile-only为 **045808Z-c6558108**，exec83973已仅提交终态0，remotePID **3340475**/child **3340905**，receipt E/turing-20261113T045808Z-c6558108/receipt.json。05:00UTC仍running，已实际编译n0-qlog/Noq/iroh/khor-net等；Root唯一ledger writer。编译源码仍Q d372d293/7e328dc5；不是新测量轮、不动原失败分母。
+
+后续数据工具已source-only准备：E/ops/verify-qlog-release-compile-v1.py、workload-qlog-runtime-v1.py（COMPILE_BINDINGS仍空，必须等真实producer闭后填入/另冻control，绝不能直接跑）。runtime采用原native ownership/subreaper，700MiB trace保护只向Popen-owned test group发TERM；若触发则保留全部原trace/错误并停止，不降collector门或当业务根因。原首caller2秒/whole file240秒/owned600秒、三fresh上限保持。test-onlysole-cache v1仍仅本地源码、未fmt/编译/运行。

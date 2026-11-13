@@ -5,7 +5,7 @@
 | ID | 要求 | 当前证据与缺口 | 状态 |
 | --- | --- | --- | --- |
 | N0.1 | 当前源码、调用链、补丁与覆盖核对 | 选路/注册/确认/看守已跟踪；完整协议与补丁覆盖还未核完 | 部分 |
-| N0.2 | 同条件 baseline/candidate/固定好路径对照 | 历史A/B/负向及失败按原版本保留。最新公开main c3b098对产品集成117c39的同夹具Release唯一middle ABBAAB已闭：基线三次5秒超时、候选345236/366587/366320μs成功；详SOLE-PEER-RELEASE。此前长稳A/B各5case及idle成本差异见STATE。当前共同Release目录/PTY/文件双profile ABBAAB在执行，不能预称性能接受。 | 部分 |
+| N0.2 | 同条件 baseline/candidate/固定好路径对照 | 历史A/B/负向及失败按原版本保留。最新公开main c3b098对产品集成117c39的同夹具Release唯一middle ABBAAB已闭：基线三次5秒超时、候选345236/366587/366320μs成功；详SOLE-PEER-RELEASE。此前长稳A/B各5case及idle成本差异见STATE。最新共同Release双profile ABBAAB已闭，8640记录/12file全留；candidate high只有1/3，原3timeout/232blocked不豁免，见WORKLOAD-RELEASE。 | 部分 |
 | N0.3 | 可追溯 Linux 执行器、私库调度与回执 | namespace/netem/nft、CLI、源码 tree/控制 commit 与原始 artifact 已实际验证 | 已有实证 |
 | N0.4 | 场景分类与指标/门槛冻结 | p6/p7 和原 p2/p3 有协议；完整矩阵 baseline 42507224815 已分类（含配对busy与观察red），其余工作负载目标待补 | 部分 |
 | N1.1 | 类型、端到端质量、停顿、样本时间/可信度 | 共享quality/age/count与ACK校正有证据；延迟读/旧包/初始估计三项红→真实时间窗434Noq/26iroh绿；path事件及新源实际行为仍待验证，置信/波动未齐 | 部分 |
@@ -20,8 +20,8 @@
 | N2.4 | 总期限传递，区分路径/连接/远端/本机慢 | 原Op5/30/300/3600秒减.5秒by已贯通入口/锁/hop/普通exchange/Accepted/一次读重试；42571393016预算/流/探针14绿。Mac138与Turing141长ACK阳性绿、Turing141真实namespace/nft长黑洞F7绿（16合同）。grace之前取消143rd F8实际红→150th同函数Linux21绿、151st同源Mac19便携绿；F7独立确认/外部thread取消及replacement/Weak owner生命周期通过。F9 tick与F10长Accepted取消158实际红→160 Linux24/161同源Mac20绿，16秒健康Accepted控制保持；无pending proof的tick/served独立close与多quiet epoch仍缺；更新10秒/200ms by运行绿，IPC剩余预算/取消未跨进程与多阶段覆盖仍缺 | 部分 |
 | N2.5 | 随机退避、并发预算、恢复事件合并 | 211/212已修稳定接口集合被无关更新反复推迟的通知timer，原1秒及30项journal合同绿；确定性指数退避/jitter与其他事件合并仍缺 | 部分 |
 | N2.6 | 读写重试与 0-RTT 边界 | Accepted与普通wire/真实读重试同by、Sessions严格2次/Mkdir严格1次有Mac实证；全部写动作与包级0-RTT重放专项、最终准确源验证仍缺 | 部分 |
-| N3.1 | 实测队列/并发/缓冲/外层流阻塞 | 原Noq独立方向FIFO及真实Node分层校准、低/高BDP政策数据见MODEL-DECISION/IROH-WORKLOAD-RESULTS/历史STATE；不是只有Noq模型。最新公开main对集成117c39的真实resident目录/PTY/完整文件同Release协议已冻结并开始物理preflight，业务结果待闭。SSH/hop/同步共存及完整资源成本仍缺。 | 部分 |
-| N3.2 | 交互/前台/批量的优先级、背压、公平 | 已有真实Node低/高profile优先级/窗口/取消工作和原始失败；最终产品集成的Release目录/PTY/完整文件固定双模型对比在途。原caller/bytes/样本/真实重叠门保持；同步/预览/全负载公平与实际资源取消仍待最终对齐。 | 部分 |
+| N3.1 | 实测队列/并发/缓冲/外层流阻塞 | 原Noq独立方向FIFO及真实Node分层校准、低/高BDP政策数据见MODEL-DECISION/IROH-WORKLOAD-RESULTS/历史STATE；不是只有Noq模型。最新公开main对集成117c39的同Release双模型ABBAAB已闭：low过、high交互2/3失败，8640完整记录与12file，吞吐收益不抵销阻塞；独立上游qlog诊断编译中。SSH/hop/同步共存及完整资源成本仍缺。 | 部分 |
+| N3.2 | 交互/前台/批量的优先级、背压、公平 | 已有真实Node低/高profile优先级/窗口/取消工作和原始失败；最终产品集成的Release固定双模型对比已闭：high1/3通过、3timeout/232blocked；原失败使当前候选被拒绝，正在定位。原caller/bytes/样本/真实重叠门保持；同步/预览/全负载公平与实际资源取消仍待最终对齐。 | 部分 |
 | N3.3 | 比较共享与分连接，按数据选设计 | 尚无本轮比较，不能预先认定增加连接有效 | 待做 |
 | N3.4 | 保留个人网拓扑，改进闲时/事件/恢复开销 | 174/176真实resident观测到各274–280存活thread，尚无闲时/能耗结论；需1/3/5设备数、空闲字节、CPU/唤醒与手机能耗记录 | 待做 |
 | N4.1 | 两端完整路径及不对称可达性 | 实验室 p6 有完整测量；用户已澄清MacLab/Turing同LAN，构建macserver另机且A/B依用户异网报告；A/B公共Relay目录/正文120/120通过，Direct/NAT/v6穿透未验；localhost iPhone前台换网正在采样 | 部分 |
