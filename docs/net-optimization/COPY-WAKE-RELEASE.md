@@ -15,3 +15,21 @@
 W 的8个原稳定性控制已通过，但这些helper实际是目录读取，不能当作真实PTY接受。Mac补丁38库检查已对照绿，真实NAT退出尚待。本实验也不替代同步/预览/SSH公平性、空闲能耗、IPv6/手机换网及最终同源N0–N5验收。
 
 执行已进入固定业务矩阵。root使用串行stdlib编排器（当前PID及句柄只查STATE/progress），每块真实终态后核两类证据再派下一块。活跃期间该进程独占source-refs/progress写入，root不另行调度；它不会因产品红补跑，也不会因观测超时替换仍在途的run。未知测量/所有权/launch会停止后续并保留准确句柄。
+
+## 完整批次结果
+
+2026-11-13本批已终态、收集、逐块核验，root编排器PID20826已退出，原source-refs无pending。固定18业务场景、12960计划交互全部留证；无替代轮次。三臂各3个low及3个high新场景，共同业务夹具和原门保持。
+
+| 源 | 原业务门通过 | 交互outcomes | low文件中位Mbit/s | high文件中位Mbit/s |
+| --- | --- | --- | ---: | ---: |
+| 原公开基线B | 6/6 | 4320 ok | 7.163660 | 19.715313 |
+| 升级原候选C | 6/6 | 4320 ok | 7.252352 | 24.307740 |
+| 唤醒消融W | 5/6 | 4200 ok、2 timeout、118 blocked | 6.917343 | 23.493630 |
+
+**拒绝W作为超时修复或默认设计。** W的low终端pooled scheduled-to-end p95：bulk为6.379894s（B为80.491ms），idle_after为8.396699s（B为43.197ms）。high有2个原2秒caller超时，后续118个blocked是未发意图，不能计成118次网络超时，也不能从分布删去。完整文件仍成功不能抵销交互失败。旧8/8稳定性控制不替代这份业务反例。
+
+C本轮没有交互超时，但也未通过原工程门：low的bulk目录p95为371017us，对照239185us，原界限283103.5us；high为580146us，对照452402us，原界限517642.2us。C的本轮TTY数据不能覆盖原Release批次high 2/3失败，不能据本轮全功能绿宣称已修复或最终晋升。
+
+原3个cold TCP参考红全部保留；三臂分层模型准入均过，并未把TCP原门改成通过。p99仍仅为有限样本nearest-rank，失败条件分布明确，无独立显著性或任意WAN保证。
+
+完整数据在E/copy-wake-release-comparison-verification-v1.json；C对B按原门补核在E/copy-wake-parent-recheck-analysis-v1.json。原cohort progress的12个闭块各有identity、block及resource三个证据，全部源、日志hash、实际CLI/selected还原和无强制清理见证保持。下一步的单一原生CC分量诊断见[CUBIC-ABLATION](CUBIC-ABLATION.md)，不重新包装或替换本批失败。

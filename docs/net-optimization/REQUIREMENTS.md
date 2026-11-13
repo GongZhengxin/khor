@@ -20,7 +20,7 @@
 | N2.4 | 总期限传递，区分路径/连接/远端/本机慢 | 原Op5/30/300/3600秒减.5秒by已贯通入口/锁/hop/普通exchange/Accepted/一次读重试；42571393016预算/流/探针14绿。Mac138与Turing141长ACK阳性绿、Turing141真实namespace/nft长黑洞F7绿（16合同）。grace之前取消143rd F8实际红→150th同函数Linux21绿、151st同源Mac19便携绿；F7独立确认/外部thread取消及replacement/Weak owner生命周期通过。F9 tick与F10长Accepted取消158实际红→160 Linux24/161同源Mac20绿，16秒健康Accepted控制保持；无pending proof的tick/served独立close与多quiet epoch仍缺；更新10秒/200ms by运行绿，IPC剩余预算/取消未跨进程与多阶段覆盖仍缺 | 部分 |
 | N2.5 | 随机退避、并发预算、恢复事件合并 | 211/212已修稳定接口集合被无关更新反复推迟的通知timer，原1秒及30项journal合同绿；确定性指数退避/jitter与其他事件合并仍缺 | 部分 |
 | N2.6 | 读写重试与 0-RTT 边界 | Accepted与普通wire/真实读重试同by、Sessions严格2次/Mkdir严格1次有Mac实证；全部写动作与包级0-RTT重放专项、最终准确源验证仍缺 | 部分 |
-| N3.1 | 实测队列/并发/缓冲/外层流阻塞 | 原Noq独立方向FIFO及真实Node分层校准、低/高BDP政策数据见MODEL-DECISION/IROH-WORKLOAD-RESULTS/历史STATE；不是只有Noq模型。最新公开main对集成117c39的同Release双模型ABBAAB已闭：low过、high交互2/3失败，8640完整记录与12file，吞吐收益不抵销阻塞；独立上游qlog与native ACK各固定3已闭但未复现原超时，不能覆盖原红；W copy-wake独立消融原控制固定8/8已闭（六轮600s spike、黑洞与短停顿）；helper实际为目录读，不代真实PTY。普通Release三臂producer及15项fresh准入已闭（各原cold TCP红保留，分层准入过）；固定18业务场景已开始，尚无本批性能结论。SSH/hop/同步共存及完整资源成本仍缺。 | 部分 |
+| N3.1 | 实测队列/并发/缓冲/外层流阻塞 | 原Noq独立方向FIFO及真实Node分层校准、低/高BDP政策数据见MODEL-DECISION/IROH-WORKLOAD-RESULTS/历史STATE；不是只有Noq模型。最新公开main对集成117c39的同Release双模型ABBAAB已闭：low过、high交互2/3失败，8640完整记录与12file，吞吐收益不抵销阻塞；独立上游qlog与native ACK各固定3已闭但未复现原超时，不能覆盖原红；W copy-wake独立消融原控制固定8/8已闭（六轮600s spike、黑洞与短停顿）；helper实际为目录读，不代真实PTY。普通Release三臂18场景/12960记录已闭，W有2timeout/118blocked，C虽本轮全功能过但bulk目录尾延迟仍过原界限；两者均未晋升。CUBIC单一分量普通Release编译在途，尚无runtime结果，未当修复。SSH/hop/同步共存及完整资源成本仍缺。 | 部分 |
 | N3.2 | 交互/前台/批量的优先级、背压、公平 | 已有真实Node低/高profile优先级/窗口/取消工作和原始失败；最终产品集成的Release固定双模型对比已闭：high1/3通过、3timeout/232blocked；原失败使当前候选被拒绝，正在定位。原caller/bytes/样本/真实重叠门保持；同步/预览/全负载公平与实际资源取消仍待最终对齐。 | 部分 |
 | N3.3 | 比较共享与分连接，按数据选设计 | 尚无本轮比较，不能预先认定增加连接有效 | 待做 |
 | N3.4 | 保留个人网拓扑，改进闲时/事件/恢复开销 | 174/176真实resident观测到各274–280存活thread，尚无闲时/能耗结论；需1/3/5设备数、空闲字节、CPU/唤醒与手机能耗记录 | 待做 |
@@ -29,7 +29,7 @@
 | N4.3 | 单家/双家必要性与成本实证 | 尚未定案 | 待做 |
 | N4.4 | 移动IPv4/NAT映射与IPv6地址/前缀独立或同时变化；Wi-Fi↔移动网、地址族切换、双方与peer-relay移动；缓存/发布/发现收敛 | U12明确；210生产通知真实红→211 Linux/212 Mac原整fixture绿，原1秒不变；215又完成同prefix IPv6实替换/IPv4保持的物理注入校准；Node业务、前缀/IPv4/NAT与真机矩阵未执行 | 部分 |
 | N4.5 | 有测量支持的中继布局、容量与运维设计 | 部署/采购单列，当前未执行 | 待做 |
-| N5.1 | 每项 vendor 补丁的原因/覆盖/上游/退出条件 | 已升独立产品候选至iroh1.4.1/Noq1.4.0，canonical尚未合。E/iroh-upgrade-patch-ledger-v4.json的60历史项为1上游替代已验、2移除红而留、57待退出核查；不得说57均必要。patch38移除前后Mac完整iroh库均198/0/原ignored1，逐项名称与结果一致，但真实NAT强oracle对照尚未执行，不能据此删补丁；见TUPLE-REFRESH-EXIT。部分vendor及应用/物理恢复专属证据见STATE，逐项退出仍未齐。 | 部分 |
+| N5.1 | 每项 vendor 补丁的原因/覆盖/上游/退出条件 | 已升独立产品候选至iroh1.4.1/Noq1.4.0，canonical尚未合。E/iroh-upgrade-patch-ledger-v5.json的60历史项为1上游替代已验、2Noq移除红保留、1 iroh38实际NAT移除红保留、56待退出核查；不得说56均必要。patch38移除前后Mac完整iroh库均198/0/原ignored1，名称与结果一致；真实NAT固定6块/12场景/744读全成功，基线3/3强oracle过、移除臂0/3并有215个cached/actual mismatch，因此在所测当前源保留；见TUPLE-REFRESH-EXIT。部分vendor及应用/物理恢复专属证据见STATE，逐项退出仍未齐。 | 部分 |
 | N5.2 | 稳定短回归、完整矩阵、长时间与重复 | 稳定性前后各5case、600秒与32真实目录请求、原取消及成本回退已闭；最新产品Quality13/13首次通过、唯一middle Debug3/ReleaseABBAAB闭证。原完整NET-16/移动/成本/最终同源矩阵未全齐，不以短绿代全绿。 | 部分 |
 | N5.3 | Mac 原生、真实手机与多机验收 | 集成117c39完整原生Quality13/13首次通过；最新Mac Lab43355810513原native成功、checks原WebKit失败留证/唯一同源重跑77浏览器case过，inner native ZIP/probe/source/contract已核、无本地产品执行/安装替换。物理iPhone仍旧安装版，新候选跨网/换网/能耗未接受。 | 部分 |
 | N5.4 | 最终准确源码质量检查、集成复核和限制说明 | 产品集成117c39保留当前公开main apps/与.github/，完整Quality43348869616首次13/13及Mac Lab同源通过（原WebKit失败仍保留）。最终NET-16/N3/N4/custom收敛后的准确源复核、canonical集成与报告尚未齐；无main合并/发布。 | 部分 |
