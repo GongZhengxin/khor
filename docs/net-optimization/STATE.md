@@ -1,6 +1,6 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-13T21:51:21.379486+00:00。完整[GOAL](GOAL.md)/[PLAN](PLAN.md) N0–N5 **未完成**；逐项缺口见[REQUIREMENTS](REQUIREMENTS.md)。用户已授权持续实施/远端验证，root串行、不派子智能体；不因局部通过停止。无main合并、正式发布、生产Relay采购部署或现装App替换授权。
+更新于 2026-11-13T22:14:11.571930+00:00。完整[GOAL](GOAL.md)/[PLAN](PLAN.md) N0–N5 **未完成**；逐项缺口见[REQUIREMENTS](REQUIREMENTS.md)。用户已授权持续实施/远端验证，root串行、不派子智能体；不因局部通过停止。无main合并、正式发布、生产Relay采购部署或现装App替换授权。
 
 E=`/Volumes/disk0/Khor/evidence/net`；全部worktree在`/Volumes/disk0/Khor/worktrees/current/`。此前STATE逐字归档[HISTORY-through-relay-health-v2](HISTORY-20261113-through-relay-health-v2.md)，SHA256 `04c4a8d83d8f48a963f0762581843009788d3f24cdadeebd89f29dc55ce744c5`；其中保留更早全部历史/失败/来源链接。历史pending/PID不用于重派。
 
@@ -18,9 +18,15 @@ E=`/Volumes/disk0/Khor/evidence/net`；全部worktree在`/Volumes/disk0/Khor/wor
 
 **F3原混合负载六场已完整闭证**：211514Z-c483a776 0/721.053971秒，18files/identity/native/CPU/owned全核，4320/4320请求成功、6文件完整。原两个profile/2秒caller与low/high/high/low/low/high不改；高profile第6场目录scheduled p95仍1.229秒，不能关闭N3或旧I1/A超时，详RELAY-PROGRESS-MIXED。首个210632Z-119ea551控制漏--ignored、业务0/六场未执行的1/7.739828秒完整保留；修正版仅恢复原测试所需参数，无替代业务场次。
 
-**Turing唯一pending为双端换网测试producer214246Z-2606e4e9 / PID952495**，task net-node/revision dual_endpoint_replug_release_compile_v2/controlce03e5c085b5961cd9ef740a60e241144609e487。独立khor-net-dual-replug-v1 / experiment/net-dual-replug-v1，source7bacfb1860f1e426d4a62564be7698264d0a41f0/treea2f7a04cf1cf15e4eb2fb1f36156158e71a85048/snapshotc7328da4e607539533dda90db8a61556399a4363，只在I3之上新增paths::both两个测试与mod显式路径，共两文件，产品代码不改。提前冻结E/dual-replug-design-v1.json：两端IPv4/NAT、两端dual-stack+prefix各固定3场，2setup+两方向各20新marker读，原新合同2秒caller/500ms计划/各方向首有效≤2秒，共252调用；两端replug完成后才并发第一对业务，无中途probe/手工重绑。dual场不冒充实际IPv6-only路径或手机。两次源经远端固定rustfmt SHA已核。
+**双端换网夹具普通Release producer214246Z-2606e4e9已0/598.284484秒闭证**，22files/identity/strict native完整，Rust9分06秒，实际CLI fresh=false且SHA逐字F3/I3 a2a655f73f168dc10ed580e1a578c5db5c3056a6d5207aacceebc82aebba450d；完整test27153e0228f06cb9108c33a9281eb1ab2042dec873cc6f23432ee3422ce19b03。source7bacfb1860f1e426d4a62564be7698264d0a41f0/treea2f7a04cf1cf15e4eb2fb1f36156158e71a85048/snapshotc7328da4e607539533dda90db8a61556399a4363。run/dual-replug-native-compile-verification-v2.json；只比I3新增paths::both两个测试与mod显式路径，产品代码不改。
 
-首producer213848Z-491c518e **1/43.944155秒**，10files/identity/owned闭，夹具漏#[path]在格式预检被拦，Cargo编译/产品/业务0；run/dual-replug-format-preparation-failure-v1.json保留。修正版仅加符合已有兄弟模块的路径属性。当前producer普通Release/strict来源/实际CLI fresh=false门不改，完成collect→identity→ops/verify-dual-replug-native-compile-v2.py，若通过再冻结准入后的固定六场runtime。当前双端换网尚无native/业务接受。恢复查source-refs，root唯一ledger writer，禁止重派。
+**双端换网固定六场220320Z-44d72463已0/218.669043秒闭证，当前Turing无pending。** 18files/identity/native/CPU/owned完整，252/252实际读成功；V4三场首双向0.507–0.509秒，dual三场0.706–1.674秒，各方向原2秒门通过。独立核对两端内核旧/新IPv4与IPv6 /64、外部UDP映射和8份router前后规则、全部42起止/每场40新marker样本，protocol_verified=true。run/dual-replug-runtime-verification-v1.json及E/dual-replug-summary-v1.json，详BOTH-ENDPOINT-MOBILITY。固定V4/dual/dual/V4/V4/dual，无替代/运行编译。只接受两个几何，不冒充IPv6-only两端变化或手机/全N4。
+
+下一Turing工作尚未调度，恢复先查source-refs；可继续N3当前候选对照/成本、N4纯IPv6双方变化及N2/custom缺口，不能因六场绿停掉完整目标。
+
+**WebKit菜单四场诊断已唯一发起43515609775**：独立khor-net-webkit-menu-diagnostic-v1 / diagnostic/net-webkit-menu-v1，commit59d72b36b683bd1a53f5199c2436b03bd0b27aca/treecd09ec8137fe17d7a309128a9c2dcba5b7c26b69；仅四个测试mjs变化，产品UI/网络代码0变更。提前E/webkit-menu-diagnostic-design-v1.json固定after_resources/fresh/fresh/after_resources四场，比较同一headless WebKit中资源预览前置/进程历史，使用原settings断言、15秒与popup5秒；仅失败后采集DOM/动画/visibility与有界RAF/JS timer。不是完整77case替代或性能接受。mode=frontend/native_required=false/port23969，request97104fd5e3924002a12ea2030100750f、snapshot7435858bdc141fdd0e4760d000bf8b3508896457，E/public-webkit-menu-diagnostic-v1，收集器OS session27070（仅下载数据、本地产品执行0）。当前frontend已success、native按意图skipped、checks132199036488在途。恢复先查request/run，禁止重派。
+
+首producer213848Z-491c518e **1/43.944155秒**，10files/identity/owned闭，夹具漏#[path]在格式预检被拦，Cargo编译/产品/业务0；run/dual-replug-format-preparation-failure-v1.json保留。修正版仅加符合已有兄弟模块的路径属性；修正版producer与六场业务均已见上闭证。恢复先查source-refs，root唯一ledger writer，禁止按旧pending重派。
 
 **健康jitter真实3场已完整重现F2误断，F2不晋升。** runtime201418Z-2b427674 **1/112.210432秒**、15files/identity/native/CPU/owned闭：42/42实际读成功、无队列drop，但三场原TCP都在约1.11秒消失后被新tuple替换。100ms内核采样、原124→976ms delay/filter/无drop和原5秒caller均独立核验，protocol_verified=true；每场158/159/161次改变观测。run/relay-health-jitter-runtime-verification-v1.json。原silent3场改善依然保留，但不足以全面采用F2。
 
