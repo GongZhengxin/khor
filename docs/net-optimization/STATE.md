@@ -6,7 +6,9 @@
 
 ## 当前执行器与紧接工作
 
-唯一pending为Relay可用性隔离compile-only **131622Z-0132e71c / PID280563**，control **40c5f3ac48787ccf5d649858af4fcb288c545468**。source tree **953fd88f5f39fa99bc726296e5a84559996ce5cc** / snapshot **90d743c8b05c77f2c848c8b1feb9485aa851ab41**，worktree khor-net-relay-availability-v1、branch experiment/net-relay-availability-v1，HEADd6、2 staged。E/relay-availability-{source,native-compile-plan,runtime-design}-v1.json；设计SHA c36987c80027f25dbb81d7becde25c954b0c81fe033d16a913000d2320291310。原D源保留。先核真实execution/PID；终态collect→identity→producer闭，再冻结实际runtime绑定，禁止重派。root唯一ledger writer、无后台协调器；旧20826/53952已实际退出。
+Relay可用性隔离v1 **131622Z-0132e71c 1/214.672428s**已闭17files/identity/空owner；Cargo普通Release成功2m45s，但严格来源核验拒绝fresh CLI（只准备了test入口，包级源码key已变化）。native未准入、业务0，失败完整留存。v2保持**同一源码953fd88f5f39fa99bc726296e5a84559996ce5cc / snapshot90d743c8b05c77f2c848c8b1feb9485aa851ab41**，仅控制编排使用原prepare_build显式准备普通CLI入口，原验证器不改；先归档未准入5文件，再原命令构建。control **da9463f9919127fa12c6de83b5fe7ab8041c9744**；具体新receipt核source-refs唯一pending，禁止重新调度。E/relay-availability-native-compile-plan-v2.json、runtime-design-v1（SHAc36987c8）均预冻。source在khor-net-relay-availability-v1 / experiment/net-relay-availability-v1，HEADd6、2 staged，旧D原件保留。编译闭后才绑定实际producer并运行固定6场。
+
+独立Mac whole-hop准确R9081b94d/treecf9d172b回归已派发 **43432815139**，request **92505a44604d4167adeab5d7e2d1bd80**、control **0deeef2f8c79c97f941054efc1bd324efbc787cd**。E/public-mac-live-middle-whole-hop-v1/receipt.json，协议live-middle-mac-whole-hop-plan-v1.json；固定原Linux全部92个名字，正计数与结果必须全同，原Mac50/40GiB门/jobs2/raw blob传输/workflow不改。复用ceeb30968b274bb0b8da0f5a41ebf520原owner源码refs（已核远端SHA），新request不得退役其refs。仅回归、非性能/全部NET16，不安装/发布App。root唯一ledger writer，无后台协调器，旧20826/53952已退出。
 
 Direct/Relay配置隔离producer **124033Z-8cfa87a1 0/596.350447s**，普通Release、Rust9m06s、20files/identity/native provenance已闭；source tree **59639aac742bd404fc9bea1618f29345907ac238**，snapshot **5a41f54d37d8755cb54e31478e61a5cddff6c2f4**。test SHA5ba6fa9ea5d828be2fc782fdaac5100f5dcc3474df0d367c1f36e7a260078f98；CLI a7e3565f15ed15d59f5215bceeb3900d153d053dd853846f623d86efbe6e4ac9。实验树khor-net-direct-isolation-v1，HEADd6b97c3d、2 staged；runtime逐字I117 BBR，不含R/W/M38。
 
