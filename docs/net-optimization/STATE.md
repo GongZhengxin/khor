@@ -128,3 +128,8 @@ W原控制runtime control94849c5a1748121af392ec68c00d153b4aba4482已提交，exe
 v2协议E/copy-wake-original-controls-plan-v2.json：仍p1s×6→p3→p5、原600s/原4drops/原门；保持512同时匹配owner上限，历史birth identity记录另有8192有界cap并记录peak live/history；以纯数据校准2000历史+1活、513活应拒、8193历史应拒。不改产品源/原native verifier，复用同actual producer无需重编。controlc2c2d706799a26585febf3d135d43ca039a7e327，提交exec23870；最新pending [{"run_id": "turing-20261113T073647Z-7e574645", "pid": 3708886, "submission_state": "launched"}]。root唯一writer，先核当前任务，不重开v1。最终report/copy-wake-original-controls-contract-v2.json、在途copy-wake-controls-progress-v2.json。
 
 只读移动链路审计见[MOBILE-ADDRESS-AUDIT](MOBILE-ADDRESS-AUDIT.md)：准确netwatch0.19.3原crate checksum核，iOS有AF_ROUTE地址通知、minor也进iroh重新寻址/通知QUIC。App同interface种类去重不单独证明漏地址事件，须实际移动/发布/epoch/phone测试。无产品修改或N4接受；持续路由事件下250ms debounce只列待测风险，不作为已证根因。
+
+
+2026-11-13T07:42Z现场核：当前唯一pending为 **073647Z-7e574645**（v2，remotePID3708886/child3709408，exec23870仅提交已终态0），准确W/source/control同上。report确认监督纯数据三边界校准全过、首p1s实际执行中；尚无该case verdict。继续先核原task，不重复dispatch、不覆盖未完分母。v1中断已闭；R恢复3/3与92测试仍成立，I原N3拒绝保持。
+
+等长稳窗口时仅做只读退出审查：原E/upstream-20261109/iroh-1.4.1.crate的e3689cab508af9bcef7816c1201b403595ec6aa20e7d15e1f9683bb4be4a5b17与原registry元数据checksum核，从包内读取源码到E/upstream-iroh-141-address-review-v1。patch38当前source审查E/iroh-patch38-source-exit-review-v1.json：upstream Established时登记tuple，RemoteStatus/ObservedAddr忽略；未见同等refresh scan，但不能据此认定当前Noq1.4.0必须保留或删除。需同准确新源的真正NAT重绑退出对照与成本/tuple归属；ledger57 pending不擅改。没有新产品源码或本机native运行。
