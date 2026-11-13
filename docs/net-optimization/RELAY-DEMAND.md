@@ -11,3 +11,12 @@ runtime184914Z-5cfe53b4 1/198.559489秒，15files/identity/native/CPU/owned清�
 该几何复现了真实前台等待，不等同手机现场、全部故障域或所有策略。静态常规15秒Relay ping加最长5秒pong与观测相符；需候选对照验证因果。仅有空闲30秒内恢复不能作为最佳体验接受。
 
 下一候选设计：实际请求已发且尚无ACK时，在按RTT缩放的短等待后请求现有Relay健康检查。由iroh继续判断pong/重建TCP；不因请求慢直接判死QUIC，不重放写，不把轻量健康检查升级成全endpoint重新绑定。检查仅属于有界请求，调用方取消后不保留新watcher；iroh现有actor合并并发提示，后台常规15秒节奏保持。具体候选与重复协议在E提前记录。原慢健康Relay、长Accepted、取消及后台成本必须回归，绿后才讨论晋升。
+
+
+## 窄修复同夹具复验
+
+隔离候选81ae5c9812b06298a06549f1c16a3728baac2c8d/treeba3da3451c027904b657183bc26d990191d75c30保留原fixture全部字节，按实际resident request在未收到datagram时提示既有Relay健康检查；TCP actor只持一个未完成health ping，匹配pong或原timeout完成它，避免并发提示/周期ping延长deadline。没有新周期timer、整endpoint rebind或应用写重放。该exchange也供后台同步使用，成本必须实测。
+
+普通Release producer191019Z-979f0ccd 0/594.656134秒，22files/identity/strict native闭；CLI ef9a3dd1061ab557c4aa1709b9a14901813efff2e91251bbdef5e415f8c49519、test2296f0f2b87910dee724f65b9b52957e7e255bf9e0d9a29ea24fbb63f1816f4b。runtime192107Z-941d6b67 **0/166.445581秒**，15files/identity/native/CPU/owned闭，固定原3场 **126/126成功、零超时**。首个有效响应960623、958965、906570μs，均在原2秒内；基线分别20042371、20040904、20049739μs、30超时。各40故障后真实新marker目录读和2setup均保留。run/relay-silent-demand-repair-runtime-verification-v2.json。
+
+对照不是同期交错A/B；只支持该固定几何里3次红到3次绿与首响应改善，不估总体可靠率/p99，不替代真实iPhone现场。v1仅原生compile保留、因并发deadline风险未运行/晋升。v2七组件回归、慢健康路/Accepted/取消/成本及全部N0–N5仍需完成。

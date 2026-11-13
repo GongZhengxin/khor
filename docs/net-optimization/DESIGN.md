@@ -175,3 +175,5 @@ RELAY-DEMAND记录准确I2/R普通Release在原几何中3/3真实前台红：每
 Endpoint通过现有有界socket actor队列转交。实际TCP的ActiveRelayActor拥有一个未完成health ping：并发提示加入当前检查，只有匹配pong清除，原timeout/reconnect仍归iroh；周期ping不能覆盖该检查的deadline。新TCP重新开始该状态。没有新后台周期timer、没有全endpoint rebind，也不因业务处理慢直接retire QUIC或重放应用写入。
 
 V1以500ms节流合并被静态审查否决：上游PingTracker每次new_ping覆盖deadline，可能被并发提示反复推迟；保留其原生compile但未运行/晋升。V2新增原生deadline与pong合同，还须原3场、慢健康Relay/长Accepted、取消/资源与实际后台成本回归。健康探测RTT抖动、发送队列已堵时的normal inbox可达性、收到旧datagram、持久TTY/其他协议及反复故障仍属未验范围。此窄修复不能关闭完整N2/N3/N4或手机现场。
+
+候选的resident exchange入口也供后台同步使用，没有按UI前后台标记过滤。没有活请求时不会由本改动新增检查，但后台同步本身仍是实际请求，不能据此宣称闲置流量或能耗不变；需真实1/3/5设备与手机记录。
