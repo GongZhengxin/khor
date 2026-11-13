@@ -6,13 +6,13 @@
 
 ## 当前执行器与紧接工作
 
-当前无pending任务、无后台协调器。root唯一ledger writer；旧20826/53952已实际退出。先前STATE的compile pending已终态闭，不重派。
+唯一pending为Relay可用性隔离compile-only **131622Z-0132e71c / PID280563**，control **40c5f3ac48787ccf5d649858af4fcb288c545468**。source tree **953fd88f5f39fa99bc726296e5a84559996ce5cc** / snapshot **90d743c8b05c77f2c848c8b1feb9485aa851ab41**，worktree khor-net-relay-availability-v1、branch experiment/net-relay-availability-v1，HEADd6、2 staged。E/relay-availability-{source,native-compile-plan,runtime-design}-v1.json；设计SHA c36987c80027f25dbb81d7becde25c954b0c81fe033d16a913000d2320291310。原D源保留。先核真实execution/PID；终态collect→identity→producer闭，再冻结实际runtime绑定，禁止重派。root唯一ledger writer、无后台协调器；旧20826/53952已实际退出。
 
 Direct/Relay配置隔离producer **124033Z-8cfa87a1 0/596.350447s**，普通Release、Rust9m06s、20files/identity/native provenance已闭；source tree **59639aac742bd404fc9bea1618f29345907ac238**，snapshot **5a41f54d37d8755cb54e31478e61a5cddff6c2f4**。test SHA5ba6fa9ea5d828be2fc782fdaac5100f5dcc3474df0d367c1f36e7a260078f98；CLI a7e3565f15ed15d59f5215bceeb3900d153d053dd853846f623d86efbe6e4ac9。实验树khor-net-direct-isolation-v1，HEADd6b97c3d、2 staged；runtime逐字I117 BBR，不含R/W/M38。
 
 runtime **125829Z-17b3241d 1/195.119839s**，control **801cd2cb052e214505041a7d5598b9e2cc385c8b**，14files/identity/全部owned清理已核，source-refs已闭。固定6场仅执行2场：normal第1场原门通过、720/720业务ok、192MiB完整，bulk目录/TTY scheduled p95 **655612/317657us**，文件25.192292Mbit/s；第2场在计时前前置失败，无manifest/sample/bulk；其余4场未执行、替代0。完整比较**无效**，E/turing-20261113T125829Z-17b3241d/direct-isolation-partial-verification-v1.json；原raw保留，仅按预冻适配移除第1场一个非业务控制记录作原解析。
 
-原因已由实际源码确认：node::chosen_relays明确在清单为空时关闭only_mine，恢复内置Relay，是已有兜底设计；并非产品已违反禁用设置。此前把空清单视为禁用开关是夹具假设错误。不能以此构造Direct-only性能结论，也不新增产品禁用开关。紧接改为**相同配置、Relay可用性隔离**：仍只配置相同Lab Relay，两组产品runtime/BBR一致；在实验fixture中停止故障组的真实Relay并核实端口关闭，测有/无可用Relay时原真实Node工作负载。必须先冻结修改后协议/前置，再构建与固定执行；原失败及6场计划保持不变，不回填未执行场。
+原因已由实际源码确认：node::chosen_relays明确在清单为空时关闭only_mine，恢复内置Relay，是已有兜底设计；并非产品已违反禁用设置。此前把空清单视为禁用开关是夹具假设错误。不能以此构造Direct-only性能结论，也不新增产品禁用开关。当前改为**相同配置、Relay可用性隔离**：仍只配置相同Lab Relay，两组产品runtime/BBR一致；在实验fixture中停止故障组的真实Relay并核实端口关闭，测有/无可用Relay时原真实Node工作负载。协议/前置已预冻，正在仅编译，之后才固定执行；原失败及6场计划保持不变，不回填未执行场。
 
 原配置/发布不证明两条活Noq copy；新实验也必须限制因果解释，保留journal。Main目录/文件与Tunnel PTY本来已分连接，不能声称是新设计。仅实验诊断，不建议产品禁用Relay。编译/计时分离，计时不编译，不改原720记录/192MiB/2秒caller/600秒owned/Direct前后及功能门。
 

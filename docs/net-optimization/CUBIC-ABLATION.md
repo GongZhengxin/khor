@@ -58,3 +58,12 @@ Rust libtest会把test-name前缀与第一条stderr指标写在同一行。原�
 测量代码及验证图修正已提交隔离分支experiment/net-cc-matrix-v1，commitd6b97c3d41d13fb1b9ef209adb89975bfdd727af、tree23b5d7e9d841e1411ba84a68db91ed1f95d7bcff，不合入main/canonical。
 
 下一问题是在保留I117的原BBR runtime时，Relay候选配置是否改变真实Node长尾。新的khor-net-direct-isolation-v1只改实验夹具，并把endpoint.rs逐字还原I117。Main用于目录/文件、Tunnel用于终端本来已分开；这不预先决定再开连接。E/direct-isolation-design-v2.json预冻六场normal/direct/direct/normal/normal/direct，原720记录/场、192MiB/场、2秒caller及全部业务门保持。禁止把夹具关闭Relay推广为生产建议，候选的配置/发布也不独立证明同时活跃的Noq路径。准确在途与来源以STATE为准。
+
+
+## Relay隔离前置失败与修订
+
+原D producer124033Z-8cfa87a1已通过普通Release编译/来源核验。固定6场runtime125829Z-17b3241d完成1/195.119839s：第1normal场原门通过、720业务全部ok、192MiB完整；第2场在计时前发现两端仍发布内置Relay，前置失败，余4场未执行、替代0。对照无效，完整partial verification见该run目录，原raw/失败均保持。第1场bulk目录/TTY scheduled p95 655612/317657us、文件25.192292Mbit/s只属单场正常配置观测。
+
+实际node::chosen_relays明确在名单为空时关闭only_mine，作为手改空文件的安全兜底；写入口本来就拒绝该组合。把空清单当禁用开关是实验假设错误，不能因此判产品违规，也不能新增禁用开关来配合测量。
+
+新设计E/relay-availability-runtime-design-v1.json保持同一有效Lab Relay清单，两组均核两端实际发布地址。故障组只停止并wait实验Relay的原child，再从该private设备实际探测监听口必须ConnectionRefused；正常组必须真实TCP可连。两组都按原要求先Direct，再执行相同720记录/192MiB/2秒caller及全部原门，顺序available/unavailable/unavailable/available/available/unavailable。变化在节点启动前发生，不冒充在途断线恢复测试；死Relay的后台重试成本包括在内，可用也不独立证明存在同时活的Noq多路径。runtime与I117 BBR逐字一致。当前只构建，不接受优化结论。
