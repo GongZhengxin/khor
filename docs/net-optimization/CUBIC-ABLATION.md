@@ -31,3 +31,30 @@ runtime111336Z-865645d6结束1/504.032874s，15个artifact文件及全部来源�
 仅隔离树khor-net-cc-matrix-v1增加该测量。source tree25fed870f2637708c85f5a758a583d3d9f44dc65/snapshotcd36eaf2a9227c6b01fc49bf23652dab29873e28，fixture SHA da7e5ca0b414af0a3b278902d8c1222044dafa38b1cc96d453643b76d126aeed。首编译准备112934Z-a0f72d29被格式门拦下，Rust编译/业务0，原失败保留；v2只用其导出格式修正。准确在途句柄见STATE。
 
 分量诊断screen已在runtime前固定：全原调用成功，每loss下各控制器3轮完整bulk，CUBIC吞吐中位≥BBR的90%；各phase p95≤BBR×1.10+20ms。屏幕样本量很小，报告n，不作总体p99置信声明。测量不接纳默认控制器，也不覆盖真实Node/SSH/hop、共享/分连接、取消公平和能耗。
+
+
+## 构建图修正与实际矩阵
+
+原构建验证图错误地传播了依赖库的dev-dependency：当前net→catalog把catalog自身测试用core也列作本次网络测量的必编译包。Cargo官方明确dev依赖不向使用者传播，typed metadata的dep_kinds提供normal/build/dev分类：[开发依赖](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#development-dependencies)、[metadata格式](https://doc.rust-lang.org/cargo/commands/cargo-metadata.html)。
+
+隔离树修正native_provenance的图计算，只纳入被请求test/example/bench自身的dev依赖，保留所有normal/build边；typed与legacy IDs不一致、缺typed字段或未知kind拒绝，原source/actual row/dep-info/hash门保持。原37项和9个新正反例在Turing先对旧代码精确5红，再对新代码46全绿。源码与全部准备/校验拒绝逐项见STATE和各原receipt，没有删除失败或将未准入产物执行。
+
+最新测量源tree23b5d7e9d841e1411ba84a68db91ed1f95d7bcff/snapshotc8a1ce24babfad4a68af86b4c0d530596932c1be；Rust runtime和quiet夹具与前版相同，仅两份Python验证文件新增修正及回归。producer120149Z-9c128417成功0/74.067894s（Rust18.97s），22files闭证。runtime120549Z-13cd71dd已派发：control7b1b5f0b588470af70afc7d04e6e0361c932c880，绑定真实producer及19个固定场景，E/cc-matrix-runtime-{plan,control}-v1.json。该矩阵仍在途，无最终性能或产品接受结论。
+
+
+## 当前Noq完整矩阵结论（已闭）
+
+120549Z-13cd71dd完成0/1115.477027s，50files、来源/CPU/私有namespace/全部owned清理核验；固定19/19原native门，1101/1101请求ok，替代0。完整E/cc-matrix-comparison-verification-v1.json。该纯Noq层的10秒ask期限与Node原2秒期限分别记录。
+
+| 双向随机丢包 | CUBIC bulk中位 Mbit/s | BBR bulk中位 Mbit/s | 结论 |
+| --- | --- | --- | --- |
+| 0% | 16.507651 | 11.686758 | CUBIC吞吐较高，但小burst并非全面更快 |
+| 2% | 0.325742 | 10.067335 | CUBIC未过预冻90%吞吐界限 |
+
+0%下typing后screen p95 CUBIC429.567ms/BBR307.491ms、quiet后screen430.954/307.321ms，均各n9，CUBIC还未过这两格原延迟界限。2% bulk echo p95为763.900/455.850ms。静默后小读约304ms，不能简单宣称某一算法全场景最优。模型全部观测中BBR最大1.283s、CUBIC1.407s；这些数不是原Node 2秒超时的重现，也不证明已定因。当前不采用全局CUBIC。
+
+Rust libtest会把test-name前缀与第一条stderr指标写在同一行。原行首解析器会漏首CUBIC bulk/quiet；v1原件及SHA保持，E/cc-matrix-parser-correction-v2.json记录确定性修正为收集完整marker。原2个bulk/6个quiet计数、样本/quantile/期限/门保持，v2逐条重算所有summary，无修改raw。所有1101结果均保留。
+
+测量代码及验证图修正已提交隔离分支experiment/net-cc-matrix-v1，commitd6b97c3d41d13fb1b9ef209adb89975bfdd727af、tree23b5d7e9d841e1411ba84a68db91ed1f95d7bcff，不合入main/canonical。
+
+下一问题是在保留I117的原BBR runtime时，Relay候选配置是否改变真实Node长尾。新的khor-net-direct-isolation-v1只改实验夹具，并把endpoint.rs逐字还原I117。Main用于目录/文件、Tunnel用于终端本来已分开；这不预先决定再开连接。E/direct-isolation-design-v2.json预冻六场normal/direct/direct/normal/normal/direct，原720记录/场、192MiB/场、2秒caller及全部业务门保持。禁止把夹具关闭Relay推广为生产建议，候选的配置/发布也不独立证明同时活跃的Noq路径。准确在途与来源以STATE为准。
