@@ -1,6 +1,6 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-13T14:14:27.430965+00:00。完整目标是[GOAL](GOAL.md)、[PLAN](PLAN.md)的N0–N5，**未完成**；逐项缺口见[REQUIREMENTS](REQUIREMENTS.md)。root串行，不派子智能体。
+更新于 2026-11-13T15:00:14.991980+00:00。完整目标是[GOAL](GOAL.md)、[PLAN](PLAN.md)的N0–N5，**未完成**；逐项缺口见[REQUIREMENTS](REQUIREMENTS.md)。root串行，不派子智能体。
 
 此前STATE逐字归档[HISTORY-20261113-through-current-noq-matrix](HISTORY-20261113-through-current-noq-matrix.md)，SHA256 `8ea6c57858cbf72d124e9ee81eb1fdc3a8c627deb23db89ea3aedb0b55667944`。它的pending/进程描述只适用于原时点，不能据历史重派；更早历史链接亦保留。本页是当前执行入口。
 
@@ -10,7 +10,9 @@
 
 选择器固定6场已全部闭：control0d600172bb66392d8274102664934931f7be91c7，协议SHA c42d7d70fbb8f9adf66f1e09a59022322bb8c1a858c990d341be0a6255de2ed5，E/selector-comparison-progress-v1.json phase=completed、6块。RoadOrder/内建各3/3原门、各2160ok、6文件完整，替代0、运行编译0；每块13files/identity/source/native/CPU/owner/raw已核，source-refs无pending。同期RoadOrder未重现原超时，故预冻diagnostic screen **false**，不归因或晋升内建选择器。bulk目录scheduled p95 **584911/409883us**、终端 **441411/316267us**；文件中位 **23.548850/23.542792Mbit/s**；全部延迟数值门过也不抵销“未重现”限制。原Relay可用组2timeout/63blocked与更早红仍保持。完整E/selector-comparison-verification-v1.json。
 
-紧接执行E/terminal-direction-design-v1.json的无产品改动诊断：真实PTY保持，用带私有非阻塞FIFO时刻记录的echo程序与原shell交错，区分输入到达、程序回写和返回链路。原720意图/192MiB/2秒caller/600秒owned保持；无周期产品诊断、无输入重放。只有summary完整/dropped0/无观察溢出/同CLOCK_MONOTONIC与time namespace/epoch bracket≤1ms才解释缺失输入；换echo程序本身不是性能接受。源实现尚未开始，下一步在独立worktree实现，远端先验证helper正负行为再构建。
+紧接执行E/terminal-direction-design-v1.json的无产品改动诊断：真实PTY保持，用带私有非阻塞FIFO时刻记录的echo程序与原shell交错，区分输入到达、程序回写和返回链路。原720意图/192MiB/2秒caller/600秒owned保持；无周期产品诊断、无输入重放。只有summary完整/dropped0/无观察溢出/同CLOCK_MONOTONIC与time namespace/epoch bracket≤1ms才解释缺失输入；换echo程序本身不是性能接受。夹具已在独立khor-net-terminal-direction-v1 / experiment/net-terminal-direction-v1实现，HEADf6b9、3 staged，准确tree **776ecc6b2bf358bb9421dbbd5c988cb4f1a52a7b** / snapshot **f2131be0c896a4b9ad94ae285a0cc0b0a9a98092**。所有产品文件逐字原A，原shell控制保留；新增Python -E -S真实PTY echo、私有非阻塞FIFO、仅test进程的512KiB/5ms读者、测量后1秒内请求summary，未加产品探测/计时器。远端helper实际4/0/0已验证：分片输入、多行、满记录管道仍回显且报告drop、无业务输入的带外summary；E/terminal-direction-helper-check-v1.json/log，helperSHAf741b27cd43c71ac2a864733f8ede7f061501158920adc324519badf16d6c599，固定CondaPy SHA c46ed00d。
+
+当前唯一pending是terminal direction compile-only；control **fbd7c04a15e4c55e733b5aa50f0f8a9df70f805c**，准确run/PID先核source-refs与receipt，不重派。E/terminal-direction-native-compile-plan-v1.json已冻源/可信producer S135643与helper证明；原S selected5先核存，恢复原A RoadOrder/BBR后构建test及显式CLI入口，必须CLI重现a7e3565f。producer闭前无业务结果；后续runtime还须绑定真实产物。此轮下一批若自动推进，只允许一个串行脚本写source-refs，root不可同时stage或改ledger；当前无后台协调器。
 
 E/relay-selector-static-audit-v2.json记录已排除的假设：host的Welcome后本来是raw PTY输出，fixture积累TCP字节匹配并非误解为未解码ServerOp；p.rtt本来已有传输估计回退；Main等FIN而Tunnel双工，不能只改Proto枚举来“共享连接”；内建低multipath值会被忽略；W发的是path.ping补探测，不是通用驱动wake修复。避免重走这些假设。
 
