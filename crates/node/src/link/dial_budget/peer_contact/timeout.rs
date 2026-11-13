@@ -1,0 +1,210 @@
+//! An actual unanswered handshake finishes after newer authenticated contact.
+
+use super::*;
+use std::sync::atomic::AtomicBool;
+
+async fn ask_after_timeout(
+    node: &Node,
+    ep: &iroh::Endpoint,
+    peer: &DeviceInfo,
+    early: bool,
+) -> bool {
+    let conn = if early {
+        match node.ask_early(ep, peer, &Request::Sessions, None).await {
+            Early::Failed(DialFailure::TimedOut) => return false,
+            Early::NotTaken => node.wires.live(&peer.id, wires::Proto::Main).unwrap(),
+            _ => panic!("the cold dial must time out or publish its actual connection"),
+        }
+    } else {
+        match node
+            .line_to_inner(ep, peer, wires::Proto::Main, None, false)
+            .await
+        {
+            Err(DialFailure::TimedOut) => return false,
+            Ok(line) => line.conn,
+            _ => panic!("the ordinary dial must time out or establish its connection"),
+        }
+    };
+    echo(&conn).await;
+    true
+}
+
+async fn observe_timeout(early: bool, contact: Contact) {
+    let server = endpoint().await;
+    let other = endpoint().await;
+    let (_root, node, mut peer, initial_ep) = fixture_for(server.id().to_string()).await;
+    initial_ep.close().await;
+    let ep = endpoint().await;
+    peer.addrs = server
+        .addr()
+        .addrs
+        .iter()
+        .filter_map(|addr| match addr {
+            iroh::TransportAddr::Ip(addr) => Some(addr.to_string()),
+            _ => None,
+        })
+        .collect();
+    assert!(!peer.addrs.is_empty());
+    let node = Arc::new(node);
+    let initial_contact_version = node.wires.contact_version(&peer.id);
+    let ignore_handshakes = Arc::new(AtomicBool::new(true));
+    let (first_ignored, observed_first) = tokio::sync::oneshot::channel();
+    let mut serving = Aborts(Some(tokio::spawn({
+        let server = server.clone();
+        let ignore_handshakes = ignore_handshakes.clone();
+        async move {
+            let mut first_ignored = Some(first_ignored);
+            while let Some(incoming) = server.accept().await {
+                if ignore_handshakes.load(Ordering::SeqCst) {
+                    // This is a real dropped handshake, not a fabricated DialFailure.
+                    incoming.ignore();
+                    if let Some(signal) = first_ignored.take() {
+                        signal.send(()).unwrap();
+                    }
+                    continue;
+                }
+                let conn = incoming.accept().unwrap().await.unwrap();
+                answer_echo(&conn).await;
+                conn.closed().await;
+            }
+        }
+    })));
+    let mut owner = Aborts(Some(tokio::spawn({
+        let (node, ep, peer) = (node.clone(), ep.clone(), peer.clone());
+        async move { ask_after_timeout(&node, &ep, &peer, early).await }
+    })));
+    tokio::time::timeout(Duration::from_secs(5), observed_first)
+        .await
+        .unwrap()
+        .unwrap();
+    let mut queued = Box::pin(ask_after_timeout(&node, &ep, &peer, early));
+    std::future::poll_fn(|cx| {
+        assert!(queued.as_mut().poll(cx).is_pending());
+        Poll::Ready(())
+    })
+    .await;
+    let contact_wires = match contact {
+        Contact::None => None,
+        Contact::SamePeer | Contact::OtherPeer => {
+            let caller = if matches!(contact, Contact::SamePeer) {
+                &server
+            } else {
+                &other
+            };
+            let (outbound, inbound) = tokio::time::timeout(Duration::from_secs(5), async {
+                tokio::join!(caller.connect(ep.addr(), ALPN), async {
+                    ep.accept().await.unwrap().accept().unwrap().await
+                })
+            })
+            .await
+            .unwrap();
+            let (outbound, inbound) = (outbound.unwrap(), inbound.unwrap());
+            assert_eq!(inbound.remote_id(), caller.id());
+            node.wires.serving(&inbound);
+            tokio::time::timeout(Duration::from_secs(5), async {
+                tokio::join!(echo(&outbound), answer_echo(&inbound));
+            })
+            .await
+            .unwrap();
+            Some((outbound, inbound))
+        }
+    };
+    let version_after_contact = node.wires.contact_version(&peer.id);
+    // The product's original10s dial limit runs to completion, without a
+    // caller deadline or altered production timer fabricating the failure.
+    let owner_answered = tokio::time::timeout(Duration::from_secs(15), owner.0.as_mut().unwrap())
+        .await
+        .unwrap()
+        .unwrap();
+    let down_after_old_timeout = node.wires.link(&peer.id).down;
+    let backoff_after_old_timeout = node.wires.backing_off(&peer.id);
+    let version_after_timeout = node.wires.contact_version(&peer.id);
+    ignore_handshakes.store(false, Ordering::SeqCst);
+    let queued_answered = tokio::time::timeout(Duration::from_secs(5), &mut queued).await;
+    drop(queued);
+    if let Some((outbound, inbound)) = contact_wires {
+        outbound.close(0u32.into(), b"fixture finished");
+        inbound.close(0u32.into(), b"fixture finished");
+    }
+    serving.0.as_ref().unwrap().abort();
+    let server_stopped = serving.0.as_mut().unwrap().await;
+    tokio::join!(ep.close(), server.close(), other.close());
+
+    match server_stopped {
+        Ok(()) => {}
+        Err(error) => assert!(error.is_cancelled(), "the scratch server must not panic"),
+    }
+    eprintln!(
+        "[dial-timeout-contact] {}",
+        serde_json::json!({
+            "schema": 1,
+            "early": early,
+            "contact": match contact {
+                Contact::SamePeer => "same_peer",
+                Contact::None => "none",
+                Contact::OtherPeer => "other_peer",
+            },
+            "initial_contact_version": initial_contact_version,
+            "version_after_contact": version_after_contact,
+            "version_after_timeout": version_after_timeout,
+            "owner_answered": owner_answered,
+            "queued_answered": queued_answered.as_ref().ok().copied(),
+            "down_after_old_timeout": down_after_old_timeout.is_some(),
+            "backoff_after_old_timeout": backoff_after_old_timeout.is_some(),
+            "endpoints_explicitly_closed": true,
+        })
+    );
+    assert!(
+        !owner_answered,
+        "the old caller must keep its actual timeout"
+    );
+    let queued_answered = queued_answered.expect("the queued caller must finish within5s");
+    if matches!(contact, Contact::SamePeer) {
+        assert_eq!(
+            down_after_old_timeout, None,
+            "an old timeout cannot erase newer authenticated contact"
+        );
+        assert_eq!(backoff_after_old_timeout, None);
+        assert!(
+            queued_answered,
+            "the waiter must not reuse the stale timeout"
+        );
+    } else {
+        assert!(down_after_old_timeout.is_some());
+        assert!(backoff_after_old_timeout.is_some());
+        assert!(
+            !queued_answered,
+            "unproven peers still share the failed dial"
+        );
+    }
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn ordinary_timeout_cannot_overwrite_fresh_peer_contact() {
+    observe_timeout(false, Contact::SamePeer).await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn cold_early_timeout_cannot_overwrite_fresh_peer_contact() {
+    observe_timeout(true, Contact::SamePeer).await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn ordinary_timeout_without_fresh_contact_is_shared() {
+    observe_timeout(false, Contact::None).await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn cold_early_timeout_without_fresh_contact_is_shared() {
+    observe_timeout(true, Contact::None).await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn ordinary_timeout_is_not_invalidated_by_another_peer() {
+    observe_timeout(false, Contact::OtherPeer).await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn cold_early_timeout_is_not_invalidated_by_another_peer() {
+    observe_timeout(true, Contact::OtherPeer).await;
+}

@@ -1,5 +1,8 @@
 //! A real refused dial completing after a fresh incoming connection.
 
+#[path = "peer_contact/timeout.rs"]
+mod timeout;
+
 use super::*;
 use std::future::Future;
 use std::sync::{
