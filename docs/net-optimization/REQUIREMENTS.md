@@ -46,3 +46,6 @@
 用户IMG_5608现场：5GA，hinton UI直连29ms、其他若干目标不通。只证明手机到hinton首段，hinton到每目标的第二段与当时策略尚未实测，截图不能证明某个源码分支。证据在外部phone-partial-reachability-20261110-IMG_5608，原图SHA与可见字段保留；未启动phone sampler。
 
 验收须含：第一段Direct/Relay且唯一可达middle、第二段Direct/Relay/SSH；第二段记录缺失/过时、目标历史Direct/旧失败/本地或对端换址；正负控制middle能达目标、middle也不能达、暂停/未信任/递归hop均不得越权。真实两腿/端到端业务和原总期限/取消/无隐式写重放/安静能耗共同验证。候选准入不能把“声明配置了Relay”当作它当前可用，已有好路的性能比较与无路时的有限兜底应分别建模。保留原两middle和总3秒/更早caller、无全网广播和无界探测。源码已观察Legs::Dial排除Direct→Relay及要求已有两腿记录、wants_hop看历史Direct，具体改法仍需实际红与设计收敛，未记通过。
+
+
+2026-11-13补充：独立当前产品集成候选的真实唯一middle首业务固定3次已过，三次初态Idle、no_relay=false，实证Direct第一腿/Relay第二腿及端到端目录，详见[SOLE-PEER-PHYSICAL](SOLE-PEER-PHYSICAL.md)。上方“源码已观察排除”是最初审计记录，不能覆盖后续候选事实；该窄物理合同通过不表示NET-16全部范围或canonical feat/net最终集成完成。缺失/过时hint、旧Direct/失败、负向策略、移动及成本继续保留为必要验收。
