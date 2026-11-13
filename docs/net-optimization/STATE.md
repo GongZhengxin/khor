@@ -1,12 +1,16 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-13T13:34:22.886558+00:00。完整目标是[GOAL](GOAL.md)、[PLAN](PLAN.md)的N0–N5，**未完成**；逐项缺口见[REQUIREMENTS](REQUIREMENTS.md)。root串行，不派子智能体。
+更新于 2026-11-13T13:53:34.717388+00:00。完整目标是[GOAL](GOAL.md)、[PLAN](PLAN.md)的N0–N5，**未完成**；逐项缺口见[REQUIREMENTS](REQUIREMENTS.md)。root串行，不派子智能体。
 
 此前STATE逐字归档[HISTORY-20261113-through-current-noq-matrix](HISTORY-20261113-through-current-noq-matrix.md)，SHA256 `8ea6c57858cbf72d124e9ee81eb1fdc3a8c627deb23db89ea3aedb0b55667944`。它的pending/进程描述只适用于原时点，不能据历史重派；更早历史链接亦保留。本页是当前执行入口。
 
 ## 当前执行器与紧接工作
 
-唯一pending是Relay可用性隔离固定6场runtime **132935Z-b055e94a / PID301925**，control **78f4657adb796765bf3317a044d2829ba0296096**。receipt在E/同名目录，协议E/relay-availability-runtime-plan-v1.json SHA **d901305ab1f394b08c403d9478475955fef5aec10f465a9408a6064b51426983**。准确源tree **953fd88f5f39fa99bc726296e5a84559996ce5cc** / snapshot **90d743c8b05c77f2c848c8b1feb9485aa851ab41**。两个源配置完全相同，仅故障组停并wait原Lab Relay、实际探测必须ConnectionRefused；正常组真实TCP可连。顺序available/unavailable/unavailable/available/available/unavailable；原4320计划记录/6文件/原2秒caller/600秒owned/CPU与功能门不改，替代0，运行时编译0。先核真实execution/PID，终态collect→identity→原raw及预冻metadata适配→ledger闭，不重派。第1场只观察到前置valid=true，不能当终态。源位于khor-net-relay-availability-v1 / experiment/net-relay-availability-v1，HEADd6、2 staged，原D保留。
+当前无pending，未有后台协调器。Relay可用性隔离固定6场 **132935Z-b055e94a 1/1161.211608s**已闭18files/identity/native来源/CPU/全部owned清理。control78f4657adb796765bf3317a044d2829ba0296096；协议SHA d901305ab1f394b08c403d9478475955fef5aec10f465a9408a6064b51426983。六场前置均有效、4320完整意图、替代0、运行编译0。可用Relay组原1/3、2095ok/2timeout/63blocked；不可用组3/3、2160ok，6个192MiB文件均完整。两次原2秒TTY超时分别idle_after index82与idle_before index93（后者起始调度lag10.444035秒），不能单按大文件挤占带宽解释。bulk TTY两组360个全成功，但scheduled p95 **5.874877/0.336874秒**；目录 **0.786266/0.506660秒**；文件中位23.302977/23.427441Mbit/s。失败相位的成功分位数是条件统计，blocked非网络超时。
+
+完整[RELAY-AVAILABILITY](RELAY-AVAILABILITY.md)及E/relay-availability-comparison-verification-v1.json。实际CLI与原超时C producer040254Z-2e151f7f逐字同SHAa7e3565f，绝非新修复；只收敛到可用Relay/传输/选路交互，未定具体根因，不建议产品禁用Relay。源实验已clean commit **f6b9a75633485b8ab29f187479506f186ba88618**，tree953fd88f5f39fa99bc726296e5a84559996ce5cc、snapshot90d743c8保留，旧D前置失败原件保持。
+
+紧接在相同可用Relay/BBR/真实业务条件下只比较RoadOrder与iroh内建选择器；后者默认Relay=backup，不符合用户速度优先要求，只作隔离控制，不晋升。必须先冻结源码/协议/实际producer后运行，不无条件重复上一批，也不把vendor内建选择器称纯上游。
 
 producer **132330Z-5893f7e8 0/230.673910s**，Rust2m59s，22files/identity/native provenance闭；test SHA **42d8f0ba72908748cde69e3f5b91834683ec38ec90c0b084fc03564baacb8533**，CLI仍与I117/D完全同bytes **a7e3565f15ed15d59f5215bceeb3900d153d053dd853846f623d86efbe6e4ac9**。先前v1 **131622Z-0132e71c 1/214.672428s**已闭17files/identity/空owner：Cargo成功2m45s，但只准备test入口，严格验证拒绝fresh CLI的新包key；未准入、业务0。v2仅调用原prepare_build显式准备CLI，验证器不改；原未准入5文件已先归档为诊断，不作prior。
 
