@@ -1,12 +1,20 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-13T17:05:21.775054+00:00。完整目标 [GOAL](GOAL.md) / [PLAN](PLAN.md) N0–N5 **未完成**；逐项缺口见 [REQUIREMENTS](REQUIREMENTS.md)。root 串行，不派子智能体。用户已授权持续实施与远端验证，不因阶段完成停工。
+更新于 2026-11-13T17:39:43.012092+00:00。完整目标 [GOAL](GOAL.md) / [PLAN](PLAN.md) N0–N5 **未完成**；逐项缺口见 [REQUIREMENTS](REQUIREMENTS.md)。root 串行，不派子智能体。用户已授权持续实施与远端验证，不因阶段完成停工。
 
 E=`/Volumes/disk0/Khor/evidence/net`；工作树均在 `/Volumes/disk0/Khor/worktrees/current/`。此前 STATE 逐字存 [HISTORY-through-terminal-direction-launch](HISTORY-20261113-through-terminal-direction-launch.md)，SHA256 `b6712ae6174fb1be910c4f43f4b11424d6be545645358fc2a7d50c63c4eded47`；其中更早历史链接保留。历史 pending/PID 不能用来重新派发。
 
 ## 当前执行与紧接工作
 
-**当前唯一pending为同源原4项换网普通Release运行 turing-20261113T170134Z-6a92a593 / PID599981**，revision current_replug_original4_release_v1、control **8ffcfaa8f977576939d79dc0049360600d8f68ec**。同tree90a1d7813377d611ea93b3276a36d3876e28e09c/snapshotb6cb41a3adcc51abb175d8c92fcc008d7341eedc，产品源未变。协议E/current-replug-runtime-plan-v1.json SHA **508f2799f7bf4ba433fe63f4c896264a49deaa5979c69fe7078c65c9477b0f8d**；固定IPv4/NAT、双栈/前缀、IPv4→IPv6-only远端先发起3项＋peer-middle自身换网1项，每项124读含2setup，总496；无替代/运行编译。原read30s、Node setup120s/scenario240s、peer setup150s/scenario360s/原前置hold预算45s/后观察60s保持；owned前三300s、peer600s仅覆盖原scenario+topology/cleanup。peer native可用性与carried_observed_again分开，摘要不是包级最优性证明。完整后collect→verify-turing-record.py→E/ops/verify-current-replug-block-v1.py；若partial/unsafe先保留并分类，不硬跑完整块验证。root唯一ledger writer。
+**Turing当前没有pending**：原四项换网与当前R混合负载都已collect并完成独立复核，不再重派。`170134Z-6a92a593` 0/268.968832秒、16files，**496/496**读成功；实际IPv4/NAT、双栈前缀、IPv4→IPv6-only及middle自身IPv4变化已核，middle再次观察到carried并持续10秒。首次响应详[MOBILITY-RELEASE](MOBILITY-RELEASE.md)，摘要不代包级最优性证明。
+
+**当前R/I2原混合负载 `171546Z-dfd9502c` 0/713.189051秒**已闭18files、identity/native/CPU/owned。固定low/high/high/low/low/high、**4320/4320 ok、6完整文件**，保留原2秒请求、原profile与原场景，运行编译/替代0；control b320fcf93b435f47717a9ed49e8ed1dde1333e1c，协议SHA8124e47150e4ce62a56d60d05c6635b182cef7bc7714165c98be24e82c0f209e。E/current-r-mixed-summary-v1.json和run下current-r-mixed-block-verification-v1.json，完整数据见[CURRENT-MIXED-RELEASE](CURRENT-MIXED-RELEASE.md)。high仍有超过1秒的scheduled尾延迟；不以功能全绿认定体验完成，不覆盖原I1/A超时或声称已定位修复。
+
+**同源I2完整Quality已发起 `43474829073`**：公开产品仓独立verify/net-product-v2，准确commit3093f86662b9b9ff139f29f85692e84ec2e47358/treebf4d38d73fbb8eda558d08446deff2d930b65304，suite=all/interaction_scope=all，预期13jobs；尚未通过。E/net-product-quality-v2-submission.json记录唯一发起与链接。不得重复dispatch；完成后核head/source、全部原job结果及artifact来源。下一步准备同源、独立数据的Mac Lab候选，不是正式发行或现装App替换。
+
+**同源独立Mac Lab构建 `43475243450` 已发起**：可信GitHub托管macos-26的Developer Lab管道，非macserver产物本机执行。准确I2 treebf4d38d7、snapshot385078c7b1c42444cfbdb44d5e2dda927a03ee23，request56f540fd11ca4a978c52b7ff474487c4，port23965。E/public-native-lab-net-product-v2/request.json及acquisition-intent.json；本地收集控制器OS exec session95523仍运行，只上传源/收集artifact，不启动Lab manager或native。完成后核outer/inner ZIP、manifest/source/native contract及远端实际backend probe；不得重新发起。macserver SSH只读重试仍banner timeout，不影响此托管通道。Lab23961不动。
+
+Noq backup-burst草案只在独立khor-net-noq-backup-burst-v1中stage，尚未format/compile/dispatch；当前先做准确产品源Quality与原生候选，避免没有原始重现或独立问题的新消融堆叠。root唯一ledger writer，无活跃协调器。
 
 **同源完整netlab producer 165200Z-a2a62249 0/234.868713s**已闭21files/identity/native来源，CLI实际fresh=true、精确SHA **7e8c52bc4d21a3471e3c0592ad1a874147a7d024c067bda23a7f4d08213b34df**；完整test SHA **e4f2f52c7c1ff7f17b5e970c20c1aab5d40d5620dd118fc8491631ee8fa84913**。E/run/current-full-netlab-native-compile-verification-v1.json。未改source/fixture，仅编译已有--test netlab；同test-root dev依赖scope重用旧CLI证明，未独立apply bin准备、未touch main，严格validator不变。这次完整fixture重用核心库与CLI，不需每种场景改source再重建。E/ops/fix-same-source-full-netlab-prepare-v2.py记录发起前修正；v1草案未stage。闭证协调器PID51522已完成退出，state E/full-netlab-native-close-coordinator-v1.json phase=completed、sole_ledger_writer=false；无运行中的本地协调器/另一个远端任务。
 
