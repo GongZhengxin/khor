@@ -38,3 +38,8 @@ runtime061644Z-077fb72d、control59e3774eb74c7311ff446df472d458441302c715，原1
 T3 tree8ff93012943b0b6c6b598142559b74e682e58829 / snapshot2c66f25350ecc698cc91b4dc180717261a3e5d4b，只新增有界等待实际暂停拒绝，原5s恢复期限保持。格式063455Z-c208e81b 0/47.923686s、compile063838Z-cdb6f871 0/75.911366s；相同产品CLI f129a57c，20unit及原native proof核。
 
 runtime064222Z-57c213de原1/114.475143s，固定3、替代0、前置3/3成立、恢复0/3。M恢复真实内容441358/337646/554797us；X总恢复5008873/5026542/5008990us后仍timeout。首腿五次读/活路、PID及hint不变，无新hop journal（仅暂停时一次tried1）。三case owner干净，18file/source/hash/identity/ledger闭，准确proof E/turing-20261113T064222Z-57c213de/sole-cache-resume-physical-verification-v3.json。证明产品恢复失败，具体失败缓存机制待隔离修复验证；旧sp5/6失效前置和旧sp2/3/4各3绿均保留，不重置分母。
+
+
+## 隔离修复R已过原sp7固定三轮
+
+详[LIVE-MIDDLE-RETRY](LIVE-MIDDLE-RETRY.md)：9081b94d / treecf9d172b，原T3 fixture逐字不变，仅hop.rs runtime改动。完整hop库92/92后，070832Z-6b87e77c原0/98.267049s，固定3恢复3/3，总1013894/784788/878995us；原5s/实际首腿第二腿/marker/hint/PID/drop/owner全核，ledger闭。原064222Z-57c213de有效3红保持。不是full NET16/手机/能耗/N3接受，canonical/I未应用。

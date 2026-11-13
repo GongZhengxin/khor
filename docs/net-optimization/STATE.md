@@ -1,6 +1,6 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-13T06:25:47.840028+00:00。活动目标是 [GOAL](GOAL.md)、[PLAN](PLAN.md)完整N0–N5，**未完成**；117c39当前因Release高BDP交互退化被拒绝，不得晋升为最终候选。root串行，不派子智能体。
+更新于 2026-11-13T07:12:38.894382+00:00。活动目标是 [GOAL](GOAL.md)、[PLAN](PLAN.md)完整N0–N5，**未完成**；117c39当前因Release高BDP交互退化被拒绝，不得晋升为最终候选。root串行，不派子智能体。
 
 此前STATE逐字保存在[本次完整历史](HISTORY-20261113-through-qlog-cache.md)，SHA256 `e5fdf9aed5ef256161015e24ec96c51c8a3fbc1f77db07600b09a63f6b63ce94`；它继续链接全部更早历史。历史“在途”只指其原时点，不重启旧批次。逐项未完范围见[REQUIREMENTS](REQUIREMENTS.md)。
 
@@ -91,3 +91,25 @@ T3/sp7格式063455Z-c208e81b、编译063838Z-cdb6f871均成功，tree8ff93012943
 runtime064222Z-57c213de，controlf4f202bf62ab9bfed86ddfec69d063bba8cc19a9，原1/114.475143s、18files/source/hash/identity/原group空与三个case-owned干净，ledger已闭。三个case前置**全部为真**：实际M暂停拒绝、X负向读、五次X→M真实读、首腿live、same caller PID、hint held；unpause后M在441358/337646/554797us读到真实Y内容，但一次新X请求仍耗尽原总5s（5008873/5026542/5008990us），实际两腿未形成。每case仅暂停期间有一次hop(tried1)，恢复后无新hop。proof E/turing-20261113T064222Z-57c213de/sole-cache-resume-physical-verification-v3.json。**这是有效产品恢复红，非sp5/6前置失败。**原red全保留，不追加不变病例。
 
 当前优先查明/修复NET-16失败缓存对救通的压制。已核hop_ahead全走每candidate cooling过滤，MISSED_FIRST30s；journal::By区分Pump/Forced/Ask，有限deadline单独不能代前台来源。尚未宣称唯一根因或已修复。需要隔离新candidate，对活首腿的有界需求恢复放行，同时保留背景指数退避、并发/epoch/期限/策略/信任/单跳及写不重放。W消融库198过仍非物理/性能接受，暂后于确定的NET-16红。root唯一ledger writer，无pending。完整N0–N5未完成，I原N3高BDP拒绝不变。
+
+
+### NET-16独立修复准备中
+
+新R `/Volumes/disk0/Khor/worktrees/current/khor-net-live-middle-retry-v1` / experiment/net-live-middle-retry-v1，HEAD117c39，准确继承T3原fixture tree8ff930；仅hop.rs有runtime差异，两原node测试文件新增需求/后台/短caller/并发32控制。stage包括6文件，预格式tree9570105a4545452d66b928786e23c8b089ec4b78 / snapshot2f0ce65ba360077cd396146a65e39c1e2a6cd285。有限Ask/Forced且无target road、实际活首腿可在原总期限/原hop3s内重查；活首腿失败重查最短间隔复用HOP_WITHIN3s，原后台/比较指数退避、tries2、owner/epoch/策略/信任/写重放不变。不是已验证修复。协议E/live-middle-retry-plan-v1.json。
+
+remote格式准备065900Z-8123d068、control6d09e1f39126b50c278c750cb4f388609cade323已提交；exec80771仅提交终态0，remotePID3627645真实任务须先核终态与收集/identity/patch后再发compile。root唯一writer，待闭这一个prep。W/I/canonical运行时不改，原red均保留。
+
+R格式065900Z-8123d068已0/46.101216s、12files/source/hash/identity/owner及准确patch核并应用，ledger闭。冻结R treecf9d172bb92778ccfd97899ddea27bdf0e6d2f6e / snapshota3cad264bc6772d68289b5f954c0966dc87627cd，6文件staged、原T3三个fixture逐字相同（diff只三个node文件）。compile+whole hop模块合同070105Z-8e82e611 / control27e55eedd7dbb92c2c907d732ca73d8de18468d1已提交，exec74748仅提交终态0，remotePID3631399真实任务在途。先闭compile，不提前发physical。
+
+070105Z-8e82e611在途更新：原whole hop::模块92/92、0failed/ignored，测试113.32s；新实际NO_ROUTE→需求恢复/背景退避/短caller/并发32均绿，原guard测试也绿。真实CLI/test producer准入尚未终态，不能提前发physical。原测试fixture与physical固定3协议E/live-middle-retry-physical-plan-v1.json已冻结。
+
+R compile070105Z-8e82e611已0/281.033342s、17files/identity/source/hash/owner核，原native verifier20unit、实际CLI/test核，whole hop92/0/0（113.32s），ledger闭。CLI856ecd02bf638c2b08908a625e5579aac732d4369866df36eca5a6da0d101121；test72a8b6536c60eefd4adede0aa48aa549b07b93bcde6d64ecd64ec8d4b8b5afd3。原CLI/test只读保留closed-sole-cache-resume-v3。专属E/run/live-middle-retry-compile-verification-v1.json明确legacy compile-only元数据不涵盖已执行92库测试。
+
+固定原sp7×3 physical控制8b36679b18dce3758baf0b9a995fe35f38a9b61f已提交，最新pending索引[{"run_id": "turing-20261113T070832Z-6b87e77c", "pid": 3643900, "submission_state": "launched"}]；先核receipt真实任务，root单writer，不重复dispatch。原fixture/原5s/策略前置/owned核不变。
+
+
+### R唯一middle恢复已闭；下一步回到N3
+
+详[LIVE-MIDDLE-RETRY](LIVE-MIDDLE-RETRY.md)。R已commit9081b94dce827cbd3fb9b9e7bb13633d762e3cd9、clean，treecf9d172bb92778ccfd97899ddea27bdf0e6d2f6e准确等同冻结被测snapshot。runtime070832Z-6b87e77c / control8b36679b18dce3758baf0b9a995fe35f38a9b61f **0/98.267049s**，18files/hash/source/identity/owner核、固定原sp7 **3/3**，总恢复1013894/784788/878995us、原5秒不变、目标marker/真Direct-Relay两腿/hint held/same PID/drop counters全核，ledger闭。原有效3红保留；92hop tests与actual native producer也闭。只接受这项NET-16恢复，不是full NET16/N3/phone/energy/N0–N5。canonical/I运行时不动。
+
+当前无pending任务，root唯一ledger writer。下一步W copy-wake消融的原健康spike/短停顿/黑洞控制（原600s/原4drops不缩短），再基于结果决定是否继续普通Release性能复核；不再重复原sp7挑绿。多middle排序/完整策略与移动等仍待。
