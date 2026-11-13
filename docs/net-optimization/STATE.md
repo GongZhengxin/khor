@@ -1,6 +1,6 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-13T04:33:54.787160+00:00。活动目标仍是[GOAL](GOAL.md)和[PLAN](PLAN.md)完整N0–N5，**未完成**。已发现Release高BDP共存原红，不能验收；root串行。
+更新于 2026-11-13T04:45:50.939957+00:00。活动目标仍是[GOAL](GOAL.md)和[PLAN](PLAN.md)完整N0–N5，**未完成**。Release高BDP共存2/3失败，117c39不能接受；root串行。
 
 此前STATE逐字保存于[完整历史](HISTORY-20261113-through-product-quality-and-sole-peer.md)，SHA256 `778295b28a3de7a9d18c732891cc257e2e8335a802d59701d68ad369420f134d`；该历史继续链接全部更早收据、失败、中断和旧协议。历史中的“在途”只按原时点理解，不重启已关闭批次。
 
@@ -88,3 +88,9 @@ Release business首baseline041330Z-0ae9a3ec low/high均过。首candidate041753Z
 失败发生在bulk初段；客户端借用probe在三个phase最大lag1857/2366/3266μs、相邻tick最大20.8/20.9/21.9ms，不支持客户端Tokio整体2秒停顿这一解释，**不证明resident/传输/整机原因**。终端断开/重连也未由该数据独立证明。先闭完整固定人口，再设计单一诊断/修复对照，不因后续绿忽略红。E/ops/summarize-workload-release-v2.py已加完整分母、失败/缺失拒绝误判、有限n nearest-rank分位及完整文件独立计量；两个业务超时不能把真实完整文件误记未完成。stdlib合成边界守卫通过，非产品运行。
 
 新test-only树 **khor-net-sole-cache-v1 / experiment/net-sole-cache-v1** 基于干净117c39，三新测试文件staged（未提交、未format/编译/运行）。E/sole-peer-cache-physical-plan-v1.json在新物理case前冻结4case×3fresh：unusable第二腿hint（明确null不可解析、非字面删除字段）、stale Direct第二腿、X历史Direct、真实M暂停Y→X实际失败→恢复M-Y后新显式X读取；只用现有公开DeviceDoc/store与pause API，真实Direct/Relay两腿/隔离/唯一marker，hint前后保持，无prod hook或适配transport。恢复阶段从unpause开始同一总5秒，含middle-ready与最后读取，X PID不变；初始失败不得重试重放写。该批**只准备源码**，不能冒充NET-16已过；真正缺字段、多middle、递归/未信任等其余矩阵仍待。N3 coordinator运行期间不在Turing编译/测试/动cache，不动性能源I/B/C。
+
+### Release双模型ABBAAB完整闭证：候选被拒绝（2026-11-13T04:45:50.939826+00:00）
+
+[WORKLOAD-RELEASE](WORKLOAD-RELEASE.md)及E/workload-release-comparison-verification-v2.json绑定全部8run/12业务场景/8640记录/12完整file。coordinator **exec45051/PID71819已终态0**，progress/results均completed，ledger无pending，root恢复唯一writer。原fixed A B B A A B全部保留/额外0；不得再重开相同候选批次挑绿。baseline low/high各3/3；candidate low3/3，high**1/3**。第二红043619Z-e3822070为idle_after terminal index5超2秒及其后114blocked；连同首红，全high候选1925ok/3timeout/232blocked，完整文件三次均成功。low分段工程筛查过，high失败；median高file19.3299→22.4087Mbit/s不抵销交互退化，idle_before TTY计划至完成经验p95 0.303→8.229s。**117c39不具备完整网络接受，勿晋升canonical/main。**
+
+下一优先定位上述Release高BDP退化，先独立诊断，不先改重试/期限/样本或凭一次绿收口。test-onlysole-cache源码准备保留待测。独立诊断树 **khor-net-workload-qlog-v1 / experiment/net-workload-qlog-v1** 基于117c39，普通qlog feature默认关；拟通过上游iroh/Noq qlog能力捕获whole high phase实际恢复/拥塞（新原红还含idle_after，不能只盯bulk启动）。目前仅源码准备：khor-net/Cargo.toml增加qlog feature、transport builder受cfg调用qlog_from_env，测试传每resident隔离QLOGDIR与epoch壁钟/单调锚点；无vendor算法改动/新重试或timer。E/workload-release-qlog-diagnostic-plan-v1.json预先限定三fresh诊断，不能代普通性能；须先remote fmt/lock/deps/trace体积准备再冻结source/producer，当前尚无该诊断产品运行。原1GiB expanded/512MiB压缩collector及40GiB/owner门不降。
