@@ -19,3 +19,5 @@
 E/workload-qlog-diagnostic-summary-v1.json绑定三个专属proof；E/workload-qlog-diagnostic-progress-v1.json/results-v1.json的coordinator仅负责后两次，故其runtime_executions=2不是全批只有2。exec68965/PID40415已终态0，ledger无pending，root恢复唯一writer。
 
 上游元数据于2026-11-13T05:25:07Z核：iroh1.4.1、noq/noq-proto1.4.0仍最新稳定；见E/upstream-latest-recheck-20261113T0526-v1.json。GitHub Noq latest UI旧tag不可代registry latest。
+
+附加定时相关（不是原超时定因）：E/workload-qlog-tty-delivery-correlation-v1.json对case2同CID/stream0/方向/offset/长度匹配727个完整frame。该TTY bulk index38用时1459798μs；X发送输入63.686781s、Y接收63.836960s、Y发送回复63.837503s（Noq path1）、X接收65.146285s，均相对workload epoch，文件名壁钟有毫秒量化。回复两个qlog传输观察点相差1308.782ms；Y转发前仅约0.543ms。path1按双方tuple_assigned及iroh fd15:70a:510b:1::/64定义核为Relay；其后Y回复用path0直连。packet_sent不是NIC线速时间，尚不能细分Relay TCP队列/链路。数据来自通过的instrumented病例，不能当原失败根因或修复证据；但明确继续核双向选路、共享样本与旧路径在途恢复。n0-qlog0.2.0 streamer.rs55已核MicroSeconds实际as_micros/1000，事件数值单位毫秒。

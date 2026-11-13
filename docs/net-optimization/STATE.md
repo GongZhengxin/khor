@@ -116,3 +116,11 @@ v2 control **5a8c50ab20998e13635802e81c88e947c1ac0c2b**改用每run唯一refs/kh
 详[WORKLOAD-QLOG](WORKLOAD-QLOG.md)。compile045808Z-c6558108已0/617.837255s、19files/原native Release opt3/qlog feature/20first-party units/同producer CLI与test/source/hash/identity/group空闭证。runtime control64e1374e650659c2bcd0dc9506ef684a23929ac9按其准确ELF冻结；固定051025Z-5907dd5c、052027Z-1edb3353、052344Z-509f2cd6各720ok、三whole file，总2160/2160，替代0。8trace/case，分别326868694/333501091/330356066字节；EOF末条不完整6/6/5均明确标注/hash保留，没有触发采集cap。三次未复现原超时，**对原故障未定因**，停止追加相同instrumented试验；原unlogged候选high1/3与3timeout/232blocked保持，117c39仍拒绝，完整N3及N0–N5未完成。
 
 coordinator E/ops/run-workload-qlog-final-two-v1.py exec68965/PID40415已终态0，progress/results completed、source-refs无pending，root恢复唯一writer；不重启旧任务。下一步检查真实TTY数据流及调度/恢复改动，形成有界新诊断或消融问题，再动参数；sole-cache准备源仍未编译/运行。元数据最新稳定iroh1.4.1/Noq1.4.0已于05:25UTC独立registry复核。
+
+### 缓存物理矩阵已闭与下一诊断（2026-11-13T05:47:42.905943+00:00）
+
+[SOLE-PEER-CACHE](SOLE-PEER-CACHE.md)记录T源14e9f060/05325c56，format053241Z-3a264e87 0/51.258588s；compile053516Z-5aa15758 0/81.366352s、20unit/实际CLI/test过原native verifier。runtime **053846Z-4b1bebf2 原1/365.502303s**已终态/36files/identity/source/hash/owner核、ledger闭；sp2无效第二腿hint、sp3过时Direct第二腿hint、sp4历史Direct目标各3/3真实首业务及Direct/Relay两腿过。sp5三次原失败保持，但middle_down前置全部false，不能当产品负向缓存定因。前三类不追加重复；后续修正sp5前置另冻协议/分母，其他完整NET-16未过。
+
+Qlog后续相关已保存E/workload-qlog-tty-delivery-correlation-v1.json及WORKLOAD-QLOG：通过case2有1459798us的TTY尾；实际Y很快发送回复，Relay path1发送到X接收的两个qlog观察点相差1308.782ms，后来回复回到path0直连。单源同kernel壁钟毫秒量化、事件单位ms已核，不能冒充NIC时间或原超时根因。继续双向选路/共享质量与在途恢复检查。
+
+新独立诊断树 **khor-net-workload-ack-v1 / experiment/net-workload-ack-v1**，base117c39、treef92abcfffe5084335feb0c50007a3327d54fae07 / snapshot9c5a4829badfa1c351fddbe38c3def3fc446937c；E/workload-native-ack-diagnostic-plan-v1.json预先固定3fresh、替代0、原whole high/2s/240s/600s不改。沿用Q默认关optional上游qlog源码但测试不传QLOGDIR、不采qlog，拟启用已有CLI net-diagnostics与NETLAB_DIAGNOSTICS=1，保留ACK/选路日志和epoch锚点；不改vendor算法、重试、策略或参数。仍是instrumented非普通接受；若三次不复现便停止不挑绿。compile control2b7b399e81a210f832daea127ff2438f4440fa40已提交（exec98667仅submit，实际receipt以最新为准），**尚无该批runtime**。root唯一ledger writer。原117c39 high1/3拒绝及完整N0–N5均保持。

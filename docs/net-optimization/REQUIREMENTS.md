@@ -13,7 +13,7 @@
 | N1.3 | 有意义收益确认、防抖、故障快速通道 | 36普通stalls为2/2、p1s0/0移动；37候选Mac42555870179实际36路径/438Noq/9home绿。旧Linux dynamic25/27及hop8/9红保留；Turing候选recovery6/6，但corrected hop出现f4i回退红，基线/CPU/最终矩阵未收口。started计量reducer实际2红→4绿只证明fixture，不替代产品 | 部分 |
 | N1.4 | 防止稀疏、积压、换网旧样本与 CPU 污染 | p7七相位×三轮最新21项全绿，idle至19.61秒、裕量小；真实时刻/过期质量已红→绿；CPU防抖/置信/探测成本未齐，可选日志只作定因 | 部分 |
 | N1.5 | 多连接/协议观测共享与生命周期一致 | 178真实双连接/真实echo与两清理控制先过后，shared carrier释放判断真红；已改为核Main/Tunnel/served全部live消费者，179 Linux/180同源Mac原整fixture红转绿（各wires11＋24/20合同），181CPU/182hop证据保留；189旧owner实际红→193 Linux/194 Mac原整fixture绿，195严格hold恢复3/3、201参照9/9但automatic仍有慢轮；peer共享selected tuple与per-conn open paths边界明确，完整hop/多协议仍待 | 部分 |
-| N1.6 | Peer relay纳入最优连接：实测完整两腿、双向、多middle与移动/失效 | 原单/双middle prepared合同和失败完整保留。最新真实唯一Direct首腿/Relay第二腿首业务：Debug固定3、Release候选固定3均实选FWD via M且marker返回，原no_relay=false/Idle，不需重开App；公开main同Release三次5秒未返回。缺失/过时hint、旧Direct/失败、全部策略负向、多middle/移动范围仍未齐。 | 部分 |
+| N1.6 | Peer relay纳入最优连接：实测完整两腿、双向、多middle与移动/失效 | 原单/双middle prepared合同和失败完整保留。最新真实唯一Direct首腿/Relay第二腿首业务：Debug固定3、Release候选固定3均实选FWD via M且marker返回，原no_relay=false/Idle，不需重开App；公开main同Release三次5秒未返回。最新SOLE-PEER-CACHE中不可用第二腿hint、过时Direct第二腿hint、历史Direct目标各3/3物理通过；sp5前置不满足的三次原失败保留，未当产品定因。真正删字段、旧失败/全部策略负向、多middle/移动范围仍未齐。 | 部分 |
 | N2.1 | 近期成功缓存与失效、坏地址不能耗尽期限 | 现有双尝试基础，尚未完成审计与对照 | 待做 |
 | N2.2 | 有界竞速、输掉的尝试/取消释放 | pair/doctor HTTP探针外层取消、配对取消、按完成取首成功已有三红→42571393016绿；拨号输者及延迟候选资源边界仍缺 | 部分 |
 | N2.3 | 可用连接后持续优化、有限备用与探测预算 | p7 覆盖恢复目标，具体机制待证据收敛 | 待做 |
