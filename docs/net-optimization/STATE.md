@@ -1,16 +1,22 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-12 19:58 UTC（本地2026-11-13）。用户“定好目标，开始”已恢复执行；完整目标 [GOAL](GOAL.md) 与 [PLAN](PLAN.md) N0–N5 **未完成**。
+更新于 2026-11-13 01:57 UTC（下列实际收据时间优先）。用户“定好目标，开始”已恢复执行；完整目标 [GOAL](GOAL.md) 与 [PLAN](PLAN.md) N0–N5 **未完成**。
 用户ToDesk级体验、iroh/Rust极致优化及原约束均已记入GOAL/PLAN v3。root串行，不派发子智能体。目标服务旧paused状态不覆盖本次明确恢复授权。
 
 此前STATE逐字保存在 [上轮完整状态](HISTORY-20261113-iroh-recovery-and-stability-preparation.md)，其中继续链接所有更早历史、原失败、收据及冻结输入。
 历史SHA256 `3e1fe2e38c7f7d90fa34166977390a8e2918564a7ab2370d01cf5c906f970753`。本页只描述当前事实和下一步；历史中“当前在途”按其时点理解，不能再次启动已关闭批次。
 
-## 恢复后的当前执行
+## 当前执行：产品集成与完整验证
 
-混版首个真实runtime **已结束并闭批**：`turing-20261112T192613Z-c2c8ebe2`，19:26:35 UTC，source3b734073，control **ce4998f58fe1cc70d8b84e1854582d8828d27223**，revision `iroh14_actual_mixed_version_resume_v1`。**controller1/187.838121s，原Rust测试1过/0失败/0忽略，runtime138.35s**；old/new两方向row/pin均实际同步且唯一正marker，观察到的65个owner正常退出，无timeout/强制清理/remaining footprint，21原files/hash/identity/group空核验。原后置门要求的old/new两个长存host只见证到old，198行断言失败，故**完整混版协议未过，accepted=false**，不是全绿。原源码/frame/CLI与copy hash、tracked diff在停止后只读复核均保持。proof E/该run/mixed-runtime-screen-v1.json；ledger已闭，不重复提交。当前无本任务Turing在途。
+旧新真实混版观察协议v2已完成并闭批：`turing-20261113T011900Z-19b49119`，control **de74a134bb5a1d2416fbf1736bd05c50ab696731**，source仍准确3b734073。**0/160.457763s、原Rust1过/0失败/0忽略**；原双向row/pin、old/new两常驻host及其sleep子进程均实见，原身份/hash/group空及23原reportfiles核验。controller仅用私有subreaper补齐快速分离子进程见证，并按inode缓存ELF hash；独立零产品运行校准通过。原产品fixture与最终行为断言未改、编译执行零、实际混版runtime一次、替代零。proof E/该run/mixed-observer-v2-verification.json；ledger pending=false/behavior_verified=true。只接受此窄互通合同，不是完整N5、旧pre-Versions回退、手机、WAN或能耗接受。旧两次失败原样保留，见[IROH-MIXED](IROH-MIXED.md)。当前本任务无Turing在途。
 
-下一步先定位缺少new host见证：原observer只跟踪采样到的祖先，且在每次poll对活host完整ELF重复哈希（约264MB），存在漏掉快速分离子进程的可能；这是源码可见的框架缺口，**尚未证明就是本次唯一原因**，不能放宽原host/child门。可用私有controller subreaper和一次ELF缓存的独立小fixture核验，再声明修正后的观测协议；不得把旧原业务成功或新测试替代旧红。所有原数据已留，零新产品执行的审计不算再次互通。
+已建立独立集成树 **khor-net-product-integration-v1**、分支 **integrate/net-product-v1**。最初基于本地main57a69；随后核实其是公开main **c3b098bdbf52a9b3b38e887ae74b90155292b544** 的祖先，已将实际公开main合入本任务集成树，绝不将旧GUI候选当最终产品。集成merge **a3e07d34133b3a1b4d4ee66d82fd8d0cab37436e**、tree **da403915d443fe2e52f5f0a2a4d32030dd12244b**，自动合并无冲突，apps/逐字保留公开main；三份锁的iroh1.4.1/Noq1.4.0一致。原feat/net运行时不变，用户main、已安装App、其他任务Lab23961均未动。集成源码尚未经过完整Quality，不晋升或发布。
+
+下一步：同步本轮文档后，冻结同树验证提交，以公开main为唯一parent，在独立 `verify/net-product-v1` 分支运行仓库原生完整Quality（suite=all/interaction_scope=all），不推main/tag、不触发release；保存实际source/tree/run。该tree已公开的3b网络源码与当前公开main合成，不发布私有实验祖先DAG。继续Release真实业务基线、唯一middle冷启动接管、地址变化和custom退出核查。完整N0–N5未完成；最终性能协议必须在执行前绑定最终arm与原门，不沿用旧候选的测试身份冒充新集成验证。
+
+## 已保留的混版v1失败
+
+首个真实runtime `turing-20261112T192613Z-c2c8ebe2`，control **ce4998f58fe1cc70d8b84e1854582d8828d27223**、source3b，controller1/187.838121s；原Rust1过、138.35s，四项row/pin均同步。原observer见65个owner干净退出，但只见old host，198行原后置断言失败，accepted=false。21原files/hash/identity/group空，proof mixed-runtime-screen-v1.json及ledger保留。原祖先采样可能漏掉快速分离进程，重复哈希约264MB ELF也会延长采样；这是框架可见缺口，不独立证明旧失败唯一根因。v2独立声明修正观察协议后才执行，未放宽原host/child门。
 
 混版第一次准备 `turing-20261112T190345Z-5b6f85b7`，control054/source3b，1/459.251317s，26files/hash/identity/group空已核；**没有mixed-runtime.log或contract，零互通runtime**。错误是控制脚本139行假定cargo test不会重建CLI，普通build ELF dcd289与实际test producer的418df3不同；原old/new只读copy均保持原hash。失败原样保存，E/该run/mixed-preflight-failure-v1.json，ledger闭controller_preflight_failure，不是产品互通红。E/iroh14-mixed-resume-plan-v1.json SHA7d388c89dba9d0067283e70def0a2188fae81eb166d577a248989b871a9d3601声明只复用已准入old只读ELF、从原verified test producer选择实际CLI，用原require_provenance再次核文件/源码/context；不改verifier，不再编译，原runtime/host/child/断言body逐字相同（SHA11f48a3e67608f0f543bd07d707a2a91db4e1b1912a91bdb9e279b61abc6603a），允许实际runtime一次/替代零。ctrl/proof在E/iroh14-mixed-resume-control-v1.json。
 
@@ -34,7 +40,7 @@ E/iroh14-policy-stability-resume-results-v1.json为完整描述性对照：两�
 
 提交工具已在 **45044a84f1dfac9339bfc934a8c4c3341b1864b3** 修复：CLI和Lab共享require_source_builder，仅显式授权的colehank/khor-build同时匹配请求名与GitHub实际full_name时允许public；其他公开库仍在snapshot/upload前拒绝，原私库流程保留。真实CLI已成功提交工具验证run **43283055508**；control验证分支commit **adc701423672e2ea2136e781fbdac6a3e6461897**，未改control main。GH托管Linux三suite **3+14+15=32通过**，artifact13972678652 SHA **7cce5b4a6198ae81994c614e5789763f42551e2d62243b68713c9ac4cdc03282**、source45044/tree624dce/snapshot8410dbe逐项核验，proof E/khor-build-public-tooling-v1/verification.json。本机只做AST/diff结构检查；此结果不是完整Quality或3b原生Lab接受。
 
-该3b候选不是最新GUI发行源；只能作为首个网络候选Lab。已对本地main57a69f8d与3b进行git merge-tree预览，自动合并无冲突，所得tree3a76346eb1a26c8d7cee2fe3f96cf90f005120d1；没有创建新分支/worktree或合并main。最终产品集成及同源Quality/真机验收仍待，不把旧候选测试挪作最终合并源验证。现有其他任务Lab23961保持。
+该3b候选不是最新GUI发行源；只能作为首个网络候选Lab。最初本地main57a69预览已被本页当前产品集成进展取代；公开main c3b098才是现产品基线。最终同源Quality/真机验收仍待，不把3b原Lab测试挪作新集成源码验证。现有其他任务Lab23961保持。
 
 ## 历史暂停（2026-11-13 00:57，本地）
 
