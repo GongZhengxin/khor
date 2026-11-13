@@ -18,3 +18,8 @@
 | 只有超时后的记录 | 时间戳上界不足以判断方向 | 不据此声称网络送达晚或程序回写晚 |
 
 带记录的程序增加诊断开销；其结果不代替最终性能和能耗验收。本轮若没有重现失败，也不视为修复。运行前冻结协议 `E/terminal-direction-runtime-plan-v1.json`，SHA `a6893aaa724d3f121c3c9f316ccdfbaf7b1808b9e99a5ea37f25f5475c7330ef`；E 为 `/Volumes/disk0/Khor/evidence/net`。
+
+
+固定6场已闭：151349Z-c16a9107，0/1125.157539s，原shell/capture各3/3、各2160ok，六个192MiB文件完整；三个capture均724条完整前缀、输入/回复各361、epoch bracket130ns，无丢记录。原/capture文件吞吐中位22.720202/22.759749Mbit/s仅作描述。未重现旧超时，无法归因；不据绿宣称修复。完整E/terminal-direction-comparison-verification-v1.json。
+
+对原Relay可用组两次红的纯数据复核发现：两个2秒TTY超时期间，本地20ms probe各推进100次，最大tick lag1489/1711μs；同时Main目录请求约303–305ms成功。不能据schedule_lag大就认定CPU停顿，它还包含等待前面串行业务。此观察只把问题收敛到终端连接/PTY及相关链路，未确定具体环节；E/red-terminal-locality-verification-v1.json保留原log SHA和全部数据来源。

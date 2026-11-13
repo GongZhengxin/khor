@@ -1,24 +1,20 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-13T15:28:50.668005+00:00。完整目标 [GOAL](GOAL.md) / [PLAN](PLAN.md) N0–N5 **未完成**；逐项缺口见 [REQUIREMENTS](REQUIREMENTS.md)。root 串行，不派子智能体。用户已授权持续实施与远端验证，不因阶段完成停工。
+更新于 2026-11-13T15:43:42.656626+00:00。完整目标 [GOAL](GOAL.md) / [PLAN](PLAN.md) N0–N5 **未完成**；逐项缺口见 [REQUIREMENTS](REQUIREMENTS.md)。root 串行，不派子智能体。用户已授权持续实施与远端验证，不因阶段完成停工。
 
 E=`/Volumes/disk0/Khor/evidence/net`；工作树均在 `/Volumes/disk0/Khor/worktrees/current/`。此前 STATE 逐字存 [HISTORY-through-terminal-direction-launch](HISTORY-20261113-through-terminal-direction-launch.md)，SHA256 `b6712ae6174fb1be910c4f43f4b11424d6be545645358fc2a7d50c63c4eded47`；其中更早历史链接保留。历史 pending/PID 不能用来重新派发。
 
-## 当前唯一在途
+## 当前执行与紧接工作
 
-Turing **151349Z-c16a9107 / PID461002**，角色 terminal_direction，普通 Release 固定 6 场，原/capture/capture/原/原/capture。单一远端 controller 串行，无本地后台协调器；root 是唯一 source-refs writer。恢复时先读实际 receipt / execution，不能重新 stage。最近只读观察前 4 场均原门成功，第 5 场进行中，尚未完整闭证。
+**当前唯一pending为持续交互 compile-only turing-20261113T154317Z-37b038ce / PID509435**，control0b45019f211dd0bdec36878c0096d5837aab2623；source tree3f6cb2c3bedfd350f06315cc7cb8a70d742c008f / snapshot7dca8534bb9eede8b28bf1e51e5e73ece252176a。只构建、不跑业务；E/terminal-persistence-native-compile-plan-v1.json与E/ops/verify-terminal-persistence-native-compile-v1.py已准备，producer闭后才能冻runtime。无其他后台协调器或Mac任务。 终端方向固定6场 **151349Z-c16a9107 0/1125.157539s** 已闭18files/identity/native来源/CPU/全部owned清理。原shell/capture各3/3、各2160ok、六完整192MiB文件；三个capture各724条完整前缀、输入/回复各361、epoch bracket130ns、无丢记录。替代0、运行编译0。原/capture文件中位22.720202/22.759749Mbit/s只作描述。**未重现原超时，未定位根因，不是修复**。E/terminal-direction-comparison-verification-v1.json、run下terminal-direction-block-verification-v1.json。
 
-- control `0f50c7bcaa76a37897431f4dc0832ce271579f5a`。
-- source tree `776ecc6b2bf358bb9421dbbd5c988cb4f1a52a7b`，snapshot `f2131be0c896a4b9ad94ae285a0cc0b0a9a98092`。
-- 测试树 `khor-net-terminal-direction-v1` / `experiment/net-terminal-direction-v1`，现 clean commit `ac261817d4d4e897acf2614a286f6e4ead78621c`，tree 未变。原 descriptor 中 basef6b9/dirty=true 是提交前历史实情，不重写。
-- 冻结协议 E/terminal-direction-runtime-plan-v1.json，SHA `a6893aaa724d3f121c3c9f316ccdfbaf7b1808b9e99a5ea37f25f5475c7330ef`。
-- producer **145811Z-6f3704a7 0/544.370115s**，Rust8m14s，22files/identity/native 来源已闭；test SHA `499340a0655fc827e5e792af7c364ade14188560901a1a8aa332975c05462954`。CLI 精确原失败版本 `a7e3565f15ed15d59f5215bceeb3900d153d053dd853846f623d86efbe6e4ac9`，产品无改动；准备了 test 与显式 CLI 入口。
+已提交测试树 khor-net-terminal-direction-v1 / experiment/net-terminal-direction-v1，clean **ac261817d4d4e897acf2614a286f6e4ead78621c**、tree **776ecc6b2bf358bb9421dbbd5c988cb4f1a52a7b**，snapshotf2131be0；产品CLI精确原a7e3565f。producer145811Z-6f3704a7 0/544.370115s，22files闭、testSHA499340a0655fc827e5e792af7c364ade14188560901a1a8aa332975c05462954。原descriptor提交前basef6b9/dirty=true不重写。control0f50c7bcaa76a37897431f4dc0832ce271579f5a，协议E/terminal-direction-runtime-plan-v1.json SHAa6893aaa724d3f121c3c9f316ccdfbaf7b1808b9e99a5ea37f25f5475c7330ef。
 
-全部 6 场同可用 Lab Relay，原 720 意图/192MiB/2秒 caller/600秒 owned 保持，运行编译0、替代0。Python echo 保持真实 PTY，私有非阻塞 FIFO 只记录程序完整输入/回复和测量后 summary。helper 远端4/0/0，数据分析合成检查6/0/0。首个 capture（case2）中期核验有效：724条连续前缀、输入/回复各361（含预热）、epoch bracket130ns、无丢记录；仅中期证据，不代整个任务闭证。
+新增纯数据复核 **E/red-terminal-locality-verification-v1.json**：旧Relay可用组case4/5两次TTY超时，2秒窗口内各有100个20ms本地probe；最大tick lag1489/1711us、邻近最大gap20573/20792us。同时Main目录请求仍约303–305ms成功。只排除“这两秒整个本地fixture计时器停了/设备对全部业务都断”的解释，不证明远端PTY或Tunnel健康。scheduled lag包括等待前面串行业务，不是OS调度延迟。
 
-[TERMINAL-DIRECTION](TERMINAL-DIRECTION.md)定义解释边界：at_ns 在 I/O 后采样，只是完成上界。早于观测超时下界的 reply_written 才能证明程序已写出；晚 stamp 不证明晚到/晚写。summary 只验证截至第一 summary 的连续无丢前缀，后续原记录全保留；缺 input 最多证明程序截至 summary 未处理完整行，不能推成包未到内核。要求同 time namespace、epoch bracket≤1ms、无读错/溢出。带记录程序不是最终性能/能耗接受。
+下一轮**持续交互诊断**先冻结 E/terminal-persistence-design-v1.json：同一连接10×120个400ms间隔窗口（约8分钟），只有目录与真实TTY，无bulk；原shell/capture各固定一场，原2秒caller/600秒owned，完整4800意图，不替代。回答长连接持续交互是否也停顿，不与原混合负载互相替代，不作最终SLO/能耗接受。独立测试树khor-net-terminal-persistence-v1 / experiment/net-terminal-persistence-v1，HEADac261817、2 staged，只新增203行persistence.rs及父模块2行声明。已远端固定rustfmt格式化（首次orchestration因远端Python3.8无Path.is_relative_to失败，空audit目录及脚本保持；v2改用relative_to成功），编译已在途，业务尚未执行；准确producer闭后绑定runtime。root唯一source-refs writer，无后台协调器。
 
-执行完成后顺序：collect-network-ssh.py → E/ops/verify-turing-record.py → E/ops/verify-terminal-direction-block-v1.py → E/ops/summarize-terminal-direction-v1.py，均传 E/该run（collect 传 receipt.json）。验证与汇总脚本已准备，尚无最终结果。若前置或 owned 清理不完整，保留 partial 并解释，不能把失败替换成新场次。之后依据实测方向定位；本批未重现也不能宣称修复。
+[TERMINAL-DIRECTION](TERMINAL-DIRECTION.md)保留解释边界：at_ns在I/O后采，是完成上界；只有早于观测超时下界的reply_written证明程序已写出；晚stamp不能证明晚到/晚写。summary只验证第一summary前连续无丢前缀，保留其后原行；缺input最多证明程序截至summary未处理完整行，不推成包未到内核。要求同time namespace、epoch bracket≤1ms、无读错/溢出。helper远端4绿、元数据合成检查6绿，不代业务修复。
 
 ## 产品源与当前接受边界
 
