@@ -1,6 +1,6 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-13 02:37 UTC（下列实际收据时间优先）。用户“定好目标，开始”已恢复执行；完整目标 [GOAL](GOAL.md) 与 [PLAN](PLAN.md) N0–N5 **未完成**。
+更新于 2026-11-13 02:42 UTC（下列实际收据时间优先）。用户“定好目标，开始”已恢复执行；完整目标 [GOAL](GOAL.md) 与 [PLAN](PLAN.md) N0–N5 **未完成**。
 用户ToDesk级体验、iroh/Rust极致优化及原约束均已记入GOAL/PLAN v3。root串行，不派发子智能体。目标服务旧paused状态不覆盖本次明确恢复授权。
 
 此前STATE逐字保存在 [上轮完整状态](HISTORY-20261113-iroh-recovery-and-stability-preparation.md)，其中继续链接所有更早历史、原失败、收据及冻结输入。
@@ -12,7 +12,7 @@
 
 已建立独立集成树 **khor-net-product-integration-v1**、分支 **integrate/net-product-v1**。最初基于本地main57a69；随后核实其是公开main **c3b098bdbf52a9b3b38e887ae74b90155292b544** 的祖先，已将实际公开main合入本任务集成树，绝不将旧GUI候选当最终产品。集成merge **a3e07d34133b3a1b4d4ee66d82fd8d0cab37436e**、tree **da403915d443fe2e52f5f0a2a4d32030dd12244b**，自动合并无冲突，apps/逐字保留公开main；三份锁的iroh1.4.1/Noq1.4.0一致。原feat/net运行时不变，用户main、已安装App、其他任务Lab23961均未动。集成源码尚未经过完整Quality，不晋升或发布。
 
-已同步本轮文档并冻结单父验证源 **117c39e5432741198c924177fae1775ff292eada**，tree **ace4fd8223ed7fcd8d2b29477d9e651a2df53ff2**，唯一parent为公开main c3b098。完整本地merge链保留于 `refs/khor/net-integrations/product-v1-merge` →1cd5092f；集成树HEAD现在117c39且clean，apps/及.github/逐字等于公开main。只推独立 `colehank/khor:verify/net-product-v1`，原生完整Quality **43348869616** 已于01:59:19 UTC FIRSTATTEMPT启动，suite=all/interaction_scope=all，API核准确head/event；截至本次更新12job成功，仅node-native的signed SSH验证仍运行。E/net-product-integration-v1.json为权威收据，不因网页fixture或先前3b原生probe宣称本集成接受。没有main/tag/release/已安装App操作。
+已同步本轮文档并冻结单父验证源 **117c39e5432741198c924177fae1775ff292eada**，tree **ace4fd8223ed7fcd8d2b29477d9e651a2df53ff2**，唯一parent为公开main c3b098。完整本地merge链保留于 `refs/khor/net-integrations/product-v1-merge` →1cd5092f；集成树HEAD现在117c39且clean，apps/及.github/逐字等于公开main。只推独立 `colehank/khor:verify/net-product-v1`，原生完整Quality **43348869616** 已于02:35:11 UTC **FIRSTATTEMPT 13/13全部SUCCESS**，suite=all/interaction_scope=all，API核准确head/event/attempt；包含三OS runtime、Agent、frontend、Lab、GUI、Node原生及真实SSH安装认证、Mac更新/WebKit、iOS原生UI等全部原门。E/net-product-quality-v1.json为完整run/jobs证据，E/net-product-integration-v1.json已记quality_succeeded。8份原artifact均已下载至E/public-quality-net-product-v1，逐份GitHub原SHA/字节/ZIP CRC核，archive-retention.json保存；未提取或执行其中native产物。此结果不是候选手机、WAN、能耗或全部N0–N5接受。没有main/tag/release/已安装App操作。
 
 同时补齐实际唯一middle首个业务场景。独立树 **khor-net-product-sole-peer-v1**、branch **experiment/net-product-sole-peer-v1**，base117c39，仅新增fixture模块与mod声明，产品源码不改。X/M同LAN Direct；X在resident启动前双向阻断其仍配置的Relay，Y双向阻断全部UDP，M→Y只剩真实TCP Relay。通过M配对roster，无X→Y业务预热、不等hop或no-relay长期宣告；后台若已准备好必须如实记录，不称冷前台握手。首个目录请求要求5秒内返回目标独有marker、X→Y确经M、两腿实报Direct/Relay且当时no_relay=false；原3秒hop预算未改。协议E/net-product-sole-peer-plan-v1.json，先compile-only，再预声明三独立runtime/替代零；缺hint/旧Direct/负向策略/能耗及手机仍另验。
 
@@ -24,9 +24,9 @@ compile-only `turing-20261113T021226Z-a2207feb`已 **0/129.161091s**，18原repo
 
 原runtime准备022103Z-df6a99d7（control175fdc）错误把环境SHA作值，找不到git；022453Z-ee449360（controlfc3e）原初始来源准入过后，controller新增KHOR_TEST_KEEP/NO_MDNS改变完整环境指纹，被原门拒绝。两者均**零编译/零产品runtime/零业务人口**、原收件/identity/group空与专属proof/ledger闭。v3在原producer环境下运行，只设private TMPDIR；原Scratch清理、子命令mDNS隔离及全部原行为门保持，完整日志/owner事实留证，scratch homes不保留。原native verifier没有放宽。此处失败属于控制前置，不隐去，也不计业务失败或重试成功。
 
-当前本任务无Turing在途、无pending ledger。原资源/源码/可信执行约束保持；Quality43348869616仍在GitHub运行，不能重复dispatch。root继续串行，旧协调器61277不恢复。
+当前本任务无Turing在途、无pending ledger。原资源/源码/可信执行约束保持；Quality43348869616也已终态全绿，不能重复dispatch。root继续串行，旧协调器61277不恢复。
 
-下一步：收齐当前Quality最后原生Node任务及artifact；冻结同一实际业务夹具的公开main/候选对照（先验证共享helper兼容，不能拿不同observer作速度因果），继续Release基线、缺失/过时第二腿hint/负向策略、地址变化、手机/原生Lab和custom退出核查。完整N0–N5未完成；最终性能协议在执行前绑定最终arm与原门，不挪旧候选测试作新集成验证。
+下一步：按需核对已保留artifact的具体payload用于新集成Lab；冻结同一实际业务夹具的公开main/候选对照（先验证共享helper兼容，不能拿不同observer作速度因果），继续Release基线、缺失/过时第二腿hint/负向策略、地址变化、手机/原生Lab和custom退出核查。完整N0–N5未完成；最终性能协议在执行前绑定最终arm与原门，不挪旧候选测试作新集成验证。
 
 ## 已保留的混版v1失败
 
