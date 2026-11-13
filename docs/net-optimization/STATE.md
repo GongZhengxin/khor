@@ -1,6 +1,6 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-13 01:57 UTC（下列实际收据时间优先）。用户“定好目标，开始”已恢复执行；完整目标 [GOAL](GOAL.md) 与 [PLAN](PLAN.md) N0–N5 **未完成**。
+更新于 2026-11-13 02:14 UTC（下列实际收据时间优先）。用户“定好目标，开始”已恢复执行；完整目标 [GOAL](GOAL.md) 与 [PLAN](PLAN.md) N0–N5 **未完成**。
 用户ToDesk级体验、iroh/Rust极致优化及原约束均已记入GOAL/PLAN v3。root串行，不派发子智能体。目标服务旧paused状态不覆盖本次明确恢复授权。
 
 此前STATE逐字保存在 [上轮完整状态](HISTORY-20261113-iroh-recovery-and-stability-preparation.md)，其中继续链接所有更早历史、原失败、收据及冻结输入。
@@ -8,11 +8,19 @@
 
 ## 当前执行：产品集成与完整验证
 
-旧新真实混版观察协议v2已完成并闭批：`turing-20261113T011900Z-19b49119`，control **de74a134bb5a1d2416fbf1736bd05c50ab696731**，source仍准确3b734073。**0/160.457763s、原Rust1过/0失败/0忽略**；原双向row/pin、old/new两常驻host及其sleep子进程均实见，原身份/hash/group空及23原reportfiles核验。controller仅用私有subreaper补齐快速分离子进程见证，并按inode缓存ELF hash；独立零产品运行校准通过。原产品fixture与最终行为断言未改、编译执行零、实际混版runtime一次、替代零。proof E/该run/mixed-observer-v2-verification.json；ledger pending=false/behavior_verified=true。只接受此窄互通合同，不是完整N5、旧pre-Versions回退、手机、WAN或能耗接受。旧两次失败原样保留，见[IROH-MIXED](IROH-MIXED.md)。当前本任务无Turing在途。
+旧新真实混版观察协议v2已完成并闭批：`turing-20261113T011900Z-19b49119`，control **de74a134bb5a1d2416fbf1736bd05c50ab696731**，source仍准确3b734073。**0/160.457763s、原Rust1过/0失败/0忽略**；原双向row/pin、old/new两常驻host及其sleep子进程均实见，原身份/hash/group空及23原reportfiles核验。controller仅用私有subreaper补齐快速分离子进程见证，并按inode缓存ELF hash；独立零产品运行校准通过。原产品fixture与最终行为断言未改、编译执行零、实际混版runtime一次、替代零。proof E/该run/mixed-observer-v2-verification.json；ledger pending=false/behavior_verified=true。只接受此窄互通合同，不是完整N5、旧pre-Versions回退、手机、WAN或能耗接受。旧两次失败原样保留，见[IROH-MIXED](IROH-MIXED.md)。该混版批次已无Turing在途；后续在途见下方独立compile收据。
 
 已建立独立集成树 **khor-net-product-integration-v1**、分支 **integrate/net-product-v1**。最初基于本地main57a69；随后核实其是公开main **c3b098bdbf52a9b3b38e887ae74b90155292b544** 的祖先，已将实际公开main合入本任务集成树，绝不将旧GUI候选当最终产品。集成merge **a3e07d34133b3a1b4d4ee66d82fd8d0cab37436e**、tree **da403915d443fe2e52f5f0a2a4d32030dd12244b**，自动合并无冲突，apps/逐字保留公开main；三份锁的iroh1.4.1/Noq1.4.0一致。原feat/net运行时不变，用户main、已安装App、其他任务Lab23961均未动。集成源码尚未经过完整Quality，不晋升或发布。
 
-下一步：同步本轮文档后，冻结同树验证提交，以公开main为唯一parent，在独立 `verify/net-product-v1` 分支运行仓库原生完整Quality（suite=all/interaction_scope=all），不推main/tag、不触发release；保存实际source/tree/run。该tree已公开的3b网络源码与当前公开main合成，不发布私有实验祖先DAG。继续Release真实业务基线、唯一middle冷启动接管、地址变化和custom退出核查。完整N0–N5未完成；最终性能协议必须在执行前绑定最终arm与原门，不沿用旧候选的测试身份冒充新集成验证。
+已同步本轮文档并冻结单父验证源 **117c39e5432741198c924177fae1775ff292eada**，tree **ace4fd8223ed7fcd8d2b29477d9e651a2df53ff2**，唯一parent为公开main c3b098。完整本地merge链保留于 `refs/khor/net-integrations/product-v1-merge` →1cd5092f；集成树HEAD现在117c39且clean，apps/及.github/逐字等于公开main。只推独立 `colehank/khor:verify/net-product-v1`，原生完整Quality **43348869616** 已于01:59:19 UTC FIRSTATTEMPT启动，suite=all/interaction_scope=all，API核准确head/event；截至本次更新10job成功，GUI/node-native/mac-updates仍运行。E/net-product-integration-v1.json为权威收据，不因网页fixture或先前3b原生probe宣称本集成接受。没有main/tag/release/已安装App操作。
+
+同时补齐实际唯一middle首个业务场景。独立树 **khor-net-product-sole-peer-v1**、branch **experiment/net-product-sole-peer-v1**，base117c39，仅新增fixture模块与mod声明，产品源码不改。X/M同LAN Direct；X在resident启动前双向阻断其仍配置的Relay，Y双向阻断全部UDP，M→Y只剩真实TCP Relay。通过M配对roster，无X→Y业务预热、不等hop或no-relay长期宣告；后台若已准备好必须如实记录，不称冷前台握手。首个目录请求要求5秒内返回目标独有marker、X→Y确经M、两腿实报Direct/Relay且当时no_relay=false；原3秒hop预算未改。协议E/net-product-sole-peer-plan-v1.json，先compile-only，再预声明三独立runtime/替代零；缺hint/旧Direct/负向策略/能耗及手机仍另验。
+
+首次准备 `turing-20261113T020722Z-4abf5dc7`，source59e2fe9c/control e532：format前置红，**零编译/零产品runtime**，10原files/hash/identity/group空已收且ledger闭；只应用其准确formatter补丁。修正source tree **a448adc27f7502deb7293bbfa376d96de539df3b**、snapshot **08d0afa45e3aaf15ba73b8fd6928c30737f6de37**，描述符E/net-product-sole-peer-source-v2.json。增加原native_provenance实际test producer与同producer CLI准入，未改verifier、业务门或生产源；E/net-product-sole-peer-preexecution-amendment-v2.json保存执行前修订。
+
+**本任务当前唯一Turing在途**：`turing-20261113T021226Z-a2207feb`，02:12:49 UTC、PID3057952，control **ba58e0e3b9828d05f932708013a99d8f94bf2368**，revision net_product_sole_peer_native_compile_v2，compile-only、产品runtime零；启动exec22444已终态。先查询此收据并收件/identity/具体编译来源核验，不重复调度。root是唯一ledger writer；保持原UID1110/flock/50GiB启动/40GiB停止/90分钟守护、Rust1.95/jobs16/nice10与本机source-only。编译通过才能建立runtime控制；无同源重试挑绿。
+
+下一步：完成当前Quality与compile收据；运行冻结唯一middle三次真实业务，继续Release基线、地址变化、手机/原生Lab和custom退出核查。完整N0–N5未完成；最终性能协议在执行前绑定最终arm与原门，不挪旧候选测试作新集成验证。
 
 ## 已保留的混版v1失败
 
@@ -32,7 +40,7 @@ E/iroh14-policy-stability-resume-results-v1.json为完整描述性对照：两�
 
 用户问能否通过公开仓库恢复Actions。只读查明私库colehank/khor-build的43205919189被付款/额度拦截、prepare零step；macserver最新SSH仍banner timeout255。colehank/khor已经public，私库失败后其公开release43227326496仍成功。其现有Developer Lab（410114960，workflow blob404aed5fddbe4c8ecd9b8569ec9d4afcb4d25d9f）含ubuntu前端/检查与macos-26标准托管原生构建，可作为待确认的替代路线；不触发release。
 
-用户“开放吧”并澄清“为什么让khor-build开放不行？”，已按原意将 **colehank/khor-build改为public**，GitHub API复核public/admin；全部既有分支和历史保留。原复用公开产品库khor的提议已被此决定取代，没有向产品库khor推送快照或dispatch。E/khor-build-visibility-transition-v1.json绑定授权与结果。 控制库README已同步公开约定，docs-only commit9b671817e34846df9e14c213a562ab88309cb45a；未改任何workflow或产品main，原Lab run仍绑定6ed3ce控制版本。此前付款失败和SSH超时保留，不把建议私有误作永久技术限制。
+用户“开放吧”并澄清“为什么让khor-build开放不行？”，已按原意将 **colehank/khor-build改为public**，GitHub API复核public/admin；全部既有分支和历史保留。原复用公开产品库khor作为builder的提议已被此决定取代。此前未向khor推送快照或dispatch；本轮另以独立verify/net-product-v1分支运行其原生完整Quality，具体版本和边界见本页当前执行。E/khor-build-visibility-transition-v1.json绑定授权与结果。 控制库README已同步公开约定，docs-only commit9b671817e34846df9e14c213a562ab88309cb45a；未改任何workflow或产品main，原Lab run仍绑定6ed3ce控制版本。此前付款失败和SSH超时保留，不把建议私有误作永久技术限制。
 
 公开前核466个远端branch、8819个可达对象、4606个普通blob及212个bundle头，后者均指向已可达源码图，无额外prerequisite；唯一密钥格式命中是与公开main逐字相同的vendor/tiny_http示例TLS key。无tag，历史工作流无外部PR/评论等代码触发器，默认token只读；自托管runner存在，现有任务均手动dispatch。E/khor-build-publication-source-audit-v1.json及actions/branches-before保留；这只是已知格式源码检查，不宣称全日志/历史artifact凭据排除。
 
