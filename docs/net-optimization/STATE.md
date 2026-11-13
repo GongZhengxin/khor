@@ -17,16 +17,16 @@
 
 本机source-only：Git、stdlib Python源码/元数据/数据/ZIP处理及SSH编排；不运行本机Cargo/Rust/rustfmt/Node/Bun/Xcode或下载的原生产物。重型工作只Turing/macserver/可信GitHub。用户main、已安装App、其他任务Lab23961（源98285、PID4769/exec18781）不动；无main合并、发布/标签/TestFlight、生产Relay采购部署或已安装App替换授权。用户已明确公开colehank/khor-build，Actions通道已恢复，不再按旧私库额度阻塞。
 
-## 当前唯一ledger writer：ACK串行coordinator
+## ACK串行coordinator已闭：root恢复唯一ledger writer
 
-**E/ops/run-workload-native-ack-three-v1.py，exec76657，localPID64594** 正运行，持专属flock；此间root只读E/source-refs，不能另stage/close Turing任务。先核真实progress/exec终态再恢复writer，不凭观察超时重提。
+**E/ops/run-workload-native-ack-three-v1.py，exec76657，localPID64594已终态0**，progress/results completed，ledger无pending；root恢复唯一writer，不重启旧批次。详[WORKLOAD-NATIVE-ACK](WORKLOAD-NATIVE-ACK.md)。fixed3共2160ok、三file全，但未复现原2秒超时、未定因；原普通Release候选拒绝保持。
 
 - protocol **E/workload-native-ack-diagnostic-plan-v2.json**；fixed3 fresh high病例、替代0，修订在runtime前冻结。source A如上；原192MiB/三phase各目录+真实TTY各120样本/2秒caller/240秒file/600秒owned不改。
 - compile **054642Z-d37db21c** 已 **0/300.285793s**，19files及identity/source/hash/group空、原native verifier的Release opt3/20first-party unit/实际CLI与test核。18项目依赖复用，仅CLI/test fresh；old Q两ELF只读保全。actual CLI/test features均net-diagnostics，khor_net实际qlog。E/run/native-ack-release-compile-verification-v1.json。原compile.json继承upstream_qlog标签未覆写，专属audit明确标注这个元数据限制；实际feature/CLI及runtime合同另核。
 - runtime控制 **ab2ac0803d207a3d98271a38f7ce2ccfa08134da**，E/workload-native-ack-runtime-control-v2.json。v1仅修suite标签、未执行；不可误启动。旧qlog控制不能在已切A的stable candidate source运行。
-- 首runtime **turing-20261113T055445Z-f9df1c24**，receipt E/run/receipt.json，remotePID3488460；exec28549仅提交已终态0。后两轮只能由当前coordinator串行提交。**E/workload-native-ack-diagnostic-progress-v1.json / results-v1.json**是执行索引。
+- 首runtime **turing-20261113T055445Z-f9df1c24**，receipt E/run/receipt.json，remotePID3488460；exec28549仅提交已终态0。后两轮055802Z-ad8c39fd、060113Z-5af34dfa已由coordinator串行执行完并闭。**E/workload-native-ack-diagnostic-progress-v1.json / results-v1.json**是执行索引。
 - QLOGDIR不传且显式unset，无qlog采集；NETLAB_DIAGNOSTICS=1启用已有native ACK/选路日志，保留原两resident日志及wall/monotonic锚点。300MiB日志保护只向实际Popen-owned test group TERM，原512MiB压缩/1GiB展开collector门不放宽。触cap归采集资源中断、非产品根因，停后续。
-- 专属 E/ops/verify-workload-native-ack-case-v1.py 核原720总体、原Rust出口/bytes/geometry/overlap、全部日志SHA/字节及实际ACK/stream snapshot、无qlog、native owner；Rust红保留。若三次未复现，停止同样诊断，不当修复或普通性能接受。即便绿，原unlogged两红仍在。
+- 专属 E/ops/verify-workload-native-ack-case-v1.py 核原720总体、原Rust出口/bytes/geometry/overlap、全部日志SHA/字节及实际ACK/stream snapshot、无qlog、native owner；Rust红保留。三次均未复现，停止同样诊断，不当修复或普通性能接受。原unlogged两红仍在。
 
 Turing原UID1110/flock/jobs16/nice10/Rust1.95/50GiB启动/40GiB停止/90分钟outer守护保持。所有老coordinator（72887、45051、68965及旧61277）均终态，不恢复。
 
@@ -45,7 +45,7 @@ baseline low/high各3/3；candidate low3/3、high **1/3**。candidate high共192
 - [SOLE-PEER-RELEASE](SOLE-PEER-RELEASE.md)：相同Release唯一M的Direct首腿/真实Relay第二腿首目录ABBAAB已闭。基线3次5秒右删失；I3次345236/366587/366320us，真实marker/唯一middle/no_relay=false/cold/实际drop与owner全核。右删失不能变成功5秒延迟或有限加速倍数。S Debug先前固定3也通过，其适用范围独立。
 - [SOLE-PEER-CACHE](SOLE-PEER-CACHE.md)：T v1 compile053516Z-5aa15758 0/81.366352s；runtime **053846Z-4b1bebf2 原1/365.502303s**、36files/identity/source/hash/owner与ledger已闭。不可用第二腿hint（JSON null，非删map）、过时Direct第二腿hint、X历史Direct目标三类各3/3，hint前后保持、实际唯一M的Direct/Relay两腿和目标marker/5秒门通过。该9case不重复。
 - v1 sp5三次失败原件保持，middle_down前置全false、前两次first_leg_up=false、末次middle_resumed=false。**前置未成立，不能据此将根因归给30秒miss缓存。**已核set_machine_paused接受设备名，不误诊其名字参数。
-- 新 **E/sole-peer-cache-resume-plan-v2.json** 与T本地追加sp6已预写：用实际M→Y暂停拒绝、persisted policy bit和X→M真实内容见证，原X失败读期间5次有界只读keepalive维持首腿；从unpause开始含实际M恢复目录及一次新X目标读共享原总5秒，same caller PID、hint held、实际两腿。固定3、仅新case，不替换旧sp5分母。**目前仅源码/协议准备，未fmt、未freeze新source、未编译运行**；当前ACK coordinator期间不动Turing cache/不提交。
+- 新 **E/sole-peer-cache-resume-plan-v2.json** 与T本地追加sp6已预写：用实际M→Y暂停拒绝、persisted policy bit和X→M真实内容见证，原X失败读期间5次有界只读keepalive维持首腿；从unpause开始含实际M恢复目录及一次新X目标读共享原总5秒，same caller PID、hint held、实际两腿。固定3、仅新case，不替换旧sp5分母。**目前仅源码/协议准备，未fmt、未freeze新source、未编译运行**；ACK coordinator已闭；下一新任务仍须准确source/control与原所有权准入。
 
 ## 可复用的其他已闭证据
 
@@ -58,10 +58,12 @@ baseline low/high各3/3；candidate low3/3、high **1/3**。candidate high共192
 
 ## 接下来与完整交付
 
-1. 先续当前ACK三个固定病例/证据，不重复已dispatch任务。根据实际ACK/选路与连接身份，设计最小修复或明确消融；普通unlogged同源Release复核必须另立固定协议，原失败保留。
+1. ACK三个固定病例已闭，不重复已dispatch任务。根据实际ACK/选路与连接身份，设计最小修复或明确消融；普通unlogged同源Release复核必须另立固定协议，原失败保留。
 2. 修正前置的新sp6三次及其余NET-16策略/缺字段/多middle/移动范围，不能把9窄合同代全部peer relay。
 3. N3补同步/预览/SSH/hop并行负载、背压/公平/取消真实资源与共享/分连接比较；1/3/5设备闲时CPU/线程/字节/唤醒/手机能耗，现有成本回退需解释/改进。
 4. N4双方与peer relay IPv4/IPv6/NAT独立或同时变址、prefix/Wi-Fi↔蜂窝/锁屏休眠、寻址与Relay登记/出口故障域/容量/布局；MacLab与Turing同LAN，macserver另机。新候选物理iPhone窗口未执行。
 5. 所有custom逐项退出依据、状态/职责及持续短回归/完整矩阵/前后对照/中继运维设计，最终收敛到同一准确source；与届时main隔离集成并跑准确源完整Quality/Mac原生/手机接受。无main合并或正式发布授权。
 
 所有已闭结果只复用于其准确源码/范围。失败、控制前置失败、用户取消、采集资源中断及未验证分别记；源码计划准备不冒充实现/接受。最终完整目标、[DESIGN](DESIGN.md)、需求审计的未完项不因局部绿缩减。
+
+首ACK病例的1.664秒TTY尾与单Direct copy2PTO/另一copy较新收包和全局silence重合，move仍Hold；精确hash-bound行证据见E/workload-native-ack-first-tail-observation-v1.json。静态off_direct guard限制旧copy wake仅为待检假设，不冒充已证根因。接下来先修正前置的新sp6，并以明确受控问题收敛路径/连接停顿，不再追加相同日志试验。
