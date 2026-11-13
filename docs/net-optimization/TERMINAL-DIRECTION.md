@@ -23,3 +23,6 @@
 固定6场已闭：151349Z-c16a9107，0/1125.157539s，原shell/capture各3/3、各2160ok，六个192MiB文件完整；三个capture均724条完整前缀、输入/回复各361、epoch bracket130ns，无丢记录。原/capture文件吞吐中位22.720202/22.759749Mbit/s仅作描述。未重现旧超时，无法归因；不据绿宣称修复。完整E/terminal-direction-comparison-verification-v1.json。
 
 对原Relay可用组两次红的纯数据复核发现：两个2秒TTY超时期间，本地20ms probe各推进100次，最大tick lag1489/1711μs；同时Main目录请求约303–305ms成功。不能据schedule_lag大就认定CPU停顿，它还包含等待前面串行业务。此观察只把问题收敛到终端连接/PTY及相关链路，未确定具体环节；E/red-terminal-locality-verification-v1.json保留原log SHA和全部数据来源。
+
+
+后续持续交互诊断154840Z-ed908e42已闭：两个同一PTY的10窗口会话，各2400ok，共4800ok，无bulk；capture2404条完整前缀、输入/回复各1201、epoch bracket120ns，无丢失。TTY scheduled p95原shell/capture为303409/303297μs，目录305919/305500μs。原/capture各只有一个长会话，量测条件也不同于原混合负载；不证明修复、等价性能或bulk唯一因果。完整E/terminal-persistence-comparison-verification-v1.json。
