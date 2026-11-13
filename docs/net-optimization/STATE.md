@@ -6,7 +6,7 @@ E=`/Volumes/disk0/Khor/evidence/net`；工作树均在 `/Volumes/disk0/Khor/work
 
 ## 当前执行与紧接工作
 
-**Turing当前没有pending**：原四项换网与当前R混合负载都已collect并完成独立复核，不再重派。`170134Z-6a92a593` 0/268.968832秒、16files，**496/496**读成功；实际IPv4/NAT、双栈前缀、IPv4→IPv6-only及middle自身IPv4变化已核，middle再次观察到carried并持续10秒。首次响应详[MOBILITY-RELEASE](MOBILITY-RELEASE.md)，摘要不代包级最优性证明。
+**Turing唯一pending为原9项核心路径回归 `174412Z-b676ad99` / PID659987**，revision current_core_paths_original9_release_v1、control9f6cfaa8dd3308e80e07874ee94b71bcb607eddd、协议SHA469d805c010dfb0111fb3cd6111925fbb0ece7db7c1db2cb9b6917e6d853d54a。相同已准入CLI7e8/fullteste4f2，不改source/不编译。固定p6慢直连/快Relay及反向各含单路reference4项、p2变慢、p3黑洞、p4重复地址、Relay TCP静默、uplink换网；全部原场景为unignored，原native门/期限/时长不变，owned前4项1200秒、后5项600秒只保护harness。原p6每场30读、p95<200ms与两端报告路均保留；不能以该有限组代完整NET-16/真机/成本。完成后collect→verify-turing-record.py→E/ops/verify-current-core-paths-block-v1.py；partial/unsafe先分类，禁止硬记全组。原四项换网与当前R混合负载都已collect并完成独立复核，不再重派。`170134Z-6a92a593` 0/268.968832秒、16files，**496/496**读成功；实际IPv4/NAT、双栈前缀、IPv4→IPv6-only及middle自身IPv4变化已核，middle再次观察到carried并持续10秒。首次响应详[MOBILITY-RELEASE](MOBILITY-RELEASE.md)，摘要不代包级最优性证明。
 
 **当前R/I2原混合负载 `171546Z-dfd9502c` 0/713.189051秒**已闭18files、identity/native/CPU/owned。固定low/high/high/low/low/high、**4320/4320 ok、6完整文件**，保留原2秒请求、原profile与原场景，运行编译/替代0；control b320fcf93b435f47717a9ed49e8ed1dde1333e1c，协议SHA8124e47150e4ce62a56d60d05c6635b182cef7bc7714165c98be24e82c0f209e。E/current-r-mixed-summary-v1.json和run下current-r-mixed-block-verification-v1.json，完整数据见[CURRENT-MIXED-RELEASE](CURRENT-MIXED-RELEASE.md)。high仍有超过1秒的scheduled尾延迟；不以功能全绿认定体验完成，不覆盖原I1/A超时或声称已定位修复。
 
