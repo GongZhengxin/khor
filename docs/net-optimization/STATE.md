@@ -1,6 +1,6 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-13T05:58:13.375460+00:00。活动目标是 [GOAL](GOAL.md)、[PLAN](PLAN.md)完整N0–N5，**未完成**；117c39当前因Release高BDP交互退化被拒绝，不得晋升为最终候选。root串行，不派子智能体。
+更新于 2026-11-13T06:25:47.840028+00:00。活动目标是 [GOAL](GOAL.md)、[PLAN](PLAN.md)完整N0–N5，**未完成**；117c39当前因Release高BDP交互退化被拒绝，不得晋升为最终候选。root串行，不派子智能体。
 
 此前STATE逐字保存在[本次完整历史](HISTORY-20261113-through-qlog-cache.md)，SHA256 `e5fdf9aed5ef256161015e24ec96c51c8a3fbc1f77db07600b09a63f6b63ce94`；它继续链接全部更早历史。历史“在途”只指其原时点，不重启旧批次。逐项未完范围见[REQUIREMENTS](REQUIREMENTS.md)。
 
@@ -10,7 +10,7 @@
 - 产品I `khor-net-product-integration-v1`，integrate/net-product-v1，HEAD **117c39e5432741198c924177fae1775ff292eada**、tree **ace4fd8223ed7fcd8d2b29477d9e651a2df53ff2**；parent是冻结对照当时的公开main **c3b098bdbf52a9b3b38e887ae74b90155292b544**，apps/与.github/逐字一致。iroh1.4.1/Noq1.4.0。不是对持续变化main的自动重基/合并。
 - 所有下述树同在 `/Volumes/disk0/Khor/worktrees/current/`。S `khor-net-product-sole-peer-v1` clean ade7decb4aa2d8616fb028b0b0221873d9d6f494，原Debug唯一middle固定3已闭。
 - B/C `khor-net-sole-release-{baseline,candidate}-v1`，两experiment分支、各基c3b098/117c39；共同测试overlay staged，闭合首业务及共存证据，不按摘要覆盖。
-- T `khor-net-sole-cache-v1`，experiment/net-sole-cache-v1，HEAD117c39；三个新测试文件staged。闭合v1源tree **14e9f060422b3cfbd28976364d781e80daedeef7**/snapshot **05325c56df1ab25d53878bcc16537187a9abff7a**。其后sole_cache.rs又追加新sp6（**unstaged、未fmt/编译/运行**），旧sp5原函数保持。见下，不把现场新diff误作旧已验证源。
+- T `khor-net-sole-cache-v1`，experiment/net-sole-cache-v1，HEAD117c39；三个新测试文件staged。闭合v1源tree **14e9f060422b3cfbd28976364d781e80daedeef7**/snapshot **05325c56df1ab25d53878bcc16537187a9abff7a**。其后追加新sp6，当前三新文件staged：v2冻结tree **5625255d023a1f3f82fb305a64aa9cc45e2b2a15**/snapshot **4e2b2c66839b8401d0ed2c1e249c6f53286415ea**；format/compile/runtime都已闭，但sp6三次前置失败，不是产品hop恢复接受。旧sp5原函数保持。
 - Q `khor-net-workload-qlog-v1`，experiment/net-workload-qlog-v1，HEAD117c39；staged诊断overlay，冻结tree **d372d293f69f4980bc0926797bf99f99ffa60f3a**/snapshot **7e328dc5d000873f1cca809683fa41c0fa472e99**，三qlog病例已闭。
 - A（新ACK诊断） `khor-net-workload-ack-v1`，experiment/net-workload-ack-v1，HEAD117c39；staged冻结tree **f92abcfffe5084335feb0c50007a3327d54fae07**/snapshot **9c5a4829badfa1c351fddbe38c3def3fc446937c**。仅Q上测试环境/manifest变化，qlog optional代码默认关保留；actual CLI额外编译已有net-diagnostics feature。
 - control `khor-build-net` HEAD保持 **5d3691f252f9dee0297fa3c494374be6119bca29**；控制仅新建Git对象与refs/khor/net-controls。E=`/Volumes/disk0/Khor/evidence/net`。
@@ -45,7 +45,7 @@ baseline low/high各3/3；candidate low3/3、high **1/3**。candidate high共192
 - [SOLE-PEER-RELEASE](SOLE-PEER-RELEASE.md)：相同Release唯一M的Direct首腿/真实Relay第二腿首目录ABBAAB已闭。基线3次5秒右删失；I3次345236/366587/366320us，真实marker/唯一middle/no_relay=false/cold/实际drop与owner全核。右删失不能变成功5秒延迟或有限加速倍数。S Debug先前固定3也通过，其适用范围独立。
 - [SOLE-PEER-CACHE](SOLE-PEER-CACHE.md)：T v1 compile053516Z-5aa15758 0/81.366352s；runtime **053846Z-4b1bebf2 原1/365.502303s**、36files/identity/source/hash/owner与ledger已闭。不可用第二腿hint（JSON null，非删map）、过时Direct第二腿hint、X历史Direct目标三类各3/3，hint前后保持、实际唯一M的Direct/Relay两腿和目标marker/5秒门通过。该9case不重复。
 - v1 sp5三次失败原件保持，middle_down前置全false、前两次first_leg_up=false、末次middle_resumed=false。**前置未成立，不能据此将根因归给30秒miss缓存。**已核set_machine_paused接受设备名，不误诊其名字参数。
-- 新 **E/sole-peer-cache-resume-plan-v2.json** 与T本地追加sp6已预写：用实际M→Y暂停拒绝、persisted policy bit和X→M真实内容见证，原X失败读期间5次有界只读keepalive维持首腿；从unpause开始含实际M恢复目录及一次新X目标读共享原总5秒，same caller PID、hint held、实际两腿。固定3、仅新case，不替换旧sp5分母。**目前仅源码/协议准备，未fmt、未freeze新source、未编译运行**；ACK coordinator已闭；下一新任务仍须准确source/control与原所有权准入。
+- 新 **E/sole-peer-cache-resume-plan-v2.json** 与T追加sp6：用实际M→Y暂停拒绝、persisted policy bit和X→M真实内容见证，原X失败读期间5次有界只读keepalive维持首腿；从unpause开始含实际M恢复目录及一次新X目标读共享原总5秒，same caller PID、hint held、实际两腿。固定3、仅新case，不替换旧sp5分母。**v2已执行并闭**：format060655Z-eab274c7 0/45.943910s；compile061039Z-5f6b2be8 0/77.773270s、原verifier20unit/CLI/test/identity/hash/owner核；runtime061644Z-077fb72d原1/100.191668s、18files/owner/source/identity/ledger闭。三次均真实M→Y和X→M前控制成功，但外部pause后立即M读取仍成功，前置断言失败；零X负向/恢复测量，不能作产品根因。pause.rs resident缓存和link.rs PAUSE_POLL500ms静态已核；须有界等实际拒绝再测。v3只提议E/sole-peer-cache-resume-v3-proposal.json，恢复的实际M可用等待仍必须包含在原总5秒。无新v3源码/编译/运行，不重开旧v1/v2分母。
 
 ## 可复用的其他已闭证据
 
@@ -67,3 +67,12 @@ baseline low/high各3/3；candidate low3/3、high **1/3**。candidate high共192
 所有已闭结果只复用于其准确源码/范围。失败、控制前置失败、用户取消、采集资源中断及未验证分别记；源码计划准备不冒充实现/接受。最终完整目标、[DESIGN](DESIGN.md)、需求审计的未完项不因局部绿缩减。
 
 首ACK病例的1.664秒TTY尾与单Direct copy2PTO/另一copy较新收包和全局silence重合，move仍Hold；精确hash-bound行证据见E/workload-native-ack-first-tail-observation-v1.json。静态off_direct guard限制旧copy wake仅为待检假设，不冒充已证根因。接下来先修正前置的新sp6，并以明确受控问题收敛路径/连接停顿，不再追加相同日志试验。
+
+
+## 下一独立消融已准备（尚未格式/编译/执行）
+
+`khor-net-copy-wake-v1` / experiment/net-copy-wake-v1，HEAD117c39。新的专属worktree以闭合unlogged C共同fixture treeadbc7d6a5032cdc24db19cdbac4b9d1f7ec6415c为测试overlay，仅vendor/iroh/src/socket/remote_map/remote_state.rs有runtime差异：取消off_direct传输种类guard，调用已有wake(&backed_off,&heard)；原to_wake等待/同road收包证据、所有timer/质量/滞回/Noq/期限/重放/信任不改。测试overlay staged，runtime源为unstaged；不要按摘要覆盖。E/copy-wake-ablation-design-v1.json记录具体问题、依据、范围和旧p1s历史风险（旧守门前3/6健康抖动超move门），不是已证修复或最终默认设计。
+
+后续先remote格式/库合同与原健康spike/黑洞/恢复负向，性能另冻双方准确source/producers/control/ABBAAB/完整人口与成本/吞吐/长尾判据。可考虑复用准确原Release产物减少重复编译，但须保全**全部selected文件（ELF与dep-info）**、源/context/path/字节哈希并过原native verifier；不能只保ELF或改proof。若不能严格准入则正常重编。还没有该消融Turing提交/运行，不能把准备等于改进。
+
+最新现场：所有本轮原生任务/ACK coordinator均终态、E/source-refs无pending，root唯一ledger writer。canonical/I/main运行时均未应用此消融。完整目标仍未完成，当前117c39仍因原N3 high失败被拒绝。

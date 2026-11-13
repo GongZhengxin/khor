@@ -16,4 +16,4 @@ compile054642Z-d37db21c已0/300.285793s，原verifier20unit、18依赖reuse、�
 
 静态发现read_paths仍以selected.is_ip限制旧copy wake，源remote_state.rs1620–1633；这是待检假设，不是已证根因。与另一qlog cohort的Relay发送到接收1.308秒尾分开理解。后续受控丢包或单一改动消融须同时保持健康300ms抖动/黑洞/恢复负向，不能先缩短期限、把blocked当成功或放弃速度优先。
 
-完整N0–N5和N3 remain open。
+完整N0–N5和N3仍未完成。
