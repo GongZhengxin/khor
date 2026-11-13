@@ -34,3 +34,8 @@ bulk终端360个意图在两组都成功，scheduled-to-end p95为可用组5.874
 该固定小样本支持继续调查**可用Relay与传输/选路交互**。它不证明某个具体Noq调度、ACK、拥塞或路径确认是根因；Relay不可用组仍有死Relay重试开销，也不是完全无Relay候选的端点。可用组peer journal记录了Relay路径及切换，但普通journal不能独立将每个TTY流与某个Noq copy精确绑定。
 
 生产仍保留Relay和peer relay救通能力，速度优先方向不变。下一控制保持Relay可用、BBR、原业务与配置，只比较当前RoadOrder和iroh内建选择器，以区分自定义策略与更底层传输交互。内建默认把Relay列为backup，**不符合用户速度优先完整合同**，仅用于定因，不能作为最终方案。它也含当前vendor补丁，并非未修改的完整上游对照。若这项控制不能区分，再按实际失败捕获请求/连接/路径事实，避免周期性诊断开销改变普通Release行为。
+
+
+## 后续选择器控制（已闭，未定因）
+
+原定RoadOrder/内建/内建/RoadOrder/RoadOrder/内建六场，Relay均可用、BBR与全部业务门保持。各3/3原native门、2160ok，六文件完整、替代0。bulk目录scheduled p95 584911/409883us、终端441411/316267us，文件中位23.548850/23.542792Mbit/s。同期RoadOrder没有原2秒超时，因此预冻diagnostic screen为false；不把不同批次的失败挑来补同期red，也不归因或晋升默认Relay=backup的内建选择器。完整E/selector-comparison-verification-v1.json及原6块13files收据。下一步记录真实PTY两端的业务时刻，保留原程序控制和原期限，不能继续只凭路径RTT猜测输入、程序处理或返回链路。
