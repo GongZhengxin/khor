@@ -1,12 +1,16 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-13T13:53:34.717388+00:00。完整目标是[GOAL](GOAL.md)、[PLAN](PLAN.md)的N0–N5，**未完成**；逐项缺口见[REQUIREMENTS](REQUIREMENTS.md)。root串行，不派子智能体。
+更新于 2026-11-13T14:14:27.430965+00:00。完整目标是[GOAL](GOAL.md)、[PLAN](PLAN.md)的N0–N5，**未完成**；逐项缺口见[REQUIREMENTS](REQUIREMENTS.md)。root串行，不派子智能体。
 
 此前STATE逐字归档[HISTORY-20261113-through-current-noq-matrix](HISTORY-20261113-through-current-noq-matrix.md)，SHA256 `8ea6c57858cbf72d124e9ee81eb1fdc3a8c627deb23db89ea3aedb0b55667944`。它的pending/进程描述只适用于原时点，不能据历史重派；更早历史链接亦保留。本页是当前执行入口。
 
 ## 当前执行器与紧接工作
 
-内建选择器控制的compile-only已按E/builtin-selector-native-compile-plan-v1.json派发；准确新run/PID核source-refs唯一pending与receipt，不重派。control **bac52241d515e6bc9fcdbc71cae14926d6c3a942**，source tree **ceca08abc132f807e74fe0b463a231b26d942645** / snapshot **b41ec41e2d76e0b753562bafe90c5737f07aebe1**，worktree khor-net-builtin-selector-v1 / experiment/net-builtin-selector-v1，HEADf6b9、1 staged。只删endpoint的RoadOrder注册一行；BBR、vendor、全部夹具与配置逐字原A，内建仍含vendor补丁且默认Relay=backup，仅诊断、不晋升。预冻E/builtin-selector-design-v1.json：当前RoadOrder/内建/内建/RoadOrder/RoadOrder/内建六场，所有Relay可用，原4320意图/6文件/2秒caller及资源门保持。producer闭后才绑定固定runtime。无后台协调器。
+内建选择器普通Release producer **135643Z-73d37a5b 0/552.550232s**已闭21files/identity/native来源，Rust8m21s。源码仅删endpoint的一行RoadOrder注册，tree **ceca08abc132f807e74fe0b463a231b26d942645** / snapshot **b41ec41e2d76e0b753562bafe90c5737f07aebe1**；test SHA **8a6020f907a99a10faf54e1b5a8d42df9ca070000f7325211ad62284f05baec3**，CLI **5f63175c97472cf8fdce214d24d070a41ee8c236c3c9d6468b0f64b76016665f**。worktree khor-net-builtin-selector-v1 / experiment/net-builtin-selector-v1，HEADf6b9、1 staged。内建仍含vendor补丁且默认Relay=backup，只诊断，不晋升或改回产品类型优先。
+
+当前唯一pending是选择器固定六场第1场 **RoadOrder / 141014Z-69fd468c / PID383939**，control **0d600172bb66392d8274102664934931f7be91c7**。原A准确source953fd88f、CLI仍a7e3565f；当前时刻不能当完成。E/selector-comparison-progress-v1.json为唯一批次入口，E/selector-runtime-plan-v1.json SHA **c42d7d70fbb8f9adf66f1e09a59022322bb8c1a858c990d341be0a6255de2ed5**，原定RoadOrder/内建/内建/RoadOrder/RoadOrder/内建，全部相同可用Relay/BBR/夹具。每场原720意图/192MiB/2秒caller/600秒owned/CPU门，计时编译0，替代0。两producer选中exe/dep-info5文件逐字归档、按原来源门恢复；不改旧凭据。
+
+先核真实remote execution；终态collect→verify-turing-record.py→verify-selector-case-v1.py→advance-selector-comparison-v1.py finish，再start下一场。每次推进是一次性脚本，无后台协调器/自动重试；uncertain stage/launch先读progress/receipt/source-refs，不再start。原native红只要全部720/完整summary、precondition/owner/analysis都有效，必须按固定协议保留并继续其余场；前置或观测不完整则停批保留缺口。6场均闭后summarize-selector-comparison-v1.py；要求同期RoadOrder真实超时重现才有定因分量信号，内建还须3/3原门、2160操作/完整文件及原吞吐/可比较延迟screen。仍不证明具体ACK/BBR/wake根因或完整N3。
 
 上一Relay可用性隔离固定6场 **132935Z-b055e94a 1/1161.211608s**已闭18files/identity/native来源/CPU/全部owned清理。control78f4657adb796765bf3317a044d2829ba0296096；协议SHA d901305ab1f394b08c403d9478475955fef5aec10f465a9408a6064b51426983。六场前置均有效、4320完整意图、替代0、运行编译0。可用Relay组原1/3、2095ok/2timeout/63blocked；不可用组3/3、2160ok，6个192MiB文件均完整。两次原2秒TTY超时分别idle_after index82与idle_before index93（后者起始调度lag10.444035秒），不能单按大文件挤占带宽解释。bulk TTY两组360个全成功，但scheduled p95 **5.874877/0.336874秒**；目录 **0.786266/0.506660秒**；文件中位23.302977/23.427441Mbit/s。失败相位的成功分位数是条件统计，blocked非网络超时。
 
