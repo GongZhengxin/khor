@@ -1,15 +1,15 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-13T08:57:17.900740+00:00。完整目标仍是[GOAL](GOAL.md)、[PLAN](PLAN.md)的N0–N5，**未完成**；逐项缺口见[REQUIREMENTS](REQUIREMENTS.md)。root唯一writer，不派子智能体。
+更新于 2026-11-13T09:23:08.130589+00:00。完整目标仍是[GOAL](GOAL.md)、[PLAN](PLAN.md)的N0–N5，**未完成**；逐项缺口见[REQUIREMENTS](REQUIREMENTS.md)。root唯一writer，不派子智能体。
 
 此前完整STATE逐字存入[历史](HISTORY-20261113-through-wake-controls-and-mac-preparation.md)，SHA256 `d4e996331af2a19b62ee65dc69af0e68e170ef8408009520ff97e89151c60cf2`。历史中“在途/无pending”只描述原时点；不得重启已闭批次。本页是当前入口。
 
 ## 当前两台执行器
 
-1. **Turing W原控制v2：073647Z-7e574645**，remotePID3708886/child3709408，control **c2c2d706799a26585febf3d135d43ca039a7e327**。exec23870仅提交已终态0。08:54只读核为真实running、active_case8：原600s p1s六轮均绿（各20次300ms尖峰/原busy CPU、owner干净），p3黑洞原门绿；p5仍在跑。固定8顺序p1s×6→p3→p5、替代0，首产品红/不安全停后续，不补绿。真实在途report/copy-wake-controls-progress-v2.json，最终copy-wake-original-controls-contract-v2.json。**尚未8/8，不是N3接受**。
-2. **Mac补丁38移除的library检查43396826114**，request75ad0d5579ed4949a2960844a4ba5e4d，control **f27a6c9777d0f270fa986842a3e819f4b3fb3a65** / builder-ref feat/net-tuple-exit-mac-lib-v3。刚派发，先查真实job，不重发；exec25790仅提交已终态0。准确receipt E/public-mac-tuple-exit-disabled-v3/receipt.json，tree2d702718ff8f664cc1e2fa5db2352e2d8e91ee8d、actual snapshot0f11a5f7ebf2dc42a662a4d1d79697443ca42aee。保留补丁的Mac baseline **43394584580已success并收集/核验198pass、0fail、原ignored1、0filter**，但这只测iroh库，不等于R的Node/App或N4接受。
+1. **Turing W原控制v2：073647Z-7e574645已终态0 / 4752.282312s**，control **c2c2d706799a26585febf3d135d43ca039a7e327**。固定8顺序p1s×6→p3→p5，全部原门通过、替代0。29files/source/control/hash/identity/owned cleanup核验完、ledger已闭，证据E/turing-20261113T073647Z-7e574645/copy-wake-original-controls-verification-v2.json。六轮600s短尖峰控制、黑洞接管、十二次短停顿控制均完整执行。**仅这8个控制通过，不是N3接受**；下一步是原unlogged Release业务性能对照，尚未派发。
+2. **Mac补丁38移除的library检查43396826114已success、收集并核验**，request75ad0d5579ed4949a2960844a4ba5e4d，control **f27a6c9777d0f270fa986842a3e819f4b3fb3a65** / builder-ref feat/net-tuple-exit-mac-lib-v3。tree2d702718ff8f664cc1e2fa5db2352e2d8e91ee8d、actual snapshot0f11a5f7ebf2dc42a662a4d1d79697443ca42aee。移除前43394584580与移除后均 **198pass、0fail、原ignored1、0filter**，199项名称及结果完全相同。artifact14023303488（228172bytes/SHA29bf14c4…）ZIP/CRC、源/控制/metadata/guard均核，证据E/public-mac-tuple-exit-disabled-v3/mac-library-disabled-verification-v3.json。**库对照绿，不等于补丁可安全退出**，真实NAT重绑定仍待。
 
-两机任务不争CPU/磁盘；Turing排他lease中不安排其他编译。GH状态/源码/产物独立于Turing ledger；E/source-refs.json当前只剩上述Turing任务pending。
+W原控制与Mac库两臂已闭。Turing目前在途 **092115Z-acbcbe95 / PID3953377**，control **aa1b8dc67f6919a0a98341678c808d02364b880b**，仅普通Release编译，不在计业务性能。新对照协议见[COPY-WAKE-RELEASE](COPY-WAKE-RELEASE.md)，三臂固定B C W / C W B / W B C（18业务场景），已于业务前冻结。当前没有本批性能结论。root仍唯一ledger writer，不重发旧任务。
 
 ## 现场、授权与准确源码
 
@@ -37,7 +37,9 @@ library063044Z-bf939c7b完整iroh **198/0/原ignored1**、15files/source/hash/me
 
 原v1 **071957Z-261fdeee 1/594.071116s**、15files：首p1s在supervisor524.866815s触历史owner513>512，中断前14业务均ok，无600s verdict/summary；原native-15/forced、原group_absent=false保持。控制器终态后只读postmortem PGID3664371及8个记录/proc项全空。原中断已闭，不作产品红/绿；另7未执行。
 
-v2仍原600s/p5每stall4drops/Rust全部门，supervisor1200s只容纳长场景、outer90min不改。历史记录cap8192、同时匹配owner仍512；纯数据校准2000历史+1活通过、513活拒绝、8193历史拒绝。前六轮实际peak_live10/11、history667–697；不把未执行项变通过。计划E/copy-wake-original-controls-plan-v2.json。旧健康spike 3/6风险保持。**等本批终态先collect+identity+behavior审计/ledger闭，再决定Release复核；不能重开批次或挑绿。**
+v2仍原600s/p5每stall4drops/Rust全部门，supervisor1200s只容纳长场景、outer90min不改。历史记录cap8192、同时匹配owner仍512；纯数据校准2000历史+1活通过、513活拒绝、8193历史拒绝。前六轮实际peak_live10/11、history667–697，全部原门通过；p3实际230次黑洞后读、最慢536833us、0失败；p5十二次短停顿、未切Relay/未打洞。六轮p1s实际切换0/0/0/0/0/1、无退役。计划E/copy-wake-original-controls-plan-v2.json。旧健康spike 3/6与原Release红保留，不覆盖旧结果。
+
+本批额外逐项审计372次完成的目录读均ok（p1s各20，p3含预热240，p5共12）。原helper echo()实际执行ls_of(beta,/tmp)，旧result里的keystroke措辞不能当PTY实测；p1s/p5原门只约束稳定性，额外读审计属于事后范围核查，不新造SLO或PTY验收。原N3真实PTY+文件的unlogged Release检查仍必需。
 
 ## Mac库对照与构建通道
 
@@ -48,7 +50,8 @@ v2仍原600s/p5每stall4drops/Rust全部门，supervisor1200s只容纳长场景�
 - 修复使用GitHub支持的raw blob media type、bounded reads、原64MiB cap、Git blob SHA1+bundle SHA256不变。实际22110825bytes源包校验与六个纯数据完整/截断/超限/错误hash控制均过。Mac baseline后续复用同d3a6379快照/54b072d blob，不重复上传或编译假装新源。
 - v3 **43394584580 success**，真实Mac **198pass/0fail/原ignored1/0filter**，metadata iroh1.4.1/Noq+proto1.4.0及实际vendored路径、源码treecf9、controlf27a6c9、ZIP/artifact14022571285（229653bytes/SHAcea062709…）均核，E/public-mac-tuple-exit-baseline-v3/mac-library-baseline-verification-v3.json。
 - 使用仓库已有prune-test-programs，只在free<50时于build.lock下清无占用旧测试exe，留每目标最新2、排除lib/链接，lsof活文件保留。原实际guard **50GiB准入/40GiB停止/target100GiB**（旧35/20文档对此机已过时），前后SHA998f5723…完全相同；清23个旧测试、约2GB，库编译8.80s/执行45.80s。没有改guard或产品/App/store。
-- 失效/新源的receipt目录已列；baseline v2/v3均**复用ceeb30968b274bb0b8da0f5a41ebf520原refs**，不是新请求所有：全部使用结束留证后只能由原owner、核SHA再退休。disabled请求75ad…有自己refs。Mac结果未闭前不能删除这些引用。
+- disabled v3 **43396826114 success**，完整iroh库198/0/原ignored1/0filter，编译7.73s、运行45.58s；与baseline的199项名称及结果逐项一致。metadata实际iroh/noq-proto来自vendor，noq1.4.0来自registry（不是误称三者均vendor）；原guard SHA998f5723…保持。artifact14023303488与全部16files内容已核，source tree2d7/controlf27准确。只接受库对照，NAT oracle未执行。
+- 失效/新源的receipt目录已列；baseline v2/v3均**复用ceeb30968b274bb0b8da0f5a41ebf520原refs**，不是新请求所有：全部使用结束留证后只能由原owner、核SHA再退休。disabled请求75ad…有自己refs；本批均已闭，但此处尚未删除远端refs。
 
 SSH macserver本轮仍8秒banner超时，但GH通道实证可用，不当整体阻塞。M38退出计划E/tuple-refresh-exit-plan-v1.json：原r0/r1 fixture SHAac977269…不改，原124读和30暖远端stream选中新tuple/零mismatch的oracle scripts/netlab-nat-selection.py不放宽；拟当前源ABBAAB各3真NAT，先完善实际producer/control协议。**库绿不能判补丁可删。**
 
@@ -63,3 +66,7 @@ SSH macserver本轮仍8秒banner超时，但GH通道实证可用，不当整体�
 原I Quality43348869616首次13/13、Mac Lab43355810513 attempt2（原WebKit失败保留/唯一失败job重跑77case绿）及ZIP/source/probe证据仍只适用I；只证明两懂Versions版本的旧/新互通011900Z-19b49119。物理iPhone仍旧0.2，尚无候选手机/能耗接受。移动只读审计见[MOBILE-ADDRESS-AUDIT](MOBILE-ADDRESS-AUDIT.md)，准确netwatch0.19.3有iOS AF_ROUTE通知，静态App去重不单独证明漏事件；连续route chatter的250ms debounce只列待测风险，不冒充根因。
 
 上游最后registry核2026-11-13T05:25UTC仍iroh1.4.1/Noq+proto1.4.0（最终交付前再核）；custom ledger60项为1上游替代有证、2移除红保留、57退出仍待，不是57均必要。patch38当前上游对照只读E/iroh-patch38-source-exit-review-v1.json不能替代新源物理退出。最终设计/职责/持续回归/报告与准确最终代码仍需收敛，无main合并或发布授权。
+
+## Release准备中断与继续（本轮）
+
+原准备 **091727Z-71804040 1/51.961675s** 已收集13files/identity/owner干净/ledger闭。原B/C/ACK各5个selected ELF+dep-info已逐字保存，C canonical khor由同一个原selected proof中相同hash的deps ELF取回，不以文件名推定。准备在原native_provenance模拟单元37项处停：32过、2fail、3error；**Rust编译与业务执行均0**，不是产品红/绿。E/turing-file-clock-calibration-v1.json与原断言表明Linux文件ctime较time.time_ns滞后一个tick。v2仅对模拟unit的prepare返回前增加最长1秒的同文件系统ctime barrier，原dict/时间戳/断言/校验器/产品timer不改；并按失败migration凭据回到准确旧源核验再继续W。证据E/091727目录的copy-wake-release-preparation-failure-v1.json（目录完整名以run ID为准）。原失败保留，不通过删单元或放宽门来编译。
