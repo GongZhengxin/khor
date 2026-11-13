@@ -76,3 +76,9 @@ baseline low/high各3/3；candidate low3/3、high **1/3**。candidate high共192
 后续先remote格式/库合同与原健康spike/黑洞/恢复负向，性能另冻双方准确source/producers/control/ABBAAB/完整人口与成本/吞吐/长尾判据。可考虑复用准确原Release产物减少重复编译，但须保全**全部selected文件（ELF与dep-info）**、源/context/path/字节哈希并过原native verifier；不能只保ELF或改proof。若不能严格准入则正常重编。还没有该消融Turing提交/运行，不能把准备等于改进。
 
 最新现场：所有本轮原生任务/ACK coordinator均终态、E/source-refs无pending，root唯一ledger writer。canonical/I/main运行时均未应用此消融。完整目标仍未完成，当前117c39仍因原N3 high失败被拒绝。
+
+### 新轮实证（2026-11-13T06:36:35.502708+00:00）
+
+copy-wake消融source已冻结 f5faf2a2fef7fd64f09908fc53c73b24bb2eae4d / 8780bf503d753b820a7236931357b2dcebfa42a6，W所有更改已staged。library控制39ffdc8079f5bbe4bf7f023963e51ca2ce41e545，run063044Z-bf939c7b已0/154.431210s、完整iroh lib **198/0/原ignored1**、0filter，15files/metadata实际vendoredNoq-proto1.4路径与iroh1.4.1/noq1.4/source/hash/identity/owner核、ledger闭。Graph旧a3e07且不覆盖vendor，定向diff/源码人工核补，不擅建CodeGraph。编译约含下载跨平台metadata的开销；未来metadata应filter host。只是库行为，不是实际spike/黑洞/Release性能或N3接受；Noq算法本轮无diff，不重复其原已闭whole suite。
+
+T新增sp7源码和 E/sole-peer-cache-resume-plan-v3.json 已预先固定3、替代0：10s setup有界等实际M错误包含peer_paused_refusal，成功的旧缓存响应/无关超时不算策略拒绝；恢复时M实际可用观察也含在原总5s，然后一次新X业务读。原sp5/sp6及所有分母保持。当前仅新增sp7源码（staged）待remote格式，**无v3编译/runtime**。预格式source9a2b273289c8d6df030d250f5732fc274fb759d1 / 057b0bbcbdca90f0621091ed53c413205342e6b0，controlad92cab61aed98696ca776f4db0b80cb3757739d。prep已经提交exec31550（仅提交）；真实run句柄以最新receipt为准。root唯一ledger writer，先核当前prep终态再发新任务。
