@@ -164,3 +164,14 @@ c2b的三个新增实际TLS/echo合同在Mac/Turing同源全部12组通过（总
 19cceb将比较工作记录放进原MISSED的每个middle，以实际网络、候选和首腿事实定义寿命。相同事实保留30秒的比较间隔；新增实际middle、真实首腿替换或网络上下文变化可以及时比较。未试的候选不继承已经尝试的其他middle的时间，前台恢复继续受原失败退避与总期限约束，不因改善比较的周期而额外等候。
 
 同锁claim拒绝旧weak epoch和已到期调用方；成功保留工作记录，只退役旧完成事件。不存在新的全局表、后台timer或独立observer。移除进程全局LAST_COMPARE使不同目标/Node不再共享一次比较时间；但原全局门与每middle门的总工作上限不同，个人网1/3/5设备成本与quiet稳定性必须实测，不能从保留“30秒”推断总开销不变。当前Mac仅首轮失败待核是否格式；Turing准确c2b修改前原矩阵仍在跑，首轮f4i28.2秒、次轮17.8秒说明长尾尚在。没有新候选物理收益结论。
+
+
+## 前台Relay静默恢复候选（2026-11-14，尚未接受）
+
+RELAY-DEMAND记录准确I2/R普通Release在原几何中3/3真实前台红：每场10次2秒超时，约20.04秒首有效目录内容。空闲30秒恢复合同不代最佳体验。隔离候选81ae5c98保留原测试与期限。
+
+请求层只在有活请求、开始后尚未收到对端任何QUIC datagram、选中的路径为Relay且达到max(250ms,3×当前路RTT)时，提示现有Relay健康检查；最多一次成功入队，队列满时只在同一个请求剩余beat内再试。收到任意datagram就不启动这一早期提示，并不声称它是当前请求的ACK；请求后半程的静默仍由既有wire看守和transport负责。当前仅resident endpoint入口，没有验证one-shot全路径。
+
+Endpoint通过现有有界socket actor队列转交。实际TCP的ActiveRelayActor拥有一个未完成health ping：并发提示加入当前检查，只有匹配pong清除，原timeout/reconnect仍归iroh；周期ping不能覆盖该检查的deadline。新TCP重新开始该状态。没有新后台周期timer、没有全endpoint rebind，也不因业务处理慢直接retire QUIC或重放应用写入。
+
+V1以500ms节流合并被静态审查否决：上游PingTracker每次new_ping覆盖deadline，可能被并发提示反复推迟；保留其原生compile但未运行/晋升。V2新增原生deadline与pong合同，还须原3场、慢健康Relay/长Accepted、取消/资源与实际后台成本回归。健康探测RTT抖动、发送队列已堵时的normal inbox可达性、收到旧datagram、持久TTY/其他协议及反复故障仍属未验范围。此窄修复不能关闭完整N2/N3/N4或手机现场。
