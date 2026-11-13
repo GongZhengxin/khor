@@ -21,3 +21,10 @@ T3/sp7保留实际X→M Direct、M→Y真实Relay：暂停第二腿，等residen
 修复前3红不删除/替换。行为比较有同一fixture、同预算、单一runtime文件改动；Debug数值只判此场景恢复，不是Release吞吐/长尾benchmark。实际CLI SHA856ecd02bf638c2b08908a625e5579aac732d4369866df36eca5a6da0d101121，test72a8b6536c60eefd4adede0aa48aa549b07b93bcde6d64ecd64ec8d4b8b5afd3。旧CLI/test只读保留在Turing closed-sole-cache-resume-v3。
 
 原始协议E/live-middle-retry-plan-v1.json、physical-plan-v1.json；专属proof E/turing-20261113T070832Z-6b87e77c/live-middle-retry-physical-verification-v1.json。不是完整NET-16、N3性能、手机或能耗接受；I原Release high退化仍未解决。下一步回到copy-wake独立消融的原健康spike/短停顿/黑洞控制，再收敛Release共存退化；完整N0–N5范围不缩减。
+
+
+## 同源Mac whole-hop与后续集成
+
+2026-11-13，Mac43432815139在准确R9081b94d/treecf9d172bb92778ccfd97899ddea27bdf0e6d2f6e执行原Linux whole-hop相同92个名字，92通过/0失败/0忽略，105.52秒。普通Mac原生回归，不是性能对照。原50/40GiB guard与jobs2、源码Git bundle/control、14份artifact CRC/hash及逐条raw已核，E/public-mac-live-middle-whole-hop-v1/verification.json。原源refs仍属于ceeb请求，复用请求未删除。加上Linux92与原3次物理恢复，接受仍仅限本窄修复，不代表全部NET16、换网/能耗或最终N5。
+
+为后续交付整理integrate/net-product-v2 / 3093f866，runtime与R逐字一致，另仅合入两份已远端46回归验证的Cargo dev边界工具修正；GUI/workflows保持冻结main c3b098。新候选仍有N3已知红且无最终整源检查，不晋升；I/R原树与所有旧失败保留。

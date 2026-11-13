@@ -1,14 +1,18 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-13T13:13:54.570622+00:00。完整目标是[GOAL](GOAL.md)、[PLAN](PLAN.md)的N0–N5，**未完成**；逐项缺口见[REQUIREMENTS](REQUIREMENTS.md)。root串行，不派子智能体。
+更新于 2026-11-13T13:34:22.886558+00:00。完整目标是[GOAL](GOAL.md)、[PLAN](PLAN.md)的N0–N5，**未完成**；逐项缺口见[REQUIREMENTS](REQUIREMENTS.md)。root串行，不派子智能体。
 
 此前STATE逐字归档[HISTORY-20261113-through-current-noq-matrix](HISTORY-20261113-through-current-noq-matrix.md)，SHA256 `8ea6c57858cbf72d124e9ee81eb1fdc3a8c627deb23db89ea3aedb0b55667944`。它的pending/进程描述只适用于原时点，不能据历史重派；更早历史链接亦保留。本页是当前执行入口。
 
 ## 当前执行器与紧接工作
 
-Relay可用性隔离v1 **131622Z-0132e71c 1/214.672428s**已闭17files/identity/空owner；Cargo普通Release成功2m45s，但严格来源核验拒绝fresh CLI（只准备了test入口，包级源码key已变化）。native未准入、业务0，失败完整留存。v2保持**同一源码953fd88f5f39fa99bc726296e5a84559996ce5cc / snapshot90d743c8b05c77f2c848c8b1feb9485aa851ab41**，仅控制编排使用原prepare_build显式准备普通CLI入口，原验证器不改；先归档未准入5文件，再原命令构建。control **da9463f9919127fa12c6de83b5fe7ab8041c9744**；具体新receipt核source-refs唯一pending，禁止重新调度。E/relay-availability-native-compile-plan-v2.json、runtime-design-v1（SHAc36987c8）均预冻。source在khor-net-relay-availability-v1 / experiment/net-relay-availability-v1，HEADd6、2 staged，旧D原件保留。编译闭后才绑定实际producer并运行固定6场。
+唯一pending是Relay可用性隔离固定6场runtime **132935Z-b055e94a / PID301925**，control **78f4657adb796765bf3317a044d2829ba0296096**。receipt在E/同名目录，协议E/relay-availability-runtime-plan-v1.json SHA **d901305ab1f394b08c403d9478475955fef5aec10f465a9408a6064b51426983**。准确源tree **953fd88f5f39fa99bc726296e5a84559996ce5cc** / snapshot **90d743c8b05c77f2c848c8b1feb9485aa851ab41**。两个源配置完全相同，仅故障组停并wait原Lab Relay、实际探测必须ConnectionRefused；正常组真实TCP可连。顺序available/unavailable/unavailable/available/available/unavailable；原4320计划记录/6文件/原2秒caller/600秒owned/CPU与功能门不改，替代0，运行时编译0。先核真实execution/PID，终态collect→identity→原raw及预冻metadata适配→ledger闭，不重派。第1场只观察到前置valid=true，不能当终态。源位于khor-net-relay-availability-v1 / experiment/net-relay-availability-v1，HEADd6、2 staged，原D保留。
 
-独立Mac whole-hop准确R9081b94d/treecf9d172b回归已派发 **43432815139**，request **92505a44604d4167adeab5d7e2d1bd80**、control **0deeef2f8c79c97f941054efc1bd324efbc787cd**。E/public-mac-live-middle-whole-hop-v1/receipt.json，协议live-middle-mac-whole-hop-plan-v1.json；固定原Linux全部92个名字，正计数与结果必须全同，原Mac50/40GiB门/jobs2/raw blob传输/workflow不改。复用ceeb30968b274bb0b8da0f5a41ebf520原owner源码refs（已核远端SHA），新request不得退役其refs。仅回归、非性能/全部NET16，不安装/发布App。root唯一ledger writer，无后台协调器，旧20826/53952已退出。
+producer **132330Z-5893f7e8 0/230.673910s**，Rust2m59s，22files/identity/native provenance闭；test SHA **42d8f0ba72908748cde69e3f5b91834683ec38ec90c0b084fc03564baacb8533**，CLI仍与I117/D完全同bytes **a7e3565f15ed15d59f5215bceeb3900d153d053dd853846f623d86efbe6e4ac9**。先前v1 **131622Z-0132e71c 1/214.672428s**已闭17files/identity/空owner：Cargo成功2m45s，但只准备test入口，严格验证拒绝fresh CLI的新包key；未准入、业务0。v2仅调用原prepare_build显式准备CLI，验证器不改；原未准入5文件已先归档为诊断，不作prior。
+
+独立Mac whole-hop **43432815139 SUCCESS**已闭：准确R9081b94d/treecf9d172b、原Linux全部92个名字，**92/0/0、105.52s**；artifact14039959512 SHAf76760c5ecb3821f546aea53b326c3f66536bb3f5b10f55a3c04f497af0b275f，14files/source/control/ZIP CRC/各raw/host/50-40GiB guard/jobs2均核。E/public-mac-live-middle-whole-hop-v1/verification.json。复用ceeb30968b274bb0b8da0f5a41ebf520原owner源码refs，新request92505a44604d4167adeab5d7e2d1bd80未退役它们。仅窄回归，不代全部NET16/最终N5，不安装/发布App。
+
+新整理集成候选 **khor-net-product-integration-v2 / integrate/net-product-v2** clean，HEAD **3093f86662b9b9ff139f29f85692e84ec2e47358** / tree **bf4d38d73fbb8eda558d08446deff2d930b65304**：产品runtime逐字R9081b94d（I117加窄live-middle修复），另仅两份已46回归验证的native provenance工具修正；apps/.github仍逐字冻结公开main c3b098bd，保留原I。E/product-integration-v2-source-audit-v1.json。未修N3原红、未晋升/合并/发布；最终整源门仍须后续执行。root唯一ledger writer，无后台协调器，旧20826/53952已退出。
 
 Direct/Relay配置隔离producer **124033Z-8cfa87a1 0/596.350447s**，普通Release、Rust9m06s、20files/identity/native provenance已闭；source tree **59639aac742bd404fc9bea1618f29345907ac238**，snapshot **5a41f54d37d8755cb54e31478e61a5cddff6c2f4**。test SHA5ba6fa9ea5d828be2fc782fdaac5100f5dcc3474df0d367c1f36e7a260078f98；CLI a7e3565f15ed15d59f5215bceeb3900d153d053dd853846f623d86efbe6e4ac9。实验树khor-net-direct-isolation-v1，HEADd6b97c3d、2 staged；runtime逐字I117 BBR，不含R/W/M38。
 
