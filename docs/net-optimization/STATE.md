@@ -1,15 +1,15 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-13T09:40:51.210298+00:00。完整目标仍是[GOAL](GOAL.md)、[PLAN](PLAN.md)的N0–N5，**未完成**；逐项缺口见[REQUIREMENTS](REQUIREMENTS.md)。root唯一writer，不派子智能体。
+更新于 2026-11-13T10:01:27.189753+00:00。完整目标仍是[GOAL](GOAL.md)、[PLAN](PLAN.md)的N0–N5，**未完成**；逐项缺口见[REQUIREMENTS](REQUIREMENTS.md)。root唯一writer，不派子智能体。
 
 此前完整STATE逐字存入[历史](HISTORY-20261113-through-wake-controls-and-mac-preparation.md)，SHA256 `d4e996331af2a19b62ee65dc69af0e68e170ef8408009520ff97e89151c60cf2`。历史中“在途/无pending”只描述原时点；不得重启已闭批次。本页是当前入口。
 
 ## 当前两台执行器
 
-1. **Turing W原控制v2：073647Z-7e574645已终态0 / 4752.282312s**，control **c2c2d706799a26585febf3d135d43ca039a7e327**。固定8顺序p1s×6→p3→p5，全部原门通过、替代0。29files/source/control/hash/identity/owned cleanup核验完、ledger已闭，证据E/turing-20261113T073647Z-7e574645/copy-wake-original-controls-verification-v2.json。六轮600s短尖峰控制、黑洞接管、十二次短停顿控制均完整执行。**仅这8个控制通过，不是N3接受**；下一步是原unlogged Release业务性能对照，尚未派发。
+1. **Turing W原控制v2：073647Z-7e574645已终态0 / 4752.282312s**，control **c2c2d706799a26585febf3d135d43ca039a7e327**。固定8顺序p1s×6→p3→p5，全部原门通过、替代0。29files/source/control/hash/identity/owned cleanup核验完、ledger已闭，证据E/turing-20261113T073647Z-7e574645/copy-wake-original-controls-verification-v2.json。六轮600s短尖峰控制、黑洞接管、十二次短停顿控制均完整执行。**仅这8个控制通过，不是N3接受**；原普通Release业务对照现已启动，具体在途句柄见下文。
 2. **Mac补丁38移除的library检查43396826114已success、收集并核验**，request75ad0d5579ed4949a2960844a4ba5e4d，control **f27a6c9777d0f270fa986842a3e819f4b3fb3a65** / builder-ref feat/net-tuple-exit-mac-lib-v3。tree2d702718ff8f664cc1e2fa5db2352e2d8e91ee8d、actual snapshot0f11a5f7ebf2dc42a662a4d1d79697443ca42aee。移除前43394584580与移除后均 **198pass、0fail、原ignored1、0filter**，199项名称及结果完全相同。artifact14023303488（228172bytes/SHA29bf14c4…）ZIP/CRC、源/控制/metadata/guard均核，证据E/public-mac-tuple-exit-disabled-v3/mac-library-disabled-verification-v3.json。**库对照绿，不等于补丁可安全退出**，真实NAT重绑定仍待。
 
-W原控制、Mac库两臂及W普通Release producer均已闭。Turing目前在途 **094009Z-b6917939 / PID3981527 / child3981781**，control **8452189a017dbb400e6e77cec56c4b56c99dcb5e**，唤醒候选wake的5项fresh模型/观察器准入，尚未业务计时。exec81586仅提交已终态0，不重派。准确receipt为E/turing-20261113T094009Z-b6917939/receipt.json；cohort进度E/copy-wake-release-comparison-progress-v1.json，root手工串行、无独立coordinator。新对照协议见[COPY-WAKE-RELEASE](COPY-WAKE-RELEASE.md)，三臂固定B C W / C W B / W B C（18业务场景），已于业务前冻结。当前没有本批性能结论。先收集核验并关闭当前wake准入；三臂全部满足分层准入才进入固定9块/18业务场景顺序。
+W原控制、Mac库两臂、W普通Release producer与三臂fresh准入均已闭。**root串行自动调度器本机PID20826已接手固定剩余业务，是source-refs/progress唯一writer；它活着时root只读这两个文件，不手工stage/collect/close或调度其他Turing任务。** 它是stdlib Python编排，无子智能体。脚本E/ops/run-copy-wake-release-remaining-v1.py，日志E/copy-wake-release-coordinator-v1.log。先查真实PID/当前remote句柄，不能仅凭progress当它仍活着。当前观察为block4 parent、turing-20261113T095836Z-4218e794 / remotePID4033504；receipt=/Volumes/disk0/Khor/evidence/net/turing-20261113T095836Z-4218e794/receipt.json。动态权威E/copy-wake-release-comparison-progress-v1.json，不因本页快照过时而重发。control **8452189a017dbb400e6e77cec56c4b56c99dcb5e**。协议[COPY-WAKE-RELEASE](COPY-WAKE-RELEASE.md)：B C W / C W B / W B C，9块/18场景/12960计划交互，替代0；全部独占计时、不编译。每块真实终态后自动collect→identity→block+resource两核→ledger闭才下一块；原产品红继续留证，未知测量/owner/不明launch停止并保留pending，绝不自动重发。只有12闭块才运行E/ops/summarize-copy-wake-release-v1.py。当前闭业务3块6场景（各臂1块），不作三重复或修复接受。原public对I的Release红仍完整保留。
 
 ## 现场、授权与准确源码
 
@@ -19,7 +19,7 @@ E=/Volumes/disk0/Khor/evidence/net；工作树均在/Volumes/disk0/Khor/worktree
 - I khor-net-product-integration-v1 / integrate/net-product-v1，clean **117c39e5432741198c924177fae1775ff292eada**、treeace4fd8223ed7fcd8d2b29477d9e651a2df53ff2；iroh1.4.1/Noq1.4.0，parent为冻结当时的公开main c3b098bdbf52a9b3b38e887ae74b90155292b544，apps/.github与该冻结main一致，非自动跟随新main。**因原N3 Release high退化拒绝最终晋升**。
 - R khor-net-live-middle-retry-v1 / experiment/net-live-middle-retry-v1，clean **9081b94dce827cbd3fb9b9e7bb13633d762e3cd9**、tree **cf9d172bb92778ccfd97899ddea27bdf0e6d2f6e**。该tree准确等于被测snapshot a3cad264bc6772d68289b5f954c0966dc87627cd。仅hop.rs有runtime差异，另含三原physical fixture与两unit文件；接受窄恢复场景，未集成canonical/I。
 - W khor-net-copy-wake-v1 / experiment/net-copy-wake-v1，HEAD117c39、四文件staged，frozen tree **f5faf2a2fef7fd64f09908fc53c73b24bb2eae4d** / snapshot **8780bf503d753b820a7236931357b2dcebfa42a6**。C共同fixture treeadbc7d6a5032cdc24db19cdbac4b9d1f7ec6415c上仅remote_state.rs runtime不同：取消off_direct guard，沿用已有wake/backoff/receive证据、质量/滞回/Noq/期限/信任。**消融，不是已接受默认设计；不含R**。
-- M38 khor-net-tuple-exit-v1 / experiment/net-tuple-exit-v1，HEAD9081b94d、一文件staged，tree **2d702718ff8f664cc1e2fa5db2352e2d8e91ee8d**，预准备snapshotc5754ef1f3705c3ccfab3180a111bf058a0cca42；仅删patch38 reconcile helper及调用（53行方法，55行删除/1行增加），保持常规select_path_on(true)。无fmt/native/退出接受推断。Mac用新container0f11a5f7但相同tree。
+- M38 khor-net-tuple-exit-v1 / experiment/net-tuple-exit-v1，HEAD9081b94d、一文件staged，tree **2d702718ff8f664cc1e2fa5db2352e2d8e91ee8d**，预准备snapshotc5754ef1f3705c3ccfab3180a111bf058a0cca42；仅删patch38 reconcile helper及调用（53行方法，55行删除/1行增加），保持常规select_path_on(true)。Mac fmt与库检查已核；Linux NAT退出未验。Mac用新container0f11a5f7但相同tree。
 - T khor-net-sole-cache-v1仍是原T3测试源，已闭tree8ff93012943b0b6c6b598142559b74e682e58829；I/R的旧对照、B/C/Q/A等准确树/闭合raw证据见历史与对应专题，不按摘要覆盖其staged内容。
 - khor-build-net HEAD保持5d3691f252f9dee0297fa3c494374be6119bca29；仅新增Git对象/refs/control分支，未移动HEAD或默认main。Mac新增控制分支见上；公共main9b671817只读取维护脚本（与原worker-storage内容相同）。
 
@@ -76,3 +76,11 @@ W普通Release **092115Z-acbcbe95 0/596.523376s** 已收集20files/identity/sour
 本批baseline准入 **093228Z-62e9e4e5 1/166.822680s**：17files/source/control/hash/identity/owner及ledger已闭。原5项只有high cold TCP吞吐项原门失败，其他4项过；原TCP101完整保留，原分层判定analysis_valid=true、layered_admitted=true，不叫全绿。独立资源补核5/5，实际CPU idle94.6%–98.0%、同UID编译器空；source/全部selected文件还原核准确B producer，不编译、不改旧receipt。证据为该run的copy-wake-release-{block,resource}-verification-v1.json；后者是核协议已有门，无新阈值。Root progress已记录这一闭块与当前parent句柄。
 
 本批parent准入 **093620Z-7ba6e497 1/166.630970s** 同样17files/identity/source/control/hash/owner与ledger闭：仅原high cold TCP吞吐门失败，其他4项通过，analysis_valid/layered_admitted均true；CPU资源与准确source/selected还原5/5补核通过。原红保留。C原producer已准确复用，未重编。progress有baseline、parent两闭块；wake仅在途，业务0场景，替代0。后续验证每块必须同时调用 verify-copy-wake-release-block-v1.py 与 verify-copy-wake-release-resources-v1.py，不能只验Rust退出码或只核identity。
+
+本批wake准入 **094009Z-b6917939 1/168.001441s**：17files/source/control/hash/identity/owner及ledger闭，两个verifier均通过。与B/C一致，仅原high cold TCP吞吐门失败、原101保留；其余4项过，真实分层analysis_valid/layered_admitted=true。三臂fresh准入共15case已闭，不等于15个原门均绿。全部具准确还原和CPU资源见证；业务第1块baseline已经闭证（详后），其余待完成。
+
+普通Release业务 **block1 baseline 094422Z-b0861a93 0/262.870422s** 已收集14files/identity/source/control/hash/owner、两个verifier与ledger闭。原low/high两个真实目录+PTY+完整文件门均过，analysis_valid=true，原1440逻辑样本及16MiB/192MiB两payload留证；资源与准确还原2/2，替代0。只是一块基线，不作W收益/三重复或全N3结论。当前block2 parent按冻结顺序在途。
+
+串行调度已闭 **block2 parent 094959Z-0f6280c9** 与 **block3 wake 095429Z-2bc50b20**，两者原low/high业务门、完整raw分析及CPU/selected来源补核均过，日志/proof/source-refs保存准确elapsed，不在摘要重造数值。当前原parent未复现旧2秒超时；不能据此声称W根因修复。完整9块及pooled n360工程门仍待。
+
+NAT后续仅源码准备：基线R诊断producer控制 **b03a0fef697d0c7e4cc4553845fe799248c1e266**（feat/net-tuple-exit-native-baseline-v1），E/tuple-exit-native-baseline-compile-plan-v1.json。准确treecf9、net-diagnostics feature/lifecycle-only，保留旧W Debug全部selected ELF/dep-info、原native_provenance与实际CLI同producer核验；root/vendor fmt门保留。**未派发、无NAT runtime**。整个Release cohort终态/collected/verified、coordinator真实退出且ledger无pending后，先核实际缓存身份再调度；不能抢计时slot。移除臂producer需在R producer闭证后绑定其实际proof/hash，不把待填控制当已可运行。

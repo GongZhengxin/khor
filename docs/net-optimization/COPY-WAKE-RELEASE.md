@@ -13,3 +13,5 @@
 本机只做源/证据编排。Turing 在原50/40GiB与排他lease下编译，计时期间不编译；每个case先实测CPU及压力，若资源或所有权不满足就停止、后续记未执行。还原原producer的准确source和全部selected ELF/dep-info，使用未修改的 native_provenance 核准，不重写旧凭据。
 
 W 的8个原稳定性控制已通过，但这些helper实际是目录读取，不能当作真实PTY接受。Mac补丁38库检查已对照绿，真实NAT退出尚待。本实验也不替代同步/预览/SSH公平性、空闲能耗、IPv6/手机换网及最终同源N0–N5验收。
+
+执行已进入固定业务矩阵。root使用串行stdlib编排器（当前PID及句柄只查STATE/progress），每块真实终态后核两类证据再派下一块。活跃期间该进程独占source-refs/progress写入，root不另行调度；它不会因产品红补跑，也不会因观测超时替换仍在途的run。未知测量/所有权/launch会停止后续并保留准确句柄。
