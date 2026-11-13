@@ -1,16 +1,24 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-13T20:09:39.103610+00:00。完整[GOAL](GOAL.md)/[PLAN](PLAN.md) N0–N5 **未完成**；逐项缺口见[REQUIREMENTS](REQUIREMENTS.md)。用户已授权持续实施/远端验证，root串行、不派子智能体；不因局部通过停止。无main合并、正式发布、生产Relay采购部署或现装App替换授权。
+更新于 2026-11-13T20:55:26.503130+00:00。完整[GOAL](GOAL.md)/[PLAN](PLAN.md) N0–N5 **未完成**；逐项缺口见[REQUIREMENTS](REQUIREMENTS.md)。用户已授权持续实施/远端验证，root串行、不派子智能体；不因局部通过停止。无main合并、正式发布、生产Relay采购部署或现装App替换授权。
 
 E=`/Volumes/disk0/Khor/evidence/net`；全部worktree在`/Volumes/disk0/Khor/worktrees/current/`。此前STATE逐字归档[HISTORY-through-relay-health-v2](HISTORY-20261113-through-relay-health-v2.md)，SHA256 `04c4a8d83d8f48a963f0762581843009788d3f24cdadeebd89f29dc55ce744c5`；其中保留更早全部历史/失败/来源链接。历史pending/PID不用于重派。
 
 ## 当前唯一执行与接着工作
 
-**Turing唯一pending为F3十组件，正确net-vendor已唯一发起，查source-refs最新receipt。** revision relay_health_progress_component_v1/control53906f24dc79eae2ea2b257b69c83267def083bc，准确source7a79427414b40d96d18db6a867236560ac6d01bb/tree173ce959113a03b42b2c556a69140d8c63e9a5e9/snapshoteef032c13f37f66d049f58c12be0cc93ea1afd4b。先原生冷编译固定10项，闭证ops/verify-relay-health-progress-component-v1.py；通过后才普通Release原silent3＋healthy3。仅改actor单文件，原两夹具不改。
+**F3十组件203529Z-34d82f2e已0/72.022379秒闭证**，25files/identity/owned完整，冷编译33.83秒、413artifact全部fresh=false；新增3与原7全部通过。run/relay-health-progress-component-verification-v1.json；不代Release或真机结论。
+
+**F3普通Release producer203855Z-f070edef已0/592.435102秒闭证**，22files/identity/strict native完整，Rust9分01秒、实际CLI fresh=false。source7a79427414b40d96d18db6a867236560ac6d01bb/tree173ce959113a03b42b2c556a69140d8c63e9a5e9/snapshoteef032c13f37f66d049f58c12be0cc93ea1afd4b；CLI a2a655f73f168dc10ed580e1a578c5db5c3056a6d5207aacceebc82aebba450d，fulltest788230d99aec5e32ae4db895f55dcaf5b1caad9b08b295bfbede80a600e6f181。run/relay-health-progress-native-compile-verification-v1.json。普通Release/原features[]/无qlog与net-diagnostics保持，不代业务接受。
+
+**F3两组原业务合同已全部闭证，共固定6场168/168真实读成功、0超时。** silent205454Z-a05d8a1c 0/166.430165秒、15files/identity/native/CPU/owned完整，三场首有效响应953959/872597/934411μs，原2秒caller/250ms计划不改。healthy205820Z-118a2b49 0/102.174631秒，同15files与来源/资源/清理闭，42/42读成功、三场原TCP均不变、changed=0，124→976ms原delay/filter/no-drop/5秒caller保持。两原fixture逐字不改，无运行编译/替代；E/relay-health-progress-combined-runtime-verification-v1.json及两run/relay-progress-*-runtime-verification-v1.json。仅窄修复合同接受，不代全N4/N5或总体可靠率。
+
+**独立I3已冻结，两个准确源远端检查在途**：worktree khor-net-product-integration-v3、branch integrate/net-product-v3、commit6f4c8c390ea44f068886dd95716dacd02c1eaa45/treec651b2fbfa2927f00cc1d2b679455d1c77dad9a6。全部Cargo/crates/vendor runtime逐字F3（仅vendor KHOR说明除外），main9a4219ff全部apps/.github保持，仅独立已验harness脚本变更；E/product-integration-v3-source-audit-v1.json。准确源完整Quality **43507369283**（verify/net-product-v3、suite=all/interaction_scope=all）已唯一发起；可信khor-build完整原生Mac Lab **43507423100**（requestc47be810b43e43538b5548a1a2fed8d7、snapshot883e800915cd979f77a1f167b902fce992e60b9c、port23967）已唯一发起，收集器OS session93040，仅数据下载无本地产品执行。E/ops/acquire-product-native-lab-v3.py；恢复查request/run，不重派。尚未接受两次检查；main/现装App/旧Lab23961保持。
+
+**Turing唯一pending为F3原混合负载6场210632Z-119ea551 / PID906266**，task net-node/revision relay_progress_original_mixed_fixed6_v1/control669e163eb0e9bf3936a4e4942645a5c4a6e919ee。沿已准入F3普通Release、两原profile与low/high/high/low/low/high顺序、每场720记录/2秒caller、owned600保持，无源改/重编译/替代；E/relay-progress-mixed-runtime-plan-v1.json。目的是检验本次健康检查变化对共存负载的回归与剩余scheduled尾延迟，不宣称修好旧I1超时或总体N3。完成collect→identity→ops/verify-relay-progress-mixed-block-v1.py，保留全结局。该Linux测试源是F3、与I3runtime有逐字审计，不冒充I3全树Quality。
 
 **健康jitter真实3场已完整重现F2误断，F2不晋升。** runtime201418Z-2b427674 **1/112.210432秒**、15files/identity/native/CPU/owned闭：42/42实际读成功、无队列drop，但三场原TCP都在约1.11秒消失后被新tuple替换。100ms内核采样、原124→976ms delay/filter/无drop和原5秒caller均独立核验，protocol_verified=true；每场158/159/161次改变观测。run/relay-health-jitter-runtime-verification-v1.json。原silent3场改善依然保留，但不足以全面采用F2。
 
-**下一候选F3已在独立khor-net-relay-health-progress-v1提交7a794274，尚无native/业务接受。** 从J2 a199ff48起仅改vendor/iroh/src/socket/transports/relay/actor.rs，原silent与healthy夹具全部字节保持。E/relay-health-progress-design-v1.json提前冻结：同一ping的full max_timeout仍从首次发送固定不延长；RTT早期检查仅在没有收到Relay消息时判坏，收到实际消息只让过早期判断，匹配pong才结束整次检查。connected/pending-send两循环共用状态，无新周期timer/额外ping/应用重放。新增3原生合同（无回包早期失败、有进展等pong、持续进展不延长硬期限），保留原7，先跑固定10组件再普通Release原6场。
+**下一候选F3已在独立khor-net-relay-health-progress-v1提交7a794274，十组件与Release已核，仅窄6场业务接受，完整目标未齐。** 从J2 a199ff48起仅改vendor/iroh/src/socket/transports/relay/actor.rs，原silent与healthy夹具全部字节保持。E/relay-health-progress-design-v1.json提前冻结：同一ping的full max_timeout仍从首次发送固定不延长；RTT早期检查仅在没有收到Relay消息时判坏，收到实际消息只让过早期判断，匹配pong才结束整次检查。connected/pending-send两循环共用状态，无新周期timer/额外ping/应用重放。新增3原生合同（无回包早期失败、有进展等pong、持续进展不延长硬期限），保留原7，先跑固定10组件再普通Release原6场。
 
 健康夹具J2原生producer200542Z-1bf520ed **0/238.758950秒**、24files/identity/strict native闭，Rust3分08秒。source a199ff480e7c817c6a4bcbb94e3f349e85a4e23f/tree3b4a982616787852a5a9561b799f5656dd74fd3a，CLI逐字F2 ef9a、fulltest3813e1a72e0295fb8eaf3865702053bb5ed757e9fa0a73bfa30e367d27ea65b7。run/relay-health-jitter-native-compile-verification-v2.json；该源只是测试桥，产品仍F2。
 
@@ -64,7 +72,7 @@ canonical khor-net/feat/net runtime仍5064fe2a、iroh1.2/Noq1.3，后续文档�
 
 完整N1路径质量/置信/成本；N2全期限、取消/资源、全部写和0-RTT/NET16；N3真实同步/预览/SSH/hop公平、共享/分连接、背压、1/3/5设备CPU/线程/字节/实际唤醒/手机能耗；N4双端独立与同时IPv4/NAT/IPv6 IID/prefix、锁屏/休眠/Wi-Fi蜂窝、发布/发现/新连接、中继故障域/容量/布局；N5逐项custom、最终同源Quality/Mac/手机/设计报告都未齐。旧idle包+33.970%/字节+37.908%保留。ledger v5的60项=1上游替代已验＋2Noq退出红保留＋1iroh38退出红保留＋**56待审**，不是56均必要。
 
-最新官方registry核验2026-11-13T10:15:56Z为iroh1.4.1/Noq+proto1.4.0，最终交付前再核。F2/J2基于这些版本。iPhone仍旧0.2，旧ready窗口不沿用；有可用准确候选后再约真机/能耗。MacLab/Turing同LAN、macserver另机。不能把新Relay两节点case当作现场peer relay/手机修复接受。
+最新官方registry再次核验2026-11-13T20:47:08Z仍为iroh1.4.1/Noq+proto1.4.0；E/upstream-registry-recheck-20261113T2046Z/verification.json及三个完整原API JSON/SHA保留，最终交付若跨时再核。F2/J2基于这些版本。iPhone仍旧0.2，旧ready窗口不沿用；有可用准确候选后再约真机/能耗。MacLab/Turing同LAN、macserver另机。不能把新Relay两节点case当作现场peer relay/手机修复接受。
 
 ## 必须保持的开发约束
 
