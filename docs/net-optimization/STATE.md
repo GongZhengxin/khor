@@ -1,6 +1,6 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-13T03:52:37.515590+00:00。活动目标仍是[GOAL](GOAL.md)和[PLAN](PLAN.md)完整N0–N5，**未完成**。上轮是实际进展：准确产品源完整Quality13/13及真实唯一middle固定3次均已闭证，不是整体接受。root串行，不派发子智能体。
+更新于 2026-11-13T04:12:21.138564+00:00。活动目标仍是[GOAL](GOAL.md)和[PLAN](PLAN.md)完整N0–N5，**未完成**。本轮继续实际推进Release性能与最新Mac Lab验收，root串行，不派发子智能体。
 
 此前STATE逐字保存于[完整历史](HISTORY-20261113-through-product-quality-and-sole-peer.md)，SHA256 `778295b28a3de7a9d18c732891cc257e2e8335a802d59701d68ad369420f134d`；该历史继续链接全部更早收据、失败、中断和旧协议。历史中的“在途”只按原时点理解，不重启已关闭批次。
 
@@ -29,13 +29,15 @@
 
 **Release A B B A A B六次已全终态、收件/identity/业务+所有权审计及ledger闭**：[SOLE-PEER-RELEASE](SOLE-PEER-RELEASE.md)，E/sole-peer-release-comparison-verification-v1.json。旧源3次均首目录5秒超时；候选3次实际返回 **345236/366587/366320μs**、经唯一M的Direct/Relay两腿。各case独立新Lab、前态Idle/no_relay=false；所有失败保留，额外试验0，无强制/遗留。旧完成时间是5秒右删失，不能造成功延迟/p99或有限倍数加速；首A与其余约10分钟间隔如实保留。
 
-串行coordinator E/ops/run-sole-peer-release-pair-v1.py **exec72887已终态0**，progress/result均completed，当前无Turing在途/无pending ledger；root恢复唯一writer，旧61277不恢复。原UID1110/flock/jobs16/nice10/50GiB启动/40GiB停止/90分钟守护保持。相同已闭Release或Debug候选不追加挑绿。
+串行coordinator E/ops/run-sole-peer-release-pair-v1.py **exec72887已终态0**，progress/result均completed，该批结束时无Turing在途/pending；其后共存coordinator状态见下，不恢复旧批，旧61277不恢复。原UID1110/flock/jobs16/nice10/50GiB启动/40GiB停止/90分钟守护保持。相同已闭Release或Debug候选不追加挑绿。
 
-## 当前Mac原生候选：最新集成源，不启动本地App
+## 当前Mac原生候选：同源重跑通过，包已核、不启动本地App
 
-公开builder的完整Lab **43355810513**，request **ad847c8fb3874591bf786afd5c347a24**，source **117c39**/tree **ace4fd**，snapshot **4140e11e727ee0d43e859a6c1dd8d4659d793744**，native_contract **71e64768d0b001dcf6f8c45deaab341e845b226ae3d58443264bdb3e083ac4d7**，port23963；control main **9b671817e34846df9e14c213a562ab88309cb45a**。source/request已写E/public-native-lab-net-product-v1/request.json，API核workflow_dispatch/准确control，原生/前端成功，整体检查存在下述失败，尚未接受。
+公开builder完整Lab **43355810513 attempt2 success**，request ad847c8fb3874591bf786afd5c347a24，source **117c39**/tree **ace4fd**，snapshot4140e11e727ee0d43e859a6c1dd8d4659d793744，native_contract71e64768d0b001dcf6f8c45deaab341e845b226ae3d58443264bdb3e083ac4d7，port23963，control9b671817。准确报告 **E/public-native-lab-net-product-v1/lab-acquisition-verification-v1.json**。
 
-本地仅source快照/上传和artifact数据获取进程，**exec96116已终态0**，脚本E/ops/acquire-product-native-lab-v1.py。它调用原builders.remote，callback只记盘，不建manager/不启动下载的native。前端/原生artifact均已获取，acquisition-result.json明确failure；callback未启动本地产品。不重复提交build。builder.log、acquired-*.json、acquisition-result/error.json都在该目录。原native/frontend/retire三job成功；checks在WebKit桌面settings导航data-nav-me元素原15秒稳定性等待超时。62个已落盘浏览器case无errors，原完整检查log与35,419,759字节ZIP/SHA/CRC保存在failed-checks.zip，未隐去失败。无UI源码/断言/期限修改；仅对原失败job131659939275发起**一次**同源受控重跑，API请求范围仅原失败job；attempt2最新job列表也出现新ID的native/frontend成功job，其实际是否重建待logs/payload核实，不预称未重建。见checks-failed-job-only-retry-v1.json；attempt2 checks job131672404119仍在原完整App/WebKit步运行；后续核它，不另造build。旧3b Lab不能代替本集成源。
+首次checks WebKit桌面settings稳定性15秒超时完整保留；只重跑失败job一次，同源/断言/预算零修改，根因未证。attempt2全部4job成功，77完整App浏览器case零errors，hot/CSS更新/草稿门过，chat取消28/poll12/recovery22/scroll12原case均过。79处本地存在的报告源码hash与I一致；10处生成绑定未在本地源码出现，明确未以本地hash冒充核验。新checks ZIP41,651,437字节/SHA1130ab59及旧失败ZIP35,419,759字节/SHA06c455ba均留盘/CRC过。
+
+API给继承job新ID；已核新IDnative日志仍是03:05–03:19及原artifact14006788158，frontend/native artifact ID和digest均未变，非重建。原生inner native.zip108,065,996字节/SHA2ca9754e及ZIP CRC、Mach-O arm64字头/可执行位、Info.plist独立Lab ID、准确tree/snapshot/contract/port和远端real_backend probe均核。整个获取exec96116终态；callback只记盘，无manager/下载native本地执行、无替换安装App。不是用户或物理iPhone接受；旧3b Lab不代替本源。
 
 ## 已闭证据及其范围
 
@@ -61,4 +63,20 @@ N0–N5保持原范围，不把13个Quality或3个namespace病例当作全部接
 
 ### 下一轮Release共存准备
 
-在已闭首业务两配对树中只加入共同netlab_workload_release测试target及当前workload.rs与8个辅助文件；旧原夹具/receipt保持。已核公开main实际拥有wire_counts、pull_path、open_on、close_on API，**不采纳摘要误报“无wire_counts”**，双方共同workload业务体、observer及wire计数无需修改。尚未发新Turing/未有该批业务运行；协议冻结后复用已owned稳定source/target，原native-provenance prior receipts只允许准确匹配依赖，避免冷重编。当前无Turing pending。
+在已闭首业务两配对树中只加入共同netlab_workload_release测试target及当前workload.rs与8个辅助文件；旧原夹具/receipt保持。已核公开main实际拥有wire_counts、pull_path、open_on、close_on API，**不采纳摘要误报“无wire_counts”**，双方共同workload业务体、observer及wire计数无需修改。尚未发新Turing/未有该批业务运行；协议冻结后复用已owned稳定source/target，原native-provenance prior receipts只允许准确匹配依赖，避免冷重编。目前candidate compile040254Z-2e151f7f在途（exec43456仅提交已终态0，真实远端PID3206329）；root仍唯一ledger writer。
+
+### Release共存协议已冻结、增量编译推进
+
+E/workload-release-comparison-plan-v1.json固定公开main对117c39，12份共同root/observer/workload/calibration文件逐字相同，生产overlay零。两网络模型各固定ABBAAB、每arm每profile3次，720逻辑样本/case，原2秒目录/TTY、120/240秒bulk、16/192MiB与所有重叠/完整payload/close/owner门保持。preflight双方各两个owned取消guard、low和split-high独立TCP校准；校准红停止性能比较。高模型最坏观察窗口在执行前声明owned harness cap600秒（原通用300不足覆盖240+2×48+setup），不改业务门。失败/取消/观察缺失全保留、替代0；有限n经验分位与工程退化筛查，不称全局p99/能耗或完整N3。
+
+编译control v1的旧tree绑定被生成器误替换，035604Z-a2e3b97d在assert前置1/23.839862秒退出，产品编译/运行/迁移零；原failure及identity完整闭账。v2 control35c9d2ce修正旧/新binding并作静态对账，原native verifier未改。baseline035824Z-400ee7e2 **0/220.928664秒**、19files全核闭账；18first-party依赖通过原prior verifier复用，只CLI/新test重编，较上一轮冷编630.7秒短，CLI SHA完全相同。旧first-business两ELF先只读存盘/核hash；owned稳定source只切共同测试fixture。当前candidate040254Z-2e151f7f正在同法编译；两产物过后一次冻结runtime binding，再执行原preflight与固定配对，计时不编译。尚无本协议业务结果，不重开旧sole-peer批次。
+
+### 当前唯一ledger writer：共存串行coordinator（请先核真实状态）
+
+**E/ops/run-workload-release-pair-v2.py，exec45051，PID71819** 正运行，持专用local flock。root此间只读E/source-refs，不能并发stage/close；如coordinator终态才恢复writer。E/workload-release-comparison-progress-v2.json与results-v2.json是唯一执行索引。当前按baseline preflight040811Z-091f51be→candidate preflight041049Z-1d454085→固定A B B A A B，每business block low/high两fresh；替代0。不盲重提、观察超时不当终止。
+
+两个Release compile已闭：baseline035824Z-400ee7e2 0/220.928664s，candidate040254Z-2e151f7f **0/212.873642s**；双方18first-party依赖按原verifier prior复用，仅CLI/新test重编，CLI SHA仍各与首业务旧ELF完全一致。新source基线f6c239ae/e22263d6、候选adbc7d6a/5dccbfd2（tree/snapshot，准确40位见E/workload-release-{baseline,candidate}-source-v1.json）。runtime control **9532c63b**按已闭compile SHA冻结，原owner/caller门及source-only保持。
+
+原未执行runtime协议v1把旧冷TCP平均吞吐误作唯一模型准入；首次物理case前已逐字留存并以 **E/workload-release-comparison-plan-v2.json** 明确纠正，沿既有MODEL-DECISION分层准入，并增加每arm独立UDP case，preflight共5个（2owned guard+lowTCP+highTCP参照+highUDP）。不改原TCP断言/区间/退出结果；若仅旧冷TCP平均吞吐门红，仍原Rust101/原controller1，不冒称其绿；必须完整TCP双payload/68echo/server/300ms RTT/实际几何和独立UDP人口/pacer/容量全验才允许应用测量。队列/burst/datagrams与旧校准逐字相同；capacity仅capture可见性变pub(super)、正文同，双方仍做fresh校准，不用旧数据代新。
+
+baseline preflight040811Z-091f51be已原件收齐/identity/独立data审计/ledger闭：两个真实取消guard与lowTCP、highUDP通过，highTCP原红，平均35.541/35.918Mbit，RTT300229μs、完整70操作/双payload及几何过；UDP两个方向steady48.30912Mbit、每方向145833/145833发送/无pacer skip，全部丢包分母保留。原return1不改；专属proof给**分层模型准入true**，非产品/完整N3接受。candidate preflight041049Z-1d454085在途，以实际progress为准。之后每case原raw人口、超时、阻塞、取消/清理必须全留，缺人口不能补零或只挑成功算p99。
