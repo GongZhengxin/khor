@@ -6,7 +6,16 @@
 
 ## 当前唯一Turing执行及下一步
 
-唯一pending **turing-20261114T052833Z-419e8012** / separate_pull_preflight_baseline_v1，role baseline；普通三组control **6ee198d424e0313d71812c1f0c5343947be50f99**、protocol **9d32bff84c5cda4e00dbb7bacab1f8d27370ca49a3161a2c18b4f881334ab6b2**。先查原receipt/execution，禁止重复stage/launch。这是原main新5项校准，原high coldTCP红要保留，按已有MODEL-DECISION显式分层准入，不称全部绿。collect→verify-turing-record→verify-separate-pull-three-arm-block-v1.py→record-separate-pull-three-arm-block-v1.py；只有analysis/分层模型/CPU/owner闭证后才派prototype preflight_candidate，再业务固定9块。
+唯一**Turing** stage/launch **separate_pull_block_4_B_v1**，role candidate，source S dad430/0db650/snapshot0a97f374、CLISHA9add2509.../netlab4ca36fb...，**shared mode**；实际run见source-refs末条/receipt/execution。control6ee198d424e0313d71812c1f0c5343947be50f99/protocol9d32bff84c5cda4e00dbb7bacab1f8d27370ca49a3161a2c18b4f881334ab6b2不变。计时旁不编译，不重复launch；collect→identity→verify-separate-pull-three-arm-block-v1.py→record-separate-pull-three-arm-block-v1.py，若collecting再第5C separate，同S/rolecandidate。若phase停止不再派剩余，summarize保全部原坏数据和未执行。固定1A/2B/3C/4B/5C/6A/7C/8A/9B，不替换。
+
+已闭首轮ABC业务：A **053604Z-010c3ac7** 0/248.821374秒、B shared **054110Z-5872daed** 0/241.060238秒、C separate **054711Z-5f383a10** 0/244.952115秒，各14files/identity/source/CPU/owner/原low+high所有业务门，累计 **4320/4320读、6完整文件**。C首轮record futility=[]，progress-v1现blocks5/phasecollecting（含2preflight）。这只是每臂各1块，**不能按首轮或有日志诊断接受N3**；尚无完整三轮性能结论。
+
+**并行Mac便携原生回归**（不共享Turing CPU，不是App发布）：唯一GH **43563143698**，job **132351061154 network-mac**，control仍 **68cadb57a0ed72d40a4ca9a843e86b9c6797bf34**，source同dad430/tree0db650，Mac snapshot **b81353f2eaa91cbea489fb58bd3ecca10941ab7b**，requestd06be9417b5348e1a403ea50f7dd925b。bundlea018eb6d59d1e2659a9fad0bed9dcc10320444b7bd928843447b618eb930a4f2/22031074B，blob6b6704a67dbdf2feb88433988c1b63f07f8fc806；源码ref已固定refs/khor/net-evidence/43563143698。E/separate-pull-mac-source-v1.json、mac-43563143698/receipt.json、**separate-pull-mac-progress-v1.json(pending true)**为独立在途账本，不得遗忘或重派；GH已核head精确、prepare source/host步骤成功、run under existing admission guard进行中。原jobs2/50start40stop/installed guard998f不改，旧LIVE23961不碰。预计原293减原4Linux-only=**289pass/0fail/原ignored1**，全部7新模式及14联系合同都必须过，不说293Mac。
+
+Mac独立账本是为了保持**已冻结Turing recorder的全局pending保护与helper SHA不变**：不在Mac运行中往common source-refs新增pending；它仍由完整独立receipt/progress/pinned Gitref跟踪。等GH完成，使用E/ops/collect-separate-pull-mac-v1.py RUN_ID ARTIFACT_ID（沿原collector仅改独立账本入口、增加CRC）保留ZIP/元数据/SHA/安全路径；独立源/全11控制blob/hostguard/289名册验证通过后再以**completed、pending false**追加共同历史，勿调用register-mac-run.py把Mac在途塞进固定Turingglobalpending门。原12命令与Linux5d逐字相同，2078B slice SHA74d7cb005cbd1fca6811895a4e57776acbe4b1ea71e573ca68dfafe91ec2dcb0。最初本地旧SHA25cc分帧断言在intent/remote前拒绝；已核commands相同并明确定义新slice，非改测试。
+
+
+两份fresh preflight都已闭证：A **052833Z-419e8012** 1/162.572332秒、B代表prototype **053223Z-815dd1d4** 1/164.525110秒，各17files/identity/source/CPU/owner/全部原5case。各原两observer ownership/lowTCP/fresh UDP四绿、高coldTCP原红完整保留；完整RTT/几何/68echo/双文件/队列readback均valid，依据原MODEL-DECISION显式 **preflight_layered_admitted=True**，不是全绿。E/run/separate-pull-three-arm-block-verification-v1.json；record progress-v1已含这2个preflight，后续业务按唯一在途节继续。独立数据脚本：verify-separate-pull-three-arm-block-v1.py、record-separate-pull-three-arm-block-v1.py、summarize-separate-pull-three-arm-v1.py；全部helperSHA已绑定plan，勿在数据后随意改统计/gates。
 
 两场固定有日志诊断都已完整闭证：shared **051918Z-ca81d523** 0/214.638022秒，separate **052331Z-eea39ea2** 0/190.553538秒，各16files、720ok/192MiB完整、1128真实stream配对（360目录＋768文件），共1440ok/2256stream。shared实际一Main，separate实际目录/file不同两Main且仅1个pull_wire_opened匹配filewire，均终端独立Tunnel；原3采集校准/8×16MiB界/3flag finally恢复/来源/CPU/owner通过。E/run/separate-pull-lifecycle-verification-v1.json，layout_ok True。**只证明布局功能，不用此日志cohort接受性能/成本**，不重派诊断。
 
@@ -150,3 +159,8 @@ canonical feat/net产品运行仍5064fe2a（iroh1.2/Noq1.3）；本分支后续H
 E/ops/freeze-separate-pull-native-compile-v1.py已执行并产生当前唯一050842 producer；不得重复。E/ops/freeze-separate-pull-lifecycle-v1.py已唯一执行且两场闭证，不重复。E/separate-pull-three-arm-design-v2.json在任何prototype性能/诊断case前更正文案period：**原low100ms/high400ms**，v1写两者100ms错误仅设计文字，原runtime/source/门未变、v1保留。真正controller已按v2准确period冻结，不得拿v1不准文案改原fixture。
 
 E/separate-pull-fixture-equivalence-v1.json：原11公共文件中10个（含业务/observer/calibration）字节相同；lab.rs因IPv6工厂新增不相同，但去掉new wrapper/relay_v6、重命名family及还原IPv4 let ip/格式SocketAddr后**整个文件逐字等于TF96e原文件**。原relay传constantfalse，IPv4 setup参数/路由/device/slow/owner/drainer不变，不称11文件全字节相同；正式三组对照前baseline和prototype仍必须fresh分层native校准，所有原coldTCP红保留。
+
+
+2026-11-14T05:37:22Z上游在线版本已重新核查：官方Release/docs.rs与官方crates.io JSON确认最新稳定iroh1.4.1/noq和noq-proto1.4.0，均未yank，准确S candidate版本一致；Noq GitHub Latest旧标签1.1.0不作registry准则。原JSON/SHA在E/upstream-recheck-20261114/verification.json，UPSTREAM已更新，未改任何候选/对照源码或已冻结运行条件；canonical/已安装App不据此宣称升级。
+
+Mac最终独立verifier E/ops/verify-separate-pull-mac-v1.py已写/parsed，尚未运行；等完成后保存jobs.json与job.log到mac-43563143698，原collector核artifacts.json/ZIP后才verify。严格检查289/0/原ignored1、全7新mode-ON和14contact、原4cfg Linux排除、精确bundle/snapshot/tree/全部11控制blob、job成功、ARM64/rust1.95/jobs2、installed guard998f/50GiB、artifact大小/SHA/CRC；全通过才写E/separate-pull-mac-verification-v1.json并completed-only追加common SourceRefs，同时关闭独立progress。若guard或任何原生拒绝，保留原件具体分析，不重派/不称通过。

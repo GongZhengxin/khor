@@ -4,9 +4,15 @@
 
 升级已在隔离候选实施：I4及N2修复96e999da的实际Cargo与普通Release元数据确认iroh1.4.1、noq/noq-proto1.4.0；最新来源及计时任务以[STATE](STATE.md)为准。canonical feat/net仍未集成该运行代码，不是手机或已安装App已升级。下文“未升级／只读”按原日期保留，不再描述全部隔离候选。
 
-本页的官方Latest核对时间是2026-11-12；此处只更新本地与已闭远端产物事实，不把两天前的网页观察写成新的在线版本查询。最终交付前需再次确认稳定版本及兼容锁。
+2026-11-14T05:37:22Z已重新在线核对：官方iroh Latest和docs.rs Latest仍为1.4.1，官方registry max_stable_version的iroh1.4.1、Noq/noq-proto1.4.0均未yank，和准确S候选普通Release metadata一致；不是把11-12观察冒充今日查询。Noq GitHub Latest标签仍指1.1.0，已按官方registry和docs.rs1.4.0交叉核对，不能据旧标签降级。完整原始JSON及SHA见E/upstream-recheck-20261114/verification.json；源码/版本/本轮已冻结比较没有因查询改动。
 
 当前60项vendor历史条目的实际退出状态见[VENDOR-AUDIT当前账目](VENDOR-AUDIT.md)：iroh22上游替代已验，Noq2/5及iroh38移除合同失败保留，56项继续逐项审计。新增版本与通用库绿不代这些退出合同，也不新增BLE/Tor/Nym产品范围。
+
+## 2026-11-14在线复核
+
+[iroh官方Latest](https://github.com/n0-computer/iroh/releases/latest)重定向v1.4.1，[iroh API Latest](https://docs.rs/iroh/latest/iroh/)同1.4.1；[Noq API Latest](https://docs.rs/noq/latest/noq/)为1.4.0。官方crates.io registry原始JSON确认iroh1.4.1（2026-10-21T17:08:50Z）、noq1.4.0（10-20T17:16:39Z）与noq-proto1.4.0（10-20T17:16:21Z）为当前max_stable_version/max_version且均未yank，源码包checksum也已记录。Web工具对registry API返回不可访问，随后stdlib HTTPS只读下载3个官方JSON，未执行网络源码；本地仅数据处理。Noq GitHub Latest旧标签不是registry最新包版本。
+
+准确隔离S源dad4306132a51e1807da2058988e13f315b262ac的普通Release050842 producer已经核验此依赖组合、features[]，CLI9add2509...；仍是带已列本地patch的候选，不说等于未修改上游，不表示canonical/手机已更新。56项补丁退出审核、完整N3/N4/N5和最终准确源复核继续，当前普通三组cohort源码/门不因此变化。
 
 下面为原始固定来源调查与历史结论。
 
