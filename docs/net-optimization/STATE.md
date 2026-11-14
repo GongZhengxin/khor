@@ -1,24 +1,37 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-14T01:52:25.369603+00:00。用户已授权持续实施/远端验证，活动目标“好 完成完整目标”仍未完成。root串行，不派子智能体。完整[GOAL](GOAL.md)/[PLAN](PLAN.md) N0–N5范围保持，逐项缺口以[REQUIREMENTS](REQUIREMENTS.md)为准。未获main合并、正式发布、现装App替换或生产Relay采购部署授权。
+更新于 2026-11-14T02:39:39.376620+00:00。用户已授权持续实施/远端验证，活动目标“好 完成完整目标”仍未完成。root串行，不派子智能体。完整[GOAL](GOAL.md)/[PLAN](PLAN.md) N0–N5范围保持，逐项缺口以[REQUIREMENTS](REQUIREMENTS.md)为准。未获main合并、正式发布、现装App替换或生产Relay采购部署授权。
 
 此前STATE逐字归档[HISTORY-through-relative-margin-v2-unit](HISTORY-20261114-through-relative-margin-v2-unit.md)，SHA256 `c772dce4a855e181e700130c5805801f3be5e3451968af6f35ad38cef5264406`；其历史pending/PID不能用于重派。更早原件由该文链接继续保留。E=`/Volumes/disk0/Khor/evidence/net`；worktree均在`/Volumes/disk0/Khor/worktrees/current/`。
 
 ## 当前唯一Turing执行及下一步
 
-唯一pending是 **turing-20261114T014844Z-9003c9f9**，net-node / relative_margin_block_3_candidate_v1，role=candidate；实际receipt/source-refs优先。control **429e1e87a686f8ea78fcde0cb666914203d50982**，protocol **2a72b1c8889a320fb50bafeb1434dfe6a1eaf6945774849ff710f7505a6d8a8a**。本轮只测相对正常切换收益门，未接受参数。
+唯一pending **turing-20261114T023714Z-08b04294**，net-node / h2_lifecycle_case_1_v1，role diagnostic。control **37e25ff087ac985bb89e563c1847b946021e6b7a**，protocol **8fee1ad77e8793db4578c45fc93b01939c9dfdb141620320edab7fafc4dbd96e**；先查实际receipt/source-refs，禁止重派。
 
-准确候选H2：worktree khor-net-relative-margin-v1，branch experiment/net-relative-margin-v1，HEAD **db21c2beeecb1d6b1823589267b2f98d34fa5e38** / tree **5cf730ab964c52fd613953251000ba2057e0f2bc** / snapshot **67b205f2d7e55eafb02d81b3a5be1f672669f948**。E/relative-path-margin-source-v2.json、source-audit-v2.json；相对DB7bac只carry.rs，choose_settling在已有活路时叠正常10%/既有settling20%收益门。初始/故障无活路选择、绝对5/10ms、60秒dwell、improves及peer-relay清理保留原版。PULL8，无新增timer/probe/连接/vendor。两新增政策测试和全部旧断言保持，反向源码重建逐字DB。
+当前不是性能验收，而是固定3场普通Release现有生命周期钩子的诊断。E/h2-lifecycle-shadow-plan-v1.json / control-v1.json；复用H2 source **db21c2beeecb1d6b1823589267b2f98d34fa5e38**, tree5cf730ab964c52fd613953251000ba2057e0f2bc, snapshot67b205f2d7e55eafb02d81b3a5be1f672669f948，worktree khor-net-relative-margin-v1。CLI d11188633795731dd3189c787db3f3d99f83568419bbcf822a841e3118139cb4 / fulltest b94a18c51041e9ba02152607139cc4fcfe2945d17dab62c9fa00c50c642b167a，已闭producer011935Z-60f3d677；原profile/features[]/无qlog保持，不重新编译。
 
-H2原生net-unit **011751Z-b0350bd0 0/37.973077秒**已闭，72pass/0fail/原1ignored，原全部名称/断言与H1相同；E/run/relative-path-margin-unit-verification-v2.json。普通Release producer **011935Z-60f3d677 0/554.262451秒**已闭，Rust8m23、actual CLI fresh=false，strict provenance/原profile/features[]/无qlog/无net-diagnostics及selected5存档核验完整。CLI **d11188633795731dd3189c787db3f3d99f83568419bbcf822a841e3118139cb4**，fulltest **b94a18c51041e9ba02152607139cc4fcfe2945d17dab62c9fa00c50c642b167a**。E/run/relative-path-margin-native-compile-verification-v2.json，producer control481c6c219a328da23e8148736be0ee0e2cb1c31e。cache从拒绝的PULL4恢复8并带carry.rs，迁移2文件；相对DB产品差仍只有carry.rs。原46来源工具元验证沿已核source hash准入，不复制Cargo fingerprint。
+方法：NETLAB_DIAGNOSTICS=0，不触发旧feature诊断初始化断言；仅设置既有KHOR_NET_DIAGNOSTICS=lifecycle，使已有普通binary钩子输出stderr。外部owner observer在原采样循环里只读打开私有Scratch的serve.log，持fd到原生owner全部结束再drain，保留unlink后尾部。E/ops/serve-log-shadow-v1.py每场先校准unlink继续写、原路径换inode、跳过外部symlink三个合同；最多8日志/每份16MiB，不改Rust/fixture/期限或增加产品timer/probe。现有flag另有只读tuple诊断及瞬时weak升级，日志/采集有扰动，不能拿此数据作性能/能耗验收。
 
-实际runtime已冻E/relative-margin-comparison-plan-v1.json / runtime-control-v1.json。两臂均完整同netlab entry及11共同workload/observer/calibration文件，原8/普通绝对margin为baseline（DB214246 producer），H2为candidate。两臂各5项新preflight，然后固定 **A/B/B/A/A/B** 六个high场景，720结果/场、共4320/6个192MiB文件；原2秒caller、240秒文件、400ms采样、owned600秒与所有model/CPU/磁盘/来源/清理门不改。已预先声明：任何business硬功能失败，当前场完整核验后停止后续；candidate失败拒绝候选，baseline失败停止参考准入；未跑项明确unexecuted，不作完整六场pooled结论。无替代/后台协调器/运行编译。
+固定3个独立high原wh2场景，原720结果/192MiB/2秒caller/240秒文件/400ms采样/owned600保持；复用准确同源013456模型准入（绑定proof hash和相同ELF/11 fixture/工具，原coldTCP红保持），每场实际geometry/CPU/来源/清理门仍核验。全部原功能失败和stream缺失/额外/重试均保留；仅清理/采集/调度未知时停止，不替代场次。每场含生命周期日志时需要新诊断分析，不误用正式性能recorder。
 
-两臂preflight013143Z-078f5b6e（1/166.500305秒）和013456Z-1969d559（1/164.452927秒）各17files/identity/owned闭，原high冷TCP红保留、分层准入成立。业务第1 baseline013842Z-71395996 **0/184.597149秒**、第2 candidate014404Z-c413459e **0/192.597185秒**均原720/720成功、192MiB完整、13files/identity/native/CPU/清理闭。当前第3 candidate014844唯一pending。E/relative-margin-comparison-progress-v1.json现4/8块（含2校准）；尚不作完整6场性能结论。
+接着：核023714 actual execution/calibration/capture。完成后先collect-network-ssh.py、verify-turing-record.py，再核workload-release-contract的capture_calibration_passed、每场lifecycle_capture、全部原720结果及两端实际lifecycle文件/stream人口；首场尚未验证。实际流分析优先复用scripts/netlab-workload-wires.py的解析函数，扩大实际768个切片/360目录但不假造失败/缺失；不能减两个p95或跨进程未校准绝对clock。只有首场来源/原生owner清理/采集闭证后，再原控制顺序派h2_lifecycle_case_2_v1、case_3_v1，source同H2，前驱当前receipt。root唯一ledger writer，无后台协调器。
 
-继续顺序：先查source-refs和当前014844实际execution；收集后运行ops/verify-turing-record.py、verify-relative-margin-block-v1.py、record-relative-margin-block-v1.py。只有原分层准入/分析/清理成立且无pending，才用stage-launch-turing.py依序启动relative_margin_block_{1..6}_{baseline|candidate}_v1，source分别dual-replug-source-v2.json和relative-path-margin-source-v2.json。每块单独收集/核验/record，根智能体唯一ledger writer。summary用summarize-relative-margin-v1.py，统计自检已过；未完成cohort不得声称通过。
+### 刚闭的H2正式对照：未接受，不再派5/6
 
-原main参考工程门仍为high bulk目录p95<=592518.1μs、PTY<=391538.2μs，完整文件median>=16.791371Mbit/s；与当前baseline相对10%+20ms/90%门分别报告，均非用户已批准的普适SLO。完整低/高、多负载、公平及成本仍待。
+E/relative-margin-comparison-plan-v1.json，control429e1e87a686f8ea78fcde0cb666914203d50982/protocol2a72b1c8889a320fb50bafeb1434dfe6a1eaf6945774849ff710f7505a6d8a8a。两臂preflight013143/013456已闭分层准入。业务前4场均完整原native/CPU/owner/人口核验：
+
+| 块 | 来源 | run | 原结果 |
+| --- | --- | --- | --- |
+| 1 | 原8/绝对margin | 013842Z-71395996 | 720ok，文件完整，0/184.597149秒 |
+| 2 | H2 | 014404Z-c413459e | 720ok，文件完整，0/192.597185秒 |
+| 3 | H2 | 014844Z-9003c9f9 | 720ok，文件完整，0/192.818851秒 |
+| 4 | 原8/绝对margin | 015521Z-4f83dbcd | 646ok/2timeout/72blocked，文件完整，1/198.869200秒 |
+
+按提前声明的baseline硬失败停止，progress-v1=stopped-baseline-hard-functional-failure；第5 baseline和第6 candidate未执行，不重派/不替换/不作完整6场paired结论。E/relative-margin-stopped-summary-v1.json。
+
+H2也不能单靠相对收益门关闭N3：两场已观察的240条bulk目录中28条计划→完成超过原main门592518.1μs，原计划360的nearest-rank p95最多允许18条超界，即使第三场全好也已不可能过。PTY两场0超391538.2μs，目录每场p95 531354/850180μs、文件21.465/21.488Mbit/s；不能用功能全成功抵销目录回退。H2未采用，E/relative-margin-next-diagnosis-decision-v1.json。
+
+历史response-priority-decision-v1.json已有低/高各18场（共25920调用）：-1低延迟有目录收益，高延迟未稳定改善，故当时把0固定为后续预取中性参照，非最终策略。不要凭记忆重做同一个常量；本轮先定位当前普通H2的client exchange与server seat/read/dispatch/encode/write及剩余未测区间。
 
 ## 已闭修复与仍然失败的方案
 
@@ -46,7 +59,9 @@ Linux已过的96e同源Mac标准net-node已唯一提交 **43540500760**（reques
 
 SSH只读hostname曾成功，但之后原生前的Python维护测试上传在banner阶段超时，执行0；E/mac-start-reserve-ssh-preparation-failure-v1.json和原intent保留，已走可信GH完成上述修正/回收，不原样反复SSH。
 
-环境恢复后已新提交同source/control的Mac标准net-node **43542867922**，requestcb0220712d284ad48e30f92ef00595a9，snapshotb19a46316daf8a698ef4f976b69930c3319558e9/source41df16ad/commit96e，E/dial-contact-repair-mac-source-v2.json。network-mac/job132287202971现Run under existing shared admission guard在途，未有完整结果，不据此宣告Mac通过。原43540500760的磁盘拒绝5-file artifact14091886017 SHA f178febc/CRC与完整log已闭：E/dial-contact-repair-mac-attempt1-verification-v1.json，编译/测试0，不作产品失败。此处没有App构建/安装/发布。
+环境恢复后的同source/control Mac标准net-node **43542867922** 已首轮success并完整闭证：requestcb0220712d284ad48e30f92ef00595a9，snapshotb19a46316daf8a698ef4f976b69930c3319558e9/source41df16ad/commit96e，job132287202971。E/dial-contact-repair-mac-verification-v1.json：原12组 **282pass/0fail/原1ignored**，14联系合同全过，与Linux原名称逐一核对，少4条有明确cfg(target_os=linux)且Linux已过，不补写成286 Mac。artifact14093330987 38214B SHA005de796571e0c6ae5101835afce68961b9c7a134a2cb56ae2e6f695754a573e/CRC、全部11控制Git blob、snapshot/source/bundle/host ARM64/rust1.95/jobs2、installed guard998f和所有原日志逐项核验。本地只数据操作；Rust--nocapture的换行结果复用已验parser，首单行parser准备失败未改原数据或重跑测试。原435405磁盘拒绝原件保持，不算产品红。
+
+N2该窄修复现有准确同源Linux286/Mac282及14合同接受；仍非Release性能/最终集成/手机/完整N2或N5。此处没有App构建/安装/发布。
 
 ## 仍有效的I4/F3与边界
 
