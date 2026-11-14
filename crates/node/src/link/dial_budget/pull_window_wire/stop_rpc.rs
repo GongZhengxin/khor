@@ -43,7 +43,7 @@ async fn only_an_admitted_stop_for_the_right_token_cancels_a_live_pull() {
     }
     assert!(fixture.node.admit(&controller.id().to_string()).is_ok());
     assert!(fixture.node.admit(&stranger.id().to_string()).is_err());
-    let receiver = Arc::new(fixture.ep.clone());
+    let receiver = fixture.ep.clone();
     let mut serving = Aborts(Some(tokio::spawn({
         let (node, ep) = (fixture.node.clone(), receiver.clone());
         async move {
