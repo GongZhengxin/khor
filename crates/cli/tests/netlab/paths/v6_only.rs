@@ -64,7 +64,7 @@ fn tcp_probe(dev: &Device, remote: SocketAddr) -> serde_json::Value {
         let mut bytes = [0u8; 256];
         let received = socket.read(&mut bytes).expect("IPv6 Relay HTTP response");
         assert!(bytes[..received].starts_with(b"HTTP/"));
-        serde_json::json!({"local":local,"remote":remote,"response_bytes":received})
+        Ok(serde_json::json!({"local":local,"remote":remote,"response_bytes":received}))
     })
     .unwrap()
 }
