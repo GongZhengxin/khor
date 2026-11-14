@@ -1,20 +1,26 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-14T02:46:50.630610+00:00。用户已授权持续实施/远端验证，活动目标“好 完成完整目标”仍未完成。root串行，不派子智能体。完整[GOAL](GOAL.md)/[PLAN](PLAN.md) N0–N5范围保持，逐项缺口以[REQUIREMENTS](REQUIREMENTS.md)为准。未获main合并、正式发布、现装App替换或生产Relay采购部署授权。
+更新于 2026-11-14T03:13:13.428229+00:00。用户已授权持续实施/远端验证，活动目标“好 完成完整目标”仍未完成。root串行，不派子智能体。完整[GOAL](GOAL.md)/[PLAN](PLAN.md) N0–N5范围保持，逐项缺口以[REQUIREMENTS](REQUIREMENTS.md)为准。未获main合并、正式发布、现装App替换或生产Relay采购部署授权。
 
 此前STATE逐字归档[HISTORY-through-relative-margin-v2-unit](HISTORY-20261114-through-relative-margin-v2-unit.md)，SHA256 `c772dce4a855e181e700130c5805801f3be5e3451968af6f35ad38cef5264406`；其历史pending/PID不能用于重派。更早原件由该文链接继续保留。E=`/Volumes/disk0/Khor/evidence/net`；worktree均在`/Volumes/disk0/Khor/worktrees/current/`。
 
 ## 当前唯一Turing执行及下一步
 
-唯一pending **turing-20261114T030058Z-e97c48c8**，net-node / contact_current_release_compile_v1，role candidate，control **950e760775b24d7478f79d7b6bc7d95d04ff1462**。这是准确已过Linux286/Mac282的 **96e999da/tree41df16ad/snapshot1cc2cb53**（I4＋N2联系代次修复）的普通Release producer；编译中，没有计时场次。原H2/PULL4均未采用。E/contact-current-release-{source,compile-plan,compile-control}-v1.json，E/ops/freeze-contact-current-release-v1.py及verify-contact-current-release-compile-v1.py。先查actual execution，禁止重派。
+唯一pending **turing-20261114T031149Z-be538813**，net-node / contact_current_mixed_preflight_baseline_v1，role baseline；control **2cc1ad6578c83a4384335e825f2ba30db650439b**，protocol **13b66d93d03519417f0b20c956cbf697ad968f8044d502995c16727d81bc4f51**。先核actual receipt/execution，禁止重派。原始baseline descriptor E/contact-current-mixed-baseline-source-v1.json（c3b098bd/treef6c239ae/snapshote22263d6，dirty=true是既有已闭bridge快照，不能新造为clean）。
 
-复用当前H2普通Release的严格来源/缓存，完整tree13路径逆重建精确5cf730ab；其中native5（carry恢复I4、link/wires修复、2个单元fixture），netlab11文件逐字保持，I4浏览器锁保留；只有N2 link/wires是相对I4的产品增量。全部46原provenance合同source不变才复用，prepare/verify/require原门不降，CLI强制refresh且原features[]/Release thin LTO/无qlog，测试执行0。生成脚本首次选到了旧source描述符，在本地断言停止且未写文件/调度；随后从已闭010353receipt准确96e生成，原旧descriptor未覆盖。此编译不接受N3或完整目标。
+**030058Z-e97c48c8普通Release producer已闭成功**，0/570.415930秒，Cargo原8m30、22文件/identity/原owner已核；准确已过Linux286/Mac282的 **96e999da/tree41df16ad/snapshot1cc2cb53**（I4＋N2联系代次修复）。E/该run/contact-current-release-compile-verification-v1.json；CLI **443c6e010293b83e7c0e963b6eb96edb3897dd4c0d6ada0bca9f6fca02666a43**，full netlab **01b6432ae381f633d98a4a1fb6af84b9a5e91fa1075f65c88f371ec14f53dfbb**。features[]/原Release thin LTO、无qlog/诊断feature，CLI强制refresh且实际fresh=false、46原来源合同源码一致复用，未执行任何业务测试。原H2/PULL4未采用；I4浏览器锁保留，N2 link/wires是相对I4仅有产品增量。
 
-编译闭证后按 **E/contact-current-mixed-design-v1.json** 冻结实际ELF/proof绑定，再执行准确同源的无日志混合业务验收。设计先于native计时：冻结原public-main runtime baseline及其已闭ELF、最新接受candidate，ABBAAB六块×low/high=12case/8640；原caller2秒、16/192MiB、bulk120/240秒及owned600保持。原相对10%+20ms/文件90%与原始基线固定绝对界限同时保留。每arm5个原guards/calibration新执行，原coldTCP红按既有MODEL-DECISION分层，不能写全绿。
+producer完整tree13路径逆重建精确H2 tree5cf730ab，source_frame全部13逐项核验，其中native5（carry恢复I4、link/wires、2个单元fixture），netlab11文件不变。raw migration的fixtures_unchanged在该控制模板中指netlab；新增2个node单元fixture在plan/proof显式列出，不能称所有测试文件都未变。E/contact-current-release-{source,compile-plan,compile-control}-v1.json，control950e7607及全部原source/provenance保留。首次本地旧descriptor断言与随后不存在baseline descriptor的stage前失败均未创建远端/native执行；后者E/contact-current-mixed-stage-preparation-v1.json，不算性能场次或替代试次。
 
-新协议明确保留有效baseline产品失败并继续固定cohort（相对全成功单元不能评为通过），candidate任一完整块硬失败拒绝；若固定360的任一cell已有>18条越原固定p95门，或三文件的前两条均低于固定中位门，可数学不可挽回早拒。未知调度/来源/分析/清理不安全则停，无替代试次。H2旧协议不追溯修改。下一步先闭030058 producer，再生成新runtime control/plan/verifier/recorder，检查source准确性后串行调度；root唯一ledger writer。
+新验收的设计/实际绑定已在全部计时前冻结：**E/contact-current-mixed-design-v1.json**（SHA57d5827b8348b70a4cc9f81510d3c478a4cfb8030783fc80ada54ded79ac1afd），**contact-current-mixed-plan-v1.json / control-v1.json**，E/ops/freeze-contact-current-mixed-v1.py。冻结原public-main runtime baseline035824的已闭ELF，candidate030058准确普通Release；ABBAAB六块×low/high=12case/8640，原caller2秒、16/192MiB、bulk120/240秒及owned600保持。每arm5个原guards/calibration新执行，coldTCP原红按既有MODEL-DECISION分层，不能写全绿。计时无编译，无日志开关；两份producer初始selected5 archive按原hash保留，只有已闭新candidate可创建初始档。
+
+原相对10%+20ms/文件90%及原始基线各cell固定绝对界限同时保留（high目录bulk592518.1μs/TTY391538.2μs、文件中位16.791371Mbit/s下限）。新协议保留有效baseline产品失败并继续固定cohort，其失败cell相对全成功门不能通过；candidate任一完整块硬失败拒绝。固定360任一cell已有>18条越固定p95门，或三文件已有两条低于固定中位门，可数学不可挽回早拒；未知调度/来源/分析/清理则停，无替代。H2旧协议不追溯修改。
+
+下一步：031149完成后collect-network-ssh.py、verify-turing-record.py、**E/ops/verify-contact-current-mixed-block-v1.py**、**record-contact-current-mixed-block-v1.py**按顺序闭证记录。progress E/contact-current-mixed-progress-v1.json，是新cohort唯一顺序入口。若baseline分层准入且无未知，唯一派candidate preflight，source E/contact-current-release-source-v1.json，revision contact_current_mixed_preflight_candidate_v1，同control，前驱031149 receipt。然后按progress依次business1 baseline/2 candidate/3 candidate/4 baseline/5 baseline/6 candidate，revision contact_current_mixed_block_{index}_{arm}_v1，每块完整low/high；每次collect/verify/record才下一派。**summarize-contact-current-mixed-v1.py**只在完整cohort给相对＋固定绝对门，停止则不冒充完整对照。root唯一ledger writer，无后台协调器，不和编译并发。
 
 ### 普通H2无重编译诊断已完成，不作性能接受
+
+持久说明见[LIFECYCLE-DIAGNOSIS](LIFECYCLE-DIAGNOSIS.md)。
 
 **024533Z-50822f42 / 024937Z-96d5dcf3 / 025345Z-16ed1d5c**，control30f054bebf4409cda005807368af850a967a67e4，固定3场全部collect/identity/原owner/来源/采集/业务人口闭证：**2160ok、3384实际响应stream**（1080目录＋2304切片），各16文件、runtime无compile、无替代。E/h2-lifecycle-shadow-summary-v2.json，逐场h2-lifecycle-shadow-verification-v2.json；E/ops/verify-h2-lifecycle-shadow-v2.py为data-only，匹配真实ALPN/wire/stream/offset。
 
