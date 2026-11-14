@@ -171,9 +171,11 @@ fn stored(root: &Path) -> BTreeMap<String, Open> {
 /// shared temp name is two writers clobbering each other's draft before
 /// either has renamed.
 ///
-/// Windows cannot reach this: [`change`] refuses there before a write
-/// (no `flock` to serialize it), so the whole write side is Unix-only.
-#[cfg(unix)]
+/// Windows reaches this the same way: `std::fs::rename` replaces the
+/// destination even while a reader has it open — the reader keeps the
+/// old contents — so the atomic-replace save is correct on both
+/// platforms. [`change`]'s lock, not the rename, is what serializes
+/// writers.
 fn save(root: &Path, all: &BTreeMap<String, Open>) -> Result<(), String> {
     let dot = root.join(".khor");
     std::fs::create_dir_all(&dot).map_err(|_| msg::cant_make_dir(dot.display()))?;
@@ -209,15 +211,19 @@ fn save(root: &Path, all: &BTreeMap<String, Open>) -> Result<(), String> {
 /// and the next writer would lock a file nobody else is holding. The
 /// lock file is only ever created and locked, never rewritten.
 ///
-/// **`flock` rather than a lock somebody has to remove**, because the
-/// kernel drops it when the fd closes: a process killed mid-change
+/// **A kernel lock rather than a lock somebody has to remove**, because
+/// the kernel drops it when the fd closes: a process killed mid-change
 /// leaves nothing to clean up and nothing to time out. A lock file this
 /// app had to garbage-collect would be one more thing that goes wrong
 /// on the machine the user is actually using.
-#[cfg(unix)]
+///
+/// [`std::fs::File::lock`] is `flock` on Unix and `LockFileEx` on
+/// Windows; both are whole-file locks held per open handle, so two
+/// opens — two processes, or two threads — contend the same way. That
+/// is what keeps the Windows window and `khor tabs` from losing each
+/// other's rows.
 struct Hold(std::fs::File);
 
-#[cfg(unix)]
 impl Hold {
     fn take(root: &Path) -> Result<Hold, String> {
         let dot = root.join(".khor");
@@ -238,7 +244,6 @@ impl Hold {
     }
 }
 
-#[cfg(unix)]
 impl Drop for Hold {
     fn drop(&mut self) {
         // Closing the fd releases it; this is the explicit spelling so
@@ -259,7 +264,6 @@ pub fn list(root: &Path, kind: &str) -> Open {
 /// **Every mutation goes through here**, so `active` cannot be left
 /// naming a closed tab by a caller that forgot: the invariant is held
 /// by the road rather than by each traveller.
-#[cfg(unix)]
 fn change<T>(
     root: &Path,
     kind: &str,
@@ -275,21 +279,6 @@ fn change<T>(
     open.settle();
     save(root, &all)?;
     Ok(out)
-}
-
-/// **Windows has no `flock`**, so two processes writing tabs there —
-/// the window and `khor tabs` — would race exactly the way the lock
-/// above exists to prevent, and the loser's tab would quietly vanish.
-/// Refusing the write keeps a tab from being lost silently; [`list`]
-/// still reads the table.
-#[cfg(not(unix))]
-fn change<T>(
-    _root: &Path,
-    _kind: &str,
-    _with: impl FnOnce(&mut Open) -> Result<T, String>,
-) -> Result<T, String> {
-    Err("tabs writes are unsupported on Windows: no flock to serialize the window and `khor tabs`"
-        .to_owned())
 }
 
 /// A fresh handle.
@@ -927,6 +916,34 @@ mod tests {
         let again = list(&r.0, "page");
         assert_eq!(again.tabs.len(), 41);
         assert!(after.tabs.iter().any(|t| t.id == after.active));
+    }
+
+    /// **A held lock makes the second writer wait.**
+    ///
+    /// `two_writers…` shows the outcome; this shows the mechanism. If
+    /// the lock were a no-op both threads would run the read-modify-write
+    /// at once and this test would finish long before the held lock is
+    /// dropped.
+    #[test]
+    fn a_held_lock_makes_the_second_writer_wait() {
+        let r = root("lock-waits");
+        let held = Hold::take(&r.0).unwrap();
+        let here = r.0.clone();
+        let second_ran = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let flag = second_ran.clone();
+        let waiter = std::thread::spawn(move || {
+            let second = Hold::take(&here).unwrap();
+            flag.store(true, std::sync::atomic::Ordering::SeqCst);
+            drop(second);
+        });
+        std::thread::sleep(std::time::Duration::from_millis(150));
+        assert!(
+            !second_ran.load(std::sync::atomic::Ordering::SeqCst),
+            "the second writer ran while the lock was held"
+        );
+        drop(held);
+        waiter.join().unwrap();
+        assert!(second_ran.load(std::sync::atomic::Ordering::SeqCst));
     }
 
     /// The table is renamed into place, so a reader never sees a
