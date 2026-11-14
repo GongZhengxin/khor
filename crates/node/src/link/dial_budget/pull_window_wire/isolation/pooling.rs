@@ -2,6 +2,7 @@
 use super::*;
 
 mod concurrent_files;
+mod pressure;
 mod resources;
 
 async fn pooled_extra(
