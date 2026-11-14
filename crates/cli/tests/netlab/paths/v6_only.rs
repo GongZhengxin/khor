@@ -71,7 +71,7 @@ fn tcp_probe(dev: &Device, remote: SocketAddr) -> serde_json::Value {
 
 fn udp_rule(dev: &Device, reflector: SocketAddr) -> String {
     let script = format!(
-        "table inet v6_only {{ chain output {{ type filter hook output priority 0; policy accept; ip6 daddr {} udp dport {} accept; meta l4proto udp counter drop; }} }}\n",
+        "table inet v6_only {{\n chain output {{\n type filter hook output priority 0; policy accept;\n ip6 daddr {} udp dport {} accept;\n meta l4proto udp counter drop;\n }}\n}}\n",
         reflector.ip(),
         reflector.port()
     );
