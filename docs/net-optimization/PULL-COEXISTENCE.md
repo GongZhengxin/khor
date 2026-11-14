@@ -6,9 +6,9 @@
 
 原三个workload测试仍使用原fixed-Direct条件。另加ws2/wsh2两个独立命名的speed-first case：保留low/high几何、16/192MiB字节、120×三阶段×两操作共720样本、原caller2秒与file120/240秒、原observer/完整文件/真实重叠/PTY关闭及owner清理；起终允许健康Direct/Relay/SSH/Forwarded，结束时再做两个有界的相反方向目录读取、核对完整payload，两端Link必须live且无down_ms。direct_after继续保存。路径标签不是速度证据，最终还须比较真实业务延迟/吞吐与成本。
 
-先用准确普通Release做shared/separate各一次有日志布局合同。shared应1对Main服务目录及完整文件；v1对separate误预测offset0后立即切extra；实际首2块在缓存Main、后766块在唯一extra，原业务/健康全过而布局门拒绝。准确源码在准备等待时继续原window、保留已准入请求，故v2改为：offset0起的非空连续缓存前缀，随后非空连续后缀只用唯一extra；不固定缓存块数，目录仍在原Main，PTY是独立Tunnel。新合同固定1场确认，不改产品或旧拒绝。额外两个健康读带来客户端/服务端各2个回复，全部另存，原1128测量RPC继续精确配对。日志扰动场次不作性能晋升。shared已闭，separate v1原拒绝及v2确认状态见STATE。
+先用准确普通Release做shared/separate各一次有日志布局合同。shared应1对Main服务目录及完整文件；v1对separate误预测offset0后立即切extra；实际首2块在缓存Main、后766块在唯一extra，原业务/健康全过而布局门拒绝。准确源码在准备等待时继续原window、保留已准入请求，故v2改为：offset0起的非空连续缓存前缀，随后非空连续后缀只用唯一extra；不固定缓存块数，目录仍在原Main，PTY是独立Tunnel。新合同固定1场确认，不改产品或旧拒绝。额外两个健康读带来客户端/服务端各2个回复，全部另存，原1128测量RPC继续精确配对。日志扰动场次不作性能晋升。shared及separate v2均已闭，原v1预测拒绝保留；当前性能campaign运行状态见STATE。
 
-E/pull-coexistence-comparison-design-v1.json固定下一步同ELF设计选择：S shared/C separate顺序SCCSSC，每块low/high，合计12场、8640原交互样本、24个post-health读，每个arm/profile/operation/phase共360原样本。先完成布局及准确同源5个observer/kernel guards，再将已核编译binding写入最终protocol/control；计时不开lifecycle日志，不编译、不替代失败。
+E/pull-coexistence-comparison-design-v1.json固定下一步同ELF设计选择：S shared/C separate顺序SCCSSC，每块low/high，合计12场、8640原交互样本、24个post-health读，每个arm/profile/operation/phase共360原样本。布局已闭，准确同源5个observer/kernel case按原MODEL-DECISION分层准入已闭：4原生过、high冷TCP平均率原门仍失败，失败与原退出1保留；其完整内容/echo/RTT/队列几何及独立UDP容量均核对。最终protocol/control已冻结并运行；计时不开lifecycle日志、不编译、不替代失败，固定串行控制器逐块collect/验收后推进。模型准入不意味着冷TCP门或N3通过。
 
 原工程门保留：C每cell pooled scheduled-to-end p95不超过S×1.10＋20000μs，只有原360样本全ok才可评级；完整文件三次中位goodput不低于S×0.90；原公开参考的所有绝对延迟上限和文件率下限仍须通过。报告service/queue拆分、全部失败/缺失/取消和有限人口p99，不做通用WAN或能耗保证。C硬业务/健康失败或固定360人口的不可恢复绝对p95越界停止后续块；完整最后块的拒绝不能写成数据未齐。
 
