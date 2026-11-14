@@ -3030,6 +3030,9 @@ mod script_tests {
     /// not consulted by this script — see [`LAUNCH_SH`] — so the
     /// environment variable is not what is set here; the opener it
     /// names is.)
+    // The opener is `/usr/bin/true` and the symlink is a Unix symlink; a
+    // Windows launcher probe needs its own fixture before this runs there.
+    #[cfg(unix)]
     #[test]
     fn launch_answers_done_with_an_opener_and_none_without_one() {
         let dir = scratch("launch");

@@ -247,7 +247,7 @@ pub(crate) struct Worker {
     deadline: Instant,
 }
 impl Worker {
-    #[cfg(test)]
+    #[cfg(all(test, unix))]
     pub(crate) fn pid(&self) -> Option<u32> {
         self.session.as_ref().map(Session::pid)
     }

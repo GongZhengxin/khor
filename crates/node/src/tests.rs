@@ -444,7 +444,18 @@ fn a_word_reported_by_another_process_loses_to_the_vendors_live_file() {
     let me = std::process::id();
     // The parent (the test harness) is another live process — a
     // reporter that is not the claude the file describes.
+    #[cfg(unix)]
     let other = unsafe { libc::getppid() } as u32;
+    #[cfg(windows)]
+    let other = {
+        let mut system = sysinfo::System::new_all();
+        system.refresh_all();
+        system
+            .process(sysinfo::get_current_pid().expect("current pid"))
+            .and_then(|process| process.parent())
+            .expect("the test harness has a parent process")
+            .as_u32()
+    };
     assert!(
         crate::link::pid_alive(other),
         "probe dead: the other reporter must be alive"
