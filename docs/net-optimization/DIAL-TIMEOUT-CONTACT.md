@@ -1,6 +1,6 @@
-# 新联系与旧拨号超时：待验证边界
+# 新联系与旧拨号超时：窄修复已验证
 
-当前普通与冷early两个入口已真实复现旧超时覆盖新认证联系，原红及负控制见下方首轮结果；已有隔离产品修复草稿，**尚未通过修复验收**。
+当前普通与冷early两个入口已真实复现旧超时覆盖新认证联系，原红及负控制见下方首轮结果；隔离修复已在同一并发夹具下固定14/14通过；完整标准Node及最终集成仍待。
 
 ## 执行前诊断记录
 
@@ -32,4 +32,6 @@ E/run/stale-dial-timeout-reproduction-verification-v2.json保留完整原结果�
 
 提前冻结E/dial-contact-fixture-cancellation-v2-design.json后，仅改测试服务端为cap8 JoinSet并发，记录取消/关闭/容量，shutdown信号后abort并join所有handler，再关闭端点、检查原所有断言。原10秒产品timer、5秒setup/queued、15秒owner watchdog和14测试body不改。原版5066bfb9/tree49acdc35/snapshotc45c6af3；同一fixturecherry-pick到修复版96e999da/tree41df16ad/snapshot1cc2cb53，产品代码逐字d15，所有peer_contact源码在两树逐字相同。formatter v1因孤立src缺tests/util解析失败保留，v2仅远端stdin/stdout格式化两源；后续原控制cargo fmt --all --check仍保持。无本机Rust/产品运行。
 
-当前原版fixturev2唯一run002222Z-fb33f5b6在途，控制27ff89e4d3df21b44c4f1a36cebc1d43d5ac6347/原固定14。必须先核它仍有原2 red且其余12过、8marker/全handler清理，再调度相同fixture的96e修复。不能把原版前一夹具的红与修复v2混为同fixture因果证据；两旧失败都保持。完整标准Node和Release/最终Mac/真机仍未补齐。
+并发夹具v2原版002222Z-fb33f5b6已101/196.613641秒闭证，准确5066bfb9：12通过/原2失败、8marker、容量拒绝0、全部handler join。随后相同控制27ff89e4及字节相同测试的修复96e999da，003059Z-d829e18f已0/196.561372秒闭证：14全部通过，8marker/原所有断言及负控制完整、容量拒绝0、全部handler join，12files/identity/owned均核。两正向排队者真实echo成功、旧owner仍真实TimedOut、下线/退避不覆盖新Main握手；其他peer/无握手/新Tunnel控制仍共享有效Main失败，原Asleep六项保持。E/run/dial-contact-concurrent-original-verification-v2.json及dial-contact-concurrent-repair-verification-v2.json。
+
+这支持该窄修复，不替代完整标准Node、Release和最终Mac/手机，也不代所有0RTT、写重放或资源验收。原最初产品红、串行夹具失败和所有未执行组均保留。当前实现没有新timer/探测包/任务，成本仍需在最终源测量。准确修复树无图谱覆盖，主图谱旧调用分析及定向源码锁序复核仅作静态证据。

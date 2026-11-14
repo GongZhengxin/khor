@@ -10,4 +10,4 @@
 
 本地仅源码和证据操作，无产品执行；其他任务Lab23961、main和现装App保持。
 
-基于该固定四场证据，I4完整候选准备中：在DB原两端夹具上只带入锁文件更新和本计划最新记录，恢复原完整77case runner，重新跑准确源Quality all与native Mac Lab；不带入诊断替代runner。E/product-integration-v4-intent-v1.json于集成前冻结。
+基于该固定四场证据，I4准确4517d4cb/treecd52c290已完成完整同源验证。相对I3代码仅稳定浏览器lock＋DB两测试文件，产品Rust/UI不改，原完整77case runner恢复且逐字保持。Quality43523128168 FIRSTATTEMPT13/13成功，E/net-product-quality-v4-verification-v1.json。可信原生Mac Lab43523194833首轮4jobs成功，原77场名称逐字I2且errors全部为空、hot原5条件与附属报告通过；ZIP CRC/source/contract/真backend及arm64 MachO host已核。E/public-native-lab-net-product-v4/lab-acquisition-verification-v2.json；98tracked-source＋18generated-source lineage记录分别核验，不声称本机重新生成后者。完整Quality/Lab仅对该准确源接受，不抵销N3两cell回退、之后N2修复待集成或手机/全N0–N5。
