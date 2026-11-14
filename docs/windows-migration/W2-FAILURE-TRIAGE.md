@@ -77,4 +77,20 @@ C4 的 33 条集中在 `session_content::journal`、`live::*`、`khor_agent::*`�
 
 | 日期 | 批次 | 结果 | 提交 |
 | --- | --- | --- | --- |
-| 2026-11-14 | 分诊（125 条） | 完成初判，B1 起手 | — |
+| 2026-11-14 | 分诊（125 条） | 完成初判，B1 起手 | `da835776` |
+| 2026-11-14 | B1 扩展路径前缀 | `git::` 35/35 通过（原 11 失败）；fixture 把 `\\?\` 剥掉后再交给 git | `592c937b` |
+| 2026-11-15 | B2 程序查找 / 夹具进程 | `sleep`/`true` 换成 `testproc`（Windows: `ping`/`cmd exit`） | `e4c2394a` |
+| 2026-11-15 | B3 文件同步与目录重命名 | `durable::sync_file`（写句柄 fsync）；journal 记录句柄在 rename/remove 前释放；`set_times` 用写句柄。session_content 15→1，khor_agent 9→3，live 29→18 | `e4c2394a` |
+| 2026-11-15 | B4 平台夹具与 Unix-only 测试 | `workspace::basename` 按平台分隔符；`absolute()` 夹具；`satellite`/`workspace`/`wsfacts` 的 mtime 用写句柄；tmux 11 条与 `finding_the_program` 5 条 `#[cfg(unix)]`；appearance 期望补上 window 三项 | `0236678a` |
+
+**全量 lib 轨迹（rustc 1.95.0，`--test-threads=1`）**
+
+```text
+基线 936698a6（W2-A 之前）  931 passed / 156 failed / 14 ignored
+W2-A 之后 dc72eaec          963 / 125 / 14
+B1+B2+B3 之后               986 /  62 / 13   （半量跑，含 B4a 未编译）
+B4 之后 0236678a           1032 /  38 / 14
+```
+
+剩余 38 条的分布：`live 9 / satellite 8 / usage 4 / files 3 / quota 2 / vitals 2 / watch 2 / ipc 2 / khor_agent 2 / place 1 / gui_host 1 / road 1 / pipe 1`。
+

@@ -9,7 +9,7 @@
 | --- | --- | --- |
 | W0 基线 / 功能矩阵 / 审批包 | ✅ 完成 | [BASELINE](BASELINE.md)、[FEATURE-MATRIX](FEATURE-MATRIX.md)、[APPROVAL-PACKAGE](APPROVAL-PACKAGE.md) |
 | W1 构建底座 + CI | ✅ 完成 | [W1-ACCEPTANCE](W1-ACCEPTANCE.md)、[W1-CI](W1-CI.md)；远端 run 43559639618 success |
-| W2 节点层 Windows 适配 | 🟡 进行中 | W2-A 已完成（[验收](W2-TABS-WINDOWS-LOCK.md)）；W2-B/C/D 见下 |
+| W2 节点层 Windows 适配 | 🟡 进行中 | W2-A 已完成（[验收](W2-TABS-WINDOWS-LOCK.md)）；W2-B 进行中：全量 lib 失败 156 → 38（[分诊](W2-FAILURE-TRIAGE.md)） |
 | W3 进程 / 终端 / 文件 smoke | ⬜ 未开始 | — |
 | W4 设备网络 + Session 端到端 | ⬜ 未开始 | — |
 | W5 GUI / Web 桌面端 | ⬜ 未开始 | — |
