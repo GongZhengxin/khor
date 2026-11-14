@@ -2550,7 +2550,12 @@ mod tests {
         std::fs::write(tmp.join("target/debug/fresh"), "x").unwrap();
         let stamp = |p: std::path::PathBuf, secs: u64| {
             let t = std::time::UNIX_EPOCH + std::time::Duration::from_secs(secs);
-            std::fs::File::open(p).unwrap().set_modified(t).unwrap();
+            std::fs::File::options()
+                .write(true)
+                .open(p)
+                .unwrap()
+                .set_modified(t)
+                .unwrap();
         };
         stamp(tmp.join("README.md"), 1_000);
         stamp(tmp.join("src/deep/one.rs"), 2_000);

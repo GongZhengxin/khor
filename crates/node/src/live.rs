@@ -4835,6 +4835,7 @@ mod tests {
     /// shell in no tmux does not — and that second half is the control,
     /// because `term` is true of the first and a `mux` that merely
     /// copied `term` would send every khor conversation to the terminal.
+    #[cfg(unix)]
     #[test]
     fn a_row_held_by_tmux_is_multiplexed_and_one_that_is_not_is_not() {
         use crate::adaptor::{Discovery, Proc, Procs, tmux::Tmux};
@@ -5676,6 +5677,7 @@ mod tests {
     /// The control group is the same tmux session with nothing listed
     /// inside it: it becomes a row. Without that half, an implementation
     /// that simply never emitted tmux rows would pass.
+    #[cfg(unix)]
     #[test]
     fn a_tmux_session_holding_a_listed_agent_is_not_a_second_row() {
         use crate::adaptor::{Discovery, Proc, Procs, tmux::Tmux};
@@ -7000,6 +7002,7 @@ mod tests {
         drop(writers);
     }
 
+    #[cfg(unix)]
     #[test]
     fn workspace_directory_follows_active_tmux_pane_even_with_old_marks() {
         use crate::adaptor::{Discovery, Procs, tmux::Tmux};
@@ -7057,6 +7060,7 @@ mod tests {
     /// marks, reads tmux for that pane** (item 21's follow-up): never an
     /// empty row while the person's shells have no integration. A pane
     /// that marked keeps its own reading.
+    #[cfg(unix)]
     #[test]
     fn an_attached_tmux_row_reads_tmux_for_a_front_pane_with_no_marks() {
         use crate::adaptor::{Discovery, Procs, tmux::Tmux};
@@ -7138,6 +7142,7 @@ mod tests {
         assert!(!doing().pane_unmarked, "the pane in front marks");
     }
 
+    #[cfg(unix)]
     #[test]
     fn an_agent_leaving_its_tmux_session_turns_its_row_into_that_terminal() {
         use crate::adaptor::{Discovery, Procs, tmux::Tmux};
@@ -7240,6 +7245,7 @@ mod tests {
     /// gone. It has to turn into that tmux session's terminal exactly
     /// like a registered one, whether claude crashed (its status file
     /// left behind, still news) or exited cleanly (the file gone too).
+    #[cfg(unix)]
     #[test]
     fn an_unregistered_agent_leaving_its_tmux_session_turns_its_row_into_that_terminal() {
         use crate::adaptor::{Discovery, Procs, tmux::Tmux};
@@ -7366,6 +7372,7 @@ mod tests {
     /// two rows whoever holds the session's seat: the one on the list
     /// holds it in its own form, and the other — newer, and so the one a
     /// non-agent holder would wear — is not folded into it.
+    #[cfg(unix)]
     #[test]
     fn two_agents_in_one_tmux_session_stay_two_rows() {
         use crate::adaptor::{Discovery, Procs, tmux::Tmux};
@@ -7505,6 +7512,7 @@ mod tests {
     /// a claude started in it directly; its 「正在运行 tmux」 gives way to
     /// the agent's preview; and neither the claude nor the session is a
     /// second row.
+    #[cfg(unix)]
     #[test]
     fn a_khor_shell_attached_to_tmux_wears_the_agent_in_that_session() {
         use crate::adaptor::{Discovery, Procs, tmux::Tmux};
@@ -7579,6 +7587,7 @@ mod tests {
     /// shell's own marks only ever saw it start the client. Where tmux
     /// named no front pane, the session's reading stands in, as for an
     /// attached tmux row. The session is no second row either way.
+    #[cfg(unix)]
     #[test]
     fn a_khor_shell_attached_to_tmux_says_what_the_front_pane_runs() {
         use crate::adaptor::{Discovery, Procs, tmux::Tmux};

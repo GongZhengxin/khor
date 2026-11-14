@@ -42,8 +42,6 @@ mod doc_transfer_state;
 pub mod doctor;
 pub mod drops;
 mod durable;
-#[cfg(test)]
-mod testproc;
 pub(crate) mod egress;
 pub mod face;
 pub mod favicon;
@@ -101,6 +99,8 @@ pub mod subscriptions;
 pub mod tabs;
 #[cfg(test)]
 pub(crate) mod testdir;
+#[cfg(test)]
+mod testproc;
 pub mod top;
 pub mod transfer;
 pub mod tree;

@@ -56,6 +56,22 @@ fn scratch(tag: &str) -> Scratch {
     root(tag)
 }
 
+/// An absolute path every platform agrees is absolute.
+///
+/// These fixtures used Unix literals (`/Users/x/proj`, `/work/theirs`);
+/// a drive-less leading slash is *relative* on Windows, so the node under
+/// test refused the path for a reason the test was not about. Leaked
+/// because a test's lifetime is the process's.
+fn absolute(tail: &str) -> &'static str {
+    Box::leak(
+        std::env::temp_dir()
+            .join(tail)
+            .display()
+            .to_string()
+            .into_boxed_str(),
+    )
+}
+
 /// forget 批: a machine shown the door takes its rows with it — its cached
 /// report stops being painted, while the in-table sibling keeps every
 /// row untouched (the control). Nothing is deleted: the report cache
@@ -1257,6 +1273,8 @@ mod recents_tests {
 
     use crate::{Node, PlaceKind};
 
+    use super::absolute;
+
     fn root(tag: &str) -> super::Scratch {
         let p = std::env::temp_dir().join(format!("khor-node-{tag}-{}", std::process::id()));
         let _ = fs::remove_dir_all(&p);
@@ -1275,7 +1293,7 @@ mod recents_tests {
         let me = n.name().to_owned();
 
         for _ in 0..3 {
-            n.recent_visit(PlaceKind::Dir, &me, "/Users/x/proj")
+            n.recent_visit(PlaceKind::Dir, &me, absolute("proj"))
                 .unwrap();
             std::thread::sleep(std::time::Duration::from_millis(3));
         }
@@ -1285,7 +1303,7 @@ mod recents_tests {
             "three trips, one place"
         );
 
-        n.recent_visit(PlaceKind::Dir, &me, "/Users/x/other")
+        n.recent_visit(PlaceKind::Dir, &me, absolute("other"))
             .unwrap();
         assert_eq!(
             n.recents(PlaceKind::Dir, 10).unwrap().len(),
@@ -1305,7 +1323,7 @@ mod recents_tests {
         let n = Node::open(r.to_path_buf()).unwrap();
         let me = n.name().to_owned();
 
-        for p in ["/first", "/second", "/third"] {
+        for p in [absolute("first"), absolute("second"), absolute("third")] {
             n.recent_visit(PlaceKind::Dir, &me, p).unwrap();
             std::thread::sleep(std::time::Duration::from_millis(3));
         }
@@ -1319,7 +1337,7 @@ mod recents_tests {
         let places: Vec<&str> = all.iter().map(|p| p.place.as_str()).collect();
         assert_eq!(
             places,
-            vec!["/third", "/second", "/first"],
+            vec![absolute("third"), absolute("second"), absolute("first")],
             "most recent first"
         );
         assert!(
@@ -1330,7 +1348,7 @@ mod recents_tests {
         let two = n.recents(PlaceKind::Dir, 2).unwrap();
         assert_eq!(
             two.iter().map(|p| p.place.as_str()).collect::<Vec<_>>(),
-            vec!["/third", "/second"],
+            vec![absolute("third"), absolute("second")],
             "the cap keeps the recent end, not the old one"
         );
         assert!(
@@ -1349,7 +1367,7 @@ mod recents_tests {
         let n = Node::open(r.to_path_buf()).unwrap();
         let me = n.name().to_owned();
 
-        n.recent_visit(PlaceKind::Dir, &me, "/Users/x/proj")
+        n.recent_visit(PlaceKind::Dir, &me, absolute("proj"))
             .unwrap();
         n.recent_visit(PlaceKind::Page, &me, "https://example.com/read")
             .unwrap();
@@ -1357,7 +1375,7 @@ mod recents_tests {
         let dirs = n.recents(PlaceKind::Dir, 10).unwrap();
         let pages = n.recents(PlaceKind::Page, 10).unwrap();
         assert_eq!(dirs.len(), 1, "one directory: {dirs:?}");
-        assert_eq!(dirs[0].place, "/Users/x/proj");
+        assert_eq!(dirs[0].place, absolute("proj"));
         assert_eq!(pages.len(), 1, "one page: {pages:?}");
         assert_eq!(pages[0].place, "https://example.com/read");
     }
@@ -1410,7 +1428,11 @@ mod recents_tests {
         let gone = "ab".repeat(32);
         let sibling = "cd".repeat(32);
         let kinds = [PlaceKind::Page, PlaceKind::File, PlaceKind::Dir];
-        let places = ["https://example.test/shared", "/project/a.txt", "/project"];
+        let places = [
+            "https://example.test/shared",
+            absolute("a.txt"),
+            absolute("project"),
+        ];
         let put_devices = |name: &str| {
             let loaded = n.devices_loaded().unwrap();
             loaded.doc.upsert(&gone, name, &[]).unwrap();
@@ -1484,14 +1506,14 @@ mod recents_tests {
         let r = root("recents-reopen");
         let n = Node::open(r.to_path_buf()).unwrap();
         let me = n.name().to_owned();
-        n.recent_visit(PlaceKind::Dir, &me, "/Users/x/proj")
+        n.recent_visit(PlaceKind::Dir, &me, absolute("proj"))
             .unwrap();
         drop(n);
 
         let n = Node::open(r.to_path_buf()).unwrap();
         assert_eq!(
             n.recents(PlaceKind::Dir, 10).unwrap()[0].place,
-            "/Users/x/proj",
+            absolute("proj"),
             "the record must outlive the process that made it"
         );
     }
@@ -1507,14 +1529,14 @@ mod recents_tests {
         let n = Node::open(r.to_path_buf()).unwrap();
         let me = n.name().to_owned();
 
-        n.recent_visit(PlaceKind::Dir, &me, "/Users/x/proj")
+        n.recent_visit(PlaceKind::Dir, &me, absolute("proj"))
             .expect("control: an absolute path is fine");
         assert!(
             n.recent_visit(PlaceKind::Dir, &me, "proj/sub").is_err(),
             "a relative directory names nowhere"
         );
         assert!(
-            n.recent_visit(PlaceKind::Dir, "no-such-machine", "/Users/x/proj")
+            n.recent_visit(PlaceKind::Dir, "no-such-machine", absolute("proj"))
                 .is_err(),
             "a machine not in the table names nobody"
         );
@@ -1541,6 +1563,7 @@ mod recents_tests {
 /// (a launchd agent, `PATH=/usr/bin:/bin:/usr/sbin:/sbin`) it said
 /// **"the agent ended before it answered"**, which is a sentence about
 /// the agent and the agent was fine.
+#[cfg(unix)]
 mod finding_the_program {
     use crate::{AgentSpec, Node};
 
@@ -1813,7 +1836,7 @@ fn a_workspace_whose_machine_left_the_table_keeps_its_row_and_comes_off_by_id() 
     let r = root("ws-ghost");
     let n = Node::open(r.to_path_buf()).unwrap();
     let ghost = "c".repeat(64);
-    let path = "/srv/gone/project";
+    let path = absolute("project");
     {
         let loaded = n.workspaces_loaded().unwrap();
         loaded
@@ -2567,6 +2590,9 @@ fn settings_group_into_the_seven_pages_and_keep_their_values() {
         on("appearance"),
         [
             ("theme", "dark"),
+            ("window-material", "solid"),
+            ("window-outline", "on"),
+            ("window-opacity", "90"),
             ("kind-mark", "face"),
             ("corner-is", "kind"),
             ("lang", "auto")
@@ -2662,8 +2688,8 @@ fn a_network_of_three(root: &Path) -> (Node, String, String) {
         .unwrap();
     template.id = SessionId("shell/on-beta".into());
     n.cache_peer_rows(&beta, "beta", &[template]).unwrap();
-    n.ws_pin(&alpha, "/work/theirs", false).unwrap();
-    n.ws_pin(n.device_str(), "/work/mine", false).unwrap();
+    n.ws_pin(&alpha, absolute("theirs"), false).unwrap();
+    n.ws_pin(n.device_str(), absolute("mine"), false).unwrap();
     (n, alpha, beta)
 }
 
@@ -2718,7 +2744,7 @@ fn leaving_empties_the_table_down_to_this_machine() {
         .collect();
     assert_eq!(
         ws,
-        vec!["/work/mine".to_owned()],
+        vec![absolute("mine").to_owned()],
         "their workspaces go with them; this machine's stays"
     );
     let after: Vec<String> = n
@@ -3045,11 +3071,7 @@ fn the_desktop_app_is_up_only_while_its_recorded_pid_is() {
     // `kill(0, 0)` addresses this whole process group and answers yes,
     // and a number picked to be「surely too big」 is a guess about
     // `pid_max` on a machine this test has never seen.
-    let mut gone = std::process::Command::new("/bin/sh")
-        .arg("-c")
-        .arg("exit 0")
-        .spawn()
-        .unwrap();
+    let mut gone = crate::testproc::true_like().spawn().unwrap();
     let pid = gone.id();
     gone.wait().unwrap();
     std::fs::write(
@@ -3076,7 +3098,7 @@ fn place_pins_move_to_the_sidebars_once() {
     let n = Node::open(r.to_path_buf()).unwrap();
     let here = n.name().to_owned();
     n.pin_web(&here, "https://khor.example/kept", true).unwrap();
-    n.pin_dir(&here, "/srv/kept/dir", true).unwrap();
+    n.pin_dir(&here, absolute("dir"), true).unwrap();
 
     assert_eq!(n.migrate_place_pins().unwrap(), 2, "both rows move");
     let tabs = crate::tabs::list(&r, "page");
@@ -3087,7 +3109,7 @@ fn place_pins_move_to_the_sidebars_once() {
     let ws = n.workspaces().unwrap();
     assert!(
         ws.iter()
-            .any(|w| w.path == "/srv/kept/dir" && w.pinned && w.device == n.device_str()),
+            .any(|w| w.path == absolute("dir") && w.pinned && w.device == n.device_str()),
         "a pinned directory is a pinned workspace: {ws:?}"
     );
 
