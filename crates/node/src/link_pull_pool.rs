@@ -190,6 +190,7 @@ pub(super) struct Usage {
     pub(super) global_held: usize,
     pub(super) peer_ready: usize,
     pub(super) global_ready: usize,
+    pub(super) foreground_held: usize,
     pub(super) owners: usize,
 }
 
@@ -201,6 +202,7 @@ impl Peer {
             global_held: BULK - self.scope.bulk.available_permits(),
             peer_ready: self.ready.load(std::sync::atomic::Ordering::SeqCst),
             global_ready: self.scope.ready.load(std::sync::atomic::Ordering::SeqCst),
+            foreground_held: FIRST - self.scope.first.available_permits(),
             owners: self
                 .live
                 .lock()

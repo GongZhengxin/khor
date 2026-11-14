@@ -150,11 +150,19 @@ async fn observe_two_files(cancel_a: bool) {
             let both_prefixes = [&pa, &pb]
                 .into_iter()
                 .all(|p| std::fs::read(p).is_ok_and(|v| v == f.bytes[..proto::SLICE as usize]));
+            let issued = {
+                let seen = traffic.lock().unwrap();
+                seen.issued.contains_key(&(A.to_owned(), 1))
+                    && seen.issued.contains_key(&(B.to_owned(), 1))
+                    && seen.issued.len() == 10 + usage.foreground_held
+            };
             if both_prefixes
+                && issued
                 && usage.peer_held == 8
                 && usage.global_held == 8
-                && usage.peer_ready == 6
-                && usage.global_ready == 6
+                && usage.foreground_held <= 2
+                && usage.peer_ready == 6 + usage.foreground_held
+                && usage.global_ready == usage.peer_ready
                 && usage.owners >= 2
             {
                 break;
@@ -168,9 +176,11 @@ async fn observe_two_files(cancel_a: bool) {
     })
     .await
     .expect("two real files never reached decoded-ready bounded state");
+    let before = owner.usage();
+    let issued_before = traffic.lock().unwrap().issued.len();
     {
         let seen = traffic.lock().unwrap();
-        assert_eq!(seen.issued.len(), 10);
+        assert_eq!(seen.issued.len(), 10 + before.foreground_held);
         assert_eq!(seen.duplicates, 0);
         assert_eq!(seen.handshakes, 1);
     }
@@ -198,7 +208,8 @@ async fn observe_two_files(cancel_a: bool) {
                             .iter()
                             .any(|((path, index), extra)| path == B && *index > 1 && *extra)
                 };
-                if progress && usage.peer_held == 8 && usage.peer_ready == 7 {
+                if progress && usage.peer_held + usage.foreground_held == 8 && usage.peer_ready == 7
+                {
                     break;
                 }
                 tokio::select! {
@@ -238,7 +249,8 @@ async fn observe_two_files(cancel_a: bool) {
     let credits_returned = usage.peer_held == 0
         && usage.global_held == 0
         && usage.peer_ready == 0
-        && usage.global_ready == 0;
+        && usage.global_ready == 0
+        && usage.foreground_held == 0;
     assert_eq!(f.node.wires.pulls.available_extra(), 4);
     let unique_offsets = {
         let seen = traffic.lock().unwrap();
@@ -262,9 +274,10 @@ async fn observe_two_files(cancel_a: bool) {
         "[pull-pool-files] {}",
         serde_json::json!({
             "cancel_a":cancel_a, "both_exact_first_slices":true, "handshakes":1,
-            "held_bulk_before_release":8, "decoded_ready_before_release":6,
-            "issued_before_release":10, "cancelled_head_actual_stop":cancel_a,
-            "surviving_file_retained_extra":cancel_a, "surviving_decoded_ready":if cancel_a {7} else {6},
+            "held_bulk_before_release":before.peer_held, "decoded_ready_before_release":before.peer_ready,
+            "foreground_held_before_release":before.foreground_held,
+            "issued_before_release":issued_before, "cancelled_head_actual_stop":cancel_a,
+            "surviving_file_retained_extra":cancel_a, "surviving_decoded_ready":if cancel_a {7} else {before.peer_ready},
             "completed_a":completed_a, "completed_b":completed_b, "unique_offsets":unique_offsets,
             "all_credits_returned":credits_returned, "last_owner_closed_extra":true,
             "cached_main_control":true, "fixture_closed":true,
