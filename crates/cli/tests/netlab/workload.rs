@@ -239,7 +239,65 @@ async fn wh2_high_bdp_buffered_directory_terminal_and_complete_file() {
     run(Mode::Buffered, HIGH).await;
 }
 
+#[tokio::test(flavor = "multi_thread", worker_threads = 6)]
+#[ignore = "speed-first coexistence; guarded ordinary Release comparison"]
+async fn ws2_speed_first_buffered_directory_terminal_and_complete_file() {
+    run_with_acceptance(Mode::Buffered, LOW, true).await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 6)]
+#[ignore = "speed-first high-BDP coexistence; guarded ordinary Release comparison"]
+async fn wsh2_speed_first_high_bdp_directory_terminal_and_complete_file() {
+    run_with_acceptance(Mode::Buffered, HIGH, true).await;
+}
+
+fn live_path(link: &khor_core::Link) -> bool {
+    matches!(
+        link.hop,
+        Hop::Direct | Hop::Relay | Hop::Ssh | Hop::Forwarded
+    ) && link.down_ms.is_none()
+}
+
+async fn post_health(
+    resident: &crate::lab::LabNode,
+    peer: &str,
+    path: &std::path::Path,
+    bytes: usize,
+) -> Value {
+    let peer = peer.to_owned();
+    let path = path.display().to_string();
+    let started = Instant::now();
+    let reply = tokio::time::timeout(
+        CALLER,
+        resident.with(move |node| async move { node.ls_of(&peer, &path).await }),
+    )
+    .await;
+    let (ok, error) = match reply {
+        Ok(Ok((_, entries, false)))
+            if entries
+                .iter()
+                .any(|e| e.name == "payload.bin" && e.size == bytes as u64) =>
+        {
+            (true, None)
+        }
+        Ok(Ok(_)) => (
+            false,
+            Some("post-measurement directory omitted the complete payload".to_owned()),
+        ),
+        Ok(Err(error)) => (false, Some(error)),
+        Err(_) => (
+            false,
+            Some("post-measurement directory caller deadline".to_owned()),
+        ),
+    };
+    json!({"ok":ok,"error":error,"elapsed_us":started.elapsed().as_micros(),"caller_us":CALLER.as_micros()})
+}
+
 async fn run(mode: Mode, spec: Spec) {
+    run_with_acceptance(mode, spec, false).await;
+}
+
+async fn run_with_acceptance(mode: Mode, spec: Spec, speed_first: bool) {
     let s = if spec.high {
         "wh2-buffer"
     } else if mode == Mode::Streaming {
@@ -262,9 +320,13 @@ async fn run(mode: Mode, spec: Spec) {
     let y = node(s, dy, "y", &[&r], &[("SHELL", "/bin/sh")]).await;
     mesh(&[&x, &y]).await;
     assert!(
-        x.until(&y, Duration::from_secs(60), |l| l.hop == Hop::Direct)
-            .await
-            .is_some()
+        x.until(&y, Duration::from_secs(60), |l| if speed_first {
+            live_path(l)
+        } else {
+            l.hop == Hop::Direct
+        })
+        .await
+        .is_some()
     );
     let source = y.home.0.join("workload");
     let landed = x.home.0.join("landed");
@@ -286,6 +348,7 @@ async fn run(mode: Mode, spec: Spec) {
     let path = source.display().to_string();
     let cwd = path.clone();
     let capture_before = profile::captures(&x.dev, &y.dev, &rx, &ry, spec, mode, "before").await;
+    let landed_for_health = landed.clone();
     let node = x.with(|node| async move { node }).await;
     let mut benchmark = Owned(x.dev.spawn(move |_| async move {
         // Match the existing real-terminal integration entry (term_echo.rs).
@@ -314,6 +377,7 @@ async fn run(mode: Mode, spec: Spec) {
             "period_us":spec.period.as_micros(),"caller_us":CALLER.as_micros(),"bulk_bytes":spec.bytes,
             "nominal_rtt_ms":if spec.high {300} else {40},"mbit_per_direction":if spec.high {50} else {8},"queue_ms":40,"random_loss_pct":0,
             "connection_layout":"directory_and_fetch_Main__terminal_Tunnel","slo":false,
+            "acceptance_revision":if speed_first {"speed_first_coexistence_v1"} else {"original_fixed_direct"},
             "network_profile":if spec.high {"forwarding_split_300ms_50mbit"} else {"combined_40ms_8mbit"},
             "impairment_installed_before_residents":spec.high,
             "calibrated":false,"seed":"6d697865646c6f61","diagnostic_recording":true}));
@@ -344,18 +408,37 @@ async fn run(mode: Mode, spec: Spec) {
             .count()
     };
     let all_answers = rows.len() == SAMPLES * 6 && rows.iter().all(|row| row["outcome"] == "ok");
+    let health = if speed_first {
+        let (forward, reverse) = tokio::join!(
+            post_health(&x, "y", &source, spec.bytes),
+            post_health(&y, "x", &landed_for_health, spec.bytes),
+        );
+        Some([forward, reverse])
+    } else {
+        None
+    };
+    let post_health_ok = health
+        .as_ref()
+        .is_none_or(|rows| rows.iter().all(|row| row["ok"] == true));
     let final_link = x.link(&y).await;
     let direct_after = final_link
         .as_ref()
         .is_some_and(|l| l.hop == Hop::Direct && l.down_ms.is_none());
     let final_remote_link = y.link(&x).await;
+    let live_after = final_link.as_ref().is_some_and(live_path)
+        && final_remote_link.as_ref().is_some_and(live_path);
+    let path_ok = if speed_first {
+        live_after && post_health_ok
+    } else {
+        direct_after
+    };
     let ok = capture_before
         && capture_after
         && all_answers
         && exact_bytes
         && bulk["moved"] == spec.bytes as u64
         && closed
-        && direct_after
+        && path_ok
         && overlap("directory") >= 30
         && overlap("terminal") >= 30;
     emit(
@@ -364,6 +447,8 @@ async fn run(mode: Mode, spec: Spec) {
         "samples":rows.len(),"all_answers":all_answers,"exact_bytes":exact_bytes,"closed":closed,
         "direct_after":direct_after,"directory_overlap":overlap("directory"),"terminal_overlap":overlap("terminal"),
         "final_link":final_link,"final_remote_link":final_remote_link,
+        "acceptance_revision":if speed_first {"speed_first_coexistence_v1"} else {"original_fixed_direct"},
+        "live_after":live_after,"post_health":health,"post_health_ok":post_health_ok,
         "bulk":bulk,"calibrated":false,"slo":false,"p99_claimed":false,
         "x_journal":x.journal(Some(&y)),"y_journal":y.journal(Some(&x))}),
     );
