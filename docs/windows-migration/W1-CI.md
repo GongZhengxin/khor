@@ -24,12 +24,44 @@ windows-agent-process:
   - 诊断入口成功。
 - **远端 GitHub Actions 未执行（NOT_RUN）**；本机不是 windows-2025 GitHub runner。
 
-## 3. W1 判定
+## 3. 本地等价执行
+
+### 3.1 Windows process harness
+
+```text
+cargo run --locked --manifest-path crates/node/tests/windows-process-harness/Cargo.toml
+exit 0
+```
+
+12 项 PASS（argv/环境/cwd/stdin/stdout/stderr/退出码、缺失程序、batch/NUL 拒绝、Job Object 终止、取消阻塞、deadline、MCP breakaway、HANDLE_LIST lease、runtime groups）。
+
+### 3.2 fanout harness
+
+```text
+rustc --edition=2024 --test crates/node/tests/fanout_harness.rs -o F:\Temp\gui-fanout-tests.exe
+exit 0
+
+F:\Temp\gui-fanout-tests.exe --nocapture --test-threads=1
+9 passed; 1 failed
+```
+
+失败项：
+
+```text
+fanout::tests::a_history_producer_waits_for_real_capacity_without_retiring_the_reader
+```
+
+隔离重跑该测试为 ok，说明是 Windows 顺序相关 flake，不是稳定失败。W1 不把 fanout 标为全绿。
+
+## 4. W1 判定
 
 - CI 配置文件存在且 Windows job 可识别：**PASS（静态）**
 - 本地构建等价路径：**PASS（本地）**
+- process harness：**PASS**
+- fanout harness：**FAIL（1 个顺序相关 flake）**
 - 远端 CI 真实执行：**NOT_RUN**
-- 不把静态 YAML 当作 CI 绿灯。
+- 不把静态 YAML 当作 CI 绿灯；W1 不声称 CI 全绿。
+
 
 ## 4. W2+ 待办
 

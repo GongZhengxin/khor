@@ -116,7 +116,58 @@ exit 0
 ## 7. CI 基线
 
 已核对 `.github/workflows/quality.yml` 存在 `windows-agent-process` job（windows-2025 + PowerShell + Windows process harness/fanout）。  
-远端 GitHub Actions 未在本轮执行，状态 NOT_RUN；本地 `cargo build` 是 W1 基线证据。详见 [W1-CI](W1-CI.md)。
+远端 GitHub Actions 未在本轮执行，状态 NOT_RUN。
+
+### 7.1 本地 Windows process harness
+
+按仓库命令执行：
+
+```text
+cargo run --locked --manifest-path crates/node/tests/windows-process-harness/Cargo.toml
+exit 0
+```
+
+全部 12 项 PASS，包括：
+
+```text
+PASS argv / UTF16 / env-clear / removed-env / cwd / stdin / stdout / stderr / exit-status
+PASS bare program from explicit PATH with node + host.ts arguments
+PASS invalid program / missing PATH / batch / embedded NUL rejected
+PASS job termination after leader exit kills pipe-owning descendant
+PASS dropping a live process kills leader and descendant via owned job
+PASS independent I/O cancellation unblocks full stdin while child is still alive
+PASS independent I/O cancellation unblocks both reads while child holds output pipes
+PASS supervisor deadline progresses through blocked stdin and repeated Stop
+PASS only the MCP worker profile permits explicit durable breakaway; temporary child is terminated
+PASS runtime lease is in HANDLE_LIST and survives parent-side lease drop
+PASS 10 Windows runtime groups
+```
+
+### 7.2 本地 fanout harness
+
+```text
+rustc --edition=2024 --test crates/node/tests/fanout_harness.rs -o F:\Temp\gui-fanout-tests.exe
+exit 0
+
+F:\Temp\gui-fanout-tests.exe --nocapture --test-threads=1
+9 passed; 1 failed
+```
+
+失败测试：
+
+```text
+fanout::tests::a_history_producer_waits_for_real_capacity_without_retiring_the_reader
+```
+
+隔离重跑该测试为 `ok`，说明是**顺序相关的 Windows flake**，不是稳定失败。完整产物见：
+
+```text
+F:\khor-w1-evidence\process-harness.err
+F:\khor-w1-evidence\fanout-*.err
+```
+
+结论：process harness PASS；fanout 本地 CI 等价运行 not green（1 flake），W1 不能声称 CI 全部通过。详见 [W1-CI](W1-CI.md)。
+
 
 ## 8. 已知 Windows 限制（W1 显式保留）
 
@@ -138,8 +189,11 @@ exit 0
 - CLI 构建：**PASS（本地）**
 - `khor --version`：**PASS**
 - `khor doctor --json`：**PASS（基线）**
+- Windows process harness：**PASS（12/12）**
+- Windows fanout harness：**FAIL（9/10，1 个顺序相关 flake；隔离重跑通过）**
 - Windows CI 远端执行：**NOT_RUN**
 - Windows 10 兼容验证：**NOT_RUN**
 - 全功能 Windows 等价：**NOT CLAIMED**
 
-建议 W1 以“本地构建底座通过、远端 CI 待执行、已知限制入 W2”为验收范围；需用户确认。
+建议 W1 以“本地构建底座通过、process harness 通过、fanout 待修、远端 CI 与 Win10 待补”为验收范围；是否把 fanout flake 作为 W1 阻断项，需要用户确认。
+
