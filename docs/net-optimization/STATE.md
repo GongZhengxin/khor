@@ -6,9 +6,13 @@
 
 ## 当前执行与下一步
 
-**唯一Turing在途：turing-20261114T064113Z-c6ab1e11**，固定第3/3高延迟separate诊断；runtime control **06158fc9f06496de77243a130218ce5dffe0b4b9** / protocol **502cde19cf8edd9dc02bbf4d55cae6c288fd26acba5efdc9149617018af1f481**。E/separate-pull-path-diagnosis-progress-v1.json保存固定三次及当前在途，collect→verify-turing-record→verify-separate-pull-path-diagnosis-v1.py，闭证后结束固定三场并汇总，不重派；不替代原screen、不直到复现才停。共同ledger按executor与pending筛选；无在途Mac。
+**唯一Turing在途：turing-20261114T070345Z-658df53f**，新增“健康cached Main先给首内容、额外握手无acceptor”的原型回归，当前只加测试、产品不变，预期暴露准备前置等待。worktree **khor-net-pull-preparation-v1** / branch experiment/net-pull-preparation-v1，HEAD28e47f0124bcf36830b2daf0e491c2058722e75b/tree d750449626164e0f9df8d6c6980f112ee9d7d109/snapshot ec17101c30bc1fa522ff31c7bde6a4efa4208de4，基于D ddc62a71，只改isolation.rs新增mod并增preparation.rs。source E/pull-preparation-red-source-v1.json；control **84a23445869a4b88df791ed5ce1b8266f53d8272**，原5d runner/guard不变，原fmtcheck+唯一明确exact Cargo test，非全回归，断言不改；原5秒是夹具观察界，非生产期限或性能门。
 
-诊断第1次063128Z-ece4ceab已0/180.565866秒闭证，16files/原CPU/owner/3采集校准通过；720/720读、192MiB、1128真实stream配对、两Main/独立Tunnel。最终x/y Link均Direct且down=None，所有directory360/file768实际回复都Direct。**未复现原direct_after红**，不称已修复或原失败不存在。
+collect→verify-turing-record后核原生footer必须准确1test（不能0）、marker first_content=false/cached_main_control=true/fixture_closed=true以及新首内容断言失败，才称准确RED；若格式/编译拒绝则业务0，保留原件按具体原因修，不能冒称RED或改断言。原有7个separate测试均保持。测试的实际pull先在作用域退出时drop，再发真实Sessions验证同cached wire，最后完整Fixture关闭后才assert首内容；即使首内容观察超时也执行正控制与清理。下一步据此实现可选准备，尚未改产品。共同ledger按executor与pending筛选，无在途Mac。
+
+原4个p6速度优先合同同准确普通Release已0/116.199051秒且16files/identity/source/原CPU/owner全闭：**065726Z-daaec6b9**，E/run/current-speed-first-contract-verification-v1.json；快Relay/快Direct及两条固定路参照各30真实读，全部无错误、原p95<200ms保持。快Relay148.075ms、快Direct31.289ms、Relay-only147.675ms、Direct-only28.076ms；双端均持有目标路径/down=None。原max Relay246.701ms、Relay-only266.634ms也保留，不称全部<200。只接受原四功能合同，不代混合screen或完整N1；不能再重派。
+
+最终Link复查已全部结束，不再追加同一混合诊断。有日志3场063128/063616/064113、无日志3场064509/064908/065321均闭证：**4320/4320读取、6完整192MiB文件**；最终两端均Direct/down=None，0/6复现原红。有日志各16files/原CPU/owner/capture三校准/1128stream配对/两Main与独立Tunnel全过；无日志各13files且确认应用详细trace与外采均关闭，原CPU/owner/source/720人口/全部门保持。E/separate-pull-path-diagnosis-summary-v1.json与separate-pull-final-link-unlogged-summary-v1.json均completed-fixed-diagnosis。这是**未复现，不是已修复**，原九块screen继续停止且不通过，8A/9B不运行。详[FINAL-LINK-DIAGNOSIS](FINAL-LINK-DIAGNOSIS.md)。
 
 fixture-only producer **062632Z-8dc26135** 已0/240.932852秒，23files/identity/严格原Release来源闭证。独立worktree khor-net-separate-pull-path-diagnosis-v1，source **ddc62a719cbbc0445617b7940ddea96ca68f85e6** / tree **e27863d51c82001603728bf3e7ff668fa9c4d2c3** / snapshot2c3dcc0bdd8c91219041e29484f86b63b105e05a，只有workload.rs保存/输出原门使用的final Link及对侧Link。产品0变化、门槛0变化，CLI仍准确**9add2509af6c3d96d3ac82783bc7bbc9803a931ffca34f21355ee8dc897404ca**，netlab **3853081a55af2f0bfa1ed5c46fd7592f99306982c58c9a3ba92902572732a8cf**。E/run/separate-pull-path-diagnosis-compile-verification-v1.json。design在改源/运行前固定三次有日志诊断，不作性能接受；compile与runtime freezer均已唯一执行，不能重派。静态分析E/separate-pull-path-failure-static-analysis-v1.json保持证据边界。
 
@@ -70,6 +74,5 @@ iPhone现装仍旧版，之前“就绪”过期，真实候选可用后另约�
 先读本STATE/PLAN，核实际HEAD/diff/共同ledger，不能照历史pending/PID重派。S图谱0节点、不覆盖准确树（不是低风险判断）；按图谱优先后定向读实际源码，不擅自索引。其他任务LIVE23961、main及已安装App保持。
 
 
-第2次063616Z-dedecebf已0/190.626717秒、16files/720ok/1128配对/布局与原CPU/owner/capture门通过，最终两端Direct且down=None，全部directory360/file768实际回复Direct。未复现原红。
 
-追加独立复查已先冻结但未运行：E/separate-pull-final-link-unlogged-plan-v1.json，control0ea54dbd67f35c4414ddcc16c8ac62f7deb0fa51/protocol d073667e559c41d58fbf1ec8c07cbd626d1310d8f1cd54072f2eea656024a9cf；同062632 fixture-only普通Release ELF，固定三次high/separate，KHOR_NET_DIAGNOSTICS=None、不外采日志，保原所有门/失败/人口；只观察最终Link，不替代screen或作性能接受。追加原因是详细日志可能影响时序，不能用有日志未复现代替无日志故障结论。verifier verify-separate-pull-final-link-unlogged-v1.py已在native前写好/parsed。三个完整日志诊断闭证后按固定序调度，原screen第8/9仍不执行。
+下一产品工作已在改源前记录E/separate-pull-next-preparation-contracts-v1.json：当前原型在首slice前等待额外dial，DIAL_MOST=25秒且受继承期限约束；这是源码风险、不是这次已观察故障根因。先验证健康cached Main的首内容/小文件不受可选dial前置等待，准备失败/取消/政策/期限边界，再设计每peer/全局caps、多文件公平及实际Endpoint生命周期隔离。尚未实现，不改原S或已冻结源，详SEPARATE-PULL。原4p6已闭证，当前按上述单一RED合同推进；完整N0–N5保持。

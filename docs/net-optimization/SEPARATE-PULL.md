@@ -6,7 +6,7 @@
 
 固定两场有日志实际负载诊断051918 shared与052331 separate各720ok/192MiB完整，共2256响应stream配对：前者directory/file一Main，后者两Main且pull_wire_opened仅1、与filewire匹配，两者PTY独立Tunnel；采集3校准、CPU/owner/flag finally恢复完整。只证明布局，不用这些日志样本接受性能或能耗。
 
-普通无日志三组已经先冻结plan/control，再fresh分层校准；A原public main、B原型shared、C同ELF separate，ABC/BCA/CAB九块各原low/high，共12960读/18file。原relative10%+20ms/90%文件率、original-main固定absolute、全部caller/file/CPU/geometry/owner门保留。按固定hard-fail规则停止在第7C：10080/10080读、14完整文件，但最后high原生direct_after=false，整体未通过；第8A/9B未执行，不补替代。E/separate-pull-three-arm-stopped-summary-v1.json保持失败，不能从不完整同期对照接受N3。后续独立诊断只补最终Link观测；速度优先是否符合预期与原screen结果分开判断。
+普通无日志三组已经先冻结plan/control，再fresh分层校准；A原public main、B原型shared、C同ELF separate，ABC/BCA/CAB九块各原low/high，共12960读/18file。原relative10%+20ms/90%文件率、original-main固定absolute、全部caller/file/CPU/geometry/owner门保留。按固定hard-fail规则停止在第7C：10080/10080读、14完整文件，但最后high原生direct_after=false，整体未通过；第8A/9B未执行，不补替代。E/separate-pull-three-arm-stopped-summary-v1.json保持失败，不能从不完整同期对照接受N3。后续独立诊断只补最终Link观测；速度优先是否符合预期与原screen结果分开判断。 具体观测边界与固定复查见[FINAL-LINK-DIAGNOSIS](FINAL-LINK-DIAGNOSIS.md)。
 
 ## 采用之前仍需解决
 
@@ -17,3 +17,9 @@
 - 需要1/3/5个人设备的CPU/唤醒/闲时字节与连接成本、多负载公平、移动与真实iPhone功耗。现有Turing大量resident线程观察不是根因或移动功耗结论；运行时worker预算只能先测再改。
 
 这份分支仍是实验，不代表最终采用独立连接。若完整screen拒绝，保留原数据/源与原因，重新定位；不能因为组件绿或升级到最新iroh就晋升。
+
+## 下一版准备阶段的约束
+
+当前原型在任何文件slice前等待额外dial，沿用DIAL_MOST=25秒并受继承期限约束。即便cached Main健康，也可能被这项优化前置等待；这是源码风险，不是已观测的生产故障。下一版应先让原有连接在原期限内交付首个slice/metadata，小文件不为额外连接付握手等待，大文件在准备就绪后才接用额外连接。
+
+准备必须随文件取消而释放，失败或饱和不能延长原期限或绕过pause/trust/身份检查；共享bulk连接须服从实际Endpoint的所有权，不能仅按peer身份跨生命周期复用。默认启用前明确每peer/全局的连接、准备和请求上限，并用多文件取消/公平与1-3-5设备成本选择设计，不预先用任意常量当最佳值。预先列出的真实QUIC与负向合同见E/separate-pull-next-preparation-contracts-v1.json，尚未实现；原S与所有冻结产物不改。
