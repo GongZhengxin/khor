@@ -3790,18 +3790,18 @@ impl Node {
         &self,
         ep: &iroh::Endpoint,
         d: &DeviceInfo,
-    ) -> Result<TransferLine, String> {
+    ) -> Result<TransferLine, PreparationFailure> {
         if self.paused() || crate::pause::peer_on(self.root(), &d.id) {
-            return Err(unreached_words(
+            return Err(PreparationFailure::Stop(unreached_words(
                 &d.name,
                 DialFailure::Refused(msg::paused_no_dial().to_owned()),
-            ));
+            )));
         }
         if self.resting.load(std::sync::atomic::Ordering::Relaxed) {
-            return Err(unreached_words(
+            return Err(PreparationFailure::Stop(unreached_words(
                 &d.name,
                 DialFailure::Refused(msg::resting_no_dial().to_owned()),
-            ));
+            )));
         }
         let conn = self
             .dial(
@@ -3813,7 +3813,15 @@ impl Node {
                 DIAL_MOST,
             )
             .await
-            .map_err(|e| unreached_words(&d.name, e))?;
+            .map_err(|e| {
+                let timed_out = matches!(e, DialFailure::TimedOut);
+                let words = unreached_words(&d.name, e);
+                if timed_out {
+                    PreparationFailure::RetryCached(words)
+                } else {
+                    PreparationFailure::Stop(words)
+                }
+            })?;
         let line = TransferLine(Line {
             id: d.id.clone(),
             name: d.name.clone(),
@@ -3823,16 +3831,16 @@ impl Node {
         // Registration precedes the suspension check, closing the adoption race.
         self.wires.transferring(&line.0.conn);
         if self.paused() || crate::pause::peer_on(self.root(), &d.id) {
-            return Err(unreached_words(
+            return Err(PreparationFailure::Stop(unreached_words(
                 &d.name,
                 DialFailure::Refused(msg::paused_no_dial().to_owned()),
-            ));
+            )));
         }
         if self.resting.load(std::sync::atomic::Ordering::Relaxed) {
-            return Err(unreached_words(
+            return Err(PreparationFailure::Stop(unreached_words(
                 &d.name,
                 DialFailure::Refused(msg::resting_no_dial().to_owned()),
-            ));
+            )));
         }
         khor_net::carry::observe_lifecycle(
             &d.id,
@@ -10198,15 +10206,17 @@ impl Node {
                 line.map_err(|e| unreached_words(&dial_to.name, e))?;
             }
         }
-        let transfer = if separate {
-            Some(tokio::select! {
-                biased;
-                _ = &mut stopped => return Err(crate::drops::cancelled()),
-                line = self.transfer_line_for(ep, &dial_to) => line?,
-            })
-        } else {
-            None
-        };
+        let mut transfer: Option<std::sync::Arc<TransferLine>> = None;
+        let mut opening: Option<
+            std::pin::Pin<
+                Box<
+                    dyn std::future::Future<Output = Result<TransferLine, PreparationFailure>>
+                        + Send
+                        + '_,
+                >,
+            >,
+        > = None;
+        let mut attempted_transfer = !separate;
         // **A pull resumes from what it already has** (round NET-4), the
         // way an offer does from its `.partial`: the bytes so far stay in
         // the part file, and beside it what they are bytes *of* — which
@@ -10256,7 +10266,11 @@ impl Node {
             Spoiled(String),
         }
         let outcome: Result<u64, Stop> = 'pull: loop {
-            let mut window = pull_window::Window::new(offset, PULL_AHEAD as usize);
+            let preparing = separate && (!attempted_transfer || opening.is_some());
+            let mut window = pull_window::Window::new(
+                offset,
+                if preparing { 1 } else { PULL_AHEAD as usize },
+            );
             let target = &dial_to;
             loop {
                 // No detached work: cancellation or a version/offset restart
@@ -10269,12 +10283,24 @@ impl Node {
                     _ = &mut stopped => {
                         break 'pull Err(Stop::Spoiled(crate::drops::cancelled()));
                     }
+                    prepared = async { opening.as_mut().unwrap().as_mut().await }, if opening.is_some() => {
+                        opening = None;
+                        match prepared {
+                            Ok(line) => transfer = Some(std::sync::Arc::new(line)),
+                            Err(PreparationFailure::RetryCached(_words)) => {}
+                            Err(PreparationFailure::Stop(words)) => {
+                                break 'pull Err(Stop::Unreached(words));
+                            }
+                        }
+                        window.widen(PULL_AHEAD as usize);
+                        continue;
+                    }
                     next = window.next(contract.map(|(total, _)| total), |at| {
                         let req = ask(at);
-                        let line = transfer.as_ref().map(|line| &line.0);
+                        let line = transfer.clone();
                         async move {
                             let answer = match line {
-                                Some(line) => self.ask_on_transfer(ep, target, &req, line).await,
+                                Some(line) => self.ask_on_transfer(ep, target, &req, &line.0).await,
                                 None => self.ask_on(ep, target, &req).await,
                             };
                             (at, answer)
@@ -10349,6 +10375,15 @@ impl Node {
                         if offset >= total {
                             break 'pull Ok(offset);
                         }
+                        if !attempted_transfer {
+                            attempted_transfer = true;
+                            opening = Some(Box::pin(self.transfer_line_for(ep, &dial_to)));
+                            // Drop the first-slice window before preparing the rest.
+                            continue 'pull;
+                        }
+                        // A cached request can keep the original window moving even
+                        // when optional preparation is still waiting for a handshake.
+                        window.widen(PULL_AHEAD as usize);
                         // A legitimate short read resumes from the bytes
                         // committed, rather than using precomputed later offsets.
                         if (bytes.len() as u64) < proto::SLICE {
@@ -13438,6 +13473,12 @@ pub(crate) struct Line {
 /// The isolated experiment's file connection. Pending slice futures borrow it,
 /// so they are dropped before this closes on completion/error/cancellation.
 struct TransferLine(Line);
+
+#[derive(Debug)]
+enum PreparationFailure {
+    RetryCached(String),
+    Stop(String),
+}
 
 impl Drop for TransferLine {
     fn drop(&mut self) {

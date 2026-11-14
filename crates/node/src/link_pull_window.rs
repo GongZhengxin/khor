@@ -24,6 +24,12 @@ impl<F: Future> Window<F> {
         }
     }
 
+    /// Widen future admission without replacing already-owned requests.
+    pub(super) fn widen(&mut self, width: usize) {
+        assert!(width >= self.width);
+        self.width = width;
+    }
+
     pub(super) async fn next(
         &mut self,
         total: Option<u64>,
@@ -87,6 +93,54 @@ mod tests {
         fn drop(&mut self) {
             self.0.fetch_sub(1, Ordering::SeqCst);
         }
+    }
+
+    #[tokio::test]
+    async fn widening_preserves_a_pending_prefix_and_admits_later_slices_once() {
+        tokio::time::timeout(std::time::Duration::from_secs(5), async {
+            let first = Arc::new(Notify::new());
+            let last = Arc::new(Notify::new());
+            let release = Arc::new(Notify::new());
+            let seen = Arc::new(Mutex::new(Vec::new()));
+            let mut window = Window::new(0, 1);
+            let ask = |at| {
+                let (first, last, release, seen) =
+                    (first.clone(), last.clone(), release.clone(), seen.clone());
+                async move {
+                    let index = at / crate::proto::SLICE;
+                    seen.lock().unwrap().push(index);
+                    if index == 0 {
+                        first.notify_one();
+                        release.notified().await;
+                    }
+                    if index == 2 { last.notify_one(); }
+                    index
+                }
+            };
+            {
+                let next = window.next(Some(3 * crate::proto::SLICE), ask);
+                tokio::pin!(next);
+                tokio::select! {
+                    _ = &mut next => panic!("the prefix is deliberately pending"),
+                    _ = first.notified() => {}
+                }
+            }
+            window.widen(3);
+            {
+                let next = window.next(Some(3 * crate::proto::SLICE), ask);
+                tokio::pin!(next);
+                tokio::select! {
+                    _ = &mut next => panic!("ready later slices must wait for the prefix"),
+                    _ = last.notified() => {}
+                }
+                release.notify_one();
+                assert_eq!(next.await, Some(0));
+            }
+            assert_eq!(window.next(Some(3 * crate::proto::SLICE), ask).await, Some(1));
+            assert_eq!(window.next(Some(3 * crate::proto::SLICE), ask).await, Some(2));
+            assert_eq!(window.next(Some(3 * crate::proto::SLICE), ask).await, None);
+            assert_eq!(*seen.lock().unwrap(), vec![0, 1, 2]);
+        }).await.unwrap();
     }
 
     #[tokio::test]

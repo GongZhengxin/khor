@@ -148,7 +148,7 @@ async fn completing_a_separate_pull_closes_only_its_file_main() {
 }
 
 async fn observe_separate_pull(cancel: bool) {
-    let f = Fixture::with_identity(Held::All, true).await;
+    let f = Fixture::with_identity(if cancel { Held::All } else { Held::Head }, true).await;
     // Supply the exact direct hint to the stored peer used by the actual pull.
     {
         let loaded = f.node.devices_loaded().unwrap();
@@ -220,18 +220,26 @@ async fn observe_separate_pull(cancel: bool) {
             outcome = &mut pull => panic!("held pull returned: {outcome:?}"),
             remote = tokio::time::timeout(Duration::from_secs(5), accepted_rx) => remote.unwrap().unwrap(),
         };
+        if !cancel {
+            // The cached prefix stays responsive; release its optional pending
+            // slice only after the actual extra connection has been accepted.
+            f.release.notify_one();
+        }
         if cancel {
             tokio::select! {
                 outcome = &mut pull => panic!("held pull returned: {outcome:?}"),
                 ready = tokio::time::timeout(Duration::from_secs(5), async {
                     loop {
                         let notified = changed.notified();
-                        if issued.lock().unwrap().len() == PULL_AHEAD as usize + 1 { break; }
+                        if issued.lock().unwrap().len() + f.seen.lock().unwrap().issued.len() == PULL_AHEAD as usize + 1 { break; }
                         notified.await;
                     }
                 }) => ready.unwrap(),
             }
-            assert_eq!(issued.lock().unwrap().len(), PULL_AHEAD as usize + 1);
+            assert_eq!(
+                issued.lock().unwrap().len() + f.seen.lock().unwrap().issued.len(),
+                PULL_AHEAD as usize + 1
+            );
             assert_eq!(std::fs::metadata(f.part()).unwrap().len(), proto::SLICE);
         } else {
             let (moved, dest) = tokio::time::timeout(Duration::from_secs(20), &mut pull)
@@ -241,8 +249,18 @@ async fn observe_separate_pull(cancel: bool) {
             assert_eq!(moved, f.bytes.len() as u64);
             assert_eq!(std::fs::read(dest).unwrap(), *f.bytes);
             assert!(!f.part().exists() && !PullNote::path_of(&f.part()).exists());
+            let cached: BTreeSet<_> = f
+                .seen
+                .lock()
+                .unwrap()
+                .issued
+                .iter()
+                .map(|i| i * proto::SLICE)
+                .collect();
+            let additional = issued.lock().unwrap();
+            assert!(cached.is_disjoint(&additional), "no slice is replayed at handoff");
             assert_eq!(
-                *issued.lock().unwrap(),
+                cached.union(&additional).copied().collect::<BTreeSet<_>>(),
                 (0..13).map(|i| i * proto::SLICE).collect()
             );
         }
@@ -256,10 +274,22 @@ async fn observe_separate_pull(cancel: bool) {
         .unwrap();
     serving.0.take();
     cached_answer(&f).await;
-    assert!(
-        f.seen.lock().unwrap().issued.is_empty(),
-        "file must never use cached Main"
-    );
+    assert!(f.seen.lock().unwrap().issued.contains(&0), "first content uses cached Main");
+    assert!(!issued.lock().unwrap().contains(&0), "no duplicate first slice on the extra Main");
+    assert!(!issued.lock().unwrap().is_empty(), "remaining file uses the actual extra Main");
+    if cancel {
+        tokio::time::timeout(Duration::from_secs(5), async {
+            loop {
+                let notified = f.changed.notified();
+                let stopped = {
+                    let seen = f.seen.lock().unwrap();
+                    seen.issued.difference(&seen.delivered).all(|i| seen.stopped.contains(i))
+                };
+                if stopped { break; }
+                notified.await;
+            }
+        }).await.unwrap();
+    }
     eprintln!(
         "[pull-isolation] {}",
         serde_json::json!({"event":if cancel {"cancel_real_pull_keeps_cached"} else {"complete_real_pull_keeps_cached"}})
