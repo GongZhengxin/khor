@@ -23,3 +23,5 @@
 当前原型在任何文件slice前等待额外dial，沿用DIAL_MOST=25秒并受继承期限约束。即便cached Main健康，也可能被这项优化前置等待；这是源码风险，不是已观测的生产故障。下一版应先让原有连接在原期限内交付首个slice/metadata，小文件不为额外连接付握手等待，大文件在准备就绪后才接用额外连接。
 
 准备必须随文件取消而释放，失败或饱和不能延长原期限或绕过pause/trust/身份检查；共享bulk连接须服从实际Endpoint的所有权，不能仅按peer身份跨生命周期复用。默认启用前明确每peer/全局的连接、准备和请求上限，并用多文件取消/公平与1-3-5设备成本选择设计，不预先用任意常量当最佳值。预先列出的真实QUIC与负向合同见E/separate-pull-next-preparation-contracts-v1.json，尚未实现；原S与所有冻结产物不改。
+
+首内容准备的后续实现与准确红→绿证据已在独立[PULL-PREPARATION](PULL-PREPARATION.md)收口：Linux294/Mac290及13个窄合同通过，完整采用条件仍未齐；旧S和已停止性能screen不改变。
