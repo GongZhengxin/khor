@@ -6,17 +6,23 @@
 
 ## 当前唯一Turing执行及下一步
 
-唯一pending **turing-20261114T024533Z-50822f42**，net-node / h2_lifecycle_case_1_v2，role diagnostic。control **30f054bebf4409cda005807368af850a967a67e4**，protocol **c16843dba23e6ccca3956ab0f3f936ab22794ecad0a81a854d385f2b218258f7**；先查receipt/execution，禁止重派。
+唯一pending **turing-20261114T030058Z-e97c48c8**，net-node / contact_current_release_compile_v1，role candidate，control **950e760775b24d7478f79d7b6bc7d95d04ff1462**。这是准确已过Linux286/Mac282的 **96e999da/tree41df16ad/snapshot1cc2cb53**（I4＋N2联系代次修复）的普通Release producer；编译中，没有计时场次。原H2/PULL4均未采用。E/contact-current-release-{source,compile-plan,compile-control}-v1.json，E/ops/freeze-contact-current-release-v1.py及verify-contact-current-release-compile-v1.py。先查actual execution，禁止重派。
 
-前版023714Z-08b04294已collect/identity闭，1/5.698953秒，**native0/compile0/cases[]**。采集的三个文件合同校准全过，但KHOR_NET_DIAGNOSTICS在原逐场provenance前设置，环境哈希不匹配，正确拦截；不是产品红或有效性能样本。E/该run/lifecycle-preparation-verification-v1.json、原完整日志与v1计划/control保留。v1三场未执行，不跑其2/3。
+复用当前H2普通Release的严格来源/缓存，完整tree13路径逆重建精确5cf730ab；其中native5（carry恢复I4、link/wires修复、2个单元fixture），netlab11文件逐字保持，I4浏览器锁保留；只有N2 link/wires是相对I4的产品增量。全部46原provenance合同source不变才复用，prepare/verify/require原门不降，CLI强制refresh且原features[]/Release thin LTO/无qlog，测试执行0。生成脚本首次选到了旧source描述符，在本地断言停止且未写文件/调度；随后从已闭010353receipt准确96e生成，原旧descriptor未覆盖。此编译不接受N3或完整目标。
 
-新v2只改诊断控制入口：全部原provenance断言在精确producer环境执行；仅其后owned.run期间开启NETLAB_DIAGNOSTICS=0、KHOR_NET_DIAGNOSTICS=lifecycle，finally恢复原环境。没有删字段或改来源判定、Rust/fixture/参数。E/h2-lifecycle-shadow-{plan,control}-v2.json，固定3场，无native替代试次。复用H2 db21c2beeecb1d6b1823589267b2f98d34fa5e38/tree5cf730ab964c52fd613953251000ba2057e0f2bc/snapshot67b205f2d7e55eafb02d81b3a5be1f672669f948及011935 producer普通Release原ELF，不编译。
+编译闭证后按 **E/contact-current-mixed-design-v1.json** 冻结实际ELF/proof绑定，再执行准确同源的无日志混合业务验收。设计先于native计时：冻结原public-main runtime baseline及其已闭ELF、最新接受candidate，ABBAAB六块×low/high=12case/8640；原caller2秒、16/192MiB、bulk120/240秒及owned600保持。原相对10%+20ms/文件90%与原始基线固定绝对界限同时保留。每arm5个原guards/calibration新执行，原coldTCP红按既有MODEL-DECISION分层，不能写全绿。
 
-外部只读observer在原400ms循环持有私有serve.log fd，原owner全结束后再drain，保留Scratch unlink尾部；每场原unlink后写/换inode/外部symlink三校准，最多8份×16MiB。已有普通binary生命周期钩子，无feature诊断subscriber/qlog，开关另有只读tuple/短暂weak升级；因此日志扰动必须声明，不作性能/能耗验收。
+新协议明确保留有效baseline产品失败并继续固定cohort（相对全成功单元不能评为通过），candidate任一完整块硬失败拒绝；若固定360的任一cell已有>18条越原固定p95门，或三文件的前两条均低于固定中位门，可数学不可挽回早拒。未知调度/来源/分析/清理不安全则停，无替代试次。H2旧协议不追溯修改。下一步先闭030058 producer，再生成新runtime control/plan/verifier/recorder，检查source准确性后串行调度；root唯一ledger writer。
 
-每场原high wh2 **720结果/192MiB/2秒caller/240秒文件/owned600秒**保持，复用同源013456模型准入，原coldTCP红保留；实际geometry/CPU/原生来源/owner清理/全部人口仍逐场验证。先闭首场来源、采集和清理，再顺序派v2场2/3，前驱上一receipt；原功能红保留，只在调度未知、清理或采集不安全时停止，无重试至绿。
+### 普通H2无重编译诊断已完成，不作性能接受
 
-下一步：查024533 actual execution；完成后collect-network-ssh.py及verify-turing-record.py。新data-only verifier复用scripts/netlab-workload-wires.py解析概念，报告全部720人口、实际360目录/768切片的缺失/额外/重试，按真实ALPN/wire/stream/offset配对。不得减两个p95或跨未同步进程clock；server从accept开始，local write完成不是delivery/ACK，残差不得独断网络根因。root唯一ledger writer，无后台协调器。
+**024533Z-50822f42 / 024937Z-96d5dcf3 / 025345Z-16ed1d5c**，control30f054bebf4409cda005807368af850a967a67e4，固定3场全部collect/identity/原owner/来源/采集/业务人口闭证：**2160ok、3384实际响应stream**（1080目录＋2304切片），各16文件、runtime无compile、无替代。E/h2-lifecycle-shadow-summary-v2.json，逐场h2-lifecycle-shadow-verification-v2.json；E/ops/verify-h2-lifecycle-shadow-v2.py为data-only，匹配真实ALPN/wire/stream/offset。
+
+每场目录+文件共一Main，终端另Tunnel。bulk目录client elapsed p95 355501/353847/344306μs，server accept→local write p95 1929/1373/1476μs，seat增量p95 4/4/2μs，open p95 65/46/66μs；逐RPCduration残差占主要耗时（不是两个p95相减）。计划→完成p95 381737/419509/429886μs。文件20.8028/17.4581/23.6164Mbit/s只描述诊断。每场2256业务快照均显示同一Direct、观测点0变化；不能证明采样间无切换或实际包路由。
+
+结论只限这三个有日志样本：已测应用排队/处理较短，**没有重现原无日志p95回退，未定位其根因，也未接受H2性能**。server从accept开始，local write不是delivery/ACK；未同步clock不互减，残差仍含未测传输/accept/delivery/application区间。旧runtime flag另有只读tuple诊断/短暂weak升级、外部持fd采集有扰动，禁止与无日志性能cohort混算或称能耗不变。
+
+准备版 **023714Z-08b04294** 1/5.698953秒，native0/compile0/cases[]，三个文件采集校准全过；flag在原逐场provenance前设置导致环境hash正确拒绝。原件/lifecycle-preparation-verification-v1.json及v1三场未执行记录保持。v2仅在全部原provenance和资源门之后的owned.run开启运行期flag，finally恢复；未改Rust/fixture或来源断言。每场unlink后续写/换inode/外部symlink三校准、私有8×16MiB日志持fd/owner退后drain均过。
 
 ### 刚闭的H2正式对照：未接受，不再派5/6
 
