@@ -1,12 +1,12 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-14T01:37:55.820890+00:00。用户已授权持续实施/远端验证，活动目标“好 完成完整目标”仍未完成。root串行，不派子智能体。完整[GOAL](GOAL.md)/[PLAN](PLAN.md) N0–N5范围保持，逐项缺口以[REQUIREMENTS](REQUIREMENTS.md)为准。未获main合并、正式发布、现装App替换或生产Relay采购部署授权。
+更新于 2026-11-14T01:52:25.369603+00:00。用户已授权持续实施/远端验证，活动目标“好 完成完整目标”仍未完成。root串行，不派子智能体。完整[GOAL](GOAL.md)/[PLAN](PLAN.md) N0–N5范围保持，逐项缺口以[REQUIREMENTS](REQUIREMENTS.md)为准。未获main合并、正式发布、现装App替换或生产Relay采购部署授权。
 
 此前STATE逐字归档[HISTORY-through-relative-margin-v2-unit](HISTORY-20261114-through-relative-margin-v2-unit.md)，SHA256 `c772dce4a855e181e700130c5805801f3be5e3451968af6f35ad38cef5264406`；其历史pending/PID不能用于重派。更早原件由该文链接继续保留。E=`/Volumes/disk0/Khor/evidence/net`；worktree均在`/Volumes/disk0/Khor/worktrees/current/`。
 
 ## 当前唯一Turing执行及下一步
 
-唯一pending是 **turing-20261114T013456Z-1969d559**，net-node / relative_margin_preflight_candidate_v1，role=candidate；实际receipt/source-refs优先。control **429e1e87a686f8ea78fcde0cb666914203d50982**，protocol **2a72b1c8889a320fb50bafeb1434dfe6a1eaf6945774849ff710f7505a6d8a8a**。本轮只测相对正常切换收益门，未接受参数。
+唯一pending是 **turing-20261114T014844Z-9003c9f9**，net-node / relative_margin_block_3_candidate_v1，role=candidate；实际receipt/source-refs优先。control **429e1e87a686f8ea78fcde0cb666914203d50982**，protocol **2a72b1c8889a320fb50bafeb1434dfe6a1eaf6945774849ff710f7505a6d8a8a**。本轮只测相对正常切换收益门，未接受参数。
 
 准确候选H2：worktree khor-net-relative-margin-v1，branch experiment/net-relative-margin-v1，HEAD **db21c2beeecb1d6b1823589267b2f98d34fa5e38** / tree **5cf730ab964c52fd613953251000ba2057e0f2bc** / snapshot **67b205f2d7e55eafb02d81b3a5be1f672669f948**。E/relative-path-margin-source-v2.json、source-audit-v2.json；相对DB7bac只carry.rs，choose_settling在已有活路时叠正常10%/既有settling20%收益门。初始/故障无活路选择、绝对5/10ms、60秒dwell、improves及peer-relay清理保留原版。PULL8，无新增timer/probe/连接/vendor。两新增政策测试和全部旧断言保持，反向源码重建逐字DB。
 
@@ -14,9 +14,9 @@ H2原生net-unit **011751Z-b0350bd0 0/37.973077秒**已闭，72pass/0fail/原1ig
 
 实际runtime已冻E/relative-margin-comparison-plan-v1.json / runtime-control-v1.json。两臂均完整同netlab entry及11共同workload/observer/calibration文件，原8/普通绝对margin为baseline（DB214246 producer），H2为candidate。两臂各5项新preflight，然后固定 **A/B/B/A/A/B** 六个high场景，720结果/场、共4320/6个192MiB文件；原2秒caller、240秒文件、400ms采样、owned600秒与所有model/CPU/磁盘/来源/清理门不改。已预先声明：任何business硬功能失败，当前场完整核验后停止后续；candidate失败拒绝候选，baseline失败停止参考准入；未跑项明确unexecuted，不作完整六场pooled结论。无替代/后台协调器/运行编译。
 
-baseline preflight **013143Z-078f5b6e 1/166.500305秒**已闭，17files/identity/owned完整；两ownership guard、lowTCP、独立UDP过，原high冷TCP吞吐红保留，既有分层准入成立。E/relative-margin-comparison-progress-v1.json现1/8块。候选校准013456尚待核验，业务0。
+两臂preflight013143Z-078f5b6e（1/166.500305秒）和013456Z-1969d559（1/164.452927秒）各17files/identity/owned闭，原high冷TCP红保留、分层准入成立。业务第1 baseline013842Z-71395996 **0/184.597149秒**、第2 candidate014404Z-c413459e **0/192.597185秒**均原720/720成功、192MiB完整、13files/identity/native/CPU/清理闭。当前第3 candidate014844唯一pending。E/relative-margin-comparison-progress-v1.json现4/8块（含2校准）；尚不作完整6场性能结论。
 
-继续顺序：先查source-refs和013456实际execution；收集后运行ops/verify-turing-record.py、verify-relative-margin-block-v1.py、record-relative-margin-block-v1.py。只有原分层准入/分析/清理成立且无pending，才用stage-launch-turing.py依序启动relative_margin_block_{1..6}_{baseline|candidate}_v1，source分别dual-replug-source-v2.json和relative-path-margin-source-v2.json。每块单独收集/核验/record，根智能体唯一ledger writer。summary用summarize-relative-margin-v1.py，统计自检已过；未完成cohort不得声称通过。
+继续顺序：先查source-refs和当前014844实际execution；收集后运行ops/verify-turing-record.py、verify-relative-margin-block-v1.py、record-relative-margin-block-v1.py。只有原分层准入/分析/清理成立且无pending，才用stage-launch-turing.py依序启动relative_margin_block_{1..6}_{baseline|candidate}_v1，source分别dual-replug-source-v2.json和relative-path-margin-source-v2.json。每块单独收集/核验/record，根智能体唯一ledger writer。summary用summarize-relative-margin-v1.py，统计自检已过；未完成cohort不得声称通过。
 
 原main参考工程门仍为high bulk目录p95<=592518.1μs、PTY<=391538.2μs，完整文件median>=16.791371Mbit/s；与当前baseline相对10%+20ms/90%门分别报告，均非用户已批准的普适SLO。完整低/高、多负载、公平及成本仍待。
 
@@ -40,7 +40,13 @@ Linux已过的96e同源Mac标准net-node已唯一提交 **43540500760**（reques
 
 只读盘点 **43540770433** main9b671817成功，artifact14092315786 12912B SHA01a8f196bca3464555b9507cb9ccaedd30bb2830085a8fafaa6f1ac654518424/CRC已核，E/worker-storage-inventory-43540770433.{zip,json}。free49.66156GiB、target83.55098GiB；incremental37.38995GiB/347目录，82旧变体符合现有8版本/2小时规则；另1个superseded khor_node test约254.6MB。当前installed build_guard SHA **998f5723eb447a1634411397c18a524e5ed0d50bd6dbd81001a16626219f64eb**，50/40GiB及target100GiB门保持。
 
-发现维护逻辑不一致：main scripts/worker-storage.py的ensure-budget在target<90GiB且free>=40GiB就提前返回，但启动需50GiB。当前尚未改/执行清理。下一步以原共享build.lock、lsof活跃保护、每crate最新8份及2小时保留规则回收符合条件的旧缓存；不降磁盘门、不碰用户数据/活跃Lab或原生下载缓存。可先查本轮macserver只读SSH重试OSsession82935（仅hostname，20秒限），若不通继续可信GH通道。已有worker-storage.yml仅inventory/prune-test-programs可选，ensure-budget需受控入口；先完成可核验修正/原断言，再运行和取实际free/guard/hash报告。恢复后才能重派同源Mac Node。此处没有App构建/安装/发布。
+已修正维护判定并完成受保护回收：隔离builder worktree khor-build-start-reserve-v1 / fix/net-builder-start-reserve-v1，source bfe8b0f3b4a602fe159c6651e0d8815e58b9d639，含受控workflow的HEAD fa246be（具体40位见E/mac-start-reserve-reclamation-verification-v1.json）。main未合，guard本身保持998f。唯一产品外修正将ensure-budget的提前返回储备40改为已有启动门50；原shared flock/lsof/新8版本/2小时/symlink/inode保护及磁盘门不变。
+
+可信GH **43542416062** 首轮prepare/storage成功；原脚本仅新增49.5GiB真实流程回归红（其余5过），修正版6/6，原4保护测试未改。三个artifact大小/SHA/CRC与candidate脚本SHA322899ec2722aa159d64ac1162e57fff0e354aaea65e5d159655cbd1392ed269、实际控制commit相互核验。原host操作仅回收1个superseded test＋82旧incremental，free **49.6639→67.2096GiB**，target **83.5510→66.0158GiB**，admission changed=false且SHA仍998f；E/mac-start-reserve-reclamation-verification-v1.json。无App/用户文件/活跃Lab或main变化。
+
+SSH只读hostname曾成功，但之后原生前的Python维护测试上传在banner阶段超时，执行0；E/mac-start-reserve-ssh-preparation-failure-v1.json和原intent保留，已走可信GH完成上述修正/回收，不原样反复SSH。
+
+环境恢复后已新提交同source/control的Mac标准net-node **43542867922**，requestcb0220712d284ad48e30f92ef00595a9，snapshotb19a46316daf8a698ef4f976b69930c3319558e9/source41df16ad/commit96e，E/dial-contact-repair-mac-source-v2.json。network-mac/job132287202971现Run under existing shared admission guard在途，未有完整结果，不据此宣告Mac通过。原43540500760的磁盘拒绝5-file artifact14091886017 SHA f178febc/CRC与完整log已闭：E/dial-contact-repair-mac-attempt1-verification-v1.json，编译/测试0，不作产品失败。此处没有App构建/安装/发布。
 
 ## 仍有效的I4/F3与边界
 
