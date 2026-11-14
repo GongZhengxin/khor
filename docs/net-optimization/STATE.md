@@ -1,6 +1,6 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-14T00:43:26.044394+00:00。完整[GOAL](GOAL.md)/[PLAN](PLAN.md) N0–N5 **未完成**；逐项缺口见[REQUIREMENTS](REQUIREMENTS.md)。用户已授权持续实施/远端验证，root串行、不派子智能体；不因局部通过停止。无main合并、正式发布、生产Relay采购部署或现装App替换授权。
+更新于 2026-11-14T00:55:47.168590+00:00。完整[GOAL](GOAL.md)/[PLAN](PLAN.md) N0–N5 **未完成**；逐项缺口见[REQUIREMENTS](REQUIREMENTS.md)。用户已授权持续实施/远端验证，root串行、不派子智能体；不因局部通过停止。无main合并、正式发布、生产Relay采购部署或现装App替换授权。
 
 E=`/Volumes/disk0/Khor/evidence/net`；全部worktree在`/Volumes/disk0/Khor/worktrees/current/`。此前STATE逐字归档[HISTORY-through-relay-health-v2](HISTORY-20261113-through-relay-health-v2.md)，SHA256 `04c4a8d83d8f48a963f0762581843009788d3f24cdadeebd89f29dc55ce744c5`；其中保留更早全部历史/失败/来源链接。历史pending/PID不用于重派。
 
@@ -50,7 +50,9 @@ root唯一ledger writer，无后台协调器。恢复先查source-refs和实际w
 
 **N3窗口4独立诊断已编译，新校准在途、业务计时0。** 提前E/pull-window4-design-v1.json后，从DB7bac仅改PULL_AHEAD8→4一行，khor-net-pull-window4-v1 / experiment/net-pull-window4-v1，dca27a72/tree91b8577e/snapshot211c9058。producer233938Z-8f18bccd已0/550.476037秒闭证，22files/identity/strict native，Rust8m19、实际CLI fresh=false且字节改变；CLI0b0968df/fulltest5aa21a49，E/run/pull-window4-native-compile-verification-v1.json。原8臂DB214246已闭可复用。
 
-实际runtime已冻结E/pull-window-comparison-plan-v3.json，control0a0b87d68bc045c7a4cb7b61db6af60831b57378/protocol6b29723a1770c91881025e44d82fe9f121bb9de5bd1db8a47955e050e3553d20；v1/v2准备元数据残留已在任何校准前修正，未执行版本保留。原fixture/order/全部门/2秒caller/240秒文件不改。当前唯一Turing pending004224Z-92e24180，net-node / pull_window_preflight_baseline_v1 / rolebaseline，sourceDB原8；前驱为已闭N2修复003059。先原8/4各5校准，再8/4/4/8/8/4固定六场high、4320样本/6文件，无运行编译/替代。每块root收集identity/行为/清理并record后才派下一块；先查source-refs，禁止按旧pending重派。原high冷TCP红按既有分层准入保留，与原main工程界限分别报告。详PULL-WINDOW-EXPERIMENT，const4尚不采用；不可由DB实验回退I4浏览器锁/其他main成果。
+实际runtime已冻结E/pull-window-comparison-plan-v3.json，control0a0b87d68bc045c7a4cb7b61db6af60831b57378/protocol6b29723a1770c91881025e44d82fe9f121bb9de5bd1db8a47955e050e3553d20；v1/v2准备元数据残留已在任何校准前修正，未执行版本保留。原fixture/order/全部门/2秒caller/240秒文件不改。两臂新preflight004224Z-92e24180与004551Z-ea603d11已各17files/identity/owned闭，4原绿+high冷TCP原红保持、分层准入成立。首业务8臂004921Z-b43d35b9已0/186.529697秒闭证，13files/identity/native/CPU/owned全核，原720/720操作、192MiB完整。当前唯一Turing pending005307Z-492fb1fb，net-node / pull_window_block_2_candidate_v1 / rolecandidate，source窗口4。固定8/4/4/8/8/4六场high、4320样本/6文件，无运行编译/替代；E/pull-window-comparison-progress-v3.json现3/8块已闭（含两校准）。每块root收集identity/行为/清理并record后才派下一块；先查source-refs，禁止按旧pending重派。窗口4结果未齐，不提前采用；原main工程界限分别报告。详PULL-WINDOW-EXPERIMENT，不可由DB实验回退I4浏览器锁/其他main成果。
+
+N2下一完整标准Node已提前冻结E/dial-contact-repair-standard-node-plan-v1.json，准确96e999da/control5d3691f2，原12组/预计286通过＋原1ignored，当前未执行；须完整六窗口计时结束后运行，不让编译混入正式计时。I4 Quality GUI artifact14084963155 SHA2f2e9ea3/CRC及实际log已核：原27组全部通过、附件9场无errors且目录actualBytes，实际bundled Chromium159.0.8154.6；E/net-product-quality-v4-gui-verification-v1.json。不复用I3旧引擎计数作为I4事实。
 
 
 ## 已确认的本轮改进
