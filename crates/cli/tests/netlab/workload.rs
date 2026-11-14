@@ -344,10 +344,11 @@ async fn run(mode: Mode, spec: Spec) {
             .count()
     };
     let all_answers = rows.len() == SAMPLES * 6 && rows.iter().all(|row| row["outcome"] == "ok");
-    let direct_after = x
-        .link(&y)
-        .await
+    let final_link = x.link(&y).await;
+    let direct_after = final_link
+        .as_ref()
         .is_some_and(|l| l.hop == Hop::Direct && l.down_ms.is_none());
+    let final_remote_link = y.link(&x).await;
     let ok = capture_before
         && capture_after
         && all_answers
@@ -362,6 +363,7 @@ async fn run(mode: Mode, spec: Spec) {
         "profile_readback_commands_ok":capture_before && capture_after,
         "samples":rows.len(),"all_answers":all_answers,"exact_bytes":exact_bytes,"closed":closed,
         "direct_after":direct_after,"directory_overlap":overlap("directory"),"terminal_overlap":overlap("terminal"),
+        "final_link":final_link,"final_remote_link":final_remote_link,
         "bulk":bulk,"calibrated":false,"slo":false,"p99_claimed":false,
         "x_journal":x.journal(Some(&y)),"y_journal":y.journal(Some(&x))}),
     );
