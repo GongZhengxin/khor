@@ -1,8 +1,8 @@
 # 活动文件连接与前进额度
 
-当前候选2e42b346/tree596ebda4，experiment/net-pull-pool-contracts-v1。默认shared，候选内部separate模式才启用；没有安装/发行。设计原文见PULL-POOL-DESIGN，后续运行前修订与准确proof见STATE和E/pull-pool-*-v1.json。
+当前候选ff3360cd/tree4f0e7db7，experiment/net-pull-pool-pressure-v1；产品修复源29b05533/treee71011ed，之后仅增加cfg(test)压力合同。默认shared，候选内部separate模式才启用；没有安装/发行。设计原文见PULL-POOL-DESIGN，后续运行前修订与准确proof见STATE和E/pull-pool-*-v1.json。
 
-Node的canonical Arc<Endpoint>作为连接域：地址变动不创建新域，同key的新endpoint不能共享旧extra。Wires持有协调器，域只弱持有endpoint，peer只弱持有连接；活动文件及实际请求持有Lease。每peer一个准备锁、最多一个extra；node最多4个extra，满额继续cached。没有空闲连接保活timer。最后owner释放才关闭extra，主动退役则立即关闭/归还permit，即使旧Arc还活着；旧Drop不会清除新连接。
+Node的canonical Arc<Endpoint>作为连接域：地址变动不创建新域，同key的新endpoint不能共享旧extra。Wires持有协调器，域只弱持有endpoint，peer只弱持有连接；活动文件及实际请求持有Lease。每peer一个准备锁、最多一个extra；node最多4个extra，满额继续cached。额外容量满时只扫描实际已关闭连接并归还其permit，再立即重试一次；旧Arc保留也不再压住其他peer，健康连接仍保持原cap。扫描不持有peer map锁执行close。没有空闲连接保活timer。最后owner释放才关闭extra，主动退役则立即关闭/归还permit，即使旧Arc还活着；旧Drop不会清除新连接。
 
 客户端bulk额度node32/peer8，foreground额度node8。额度随pending请求及已解码但尚未顺序提交的ready响应保留，提交/丢弃才归还；独立于服务端encoded-response额度，避免双向传文件互锁。正常每slice最多SLICE的payload，合计40slice是此额度模型的payload界，不包含QUIC/编码/请求对象和其他进程内存；实际资源成本还要测。
 
@@ -10,4 +10,8 @@ Node的canonical Arc<Endpoint>作为连接域：地址变动不创建新域，�
 
 27项实际QUIC合同已闭：原20隔离/准备、4共享lease/Endpoint/退役/全局extra合同，以及两个真实并发完整文件和上述晚到文件合同。完整并发文件各13唯一offset/精确bytes和完成后的part/note清理；取消一个时真实STOP且另一个仍完成；最后关闭extra、全部额度归还、cached Main仍以原stable-id响应。源/owner/原fmt已核。
 
-这些证据尚不覆盖node32真实饱和、foreground8饱和后的新caller、准备owner取消/到期与等待者独立性、所有迟到Endpoint/policy变化、实际1/3/5设备成本、当前源标准/Mac、Release共存或手机。额外连接远端关闭且旧Arc保留的全局容量回收也需实测。参数4/32/8是待比较的候选，整体N3保持未完成。
+后续4个资源合同已将窄门扩为31/31：by-value Endpoint完整cached读、owner取消与到期后未过期waiter实际成功，以及远端已关而旧Arc保留时第5peer立即取得真实extra。原资源基线的容量RED与修复后相同测试GREEN保留；两个owner原失败由只改观察器的固定诊断澄清，未据此改产品取消语义。产品源29b原标准12组317pass/0fail/原ignored1已闭。
+
+当前ff3360新增五对端全满合同1/1：node32bulk、28实际decoded-ready、4extra、8foreground同时保持，新caller到期/取消均无RPC；满额Sessions仍响应。只放开1个head，该文件及后来另一个完整文件均完成，其余11head仍保持；最终11实际STOP、全credit/extra归还、5条cached Main真实请求和身份保持。这是单Turing进程内5个真实认证QUIC endpoints，不是5台物理设备或WAN性能。
+
+当前ff3360源同源Mac原生原12组314pass/0fail/原ignored1已闭，32个明确separate合同与14contact均过；与Linux标准317＋压力1相比只排除4个原Linux-only case，名称和cfg源均核对。普通Release producer在途。上述仍不覆盖所有迟到Endpoint/policy队列变化、实际1/3/5设备CPU/字节/唤醒成本、Release共存或手机。参数4/32/8仍需性能对照，整体N3保持未完成。
