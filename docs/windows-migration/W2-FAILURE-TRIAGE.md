@@ -83,6 +83,10 @@ C4 的 33 条集中在 `session_content::journal`、`live::*`、`khor_agent::*`�
 | 2026-11-15 | B3 文件同步与目录重命名 | `durable::sync_file`（写句柄 fsync）；journal 记录句柄在 rename/remove 前释放；`set_times` 用写句柄。session_content 15→1，khor_agent 9→3，live 29→18 | `e4c2394a` |
 | 2026-11-15 | B4 平台夹具与 Unix-only 测试 | `workspace::basename` 按平台分隔符；`absolute()` 夹具；`satellite`/`workspace`/`wsfacts` 的 mtime 用写句柄；tmux 11 条与 `finding_the_program` 5 条 `#[cfg(unix)]`；appearance 期望补上 window 三项 | `0236678a` |
 
+| 2026-11-15 | B5 路径/登录/锁收尾 | usage 43/43、quota 40/40、place 8/8、road 6/6、khor_agent 43/43、ipc 5/5、watch 22/22 | `d42d4d46`、`46f6f81a` |
+
+W2-B 收尾结论见 [W2-B 验收](W2-B-NODE-SUITE.md)：4 条失败 = 3 条平台无关预存红 + 1 条已知 flake；34 条 Unix-only 用例显式 gate。
+
 **全量 lib 轨迹（rustc 1.95.0，`--test-threads=1`）**
 
 ```text
