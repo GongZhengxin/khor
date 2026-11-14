@@ -1,6 +1,6 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-14T01:09:04.937321+00:00。完整[GOAL](GOAL.md)/[PLAN](PLAN.md) N0–N5 **未完成**；逐项缺口见[REQUIREMENTS](REQUIREMENTS.md)。用户已授权持续实施/远端验证，root串行、不派子智能体；不因局部通过停止。无main合并、正式发布、生产Relay采购部署或现装App替换授权。
+更新于 2026-11-14T01:18:49.204820+00:00。完整[GOAL](GOAL.md)/[PLAN](PLAN.md) N0–N5 **未完成**；逐项缺口见[REQUIREMENTS](REQUIREMENTS.md)。用户已授权持续实施/远端验证，root串行、不派子智能体；不因局部通过停止。无main合并、正式发布、生产Relay采购部署或现装App替换授权。
 
 E=`/Volumes/disk0/Khor/evidence/net`；全部worktree在`/Volumes/disk0/Khor/worktrees/current/`。此前STATE逐字归档[HISTORY-through-relay-health-v2](HISTORY-20261113-through-relay-health-v2.md)，SHA256 `04c4a8d83d8f48a963f0762581843009788d3f24cdadeebd89f29dc55ce744c5`；其中保留更早全部历史/失败/来源链接。历史pending/PID不用于重派。
 
@@ -52,9 +52,15 @@ root唯一ledger writer，无后台协调器。恢复先查source-refs和实际w
 
 因两个4臂已违反全部调用成功硬门，root在三场全部自然结束/核验后提前否决该参数，剩余第4/5/6（8/8/4）未发起、明确记unexecuted。这是观测数据后的程序变更，**不是原预先声明的停止规则**；原计划不改、旧红完整保留，不作完整六场/pooled p95或因果性能接受。E/pull-window4-rejection-decision-v1.json、progress-v3 phase=stopped-candidate-rejected；v1/v2未执行准备及v3全原证据均保留。停止的是失败参数支线，不停止完整目标；窗口仍8。详PULL-WINDOW-EXPERIMENT。
 
-**当前唯一Turing pending010353Z-7e1681fd：N2修复的完整标准Node。** source96e999da/tree41df16ad/snapshot1cc2cb53/control5d3691f252f9dee0297fa3c494374be6119bca29，net-node / dial_contact_repair_standard_node_v1，前驱已闭窗口005746。E/dial-contact-repair-standard-node-plan-v1.json先冻，原12组/预计286通过＋原1ignored，尚无完整结果；不要按旧pending重派。正式计时已结束，当前编译/回归不污染前述业务计时。I4 GUI artifact14084963155 SHA2f2e9ea3/CRC及实际log已核：原27组全部通过、附件9场无errors且目录actualBytes，实际bundled Chromium159.0.8154.6；E/net-product-quality-v4-gui-verification-v1.json。
+**N2修复完整标准Node已接受。** 准确96e999da/tree41df16ad/snapshot1cc2cb53/control5d3691f2，010353Z-7e1681fd已0/472.042894秒闭证，19files/identity/owned完整；原12组286pass/0fail/原1ignored，各原名称和新增两协议负控制人口核对，原后续IPC/取消/响应租约6组已执行。E/run/dial-contact-repair-standard-node-verification-v1.json。仅准确源标准Node接受，Release/最终集成Mac/手机与全N2/N5仍待。I4 GUI独立原27组/附件9/实际Chromium159.0.8154.6已核，E/net-product-quality-v4-gui-verification-v1.json。
 
-**下一N1/N3诊断为相对收益门，草稿未远端格式化/测试。** E/high-mixed-path-churn-observation-v1.json逐核9场：原main3场selected-change均0、当前8三场2/4/2、另8首场0、4两场6/26，均为实际path-stream事件，不是决定输入/包路由；无统一wall↔workload时基，相关性不作因果。E/relative-path-margin-design-v1.json先冻，独立khor-net-relative-margin-v1 / experiment/net-relative-margin-v1，从DB7bac只改carry.rs的improves（原绝对5/10ms再叠正常10%/settling20%），全部旧测试/期限/60秒dwell/故障通道保持，新增两条跨全部transport配对政策合同。无type优先或新timer/probe/连接/vendor更改，PULL8；草稿尚未提交/快照/执行。待010353闭证后先原生完整net单元，再决定Release与预先冻结的对照；预先允许candidate硬功能红后明确早停，不能再事后把剩余未跑说成完成。最终集成必须只带实证通过修改且保留I4浏览器锁、N2修复与main既有成果。
+**当前唯一Turing pending011751Z-b0350bd0：相对收益门v2原生net-unit。** worktree khor-net-relative-margin-v1 / experiment/net-relative-margin-v1，准确db21c2beeecb1d6b1823589267b2f98d34fa5e38/tree5cf730ab964c52fd613953251000ba2057e0f2bc/snapshot67b205f2d7e55eafb02d81b3a5be1f672669f948，control5d3691f2，net-unit / relative_path_margin_unit_v2；先查实际receipt，禁止重派。原72预期通过＋原1ignored，完整结果未核。E/relative-path-margin-source-v2.json/source-audit-v2.json：相对DB仅carry.rs，一处choose_settling正常live切换叠10%/settling20%门，两新增跨全部transport测试，反向还原DB逐字一致；PULL8、初始/故障选择、原绝对5/10ms及所有旧测试保持。无新增timer/probe/连接/vendor，远端pinned rustfmt v2已做，原全cargo fmt检查仍需通过。
+
+H1全局improves版本f4b495e7/tree54404310，011408Z-8eea3f7a已101/46.143293秒闭证：71pass/1fail/原1ignored，失败仅原path::tests::the_relay_beats_the_hop_only_on_measurement（200ms Relay不得清195ms hop）。E/run/relative-path-margin-unit-rejection-v1.json；保留原断言，H1明确否决、Release0；预备control539fbf6a未执行。提前E/relative-path-margin-design-v2.json后，v2恢复improves逐字原版，只把相对门放正常切换，cleanup仍保留原5ms资格，不把正常切换暂缓等同于不保留可用peer relay。新增两政策测试body也逐字H1；H1所有原件保留。
+
+v2普通Release控制已准备但未发起：481c6c219a328da23e8148736be0ee0e2cb1c31e / E/relative-path-margin-native-compile-control-v2.json，必须待011751完整旧/新单元通过后再调度。复用普通原配置/strict provenance/原46元验证，cache迁移从已归档窗口4回8＋carry.rs；相对DB的产品差只有carry.rs。现无v2 Release或业务证据，不能记最优参数/正式采用。后续先冻结实际native/source绑定与对照协议，并预先声明硬功能失败的早停规则。
+
+相关性线索E/high-mixed-path-churn-observation-v1.json逐核9场：原main3场selected-change均0、当前8三场2/4/2、另8首场0、4两场6/26。实际path-stream事件不是决定输入/包路由；缺统一wall↔workload时基，不能作因果。最终必须保留I4浏览器锁、N2修复与main既有成果；完整N0–N5仍未完成。
 
 
 ## 已确认的本轮改进

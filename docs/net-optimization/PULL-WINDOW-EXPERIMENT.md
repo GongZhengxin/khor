@@ -1,21 +1,35 @@
 # 文件预取窗口4已否决
 
-前置新N3对照8640/8640功能过，但high bulk目录520→963ms、PTY338→695ms，吞吐18.657→24.413Mbit/s不抵销交互回退。假设应用待传窗口过大有待实验，尚未归因BBR/任一vendor补丁。
+当前结论：保留窗口8，不采用窗口4。两个窗口4场景都违反全部调用成功的原硬门；计划中的六场对照提前结束，不能声称获得完整六场性能结论。N3原交互回退仍未解决。
 
-先冻结E/pull-window4-design-v1.json，在独立khor-net-pull-window4-v1 / experiment/net-pull-window4-v1，从DB7bac仅改PULL_AHEAD8→4一行；当前8片2MiB，4片1MiB，单片仍256KiB。准确dca27a72edd6d91d710283b24631d3b77294e7f2/tree91b8577e30bddac900f0a8ab4c8d42ba1a672612/snapshot211c9058d966c52ee9804f744522844c83373eca；无CC/队列/fixture/features变更。该实验基于DB，保留I4新浏览器锁的正式候选不得由它回退，最终只可能cherry-pick这一常量改动。暂不采用窗口4。
+## 假设与来源
 
-普通Release producer233938Z-8f18bccd已0/550.476037秒闭证，22files/identity/strict native完整，实际Rust8m19、CLI fresh=false。CLI0b0968df21921930f338df819715a91bbafe4e51eb9f74ee71a78ea138df19c1、fulltest5aa21a498f587a8339683f3d777ccf548dc6b838e9dd51f5b2bcd78c875f123e；相对DB源frame仅link.rs，Git反向恢复同DB tree，实际CLI字节改变。E/run/pull-window4-native-compile-verification-v1.json；control5494ea7db988366bcdf037b182b18a4613eeffa3。只有编译，业务计时0；原selected5存档/来源工具/46旧validator准入复用规则保持，不拷Cargo fingerprint。
+此前同期完整ABBAAB中8640/8640请求成功，但high bulk目录p95从原main520ms升至当前963ms、PTY338ms升至695ms；文件吞吐18.657→24.413Mbit/s不抵销交互回退。应用预取过大只是待检假设，未据此归因BBR或vendor。
 
-计划两臂新校准后固定8/4/4/8/8/4六个high场景，4320请求、6完整192MiB文件；原2秒caller/240秒文件/400ms采样与owned600秒不改。8臂复用DB214246Z-2606e4e9 closed native，4臂复用上producer，统一strict source/selected5/CPU/disk/清理门，无运行编译或替代。实际runtime及source bindings已冻结于E/pull-window-comparison-plan-v3.json，control0a0b87d68bc045c7a4cb7b61db6af60831b57378、protocol6b29723a1770c91881025e44d82fe9f121bb9de5bd1db8a47955e050e3553d20。准备v1/v2继承的旧CLI/entry/执行说明已在任何校准或业务前修正，保留未执行准备；实际夹具和顺序不改。原8臂校准004224Z-92e24180正在执行，前驱N2修复003059已闭。每块root独立采集/verify/record，禁止后台协调或与编译重叠；下一块先查ledger。
+E/pull-window4-design-v1.json先冻结；独立experiment/net-pull-window4-v1从DB7bac只改PULL_AHEAD8→4，单片仍256KiB，待传窗口2MiB→1MiB。准确dca27a72edd6d91d710283b24631d3b77294e7f2/tree91b8577e30bddac900f0a8ab4c8d42ba1a672612/snapshot211c9058d966c52ee9804f744522844c83373eca。无CC/队列/fixture/features变化。实验源基于DB，不得从它回退I4的新浏览器锁。
 
-结果须同时报告窗口8对4的因果性能/吞吐取舍，以及原main工程界限：high bulk目录p95<=592518.1μs、PTY<=391538.2μs、完整文件median>=16.791371Mbit/s（原main18.657079×90%）。不以传完或吞吐绿代交互接受，不改原门或删坏样本。共享/分连接、其他真实负载、资源/手机成本、最终同源验收仍属于完整目标。
+普通Release producer233938Z-8f18bccd已0/550.476037秒闭证，22files/identity/strict native完整，Rust8m19、实际CLI fresh=false。CLI0b0968df21921930f338df819715a91bbafe4e51eb9f74ee71a78ea138df19c1、fulltest5aa21a498f587a8339683f3d777ccf548dc6b838e9dd51f5b2bcd78c875f123e。相对DB只一行常量，反向还原同DB tree；E/run/pull-window4-native-compile-verification-v1.json。
 
-源码范围补充：同一PULL_AHEAD还用于read_all预览及带digest的接收文件窗口，不仅是本轮192MiB pull_into。当前隔离计时只覆盖后者，不能据此认定预览首内容、offer吞吐或多文件公平已接受。若采用常量4，最终源须保留这些原校验/取消/恢复行为并补相应验收；否则不把该实验更改带入正式候选。
+## 原计划与实际执行
 
-## 实际结果与提前否决
+E/pull-window-comparison-plan-v3.json / control0a0b87d68bc045c7a4cb7b61db6af60831b57378 / protocol6b29723a1770c91881025e44d82fe9f121bb9de5bd1db8a47955e050e3553d20，原文保留。v1/v2的旧CLI/entry/执行说明残留在任何校准或业务前已修正，未执行准备均保留；实际夹具/顺序/断言不变。
 
-两臂preflight004224/004551均通过既有分层准入，原high冷TCP吞吐红保留。首8臂004921为720ok、完整文件23.925Mbit/s；随后4臂005307为676ok/2timeout/42blocked、13.988Mbit/s，005746为667ok/2timeout/51blocked、10.925Mbit/s。三完整192MiB文件/原720人口、来源/真实原生/CPU/所有权清理均闭证。两个4臂均触发原全部调用成功硬失败，故拒绝采用4。
+原计划为两臂各5项新校准，再8/4/4/8/8/4六个high场景、4320请求/6个192MiB文件。原2秒caller、240秒文件、400ms采样、owned600秒和CPU/磁盘/来源/清理门不改；不在计时中编译或替换失败场次。原8/4校准004224Z-92e24180与004551Z-ea603d11均17files/identity/owned闭，high冷TCP吞吐原红保持，既有分层准入成立。
 
-root在第三在途场自然结束并完整核验后停止参数支线；第4/5/6原8/8/4三场未执行，不补造样本或替代。提前停止并非原v3预先声明的规则，已在E/pull-window4-rejection-decision-v1.json明确为数据后的程序变更；原计划保留、progress-v3标stopped-candidate-rejected。不能从这份未完成六场人口计算或宣称正式ABBAAB总体性能结论；只据原硬功能失败拒绝本参数。当前目标继续，N3和原8候选回退均未解决。
+| 窗口 | 实际run | 原退出码 | 720次逻辑结果 | 文件完整 | 有效吞吐Mbit/s |
+| --- | --- | --- | --- | --- | --- |
+| 8 | 004921Z-b43d35b9 | 0 | 720成功 | 是 | 23.925 |
+| 4 | 005307Z-492fb1fb | 1 | 676成功、2超时、42阻塞 | 是 | 13.988 |
+| 4 | 005746Z-e7e8830f | 1 | 667成功、2超时、51阻塞 | 是 | 10.925 |
 
-逐核此前同期对照与本支线9场的selected-path事件见E/high-mixed-path-churn-observation-v1.json。坏场伴随多次Direct/Relay切换，是下一假设线索，不等于决定原因或实际业务包路径已证明。新诊断先冻结相对收益门，原窗口保持8；不以这次拒绝宣布分连接或任一vendor补丁已定案。
+三场各13files/identity/原生来源/CPU/owned清理全闭；所有原始720结果均保留。两个4臂硬失败后，root等第三在途场自然结束并完整核验，决定提前拒绝参数支线；第4/5/6原8/8/4三场未发起，明确记unexecuted，无替代。
+
+**提前停止并非原v3预先声明的规则。** E/pull-window4-rejection-decision-v1.json明确为观测数据后的程序变更，progress-v3为stopped-candidate-rejected。拒绝依据是已观察的原硬功能失败；不计算或宣称完整六场pooled p95、统计显著性或因果性能接受。今后的对照须在执行前声明候选硬功能失败后的停止规则。停止此参数支线不暂停完整目标。
+
+## 后续边界
+
+下一假设线索是实际选路变化。E/high-mixed-path-churn-observation-v1.json逐核9场：原main三场selected-change均0、当前8三场2/4/2、另8首场0、4两场6/26。它们是实际path-stream事件，不能当作选择器内部决定输入或包路由；缺少统一wall↔workload时基，相关性不能代因果。相对收益门诊断已先冻E/relative-path-margin-design-v1.json，窗口保持8。
+
+原main工程界限继续保持：high bulk目录p95<=592518.1μs、PTY<=391538.2μs，完整文件median>=16.791371Mbit/s。当前未完成的窗口对照不能通过这些门；最终需要同源、完整人口和明确的设计取舍。
+
+PULL_AHEAD同时用于read_all预览、pull_into和带digest的接收文件窗口。本隔离实验只覆盖192MiB pull_into，未接受预览首内容、offer吞吐、多文件公平、共享/分连接或手机成本。所有旧红和必要验收保持，不将窗口4带入正式候选。
