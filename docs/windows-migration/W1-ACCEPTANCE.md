@@ -32,6 +32,26 @@ host: x86_64-pc-windows-msvc
 LLVM version: 23.1.5
 ```
 
+## 2.1 最新 main 基线
+
+分支已 rebase 到远端最新 main：
+
+```text
+origin/main: 9a4219ffe5e3ceba1f09cd3288cb0e27f91613d7
+rebased HEAD: 6201b91e4dab0a292df1770dcab5c1e15b03d76a
+```
+
+在无 `#` 的新构建 worktree `F:\khor-build2` 基于该 HEAD 重新执行：
+
+- frontend `gen_ts` / `gen_bindings`：exit 0
+- `tsc --noEmit`：exit 0
+- `vite build`：exit 0，`dist/index.html` 已生成
+- `cargo build --locked -p khor-cli --bin khor`：exit 0
+- Windows process harness：12/12 PASS
+- fanout harness：9/10（同一顺序相关 flake），不是稳定失败
+
+远端 CI 需要在 rebase 后重新运行；旧 run 43557690271 是 rebase 前 commit 03d861ca 的证据，不能单独代表最新 main。
+
 ## 3. 前端构建
 
 ### 3.1 依赖

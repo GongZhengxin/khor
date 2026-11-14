@@ -65,6 +65,8 @@ fanout::tests::a_history_producer_waits_for_real_capacity_without_retiring_the_r
 
 这次运行是真实 `windows-2025` runner，不是本地模拟。
 
+注意：该 run 对应 rebase 前的 commit `03d861ca`。分支已 rebase 到最新 main `9a4219ff`，新的 HEAD `6201b91e` 需要重新触发一次 Windows W1 workflow；旧 run 只作为 W1 流程已被远端验证的历史证据。
+
 ## 4. W1 判定
 
 - CI 配置文件存在且 Windows job 可识别：**PASS（静态）**
