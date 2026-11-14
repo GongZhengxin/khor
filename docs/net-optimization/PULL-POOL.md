@@ -14,4 +14,4 @@ Node的canonical Arc<Endpoint>作为连接域：地址变动不创建新域，�
 
 当前ff3360新增五对端全满合同1/1：node32bulk、28实际decoded-ready、4extra、8foreground同时保持，新caller到期/取消均无RPC；满额Sessions仍响应。只放开1个head，该文件及后来另一个完整文件均完成，其余11head仍保持；最终11实际STOP、全credit/extra归还、5条cached Main真实请求和身份保持。这是单Turing进程内5个真实认证QUIC endpoints，不是5台物理设备或WAN性能。
 
-当前ff3360源同源Mac原生原12组314pass/0fail/原ignored1已闭，32个明确separate合同与14contact均过；与Linux标准317＋压力1相比只排除4个原Linux-only case，名称和cfg源均核对。产品普通Release源ff3360已闭（CLI7454caa6）；只加新speed-first测试夹具的6f7bbf43普通Release也已闭，CLI逐字相同。当前有日志布局诊断在途，尚无新性能接受。上述仍不覆盖所有迟到Endpoint/policy队列变化、实际1/3/5设备CPU/字节/唤醒成本、Release共存或手机。参数4/32/8仍需性能对照，整体N3保持未完成。
+当前ff3360源同源Mac原生原12组314pass/0fail/原ignored1已闭，32个明确separate合同与14contact均过；与Linux标准317＋压力1相比只排除4个原Linux-only case，名称和cfg源均核对。产品普通Release源ff3360已闭（CLI7454caa6）；只加新speed-first测试夹具的6f7bbf43普通Release也已闭，CLI逐字相同。新夹具shared有日志布局已720/720原交互＋2个实际post-health成功、1130个客户端回复及对应服务端回复全部保留、1128原RPC精确配对且共享1对Main；separate v1原业务和健康均过，但“只能1个缓存块”的布局预测被实际2块缓存＋766 extra拒绝；源码确认准备期间继续缓存进展且保留已准入请求，新v2一般handover合同固定1场确认在途，原拒绝保留，尚无性能接受。上述仍不覆盖所有迟到Endpoint/policy队列变化、实际1/3/5设备CPU/字节/唤醒成本、Release共存或手机。参数4/32/8仍需性能对照，整体N3保持未完成。
