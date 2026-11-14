@@ -10411,6 +10411,13 @@ impl Node {
                                 };
                                 (answer, credit)
                             }).await;
+                            #[cfg(test)]
+                            let credit = credit.map(|mut credit| {
+                                if matches!(&answer, Ok(Response::PathSlice { .. })) {
+                                    credit.decoded();
+                                }
+                                credit
+                            });
                             (at, answer, credit)
                         }
                     }) => next,

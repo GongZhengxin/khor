@@ -1,6 +1,8 @@
 //! Actual QUIC connections, shared by active file owners only.
 use super::*;
 
+mod concurrent_files;
+
 async fn pooled_extra(
     f: &Fixture,
     ep: &iroh::Endpoint,

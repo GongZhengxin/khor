@@ -40,6 +40,8 @@ struct Scope {
     extra: Arc<Semaphore>,
     bulk: Arc<Semaphore>,
     first: Arc<Semaphore>,
+    #[cfg(test)]
+    ready: Arc<std::sync::atomic::AtomicUsize>,
 }
 
 impl Pools {
@@ -66,6 +68,8 @@ impl Pools {
                         extra: self.extra.clone(),
                         bulk: self.bulk.clone(),
                         first: self.first.clone(),
+                        #[cfg(test)]
+                        ready: Default::default(),
                     })
                 })
                 .clone();
@@ -85,6 +89,8 @@ impl Pools {
             live: Mutex::new(Weak::new()),
             cancelled: watch::channel(false).0,
             bulk: Arc::new(Semaphore::new(PEER_BULK)),
+            #[cfg(test)]
+            ready: Default::default(),
         });
         peers.insert(id.to_owned(), Arc::downgrade(&peer));
         peer
@@ -125,6 +131,8 @@ pub(super) struct Peer {
     live: Mutex<Weak<Lease>>,
     cancelled: watch::Sender<bool>,
     bulk: Arc<Semaphore>,
+    #[cfg(test)]
+    ready: Arc<std::sync::atomic::AtomicUsize>,
 }
 
 pub(super) struct Lease {
@@ -144,9 +152,62 @@ impl Lease {
 pub(super) struct Credit {
     _peer: Option<OwnedSemaphorePermit>,
     _global: OwnedSemaphorePermit,
+    #[cfg(test)]
+    ready: Option<(
+        Arc<std::sync::atomic::AtomicUsize>,
+        Arc<std::sync::atomic::AtomicUsize>,
+    )>,
+    #[cfg(test)]
+    decoded: bool,
+}
+
+#[cfg(test)]
+impl Credit {
+    pub(super) fn decoded(&mut self) {
+        if let Some((peer, global)) = &self.ready {
+            peer.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            global.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            self.decoded = true;
+        }
+    }
+}
+
+#[cfg(test)]
+impl Drop for Credit {
+    fn drop(&mut self) {
+        if self.decoded
+            && let Some((peer, global)) = &self.ready
+        {
+            peer.fetch_sub(1, std::sync::atomic::Ordering::SeqCst);
+            global.fetch_sub(1, std::sync::atomic::Ordering::SeqCst);
+        }
+    }
+}
+
+#[cfg(test)]
+pub(super) struct Usage {
+    pub(super) peer_held: usize,
+    pub(super) global_held: usize,
+    pub(super) peer_ready: usize,
+    pub(super) global_ready: usize,
+    pub(super) owners: usize,
 }
 
 impl Peer {
+    #[cfg(test)]
+    pub(super) fn usage(&self) -> Usage {
+        Usage {
+            peer_held: PEER_BULK - self.bulk.available_permits(),
+            global_held: BULK - self.scope.bulk.available_permits(),
+            peer_ready: self.ready.load(std::sync::atomic::Ordering::SeqCst),
+            global_ready: self.scope.ready.load(std::sync::atomic::Ordering::SeqCst),
+            owners: self
+                .live
+                .lock()
+                .unwrap_or_else(|p| p.into_inner())
+                .strong_count(),
+        }
+    }
     fn stopped(&self) -> bool {
         *self.cancelled.borrow() || self.scope.dead.load(std::sync::atomic::Ordering::Acquire)
     }
@@ -275,6 +336,10 @@ impl Peer {
             Ok::<Credit, String>(Credit {
                 _peer: peer,
                 _global: global,
+                #[cfg(test)]
+                ready: (!first).then(|| (self.ready.clone(), self.scope.ready.clone())),
+                #[cfg(test)]
+                decoded: false,
             })
         };
         tokio::select! {
