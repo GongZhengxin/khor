@@ -16,6 +16,8 @@ use khor_sync::store::Doc;
 
 use crate::proto::{self, DocumentInventory, MAX_FRAME, Request, Response};
 use crate::{Node, ipc, wires};
+#[path = "link_pull_pool.rs"]
+pub(crate) mod pull_pool;
 #[path = "link_pull_window.rs"]
 mod pull_window;
 #[path = "link_tree.rs"]
@@ -1275,7 +1277,16 @@ impl Node {
         ep: &std::sync::Arc<iroh::Endpoint>,
         wake: &tokio::sync::mpsc::UnboundedSender<Wake>,
     ) {
-        *self.ears.lock().unwrap_or_else(|p| p.into_inner()) = Some(ep.clone());
+        {
+            let mut ears = self.ears.lock().unwrap_or_else(|p| p.into_inner());
+            if ears
+                .as_ref()
+                .is_none_or(|old| !std::sync::Arc::ptr_eq(old, ep))
+            {
+                self.wires.pulls.clear(b"endpoint replaced");
+            }
+            *ears = Some(ep.clone());
+        }
         // New ears have homed nowhere yet (round NET-11, `ears_heard`).
         self.ears_homed
             .store(false, std::sync::atomic::Ordering::Relaxed);
@@ -3787,11 +3798,71 @@ impl Node {
         }
     }
 
-    /// One-file experimental Main; its owner never replaces the cached Main.
+    fn pull_peer(
+        &self,
+        ep: &iroh::Endpoint,
+        d: &DeviceInfo,
+    ) -> Option<std::sync::Arc<pull_pool::Peer>> {
+        let ears = self.ears.lock().unwrap_or_else(|p| p.into_inner());
+        let owner = ears.as_ref()?;
+        if !std::ptr::eq(owner.as_ref(), ep) || ep.is_closed() {
+            return None;
+        }
+        Some(self.wires.pulls.peer(owner, &d.id))
+    }
+
+    async fn pooled_transfer(
+        &self,
+        ep: &iroh::Endpoint,
+        d: &DeviceInfo,
+        peer: &std::sync::Arc<pull_pool::Peer>,
+    ) -> Result<std::sync::Arc<pull_pool::Lease>, PreparationFailure> {
+        self.transfer_admission(d)?;
+        let lease = peer
+            .prepare(|most| self.transfer_line_within(ep, d, most))
+            .await?;
+        self.transfer_admission(d)?;
+        let ears = self.ears.lock().unwrap_or_else(|p| p.into_inner());
+        if !ears
+            .as_ref()
+            .is_some_and(|owner| std::ptr::eq(owner.as_ref(), ep))
+        {
+            return Err(PreparationFailure::Stop("connection changed".into()));
+        }
+        Ok(lease)
+    }
+
+    fn transfer_admission(&self, d: &DeviceInfo) -> Result<(), PreparationFailure> {
+        if self.paused() || crate::pause::peer_on(self.root(), &d.id) {
+            return Err(PreparationFailure::Stop(unreached_words(
+                &d.name,
+                DialFailure::Refused(msg::paused_no_dial().to_owned()),
+            )));
+        }
+        if self.resting.load(std::sync::atomic::Ordering::Relaxed) {
+            return Err(PreparationFailure::Stop(unreached_words(
+                &d.name,
+                DialFailure::Refused(msg::resting_no_dial().to_owned()),
+            )));
+        }
+        Ok(())
+    }
+
+    /// One experimental Main; its owner never replaces the cached Main.
+    #[cfg(test)]
     async fn transfer_line_for(
         &self,
         ep: &iroh::Endpoint,
         d: &DeviceInfo,
+    ) -> Result<TransferLine, PreparationFailure> {
+        self.transfer_line_within(ep, d, DIAL_MOST).await
+    }
+
+    async fn transfer_line_within(
+        &self,
+        ep: &iroh::Endpoint,
+        d: &DeviceInfo,
+        most: Duration,
     ) -> Result<TransferLine, PreparationFailure> {
         if self.paused() || crate::pause::peer_on(self.root(), &d.id) {
             return Err(PreparationFailure::Stop(unreached_words(
@@ -3806,14 +3877,7 @@ impl Node {
             )));
         }
         let conn = self
-            .dial(
-                ep,
-                &d.id,
-                &d.addrs,
-                ALPN,
-                crate::deadline::current(),
-                DIAL_MOST,
-            )
+            .dial(ep, &d.id, &d.addrs, ALPN, crate::deadline::current(), most)
             .await
             .map_err(|e| {
                 let unavailable = matches!(e, DialFailure::TimedOut | DialFailure::Transport(_));
@@ -10222,17 +10286,23 @@ impl Node {
                 line.map_err(|e| unreached_words(&dial_to.name, e))?;
             }
         }
-        let mut transfer: Option<std::sync::Arc<TransferLine>> = None;
+        let pool = if separate {
+            self.pull_peer(ep, &dial_to)
+        } else {
+            None
+        };
+        let mut transfer: Option<std::sync::Arc<pull_pool::Lease>> = None;
         let mut opening: Option<
             std::pin::Pin<
                 Box<
-                    dyn std::future::Future<Output = Result<TransferLine, PreparationFailure>>
-                        + Send
+                    dyn std::future::Future<
+                            Output = Result<std::sync::Arc<pull_pool::Lease>, PreparationFailure>,
+                        > + Send
                         + '_,
                 >,
             >,
         > = None;
-        let mut attempted_transfer = !separate;
+        let mut attempted_transfer = pool.is_none();
         // **A pull resumes from what it already has** (round NET-4), the
         // way an offer does from its `.partial`: the bytes so far stay in
         // the part file, and beside it what they are bytes *of* — which
@@ -10282,7 +10352,7 @@ impl Node {
             Spoiled(String),
         }
         let outcome: Result<u64, Stop> = 'pull: loop {
-            let preparing = separate && (!attempted_transfer || opening.is_some());
+            let preparing = pool.is_some() && (!attempted_transfer || opening.is_some());
             let mut window =
                 pull_window::Window::new(offset, if preparing { 1 } else { PULL_AHEAD as usize });
             let target = &dial_to;
@@ -10300,7 +10370,7 @@ impl Node {
                     prepared = async { opening.as_mut().unwrap().as_mut().await }, if opening.is_some() => {
                         opening = None;
                         match prepared {
-                            Ok(line) => transfer = Some(std::sync::Arc::new(line)),
+                            Ok(line) => transfer = Some(line),
                             Err(PreparationFailure::RetryCached(_words)) => {}
                             Err(PreparationFailure::Stop(words)) => {
                                 break 'pull Err(Stop::Unreached(words));
@@ -10312,19 +10382,43 @@ impl Node {
                     next = window.next(contract.map(|(total, _)| total), |at| {
                         let req = ask(at);
                         let line = transfer.clone();
+                        let peer = pool.clone();
+                        let first = at == resumed_from;
                         async move {
-                            let answer = match line {
-                                Some(line) => self.ask_on_transfer(ep, target, &req, &line.0).await,
-                                None => self.ask_on(ep, target, &req).await,
-                            };
-                            (at, answer)
+                            let by = crate::deadline::current().unwrap_or_else(|| {
+                                tokio::time::Instant::now() + req.budget()
+                                    .saturating_add(DIAL_MOST)
+                                    .saturating_add(crate::hop::HOP_WITHIN)
+                                    .saturating_add(wires::RTT_BUDGET_MOST)
+                            });
+                            let (answer, credit) = crate::deadline::scope(by, async {
+                                let credit = match peer {
+                                    Some(peer) => match peer.credit(first).await {
+                                        Ok(credit) => Some(credit),
+                                        Err(error) => return (Err(error), None),
+                                    },
+                                    None => None,
+                                };
+                                let answer = match line {
+                                    Some(line) => self.ask_on_transfer(ep, target, &req, &line.line.0).await,
+                                    None => self.ask_on(ep, target, &req).await,
+                                };
+                                let answer = match answer {
+                                    Ok(Response::PathSlice { bytes, .. }) if bytes.len() > proto::SLICE as usize => {
+                                        Err("file slice exceeds protocol limit".into())
+                                    }
+                                    other => other,
+                                };
+                                (answer, credit)
+                            }).await;
+                            (at, answer, credit)
                         }
                     }) => next,
                 };
                 if is_stopped() {
                     break 'pull Err(Stop::Spoiled(crate::drops::cancelled()));
                 }
-                let Some((at, resp)) = next else {
+                let Some((at, resp, _credit)) = next else {
                     break 'pull Ok(offset);
                 };
                 if at != offset {
@@ -10391,7 +10485,11 @@ impl Node {
                         }
                         if !attempted_transfer {
                             attempted_transfer = true;
-                            opening = Some(Box::pin(self.transfer_line_for(ep, &dial_to)));
+                            opening = Some(Box::pin(self.pooled_transfer(
+                                ep,
+                                &dial_to,
+                                pool.as_ref().unwrap(),
+                            )));
                             // Drop the first-slice window before preparing the rest.
                             continue 'pull;
                         }

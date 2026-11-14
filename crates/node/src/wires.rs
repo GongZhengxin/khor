@@ -397,6 +397,7 @@ fn bytes_of(conn: &Connection) -> (u64, u64) {
 /// account of them.
 #[derive(Default)]
 pub(crate) struct Wires {
+    pub(crate) pulls: crate::link::pull_pool::Pools,
     slots: Mutex<HashMap<(String, Proto), Slot>>,
     dialing: Mutex<HashMap<(String, Proto), DialLock>>,
     pending_dials: Mutex<HashMap<String, std::sync::Weak<PendingDialState>>>,
@@ -1628,6 +1629,7 @@ impl Wires {
 
     /// Lets go of every wire to one machine (a pause bites on them).
     pub(crate) fn retire_peer(&self, id: &str, why: Retired) {
+        self.pulls.retire_peer(id, why.reason());
         let mut slots = self.slots.lock().unwrap_or_else(|p| p.into_inner());
         for proto in [Proto::Main, Proto::Tunnel] {
             if let Some(slot) = slots.get_mut(&(id.to_owned(), proto))
@@ -1656,6 +1658,7 @@ impl Wires {
     /// next ask dials afresh. What `ipc::Op::LetGo` does: a diagnostic,
     /// and the measurement of what a redial costs (round NET-3).
     pub(crate) fn let_go(&self, id: &str) {
+        self.pulls.retire_peer(id, Retired::NewEars.reason());
         let mut slots = self.slots.lock().unwrap_or_else(|p| p.into_inner());
         for proto in [Proto::Main, Proto::Tunnel] {
             if let Some(slot) = slots.get_mut(&(id.to_owned(), proto))
@@ -1668,6 +1671,7 @@ impl Wires {
     }
 
     pub(crate) fn clear(&self, why: Retired) {
+        self.pulls.clear(why.reason());
         let mut slots = self.slots.lock().unwrap_or_else(|p| p.into_inner());
         for ((id, proto), slot) in slots.iter_mut() {
             if slot.conn.is_some() {
@@ -1731,6 +1735,7 @@ impl Wires {
     /// phone going to the background owes them, so their wires to it end
     /// now instead of after their silence limit.
     pub(crate) fn let_go_served(&self, why: Retired) {
+        self.pulls.clear(why.reason());
         let served = std::mem::take(&mut *self.served.lock().unwrap_or_else(|p| p.into_inner()));
         for conn in served.iter().filter_map(|w| w.conn.upgrade()) {
             conn.close(0u32.into(), why.reason());

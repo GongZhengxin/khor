@@ -31,7 +31,7 @@ struct Seen {
 struct Fixture {
     root: tempfile::TempDir,
     node: Arc<Node>,
-    ep: iroh::Endpoint,
+    ep: Arc<iroh::Endpoint>,
     server: iroh::Endpoint,
     local: iroh::endpoint::Connection,
     remote: iroh::endpoint::Connection,
@@ -95,6 +95,8 @@ impl Fixture {
         } else {
             initial
         };
+        let ep = Arc::new(ep);
+        *node.ears.lock().unwrap() = Some(ep.clone());
         let node = Arc::new(node);
         let (local, remote) = tokio::time::timeout(Duration::from_secs(5), async {
             tokio::join!(ep.connect(server.addr(), ALPN), async {
