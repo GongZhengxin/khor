@@ -10333,6 +10333,9 @@ impl Node {
             ),
         };
         let resumed_from = offset;
+        let progress = pool
+            .as_ref()
+            .map(|_| std::sync::Arc::new(pull_pool::Progress::new(offset)));
         let ask = |at: u64| match &sat {
             Some(s) => Request::SatFetchPath {
                 sat: s.clone(),
@@ -10383,6 +10386,7 @@ impl Node {
                         let req = ask(at);
                         let line = transfer.clone();
                         let peer = pool.clone();
+                        let progress = progress.clone();
                         let first = at == resumed_from;
                         async move {
                             let by = crate::deadline::current().unwrap_or_else(|| {
@@ -10393,7 +10397,7 @@ impl Node {
                             });
                             let (answer, credit) = crate::deadline::scope(by, async {
                                 let credit = match peer {
-                                    Some(peer) => match peer.credit(first).await {
+                                    Some(peer) => match peer.credit(first, at, progress.as_deref().unwrap()).await {
                                         Ok(credit) => Some(credit),
                                         Err(error) => return (Err(error), None),
                                     },
@@ -10467,6 +10471,9 @@ impl Node {
                                 if offset == resumed_from && resumed_from > 0 {
                                     let _ = out.set_len(0);
                                     offset = 0;
+                                    if let Some(progress) = &progress {
+                                        progress.advance(0);
+                                    }
                                     contract = None;
                                     continue 'pull;
                                 }
@@ -10483,6 +10490,9 @@ impl Node {
                             break 'pull Err(Stop::Spoiled(e.to_string()));
                         }
                         offset += bytes.len() as u64;
+                        if let Some(progress) = &progress {
+                            progress.advance(offset);
+                        }
                         if let Some(job) = job {
                             job.moved
                                 .store(offset, std::sync::atomic::Ordering::Relaxed);

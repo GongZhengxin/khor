@@ -301,52 +301,113 @@ impl Peer {
         Ok(lease)
     }
 
-    pub(super) async fn credit(&self, first: bool) -> Result<Credit, String> {
+    fn credit_of(
+        &self,
+        peer: Option<OwnedSemaphorePermit>,
+        global: OwnedSemaphorePermit,
+        bulk: bool,
+    ) -> Credit {
+        #[cfg(not(test))]
+        let _ = bulk;
+        Credit {
+            _peer: peer,
+            _global: global,
+            #[cfg(test)]
+            ready: bulk.then(|| (self.ready.clone(), self.scope.ready.clone())),
+            #[cfg(test)]
+            decoded: false,
+        }
+    }
+
+    pub(super) async fn credit(
+        &self,
+        first: bool,
+        at: u64,
+        progress: &Progress,
+    ) -> Result<Credit, String> {
         let by = crate::deadline::current();
         let mut cancelled = self.cancelled.subscribe();
-        if self.stopped() {
-            return Err("file connection owner retired".into());
-        }
         let endpoint = self.scope.owner.upgrade().ok_or("connection ended")?;
-        if endpoint.is_closed() {
-            return Err("connection ended".into());
-        }
-        let acquire = async {
-            let peer = if first {
-                None
-            } else {
-                Some(
-                    self.bulk
-                        .clone()
-                        .acquire_owned()
-                        .await
-                        .map_err(|e| e.to_string())?,
-                )
+        let mut head = progress.head.subscribe();
+        loop {
+            if crate::deadline::expired(by) {
+                return Err(khor_catalog::msg::dial_timed_out().to_owned());
+            }
+            if self.stopped() {
+                return Err("file connection owner retired".into());
+            }
+            if endpoint.is_closed() {
+                return Err("connection ended".into());
+            }
+            let current = *head.borrow() == at;
+            // Prefer ordinary capacity for the cursor too. The reserved lane
+            // is needed only when retained prefetch would block its progress.
+            if current && !first {
+                if let Ok(peer) = self.bulk.clone().try_acquire_owned() {
+                    if let Ok(global) = self.scope.bulk.clone().try_acquire_owned() {
+                        return Ok(self.credit_of(Some(peer), global, true));
+                    }
+                }
+            }
+            if first || current {
+                return tokio::select! {
+                    biased;
+                    _ = cancelled.changed() => Err("file connection owner retired".into()),
+                    _ = endpoint.closed() => Err("connection ended".into()),
+                    result = crate::deadline::wait(by, self.scope.first.clone().acquire_owned()) => {
+                        let global = result.map_err(|_| khor_catalog::msg::dial_timed_out().to_owned())?.map_err(|e| e.to_string())?;
+                        Ok(self.credit_of(None, global, false))
+                    }
+                };
+            }
+            let acquire = async {
+                let peer = self
+                    .bulk
+                    .clone()
+                    .acquire_owned()
+                    .await
+                    .map_err(|e| e.to_string())?;
+                let global = self
+                    .scope
+                    .bulk
+                    .clone()
+                    .acquire_owned()
+                    .await
+                    .map_err(|e| e.to_string())?;
+                Ok::<Credit, String>(self.credit_of(Some(peer), global, true))
             };
-            let global = if first {
-                &self.scope.first
-            } else {
-                &self.scope.bulk
+            // A queued prefetch changes lane only when it becomes this file's
+            // committed cursor. No RPC has started, so promotion replays none.
+            let promoted = async {
+                loop {
+                    if *head.borrow_and_update() == at {
+                        return Ok::<(), String>(());
+                    }
+                    head.changed().await.map_err(|_| "file ended".to_owned())?;
+                }
             };
-            let global = global
-                .clone()
-                .acquire_owned()
-                .await
-                .map_err(|e| e.to_string())?;
-            Ok::<Credit, String>(Credit {
-                _peer: peer,
-                _global: global,
-                #[cfg(test)]
-                ready: (!first).then(|| (self.ready.clone(), self.scope.ready.clone())),
-                #[cfg(test)]
-                decoded: false,
-            })
-        };
-        tokio::select! {
-            biased;
-            _ = cancelled.changed() => Err("file connection owner retired".into()),
-            _ = endpoint.closed() => Err("connection ended".into()),
-            result = crate::deadline::wait(by, acquire) => result.map_err(|_| khor_catalog::msg::dial_timed_out().to_owned())?,
+            tokio::select! {
+                biased;
+                _ = cancelled.changed() => return Err("file connection owner retired".into()),
+                _ = endpoint.closed() => return Err("connection ended".into()),
+                result = promoted => { result?; },
+                result = crate::deadline::wait(by, acquire) => return result.map_err(|_| khor_catalog::msg::dial_timed_out().to_owned())?,
+            }
         }
+    }
+}
+
+pub(super) struct Progress {
+    head: watch::Sender<u64>,
+}
+
+impl Progress {
+    pub(super) fn new(at: u64) -> Self {
+        Self {
+            head: watch::channel(at).0,
+        }
+    }
+    pub(super) fn advance(&self, at: u64) {
+        self.head.send_replace(at);
     }
 }
