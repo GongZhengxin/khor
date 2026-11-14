@@ -3698,3 +3698,22 @@ fn a_local_read_clears_a_cached_remote_badge_before_sync() {
         "future receipts are clamped to the currently known row"
     );
 }
+
+/// **A bare program is found on a Windows PATH.** The finder split the
+/// variable on ':', which on Windows turned `C:\Windows\system32;...`
+/// into fragments of drive letters, so nothing was ever found by name.
+#[cfg(windows)]
+#[test]
+fn a_bare_program_is_found_on_a_windows_path() {
+    let r = root("find-windows");
+    let bin = r.join("bin");
+    std::fs::create_dir_all(&bin).unwrap();
+    std::fs::write(bin.join("khor-probe.exe"), b"MZ").unwrap();
+    let path = format!("{};{}", r.join("missing").display(), bin.display());
+    let found = crate::find_program("khor-probe", &path).expect("the probe is on the path");
+    assert!(
+        found.ends_with("khor-probe.exe"),
+        "the resolved file, with the extension Windows adds: {found}"
+    );
+    assert!(crate::find_program("khor-absent", &path).is_none());
+}

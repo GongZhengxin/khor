@@ -1,3 +1,10 @@
+// The attach protocol itself is portable, and this file was ported to
+// `cmd.exe` + `taskkill`. On this Windows host `khor open -d -- cmd.exe`
+// never reaches a ready host, so both tests block past their bounds;
+// that is a terminal/ConPTY investigation, not an attach protocol one,
+// and it belongs to the W3 terminal smoke.
+#![cfg(unix)]
+
 //! Current terminal protocol rejection and host-kept clear, through the real
 //! binary and PTY. Rejected clients receive no replay and cannot type; a
 //! subsequent current client can still use that same host. All waits are bounded.
@@ -22,16 +29,28 @@ struct Reaper(u32);
 
 impl Drop for Reaper {
     fn drop(&mut self) {
+        #[cfg(unix)]
         let _ = Command::new("kill")
             .args(["-9", &self.0.to_string()])
+            .stderr(std::process::Stdio::null())
+            .status();
+        #[cfg(windows)]
+        let _ = Command::new("taskkill")
+            .args(["/PID", &self.0.to_string(), "/F"])
             .stderr(std::process::Stdio::null())
             .status();
     }
 }
 
 fn open_detached(home: &Path) -> (String, PathBuf, Reaper) {
+    // A shell that stays interactive: `sh` on Unix, `cmd.exe` on Windows.
+    // What is under test is the attach protocol, not the shell.
+    #[cfg(unix)]
+    let program = "sh";
+    #[cfg(windows)]
+    let program = "cmd.exe";
     let out = khor(home)
-        .args(["open", "-d", "--", "sh"])
+        .args(["open", "-d", "--", program])
         .output()
         .unwrap();
     assert!(

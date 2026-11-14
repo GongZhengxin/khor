@@ -213,19 +213,11 @@ F:\khor-w1-evidence\ci-run2.log
 
 
 
-## 8. 已知 Windows 限制（W1 显式保留）
+## 8. 已知 Windows 限制（W1 当时）
 
-为使 `khor-node` 在 Windows 编译，以下能力暂为显式不支持/安全降级；均返回结构化错误或保守行为，不是静默失败：
+W1 写这一节时，下列能力还是显式 unsupported；**分支之后已经补了实现**，清单因此过时。逐条复核见 [W2-D 平台 stub 复核](W2-D-STUB-AUDIT.md)：8 条里 6 条已实现（`khor serve` keeper、`khor quit`、tabs 写、attach 原始终端、askpass 父进程检测、`foreground_group`/`tty_path` 已不存在）、1 条是注释级差异（退出词汇）、1 条是平台设计（Windows 走 MSI 安装器）。
 
-- `khor serve` keeper（需要 POSIX exec/信号转发）：返回 unsupported；
-- `khor quit` 停止 serve/host（POSIX 信号）：返回 unsupported；
-- tabs 写操作（flock）：返回 unsupported；`tabs list` 可读；
-- attach 原始终端（termios）：Windows 返回 unsupported；
-- secret askpass 父进程检测：Windows 返回 false（保守）；
-- `foreground_group`/`tty_path`：Windows 返回 None；
-- 进程退出 CRLF/CRT 清理与 Unix 不完全相同。
-
-这些属于 W2+ 的 Windows 适配工作，不应在 W1 被当作“全功能完成”。
+本文件只保留 W1 当天的事实；**不要再用这一节判断当前能力**。
 
 ## 9. 验收判定
 

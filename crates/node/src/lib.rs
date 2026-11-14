@@ -6342,15 +6342,36 @@ pub(crate) fn find_program(command: &str, path: &str) -> Option<String> {
             p.is_file()
         }
     };
-    if command.contains('/') {
+    // A path with a directory in it is used as given. Windows also accepts
+    // the backslash separator there, and resolves a bare name through
+    // PATHEXT's usual three extensions.
+    let names_a_directory = command.contains('/') || (cfg!(windows) && command.contains('\\'));
+    if names_a_directory {
         let p = std::path::Path::new(command);
         return runnable(p).then(|| command.to_owned());
     }
-    path.split(':')
-        .filter(|d| !d.is_empty())
-        .map(|d| std::path::Path::new(d).join(command))
-        .find(|p| runnable(p))
-        .map(|p| p.display().to_string())
+    // `split_paths` is the platform's own splitter: ';' on Windows, ':'
+    // elsewhere, quotes handled. Splitting on ':' by hand turned every
+    // Windows PATH into fragments of drive letters and found nothing.
+    for dir in std::env::split_paths(std::ffi::OsStr::new(path)) {
+        if dir.as_os_str().is_empty() {
+            continue;
+        }
+        let candidate = dir.join(command);
+        if runnable(&candidate) {
+            return Some(candidate.display().to_string());
+        }
+        #[cfg(windows)]
+        if std::path::Path::new(command).extension().is_none() {
+            for extension in ["exe", "cmd", "bat"] {
+                let with = candidate.with_extension(extension);
+                if runnable(&with) {
+                    return Some(with.display().to_string());
+                }
+            }
+        }
+    }
+    None
 }
 
 #[cfg(test)]

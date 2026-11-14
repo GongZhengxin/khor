@@ -12,13 +12,6 @@ mod startup;
 #[cfg(unix)]
 pub(crate) use startup::ready;
 
-/// Windows has no keeper (see [`keep`]), so no serve can be waiting for
-/// its startup acknowledgement: there is nothing to write.
-#[cfg(not(unix))]
-pub(crate) fn ready() -> Result<(), String> {
-    Ok(())
-}
-
 #[cfg(unix)]
 use std::sync::atomic::{AtomicI32, Ordering};
 
@@ -371,23 +364,4 @@ pub fn keep() -> Result<(), String> {
         std::thread::sleep(std::time::Duration::from_secs(backoff));
         backoff = (backoff * 2).min(BACKOFF_MAX);
     }
-}
-
-/// **No keeper on Windows.** The keeper is a POSIX supervisor: it
-/// `exec`s the selected image in place so the pid survives the swap,
-/// forwards `SIGTERM`/`SIGINT` to the child from a signal handler, and
-/// reads a child's death from `ExitStatusExt::signal`. Windows has
-/// neither `exec` nor POSIX signals, so a kept serve cannot be
-/// supervised here yet.
-///
-/// Unsupported rather than silently degraded: running the serve
-/// unsupervised would not be "the same feature", it would be a serve
-/// that an upgrade can leave running behind a stale pid file. The
-/// caller (`khor serve`) stays in the foreground instead.
-#[cfg(not(unix))]
-pub fn keep() -> Result<(), String> {
-    Err(
-        "`khor serve` keeper is unsupported on Windows: it needs exec and POSIX signal forwarding"
-            .to_owned(),
-    )
 }

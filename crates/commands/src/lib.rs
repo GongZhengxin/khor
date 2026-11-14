@@ -1840,6 +1840,25 @@ fn one_path(rest: &[String]) -> Result<(String, String), String> {
 /// nothing on any other machine — so only a local path is resolved
 /// here, and a path meant for another machine must already be absolute
 /// (`Node::ws_add` refuses it otherwise, in the same words `Ls` uses).
+/// `std::fs::canonicalize` answers with the Windows verbatim prefix
+/// (`\\?\F:\...`). That spelling is for the OS to hand back to the OS: a
+/// person typed `F:\...`, and a row another machine reads must carry the
+/// spelling every other path in khor carries. Removed here, at the one
+/// place a typed path becomes absolute.
+fn plain_path(path: std::path::PathBuf) -> std::path::PathBuf {
+    #[cfg(windows)]
+    {
+        let text = path.to_string_lossy();
+        if let Some(rest) = text.strip_prefix(r"\\?\") {
+            if let Some(unc) = rest.strip_prefix(r"UNC\") {
+                return std::path::PathBuf::from(format!(r"\\{unc}"));
+            }
+            return std::path::PathBuf::from(rest.to_owned());
+        }
+    }
+    path
+}
+
 fn here(dir: &str) -> Result<String, String> {
     let p = std::path::Path::new(dir);
     if p.is_absolute() {
@@ -1856,7 +1875,7 @@ fn here(dir: &str) -> Result<String, String> {
         None => p.to_path_buf(),
     };
     match std::fs::canonicalize(&joined) {
-        Ok(abs) => Ok(abs.display().to_string()),
+        Ok(abs) => Ok(plain_path(abs).display().to_string()),
         // Not this machine's path, or not there: handed on as typed so
         // the refusal comes from the one place that knows which.
         Err(_) => Ok(dir.to_owned()),

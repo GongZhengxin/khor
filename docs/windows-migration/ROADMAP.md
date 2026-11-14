@@ -9,7 +9,7 @@
 | --- | --- | --- |
 | W0 基线 / 功能矩阵 / 审批包 | ✅ 完成 | [BASELINE](BASELINE.md)、[FEATURE-MATRIX](FEATURE-MATRIX.md)、[APPROVAL-PACKAGE](APPROVAL-PACKAGE.md) |
 | W1 构建底座 + CI | ✅ 完成 | [W1-ACCEPTANCE](W1-ACCEPTANCE.md)、[W1-CI](W1-CI.md)；远端 run 43559639618 success |
-| W2 节点层 Windows 适配 | 🟡 进行中 | W2-A ✅（[验收](W2-TABS-WINDOWS-LOCK.md)）；W2-B ✅ 收敛到 4 条（3 条平台无关预存红 + 1 条已知 flake，[验收](W2-B-NODE-SUITE.md)）；W2-C ✅（[加固记录](W2-C-TABS-HARDENING.md)）；W2-D 待做 |
+| W2 节点层 Windows 适配 | 🟡 进行中 | W2-A ✅（[验收](W2-TABS-WINDOWS-LOCK.md)）；W2-B ✅ 收敛到 4 条（3 条平台无关预存红 + 1 条已知 flake，[验收](W2-B-NODE-SUITE.md)）；W2-C ✅（[加固记录](W2-C-TABS-HARDENING.md)）；W2-D ✅（[平台 stub 复核](W2-D-STUB-AUDIT.md)：6/8 条旧限制已实现，CLI 测试套件可在 Windows 编译，`quit`/`ws` 实跑通过）；W2-E（3 条上游预存红）待用户决策 |
 | W3 进程 / 终端 / 文件 smoke | ⬜ 未开始 | — |
 | W4 设备网络 + Session 端到端 | ⬜ 未开始 | — |
 | W5 GUI / Web 桌面端 | ⬜ 未开始 | — |
