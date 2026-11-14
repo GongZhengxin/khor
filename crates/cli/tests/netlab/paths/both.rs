@@ -5,14 +5,14 @@ use super::*;
 use crate::nat::{Net, router};
 use std::net::SocketAddr;
 
-fn snapshot(n: &LabNode) -> serde_json::Value {
+pub(super) fn snapshot(n: &LabNode) -> serde_json::Value {
     serde_json::json!({
         "node":n.name,"configured_v4":n.dev.ip(),"configured_v6":n.dev.ip6(),
         "v4":addresses(&n.dev,"-4"),"v6":addresses(&n.dev,"-6"),
     })
 }
 
-fn present(state: &serde_json::Value, family: &str, address: &str) -> bool {
+pub(super) fn present(state: &serde_json::Value, family: &str, address: &str) -> bool {
     state[family]
         .as_array()
         .into_iter()
@@ -22,7 +22,7 @@ fn present(state: &serde_json::Value, family: &str, address: &str) -> bool {
         .any(|entry| entry["local"].as_str() == Some(address))
 }
 
-fn changed(
+pub(super) fn changed(
     before: &serde_json::Value,
     after: &serde_json::Value,
     family: &str,
@@ -40,7 +40,7 @@ fn changed(
     }
 }
 
-fn rules(r: &Router) -> serde_json::Value {
+pub(super) fn rules(r: &Router) -> serde_json::Value {
     let mut command = Command::new("nft");
     command
         .args(["list", "ruleset"])
@@ -57,7 +57,7 @@ fn rules(r: &Router) -> serde_json::Value {
         "stderr":String::from_utf8_lossy(&output.stderr)})
 }
 
-async fn read(
+pub(super) async fn read(
     from: &LabNode,
     to: &LabNode,
     marker: &str,
@@ -90,7 +90,7 @@ async fn read(
     .await
 }
 
-async fn sample(
+pub(super) async fn sample(
     from: &LabNode,
     to: &LabNode,
     direction: &str,

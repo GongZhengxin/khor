@@ -30,6 +30,15 @@ pub struct Relay {
 /// A plain relay (the Beijing shape: HTTP, no QUIC address discovery) on
 /// `name`, its link slowed by `rtt` in all (half each way) when given.
 pub async fn relay(lab: &Lab, tag: &str, name: &str, rtt: Option<Duration>) -> Relay {
+    relay_family(lab, tag, name, rtt, false).await
+}
+
+/// A literal IPv6 HTTP Relay for IPv6-only mobility; no IPv4 fallback URL.
+pub async fn relay_v6(lab: &Lab, tag: &str, name: &str, rtt: Option<Duration>) -> Relay {
+    relay_family(lab, tag, name, rtt, true).await
+}
+
+async fn relay_family(lab: &Lab, tag: &str, name: &str, rtt: Option<Duration>, v6: bool) -> Relay {
     let dc = lab
         .add_router(&format!("dc-{name}"))
         .preset(RouterPreset::Public)
@@ -42,9 +51,13 @@ pub async fn relay(lab: &Lab, tag: &str, name: &str, rtt: Option<Duration>) -> R
         slow(&dev, rtt).await;
     }
     let home = scratch(&format!("{tag}-{name}"));
-    let ip = dev.ip().expect("a relay has IPv4");
+    let bind = if v6 {
+        std::net::SocketAddr::new(dev.ip6().expect("a relay has IPv6").into(), 3340)
+    } else {
+        std::net::SocketAddr::new(dev.ip().expect("a relay has IPv4").into(), 3340)
+    };
     let mut cmd = khor(&home.0);
-    cmd.args(["relay", "--dev", "--bind", &format!("{ip}:3340"), "--state"])
+    cmd.args(["relay", "--dev", "--bind", &bind.to_string(), "--state"])
         .arg(home.0.join("state"))
         .stdout(Stdio::piped())
         .stderr(std::fs::File::create(home.0.join("relay.log")).unwrap());
