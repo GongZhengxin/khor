@@ -3792,28 +3792,53 @@ impl Node {
         d: &DeviceInfo,
     ) -> Result<TransferLine, String> {
         if self.paused() || crate::pause::peer_on(self.root(), &d.id) {
-            return Err(unreached_words(&d.name, DialFailure::Refused(msg::paused_no_dial().to_owned())));
+            return Err(unreached_words(
+                &d.name,
+                DialFailure::Refused(msg::paused_no_dial().to_owned()),
+            ));
         }
         if self.resting.load(std::sync::atomic::Ordering::Relaxed) {
-            return Err(unreached_words(&d.name, DialFailure::Refused(msg::resting_no_dial().to_owned())));
+            return Err(unreached_words(
+                &d.name,
+                DialFailure::Refused(msg::resting_no_dial().to_owned()),
+            ));
         }
-        let conn = self.dial(ep, &d.id, &d.addrs, ALPN,
-            crate::deadline::current(), DIAL_MOST).await
+        let conn = self
+            .dial(
+                ep,
+                &d.id,
+                &d.addrs,
+                ALPN,
+                crate::deadline::current(),
+                DIAL_MOST,
+            )
+            .await
             .map_err(|e| unreached_words(&d.name, e))?;
         let line = TransferLine(Line {
-            id: d.id.clone(), name: d.name.clone(), proto: wires::Proto::Main, conn,
+            id: d.id.clone(),
+            name: d.name.clone(),
+            proto: wires::Proto::Main,
+            conn,
         });
         // Registration precedes the suspension check, closing the adoption race.
         self.wires.transferring(&line.0.conn);
         if self.paused() || crate::pause::peer_on(self.root(), &d.id) {
-            return Err(unreached_words(&d.name, DialFailure::Refused(msg::paused_no_dial().to_owned())));
+            return Err(unreached_words(
+                &d.name,
+                DialFailure::Refused(msg::paused_no_dial().to_owned()),
+            ));
         }
         if self.resting.load(std::sync::atomic::Ordering::Relaxed) {
-            return Err(unreached_words(&d.name, DialFailure::Refused(msg::resting_no_dial().to_owned())));
+            return Err(unreached_words(
+                &d.name,
+                DialFailure::Refused(msg::resting_no_dial().to_owned()),
+            ));
         }
-        khor_net::carry::observe_lifecycle(&d.id, "pull_wire_opened", || {
-            serde_json::json!({"wire":line.0.conn.stable_id(),"alpn":String::from_utf8_lossy(line.0.conn.alpn())})
-        });
+        khor_net::carry::observe_lifecycle(
+            &d.id,
+            "pull_wire_opened",
+            || serde_json::json!({"wire":line.0.conn.stable_id(),"alpn":String::from_utf8_lossy(line.0.conn.alpn())}),
+        );
         Ok(line)
     }
 
@@ -3825,13 +3850,21 @@ impl Node {
         line: &Line,
     ) -> Result<Response, String> {
         if self.paused() || crate::pause::peer_on(self.root(), &d.id) {
-            return Err(unreached_words(&d.name, DialFailure::Refused(msg::paused_no_dial().to_owned())));
+            return Err(unreached_words(
+                &d.name,
+                DialFailure::Refused(msg::paused_no_dial().to_owned()),
+            ));
         }
         if self.resting.load(std::sync::atomic::Ordering::Relaxed) {
-            return Err(unreached_words(&d.name, DialFailure::Refused(msg::resting_no_dial().to_owned())));
+            return Err(unreached_words(
+                &d.name,
+                DialFailure::Refused(msg::resting_no_dial().to_owned()),
+            ));
         }
         let by = crate::deadline::current().unwrap_or_else(|| {
-            let budget = req.budget().saturating_add(DIAL_MOST)
+            let budget = req
+                .budget()
+                .saturating_add(DIAL_MOST)
                 .saturating_add(crate::hop::HOP_WITHIN)
                 .saturating_add(wires::RTT_BUDGET_MOST);
             tokio::time::Instant::now() + budget
@@ -10017,9 +10050,10 @@ impl Node {
         cap: Option<u64>,
         resume: bool,
     ) -> Result<(u64, std::path::PathBuf), String> {
-        let separate = std::env::var("KHOR_EXPERIMENT_PULL_WIRE")
-            .is_ok_and(|layout| layout == "separate");
-        self.pull_into_with_layout(ep, machine, path, fell, job, cap, resume, separate).await
+        let separate =
+            std::env::var("KHOR_EXPERIMENT_PULL_WIRE").is_ok_and(|layout| layout == "separate");
+        self.pull_into_with_layout(ep, machine, path, fell, job, cap, resume, separate)
+            .await
     }
 
     #[allow(clippy::too_many_arguments)]
