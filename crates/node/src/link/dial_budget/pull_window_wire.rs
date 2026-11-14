@@ -57,7 +57,13 @@ impl Fixture {
     }
 
     async fn with_options(kind: Held, offered: bool, node_identity: bool) -> Self {
-        Self::with_payload(kind, offered, node_identity, (12 * proto::SLICE + 1234) as usize).await
+        Self::with_payload(
+            kind,
+            offered,
+            node_identity,
+            (12 * proto::SLICE + 1234) as usize,
+        )
+        .await
     }
 
     async fn with_payload(kind: Held, offered: bool, node_identity: bool, size: usize) -> Self {
@@ -103,11 +109,7 @@ impl Fixture {
         let seen = Arc::new(Mutex::new(Seen::default()));
         let changed = Arc::new(Notify::new());
         let release = Arc::new(Notify::new());
-        let bytes = Arc::new(
-            (0..size)
-                .map(|i| (i % 251) as u8)
-                .collect::<Vec<_>>(),
-        );
+        let bytes = Arc::new((0..size).map(|i| (i % 251) as u8).collect::<Vec<_>>());
         let serving = Aborts(Some(tokio::spawn({
             let peer = server.id().to_string();
             let (conn, seen, changed, release, bytes) = (

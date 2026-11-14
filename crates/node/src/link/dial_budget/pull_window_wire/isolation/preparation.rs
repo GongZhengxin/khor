@@ -51,34 +51,48 @@ async fn cached_main_delivers_first_content_without_accepting_an_extra_handshake
     );
 }
 
-
 async fn complete_small_file_without_extra_handshake(size: usize) {
     let f = Fixture::with_payload(Held::All, false, true, size).await;
     {
         let loaded = f.node.devices_loaded().unwrap();
-        loaded.doc.upsert(&peer(&f).id, "peer", &peer(&f).addrs).unwrap();
+        loaded
+            .doc
+            .upsert(&peer(&f).id, "peer", &peer(&f).addrs)
+            .unwrap();
         let mut store = loaded.store;
         store.flush(&loaded.doc).unwrap();
     }
     let landing = crate::files::landing(PATH, f.root.path()).unwrap();
     let (moved, destination) = tokio::time::timeout(
         Duration::from_secs(5),
-        f.node.pull_into_with_layout(&f.ep, "peer", PATH, landing, None, None, false, true),
-    ).await.unwrap().unwrap();
+        f.node
+            .pull_into_with_layout(&f.ep, "peer", PATH, landing, None, None, false, true),
+    )
+    .await
+    .unwrap()
+    .unwrap();
     assert_eq!(moved, size as u64);
     assert_eq!(std::fs::read(destination).unwrap(), *f.bytes);
     assert!(!f.part().exists() && !PullNote::path_of(&f.part()).exists());
     assert_eq!(f.seen.lock().unwrap().issued, BTreeSet::from([0]));
     let unexpected = tokio::time::timeout(Duration::from_millis(500), f.server.accept()).await;
-    assert!(unexpected.is_err(), "small file must not initiate an extra handshake");
+    assert!(
+        unexpected.is_err(),
+        "small file must not initiate an extra handshake"
+    );
     cached_answer(&f).await;
     // The same observer must actually detect a new authenticated connection.
     let (line, remote) = extra(&f).await;
     drop(line);
-    tokio::time::timeout(Duration::from_secs(5), remote.closed()).await.unwrap();
+    tokio::time::timeout(Duration::from_secs(5), remote.closed())
+        .await
+        .unwrap();
     cached_answer(&f).await;
     f.close().await;
-    eprintln!("[pull-preparation-boundary] {}", serde_json::json!({"event":"small_file_no_extra","bytes":size,"exact_bytes":true,"extra_handshakes":0,"observer_positive_control":true,"cached_main_control":true,"fixture_closed":true}));
+    eprintln!(
+        "[pull-preparation-boundary] {}",
+        serde_json::json!({"event":"small_file_no_extra","bytes":size,"exact_bytes":true,"extra_handshakes":0,"observer_positive_control":true,"cached_main_control":true,"fixture_closed":true})
+    );
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
@@ -96,22 +110,34 @@ async fn exactly_one_slice_finishes_without_an_extra_handshake() {
     complete_small_file_without_extra_handshake(proto::SLICE as usize).await;
 }
 
-
 async fn preparation_is_prevented(kind: &str) {
     let f = Fixture::with_identity(Held::All, true).await;
     let target = peer(&f);
     match kind {
         "local_pause" => crate::pause::set_on(f.node.root(), true).unwrap(),
-        "peer_pause" => crate::pause::set_peer(f.node.root(), &target.id, &target.name, true).unwrap(),
-        "resting" => f.node.resting.store(true, std::sync::atomic::Ordering::Relaxed),
+        "peer_pause" => {
+            crate::pause::set_peer(f.node.root(), &target.id, &target.name, true).unwrap()
+        }
+        "resting" => f
+            .node
+            .resting
+            .store(true, std::sync::atomic::Ordering::Relaxed),
         "caller_expired" => {}
         _ => panic!("unknown preparation control"),
     }
     let attempt = async {
-        tokio::time::timeout(Duration::from_secs(5), f.node.transfer_line_for(&f.ep, &target)).await
+        tokio::time::timeout(
+            Duration::from_secs(5),
+            f.node.transfer_line_for(&f.ep, &target),
+        )
+        .await
     };
     let result = if kind == "caller_expired" {
-        crate::deadline::scope(tokio::time::Instant::now() - Duration::from_millis(1), attempt).await
+        crate::deadline::scope(
+            tokio::time::Instant::now() - Duration::from_millis(1),
+            attempt,
+        )
+        .await
     } else {
         attempt.await
     };
@@ -119,8 +145,13 @@ async fn preparation_is_prevented(kind: &str) {
     drop(result);
     match kind {
         "local_pause" => crate::pause::set_on(f.node.root(), false).unwrap(),
-        "peer_pause" => crate::pause::set_peer(f.node.root(), &target.id, &target.name, false).unwrap(),
-        "resting" => f.node.resting.store(false, std::sync::atomic::Ordering::Relaxed),
+        "peer_pause" => {
+            crate::pause::set_peer(f.node.root(), &target.id, &target.name, false).unwrap()
+        }
+        "resting" => f
+            .node
+            .resting
+            .store(false, std::sync::atomic::Ordering::Relaxed),
         "caller_expired" => {}
         _ => unreachable!(),
     }
@@ -130,11 +161,19 @@ async fn preparation_is_prevented(kind: &str) {
     cached_answer(&f).await;
     let (line, remote) = extra(&f).await;
     drop(line);
-    tokio::time::timeout(Duration::from_secs(5), remote.closed()).await.unwrap();
+    tokio::time::timeout(Duration::from_secs(5), remote.closed())
+        .await
+        .unwrap();
     cached_answer(&f).await;
     f.close().await;
-    eprintln!("[pull-preparation-boundary] {}", serde_json::json!({"event":"preparation_prevented","kind":kind,"terminal_failure":prevented,"extra_handshakes":if no_handshake {0} else {1},"observer_positive_control":true,"cached_main_control":true,"fixture_closed":true}));
-    assert!(prevented && no_handshake, "policy or caller expiry must not become optional fallback or a new handshake");
+    eprintln!(
+        "[pull-preparation-boundary] {}",
+        serde_json::json!({"event":"preparation_prevented","kind":kind,"terminal_failure":prevented,"extra_handshakes":if no_handshake {0} else {1},"observer_positive_control":true,"cached_main_control":true,"fixture_closed":true})
+    );
+    assert!(
+        prevented && no_handshake,
+        "policy or caller expiry must not become optional fallback or a new handshake"
+    );
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
@@ -171,8 +210,13 @@ async fn cancelling_an_unaccepted_preparation_preserves_the_cached_main() {
     cached_answer(&f).await;
     let (line, remote) = extra(&f).await;
     drop(line);
-    tokio::time::timeout(Duration::from_secs(5), remote.closed()).await.unwrap();
+    tokio::time::timeout(Duration::from_secs(5), remote.closed())
+        .await
+        .unwrap();
     cached_answer(&f).await;
     f.close().await;
-    eprintln!("[pull-preparation-boundary] {}", serde_json::json!({"event":"cancel_unaccepted_preparation","actual_incoming_observed":true,"cached_main_control":true,"later_extra_connection_control":true,"fixture_closed":true}));
+    eprintln!(
+        "[pull-preparation-boundary] {}",
+        serde_json::json!({"event":"cancel_unaccepted_preparation","actual_incoming_observed":true,"cached_main_control":true,"later_extra_connection_control":true,"fixture_closed":true})
+    );
 }
