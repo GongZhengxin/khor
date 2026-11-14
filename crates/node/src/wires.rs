@@ -242,6 +242,13 @@ pub(crate) enum Proto {
 }
 
 impl Proto {
+    fn index(self) -> usize {
+        match self {
+            Proto::Main => 0,
+            Proto::Tunnel => 1,
+        }
+    }
+
     pub(crate) fn alpn(self) -> &'static [u8] {
         match self {
             Proto::Main => khor_net::endpoint::ALPN,
@@ -469,6 +476,7 @@ struct HopOfferTestGate {
 #[derive(Default)]
 struct PeerPresence {
     contact: u64,
+    handshakes: [u64; 2],
     gone: Option<Instant>,
 }
 
@@ -501,7 +509,25 @@ const LEFT_ALONE_FOR: Duration = Duration::from_secs(600);
 /// last dial under it failed, when, and the peer contact version it began
 /// with — what an asker who waited for that dial may share.
 pub(crate) type DialLock =
-    Arc<tokio::sync::Mutex<Option<(Instant, crate::link::DialFailure, u64)>>>;
+    Arc<tokio::sync::Mutex<Option<(Instant, crate::link::DialFailure, DialContact)>>>;
+
+/// Resting is peer-wide; a failed protocol only loses its meaning after
+/// a new successful handshake on that protocol, not ordinary traffic.
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct DialContact {
+    pub(crate) presence: u64,
+    pub(crate) protocol: u64,
+}
+
+impl DialContact {
+    pub(crate) fn is_current_for(self, failure: &crate::link::DialFailure, now: Self) -> bool {
+        match failure {
+            crate::link::DialFailure::Asleep(_) => self.presence == now.presence,
+            crate::link::DialFailure::CallerExpired => false,
+            _ => self.protocol == now.protocol,
+        }
+    }
+}
 
 /// A connection another machine opened to this one.
 struct Served {
@@ -1288,21 +1314,52 @@ impl Wires {
         slot.conn = Some(conn);
         self.counts.dialed.fetch_add(1, Relaxed);
         drop(slots);
-        self.back(id);
+        self.contacted(id, proto);
     }
 
     /// A dial for this key failed: the pump waits before the next one.
+    #[cfg(test)]
     pub(crate) fn failed(&self, id: &str, proto: Proto, why: String) {
+        self.failed_at_contact(id, proto, why, None);
+    }
+
+    /// Count the actual failed attempt, but do not publish stale negative
+    /// reachability after a newer authenticated handshake on this protocol.
+    pub(crate) fn failed_if_unchanged(
+        &self,
+        id: &str,
+        proto: Proto,
+        why: String,
+        protocol_contact: u64,
+    ) {
+        self.failed_at_contact(id, proto, why, Some(protocol_contact));
+    }
+
+    fn failed_at_contact(&self, id: &str, proto: Proto, why: String, expected: Option<u64>) {
         let (_, wait) = self.next_backoff(id, proto);
         let mut slots = self.slots.lock().unwrap_or_else(|p| p.into_inner());
+        // Same order as contacted: slots -> presence -> down. Never hold
+        // either state lock while pruning/closing incoming connections.
+        let presence = expected.map(|_| self.presence.lock().unwrap_or_else(|p| p.into_inner()));
         let slot = slots.entry((id.to_owned(), proto)).or_default();
         slot.last_failure = Some((why, Instant::now()));
-        slot.failures = slot.failures.saturating_add(1);
         slot.failed_total += 1;
-        slot.retry_at = Some(Instant::now() + wait);
         self.counts.dial_failed.fetch_add(1, Relaxed);
-        drop(slots);
+        if let Some(expected) = expected {
+            let actual = presence
+                .as_ref()
+                .unwrap()
+                .get(id)
+                .map_or(0, |p| p.handshakes[proto.index()]);
+            if actual != expected {
+                return;
+            }
+        }
+        slot.failures = slot.failures.saturating_add(1);
+        slot.retry_at = Some(Instant::now() + wait);
         self.went_down(id);
+        drop(presence);
+        drop(slots);
         // A connection that machine opened here and that has missed a
         // keepalive may be what steered this dial wrong (`Self::serving`):
         // it goes, and the next dial sprays every road again.
@@ -1621,7 +1678,15 @@ impl Wires {
     /// in this file's own test, a second write after a restart failing
     /// after a full 10 s dial.
     pub(crate) fn serving(&self, conn: &Connection) {
-        self.back(&conn.remote_id().to_string());
+        let id = conn.remote_id().to_string();
+        if let Some(proto) = [Proto::Main, Proto::Tunnel]
+            .into_iter()
+            .find(|p| p.alpn() == conn.alpn())
+        {
+            self.contacted(&id, proto);
+        } else {
+            self.back(&id);
+        }
         self.note(
             Some(&conn.remote_id().to_string()),
             crate::journal::What::Inbound,
@@ -1739,12 +1804,40 @@ impl Wires {
 
     /// The positive contact known when a dial starts. This is not a
     /// network/address epoch and does not change a caller's deadline.
+    #[cfg(test)]
     pub(crate) fn contact_version(&self, id: &str) -> u64 {
         self.presence
             .lock()
             .unwrap_or_else(|p| p.into_inner())
             .get(id)
             .map_or(0, |p| p.contact)
+    }
+
+    pub(crate) fn dial_contact(&self, id: &str, proto: Proto) -> DialContact {
+        let presence = self.presence.lock().unwrap_or_else(|p| p.into_inner());
+        DialContact {
+            presence: presence.get(id).map_or(0, |p| p.contact),
+            protocol: presence.get(id).map_or(0, |p| p.handshakes[proto.index()]),
+        }
+    }
+
+    /// A newly authenticated connection replaces only its protocol's old
+    /// backoff. Continuous traffic on another protocol does not reset it.
+    fn contacted(&self, id: &str, proto: Proto) {
+        let mut slots = self.slots.lock().unwrap_or_else(|p| p.into_inner());
+        let mut presence = self.presence.lock().unwrap_or_else(|p| p.into_inner());
+        let peer = presence.entry(id.to_owned()).or_default();
+        peer.gone = None;
+        peer.contact = peer.contact.wrapping_add(1);
+        peer.handshakes[proto.index()] = peer.handshakes[proto.index()].wrapping_add(1);
+        if let Some(slot) = slots.get_mut(&(id.to_owned(), proto)) {
+            slot.failures = 0;
+            slot.retry_at = None;
+        }
+        self.down
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .remove(id);
     }
 
     /// A dial's resting answer applies only if this peer has not been

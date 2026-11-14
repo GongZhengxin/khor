@@ -3554,12 +3554,11 @@ impl Node {
         // dial right after the first had just said no.
         if let Some((at, failed, contact)) = one.as_ref()
             && *at >= waited
-            && (!matches!(failed, DialFailure::Asleep(_))
-                || *contact == self.wires.contact_version(&d.id))
+            && contact.is_current_for(failed, self.wires.dial_contact(&d.id, proto))
         {
             return Err(failed.clone());
         }
-        let contact = self.wires.contact_version(&d.id);
+        let contact = self.wires.dial_contact(&d.id, proto);
         // Prepare a peer hop beside the ordinary dial. Keep the future
         // and finite usage lease through adoption, so dropping a losing
         // preparation cannot withdraw the winner's carried stream.
@@ -3611,10 +3610,11 @@ impl Node {
                 // until it dials back (net-dial B4).
                 if let Some(words) = failure {
                     if crate::journal::by_now() != crate::journal::By::Onward {
-                        self.wires.failed(&d.id, proto, words);
+                        self.wires
+                            .failed_if_unchanged(&d.id, proto, words, contact.protocol);
                     }
                 } else {
-                    self.wires.asleep_if_unchanged(&d.id, contact);
+                    self.wires.asleep_if_unchanged(&d.id, contact.presence);
                 }
                 Err(e)
             }
@@ -3817,12 +3817,11 @@ impl Node {
         }
         if let Some((at, failed, contact)) = one.as_ref()
             && *at >= waited
-            && (!matches!(failed, DialFailure::Asleep(_))
-                || *contact == self.wires.contact_version(&d.id))
+            && contact.is_current_for(failed, self.wires.dial_contact(&d.id, wires::Proto::Main))
         {
             return Early::Failed(failed.clone());
         }
-        let contact = self.wires.contact_version(&d.id);
+        let contact = self.wires.dial_contact(&d.id, wires::Proto::Main);
         let using = self.wires.pending_dial(&d.id);
         let mut hop = self.hop_ahead(ep, d);
         let Ok(mut addr) = endpoint::dial_addr(&d.id, &d.addrs, &self.published_relays(ep)) else {
@@ -4189,18 +4188,24 @@ impl Node {
                 };
                 *one = Some((std::time::Instant::now(), e.clone(), contact));
                 if let Some(words) = failure {
-                    self.wires.failed(&d.id, wires::Proto::Main, words);
+                    self.wires.failed_if_unchanged(
+                        &d.id,
+                        wires::Proto::Main,
+                        words,
+                        contact.protocol,
+                    );
                 } else {
-                    self.wires.asleep_if_unchanged(&d.id, contact);
+                    self.wires.asleep_if_unchanged(&d.id, contact.presence);
                 }
                 Early::Failed(e)
             }
             Err(_) => {
                 *one = Some((std::time::Instant::now(), DialFailure::TimedOut, contact));
-                self.wires.failed(
+                self.wires.failed_if_unchanged(
                     &d.id,
                     wires::Proto::Main,
                     msg::machine_unreachable_timeout(&d.name),
+                    contact.protocol,
                 );
                 Early::Failed(DialFailure::TimedOut)
             }
