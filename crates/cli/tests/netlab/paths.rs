@@ -54,8 +54,6 @@ use crate::lab::{LabNode, mesh, node, qad_relays_dual, relay, result, sample_dia
 mod attempts;
 #[path = "paths/both.rs"]
 mod both;
-#[path = "paths/v6_only.rs"]
-mod v6_only;
 #[path = "paths/cpu.rs"]
 mod cpu;
 #[path = "paths/first_action.rs"]
@@ -70,6 +68,8 @@ mod mobility;
 mod rebind;
 #[path = "paths/roam.rs"]
 mod roam;
+#[path = "paths/v6_only.rs"]
+mod v6_only;
 
 fn now_ms() -> u64 {
     SystemTime::now()
