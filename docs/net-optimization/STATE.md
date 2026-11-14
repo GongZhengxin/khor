@@ -6,7 +6,16 @@
 
 ## 当前唯一Turing执行及下一步
 
-唯一stage/launch **separate_pull_native_compile_v1**，role candidate，control **f2718866d75f233aa8a73849be8ac6fea1c4dc55**；实际run见E/source-refs末条/receipt/execution。原source dad430/tree0db650/snapshot0a97f374不变。先核该唯一run，不重派。这是普通Release compile-only，native/timing0；必须使用准确source/unit/ELF/provenance，N3性能尚未开始。
+唯一pending **turing-20261114T052833Z-419e8012** / separate_pull_preflight_baseline_v1，role baseline；普通三组control **6ee198d424e0313d71812c1f0c5343947be50f99**、protocol **9d32bff84c5cda4e00dbb7bacab1f8d27370ca49a3161a2c18b4f881334ab6b2**。先查原receipt/execution，禁止重复stage/launch。这是原main新5项校准，原high coldTCP红要保留，按已有MODEL-DECISION显式分层准入，不称全部绿。collect→verify-turing-record→verify-separate-pull-three-arm-block-v1.py→record-separate-pull-three-arm-block-v1.py；只有analysis/分层模型/CPU/owner闭证后才派prototype preflight_candidate，再业务固定9块。
+
+两场固定有日志诊断都已完整闭证：shared **051918Z-ca81d523** 0/214.638022秒，separate **052331Z-eea39ea2** 0/190.553538秒，各16files、720ok/192MiB完整、1128真实stream配对（360目录＋768文件），共1440ok/2256stream。shared实际一Main，separate实际目录/file不同两Main且仅1个pull_wire_opened匹配filewire，均终端独立Tunnel；原3采集校准/8×16MiB界/3flag finally恢复/来源/CPU/owner通过。E/run/separate-pull-lifecycle-verification-v1.json，layout_ok True。**只证明布局功能，不用此日志cohort接受性能/成本**，不重派诊断。
+
+E/separate-pull-three-arm-plan-v1.json与control-v1已在普通任何native前冻结；source S同dad430、CLISHA9add2509.../netlab4ca36fb...，A仍冻结原public-main runtime c3b098bdbf52a9b3b38e887ae74b90155292b544/treef6c239ae/dirty历史bridge/snapshote22263d6，既有闭证producer035824普通Release ELFs；不编译、不替换旧baseline来源。B/C同S源码和ELF，仅原provenance/CPU后owned.run flag不同；fresh preflight两source(原A、S代表B/C原transport控制不调用文件layout)，再**ABC/BCA/CAB**九业务块，每块原low/high，12960读/18file、每cell每arm360，low100ms/high400ms/2秒caller/原file120或240秒/owner600不改。主门C对A、同ELF C对B另报；所有原相对10%+20ms/90%文件率及固定original-main绝对门保留，C任何hard fail或已>18绝对超界futility停止未来块；A hard fail停止、B故障保留作诊断不让C过门；完整最后块才触发拒绝仍输出完整红。未知/analysis/geometry/owner不准均停，不替代样本。当前已开始preflight，业务计时尚未开始。
+
+Data-only recorder/summarizer已写且SHA绑定到plan，直接按A/B/C归类，不把B/C按共同compile role误合池；原统计guard blocked/missing/nearest-rank/exact-file全过。summarize-separate-pull-three-arm-v1.py在complete或预先规则stopped时写报告，未完成不接受；完整N3仍需多负载/公平/成本/手机。freezer初次KeyError来自旧plan没有可选baseline verification hash，发生在plan/control写前、native0；E/separate-pull-three-arm-freeze-preparation-v1.json保持。改为原baseline精确source＋全部compile输入绑定（未移除原校验），新candidate另有完整验证SHA；之后唯一冻结成功。
+
+普通Release producer **050842Z-6b257594** 已0/562.186521秒（Cargo8m30）、23files/identity/原owner/strict provenance闭：CLI **9add2509af6c3d96d3ac82783bc7bbc9803a931ffca34f21355ee8dc897404ca**，full netlab **4ca36fb23937b0ceecff08c7d5b3b7bac64f2cbe071e79ccc3fa957ff7c0b3bd**。准确dad430/0db650/snapshot0a97f374，features[]/原thin LTO/CLI forced refresh且actual fresh=false；original293闭证按source tree和12原logSHA复用、原46 provenance工具合同source一致复用。S相对V043812仅4个node文件（2 runtime＋2 unit fixture）变化，反向重建准确V树，netlab/vendor/原业务不变；不复制fingerprints/intermediates。E/run/separate-pull-native-compile-verification-v1.json。source-only源码没有再变，不重复编译。
+
 
 刚闭原标准 **045906Z-abc0de50** 0/489.820361秒，21files/identity/原owner闭；E/run/separate-pull-standard-node-verification-v1.json逐一核12组所有原test名＋7新合同，**293pass/0fail/原ignored1**。原286是default shared，不称全部原测试都覆盖separate；新增7项都私有mode-ON，实际额外Main/完整文件完成与取消/cached身份/peer pause及其他peer负控制/side cleanup/读retry1/写不重放全过。source-only freezer本地首个字符串引号准备SyntaxError在执行前已修正，远端0，未影响原源码/测试。
 
@@ -14,13 +23,16 @@ worktree **khor-net-separate-pull-v1** / branch experiment/net-separate-pull-v1�
 
 这是**单文件架构实验，默认原共享连接**。内部KHOR_EXPERIMENT_PULL_WIRE=separate或私有layout入口启用一条额外现有Main ALPN QUIC；沿用原Endpoint/有界dial/2秒caller预算/最多一次读retry，不扩写或0RTT。RAII完成/错误/取消关闭；原cached Main不替换；Weak side新增transfer_owned位，retire_peer同时关闭matching extra，其他peer不受影响；dial前后检查pause/rest。尚未采用、未发布、未跑性能；多文件caps/公平/完整mode-ON旧合同/真机成本仍缺。
 
-组件门已完成，不再重复。下一步collect compile→verify-turing-record→verify-separate-pull-native-compile-v1.py（已生成）。compile plan/control-v1绑定上面293的准确source tree和全部12原日志SHA；prior为闭证V043812，S只4个node文件（2runtime＋2test）变化，反向source tree重建、46工具合同source一致复用、原Release配置/features[]/强制CLI refresh/严格verify_build都保留。若compiler/provenance拒绝，保留原件按具体原因修，不能降门。
+组件门已完成，不再重复。下一步collect compile→verify-turing-record→verify-separate-pull-native-compile-v1.py（已生成）。compile plan/control-v1已闭证，绑定上面293的准确source tree和全部12原日志SHA；prior为闭证V043812，S只4个node文件（2runtime＋2test）变化，反向source tree重建、46工具合同source一致复用、原Release配置/features[]/强制CLI refresh/严格verify_build都保留。若compiler/provenance拒绝，保留原件按具体原因修，不能降门。
 
 S formatter **044431Z-f8888b8a** 已0/45.951713秒，11files/identity/owner/source已核；原fmtcheck1及patch SHA7d3d82c247560c6c39f8a5c7d9d35dc7822923ad245a35fcce6b0bac32c68539保留，仅link.rs/isolation.rs格式，compile0/native0，已经准确apply/commit。此时不再重派formatter。
 
-组件门已过、普通Release严格producer正在唯一执行；V最近闭证producer043812可作准确prior，当前稳定candidate release cache source/tree1cbe5c0dfea1f838754fcf6d74145d5e4ef3c1dd。S相对V仅4个node文件（2runtime＋2test）改变，netlab/workload/vendor/validator源保持；必须完整source/ELF准入，不复制fingerprint/intermediate。本机source-only；重型编译/计时Turing串行，不在timing旁启动Cargo。
+组件门和普通Release严格producer都已闭证；V最近闭证producer043812可作准确prior，当前稳定candidate release cache source/tree1cbe5c0dfea1f838754fcf6d74145d5e4ef3c1dd。S相对V仅4个node文件（2runtime＋2test）改变，netlab/workload/vendor/validator源保持；必须完整source/ELF准入，不复制fingerprint/intermediate。本机source-only；重型编译/计时Turing串行，不在timing旁启动Cargo。
 
 后续已预先设计但**未stage/运行**：E/separate-pull-lifecycle-design-v1.json固定shared/separate各1个真实high日志诊断（原720读/192MiB/全部门），只证明实际不同Main及独立Tunnel，复用原ServeLogShadow与3项采集校准；runtime flag只在provenance/CPU后owned.run期间设置、finally恢复。再填准确producer/controller冻结E/separate-pull-three-arm-design-v1.json：A原public main、B同prototype ELF shared、C同ELF separate，ABC/BCA/CAB九块各原low/high，共12960读/18file。C对A原相对10%+20ms/90%率及固定original-main绝对门都保持；B只作架构对照，不能为C降门。原hard/CPU/geometry/owner/futility stop与坏样本全部保留。尚无原型性能结论。
+
+
+Release后续freezer已准备但未执行：E/ops/freeze-separate-pull-lifecycle-v1.py，只允许closed producer proof后生成准确两mode plan/control与独立verifier；复用原ServeLogShadow/3校准/600s owner/720 high人口，全3env只在每场原provenance与CPU后owned.run内设置并finally恢复，失败也记录恢复。源码已核scratch::khor_from没有env_clear或删除实验flag，因此可继承到真实serve进程；实际是否用了额外Main仍必须由诊断日志连接编号证明。需要按实际文件复查生成controller的首次producer archive允许项和捕获源码SHA，不跨过准入。
 
 ### 纯IPv6固定功能矩阵已完成
 
@@ -131,3 +143,10 @@ canonical feat/net产品运行仍5064fe2a（iroh1.2/Noq1.3）；本分支后续H
 本机source-only，不运行本地Cargo/Rustfmt/Node/Bun/Xcode/产品；Git、stdlib Python源码/数据/ZIP/hash与远端编排允许。重型仅Turing/macserver/可信GH，其他任务Lab23961和main不动。Turing UID1110/shared flock、jobs16/nice10、Rust1.95、磁盘50/40GiB、私有user/netns、计时前CPU>=80%idle/pressure<=5/无同UIDCargo；编译与计时串行。Mac共享worker jobs2，原50/40GiB、target100GiB不降。root唯一ledger writer，无后台协调器。
 
 先读本STATE与PLAN，查实际worktree/HEAD/diff及E/source-refs.json；不要按历史pending/PID重派。准确候选图谱无覆盖（0不是低风险结论），已先核main图谱再定向读实际源；不自行建立索引。当前已有单元通过不代Release业务、Mac或真机；不停止完整目标，不标goal完成。
+
+
+## 本次追加的N3准备事实（2026-11-14）
+
+E/ops/freeze-separate-pull-native-compile-v1.py已执行并产生当前唯一050842 producer；不得重复。E/ops/freeze-separate-pull-lifecycle-v1.py已唯一执行且两场闭证，不重复。E/separate-pull-three-arm-design-v2.json在任何prototype性能/诊断case前更正文案period：**原low100ms/high400ms**，v1写两者100ms错误仅设计文字，原runtime/source/门未变、v1保留。真正controller已按v2准确period冻结，不得拿v1不准文案改原fixture。
+
+E/separate-pull-fixture-equivalence-v1.json：原11公共文件中10个（含业务/observer/calibration）字节相同；lab.rs因IPv6工厂新增不相同，但去掉new wrapper/relay_v6、重命名family及还原IPv4 let ip/格式SocketAddr后**整个文件逐字等于TF96e原文件**。原relay传constantfalse，IPv4 setup参数/路由/device/slow/owner/drainer不变，不称11文件全字节相同；正式三组对照前baseline和prototype仍必须fresh分层native校准，所有原coldTCP红保留。
