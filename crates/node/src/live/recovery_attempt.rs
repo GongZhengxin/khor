@@ -3083,8 +3083,27 @@ mod tests {
                     if path.is_dir() {
                         out.push((relative, None));
                         visit(root, &path, out);
+                    } else if path.extension().is_some_and(|ext| ext == "lock") {
+                        // A lock file's bytes are not state, and a writer
+                        // holding it makes a Windows read of the locked
+                        // range fail outright (ERROR_LOCK_VIOLATION).
+                        out.push((relative, None));
                     } else {
-                        out.push((relative, Some(fs::read(path).unwrap())));
+                        // A live writer may hold a byte-range lock on this
+                        // file; Windows refuses a read of a locked range
+                        // where Unix does not, so wait instead of failing.
+                        let mut attempt = 0;
+                        let bytes = loop {
+                            match fs::read(&path) {
+                                Ok(bytes) => break bytes,
+                                Err(error) if error.raw_os_error() == Some(33) && attempt < 100 => {
+                                    attempt += 1;
+                                    std::thread::sleep(std::time::Duration::from_millis(50));
+                                }
+                                Err(error) => panic!("{}: {error}", path.display()),
+                            }
+                        };
+                        out.push((relative, Some(bytes)));
                     }
                 }
             }
