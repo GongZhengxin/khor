@@ -41,6 +41,9 @@ pub mod delegation;
 mod doc_transfer_state;
 pub mod doctor;
 pub mod drops;
+mod durable;
+#[cfg(test)]
+mod testproc;
 pub(crate) mod egress;
 pub mod face;
 pub mod favicon;

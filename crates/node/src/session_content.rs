@@ -502,7 +502,11 @@ mod tests {
         let old = fixture.claude("old", FIRST, CLAUDE);
         let latest = fixture.claude("new", FIRST, CLAUDE);
         for (path, seconds) in [(&old, 10), (&latest, 20)] {
-            File::open(path)
+            // Windows needs a writable handle to set a file's times; a
+            // read-only one is refused with ERROR_ACCESS_DENIED.
+            File::options()
+                .write(true)
+                .open(path)
                 .unwrap()
                 .set_times(
                     std::fs::FileTimes::new()

@@ -262,9 +262,7 @@ pub(crate) fn write<T: Serialize>(path: &Path, value: &T) -> Result<(), (String,
     let result = (|| {
         crate::link::write_private(&temporary, &bytes)
             .map_err(|_| ("WriteFailed".into(), false))?;
-        File::open(&temporary)
-            .and_then(|f| f.sync_all())
-            .map_err(|_| ("SyncFailed".into(), false))?;
+        crate::durable::sync_file(&temporary).map_err(|_| ("SyncFailed".into(), false))?;
         fs::rename(&temporary, path).map_err(|_| ("RenameFailed".into(), false))?;
         #[cfg(unix)]
         File::open(parent)

@@ -4188,9 +4188,7 @@ impl RowGate {
         }
     }
     fn sync_meta(&self) -> Result<(), String> {
-        fs::File::open(self.dir.join("meta.json"))
-            .and_then(|file| file.sync_all())
-            .map_err(|e| e.to_string())?;
+        crate::durable::sync_file(&self.dir.join("meta.json"))?;
         #[cfg(unix)]
         fs::File::open(&self.dir)
             .and_then(|file| file.sync_all())
@@ -4670,7 +4668,7 @@ mod tests {
 
     /// A pid that is certainly dead: spawn `true`, reap it.
     fn dead_pid() -> u32 {
-        let mut c = std::process::Command::new("true").spawn().unwrap();
+        let mut c = crate::testproc::true_like().spawn().unwrap();
         let pid = c.id();
         c.wait().unwrap();
         pid
@@ -6411,12 +6409,7 @@ mod tests {
 
     impl FakeHost {
         fn up() -> FakeHost {
-            FakeHost(
-                std::process::Command::new("sleep")
-                    .arg("60")
-                    .spawn()
-                    .unwrap(),
-            )
+            FakeHost(crate::testproc::sleeper(60).spawn().unwrap())
         }
 
         fn pid(&self) -> u32 {
