@@ -1,30 +1,49 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-14T03:13:13.428229+00:00。用户已授权持续实施/远端验证，活动目标“好 完成完整目标”仍未完成。root串行，不派子智能体。完整[GOAL](GOAL.md)/[PLAN](PLAN.md) N0–N5范围保持，逐项缺口以[REQUIREMENTS](REQUIREMENTS.md)为准。未获main合并、正式发布、现装App替换或生产Relay采购部署授权。
+更新于 2026-11-14T04:29:05.083400+00:00。用户已授权持续实施/远端验证，活动目标“好 完成完整目标”仍未完成。root串行，不派子智能体。完整[GOAL](GOAL.md)/[PLAN](PLAN.md) N0–N5范围保持，逐项缺口以[REQUIREMENTS](REQUIREMENTS.md)为准。未获main合并、正式发布、现装App替换或生产Relay采购部署授权。
 
 此前STATE逐字归档[HISTORY-through-relative-margin-v2-unit](HISTORY-20261114-through-relative-margin-v2-unit.md)，SHA256 `c772dce4a855e181e700130c5805801f3be5e3451968af6f35ad38cef5264406`；其历史pending/PID不能用于重派。更早原件由该文链接继续保留。E=`/Volumes/disk0/Khor/evidence/net`；worktree均在`/Volumes/disk0/Khor/worktrees/current/`。
 
 ## 当前唯一Turing执行及下一步
 
-唯一pending **turing-20261114T032931Z-531d7086**，net-node / contact_current_mixed_block_3_candidate_v1，role candidate；control **2cc1ad6578c83a4384335e825f2ba30db650439b**，protocol **13b66d93d03519417f0b20c956cbf697ad968f8044d502995c16727d81bc4f51**。先核actual receipt/execution，禁止重派。原始baseline descriptor E/contact-current-mixed-baseline-source-v1.json（c3b098bd/treef6c239ae/snapshote22263d6，dirty=true是既有已闭bridge快照，不能新造为clean）。
+IPv6-only新夹具已经完成远端格式和准确普通Release编译，产品/vendor源码变化0。格式准备035457原check=1和patch原件保留；初版编译040023因tcp_probe新闭包缺Ok返回E0308，native0，原失败保持。单行修正后 **040848Z-2ccce6c9** 0/236.890363秒，普通features[]、原thin LTO，完整compile/provenance/selected5/owner已核；CLI SHA443c6e010293b83e7c0e963b6eb96edb3897dd4c0d6ada0bca9f6fca02666a43与已接受N2逐字相同，完整netlab72589f5af5f3304a45cf42fc5f9484a3efe5325e1423b5b4306c5a96bc004d8c。不是产品性能绿。
 
-**030058Z-e97c48c8普通Release producer已闭成功**，0/570.415930秒，Cargo原8m30、22文件/identity/原owner已核；准确已过Linux286/Mac282的 **96e999da/tree41df16ad/snapshot1cc2cb53**（I4＋N2联系代次修复）。E/该run/contact-current-release-compile-verification-v1.json；CLI **443c6e010293b83e7c0e963b6eb96edb3897dd4c0d6ada0bca9f6fca02666a43**，full netlab **01b6432ae381f633d98a4a1fb6af84b9a5e91fa1075f65c88f371ec14f53dfbb**。features[]/原Release thin LTO、无qlog/诊断feature，CLI强制refresh且实际fresh=false、46原来源合同源码一致复用，未执行任何业务测试。原H2/PULL4未采用；I4浏览器锁保留，N2 link/wires是相对I4仅有产品增量。
+准确worktree **khor-net-ipv6-only-mobility-v1**，branch experiment/net-ipv6-only-mobility-v1，HEAD **f3a6231605ff28ec82dd1180a4076c79e2f474bc**，tree4ea140f94cc49651b3775bf5be466c3f7a45bfbb、snapshot48d3f81be0a2a9eb9ddbae9cc8ee5ee7789fc89d。只改原4个netlab测试文件，基于96e接受源，无H2/PULL4。失败编译缓存只从闭证原producer恢复准确source和selected5，没有fingerprint/intermediate复制。
 
-producer完整tree13路径逆重建精确H2 tree5cf730ab，source_frame全部13逐项核验，其中native5（carry恢复I4、link/wires、2个单元fixture），netlab11文件不变。raw migration的fixtures_unchanged在该控制模板中指netlab；新增2个node单元fixture在plan/proof显式列出，不能称所有测试文件都未变。E/contact-current-release-{source,compile-plan,compile-control}-v1.json，control950e7607及全部原source/provenance保留。首次本地旧descriptor断言与随后不存在baseline descriptor的stage前失败均未创建远端/native执行；后者E/contact-current-mixed-stage-preparation-v1.json，不算性能场次或替代试次。
+固定15场五种变化各3次，设计 **E/ipv6-only-mobility-design-v1.json** 在源前冻结；runtime plan/control-v1，control **f71b536548211d49c7f8e8d1a9451c038c45580e**、protocol6d37cc713d47ab56fb7e93e0c07f7347369f5a246300765352d02f6b915f8761。保持原2setup+40真实读/场、2秒caller、500ms节奏、各方向首次≤2秒、240秒case/300秒owner；全IPv6、稳定IPv6 HTTP Relay，独立reflector/内核读回；首业务前不注入probe/hint/rebind。IID add/DAD/delete可能重叠，不称原子突发切断；强制Relay用owned namespace nft及真实双reflector正负控制。
 
-新验收的设计/实际绑定已在全部计时前冻结：**E/contact-current-mixed-design-v1.json**（SHA57d5827b8348b70a4cc9f81510d3c478a4cfb8030783fc80ada54ded79ac1afd），**contact-current-mixed-plan-v1.json / control-v1.json**，E/ops/freeze-contact-current-mixed-v1.py。冻结原public-main runtime baseline035824的已闭ELF，candidate030058准确普通Release；ABBAAB六块×low/high=12case/8640，原caller2秒、16/192MiB、bulk120/240秒及owned600保持。每arm5个原guards/calibration新执行，coldTCP原红按既有MODEL-DECISION分层，不能写全绿。计时无编译，无日志开关；两份producer初始selected5 archive按原hash保留，只有已闭新candidate可创建初始档。
+前4场均已collect/identity/独立raw-data/内核/CPU/owner验证并关闭ledger：**042127Z-54737e59** one IID42ok，首次758939/745392μs；**042901Z-f74a8df0** one prefix42ok，598302/597705；**043035Z-2643f42e** both IID42ok，944293/949209；**043240Z-ce27a48e** both prefix42ok，509911/609888。总168/168，全部没有非loopback IPv4，内核old不存在/new和实际UDP源匹配、TCP IPv6保持。逐场 E/run/ipv6-only-runtime-verification-v1.json。
 
-原相对10%+20ms/文件90%及原始基线各cell固定绝对界限同时保留（high目录bulk592518.1μs/TTY391538.2μs、文件中位16.791371Mbit/s下限）。新协议保留有效baseline产品失败并继续固定cohort，其失败cell相对全成功门不能通过；candidate任一完整块硬失败拒绝。固定360任一cell已有>18条越固定p95门，或三文件已有两条低于固定中位门，可数学不可挽回早拒；未知调度/来源/分析/清理则停，无替代。H2旧协议不追溯修改。
+第5 **043417Z-fdd40789** 1/9.732334秒，native101在nft安装即syntax error；业务0/地址变更0，不是产品红。原log/独立analysis_error与fixture preparation rejection均保留，ledger已关闭，v1停止invalid preparation，6..15未执行。E/ipv6-only-mobility-design-v2.json在修改前冻结：仅修nft块输入换行，不改规则语义/几何/期限，准确product CLI必须相同；保留前4有效功能证据，修复后固定继续5..15，不声称同ELF性能cohort，不抹掉第5准备失败。
 
-baseline预检 **031149Z-be538813** 已按collect/identity/行为/record闭证，1/164.474783秒、17文件：原5项中2owner/lowTCP/UDP四绿，原high coldTCP红，分层模型准入、全部owner退出且分析完整；progress已1块/collecting，所有原red保留。candidate预检031537已唯一派发，前驱031149。
+V新HEAD **4d6341a1b24ac388f7b1ff768213d418264d279b** / tree1cbe5c0dfea1f838754fcf6d74145d5e4ef3c1dd / snapshot4e610bc70eac4714893c614be30ed17072b30ee9，仅v6_only.rs一条nft string。当前唯一stage/launch为 **ipv6_only_native_compile_v3**，control **e311ff9e87b411afba3c943af34ffb83d9e7747d**，实际run先查source-refs末条/receipt，禁止重复launch。它先从已闭040848校验原selected/source，新增独立owned user/netns对实际source字符串nft安装＋读回校准，再普通Release严格编译。编译时不运行计时；本机仍source-only。先collect/identity/verify-ipv6-only-native-compile-v3.py，只有准确CLI相同及源差异限定一literal后，才冻结runtime-v2继续5..15。
 
-candidate预检 **031537Z-b18b6b98** 已collect/identity/行为/record，1/164.635421秒，原同5项四绿＋high coldTCP原红，分层准入且全部owner退出，17文件；progress现2块/collecting。**business1 baseline031906** 已唯一派发，原low/high两profile计时，前驱031537。
+独立N3原型 **khor-net-separate-pull-v1** / experiment/net-separate-pull-v1 基于上述准确V源，E/separate-pull-design-v1.json已在编辑前冻。link.rs/wires.rs及7项真实mode-ON合同有未提交实验：文件额外现有Main ALPN QUIC与RAII关闭/Weak side生命周期追踪，沿用原读retry/期限；尚未格式/编译/测试/采用。已明确默认原共享、内部KHOR_EXPERIMENT_PULL_WIRE=separate实验开关/私有layout测试入口。7项新增drop/peer pause+其他peer负控制/side cleanup/实际文件取消与完成/读retry1/写不重放合同尚未native；额外weak side有transfer_owned标志让retire_peer关闭matching extra，检查pause在dial前后。后续先远端format、准确源原标准组＋真实新合同，不把默认mode-OFF旧mock测试说成新路径覆盖。单文件实验，不代并发文件上限/公平/能耗/手机接受。
 
-business1 baseline **031906Z-28dfcb1b** 已闭0/279.047954秒、14文件，low/high各720ok且2文件完整。low目录bulk计划→完成p95 273795μs/TTY83153μs/文件6.9338Mbit/s；high605119/758473μs/15.3005Mbit/s。当前原始baseline本身较早参考波动，CPU准入实际99.17%idle、PSI0；不变更原门或以此为candidate开绿灯。原限速queue downstream drop9742/delay drop0，E/high-mixed-rate-queue-observation-v1.json连同以前10场计数只作线索，0随机loss不等于0taildrop，不能推算未经分母/GSO核对的丢包率。progress3块/collecting。business2 candidate032427已唯一派，前驱031906。
+### 准确接受源I4＋N2完整混合对照已闭：功能全绿、N3仍红
 
-business2 candidate **032427Z-7237c5a7** 已collect/identity/行为/record闭，0/239.000680秒、14文件，low/high各720ok及2完整file。low目录bulk计划→完成p95 234969μs/TTY82376μs/文件7.2083Mbit/s；high628558/517555μs/24.2642Mbit/s。首次candidate两p95高于固定绝对门，但累计不可挽回门尚未触发，progress4块/collecting；原y_journal含Relay→Direct两次selected事件，选后snapshot质量见原log，非精确选择输入/业务route。business3 candidate032931已唯一派，前驱032427。
+E/**contact-current-mixed-verification-v1.json**、progress-v1 phase=completed；plan/control-v1在native业务前冻结，control2cc1ad6578c83a4384335e825f2ba30db650439b，protocol13b66d93d03519417f0b20c956cbf697ad968f8044d502995c16727d81bc4f51，design SHA57d5827b8348b70a4cc9f81510d3c478a4cfb8030783fc80ada54ded79ac1afd。原ABBAAB六块×low/high、12case、**8640/8640ok、12完整file**、全部来源/CPU/geometry/owner已闭；无重试或替代、计时0compile/日志开关关闭。
 
-下一步：032931完成后collect-network-ssh.py、verify-turing-record.py、**E/ops/verify-contact-current-mixed-block-v1.py**、**record-contact-current-mixed-block-v1.py**按顺序闭证记录。progress E/contact-current-mixed-progress-v1.json，是新cohort唯一顺序入口。若phase仍collecting且无未知，按progress唯一派business4 baseline，source E/contact-current-mixed-baseline-source-v1.json，revision contact_current_mixed_block_4_baseline_v1，同control，前驱032931 receipt；再依次business5 baseline/6 candidate，revision contact_current_mixed_block_{index}_{arm}_v1，每块完整low/high；每次collect/verify/record才下一派。**summarize-contact-current-mixed-v1.py**只在完整cohort给相对＋固定绝对门，停止则不冒充完整对照。root唯一ledger writer，无后台协调器，不和编译并发。
+baseline仍冻结原公开main runtime c3b098bd/treef6c239ae/dirty=true桥接快照e22263d6（035824普通Release ELFs），candidate准确**96e999da/tree41df16ad/snapshot1cc2cb53**（I4＋N2），无H2/PULL4。candidate producer **030058Z-e97c48c8** 0/570.415930秒、Cargo8m30、22files，CLI443c6e010293b83e7c0e963b6eb96edb3897dd4c0d6ada0bca9f6fca02666a43/full netlab01b6432ae381f633d98a4a1fb6af84b9a5e91fa1075f65c88f371ec14f53dfbb，features[]/原thin LTO、强制refresh且fresh=false、46原provenance合同source一致复用。完整source_frame13路径/其中native5已核，新增node单元fixture与netlab11不变区别明确，I4 browser lock保留。
+
+两臂preflight **031149Z-be538813 / 031537Z-b18b6b98** 各17files：原2owner/lowTCP/UDP四绿，原high coldTCP红保持，按既有MODEL-DECISION分层准入，非全绿。业务6块如下（每块含原low/high各720）：
+
+| 块 | arm/run | 原结果 |
+| --- | --- | --- |
+|1|baseline031906Z-28dfcb1b|0/279.047954秒，1440ok/2file|
+|2|candidate032427Z-7237c5a7|0/239.000680秒，1440ok/2file|
+|3|candidate032931Z-531d7086|0/242.931865秒，1440ok/2file|
+|4|baseline033418Z-7450f864|0/258.920607秒，1440ok/2file|
+|5|baseline033947Z-25c28bc7|0/258.780927秒，1440ok/2file|
+|6|candidate034503Z-1460b442|0/247.020924秒，1440ok/2file|
+
+所有low cell、idle两profile与文件率门均过。**high bulk目录计划→完成p95 baseline546493→candidate1142002μs、TTY351134→715597μs**，相对10%＋20ms与原固定绝对592518.1/391538.2μs门均红；high文件中位18.742678→23.288474Mbit/s不抵销交互回退。candidate三轮high目录628558/389794/1807685μs、TTY517555/302533/1357564μs，不能挑第二轮绿接受。
+
+最后一块record得到固定360人口中目录52/TTY37条越绝对门（最多18允许）。这是**完整cohort最后才触发**，recorder明确保留rejection_at_complete_cohort且phase completed，让summarizer输出完整红；只修完整性呈现、不改任何阈值/样本/原结果或重跑。早停规则原样适用于还有未来块时，历史H2停规则未追溯修改。
+
+源后journal：candidate前两high场分别2/0次selected变化，最后high4次；y有约334ms Direct质量/301ms Relay质量的选后快照，随后Relay变477/634ms又回Direct。**不是选择决定输入或业务包路由证明**。H2两正式candidate场无selected变化，其中第二场目录p95仍850180μs，故“只要不切就解决”已不成立，不能盲加H3收益常量或当场改定时器。E/shared-path-fault-scope-hypothesis-v1.json只是假设；E/high-mixed-rate-queue-observation-v1.json原qdisc有taildrops且与尾巴不单调，不作BBR因果或丢包率结论。
+
+N2窄修复Linux286/Mac282及14合同继续接受，**N3完整屏仍拒绝，完整目标未完成**。下一轮应解决共享/分连接与真实拥塞/调度，而非再重跑相同默认cohort直到绿；IPv6-only夹具独立准备不覆盖N3。全部旧red/无效准备/未执行保留。root唯一ledger writer，无后台协调器。
 
 ### 普通H2无重编译诊断已完成，不作性能接受
 
