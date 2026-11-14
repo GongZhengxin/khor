@@ -2490,6 +2490,7 @@ mod tests {
     /// **The far shell and the local reader answer one question alike**
     /// — a checkout, a linked worktree (its `.git` is a file), a plain
     /// directory — and output that says neither is a refusal.
+    #[cfg(unix)]
     #[test]
     fn the_checkout_script_answers_what_the_local_look_answers() {
         struct Scratch(std::path::PathBuf);
@@ -2524,6 +2525,7 @@ mod tests {
         assert!(parse_checkout("sh: cd: nope").is_err());
     }
 
+    #[cfg(unix)]
     #[test]
     fn the_touched_script_answers_what_the_local_walk_answers() {
         // Takes itself away however this test leaves — an assertion
@@ -2871,6 +2873,7 @@ row=./notes.md:11:see http://example.test/x for more
 /// `sh` being a different `sh`, a `find` without `-not -path`. Those
 /// stay in the 还欠什么 column where they were.
 #[cfg(test)]
+#[cfg(unix)]
 mod script_tests {
     use super::*;
 
