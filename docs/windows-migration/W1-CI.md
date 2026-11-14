@@ -65,7 +65,13 @@ fanout::tests::a_history_producer_waits_for_real_capacity_without_retiring_the_r
 
 这次运行是真实 `windows-2025` runner，不是本地模拟。
 
-注意：该 run 对应 rebase 前的 commit `03d861ca`。分支已 rebase 到最新 main `9a4219ff`，新的 HEAD `6201b91e` 需要重新触发一次 Windows W1 workflow；旧 run 只作为 W1 流程已被远端验证的历史证据。
+注意：run 43557690271 对应 rebase 前 commit `03d861ca`。分支已 rebase 到最新 main `9a4219ff`，rebase 后 HEAD `574cce3b` 的 Windows W1 workflow 已再次运行：
+
+- Run: https://github.com/GongZhengxin/khor/actions/runs/43559639618
+- Head: `574cce3b20826f62f85c28ce9d87f9bffda782ff`
+- 结论：success（Frontend、CLI、doctor、process harness、fanout 10/10 全部通过）
+
+这是基于最新 main 的最终 W1 远端证据。
 
 ## 4. W1 判定
 

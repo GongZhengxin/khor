@@ -50,7 +50,7 @@ rebased HEAD: 6201b91e4dab0a292df1770dcab5c1e15b03d76a
 - Windows process harness：12/12 PASS
 - fanout harness：9/10（同一顺序相关 flake），不是稳定失败
 
-远端 CI 需要在 rebase 后重新运行；旧 run 43557690271 是 rebase 前 commit 03d861ca 的证据，不能单独代表最新 main。
+远端 CI 需要在 rebase 后重新运行；rebase 前 run 43557690271 是历史证据。最新 main 上的 rebase 后结果见 §7.4。
 
 ## 3. 前端构建
 
@@ -201,6 +201,16 @@ F:\khor-w1-evidence\fanout-*.err
 F:\khor-w1-evidence\ci-run2.log
 ```
 
+### 7.4 rebase 到最新 main 后的远端 CI
+
+- 基线：`origin/main` = `9a4219ffe5e3ceba1f09cd3288cb0e27f91613d7`
+- rebased HEAD：`574cce3b20826f62f85c28ce9d87f9bffda782ff`
+- Run: https://github.com/GongZhengxin/khor/actions/runs/43559639618
+- 结论：**success**
+- 所有步骤通过：Frontend build、CLI build、CLI version、doctor JSON、Windows process harness、fanout build、fanout run（10/10）
+- 这是最新 main 上的最终 W1 远端证据。
+
+
 
 
 ## 8. 已知 Windows 限制（W1 显式保留）
@@ -225,11 +235,11 @@ F:\khor-w1-evidence\ci-run2.log
 - `khor doctor --json`：**PASS（基线）**
 - Windows process harness：**PASS（本地 12/12；remote 12 PASS）**
 - Windows fanout harness：**PASS（remote 10/10；本地曾出现 1 次顺序相关 flake）**
-- Windows CI 远端执行：**PASS（run 43557690271，success）**
+- Windows CI 远端执行：**PASS（最新 main run 43559639618，success）**
 - Windows 10 兼容验证：**NOT_RUN（按用户决定延后）**
 - 全功能 Windows 等价：**NOT CLAIMED**
 
-W1 验收：**PASS（本地 + 远端 Windows CI 构建底座；Win10 与全功能等价不在 W1）**。  
+W1 验收：**PASS（基于最新 main 的本地 + 远端 Windows CI 构建底座；Win10 与全功能等价不在 W1）**。  
 后续 W2+ 需继续实现 Windows stubs 背后的真实能力。
 
 
