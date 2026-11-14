@@ -57,6 +57,10 @@ impl Fixture {
     }
 
     async fn with_options(kind: Held, offered: bool, node_identity: bool) -> Self {
+        Self::with_payload(kind, offered, node_identity, (12 * proto::SLICE + 1234) as usize).await
+    }
+
+    async fn with_payload(kind: Held, offered: bool, node_identity: bool, size: usize) -> Self {
         assert!(PULL_AHEAD >= 2);
         let server = iroh::Endpoint::builder(iroh::endpoint::presets::Minimal)
             .relay_mode(iroh::RelayMode::Disabled)
@@ -100,7 +104,7 @@ impl Fixture {
         let changed = Arc::new(Notify::new());
         let release = Arc::new(Notify::new());
         let bytes = Arc::new(
-            (0..(12 * proto::SLICE + 1234))
+            (0..size)
                 .map(|i| (i % 251) as u8)
                 .collect::<Vec<_>>(),
         );
