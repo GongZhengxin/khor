@@ -956,29 +956,62 @@ pub(crate) async fn call_refreshing(
     let attempt = async {
         let until = tokio::time::Instant::now() + std::time::Duration::from_millis(500);
         let (mut port, mut cookie) = (port, cookie.to_owned());
+        // Each attempt is bounded by the same retry budget, and a refresh is
+        // taken at most once. A refused loopback connection is instant on
+        // Unix but can take seconds on a Windows host with a filter driver,
+        // so the silence is read the same way as a refusal: this endpoint is
+        // not serving, ask the endpoint file once whether it moved.
+        let mut refreshed = false;
+        let mut ask = |port: u16, cookie: &str, spent: &mut bool| {
+            if *spent {
+                return None;
+            }
+            let (next_port, next_cookie) = refresh()?;
+            if next_port == 0 || (next_port == port && next_cookie == cookie) {
+                return None;
+            }
+            *spent = true;
+            Some((next_port, next_cookie))
+        };
         let stream = loop {
-            match tokio::net::TcpStream::connect(("127.0.0.1", port)).await {
-                Ok(stream) => break stream,
-                Err(error) => {
-                    if error.kind() != std::io::ErrorKind::ConnectionRefused
-                        || tokio::time::Instant::now() >= until
-                    {
-                        return Err(msg::serve_unreachable(error));
+            let remaining = until.saturating_duration_since(tokio::time::Instant::now());
+            match tokio::time::timeout(
+                remaining,
+                tokio::net::TcpStream::connect(("127.0.0.1", port)),
+            )
+            .await
+            {
+                Ok(Ok(stream)) => break stream,
+                Ok(Err(error)) if error.kind() == std::io::ErrorKind::ConnectionRefused => {
+                    match ask(port, &cookie, &mut refreshed) {
+                        Some((next_port, next_cookie)) => {
+                            (port, cookie) = (next_port, next_cookie);
+                            continue;
+                        }
+                        None => {
+                            if refreshed || tokio::time::Instant::now() >= until {
+                                return Err(msg::serve_unreachable(error));
+                            }
+                            tokio::time::sleep_until(until.min(
+                                tokio::time::Instant::now() + std::time::Duration::from_millis(50),
+                            ))
+                            .await;
+                        }
                     }
-                    let Some((next_port, next_cookie)) = refresh() else {
-                        return Err(msg::serve_unreachable(error));
-                    };
-                    if next_port == 0 {
-                        return Err(msg::serve_unreachable(error));
-                    }
-                    if next_port == port && next_cookie == cookie {
-                        tokio::time::sleep_until(until.min(
-                            tokio::time::Instant::now() + std::time::Duration::from_millis(50),
-                        ))
-                        .await;
-                    }
-                    (port, cookie) = (next_port, next_cookie);
                 }
+                Ok(Err(error)) => return Err(msg::serve_unreachable(error)),
+                Err(_) => match ask(port, &cookie, &mut refreshed) {
+                    Some((next_port, next_cookie)) => {
+                        (port, cookie) = (next_port, next_cookie);
+                        continue;
+                    }
+                    None => {
+                        return Err(msg::serve_unreachable(std::io::Error::new(
+                            std::io::ErrorKind::TimedOut,
+                            "connecting to the serve did not answer in time",
+                        )));
+                    }
+                },
             }
         };
         exchange(stream, &cookie, op).await

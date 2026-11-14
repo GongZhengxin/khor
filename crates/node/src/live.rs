@@ -258,7 +258,12 @@ fn cwd_of(pid: u32) -> Option<PathBuf> {
         true,
         ProcessRefreshKind::nothing().with_cwd(UpdateKind::Always),
     );
-    sys.process(pid)?.cwd().map(Path::to_path_buf)
+    // sysinfo reports a Windows directory with its trailing separator;
+    // every other producer of this path spells it without one, and the
+    // row compares them as strings.
+    sys.process(pid)?
+        .cwd()
+        .map(|cwd| cwd.components().collect())
 }
 
 /// Which address a terminal should connect to after
@@ -5772,6 +5777,7 @@ mod tests {
     /// Narrower since 2026-09-30 (docs/SESSION.md 形态随进程变): a bridge
     /// whose host runs is a terminal somebody has open, and it holds the
     /// seat instead — `a_terminal_that_starts_an_agent_becomes_that_agent_and_stays_open`.
+    #[cfg(unix)]
     #[test]
     fn an_old_bridge_row_folds_into_the_agent_row_it_duplicates() {
         use crate::adaptor::{Discovery, Proc, Procs, tmux::Tmux};
@@ -5838,6 +5844,7 @@ mod tests {
     /// comment in `rows`), and the twin a bridge's client creates would
     /// otherwise appear as a phantom row for exactly as long as someone
     /// is looking at the terminal face.
+    #[cfg(unix)]
     #[test]
     fn a_grouped_twin_of_a_listed_session_is_not_a_second_row() {
         use crate::adaptor::{Discovery, Proc, Procs, tmux::Tmux};
@@ -6328,6 +6335,7 @@ mod tests {
     /// from different places — one from a vendor's files, one from
     /// khor's own directory — and an implementation that only consulted
     /// the sweep would pass the other test and fail here.
+    #[cfg(unix)]
     #[test]
     fn a_tmux_session_holding_a_khor_session_is_not_a_second_row() {
         use crate::adaptor::{Discovery, Proc, Procs, tmux::Tmux};
@@ -6798,6 +6806,7 @@ mod tests {
         );
     }
 
+    #[cfg(unix)]
     #[test]
     fn native_codex_title_switches_identity_and_reopen_routes_with_old_writer_loaded() {
         use crate::adaptor::{Discovery, Proc, Procs, tmux::Tmux};
@@ -7419,6 +7428,7 @@ mod tests {
     /// discovered claude row folds into it, and the terminal stays up —
     /// the reaper that used to close it finds nothing. When claude
     /// leaves, the row is a terminal again.
+    #[cfg(unix)]
     #[test]
     fn a_terminal_that_starts_an_agent_becomes_that_agent_and_stays_open() {
         use crate::adaptor::{Discovery, Procs, tmux::Tmux};
