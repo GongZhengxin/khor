@@ -1,5 +1,7 @@
 # W2-A：Windows tabs 写锁 + Windows 可编译节点测试 — 实施计划
 
+> **状态（2026-11-14）：已实施并通过验收** —— 代码提交 `936698a6`、`dc72eaec`，验收证据与评审裁定见 [W2-TABS-WINDOWS-LOCK](W2-TABS-WINDOWS-LOCK.md)。下文勾选框保留为实施时的原始步骤记录，不再逐项回填。
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use executing-plans（inline 执行）或 subagent-driven-development。步骤用 `- [ ]` 跟踪。
 
 **Goal:** 让 Windows 上 `khor tabs` 与窗口两个进程的 read-modify-write 由真实文件锁串行化（不再静默丢标签），并让 `crates/node` 的 lib 测试在 Windows 上可编译、可运行。
