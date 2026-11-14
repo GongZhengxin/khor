@@ -1,6 +1,6 @@
 # 新联系与旧拨号超时：待验证边界
 
-当前普通与冷early两个入口已真实复现旧超时覆盖新认证联系，原红及负控制见下方首轮结果；**尚无产品修复**。
+当前普通与冷early两个入口已真实复现旧超时覆盖新认证联系，原红及负控制见下方首轮结果；已有隔离产品修复草稿，**尚未通过修复验收**。
 
 ## 执行前诊断记录
 
@@ -21,3 +21,15 @@ I4准确源4517d4cb沿用I3/F3的Node逻辑。普通line_to_inner和冷early拨�
 E/run/stale-dial-timeout-reproduction-verification-v2.json保留完整原结果。原控制set-e在此停，后续IPC及六租约组共24预期项未执行，不能说标准全通过；通过新case的JSON被原Rust harness捕获，外部仅有其原生ok记录与两失败JSON，已明确记录此范围。v1的两条后续未执行log名称曾用旧记忆；v2从准确原控制派生命名，原v1保留，全部原生数据/计数/根因证据不变。
 
 后续修复必须先补同peer不同协议的负控制，区分真正的新联系与仍然有效的协议失败；不能让Main持续流量无限掩盖Tunnel失败。保持原caller期限/有界拨号与Asleep保护，不添加全局rebind/写重放或周期重试。图谱先核main9a42旧结构的两调用入口line_to_inner/ask_early及failed影响；准确候选没有图谱覆盖，实际实现以候选源码和新证据为准。
+
+## 协议控制、修复草稿及夹具v2
+
+固定14原版235301Z-230e7e9b已101/196.613845秒闭证，12files/identity/owned完整；原2 red不变，另12通过，其中同身份新Tunnel两负控制通过。八个实际marker完整，原六Asleep body保持，E/run/dial-protocol-original-verification-v1.json。源码0bcde20d/tree18dae1e6，仅新测试几何增加双ALPN、原六timeout测试body保持，显式assert实际ALPN。
+
+隔离fix/net-dial-contact-repair-v1起于0bc，产品提交d15c2d1d/tree5c9e7b44，仅link.rs与wires.rs。保留peer-wide Asleep版本，增加每协议新握手generation；普通流量不递增该握手generation。typed DialContact参与两个入口缓存判旧，三个失败出口都guard；实际失败计数/history保持，只有仍有效失败可写backoff/down/清旧served。新contact和负状态提交采用slots→presence→down，关闭served在状态锁外。无新timer/packets/tasks、原请求/拨号时钟、读写/0RTT边界与PULL8保持。E/dial-contact-repair-design-v1.json与source-audit-v1.json；图谱main旧结构先核caller/impact，准确新worktree无覆盖（detect0不能当低风险/已审通过），已定向读锁序与完整diff。
+
+修复首轮001134Z-d8dc2ab1 **101/206.730660秒**完整保留，12files/identity/owned闭。12过/2失败，但两正向场景失败在测试服务端对旧已取消握手的accept().await.unwrap，而非原down断言；仅6/8marker，无业务修复接受。原调用真的开始下一拨号后，旧握手取消是正常传输事件，串行fixture不应因此panic或挡住下一请求。E/run/dial-contact-repair-fixture-failure-v1.json。
+
+提前冻结E/dial-contact-fixture-cancellation-v2-design.json后，仅改测试服务端为cap8 JoinSet并发，记录取消/关闭/容量，shutdown信号后abort并join所有handler，再关闭端点、检查原所有断言。原10秒产品timer、5秒setup/queued、15秒owner watchdog和14测试body不改。原版5066bfb9/tree49acdc35/snapshotc45c6af3；同一fixturecherry-pick到修复版96e999da/tree41df16ad/snapshot1cc2cb53，产品代码逐字d15，所有peer_contact源码在两树逐字相同。formatter v1因孤立src缺tests/util解析失败保留，v2仅远端stdin/stdout格式化两源；后续原控制cargo fmt --all --check仍保持。无本机Rust/产品运行。
+
+当前原版fixturev2唯一run002222Z-fb33f5b6在途，控制27ff89e4d3df21b44c4f1a36cebc1d43d5ac6347/原固定14。必须先核它仍有原2 red且其余12过、8marker/全handler清理，再调度相同fixture的96e修复。不能把原版前一夹具的红与修复v2混为同fixture因果证据；两旧失败都保持。完整标准Node和Release/最终Mac/真机仍未补齐。
