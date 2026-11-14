@@ -186,7 +186,21 @@ fn save(root: &Path, all: &BTreeMap<String, Open>) -> Result<(), String> {
     std::fs::rename(&tmp, &p).map_err(|e| {
         let _ = std::fs::remove_file(&tmp);
         msg::cant_write(p.display(), e)
-    })
+    })?;
+    // A draft whose writer died between write and rename would live here
+    // forever. The lock is held for this whole read-modify-write, so every
+    // other draft is a dead one; ours was just renamed away.
+    if let Ok(entries) = std::fs::read_dir(&dot) {
+        for entry in entries.flatten() {
+            let name = entry.file_name();
+            let Some(name) = name.to_str() else { continue };
+            if name.starts_with("tabs.json.") && name != format!("tabs.json.{}", std::process::id())
+            {
+                let _ = std::fs::remove_file(entry.path());
+            }
+        }
+    }
+    Ok(())
 }
 
 /// An exclusive hold on the tab table for the length of one
@@ -269,6 +283,29 @@ fn change<T>(
     kind: &str,
     with: impl FnOnce(&mut Open) -> Result<T, String>,
 ) -> Result<T, String> {
+    // `Hold` is a kernel lock on one handle: a second `take` on this
+    // thread would wait on itself forever. `with` is pure (it only sees
+    // the table in memory), but a future caller could reach a public write
+    // from inside it, so the shape is made visible in debug builds.
+    thread_local! {
+        static IN_CHANGE: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+    }
+    struct NotReentrant;
+    impl NotReentrant {
+        fn enter() -> Self {
+            IN_CHANGE.with(|inside| {
+                debug_assert!(!inside.get(), "tabs::change called inside another change");
+                inside.set(true);
+            });
+            Self
+        }
+    }
+    impl Drop for NotReentrant {
+        fn drop(&mut self) {
+            IN_CHANGE.with(|inside| inside.set(false));
+        }
+    }
+    let _not_reentrant = NotReentrant::enter();
     // **Held across the read as well as the write.** A lock taken only
     // for the write would let both writers read the same 「before」 and
     // then take turns overwriting it, which is the whole failure.
@@ -438,6 +475,17 @@ fn stalest(open: &Open) -> Option<usize> {
 /// never what the limit closes anyway). Answers the new id.
 pub fn adopt_pinned(root: &Path, kind: &str, device: &str, url: &str) -> Result<String, String> {
     change(root, kind, |open| {
+        // **Idempotent, because the migration that calls this can race**
+        // (`migrate_place_pins` reads its marker, then adopts; two
+        // processes starting together both read an empty marker). A
+        // second adoption of the same place is the same tab, not a twin.
+        if let Some(existing) = open
+            .tabs
+            .iter()
+            .find(|tab| tab.pinned && tab.device == device && tab.url == url)
+        {
+            return Ok(existing.id.clone());
+        }
         let id = mint();
         open.tabs.push(Tab {
             id: id.clone(),
@@ -930,12 +978,21 @@ mod tests {
         let held = Hold::take(&r.0).unwrap();
         let here = r.0.clone();
         let second_ran = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let started = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
         let flag = second_ran.clone();
+        let entered = started.clone();
         let waiter = std::thread::spawn(move || {
+            // Say so before asking for the lock, or a thread the scheduler
+            // has not reached yet would make the assertion below pass for
+            // the wrong reason ("did not run" rather than "was blocked").
+            entered.store(true, std::sync::atomic::Ordering::SeqCst);
             let second = Hold::take(&here).unwrap();
             flag.store(true, std::sync::atomic::Ordering::SeqCst);
             drop(second);
         });
+        while !started.load(std::sync::atomic::Ordering::SeqCst) {
+            std::thread::sleep(std::time::Duration::from_millis(1));
+        }
         std::thread::sleep(std::time::Duration::from_millis(150));
         assert!(
             !second_ran.load(std::sync::atomic::Ordering::SeqCst),
@@ -946,10 +1003,62 @@ mod tests {
         assert!(second_ran.load(std::sync::atomic::Ordering::SeqCst));
     }
 
+    /// **A reader keeps the bytes it opened, and the next open sees the new**
+    /// **list.** The save is a rename over the table rather than an in-place
+    /// rewrite, and that is the property the lock transaction leans on: a
+    /// reader already holding the file is not disturbed, and a later reader
+    /// gets a whole new list rather than a torn one.
+    #[test]
+    fn a_reader_keeps_the_bytes_it_opened_and_the_next_open_sees_the_new_list() {
+        use std::io::{Read, Seek, SeekFrom};
+
+        let r = root("reader-rename");
+        open(&r.0, "page", "m", "first").unwrap();
+        let table = path(&r.0);
+        let before = std::fs::read(&table).unwrap();
+        let mut held = std::fs::File::open(&table).unwrap();
+        open(&r.0, "page", "m", "second").unwrap();
+        let mut aged = Vec::new();
+        held.seek(SeekFrom::Start(0)).unwrap();
+        held.read_to_end(&mut aged).unwrap();
+        assert_eq!(aged, before, "the handle a reader holds keeps its bytes");
+        let fresh = std::fs::read(&table).unwrap();
+        assert_ne!(fresh, before, "the name now points at the new list");
+        assert_eq!(list(&r.0, "page").tabs.len(), 2);
+    }
+
     /// The table is renamed into place, so a reader never sees a
     /// half-written list — and the draft carries this process's name,
     /// because two writers sharing one draft would clobber each other
     /// before either renamed.
+    /// **Adopting one place twice is one tab.** The migration that calls
+    /// this reads its marker outside the lock, so two processes starting
+    /// together can both decide to adopt the same place.
+    #[test]
+    fn adopting_one_place_twice_is_one_tab() {
+        let r = root("adopt-once");
+        let first = adopt_pinned(&r.0, "page", "dev", "https://example.test/x").unwrap();
+        let again = adopt_pinned(&r.0, "page", "dev", "https://example.test/x").unwrap();
+        assert_eq!(
+            first, again,
+            "the second adoption answers with the first tab"
+        );
+        assert_eq!(list(&r.0, "page").tabs.len(), 1);
+    }
+
+    /// **A draft a dead writer left is swept by the next save.** The lock is
+    /// held across one read-modify-write, so any other draft in the directory
+    /// belongs to a writer that never finished its rename.
+    #[test]
+    fn a_stale_draft_is_swept_by_the_next_write() {
+        let r = root("stale-draft");
+        open(&r.0, "page", "m", "first").unwrap();
+        let stale = r.0.join(".khor").join("tabs.json.999999");
+        std::fs::write(&stale, b"{}").unwrap();
+        open(&r.0, "page", "m", "second").unwrap();
+        assert!(!stale.exists(), "the dead writer's draft is gone");
+    }
+
     #[test]
     fn a_write_leaves_no_draft_behind() {
         let r = root("atomic");

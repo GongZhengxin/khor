@@ -43,6 +43,13 @@ jobs:
         run: .\target\debug\khor.exe --version
       - name: CLI doctor JSON
         run: .\target\debug\khor.exe doctor --json
+      # The W2-A write lock is what keeps the window and `khor tabs` from
+      # losing each other's rows; without this step nothing on CI notices if
+      # the Windows write path is stubbed out again.
+      - name: Node lib tests (tabs write lock)
+        shell: pwsh
+        run: cargo test --locked -p khor-node --lib tabs:: -- --test-threads=1
+
       - name: Windows process harness
         run: cargo run --locked --manifest-path crates/node/tests/windows-process-harness/Cargo.toml
       - name: Build fanout harness
