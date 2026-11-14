@@ -3601,7 +3601,9 @@ impl Node {
                     DialFailure::CallerExpired => return Err(e),
                     DialFailure::Asleep(_) => None,
                     DialFailure::TimedOut => Some(msg::machine_unreachable_timeout(&d.name)),
-                    DialFailure::Refused(why) => Some(msg::cant_reach_named(&d.name, why)),
+                    DialFailure::Refused(why) | DialFailure::Transport(why) => {
+                        Some(msg::cant_reach_named(&d.name, why))
+                    }
                 };
                 *one = Some((std::time::Instant::now(), e.clone(), contact));
                 // A middle's dial for another machine is that machine's
@@ -3814,9 +3816,9 @@ impl Node {
             )
             .await
             .map_err(|e| {
-                let timed_out = matches!(e, DialFailure::TimedOut);
+                let unavailable = matches!(e, DialFailure::TimedOut | DialFailure::Transport(_));
                 let words = unreached_words(&d.name, e);
-                if timed_out {
+                if unavailable {
                     PreparationFailure::RetryCached(words)
                 } else {
                     PreparationFailure::Stop(words)
@@ -4107,7 +4109,9 @@ impl Node {
         #[cfg(test)]
         if let Ok(Err(failed)) = &outcome {
             let why = match failed {
-                DialFailure::Refused(why) => format!("Refused: {why}"),
+                DialFailure::Refused(why) | DialFailure::Transport(why) => {
+                    format!("Refused: {why}")
+                }
                 DialFailure::Asleep(why) => format!("Asleep: {why}"),
                 DialFailure::TimedOut => "TimedOut".to_owned(),
                 DialFailure::CallerExpired => "CallerExpired".to_owned(),
@@ -4115,7 +4119,10 @@ impl Node {
             self.wires.note_early_failure_for_test(why);
         }
         #[cfg(test)]
-        if matches!(outcome, Ok(Err(DialFailure::Refused(_)))) {
+        if matches!(
+            outcome,
+            Ok(Err(DialFailure::Refused(_) | DialFailure::Transport(_)))
+        ) {
             eprintln!(
                 "[early-fallback-stage] refused early_data={early_data} had_carried={had_carried} preparing={preparing} remaining_ms={}",
                 dial_by
@@ -4130,7 +4137,10 @@ impl Node {
         if !early_data
             && !had_carried
             && !raced_carrier
-            && matches!(outcome, Ok(Err(DialFailure::Refused(_))))
+            && matches!(
+                outcome,
+                Ok(Err(DialFailure::Refused(_) | DialFailure::Transport(_)))
+            )
             && !crate::deadline::expired(by)
             && tokio::time::Instant::now() < dial_by
         {
@@ -4177,7 +4187,9 @@ impl Node {
                         {
                             let result = match &outcome {
                                 Ok(Ok(_)) => "connected".to_owned(),
-                                Ok(Err(DialFailure::Refused(why))) => format!("refused: {why}"),
+                                Ok(Err(
+                                    DialFailure::Refused(why) | DialFailure::Transport(why),
+                                )) => format!("refused: {why}"),
                                 Ok(Err(DialFailure::Asleep(why))) => format!("asleep: {why}"),
                                 Ok(Err(DialFailure::TimedOut)) => "timed out".to_owned(),
                                 Ok(Err(DialFailure::CallerExpired)) => "caller expired".to_owned(),
@@ -4198,9 +4210,11 @@ impl Node {
         {
             let (won, error) = match &outcome {
                 Ok(Ok(_)) => (Some(crate::journal::Won::Early), None),
-                Ok(Err(DialFailure::Refused(why) | DialFailure::Asleep(why))) => {
-                    (None, Some(crate::journal::scrub(why)))
-                }
+                Ok(Err(
+                    DialFailure::Refused(why)
+                    | DialFailure::Transport(why)
+                    | DialFailure::Asleep(why),
+                )) => (None, Some(crate::journal::scrub(why))),
                 _ => (None, None),
             };
             let asleep = matches!(outcome, Ok(Err(DialFailure::Asleep(_))));
@@ -4291,7 +4305,9 @@ impl Node {
                 let failure = match &e {
                     DialFailure::CallerExpired => return Early::Failed(e),
                     DialFailure::Asleep(_) => None,
-                    DialFailure::Refused(why) => Some(msg::cant_reach_named(&d.name, why)),
+                    DialFailure::Refused(why) | DialFailure::Transport(why) => {
+                        Some(msg::cant_reach_named(&d.name, why))
+                    }
                     DialFailure::TimedOut => Some(msg::cant_reach_named(&d.name, "")),
                 };
                 *one = Some((std::time::Instant::now(), e.clone(), contact));
@@ -11318,12 +11334,18 @@ impl Node {
                             (_, DialFailure::CallerExpired) => msg::dial_timed_out().to_string(),
                             (true, DialFailure::TimedOut) => msg::take_sender_down(&d.name),
                             (false, DialFailure::TimedOut) => msg::take_holder_down(&d.name),
-                            (true, DialFailure::Refused(why) | DialFailure::Asleep(why)) => {
-                                msg::take_sender_failed(&d.name, why)
-                            }
-                            (false, DialFailure::Refused(why) | DialFailure::Asleep(why)) => {
-                                msg::take_holder_failed(&d.name, why)
-                            }
+                            (
+                                true,
+                                DialFailure::Refused(why)
+                                | DialFailure::Transport(why)
+                                | DialFailure::Asleep(why),
+                            ) => msg::take_sender_failed(&d.name, why),
+                            (
+                                false,
+                                DialFailure::Refused(why)
+                                | DialFailure::Transport(why)
+                                | DialFailure::Asleep(why),
+                            ) => msg::take_holder_failed(&d.name, why),
                         });
                         continue;
                     }
@@ -11841,7 +11863,9 @@ impl Node {
             Err(DialFailure::CallerExpired) => {
                 return Err(msg::dial_timed_out().to_string());
             }
-            Err(DialFailure::Refused(why) | DialFailure::Asleep(why)) => {
+            Err(
+                DialFailure::Refused(why) | DialFailure::Transport(why) | DialFailure::Asleep(why),
+            ) => {
                 return Err(msg::inviter_unreachable(why));
             }
         };
@@ -12503,7 +12527,9 @@ impl Node {
     async fn sync_device(&self, ep: &iroh::Endpoint, d: &DeviceInfo) -> Result<String, String> {
         let unreached = |e| match e {
             DialFailure::TimedOut | DialFailure::CallerExpired => msg::dial_timed_out().to_string(),
-            DialFailure::Refused(why) | DialFailure::Asleep(why) => msg::cant_reach_plain(why),
+            DialFailure::Refused(why) | DialFailure::Transport(why) | DialFailure::Asleep(why) => {
+                msg::cant_reach_plain(why)
+            }
         };
         // **The round's opening question rides a redial's handshake**
         // (`Node::ask_early`): it is a reading, so after a wake or a
@@ -13803,7 +13829,9 @@ pub(crate) fn unreached_words(name: &str, e: DialFailure) -> String {
     match e {
         DialFailure::CallerExpired => msg::dial_timed_out().to_string(),
         DialFailure::TimedOut => msg::machine_unreachable_timeout(name),
-        DialFailure::Refused(why) | DialFailure::Asleep(why) => msg::cant_reach_named(name, why),
+        DialFailure::Refused(why) | DialFailure::Transport(why) | DialFailure::Asleep(why) => {
+            msg::cant_reach_named(name, why)
+        }
     }
 }
 
@@ -14088,6 +14116,8 @@ pub(crate) enum DialFailure {
     /// Never a shared failed dial, peer-down observation or backoff event.
     CallerExpired,
     TimedOut,
+    /// An unavailable transport, distinct from policy or application refusal.
+    Transport(String),
     Refused(String),
     /// The far machine refused the connection: it is paused or in the
     /// background (`wires::resting_close`; net-dial B4). Its words are
@@ -14096,8 +14126,8 @@ pub(crate) enum DialFailure {
 }
 
 impl DialFailure {
-    /// A connect error as a dial's failure: the far side resting is
-    /// [`DialFailure::Asleep`], anything else refused.
+    /// Keep concrete QUIC transport failures separate from an application,
+    /// local-policy or resting refusal. Unknown connect/auth errors stop.
     fn of_connect(e: &iroh::endpoint::ConnectError) -> DialFailure {
         use iroh::endpoint::{ConnectError, ConnectingError};
         let end = match e {
@@ -14117,8 +14147,21 @@ impl DialFailure {
     ) -> DialFailure {
         if end.is_some_and(wires::resting_close) {
             DialFailure::Asleep(msg::peer_resting().to_owned())
-        } else {
+        } else if matches!(
+            end,
+            None | Some(iroh::endpoint::ConnectionError::ApplicationClosed(_))
+                | Some(iroh::endpoint::ConnectionError::LocallyClosed)
+        ) {
             DialFailure::Refused(e.to_string())
+        } else {
+            DialFailure::Transport(e.to_string())
+        }
+    }
+
+    fn detail(&self) -> Option<&str> {
+        match self {
+            Self::Transport(why) | Self::Refused(why) | Self::Asleep(why) => Some(why),
+            Self::CallerExpired | Self::TimedOut => None,
         }
     }
 }
@@ -14294,7 +14337,7 @@ impl Node {
         // First road home wins; a road that fails only counts if every
         // other one does too, so one dead direct address cannot decide
         // the answer while the relay is still walking.
-        let mut refused: Option<String> = None;
+        let mut refused: Option<DialFailure> = None;
         let mut carried_retry = false;
         let mut offered_carried = tried.2;
         loop {
@@ -14304,11 +14347,17 @@ impl Node {
             if deadline.is_elapsed() {
                 note(
                     None,
-                    refused.map(|why| crate::journal::scrub(&why)),
+                    refused
+                        .as_ref()
+                        .and_then(DialFailure::detail)
+                        .map(crate::journal::scrub),
                     false,
                     offered_carried,
                 );
-                return Err(DialFailure::TimedOut);
+                return Err(match refused {
+                    Some(failure @ DialFailure::Refused(_)) => failure,
+                    _ => DialFailure::TimedOut,
+                });
             }
             // A pending handshake is not yet in iroh's live path registry.
             // Give a newly prepared carrier its own initial route now. An
@@ -14334,21 +14383,24 @@ impl Node {
             if roads.is_empty() && preparation.is_none() {
                 note(
                     None,
-                    refused.as_deref().map(crate::journal::scrub),
+                    refused
+                        .as_ref()
+                        .and_then(DialFailure::detail)
+                        .map(crate::journal::scrub),
                     false,
                     offered_carried,
                 );
-                return Err(match refused {
-                    Some(why) => DialFailure::Refused(why),
-                    None => DialFailure::TimedOut,
-                });
+                return Err(refused.unwrap_or(DialFailure::TimedOut));
             }
             tokio::select! {
                 biased;
                 () = &mut caller => return Err(DialFailure::CallerExpired),
                 () = &mut deadline => {
-                    note(None, refused.map(|why| crate::journal::scrub(&why)), false, offered_carried);
-                    return Err(DialFailure::TimedOut);
+                    note(None, refused.as_ref().and_then(DialFailure::detail).map(crate::journal::scrub), false, offered_carried);
+                    return Err(match refused {
+                        Some(failure @ DialFailure::Refused(_)) => failure,
+                        _ => DialFailure::TimedOut,
+                    });
                 }
                 joined = roads.join_next(), if !roads.is_empty() => match joined {
                     Some(Ok((won, Ok(Ok(conn))))) => {
@@ -14366,7 +14418,15 @@ impl Node {
                             note(None, Some(why.clone()), true, offered_carried);
                             return Err(DialFailure::Asleep(why));
                         }
-                        _ => refused = Some(e.to_string()),
+                        failure => {
+                            // Another road failing in transport cannot erase an
+                            // explicit refusal already learned from the peer.
+                            if !matches!(&refused, Some(DialFailure::Refused(_)))
+                                || matches!(&failure, DialFailure::Refused(_))
+                            {
+                                refused = Some(failure);
+                            }
+                        },
                     },
                     Some(Err(_)) => {}
                     None => {}

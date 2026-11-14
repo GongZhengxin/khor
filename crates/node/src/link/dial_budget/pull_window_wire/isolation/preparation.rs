@@ -1,6 +1,7 @@
 //! Preparation is optional: a healthy cached Main can deliver first content.
 use super::*;
 
+mod resting;
 mod transport;
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
