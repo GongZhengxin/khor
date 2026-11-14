@@ -170,6 +170,10 @@ fn stored(root: &Path) -> BTreeMap<String, Open> {
 /// write here (第 2 条 put a terminal and a window over one file) and a
 /// shared temp name is two writers clobbering each other's draft before
 /// either has renamed.
+///
+/// Windows cannot reach this: [`change`] refuses there before a write
+/// (no `flock` to serialize it), so the whole write side is Unix-only.
+#[cfg(unix)]
 fn save(root: &Path, all: &BTreeMap<String, Open>) -> Result<(), String> {
     let dot = root.join(".khor");
     std::fs::create_dir_all(&dot).map_err(|_| msg::cant_make_dir(dot.display()))?;
@@ -210,8 +214,10 @@ fn save(root: &Path, all: &BTreeMap<String, Open>) -> Result<(), String> {
 /// leaves nothing to clean up and nothing to time out. A lock file this
 /// app had to garbage-collect would be one more thing that goes wrong
 /// on the machine the user is actually using.
+#[cfg(unix)]
 struct Hold(std::fs::File);
 
+#[cfg(unix)]
 impl Hold {
     fn take(root: &Path) -> Result<Hold, String> {
         let dot = root.join(".khor");
@@ -232,6 +238,7 @@ impl Hold {
     }
 }
 
+#[cfg(unix)]
 impl Drop for Hold {
     fn drop(&mut self) {
         // Closing the fd releases it; this is the explicit spelling so
@@ -252,6 +259,7 @@ pub fn list(root: &Path, kind: &str) -> Open {
 /// **Every mutation goes through here**, so `active` cannot be left
 /// naming a closed tab by a caller that forgot: the invariant is held
 /// by the road rather than by each traveller.
+#[cfg(unix)]
 fn change<T>(
     root: &Path,
     kind: &str,
@@ -267,6 +275,21 @@ fn change<T>(
     open.settle();
     save(root, &all)?;
     Ok(out)
+}
+
+/// **Windows has no `flock`**, so two processes writing tabs there —
+/// the window and `khor tabs` — would race exactly the way the lock
+/// above exists to prevent, and the loser's tab would quietly vanish.
+/// Refusing the write keeps a tab from being lost silently; [`list`]
+/// still reads the table.
+#[cfg(not(unix))]
+fn change<T>(
+    _root: &Path,
+    _kind: &str,
+    _with: impl FnOnce(&mut Open) -> Result<T, String>,
+) -> Result<T, String> {
+    Err("tabs writes are unsupported on Windows: no flock to serialize the window and `khor tabs`"
+        .to_owned())
 }
 
 /// A fresh handle.
