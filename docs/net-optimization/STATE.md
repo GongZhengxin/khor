@@ -1,24 +1,34 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-14T04:29:05.083400+00:00。用户已授权持续实施/远端验证，活动目标“好 完成完整目标”仍未完成。root串行，不派子智能体。完整[GOAL](GOAL.md)/[PLAN](PLAN.md) N0–N5范围保持，逐项缺口以[REQUIREMENTS](REQUIREMENTS.md)为准。未获main合并、正式发布、现装App替换或生产Relay采购部署授权。
+更新于 2026-11-14T05:00:02.994460+00:00。用户已授权持续实施/远端验证，活动目标“好 完成完整目标”仍未完成。root串行，不派子智能体。完整[GOAL](GOAL.md)/[PLAN](PLAN.md) N0–N5范围保持，逐项缺口以[REQUIREMENTS](REQUIREMENTS.md)为准。未获main合并、正式发布、现装App替换或生产Relay采购部署授权。
 
 此前STATE逐字归档[HISTORY-through-relative-margin-v2-unit](HISTORY-20261114-through-relative-margin-v2-unit.md)，SHA256 `c772dce4a855e181e700130c5805801f3be5e3451968af6f35ad38cef5264406`；其历史pending/PID不能用于重派。更早原件由该文链接继续保留。E=`/Volumes/disk0/Khor/evidence/net`；worktree均在`/Volumes/disk0/Khor/worktrees/current/`。
 
 ## 当前唯一Turing执行及下一步
 
-IPv6-only新夹具已经完成远端格式和准确普通Release编译，产品/vendor源码变化0。格式准备035457原check=1和patch原件保留；初版编译040023因tcp_probe新闭包缺Ok返回E0308，native0，原失败保持。单行修正后 **040848Z-2ccce6c9** 0/236.890363秒，普通features[]、原thin LTO，完整compile/provenance/selected5/owner已核；CLI SHA443c6e010293b83e7c0e963b6eb96edb3897dd4c0d6ada0bca9f6fca02666a43与已接受N2逐字相同，完整netlab72589f5af5f3304a45cf42fc5f9484a3efe5325e1423b5b4306c5a96bc004d8c。不是产品性能绿。
+唯一pending **turing-20261114T045906Z-abc0de50**，net-node / separate_pull_standard_node_v1，role candidate；control **5d3691f252f9dee0297fa3c494374be6119bca29**（原标准12组不改）。先查receipt/execution，按实际状态collect；禁止重复launch，原非零仍完整收集并保留，不把identity当行为通过。
 
-准确worktree **khor-net-ipv6-only-mobility-v1**，branch experiment/net-ipv6-only-mobility-v1，HEAD **f3a6231605ff28ec82dd1180a4076c79e2f474bc**，tree4ea140f94cc49651b3775bf5be466c3f7a45bfbb、snapshot48d3f81be0a2a9eb9ddbae9cc8ee5ee7789fc89d。只改原4个netlab测试文件，基于96e接受源，无H2/PULL4。失败编译缓存只从闭证原producer恢复准确source和selected5，没有fingerprint/intermediate复制。
+worktree **khor-net-separate-pull-v1** / branch experiment/net-separate-pull-v1，准确formatted HEAD **dad4306132a51e1807da2058988e13f315b262ac** / tree **0db6508aa2bd2094b9dfcfee6c35715a0af20f17** / snapshot **0a97f374b33f6d7a3b5840b48c55fbf001cb7700**。E/separate-pull-source-v1.json，基于已接受I4＋N2并带纯测试IPv6夹具修正4d6341a1；产品原型1196137a和格式dad430，准确源保留全部既有产品修复，无H2/PULL4。
 
-固定15场五种变化各3次，设计 **E/ipv6-only-mobility-design-v1.json** 在源前冻结；runtime plan/control-v1，control **f71b536548211d49c7f8e8d1a9451c038c45580e**、protocol6d37cc713d47ab56fb7e93e0c07f7347369f5a246300765352d02f6b915f8761。保持原2setup+40真实读/场、2秒caller、500ms节奏、各方向首次≤2秒、240秒case/300秒owner；全IPv6、稳定IPv6 HTTP Relay，独立reflector/内核读回；首业务前不注入probe/hint/rebind。IID add/DAD/delete可能重叠，不称原子突发切断；强制Relay用owned namespace nft及真实双reflector正负控制。
+这是**单文件架构实验，默认原共享连接**。内部KHOR_EXPERIMENT_PULL_WIRE=separate或私有layout入口启用一条额外现有Main ALPN QUIC；沿用原Endpoint/有界dial/2秒caller预算/最多一次读retry，不扩写或0RTT。RAII完成/错误/取消关闭；原cached Main不替换；Weak side新增transfer_owned位，retire_peer同时关闭matching extra，其他peer不受影响；dial前后检查pause/rest。尚未采用、未发布、未跑性能；多文件caps/公平/完整mode-ON旧合同/真机成本仍缺。
 
-前4场均已collect/identity/独立raw-data/内核/CPU/owner验证并关闭ledger：**042127Z-54737e59** one IID42ok，首次758939/745392μs；**042901Z-f74a8df0** one prefix42ok，598302/597705；**043035Z-2643f42e** both IID42ok，944293/949209；**043240Z-ce27a48e** both prefix42ok，509911/609888。总168/168，全部没有非loopback IPv4，内核old不存在/new和实际UDP源匹配、TCP IPv6保持。逐场 E/run/ipv6-only-runtime-verification-v1.json。
+**接下来先native组件门**：E/separate-pull-mode-on-contract-plan-v2.json固定原286＋7=293 pass/0 fail/原ignored1，原12命令、全部原test名逐一核对。新7个真实QUICmode-ON测试为drop extra/other-peer负控制＋peer pause/side cleanup/实际完整文件完成＋取消/读retry1/写不重放；旧mock默认shared，不称完整mode-ON覆盖。collect→verify-turing-record.py→verify-separate-pull-standard-node-v1.py；若非零先看准确compiler/test错误，不改原期限/旧断言或跳过合同，保留原红再做具体修复。
 
-第5 **043417Z-fdd40789** 1/9.732334秒，native101在nft安装即syntax error；业务0/地址变更0，不是产品红。原log/独立analysis_error与fixture preparation rejection均保留，ledger已关闭，v1停止invalid preparation，6..15未执行。E/ipv6-only-mobility-design-v2.json在修改前冻结：仅修nft块输入换行，不改规则语义/几何/期限，准确product CLI必须相同；保留前4有效功能证据，修复后固定继续5..15，不声称同ELF性能cohort，不抹掉第5准备失败。
+S formatter **044431Z-f8888b8a** 已0/45.951713秒，11files/identity/owner/source已核；原fmtcheck1及patch SHA7d3d82c247560c6c39f8a5c7d9d35dc7822923ad245a35fcce6b0bac32c68539保留，仅link.rs/isolation.rs格式，compile0/native0，已经准确apply/commit。此时不再重派formatter。
 
-V新HEAD **4d6341a1b24ac388f7b1ff768213d418264d279b** / tree1cbe5c0dfea1f838754fcf6d74145d5e4ef3c1dd / snapshot4e610bc70eac4714893c614be30ed17072b30ee9，仅v6_only.rs一条nft string。当前唯一stage/launch为 **ipv6_only_native_compile_v3**，control **e311ff9e87b411afba3c943af34ffb83d9e7747d**，实际run先查source-refs末条/receipt，禁止重复launch。它先从已闭040848校验原selected/source，新增独立owned user/netns对实际source字符串nft安装＋读回校准，再普通Release严格编译。编译时不运行计时；本机仍source-only。先collect/identity/verify-ipv6-only-native-compile-v3.py，只有准确CLI相同及源差异限定一literal后，才冻结runtime-v2继续5..15。
+只有组件门通过后，再普通Release严格producer；V最近闭证producer043812可作准确prior，当前稳定candidate release cache source/tree1cbe5c0dfea1f838754fcf6d74145d5e4ef3c1dd。S相对V仅4个node文件（2runtime＋2test）改变，netlab/workload/vendor/validator源保持；必须完整source/ELF准入，不复制fingerprint/intermediate。本机source-only；重型编译/计时Turing串行，不在timing旁启动Cargo。
 
-独立N3原型 **khor-net-separate-pull-v1** / experiment/net-separate-pull-v1 基于上述准确V源，E/separate-pull-design-v1.json已在编辑前冻。link.rs/wires.rs及7项真实mode-ON合同有未提交实验：文件额外现有Main ALPN QUIC与RAII关闭/Weak side生命周期追踪，沿用原读retry/期限；尚未格式/编译/测试/采用。已明确默认原共享、内部KHOR_EXPERIMENT_PULL_WIRE=separate实验开关/私有layout测试入口。7项新增drop/peer pause+其他peer负控制/side cleanup/实际文件取消与完成/读retry1/写不重放合同尚未native；额外weak side有transfer_owned标志让retire_peer关闭matching extra，检查pause在dial前后。后续先远端format、准确源原标准组＋真实新合同，不把默认mode-OFF旧mock测试说成新路径覆盖。单文件实验，不代并发文件上限/公平/能耗/手机接受。
+后续已预先设计但**未stage/运行**：E/separate-pull-lifecycle-design-v1.json固定shared/separate各1个真实high日志诊断（原720读/192MiB/全部门），只证明实际不同Main及独立Tunnel，复用原ServeLogShadow与3项采集校准；runtime flag只在provenance/CPU后owned.run期间设置、finally恢复。再填准确producer/controller冻结E/separate-pull-three-arm-design-v1.json：A原public main、B同prototype ELF shared、C同ELF separate，ABC/BCA/CAB九块各原low/high，共12960读/18file。C对A原相对10%+20ms/90%率及固定original-main绝对门都保持；B只作架构对照，不能为C降门。原hard/CPU/geometry/owner/futility stop与坏样本全部保留。尚无原型性能结论。
+
+### 纯IPv6固定功能矩阵已完成
+
+详[IPV6-ONLY-MOBILITY](IPV6-ONLY-MOBILITY.md)，E/**ipv6-only-mobility-verification-v2.json** phase=completed：**15/15场、五类各3次、630/630真实读取成功**；双向首次最大1705510μs，原2秒门保持。全部内核old移除/new实际UDP源、无非loopback IPv4、IPv6 TCP、owned路由/原attempt人口、CPU/PSI/owner清理独立核验。强制Relay3场各首次约0.507–0.509秒；nft allow独立reflector39999＋block39998正负控制、实际readback与counter、两侧Hop::Relay门都保留。
+
+准确产品CLI全程**443c6e010293b83e7c0e963b6eb96edb3897dd4c0d6ada0bca9f6fca02666a43**，产品/vendor变化0。前4夹具源f3a62316/4ea140与后11 literal-only修正4d6341a1/1cbe5c除nft字符串逐字一致；E/ipv6-only-functional-carryover-v2.json已核，只作功能carryover、不混算同ELF性能。初版E0308编译040023（native0）与v1第5 nft语法失败043417（业务0）全部原件保留；v1当时停止invalid preparation，设计v2先冻后修单literal，非删坏业务样本。
+
+V source4d6341a1/snapshot4e610bc70eac4714893c614be30ed17072b30ee9；普通Release producer **043812Z-bfb5fd1c** 0/244.923981秒、23files/identity/严格来源已闭，实际source nft先在独立user/netns实装/读回0，CLI同字节、testSHA187f84874dd99a5e4532b13ffa63564afa49ef59154600e7390abe8b0bee5282。runtime-v2 control **afd4f2792e09f6e16c5829f5579c46863a8ab7ff** / protocol6e46b9a4cadc25d70bd8075c77ab200fb433d23541654a4d7d06cac41a098ad2，固定5..15全部闭证。最后15 **045718Z-60f01e1e** 双prefix首次1516369/1705510μs；全部run/结果详上述报告，不能重派矩阵。
+
+边界：IID add/DAD/delete可能有地址重叠；Relay-only在配对前已隔离UDP，证明已建立Relay换址重连，不代初始Direct突然断UDP。未代NAT64/DNS64、冷新peer发布发现、睡眠/真实Wi-Fi↔蜂窝/peer relay移动/手机能耗/Relay容量与故障域。**完整N4/N3/N5未完成，活动总目标保持**。
 
 ### 准确接受源I4＋N2完整混合对照已闭：功能全绿、N3仍红
 
