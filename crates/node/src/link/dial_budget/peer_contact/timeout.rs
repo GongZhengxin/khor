@@ -68,24 +68,80 @@ async fn observe_timeout_on(early: bool, contact: Contact, contact_alpn: &[u8]) 
     let initial_contact_version = node.wires.contact_version(&peer.id);
     let ignore_handshakes = Arc::new(AtomicBool::new(true));
     let (first_ignored, observed_first) = tokio::sync::oneshot::channel();
+    let (stop_server, mut stopped) = tokio::sync::oneshot::channel::<()>();
+    let cancelled_handshakes = Arc::new(AtomicUsize::new(0));
+    let closed_streams = Arc::new(AtomicUsize::new(0));
+    let over_capacity = Arc::new(AtomicUsize::new(0));
     let mut serving = Aborts(Some(tokio::spawn({
         let server = server.clone();
         let ignore_handshakes = ignore_handshakes.clone();
+        let cancelled_handshakes = cancelled_handshakes.clone();
+        let closed_streams = closed_streams.clone();
+        let over_capacity = over_capacity.clone();
         async move {
             let mut first_ignored = Some(first_ignored);
-            while let Some(incoming) = server.accept().await {
-                if ignore_handshakes.load(Ordering::SeqCst) {
-                    // This is a real dropped handshake, not a fabricated DialFailure.
-                    incoming.ignore();
-                    if let Some(signal) = first_ignored.take() {
-                        signal.send(()).unwrap();
+            let mut handlers = tokio::task::JoinSet::new();
+            let mut panicked = false;
+            loop {
+                tokio::select! {
+                    biased;
+                    _ = &mut stopped => break,
+                    result = handlers.join_next(), if !handlers.is_empty() => {
+                        if result.is_some_and(|r| r.is_err()) {
+                            panicked = true;
+                            break;
+                        }
                     }
-                    continue;
+                    incoming = server.accept() => {
+                        let Some(incoming) = incoming else { break };
+                        if ignore_handshakes.load(Ordering::SeqCst) {
+                            incoming.ignore();
+                            if let Some(signal) = first_ignored.take() {
+                                signal.send(()).unwrap();
+                            }
+                            continue;
+                        }
+                        if handlers.len() >= 8 {
+                            over_capacity.fetch_add(1, Ordering::SeqCst);
+                            incoming.ignore();
+                            continue;
+                        }
+                        let cancelled_handshakes = cancelled_handshakes.clone();
+                        let closed_streams = closed_streams.clone();
+                        handlers.spawn(async move {
+                            let Ok(accepting) = incoming.accept() else {
+                                cancelled_handshakes.fetch_add(1, Ordering::SeqCst);
+                                return;
+                            };
+                            let Ok(conn) = accepting.await else {
+                                cancelled_handshakes.fetch_add(1, Ordering::SeqCst);
+                                return;
+                            };
+                            let Ok((mut send, mut recv)) = conn.accept_bi().await else {
+                                closed_streams.fetch_add(1, Ordering::SeqCst);
+                                return;
+                            };
+                            let Ok(bytes) = recv.read_to_end(64).await else {
+                                closed_streams.fetch_add(1, Ordering::SeqCst);
+                                return;
+                            };
+                            assert_eq!(bytes, b"peer-contact");
+                            if send.write_all(&bytes).await.is_err() || send.finish().is_err() {
+                                closed_streams.fetch_add(1, Ordering::SeqCst);
+                                return;
+                            }
+                            conn.closed().await;
+                        });
+                    }
                 }
-                let conn = incoming.accept().unwrap().await.unwrap();
-                answer_echo(&conn).await;
-                conn.closed().await;
             }
+            handlers.abort_all();
+            while let Some(result) = handlers.join_next().await {
+                if result.is_err_and(|e| !e.is_cancelled()) {
+                    panicked = true;
+                }
+            }
+            assert!(!panicked, "the scratch connection handlers must not panic");
         }
     })));
     let mut owner = Aborts(Some(tokio::spawn({
@@ -146,7 +202,7 @@ async fn observe_timeout_on(early: bool, contact: Contact, contact_alpn: &[u8]) 
         outbound.close(0u32.into(), b"fixture finished");
         inbound.close(0u32.into(), b"fixture finished");
     }
-    serving.0.as_ref().unwrap().abort();
+    let _ = stop_server.send(());
     let server_stopped = serving.0.as_mut().unwrap().await;
     tokio::join!(ep.close(), server.close(), other.close());
 
@@ -173,6 +229,11 @@ async fn observe_timeout_on(early: bool, contact: Contact, contact_alpn: &[u8]) 
             "down_after_old_timeout": down_after_old_timeout.is_some(),
             "backoff_after_old_timeout": backoff_after_old_timeout.is_some(),
             "endpoints_explicitly_closed": true,
+            "fixture_revision": "cancellation_safe_concurrent_v2",
+            "cancelled_handshakes": cancelled_handshakes.load(Ordering::SeqCst),
+            "closed_streams": closed_streams.load(Ordering::SeqCst),
+            "over_capacity": over_capacity.load(Ordering::SeqCst),
+            "all_connection_handlers_joined": true,
         })
     );
     assert!(
