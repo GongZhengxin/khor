@@ -6,7 +6,11 @@
 
 ## 当前执行与下一步
 
-**唯一Turing在途：turing-20261114T062632Z-8dc26135**，fixture-only普通Release编译；control b4dd806a17205a85a0e18858acddcc081affe088，source ddc62a719cbbc0445617b7940ddea96ca68f85e6/tree e27863d51c82001603728bf3e7ff668fa9c4d2c3/snapshot2c3dcc0bdd8c91219041e29484f86b63b105e05a。独立worktree khor-net-separate-pull-path-diagnosis-v1，只有workload.rs保存/输出原门使用的final Link及对侧Link，产品0变化、门槛0变化。原S未变。E/separate-pull-path-diagnosis-design-v1.json在改源/运行前固定3场high/separate有日志诊断，不作性能接受。collect→verify-turing-record→verify-separate-pull-path-diagnosis-compile-v1.py后，才运行已准备的freeze-separate-pull-path-diagnosis-runtime-v1.py；runtime freezer尚未执行，不得越过编译证明。共同ledger以executor与pending筛选；无在途Mac，末条可能是其完成记录。
+**唯一Turing在途：turing-20261114T064113Z-c6ab1e11**，固定第3/3高延迟separate诊断；runtime control **06158fc9f06496de77243a130218ce5dffe0b4b9** / protocol **502cde19cf8edd9dc02bbf4d55cae6c288fd26acba5efdc9149617018af1f481**。E/separate-pull-path-diagnosis-progress-v1.json保存固定三次及当前在途，collect→verify-turing-record→verify-separate-pull-path-diagnosis-v1.py，闭证后结束固定三场并汇总，不重派；不替代原screen、不直到复现才停。共同ledger按executor与pending筛选；无在途Mac。
+
+诊断第1次063128Z-ece4ceab已0/180.565866秒闭证，16files/原CPU/owner/3采集校准通过；720/720读、192MiB、1128真实stream配对、两Main/独立Tunnel。最终x/y Link均Direct且down=None，所有directory360/file768实际回复都Direct。**未复现原direct_after红**，不称已修复或原失败不存在。
+
+fixture-only producer **062632Z-8dc26135** 已0/240.932852秒，23files/identity/严格原Release来源闭证。独立worktree khor-net-separate-pull-path-diagnosis-v1，source **ddc62a719cbbc0445617b7940ddea96ca68f85e6** / tree **e27863d51c82001603728bf3e7ff668fa9c4d2c3** / snapshot2c3dcc0bdd8c91219041e29484f86b63b105e05a，只有workload.rs保存/输出原门使用的final Link及对侧Link。产品0变化、门槛0变化，CLI仍准确**9add2509af6c3d96d3ac82783bc7bbc9803a931ffca34f21355ee8dc897404ca**，netlab **3853081a55af2f0bfa1ed5c46fd7592f99306982c58c9a3ba92902572732a8cf**。E/run/separate-pull-path-diagnosis-compile-verification-v1.json。design在改源/运行前固定三次有日志诊断，不作性能接受；compile与runtime freezer均已唯一执行，不能重派。静态分析E/separate-pull-path-failure-static-analysis-v1.json保持证据边界。
 
 **独立文件QUIC三组screen已停止且未通过。** E/separate-pull-three-arm-progress-v1.json phase=`stopped-isolated-hard-functional-failure`；不可运行原第8A/9B或补替代场。停止报告E/separate-pull-three-arm-stopped-summary-v1.json已生成，原计划、阈值、所有失败与未执行人口保持。
 
@@ -64,3 +68,8 @@ iPhone现装仍旧版，之前“就绪”过期，真实候选可用后另约�
 本机source-only：不运行本地Cargo/Rustfmt/Node/Bun/Xcode/产品；Git与stdlib Python源码/数据/ZIP/hash及远端编排允许。Turing UID1110/shared flock/jobs16/nice10/Rust1.95/启动50停止40GiB、私有user/netns；计时CPU>=80%idle/pressure<=5/无同UIDCargo，与编译串行。Mac jobs2、原50/40GiB与target100GiB及installed guard998f保持。root唯一ledger writer，无后台协调器。
 
 先读本STATE/PLAN，核实际HEAD/diff/共同ledger，不能照历史pending/PID重派。S图谱0节点、不覆盖准确树（不是低风险判断）；按图谱优先后定向读实际源码，不擅自索引。其他任务LIVE23961、main及已安装App保持。
+
+
+第2次063616Z-dedecebf已0/190.626717秒、16files/720ok/1128配对/布局与原CPU/owner/capture门通过，最终两端Direct且down=None，全部directory360/file768实际回复Direct。未复现原红。
+
+追加独立复查已先冻结但未运行：E/separate-pull-final-link-unlogged-plan-v1.json，control0ea54dbd67f35c4414ddcc16c8ac62f7deb0fa51/protocol d073667e559c41d58fbf1ec8c07cbd626d1310d8f1cd54072f2eea656024a9cf；同062632 fixture-only普通Release ELF，固定三次high/separate，KHOR_NET_DIAGNOSTICS=None、不外采日志，保原所有门/失败/人口；只观察最终Link，不替代screen或作性能接受。追加原因是详细日志可能影响时序，不能用有日志未复现代替无日志故障结论。verifier verify-separate-pull-final-link-unlogged-v1.py已在native前写好/parsed。三个完整日志诊断闭证后按固定序调度，原screen第8/9仍不执行。
