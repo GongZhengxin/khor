@@ -1,6 +1,8 @@
 //! Explicit separate-mode contracts. Existing mocks stay in shared mode.
 use super::*;
 
+mod preparation;
+
 fn peer(f: &Fixture) -> DeviceInfo {
     let mut peer = f
         .node
