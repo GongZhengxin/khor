@@ -1,12 +1,27 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-14T07:52:08.471333+00:00。用户授权持续实施与远端验证，活动目标“好 完成完整目标”仍未完成。root串行、不派子智能体。完整[GOAL](GOAL.md)、[PLAN](PLAN.md) N0–N5和[REQUIREMENTS](REQUIREMENTS.md)保持。未获main合并、正式发布、现装App替换或生产Relay采购部署授权。
+更新于 2026-11-14T09:44:10.253259+00:00。用户授权持续实施与远端验证，活动目标“好 完成完整目标”仍未完成。root串行、不派子智能体。完整[GOAL](GOAL.md)、[PLAN](PLAN.md) N0–N5和[REQUIREMENTS](REQUIREMENTS.md)保持。未获main合并、正式发布、现装App替换或生产Relay采购部署授权。
 
 此前STATE逐字归档[HISTORY-20261114-through-separate-pull-screen.md](HISTORY-20261114-through-separate-pull-screen.md)，SHA256 `85c364bde3626ce7627a3be9055ad1a477a557a2601cbf682d3b58aafd64ba53`；该档案内的pending、下一步和“尚未运行”均为历史，不能用于重派。E=`/Volumes/disk0/Khor/evidence/net`。
 
 ## 当前执行与下一步
 
-**Turing无在途任务**。最新同源码标准原12组 **072757Z-352286a4** 已0/487.964780秒、21files/identity/原fmt/owner全闭：**294pass/0fail/原ignored1**，8个明确mode-ON与14contact全过，全部原test名/原ignored逐项核对。E/run/pull-preparation-standard-node-verification-v1.json。准确formatted HEAD7542ea8960c2bd35df534c437f7d05ddd0b69cdc/tree fe61be7532678bf40cce65d30f1286f51b4e815b/snapshot51e316bd77c8df1889053f86aa68ae5831c52880，worktree khor-net-pull-preparation-v1 / experiment/net-pull-preparation-v1，E/pull-preparation-implementation-source-v1.json。另有5个Window原生合同见下13窄门，不在标准12组计数里，不能双算8个重叠isolation。完整N3/Release性能/成本仍未接受。
+**当前无在途Turing/Mac任务。最新同源标准12组已闭：turing-20261114T090158Z-0ddf1257，0/489.875419秒，306pass/0fail/原ignored1**；21files/identity/owner/原fmt与全部原case/忽略逐项核对。E/run/pull-negotiation-fallback-standard-node-verification-v1.json，准确控制 **5d3691f252f9dee0297fa3c494374be6119bca29**，源码 **e4e433a57964495d202d6f0eecdf8e3fe65fc323** / tree **eacc11bf9cd05dd50862bbe78e92d2b88a60d653** / snapshot **1a7b9dccc9c5b9f5ff075b1d02b45c592b5bfe2d**。worktree khor-net-pull-negotiation-fallback-v1 / experiment/net-pull-negotiation-fallback-v1，clean。原fe61标准294＋新增准备边界8＋运输/政策4=306，原12命令及原ignored不改；20明确mode-ON与14contact全过，大部分旧合同仍shared，不能称全部旧场景mode-ON。当前源尚无Mac/Release性能/真机验收，fe61的Mac290不能代替eacc证据。不重复已闭标准306/窄20/旧16。
+
+下一实现设计已写[PULL-POOL-DESIGN](PULL-POOL-DESIGN.md)：actual canonical Arc<Endpoint>归属、每peer活跃共享extra、node/perpeer连接与slice额度、ready结果持有额度、公平推进与退役/调用者边界；候选4 extra/peer1、bulk node32/peer8、首内容8仅为待测参数，不称最优。**pool/caps代码与对应新合同尚未开始**。先在新独立分支实现并闭真实并发/生命周期合同，再进入发行性能与1/3/5成本；旧混合screen仍不通过，完整N0–N5保持。
+
+**当前源窄门已闭：085928Z-39e34269，0/104.226576秒，20pass/0fail/0ignored**，11files/identity/owner/原全局fmt；E/run/pull-negotiation-fallback-native-verification-v1.json。准确RED085432Z-798e08a1（原runtime ba423cb/treee692）先2pass/1fail，真实额外ALPN协商失败导致文件提前Err，cached Main仍真实Sessions/原stable-id；清理后才断言失败。修复后原三项transport测试模块blob完全相同：真实两个协商错误后offset2在held1释放前发出，完整13唯一offset/精确文件/part和note清理全过；真实Incoming.refuse暂停信号、ApplicationClosed、LocallyClosed继续terminal，原16隔离/准备边界全保持。只有link.rs产品变动：具体QUIC运输错误独立Transport，optional TimedOut/Transport回cached；原resting/应用/本机/未知auth/config/caller到期终止，聚合不让另一条运输失败或自身dial超时擦掉已知显式拒绝。原primary词句/backoff/early retry条件维持；无新任务、timer、deadline、ALPN、vendor或默认模式改动。详[PULL-FALLBACK](PULL-FALLBACK.md)。这不是生产延迟或完整N3接受。
+
+前一实际探针084909Z-ec61253e已101/90.142939秒、11files/identity/owner/原fmt闭；2pass/1fail。其Incoming.refuse()明确对应既有wires::resting_close的CONNECTION_REFUSED→Asleep，且生产暂停/后台确实drop Incoming；测试把它当可恢复运输故障是错误前提。E/run/pull-transport-fallback-fixture-semantics-verification-v1.json，原26b241源/plan/断言全部保持，**不能称产品回退bug或改掉暂停语义**。原错误假设verifier未执行。新独立design在运行前固定：set_alpns仅让额外握手协商失败，原Main继续服务，实际accept/协商错误、offset2在offset1被hold时发出、完整精确文件与身份/cleanup、app/local terminal全保留。
+
+上一批已闭证： 最新边界任务 **turing-20261114T080729Z-b976002c** 已0/104.196722秒、11files/identity/owner/原fmt全闭，**16pass/0fail/0ignored**；E/run/pull-preparation-boundary-native-verification-v1.json。control **b37158c0e2040aedb4d0d9a65b1671ecd861042e**，独立worktree khor-net-pull-preparation-contracts-v1 / experiment/net-pull-preparation-contracts-v1，formatted HEAD **59b841424a24ca2e2899e5c4489fca16510bab0f** / tree **b4b59602e7dc6280309b236ebeff91fdf349ba9f** / snapshot **892046078337ec757beecc94238a13c35ee19d1c**。相对fe61只两个cfg(test)文件，runtime/vendor/参数未改。新增8项真实QUIC边界：0/1234/262144字节文件不额外handshake（含真实positive observer校准）、本机/peer暂停/休眠标志/过期caller四项terminal且不dial、实际Incoming未accept时取消后cached identity保持并能再新建extra；旧8项隔离/首内容合同保持。不重跑已闭组；本门不证明真实手机休眠、性能、准备传输错误回退或caps/fairness。
+
+下一步：按PULL-POOL-DESIGN在新隔离worktree实施pool/caps、公平性和生命周期合同；原eacc保持不变，已闭306/20不重复。之后Release共存性能/成本与移动验收，完整目标保持。随后继续pool/caps、公平性、Release共存性能、移动与最终完整目标，不能以边界单测代替N3验收。
+formatter080133Z-141756d2已1/45.917981秒、10files/identity/owner闭，compile/native0；原全局fmt gate完整导出patch SHA **9b9f3a2a29114f76626b2bc49754ba1c4352b203fae16fc406fe294851da0e83**，只两处test文件；准确apply/commit59b，当前native仍执行原fmt gate。首个本地严格token断言在apply后拒绝Rustfmt对两个peer_pause match表达式加保值块；精确reverse-check及仅这两处归一化后核验，未重apply/远端重跑，原件保留。E/run/pull-preparation-boundary-format-verification-v1.json。
+
+调度准备一次错误控制SHA被本地rev-parse拒绝，run目录/ledger/SSH均未开始；E/pull-preparation-boundary-dispatch-preparation-v1.json。改为从冻结JSON读准确b371后唯一stage/launch当前run，不能重派。
+
+最新同源码标准原12组 **072757Z-352286a4** 已0/487.964780秒、21files/identity/原fmt/owner全闭：**294pass/0fail/原ignored1**，8个明确mode-ON与14contact全过，全部原test名/原ignored逐项核对。E/run/pull-preparation-standard-node-verification-v1.json。准确formatted HEAD7542ea8960c2bd35df534c437f7d05ddd0b69cdc/tree fe61be7532678bf40cce65d30f1286f51b4e815b/snapshot51e316bd77c8df1889053f86aa68ae5831c52880，worktree khor-net-pull-preparation-v1 / experiment/net-pull-preparation-v1，E/pull-preparation-implementation-source-v1.json。另有5个Window原生合同见下13窄门，不在标准12组计数里，不能双算8个重叠isolation。完整N3/Release性能/成本仍未接受。
 
 **Mac同源标准回归已闭证，无在途Mac**：GH **43571504228** / job **132376699636**，control68cadb57a0ed72d40a4ca9a843e86b9c6797bf34；与Linux同完整source snapshot51e316/treefe61，**290pass/0fail/原ignored1**，差4原Linux-only cfg逐项核源，8明确mode-ON/14contact全过。E/pull-preparation-mac-verification-v1.json；artifact **14104736988** / **37828B** / SHA **3088eabca140fa0120f0af081d68ed88f8b11389d59ceb739483f566fcaddd7e** / ZIP CRC/20files、全部11control blobs/source/bundle/ARM64/rust1.95/jobs2/installed guard998f及原50GiB门全部核。host采集free70030983168B；无App打包/安装/发布，其他LIVE23961未动。独立progress已pending false；仅完成严格验证后才completed-only追加共同SourceRefs，当前共同ledger全部pending false。
 
@@ -18,7 +33,7 @@ Mac首次本地手动import缺scripts路径，khor_lab import在upload_snapshot�
 
 formatter **071746Z-25a10da4** 已1/45.915458秒闭证，10files/identity/owner，compile/native0。原顶层check_format先于定制formatter-only分支执行，因此formatter-only.json未执行；原全局门完整导出disposable clone的三文件patch SHA **beed5f9f763bd28fdd214a62c588fc65f51b5f3c936983882407cd2bb5c44f94**，原exit1保留，不称格式已绿。该准确patch已reverse-check/规范化非格式token验证后apply/commit7542。首个本地whitespace-only校验拒绝Rustfmt移除一个optional trailing comma，发生在已apply后；没有重apply或额外native，修正为允许该Rustfmt格式变化后核验并commit。E/run/pull-preparation-format-verification-v1.json。当前原生任务仍必须通过原全局fmtcheck，不降门。未格式26bfe7/0a7a15与原件全部保留。
 
-实现设计E/pull-preparation-implementation-design-v1.json在改源前冻结。首slice先走cached Main；小文件首slice完成则不新dial；大文件追加prepare future由pull持有，与真实cached请求select并行；每请求持有额外Line的Arc，最后owner负责关闭。可选prepare未就绪时先1窗口，再随一条缓存请求完成或handshake结束widen到原8，不移除/复制既有pending；无detach/timer/新deadline，Shared仍原行为。只对typed TimedOut后退cached，Refused/Asleep/CallerExpired保持terminal，Refused交通/策略细分仍缺。Linux294/Mac290及13窄门已接受这一首内容修复的限定合同，未采用为最终方案。
+实现设计E/pull-preparation-implementation-design-v1.json在改源前冻结。首slice先走cached Main；小文件首slice完成则不新dial；大文件追加prepare future由pull持有，与真实cached请求select并行；每请求持有额外Line的Arc，最后owner负责关闭。可选prepare未就绪时先1窗口，再随一条缓存请求完成或handshake结束widen到原8，不移除/复制既有pending；无detach/timer/新deadline，Shared仍原行为。该fe61首内容基线只对typed TimedOut后退cached；后续eacc已在独立分支细分Transport，准确新验证见顶层。Linux294/Mac290及13窄门已接受这一首内容修复的限定合同，未采用为最终方案。
 
 该原生门已完整闭证（见13窄门），不再重派：原7个isolation＋新首内容共**8**，原Window4＋新增“扩容保留held prefix且后续各一次”的**5**，都原有界真实caller/cleanup，不重复已闭标准组；全组绿后再补剩余负向/小文件/caps等，最终仍需完整标准/Release/Mac。新设计两项full-pull隔离fixture明确允许缓存首块/已在途请求，保留合计全部唯一offset、精确bytes、实际extra连接、原8总pending、实际STOP_SENDING与cached stable-id正控制；旧S dad430分支与所有数据不变。不要拿旧“全部file都extra”的架构断言当新首块设计的安全合同，也不能削弱上述完整合同。
 
@@ -32,7 +47,7 @@ fixture-only producer **062632Z-8dc26135** 已0/240.932852秒，23files/identity
 
 **独立文件QUIC三组screen已停止且未通过。** E/separate-pull-three-arm-progress-v1.json phase=`stopped-isolated-hard-functional-failure`；不可运行原第8A/9B或补替代场。停止报告E/separate-pull-three-arm-stopped-summary-v1.json已生成，原计划、阈值、所有失败与未执行人口保持。
 
-当前工作：定位第7C高延迟原生失败`direct_after=false`。该场720读全部成功、192MiB文件完整、PTY关闭/120+120实际重叠/队列读回均通过；最终是否Direct且非down的组合检查失败。原complete只存bool，未存最终Link对象，不能据此判定实际掉线或单纯显示错误。x journal有一次path selected Relay（RTT302ms，质量估计301.38ms，Direct RTT306ms/质量312.47ms），但这是切换后快照、不是决定输入，也未绑定到最终cached Main；不能直接宣布根因。先查Wires sampling、实际连接编号与选路；必要时只追加独立诊断，不改变已冻结screen结果。用户要求速度优先，修复须符合这一方向。
+历史诊断起点（下述已有固定6场未复现结果，不再追加同场）：定位第7C高延迟原生失败`direct_after=false`。该场720读全部成功、192MiB文件完整、PTY关闭/120+120实际重叠/队列读回均通过；最终是否Direct且非down的组合检查失败。原complete只存bool，未存最终Link对象，不能据此判定实际掉线或单纯显示错误。x journal有一次path selected Relay（RTT302ms，质量估计301.38ms，Direct RTT306ms/质量312.47ms），但这是切换后快照、不是决定输入，也未绑定到最终cached Main；不能直接宣布根因。先查Wires sampling、实际连接编号与选路；必要时只追加独立诊断，不改变已冻结screen结果。用户要求速度优先，修复须符合这一方向。
 
 ## 独立文件连接实验的准确源与证据
 
@@ -91,7 +106,7 @@ iPhone现装仍旧版，之前“就绪”过期，真实候选可用后另约�
 
 下一产品工作已在改源前记录E/separate-pull-next-preparation-contracts-v1.json：当前原型在首slice前等待额外dial，DIAL_MOST=25秒且受继承期限约束；这是源码风险、不是这次已观察故障根因。先验证健康cached Main的首内容/小文件不受可选dial前置等待，准备失败/取消/政策/期限边界，再设计每peer/全局caps、多文件公平及实际Endpoint生命周期隔离。尚未实现，不改原S或已冻结源，详SEPARATE-PULL。原4p6已闭证，当前按上述单一RED合同推进；完整N0–N5保持。
 
-## 下一步（完整目标继续，当前所有收据已关闭）
+## 下一步（完整目标继续，前一阶段所有收据已关闭，新边界格式任务以上节为准）
 
 1. 在当前fe61源码上补足小文件确实不新拨号、准备超时/拒绝/暂停/调用者过期、准备中取消与正确后退的实际正负合同；现只对typed TimedOut后退，Refused混合交通/策略错误仍需拆清。13/294/290已过的组不因接续而重跑。
 2. 默认启用前实现并验证每peer/全局的额外连接、准备与pending上限，验证多文件公平、单文件取消不破坏其他文件、真正Endpoint所有权隔离；不能拿每文件一连接的原型当完整资源设计。

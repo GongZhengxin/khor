@@ -1,6 +1,6 @@
 # 文件连接准备：先交付内容
 
-当前隔离源码7542ea8960c2bd35df534c437f7d05ddd0b69cdc/tree fe61be7532678bf40cce65d30f1286f51b4e815b，worktree khor-net-pull-preparation-v1。默认仍原shared，只有内部separate实验模式使用此设计；没有修改vendor、ALPN、身份、原期限、写入重放边界或已安装App。
+首内容修复基线源码7542ea8960c2bd35df534c437f7d05ddd0b69cdc/tree fe61be7532678bf40cce65d30f1286f51b4e815b，worktree khor-net-pull-preparation-v1。默认仍原shared，只有内部separate实验模式使用此设计；没有修改vendor、ALPN、身份、原期限、写入重放边界或已安装App。
 
 ## 问题与行为
 
@@ -8,7 +8,7 @@
 
 修复先在主连接交付并提交首slice。文件已完整便结束，不启动额外准备；大文件的准备future由pull直接持有，与真实主连接请求并行。准备阶段先保留1个在途请求，随后一条缓存请求完成或握手结束时扩到原8窗口；已有pending和乱序完成结果保留，不重放切换前请求。额外连接就绪后，新请求持有该连接的Arc；最后owner释放才关闭额外连接。取消同时释放窗口和准备，没有分离任务或新增探测计时器。
 
-只有明确的准备TimedOut当前后退到原缓存行为；Refused、Asleep、CallerExpired保持终止。Refused仍混合交通与策略原因，不能声称所有额外连接失败都已透明后退。原暂停/peer retire的Weak side跟踪与按请求期限保持。
+此fe61基线只有明确的准备TimedOut后退到原缓存行为；Refused、Asleep、CallerExpired保持终止。后续eacc候选已将具体QUIC运输故障单列并用准确RED→同测试GREEN验证；详[PULL-FALLBACK](PULL-FALLBACK.md)，标准回归状态见STATE。未知connect/auth错误仍保守终止，不称所有额外连接失败都透明后退。原暂停/peer retire的Weak side跟踪与按请求期限保持。
 
 ## 已闭证的范围
 
@@ -21,4 +21,4 @@
 
 ## 采用前的剩余项
 
-小文件不额外拨号的实际合同、完整准备失败/政策/期限正负控制、每peer/全局的额外连接和准备上限、多文件公平、实际Endpoint生命周期隔离仍需完成。其后才用发行配置做首字节、布局、低高profile对照和1/3/5设备成本，最终同源完整质量和iPhone换网/功耗验收保持。
+小文件/暂停/过期/取消8项边界已在59b源16/16通过；后续eacc源20/20还补实际协商失败后完整读完及真实拒绝/应用/本机关闭终止。每peer/全局连接和准备上限、多文件公平、实际Endpoint生命周期隔离，以及更全面准备故障/期限覆盖仍需完成。其后才用发行配置做首字节、布局、低高profile对照和1/3/5设备成本，最终同源完整质量和iPhone换网/功耗验收保持。
