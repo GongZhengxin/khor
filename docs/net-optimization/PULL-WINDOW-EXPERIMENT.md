@@ -1,4 +1,4 @@
-# 文件预取窗口隔离对照（校准中）
+# 文件预取窗口4已否决
 
 前置新N3对照8640/8640功能过，但high bulk目录520→963ms、PTY338→695ms，吞吐18.657→24.413Mbit/s不抵销交互回退。假设应用待传窗口过大有待实验，尚未归因BBR/任一vendor补丁。
 
@@ -9,3 +9,13 @@
 计划两臂新校准后固定8/4/4/8/8/4六个high场景，4320请求、6完整192MiB文件；原2秒caller/240秒文件/400ms采样与owned600秒不改。8臂复用DB214246Z-2606e4e9 closed native，4臂复用上producer，统一strict source/selected5/CPU/disk/清理门，无运行编译或替代。实际runtime及source bindings已冻结于E/pull-window-comparison-plan-v3.json，control0a0b87d68bc045c7a4cb7b61db6af60831b57378、protocol6b29723a1770c91881025e44d82fe9f121bb9de5bd1db8a47955e050e3553d20。准备v1/v2继承的旧CLI/entry/执行说明已在任何校准或业务前修正，保留未执行准备；实际夹具和顺序不改。原8臂校准004224Z-92e24180正在执行，前驱N2修复003059已闭。每块root独立采集/verify/record，禁止后台协调或与编译重叠；下一块先查ledger。
 
 结果须同时报告窗口8对4的因果性能/吞吐取舍，以及原main工程界限：high bulk目录p95<=592518.1μs、PTY<=391538.2μs、完整文件median>=16.791371Mbit/s（原main18.657079×90%）。不以传完或吞吐绿代交互接受，不改原门或删坏样本。共享/分连接、其他真实负载、资源/手机成本、最终同源验收仍属于完整目标。
+
+源码范围补充：同一PULL_AHEAD还用于read_all预览及带digest的接收文件窗口，不仅是本轮192MiB pull_into。当前隔离计时只覆盖后者，不能据此认定预览首内容、offer吞吐或多文件公平已接受。若采用常量4，最终源须保留这些原校验/取消/恢复行为并补相应验收；否则不把该实验更改带入正式候选。
+
+## 实际结果与提前否决
+
+两臂preflight004224/004551均通过既有分层准入，原high冷TCP吞吐红保留。首8臂004921为720ok、完整文件23.925Mbit/s；随后4臂005307为676ok/2timeout/42blocked、13.988Mbit/s，005746为667ok/2timeout/51blocked、10.925Mbit/s。三完整192MiB文件/原720人口、来源/真实原生/CPU/所有权清理均闭证。两个4臂均触发原全部调用成功硬失败，故拒绝采用4。
+
+root在第三在途场自然结束并完整核验后停止参数支线；第4/5/6原8/8/4三场未执行，不补造样本或替代。提前停止并非原v3预先声明的规则，已在E/pull-window4-rejection-decision-v1.json明确为数据后的程序变更；原计划保留、progress-v3标stopped-candidate-rejected。不能从这份未完成六场人口计算或宣称正式ABBAAB总体性能结论；只据原硬功能失败拒绝本参数。当前目标继续，N3和原8候选回退均未解决。
+
+逐核此前同期对照与本支线9场的selected-path事件见E/high-mixed-path-churn-observation-v1.json。坏场伴随多次Direct/Relay切换，是下一假设线索，不等于决定原因或实际业务包路径已证明。新诊断先冻结相对收益门，原窗口保持8；不以这次拒绝宣布分连接或任一vendor补丁已定案。
