@@ -1,13 +1,19 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-14T11:43:48.946072+00:00。活动目标“好 完成完整目标”保持active；完整[GOAL](GOAL.md)、[PLAN](PLAN.md) N0–N5与[REQUIREMENTS](REQUIREMENTS.md)未整体完成。root串行、不派子智能体；本机source-only，重型工作在Turing/macserver/授权khor-build。用户已授权实施与验证，未授权main合并、现装App替换、发行/TestFlight或生产Relay采购部署。
+更新于 2026-11-14T12:11:54.960757+00:00。活动目标“好 完成完整目标”保持active；完整[GOAL](GOAL.md)、[PLAN](PLAN.md) N0–N5与[REQUIREMENTS](REQUIREMENTS.md)未整体完成。root串行、不派子智能体；本机source-only，重型工作在Turing/macserver/授权khor-build。用户已授权实施与验证，未授权main合并、现装App替换、发行/TestFlight或生产Relay采购部署。
 
 ## 当前执行
 
-- **Turing普通Release producer在途：turing-20261114T113837Z-6286623e**，control6247b13a0ee902557a6026923269318ffb1dc840，receipt在E/同run目录。只编译当前CLI与完整netlab依赖，features[]、原thinLTO/strip/cgu1、原provenance/fresh/resource门；不运行性能数据、不安装App。先poll同handle，不重派。E/pull-pool-release-compile-plan-v1.json及ops/verify-pull-pool-release-compile-v1.py已冻结。准确标准317及cfg(test)-only新压力1复用，不重复回归。
+- **当前在途Turing布局诊断：turing-20261114T121017Z-78156ce0**，task **net-node**，revision pull_coexistence_layout_shared_v1，control71a467c1a8b60672029b2a90782d6b3cff7b6bfc。源为新夹具6f7bbf43/treeaddd2218，与ff3360产品字节相同。E/pull-coexistence-layout-plan-v1.json固定shared/separate各1场high，720原样本＋双向新health读；有日志只作布局/功能诊断，不晋升性能。先poll/collect同receipt，不重派；shared闭证后按原计划执行separate一次。
+- **当前产品普通Release已闭113837Z-6286623e**：0/560.512640秒，sourceff3360/tree4f0e7db7，23files/identity/owner/原fmt/完整依赖闭包/fresh CLI。CLI SHA2567454caa6b7347669b322c64fafa16ac2ae7c4eb86e699f5b3496578552847845；netlab c4d3da80b62be6933fe163bc173cd4b6713232e873c6a3d1bbbe65e5072b092b。E/run/pull-pool-release-compile-verification-v1.json。
+- **新夹具普通Release已闭115519Z-81fbb62f**：0/242.800272秒，source6f7bbf43/treeaddd2218，仅workload.rs一个测试文件变化；CLI逐字仍7454caa6，netlab6ec6753b108877bf516b69a6451295fd11a07136cb1a9e0b7a7f2fb200040eed。E/run/pull-coexistence-compile-verification-v1.json。原标准317＋压力1及Mac314对相同产品继续适用，不因此重跑原组。
 - **同源Mac原生回归GH43590483138/job132433946148已闭：314pass/0fail/原ignored1**（[Actions](https://github.com/colehank/khor-build/actions/runs/43590483138)）。准确source/control与11个control blobs、原12组每个test名、32个明确separate合同、14contact、4个原Linux-only cfg排除均核对；artifact14112262250/38847B/SHA2566c1cc072e169bc19954af8a25055db37645347aec4ea1afe380d767d422f2c56及CRC已保留。E/pull-pool-mac-verification-v1.json；独立Mac pending已闭、common ledger只追加completed，Turing pending未改。Rust1.95/arm64/jobs2/原admission门，未安装或发行App。原iPhone就绪窗口已过，不自动采样。
 
-当前候选worktree **/Volumes/disk0/Khor/worktrees/current/khor-net-pull-pool-pressure-v1** / **experiment/net-pull-pool-pressure-v1**，clean；HEAD **ff3360cd6af3629c869e6e47028636e2ee0d46c3** / tree **4f0e7db7955531014e3b2ac7e8a8f100797bb989** / snapshot **6992bf6abd6202866e01fd3ec66f4c31db679b54**。E/pull-pool-pressure-source-v1.json。相对产品修复源29b05533504e90a16b52412ab1838f60005f0142/treee71011edd63b8f39734e8d44c6be31222a78d7bf，仅2个cfg(test)文件增加五对端压力合同。默认仍shared，内部separate opt-in；未并入canonical feat/net或main。
+当前新夹具worktree **/Volumes/disk0/Khor/worktrees/current/khor-net-pull-coexistence-v1** / **experiment/net-pull-coexistence-v1**，clean；HEAD **6f7bbf43ca2eafdb2f2f4a02d33872fc88469714** / tree **addd2218068ce891bc8098c194ba59163cc52fd3** / snapshot **8c62bdd17b27ab453c76e4c42952e0f658c1ecd1**；E/pull-coexistence-source-v1.json。产品基准仍ff3360cd6af3629c869e6e47028636e2ee0d46c3/tree4f0e7db7（压力合同源），产品修复29b05533/treee71011ed。新源只加2个独立命名的speed-first ignored workload cases：原几何/字节/周期/调用期限/720样本保持；新case起终允许健康Direct/Relay/SSH/Forwarded，终端关闭后双向实际目录验证完整文件，两端最终Link live/no-down。原三个fixed-Direct case入口/条件及旧screen失败保留。默认仍shared，separate opt-in；未并入canonical feat/net或main。
+
+**120420Z-f2ed80e5是明确零执行的启动准备错误**：root误用了netlab-workload task，控制runner在line221拒绝，未创建report、未入build driver、0编译/0业务/0样本。已核input source/control/bundle、PID与原PGID全部消失，launcher原件保留，E/run/startup-refusal-verification-v1.json闭ledger；无原退出码收据，不捏造0或1。正确既有net-node入口使用完全相同source/control/protocol/revision启动当前任务；不是替换原业务失败或观测超时重派。此后新布局/比较都用net-node。
+
+**新数据适配器**E/ops/netlab-speed-first-observer-v1.py：静态检查发现旧observer数据解析器仍把direct_after列为必需。于收集/读取任何新布局日志前修正新verifier，只接受speed_first_coexistence_v1明确marker；保留全部原样本/几何/期限/footer核对，用live_after＋post_health_ok验证新case，并独立重算双向Link/两个实际health结果。原parser与旧结果未改，记录E/pull-coexistence-layout-data-adapter-preparation-v1.json。布局RPC配对预先明确剥离且完整保存2个post-health客户端回复＋2个服务端回复，仅原1128个测量RPC作同序配对；不能把新增回复当原样本或丢未知回复。
 
 E=`/Volumes/disk0/Khor/evidence/net`；原receipt、远端execution及E/source-refs.json为实际调度依据。上版STATE逐字归档[HISTORY-20261114-through-pull-pool-resource-baseline](HISTORY-20261114-through-pull-pool-resource-baseline.md)，SHA256 `ec8e653e1163cc65000dce1474a61fadc125f227d61b45958f6755da191df8df`。其中在途/下一步是历史，不得据此重派。更早的全部证据、原失败、未执行人口通过历史档案与REQUIREMENTS保持，不被本入口替代。
 
@@ -23,8 +29,8 @@ E=`/Volumes/disk0/Khor/evidence/net`；原receipt、远端execution及E/source-r
 
 ## 接下来的顺序与完整范围
 
-1. 当前Mac准确source/control/artifact/全部人口已闭；收齐当前普通Release producer源码闭包、fresh CLI及netlab proof。未知结果恢复同receipt，不派替代。
-2. 用当前Release先核真实布局，再在采数据前冻结新的速度优先共存协议及1/3/5业务、CPU/唤醒/字节成本。比较目录/PTY与完整文件并发、小文件首内容、吞吐及存活；不能用路径标签硬要求Direct，不能把原screen最后标签失败解释为已修。
+1. 两个普通Release producer和当前Mac已闭；完成当前新夹具shared/separate固定各1场布局与双向业务/健康验收。未知结果恢复同receipt；原零执行task错误闭证见上，不重跑既有标准组或旧三臂screen。
+2. E/pull-coexistence-comparison-design-v1.json已在计时数据前固定：同一当前ELF、S shared/C separate顺序SCCSSC、每块low/high，共12case/8640原交互样本/24post-health读；每cell/arm/profile360样本，保留原相对p95×1.10＋20000μs、文件率×0.90及全部原绝对参考门；不靠Direct标签通过。需在布局与fresh同源5个observer/kernel guards通过、准确编译binding齐全后再生成最终protocol/control及运行。**本轮用于共享/分连接设计选择，最终集成源码对公开main的同期对照仍是完整目标必需，未被同ELF对照替代。** 1/3/5 CPU/RSS/字节/唤醒、全负载与小文件首内容/手机成本继续待做。
 3. N1置信/多middle/切换和成本、N2完整期限/取消/迟到Endpoint与policy队列变化/写入0-RTT/NET-16负向、N4冷hint/新peer发布/Direct UDP突断/peer relay自身移动/休眠/Wi-Fi蜂窝/Relay故障域与容量/NAT64，以及N5全部60项custom退出审计与最终同源Quality/Mac/phone/报告继续按REQUIREMENTS完成。手机在具体候选可测时重新安排。不得把“Mac＋性能＋手机”缩成全部剩余范围。
 
 ## 不可误用的既有证据与边界
@@ -34,4 +40,4 @@ E=`/Volumes/disk0/Khor/evidence/net`；原receipt、远端execution及E/source-r
 - 上游最近官方核验（2026-11-14T05:37:22Z）目标iroh1.4.1/Noq1.4.0已在独立候选，canonical feat/net仍旧依赖；60历史补丁仅1上游替代、2Noq移除红与1iroh38移除红有专属结论，56待退出核查，不能称全部custom收口。
 - MacLab与Turing同LAN，macserver另网络。iPhone localhost已配对但尚未接受本候选换网/能耗。khor-build公开已获明确授权，不等于App发行/main合并。LIVE23961未动。
 - Turing UID1110、原flock/磁盘/工具门；计时不与同host编译混跑。root唯一ledger写者；stage一次、launch一次；collect原返回码后核identity/owner及真实合同才闭ledger。Mac另主机可并行。
-- 实验worktree图谱0nodes/edges/files，定向fallback；risk0/testgap0不证明覆盖。main图谱不代表候选，不擅自重索引。本机不跑Cargo/Rustfmt/Node/Bun/Xcode/产品；main9a4219ffe5e3与builder checkout HEAD5d3691保持。
+- 旧实验worktree图谱0；新夹具commit hook自动局部35nodes/3files，但built_at仍ff3360与新HEAD不匹配，不能代表新源全图。缺口定向fallback，risk/testgap不作覆盖证据；不擅自重索引。本机不跑Cargo/Rustfmt/Node/Bun/Xcode/产品；main9a4219ffe5e3与builder checkout HEAD5d3691保持。
