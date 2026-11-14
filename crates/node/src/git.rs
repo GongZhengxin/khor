@@ -1882,6 +1882,23 @@ pub(crate) mod repository_history_tests {
     use std::process::{Command, Stdio};
     use std::sync::atomic::{AtomicU64, Ordering};
 
+    /// The verbatim prefix `std::fs::canonicalize` puts on a Windows path.
+    ///
+    /// `git fast-import` refuses `--export-marks=\\?\F:\Temp\marks` with
+    /// "Invalid argument", and a person's own path never carries the
+    /// prefix. The fixtures canonicalize their root for a stable path, so
+    /// they hand git — and the node under test — the plain spelling.
+    fn plain(path: PathBuf) -> PathBuf {
+        let text = path.to_string_lossy();
+        if let Some(rest) = text.strip_prefix(r"\\?\") {
+            if let Some(unc) = rest.strip_prefix(r"UNC\") {
+                return PathBuf::from(format!(r"\\{unc}"));
+            }
+            return PathBuf::from(rest);
+        }
+        path
+    }
+
     pub(crate) struct Checkout(pub(crate) PathBuf);
 
     impl Checkout {
@@ -1897,7 +1914,7 @@ pub(crate) mod repository_history_tests {
                 NEXT.fetch_add(1, Ordering::Relaxed)
             ));
             std::fs::create_dir(&path).unwrap();
-            let checkout = Self(std::fs::canonicalize(path).unwrap());
+            let checkout = Self(plain(std::fs::canonicalize(path).unwrap()));
             checkout.git(&["init", "--quiet", "--initial-branch=main"]);
             checkout
         }
