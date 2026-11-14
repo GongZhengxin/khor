@@ -27,6 +27,16 @@ jobs:
           cargo -V
           node --version
           npm --version
+      - name: Frontend build (Windows entry)
+        shell: pwsh
+        run: |
+          cd apps/gui
+          npm ci
+          New-Item -ItemType Directory -Force src/gen | Out-Null
+          cargo run --locked -q -p khor-catalog --bin gen_ts > src/gen/catalog.ts
+          cargo run --locked -q -p khor-gui-core --bin gen_bindings
+          npx tsc --noEmit
+          npx vite build
       - name: Build khor CLI
         run: cargo build --locked -p khor-cli --bin khor
       - name: CLI version
@@ -40,13 +50,3 @@ jobs:
       - name: Run fanout harness
         continue-on-error: true
         run: .\gui-fanout-tests.exe --nocapture --test-threads=1
-      - name: Frontend build (Windows entry)
-        shell: pwsh
-        run: |
-          cd apps/gui
-          npm ci
-          New-Item -ItemType Directory -Force src/gen | Out-Null
-          cargo run --locked -q -p khor-catalog --bin gen_ts > src/gen/catalog.ts
-          cargo run --locked -q -p khor-gui-core --bin gen_bindings
-          npx tsc --noEmit
-          npx vite build
