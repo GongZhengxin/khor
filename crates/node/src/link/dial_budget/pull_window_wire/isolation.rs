@@ -258,7 +258,10 @@ async fn observe_separate_pull(cancel: bool) {
                 .map(|i| i * proto::SLICE)
                 .collect();
             let additional = issued.lock().unwrap();
-            assert!(cached.is_disjoint(&additional), "no slice is replayed at handoff");
+            assert!(
+                cached.is_disjoint(&additional),
+                "no slice is replayed at handoff"
+            );
             assert_eq!(
                 cached.union(&additional).copied().collect::<BTreeSet<_>>(),
                 (0..13).map(|i| i * proto::SLICE).collect()
@@ -274,21 +277,36 @@ async fn observe_separate_pull(cancel: bool) {
         .unwrap();
     serving.0.take();
     cached_answer(&f).await;
-    assert!(f.seen.lock().unwrap().issued.contains(&0), "first content uses cached Main");
-    assert!(!issued.lock().unwrap().contains(&0), "no duplicate first slice on the extra Main");
-    assert!(!issued.lock().unwrap().is_empty(), "remaining file uses the actual extra Main");
+    assert!(
+        f.seen.lock().unwrap().issued.contains(&0),
+        "first content uses cached Main"
+    );
+    assert!(
+        !issued.lock().unwrap().contains(&0),
+        "no duplicate first slice on the extra Main"
+    );
+    assert!(
+        !issued.lock().unwrap().is_empty(),
+        "remaining file uses the actual extra Main"
+    );
     if cancel {
         tokio::time::timeout(Duration::from_secs(5), async {
             loop {
                 let notified = f.changed.notified();
                 let stopped = {
                     let seen = f.seen.lock().unwrap();
-                    seen.issued.difference(&seen.delivered).all(|i| seen.stopped.contains(i))
+                    seen.issued
+                        .difference(&seen.delivered)
+                        .all(|i| seen.stopped.contains(i))
                 };
-                if stopped { break; }
+                if stopped {
+                    break;
+                }
                 notified.await;
             }
-        }).await.unwrap();
+        })
+        .await
+        .unwrap();
     }
     eprintln!(
         "[pull-isolation] {}",

@@ -113,7 +113,9 @@ mod tests {
                         first.notify_one();
                         release.notified().await;
                     }
-                    if index == 2 { last.notify_one(); }
+                    if index == 2 {
+                        last.notify_one();
+                    }
                     index
                 }
             };
@@ -136,11 +138,19 @@ mod tests {
                 release.notify_one();
                 assert_eq!(next.await, Some(0));
             }
-            assert_eq!(window.next(Some(3 * crate::proto::SLICE), ask).await, Some(1));
-            assert_eq!(window.next(Some(3 * crate::proto::SLICE), ask).await, Some(2));
+            assert_eq!(
+                window.next(Some(3 * crate::proto::SLICE), ask).await,
+                Some(1)
+            );
+            assert_eq!(
+                window.next(Some(3 * crate::proto::SLICE), ask).await,
+                Some(2)
+            );
             assert_eq!(window.next(Some(3 * crate::proto::SLICE), ask).await, None);
             assert_eq!(*seen.lock().unwrap(), vec![0, 1, 2]);
-        }).await.unwrap();
+        })
+        .await
+        .unwrap();
     }
 
     #[tokio::test]

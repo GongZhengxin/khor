@@ -10267,10 +10267,8 @@ impl Node {
         }
         let outcome: Result<u64, Stop> = 'pull: loop {
             let preparing = separate && (!attempted_transfer || opening.is_some());
-            let mut window = pull_window::Window::new(
-                offset,
-                if preparing { 1 } else { PULL_AHEAD as usize },
-            );
+            let mut window =
+                pull_window::Window::new(offset, if preparing { 1 } else { PULL_AHEAD as usize });
             let target = &dial_to;
             loop {
                 // No detached work: cancellation or a version/offset restart
