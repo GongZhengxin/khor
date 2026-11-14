@@ -1,6 +1,8 @@
 //! Preparation is optional: a healthy cached Main can deliver first content.
 use super::*;
 
+mod transport;
+
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn cached_main_delivers_first_content_without_accepting_an_extra_handshake() {
     let f = Fixture::with_identity(Held::All, true).await;
