@@ -1,20 +1,22 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-14T02:39:39.376620+00:00。用户已授权持续实施/远端验证，活动目标“好 完成完整目标”仍未完成。root串行，不派子智能体。完整[GOAL](GOAL.md)/[PLAN](PLAN.md) N0–N5范围保持，逐项缺口以[REQUIREMENTS](REQUIREMENTS.md)为准。未获main合并、正式发布、现装App替换或生产Relay采购部署授权。
+更新于 2026-11-14T02:46:50.630610+00:00。用户已授权持续实施/远端验证，活动目标“好 完成完整目标”仍未完成。root串行，不派子智能体。完整[GOAL](GOAL.md)/[PLAN](PLAN.md) N0–N5范围保持，逐项缺口以[REQUIREMENTS](REQUIREMENTS.md)为准。未获main合并、正式发布、现装App替换或生产Relay采购部署授权。
 
 此前STATE逐字归档[HISTORY-through-relative-margin-v2-unit](HISTORY-20261114-through-relative-margin-v2-unit.md)，SHA256 `c772dce4a855e181e700130c5805801f3be5e3451968af6f35ad38cef5264406`；其历史pending/PID不能用于重派。更早原件由该文链接继续保留。E=`/Volumes/disk0/Khor/evidence/net`；worktree均在`/Volumes/disk0/Khor/worktrees/current/`。
 
 ## 当前唯一Turing执行及下一步
 
-唯一pending **turing-20261114T023714Z-08b04294**，net-node / h2_lifecycle_case_1_v1，role diagnostic。control **37e25ff087ac985bb89e563c1847b946021e6b7a**，protocol **8fee1ad77e8793db4578c45fc93b01939c9dfdb141620320edab7fafc4dbd96e**；先查实际receipt/source-refs，禁止重派。
+唯一pending **turing-20261114T024533Z-50822f42**，net-node / h2_lifecycle_case_1_v2，role diagnostic。control **30f054bebf4409cda005807368af850a967a67e4**，protocol **c16843dba23e6ccca3956ab0f3f936ab22794ecad0a81a854d385f2b218258f7**；先查receipt/execution，禁止重派。
 
-当前不是性能验收，而是固定3场普通Release现有生命周期钩子的诊断。E/h2-lifecycle-shadow-plan-v1.json / control-v1.json；复用H2 source **db21c2beeecb1d6b1823589267b2f98d34fa5e38**, tree5cf730ab964c52fd613953251000ba2057e0f2bc, snapshot67b205f2d7e55eafb02d81b3a5be1f672669f948，worktree khor-net-relative-margin-v1。CLI d11188633795731dd3189c787db3f3d99f83568419bbcf822a841e3118139cb4 / fulltest b94a18c51041e9ba02152607139cc4fcfe2945d17dab62c9fa00c50c642b167a，已闭producer011935Z-60f3d677；原profile/features[]/无qlog保持，不重新编译。
+前版023714Z-08b04294已collect/identity闭，1/5.698953秒，**native0/compile0/cases[]**。采集的三个文件合同校准全过，但KHOR_NET_DIAGNOSTICS在原逐场provenance前设置，环境哈希不匹配，正确拦截；不是产品红或有效性能样本。E/该run/lifecycle-preparation-verification-v1.json、原完整日志与v1计划/control保留。v1三场未执行，不跑其2/3。
 
-方法：NETLAB_DIAGNOSTICS=0，不触发旧feature诊断初始化断言；仅设置既有KHOR_NET_DIAGNOSTICS=lifecycle，使已有普通binary钩子输出stderr。外部owner observer在原采样循环里只读打开私有Scratch的serve.log，持fd到原生owner全部结束再drain，保留unlink后尾部。E/ops/serve-log-shadow-v1.py每场先校准unlink继续写、原路径换inode、跳过外部symlink三个合同；最多8日志/每份16MiB，不改Rust/fixture/期限或增加产品timer/probe。现有flag另有只读tuple诊断及瞬时weak升级，日志/采集有扰动，不能拿此数据作性能/能耗验收。
+新v2只改诊断控制入口：全部原provenance断言在精确producer环境执行；仅其后owned.run期间开启NETLAB_DIAGNOSTICS=0、KHOR_NET_DIAGNOSTICS=lifecycle，finally恢复原环境。没有删字段或改来源判定、Rust/fixture/参数。E/h2-lifecycle-shadow-{plan,control}-v2.json，固定3场，无native替代试次。复用H2 db21c2beeecb1d6b1823589267b2f98d34fa5e38/tree5cf730ab964c52fd613953251000ba2057e0f2bc/snapshot67b205f2d7e55eafb02d81b3a5be1f672669f948及011935 producer普通Release原ELF，不编译。
 
-固定3个独立high原wh2场景，原720结果/192MiB/2秒caller/240秒文件/400ms采样/owned600保持；复用准确同源013456模型准入（绑定proof hash和相同ELF/11 fixture/工具，原coldTCP红保持），每场实际geometry/CPU/来源/清理门仍核验。全部原功能失败和stream缺失/额外/重试均保留；仅清理/采集/调度未知时停止，不替代场次。每场含生命周期日志时需要新诊断分析，不误用正式性能recorder。
+外部只读observer在原400ms循环持有私有serve.log fd，原owner全结束后再drain，保留Scratch unlink尾部；每场原unlink后写/换inode/外部symlink三校准，最多8份×16MiB。已有普通binary生命周期钩子，无feature诊断subscriber/qlog，开关另有只读tuple/短暂weak升级；因此日志扰动必须声明，不作性能/能耗验收。
 
-接着：核023714 actual execution/calibration/capture。完成后先collect-network-ssh.py、verify-turing-record.py，再核workload-release-contract的capture_calibration_passed、每场lifecycle_capture、全部原720结果及两端实际lifecycle文件/stream人口；首场尚未验证。实际流分析优先复用scripts/netlab-workload-wires.py的解析函数，扩大实际768个切片/360目录但不假造失败/缺失；不能减两个p95或跨进程未校准绝对clock。只有首场来源/原生owner清理/采集闭证后，再原控制顺序派h2_lifecycle_case_2_v1、case_3_v1，source同H2，前驱当前receipt。root唯一ledger writer，无后台协调器。
+每场原high wh2 **720结果/192MiB/2秒caller/240秒文件/owned600秒**保持，复用同源013456模型准入，原coldTCP红保留；实际geometry/CPU/原生来源/owner清理/全部人口仍逐场验证。先闭首场来源、采集和清理，再顺序派v2场2/3，前驱上一receipt；原功能红保留，只在调度未知、清理或采集不安全时停止，无重试至绿。
+
+下一步：查024533 actual execution；完成后collect-network-ssh.py及verify-turing-record.py。新data-only verifier复用scripts/netlab-workload-wires.py解析概念，报告全部720人口、实际360目录/768切片的缺失/额外/重试，按真实ALPN/wire/stream/offset配对。不得减两个p95或跨未同步进程clock；server从accept开始，local write完成不是delivery/ACK，残差不得独断网络根因。root唯一ledger writer，无后台协调器。
 
 ### 刚闭的H2正式对照：未接受，不再派5/6
 
@@ -49,7 +51,7 @@ H2也不能单靠相对收益门关闭N3：两场已观察的240条bulk目录中
 
 ## Mac 独立验证及磁盘入口
 
-Linux已过的96e同源Mac标准net-node已唯一提交 **43540500760**（request7e5a0e2484914cb99b7f1c46d886642a，snapshotb516bfd2b818b81506d8a3a388803709a6315ceb，source tree41df16ad，builder feat/net68cadb57）。该builder的标准12命令块逐字Linux5d control，SHA25625cc8686fb1e5877bc0c80a2cd8b92de7c8a30eb130cb8ce83dbdfc8a259b90a。network-mac/job132279693750在原run-build门 **free<50GiB** 被拒，编译/测试0；不是产品红。原log E/dial-contact-repair-mac-attempt1.log，dev-evidence14091886017 SHA f178febcc3818a9f0c39568319fe59a275d6f0c008df1c808419db301724390c（2741B，尚未本地取ZIP）。不原样重派，先恢复磁盘reserve。
+Linux已过的96e同源Mac标准net-node已唯一提交 **43540500760**（request7e5a0e2484914cb99b7f1c46d886642a，snapshotb516bfd2b818b81506d8a3a388803709a6315ceb，source tree41df16ad，builder feat/net68cadb57）。该builder的标准12命令块逐字Linux5d control，SHA25625cc8686fb1e5877bc0c80a2cd8b92de7c8a30eb130cb8ce83dbdfc8a259b90a。network-mac/job132279693750在原run-build门 **free<50GiB** 被拒，编译/测试0；不是产品红。原log E/dial-contact-repair-mac-attempt1.log，dev-evidence14091886017 SHA f178febcc3818a9f0c39568319fe59a275d6f0c008df1c808419db301724390c（2741B，ZIP大小/SHA/CRC后续已核，见attempt1-verification）。不原样重派，先恢复磁盘reserve。
 
 只读盘点 **43540770433** main9b671817成功，artifact14092315786 12912B SHA01a8f196bca3464555b9507cb9ccaedd30bb2830085a8fafaa6f1ac654518424/CRC已核，E/worker-storage-inventory-43540770433.{zip,json}。free49.66156GiB、target83.55098GiB；incremental37.38995GiB/347目录，82旧变体符合现有8版本/2小时规则；另1个superseded khor_node test约254.6MB。当前installed build_guard SHA **998f5723eb447a1634411397c18a524e5ed0d50bd6dbd81001a16626219f64eb**，50/40GiB及target100GiB门保持。
 
