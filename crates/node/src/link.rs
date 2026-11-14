@@ -3751,7 +3751,20 @@ impl Node {
             .line_to_by(ep, d, wires::Proto::Main, Some(by.into_std()))
             .await
             .map_err(|e| unreached_words(&d.name, e))?;
-        match self.exchange_on_inner(&line, req, None, Some(by)).await {
+        self.ask_on_line_within(ep, d, req, &line, by).await
+    }
+
+    /// The existing exchange and at-most-one read retry, with its original by.
+    /// A transfer-owned Main uses this without replacing the cached Main.
+    async fn ask_on_line_within(
+        &self,
+        ep: &iroh::Endpoint,
+        d: &DeviceInfo,
+        req: &Request,
+        line: &Line,
+        by: tokio::time::Instant,
+    ) -> Result<Response, String> {
+        match self.exchange_on_inner(line, req, None, Some(by)).await {
             Err(Miss::Unreached(_)) if req.is_reading() => {
                 if crate::deadline::expired(Some(by)) {
                     return Err(unreached_words(&d.name, DialFailure::CallerExpired));
@@ -3770,6 +3783,60 @@ impl Node {
             }
             other => other.map_err(Miss::words),
         }
+    }
+
+    /// One-file experimental Main; its owner never replaces the cached Main.
+    async fn transfer_line_for(
+        &self,
+        ep: &iroh::Endpoint,
+        d: &DeviceInfo,
+    ) -> Result<TransferLine, String> {
+        if self.paused() || crate::pause::peer_on(self.root(), &d.id) {
+            return Err(unreached_words(&d.name, DialFailure::Refused(msg::paused_no_dial().to_owned())));
+        }
+        if self.resting.load(std::sync::atomic::Ordering::Relaxed) {
+            return Err(unreached_words(&d.name, DialFailure::Refused(msg::resting_no_dial().to_owned())));
+        }
+        let conn = self.dial(ep, &d.id, &d.addrs, ALPN,
+            crate::deadline::current(), DIAL_MOST).await
+            .map_err(|e| unreached_words(&d.name, e))?;
+        let line = TransferLine(Line {
+            id: d.id.clone(), name: d.name.clone(), proto: wires::Proto::Main, conn,
+        });
+        // Registration precedes the suspension check, closing the adoption race.
+        self.wires.transferring(&line.0.conn);
+        if self.paused() || crate::pause::peer_on(self.root(), &d.id) {
+            return Err(unreached_words(&d.name, DialFailure::Refused(msg::paused_no_dial().to_owned())));
+        }
+        if self.resting.load(std::sync::atomic::Ordering::Relaxed) {
+            return Err(unreached_words(&d.name, DialFailure::Refused(msg::resting_no_dial().to_owned())));
+        }
+        khor_net::carry::observe_lifecycle(&d.id, "pull_wire_opened", || {
+            serde_json::json!({"wire":line.0.conn.stable_id(),"alpn":String::from_utf8_lossy(line.0.conn.alpn())})
+        });
+        Ok(line)
+    }
+
+    async fn ask_on_transfer(
+        &self,
+        ep: &iroh::Endpoint,
+        d: &DeviceInfo,
+        req: &Request,
+        line: &Line,
+    ) -> Result<Response, String> {
+        if self.paused() || crate::pause::peer_on(self.root(), &d.id) {
+            return Err(unreached_words(&d.name, DialFailure::Refused(msg::paused_no_dial().to_owned())));
+        }
+        if self.resting.load(std::sync::atomic::Ordering::Relaxed) {
+            return Err(unreached_words(&d.name, DialFailure::Refused(msg::resting_no_dial().to_owned())));
+        }
+        let by = crate::deadline::current().unwrap_or_else(|| {
+            let budget = req.budget().saturating_add(DIAL_MOST)
+                .saturating_add(crate::hop::HOP_WITHIN)
+                .saturating_add(wires::RTT_BUDGET_MOST);
+            tokio::time::Instant::now() + budget
+        });
+        crate::deadline::scope(by, self.ask_on_line_within(ep, d, req, line, by)).await
     }
 
     /// **A redial that carries its first question** (round NET-3): with
@@ -9950,6 +10017,23 @@ impl Node {
         cap: Option<u64>,
         resume: bool,
     ) -> Result<(u64, std::path::PathBuf), String> {
+        let separate = std::env::var("KHOR_EXPERIMENT_PULL_WIRE")
+            .is_ok_and(|layout| layout == "separate");
+        self.pull_into_with_layout(ep, machine, path, fell, job, cap, resume, separate).await
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    async fn pull_into_with_layout(
+        &self,
+        ep: &iroh::Endpoint,
+        machine: &str,
+        path: &str,
+        fell: crate::files::Landing,
+        job: Option<&crate::drops::Job>,
+        cap: Option<u64>,
+        resume: bool,
+        separate: bool,
+    ) -> Result<(u64, std::path::PathBuf), String> {
         use std::io::Write;
         let (channel, home) = self.resolve(machine)?;
         let stopped = job.map(|j| j.stopped.clone());
@@ -10080,6 +10164,15 @@ impl Node {
                 line.map_err(|e| unreached_words(&dial_to.name, e))?;
             }
         }
+        let transfer = if separate {
+            Some(tokio::select! {
+                biased;
+                _ = &mut stopped => return Err(crate::drops::cancelled()),
+                line = self.transfer_line_for(ep, &dial_to) => line?,
+            })
+        } else {
+            None
+        };
         // **A pull resumes from what it already has** (round NET-4), the
         // way an offer does from its `.partial`: the bytes so far stay in
         // the part file, and beside it what they are bytes *of* — which
@@ -10144,7 +10237,14 @@ impl Node {
                     }
                     next = window.next(contract.map(|(total, _)| total), |at| {
                         let req = ask(at);
-                        async move { (at, self.ask_on(ep, target, &req).await) }
+                        let line = transfer.as_ref().map(|line| &line.0);
+                        async move {
+                            let answer = match line {
+                                Some(line) => self.ask_on_transfer(ep, target, &req, line).await,
+                                None => self.ask_on(ep, target, &req).await,
+                            };
+                            (at, answer)
+                        }
                     }) => next,
                 };
                 if is_stopped() {
@@ -13299,6 +13399,16 @@ pub(crate) struct Line {
     pub(crate) name: String,
     pub(crate) proto: wires::Proto,
     pub(crate) conn: iroh::endpoint::Connection,
+}
+
+/// The isolated experiment's file connection. Pending slice futures borrow it,
+/// so they are dropped before this closes on completion/error/cancellation.
+struct TransferLine(Line);
+
+impl Drop for TransferLine {
+    fn drop(&mut self) {
+        self.0.conn.close(0u32.into(), b"pull ended");
+    }
 }
 
 /// What [`Node::ask_early`] came to.

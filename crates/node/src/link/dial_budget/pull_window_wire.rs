@@ -6,6 +6,7 @@ use super::*;
 use std::sync::{Arc, Mutex};
 use tokio::sync::Notify;
 
+mod isolation;
 mod job_stop;
 mod offer_stop;
 mod stop_rpc;

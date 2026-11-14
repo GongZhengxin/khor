@@ -531,6 +531,7 @@ impl DialContact {
 
 /// A connection another machine opened to this one.
 struct Served {
+    transfer_owned: bool,
     conn: iroh::endpoint::WeakConnectionHandle,
     id: String,
     rx: u64,
@@ -1636,6 +1637,17 @@ impl Wires {
                 self.counts.retired(why);
             }
         }
+        let mut served = self.served.lock().unwrap_or_else(|p| p.into_inner());
+        served.retain(|side| {
+            if side.transfer_owned && side.id == id {
+                if let Some(conn) = side.conn.upgrade() {
+                    conn.close(0u32.into(), why.reason());
+                }
+                false
+            } else {
+                true
+            }
+        });
     }
 
     /// Lets go of every wire: the endpoint under them is being replaced,
@@ -1678,6 +1690,16 @@ impl Wires {
     /// in this file's own test, a second write after a restart failing
     /// after a full 10 s dial.
     pub(crate) fn serving(&self, conn: &Connection) {
+        self.track_side_connection(conn, true);
+    }
+
+    /// Track a transfer-owned outgoing Main outside the cached slot. Its
+    /// owner closes it; pause/background and shared-carrier cleanup see it.
+    pub(crate) fn transferring(&self, conn: &Connection) {
+        self.track_side_connection(conn, false);
+    }
+
+    fn track_side_connection(&self, conn: &Connection, inbound: bool) {
         let id = conn.remote_id().to_string();
         if let Some(proto) = [Proto::Main, Proto::Tunnel]
             .into_iter()
@@ -1687,13 +1709,16 @@ impl Wires {
         } else {
             self.back(&id);
         }
-        self.note(
-            Some(&conn.remote_id().to_string()),
-            crate::journal::What::Inbound,
-        );
+        if inbound {
+            self.note(
+                Some(&conn.remote_id().to_string()),
+                crate::journal::What::Inbound,
+            );
+        }
         let mut served = self.served.lock().unwrap_or_else(|p| p.into_inner());
         served.retain(|w| w.conn.upgrade().is_some_and(|c| c.close_reason().is_none()));
         served.push(Served {
+            transfer_owned: !inbound,
             conn: conn.weak_handle(),
             id: conn.remote_id().to_string(),
             rx: heard_count(conn),
@@ -1702,7 +1727,7 @@ impl Wires {
         });
     }
 
-    /// Closes every connection other machines opened to this one: what a
+    /// Closes incoming and transfer-owned side connections: what a
     /// phone going to the background owes them, so their wires to it end
     /// now instead of after their silence limit.
     pub(crate) fn let_go_served(&self, why: Retired) {
