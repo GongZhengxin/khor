@@ -32,20 +32,46 @@ async fn owner_ends(expired: bool) {
     drop(first.take());
     drop(first);
     drop(incoming);
-    let (result, remote) = tokio::time::timeout(Duration::from_secs(5), async {
-        tokio::join!(&mut waiter, async {
-            f.server.accept().await.unwrap().accept().unwrap().await
-        })
+    let caller_deadline_leaked = crate::deadline::current().is_some();
+    let mut accepted = None;
+    let mut handshake_error = None;
+    let observed = tokio::time::timeout(Duration::from_secs(5), async {
+        loop {
+            tokio::select! {
+                result = &mut waiter => break result,
+                incoming = f.server.accept(), if accepted.is_none() => {
+                    match incoming.unwrap().accept() {
+                        Ok(connecting) => match connecting.await {
+                            Ok(remote) => accepted = Some(remote),
+                            Err(error) => handshake_error = Some(format!("{error:?}")),
+                        },
+                        Err(error) => handshake_error = Some(format!("{error:?}")),
+                    }
+                }
+            }
+        }
     })
-    .await
-    .unwrap();
-    let (lease, remote) = (result.unwrap(), remote.unwrap());
-    let distinct = lease.line.0.conn.stable_id() != f.local.stable_id();
+    .await;
+    let connected = matches!(&observed, Ok(Ok(_)));
+    let failure = match &observed {
+        Ok(Err(error)) => Some(format!("{error:?}")),
+        Err(_) => Some("observer timeout".into()),
+        _ => None,
+    };
+    let lease = observed.ok().and_then(Result::ok);
+    let distinct = lease
+        .as_ref()
+        .is_some_and(|l| l.line.0.conn.stable_id() != f.local.stable_id());
     drop(waiter);
     drop(lease);
-    tokio::time::timeout(Duration::from_secs(5), remote.closed())
-        .await
-        .unwrap();
+    let accepted_incoming = accepted.is_some();
+    let extra_closed = if let Some(remote) = accepted {
+        tokio::time::timeout(Duration::from_secs(5), remote.closed())
+            .await
+            .is_ok()
+    } else {
+        false
+    };
     let capacity_returned = f.node.wires.pulls.available_extra() == 4;
     cached_answer(&f).await;
     f.close().await;
@@ -54,12 +80,23 @@ async fn owner_ends(expired: bool) {
         serde_json::json!({
             "event":"preparation_waiter", "expired_owner":expired,
             "actual_unaccepted_incoming":true, "waiter_polled_pending":true,
-            "owner_terminal_or_cancelled":owner_terminal, "waiter_connected":true,
+            "owner_terminal_or_cancelled":owner_terminal, "waiter_connected":connected,
+            "accepted_incoming":accepted_incoming, "failure":failure,
+            "handshake_error":handshake_error, "caller_deadline_leaked":caller_deadline_leaked,
             "distinct_from_cached":distinct, "capacity_returned":capacity_returned,
-            "extra_closed":true, "cached_main_control":true, "fixture_closed":true,
+            "extra_closed":extra_closed, "cached_main_control":true, "fixture_closed":true,
         })
     );
-    assert!(owner_terminal && distinct && capacity_returned);
+    assert!(
+        owner_terminal
+            && connected
+            && accepted_incoming
+            && distinct
+            && capacity_returned
+            && extra_closed
+            && !caller_deadline_leaked,
+        "an ended preparation owner must not poison its independent waiter"
+    );
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
