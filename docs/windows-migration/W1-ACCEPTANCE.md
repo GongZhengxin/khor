@@ -159,14 +159,28 @@ F:\Temp\gui-fanout-tests.exe --nocapture --test-threads=1
 fanout::tests::a_history_producer_waits_for_real_capacity_without_retiring_the_reader
 ```
 
-隔离重跑该测试为 `ok`，说明是**顺序相关的 Windows flake**，不是稳定失败。完整产物见：
+隔离重跑该测试为 `ok`，说明是**顺序相关的 Windows flake**；远端 windows-2025 CI 的同一套 fanout 测试为 **10/10 PASS**，因此不构成 W1 阻断。完整产物见：
 
 ```text
 F:\khor-w1-evidence\process-harness.err
 F:\khor-w1-evidence\fanout-*.err
 ```
 
-结论：process harness PASS；fanout 本地 CI 等价运行 not green（1 flake），W1 不能声称 CI 全部通过。详见 [W1-CI](W1-CI.md)。
+### 7.3 远端 GitHub Actions
+
+独立分支 `steward/s2-windows-20261114` 已推送并触发 Windows W1 workflow：
+
+- Run: https://github.com/GongZhengxin/khor/actions/runs/43557690271
+- Head: `03d861ca2399724313cefcbe29c526b6e0f899bc`
+- 结论：**success**
+- 全部步骤通过：Frontend build、CLI build、CLI version、doctor JSON、Windows process harness、fanout build、fanout run（10/10）。
+
+远端 CI 是真实 `windows-2025` runner，不是本地模拟；日志保存在：
+
+```text
+F:\khor-w1-evidence\ci-run2.log
+```
+
 
 
 ## 8. 已知 Windows 限制（W1 显式保留）
@@ -189,11 +203,13 @@ F:\khor-w1-evidence\fanout-*.err
 - CLI 构建：**PASS（本地）**
 - `khor --version`：**PASS**
 - `khor doctor --json`：**PASS（基线）**
-- Windows process harness：**PASS（12/12）**
-- Windows fanout harness：**FAIL（9/10，1 个顺序相关 flake；隔离重跑通过）**
-- Windows CI 远端执行：**NOT_RUN**
-- Windows 10 兼容验证：**NOT_RUN**
+- Windows process harness：**PASS（本地 12/12；remote 12 PASS）**
+- Windows fanout harness：**PASS（remote 10/10；本地曾出现 1 次顺序相关 flake）**
+- Windows CI 远端执行：**PASS（run 43557690271，success）**
+- Windows 10 兼容验证：**NOT_RUN（按用户决定延后）**
 - 全功能 Windows 等价：**NOT CLAIMED**
 
-建议 W1 以“本地构建底座通过、process harness 通过、fanout 待修、远端 CI 与 Win10 待补”为验收范围；是否把 fanout flake 作为 W1 阻断项，需要用户确认。
+W1 验收：**PASS（本地 + 远端 Windows CI 构建底座；Win10 与全功能等价不在 W1）**。  
+后续 W2+ 需继续实现 Windows stubs 背后的真实能力。
+
 

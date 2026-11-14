@@ -51,16 +51,30 @@ F:\Temp\gui-fanout-tests.exe --nocapture --test-threads=1
 fanout::tests::a_history_producer_waits_for_real_capacity_without_retiring_the_reader
 ```
 
-隔离重跑该测试为 ok，说明是 Windows 顺序相关 flake，不是稳定失败。W1 不把 fanout 标为全绿。
+隔离重跑该测试为 ok，说明是 Windows 顺序相关 flake；远端 windows-2025 CI 的同一测试为 10/10 PASS。
+
+## 3.3 远端 GitHub Actions
+
+独立分支已推送并触发 workflow：
+
+- Run: https://github.com/GongZhengxin/khor/actions/runs/43557690271
+- Head: `03d861ca2399724313cefcbe29c526b6e0f899bc`
+- 结论：success
+- 步骤：Frontend build success；CLI build success；CLI version success；doctor JSON success；process harness success；fanout build/run success（10/10）
+- 日志：`F:\khor-w1-evidence\ci-run2.log`
+
+这次运行是真实 `windows-2025` runner，不是本地模拟。
 
 ## 4. W1 判定
 
 - CI 配置文件存在且 Windows job 可识别：**PASS（静态）**
 - 本地构建等价路径：**PASS（本地）**
-- process harness：**PASS**
-- fanout harness：**FAIL（1 个顺序相关 flake）**
-- 远端 CI 真实执行：**NOT_RUN**
-- 不把静态 YAML 当作 CI 绿灯；W1 不声称 CI 全绿。
+- process harness：**PASS（12/12）**
+- fanout harness：**PASS（远端 10/10；本地一次顺序相关 flake）**
+- 远端 CI 真实执行：**PASS（run 43557690271 success）**
+- Windows 10：**NOT_RUN（按用户决定延后）**
+- 不把静态 YAML 当作 CI 绿灯；本次有真实 run 回执。
+
 
 
 ## 4. W2+ 待办
