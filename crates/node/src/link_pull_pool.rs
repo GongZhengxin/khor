@@ -116,6 +116,34 @@ impl Pools {
 }
 
 impl Scope {
+    fn extra_permit(&self) -> Result<OwnedSemaphorePermit, tokio::sync::TryAcquireError> {
+        if let Ok(permit) = self.extra.clone().try_acquire_owned() {
+            return Ok(permit);
+        }
+        // A closed connection may still be owned by a file. Reclaim only its
+        // logical slot, on demand; no polling task or idle timer is needed.
+        let peers: Vec<_> = self
+            .peers
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .values()
+            .filter_map(Weak::upgrade)
+            .collect();
+        for peer in peers {
+            let lease = peer
+                .live
+                .lock()
+                .unwrap_or_else(|p| p.into_inner())
+                .upgrade();
+            if let Some(lease) = lease
+                && lease.line.0.conn.close_reason().is_some()
+            {
+                lease.close(b"file connection ended");
+            }
+        }
+        self.extra.clone().try_acquire_owned()
+    }
+
     fn retire(&self, reason: &[u8]) {
         self.dead.store(true, std::sync::atomic::Ordering::Release);
         let peers = std::mem::take(&mut *self.peers.lock().unwrap_or_else(|p| p.into_inner()));
@@ -270,7 +298,7 @@ impl Peer {
             }
             live.close(b"file connection ended");
         }
-        let permit = self.scope.extra.clone().try_acquire_owned().map_err(|_| {
+        let permit = self.scope.extra_permit().map_err(|_| {
             PreparationFailure::RetryCached("file connection capacity in use".into())
         })?;
         let remaining = DIAL_MOST.saturating_sub(started.elapsed());
