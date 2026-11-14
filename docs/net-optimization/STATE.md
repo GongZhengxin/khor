@@ -6,7 +6,7 @@
 
 ## 当前唯一Turing执行及下一步
 
-唯一pending **turing-20261114T031149Z-be538813**，net-node / contact_current_mixed_preflight_baseline_v1，role baseline；control **2cc1ad6578c83a4384335e825f2ba30db650439b**，protocol **13b66d93d03519417f0b20c956cbf697ad968f8044d502995c16727d81bc4f51**。先核actual receipt/execution，禁止重派。原始baseline descriptor E/contact-current-mixed-baseline-source-v1.json（c3b098bd/treef6c239ae/snapshote22263d6，dirty=true是既有已闭bridge快照，不能新造为clean）。
+唯一pending **turing-20261114T032931Z-531d7086**，net-node / contact_current_mixed_block_3_candidate_v1，role candidate；control **2cc1ad6578c83a4384335e825f2ba30db650439b**，protocol **13b66d93d03519417f0b20c956cbf697ad968f8044d502995c16727d81bc4f51**。先核actual receipt/execution，禁止重派。原始baseline descriptor E/contact-current-mixed-baseline-source-v1.json（c3b098bd/treef6c239ae/snapshote22263d6，dirty=true是既有已闭bridge快照，不能新造为clean）。
 
 **030058Z-e97c48c8普通Release producer已闭成功**，0/570.415930秒，Cargo原8m30、22文件/identity/原owner已核；准确已过Linux286/Mac282的 **96e999da/tree41df16ad/snapshot1cc2cb53**（I4＋N2联系代次修复）。E/该run/contact-current-release-compile-verification-v1.json；CLI **443c6e010293b83e7c0e963b6eb96edb3897dd4c0d6ada0bca9f6fca02666a43**，full netlab **01b6432ae381f633d98a4a1fb6af84b9a5e91fa1075f65c88f371ec14f53dfbb**。features[]/原Release thin LTO、无qlog/诊断feature，CLI强制refresh且实际fresh=false、46原来源合同源码一致复用，未执行任何业务测试。原H2/PULL4未采用；I4浏览器锁保留，N2 link/wires是相对I4仅有产品增量。
 
@@ -16,7 +16,15 @@ producer完整tree13路径逆重建精确H2 tree5cf730ab，source_frame全部13�
 
 原相对10%+20ms/文件90%及原始基线各cell固定绝对界限同时保留（high目录bulk592518.1μs/TTY391538.2μs、文件中位16.791371Mbit/s下限）。新协议保留有效baseline产品失败并继续固定cohort，其失败cell相对全成功门不能通过；candidate任一完整块硬失败拒绝。固定360任一cell已有>18条越固定p95门，或三文件已有两条低于固定中位门，可数学不可挽回早拒；未知调度/来源/分析/清理则停，无替代。H2旧协议不追溯修改。
 
-下一步：031149完成后collect-network-ssh.py、verify-turing-record.py、**E/ops/verify-contact-current-mixed-block-v1.py**、**record-contact-current-mixed-block-v1.py**按顺序闭证记录。progress E/contact-current-mixed-progress-v1.json，是新cohort唯一顺序入口。若baseline分层准入且无未知，唯一派candidate preflight，source E/contact-current-release-source-v1.json，revision contact_current_mixed_preflight_candidate_v1，同control，前驱031149 receipt。然后按progress依次business1 baseline/2 candidate/3 candidate/4 baseline/5 baseline/6 candidate，revision contact_current_mixed_block_{index}_{arm}_v1，每块完整low/high；每次collect/verify/record才下一派。**summarize-contact-current-mixed-v1.py**只在完整cohort给相对＋固定绝对门，停止则不冒充完整对照。root唯一ledger writer，无后台协调器，不和编译并发。
+baseline预检 **031149Z-be538813** 已按collect/identity/行为/record闭证，1/164.474783秒、17文件：原5项中2owner/lowTCP/UDP四绿，原high coldTCP红，分层模型准入、全部owner退出且分析完整；progress已1块/collecting，所有原red保留。candidate预检031537已唯一派发，前驱031149。
+
+candidate预检 **031537Z-b18b6b98** 已collect/identity/行为/record，1/164.635421秒，原同5项四绿＋high coldTCP原红，分层准入且全部owner退出，17文件；progress现2块/collecting。**business1 baseline031906** 已唯一派发，原low/high两profile计时，前驱031537。
+
+business1 baseline **031906Z-28dfcb1b** 已闭0/279.047954秒、14文件，low/high各720ok且2文件完整。low目录bulk计划→完成p95 273795μs/TTY83153μs/文件6.9338Mbit/s；high605119/758473μs/15.3005Mbit/s。当前原始baseline本身较早参考波动，CPU准入实际99.17%idle、PSI0；不变更原门或以此为candidate开绿灯。原限速queue downstream drop9742/delay drop0，E/high-mixed-rate-queue-observation-v1.json连同以前10场计数只作线索，0随机loss不等于0taildrop，不能推算未经分母/GSO核对的丢包率。progress3块/collecting。business2 candidate032427已唯一派，前驱031906。
+
+business2 candidate **032427Z-7237c5a7** 已collect/identity/行为/record闭，0/239.000680秒、14文件，low/high各720ok及2完整file。low目录bulk计划→完成p95 234969μs/TTY82376μs/文件7.2083Mbit/s；high628558/517555μs/24.2642Mbit/s。首次candidate两p95高于固定绝对门，但累计不可挽回门尚未触发，progress4块/collecting；原y_journal含Relay→Direct两次selected事件，选后snapshot质量见原log，非精确选择输入/业务route。business3 candidate032931已唯一派，前驱032427。
+
+下一步：032931完成后collect-network-ssh.py、verify-turing-record.py、**E/ops/verify-contact-current-mixed-block-v1.py**、**record-contact-current-mixed-block-v1.py**按顺序闭证记录。progress E/contact-current-mixed-progress-v1.json，是新cohort唯一顺序入口。若phase仍collecting且无未知，按progress唯一派business4 baseline，source E/contact-current-mixed-baseline-source-v1.json，revision contact_current_mixed_block_4_baseline_v1，同control，前驱032931 receipt；再依次business5 baseline/6 candidate，revision contact_current_mixed_block_{index}_{arm}_v1，每块完整low/high；每次collect/verify/record才下一派。**summarize-contact-current-mixed-v1.py**只在完整cohort给相对＋固定绝对门，停止则不冒充完整对照。root唯一ledger writer，无后台协调器，不和编译并发。
 
 ### 普通H2无重编译诊断已完成，不作性能接受
 
