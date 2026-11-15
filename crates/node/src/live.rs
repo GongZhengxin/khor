@@ -5425,7 +5425,10 @@ mod tests {
         assert_eq!(rows.len(), 1);
         assert_eq!(rows[0].id.0, "tui/11111111-1111-4111-8111");
         assert_eq!(rows[0].state.unwrap().state, State::Blocked);
-        assert_eq!(rows[0].title, "one-aa");
+        // 84c9e6fe retired the vendor's generated name: a row is titled
+        // after its directory (`/w/one`), not after the status file's
+        // `name` field.
+        assert_eq!(rows[0].title, "one");
 
         // Now the hook registers the same claude session and reports a
         // different word.
@@ -5439,10 +5442,14 @@ mod tests {
         let rows = k.rows(|_| 0);
         assert_eq!(rows.len(), 1, "one session, one row — not two");
         assert_eq!(rows[0].id, id);
+        // 9e3f33d1: a live Claude TUI's own file outranks a persisted
+        // report, so the hook's "done" no longer overwrites the vendor's
+        // waiting word. The row is still one row, and the registered row
+        // still supplies the title and the id.
         assert_eq!(
             (rows[0].state.unwrap().state, rows[0].unread),
-            (State::Done, 1),
-            "the registered row wins: it is the only one that can say 完成"
+            (State::Blocked, 0),
+            "native Claude evidence outranks the hook's report",
         );
         assert_eq!(rows[0].title, "one");
     }
@@ -5501,10 +5508,14 @@ mod tests {
 
         // Control: the identical disagreement, reported instead of read.
         k.report(&id, State::Idle, Source::Reported).unwrap();
+        // 9e3f33d1 ("retire agent status hooks and read native Claude
+        // endings") made a live Claude TUI's own file outrank a persisted
+        // report as well as a screen guess: the hook this test spoke for
+        // was retired in the same change.
         assert_eq!(
             k.rows(|_| 0)[0].state.unwrap().state,
-            State::Idle,
-            "control: a reported word still wins, so the source is the only thing deciding",
+            State::Blocked,
+            "native Claude evidence outranks a reported word",
         );
     }
 
@@ -5597,11 +5608,37 @@ mod tests {
             "precondition: it reads back absent",
         );
 
+        // The absent field still means "reported" (`word_outranks_disk`
+        // is unit-tested below); what changed with 9e3f33d1 is that a
+        // native Claude TUI's own file outranks any persisted word.
         assert_eq!(
             k.rows(|_| 0)[0].state.unwrap().state,
-            State::Idle,
-            "an entry from before this field stands against the sweep",
+            State::Blocked,
+            "native Claude evidence outranks a pre-provenance entry too",
         );
+    }
+
+    /// **Absent provenance is the strong answer, and a screen guess is the**
+    /// **weak one.** The integration tests that used to pin this now pin
+    /// 9e3f33d1's native-Claude rule instead (a TUI's own file outranks even
+    /// a report), so the ranking itself is checked here, where it lives.
+    #[test]
+    fn reported_words_outrank_the_disk_and_screen_words_do_not() {
+        let state = |source| LiveState {
+            gui_run: None,
+            word: State::Idle,
+            at_ms: 0,
+            exit: None,
+            source,
+        };
+        assert!(Source::Reported.outranks_disk());
+        assert!(!Source::Screen.outranks_disk());
+        assert!(
+            state(None).word_outranks_disk(),
+            "an entry written before provenance existed is a report"
+        );
+        assert!(state(Some(Source::Reported)).word_outranks_disk());
+        assert!(!state(Some(Source::Screen)).word_outranks_disk());
     }
 
     /// A row registered before anyone could place it learns its category
