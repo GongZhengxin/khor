@@ -58,7 +58,7 @@ function fmtSize(n: number): string {
   return `${(n / (1024 * 1024 * 1024)).toFixed(1)}GB`;
 }
 
-const khorPendingRuns=new Map<string,{line:string;token:string}>();
+const khorPendingRuns=new Map<string,{identity:string;input:string;token:string}>();
 export function retainKhorPromptTokens(sessions:readonly string[]){const live=new Set(sessions);for(const key of khorPendingRuns.keys())if(!live.has(key))khorPendingRuns.delete(key);}
 
 /** Each Khor conversation sends prompts and commands to its own agent home. */
@@ -212,11 +212,12 @@ export function MachineChat({ id, active = true, onSession, sessions = [] }: { i
       // the viewing machine as a path on a remote agent's execution home.
       for(const item of chosen)if(!item.source&&item.path)pendingFiles.patch(item.key,{source:pathAttachment(item.path,null,landsOn),reference:false});
       const prepared=await attachments.prepare(),paths=prepared.flatMap(item=>item.path?[item.path]:[]);
-      // Presentation labels can arrive later; retry identity uses the stable home ID.
-      const agentInput=paths.length===0?text:[text,`Attached files on ${JSON.stringify(agent?.config?.home??landsOn)}:`,...paths.map(path=>JSON.stringify(path))].filter(Boolean).join('\n');
-      if(agentPrompt&&khorPendingRuns.get(id)?.line!==agentInput)khorPendingRuns.set(id,{line:agentInput,token:crypto.randomUUID()});
+      // A label arriving later cannot change a retried prompt or its receipt.
+      const agentInput=paths.length===0?text:[text,`Attached files on ${JSON.stringify(home?.shown??'会话所在机器')}:`,...paths.map(path=>JSON.stringify(path))].filter(Boolean).join('\n');
+      const identity=JSON.stringify([text,paths,agent?.config?.home??null]);
+      if(agentPrompt&&khorPendingRuns.get(id)?.identity!==identity)khorPendingRuns.set(id,{identity,input:agentInput,token:crypto.randomUUID()});
       const issued=khorPendingRuns.get(id);
-      await (agentPrompt?khorAgent('prompt',agent!.config!.home,{text:agentInput,token:issued!.token,session:id}):compose(text,paths));
+      await (agentPrompt?khorAgent('prompt',agent!.config!.home,{text:issued!.input,token:issued!.token,session:id}):compose(text,paths));
       setDraft(now=>now.trim()===text?'':now);
       for(const key of went)pendingFiles.remove(key);
       if(khorPendingRuns.get(id)===issued)khorPendingRuns.delete(id);

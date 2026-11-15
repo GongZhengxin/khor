@@ -28,7 +28,7 @@ export async function checkKhorAttachments(browser,{port,report,engine,width=390
   assert.equal((await api('__ai_preview/attachment-events')).filter(event=>event.operation==='khor_prompt').length,0,'Failed file delivery never submits a Khor prompt');await selected.waitFor();
   await api('__ai_preview/upload-mode',{mode:'ok'});await picker.locator('[data-files-send]').click();await picker.waitFor({state:'hidden'});
   const sent=await api('__ai_preview/attachment-events'),prompts=sent.filter(event=>event.operation==='khor_prompt');
-  assert.equal(prompts.length,1);assert.match(prompts[0].text,/khor-note.txt/);assert.match(prompts[0].text,/khor-drop/);assert.match(prompts[0].session,/^wide\/agent-/);
+  assert.equal(prompts.length,1);assert.match(prompts[0].text,/khor-note.txt/);assert.match(prompts[0].text,/khor-drop/);assert(!/[0-9a-f]{64}/.test(prompts[0].text),'The attachment message shows a machine label instead of its internal ID');assert.match(prompts[0].session,/^wide\/agent-/);
   assert(sent.some(event=>event.operation==='khor_put_paths'),'Khor attachment delivery uses the canonical conversation home');
   await page.waitForFunction(()=>document.activeElement?.matches('[data-chat-composer]'));
   assert.equal(await page.locator('[data-chat-pending-file="khor-note.txt"]').count(),0);
