@@ -22,8 +22,9 @@
 | `command_ledger` | 4 passed |
 | `departed` | 1 passed |
 | `workspace_facts` | 3 passed |
+| `recognition_wire` | 1 passed（先把断言对齐 9e3f33d1 的“Claude 状态钩子退役”） |
 
-合计 **44 项通过**（另有 2 ignored）。
+合计 **45 项通过**（另有 2 ignored）。
 
 ## 2. 本轮改掉/门掉的
 
@@ -34,7 +35,7 @@
 | `host_replay` | `#[cfg(unix)]` | 10,000 行 flood 22 分钟未完成 |
 | `cwd_pin` | `#[cfg(unix)]` | Windows 不能删除/重命名进程的当前目录，用例前提不存在 |
 | `day_record` | 整文件 `#[cfg(unix)]` | 三个用例都要 `Node::import` 的“已验证原生身份”，本夹具没有 agent home；strip 逻辑由 `khor_node::day` 单测覆盖 |
-| `recognition_wire` | 单用例 `#[cfg(unix)]` | **疑似产品问题**：`Enable(Claude)` 返回 Ok，但随后读取仍是 `automatic`——Claude 配置的写入与读取在 Windows 上不一致；Codex 那一半通过 |
+| `recognition_wire` | 更新断言后通过 | 用例还在期望 `Enable(Claude)` 变成 `configured`；产品在上游 9e3f33d1 已退役 Claude 状态钩子，`entry()` 恒为 `automatic`、enable/disable 是 no-op。属测试滞后，不是产品缺陷 |
 
 被 gate 的条目都在文件里写了原因，不当作通过。
 
