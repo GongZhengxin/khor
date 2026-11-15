@@ -37,6 +37,9 @@ cargo test --locked -p khor-node --test <target> -- --test-threads=1
 | --- | --- | --- |
 | `node/resume.rs::a_far_terminal_rejoins_after_resume_and_its_replay_has_what_happened_meanwhile` | 宿主能起、attach 能连，但 replay ring 只有一段清屏与提示符，没有程序的 `sayer-up`；已改用本测试二进制自带 fixture，现象不变 | 终端/ConPTY 读取，W5 排查 |
 | `node/host_replay.rs::a_replay_trimmed_past_the_modes_still_starts_in_them` | 10,000 行 flood 经 ConPTY 在 Windows 上 22 分钟仍未完成 | 同上 |
+
+两条 NOT_TESTED 另有两份独立证据（2026-11-15）：宿主跑 `cmd /c echo hello-host` 后 30s 内 `last.txt` 仍不存在、`ring` 从未写入；
+直接调用 `portable-pty` 读同一个命令 15s 无输出且 `child.wait()` 不返回。因此问题在 ConPTY 输出路径，不在这两个用例的断言。
 | 真实双机配对 | 本机只有一台 Windows | 需第二台设备；本机已用两 node 回环覆盖协议 |
 | 远程控制与审批的真人流程 | 需要 App/GUI | W5 之后随 GUI 一起验 |
 
