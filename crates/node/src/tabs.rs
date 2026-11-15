@@ -756,6 +756,114 @@ mod tests {
         assert_eq!(again.tabs[0].title, "khor.example");
     }
 
+    /// The child half of `two_processes_do_not_lose_each_others_tabs`:
+    /// with the fixture variables set it opens one tab and exits; without
+    /// them it is an ordinary passing test, so a full-suite run does not
+    /// depend on being spawned.
+    #[test]
+    fn cross_process_fixture() {
+        let Ok(directory) = std::env::var("KHOR_TABS_FIXTURE_ROOT") else {
+            return;
+        };
+        let id = std::env::var("KHOR_TABS_FIXTURE_ID").unwrap();
+        open(
+            std::path::Path::new(&directory),
+            "page",
+            "fixture-device",
+            &format!("https://khor.example/{id}"),
+        )
+        .unwrap();
+    }
+
+    /// Two **processes**, not two threads: each opens a tab on the same
+    /// table, and every row has to survive. The write lock is the only
+    /// thing ordering them, so a lost update here is the real-window bug
+    /// W3 names.
+    #[test]
+    fn two_processes_do_not_lose_each_others_tabs() {
+        use std::process::{Command, Stdio};
+        let r = root("crossproc");
+        let exe = std::env::current_exe().unwrap();
+        let mut children = Vec::new();
+        for id in 0..4 {
+            let child = Command::new(&exe)
+                .args([
+                    "--exact",
+                    "tabs::tests::cross_process_fixture",
+                    "--test-threads=1",
+                ])
+                .env("KHOR_TABS_FIXTURE_ROOT", &r.0)
+                .env("KHOR_TABS_FIXTURE_ID", id.to_string())
+                .stdout(Stdio::null())
+                .stderr(Stdio::piped())
+                .spawn()
+                .expect("spawn the fixture");
+            children.push(child);
+        }
+        for child in children {
+            let output = child.wait_with_output().unwrap();
+            assert!(
+                output.status.success(),
+                "fixture failed: {}",
+                String::from_utf8_lossy(&output.stderr)
+            );
+        }
+        let mut urls: Vec<String> = list(&r.0, "page").tabs.into_iter().map(|t| t.url).collect();
+        urls.sort();
+        assert_eq!(
+            urls,
+            (0..4)
+                .map(|id| format!("https://khor.example/{id}"))
+                .collect::<Vec<_>>(),
+            "every process's row survives"
+        );
+    }
+
+    /// A home beyond `MAX_PATH` still keeps its tabs. Rust's std rewrites an
+    /// absolute path to its verbatim form internally, so the only way this
+    /// breaks is a caller handing the product a relative path or a prefix of
+    /// its own — the W3 F3 case.
+    #[test]
+    fn a_table_beyond_max_path_still_opens() {
+        let mut deep = std::env::temp_dir();
+        for index in 0..14 {
+            deep.push(format!("khor-deep-{index:02}-padding"));
+        }
+        let scratch = Scratch(deep.clone());
+        assert!(
+            deep.to_string_lossy().len() > 260,
+            "the fixture is not deep"
+        );
+        fs::create_dir_all(&deep).unwrap();
+        let id = open(&deep, "page", "abc123", "https://khor.example/deep").unwrap();
+        assert!(!id.is_empty());
+        assert_eq!(list(&deep, "page").tabs.len(), 1);
+        drop(scratch);
+        assert!(!deep.exists());
+    }
+
+    /// A table the OS will not let us write is reported, not swallowed:
+    /// the person gets an error instead of a tab that never persisted.
+    /// (F2 of the W3 matrix: the read-only attribute is the cheapest
+    /// Windows way to reach that branch.)
+    #[test]
+    fn a_read_only_table_reports_an_error_instead_of_panicking() {
+        let r = root("readonly");
+        open(&r.0, "page", "abc123", "https://khor.example/a").unwrap();
+        let table = path_for_tests(&r.0);
+        let mut permissions = fs::metadata(&table).unwrap().permissions();
+        permissions.set_readonly(true);
+        fs::set_permissions(&table, permissions).unwrap();
+        let result = open(&r.0, "page", "abc123", "https://khor.example/b");
+        let mut permissions = fs::metadata(&table).unwrap().permissions();
+        permissions.set_readonly(false);
+        fs::set_permissions(&table, permissions).unwrap();
+        assert!(
+            result.is_err(),
+            "a read-only table must not pretend to accept a tab"
+        );
+    }
+
     /// Two kinds cannot read each other's tabs.
     ///
     /// **The danger is not a crash, it is a clean parse**: a URL and a
