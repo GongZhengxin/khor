@@ -1,10 +1,11 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-14T12:44:03.856951+00:00。活动目标“好 完成完整目标”保持active；完整[GOAL](GOAL.md)、[PLAN](PLAN.md) N0–N5与[REQUIREMENTS](REQUIREMENTS.md)未整体完成。root串行、不派子智能体；本机source-only，重型工作在Turing/macserver/授权khor-build。用户已授权实施与验证，未授权main合并、现装App替换、发行/TestFlight或生产Relay采购部署。
+更新于 2026-11-15T17:29:14.455082+00:00。活动目标“好 完成完整目标”已由用户暂停（2026-11-16 Asia/Singapore），goal服务已确认paused；完整[GOAL](GOAL.md)、[PLAN](PLAN.md) N0–N5与[REQUIREMENTS](REQUIREMENTS.md)未整体完成。root串行、不派子智能体；本机source-only，重型工作在Turing/macserver/授权khor-build。用户已授权实施与验证，未授权main合并、现装App替换、发行/TestFlight或生产Relay采购部署。
 
 ## 当前执行
 
-- **固定性能campaign已运行，root唯一ledger写者是本地串行控制器PID 2009 / exec session69980**。脚本E/ops/run-pull-coexistence-campaign-v1.py；实时入口E/pull-coexistence-campaign-controller-v1.json（当前receipt/revision/实际PID观察）与E/pull-coexistence-comparison-progress-v1.json（已闭proof与顺序）。**控制器存活时root父进程只读common ledger，不另行stage/launch/collect/闭ledger或启动Turing编译。先poll现有session69980；不得启动第二控制器。** 当前记录phase observing / turing-20261114T124301Z-8f48f044 / pull_coexistence_block_3_C_v1，此行是时间快照，随后以控制器实时文件与原receipt为准。
+- **已暂停，无在途任务**。2026-11-15T17:27Z核对goal状态paused；本地串行控制器PID2009已退出，phase finished。原campaign于2026-11-14T13:00:52Z完成全部六个业务块（另有一个校准块），全部已collect/验identity/owner/记录proof；common ledger无pending。不要因下方历史执行说明而重新启动控制器或测试。
+- **整体验收仍未通过**。固定C组high bulk/directory完整360样本中21个超过原592518.1μs绝对上限，超过nearest-rank p95允许的18个，原性能门失败；S组第五业务块turing-20261114T125212Z-1290b1d0有原生功能检查失败。全部原结果及完整分母保留，不能把campaign phase completed当作通过。用户暂停期间不继续实现、汇总、构建或验证；恢复后先核本状态、原progress/proofs和当前实际源码。
 - **性能冻结协议**E/pull-coexistence-comparison-plan-v1.json，SHA2561d0e1ddf5a74f9938574e51fa0b77fac8ed31644f0019b4d704b63eecc5e857c；control a76425ab3228b1b69ad302f3164e403549f8763f，task net-node，准确source6f7bbf43/treeaddd2218/CLI7454caa6。先唯一同源5case校准，再SCCSSC六块各low/high共12业务case/8640样本/24post-health。源/ELF/原数值门/CPU≥80%idle/PSI≤5/同UID无Cargo/全部owner门保持。数据适配器SHA固定；不启lifecycle日志、不编译、不替换失败；每块collect→identity→行为→recorder后才派下一块，C硬业务或原绝对门固定360人口不可恢复时停止未来块。控制器观察失败只重读同handle，未知stage/launch结果停控制器并保留intent，不能再派。
 - **同源校准123130Z-493d2d67已闭：原退出1、4原生case通过/1冷TCP参考失败，原分层model准入通过**。17files/identity/owner；两个真实ownership/取消守卫、low TCP、独立UDP容量通过；high TCP内容/68echo/双向payload/server/几何及270–420ms RTT通过，而冷TCP平均率未达原40–60Mbit门，原Rust/native失败保留，绝不写成5/5。复用早已版本化MODEL-DECISION原分层谓词；E/pull-coexistence-comparison-design-v2.json在新校准/计时前明确继承，无原数值或几何门变化。当前S/C只改文件连接模式，校准不重复分模式。
 - **布局v2确认122458Z-df120c3c已闭：0/192.624163秒**，16files/identity/owner、720/720、192MiB完整、2真实health、全部1130客户端回复及对应server回复、1128原RPC精确配对；连续缓存前缀2块、唯一extra后缀766块，目录Main/独立Tunnel与最终双向健康均成立。E/run/pull-coexistence-layout-verification-v2.json；原v1布局预测拒绝保留。三场布局均仅诊断，不混入性能人口。
@@ -34,6 +35,8 @@ E=`/Volumes/disk0/Khor/evidence/net`；原receipt、远端execution及E/source-r
 [PULL-POOL](PULL-POOL.md)、[PULL-POOL-DESIGN](PULL-POOL-DESIGN.md)与[PULL-COEXISTENCE](PULL-COEXISTENCE.md)记录归属、head cursor、bulk32/peer8＋foreground8资源边界。原公平性RED→同测试GREEN、旧27及全部准备/运输/写不重放边界保留；资源满额通过不等于Release性能或手机体验通过。
 
 ## 接下来的顺序与完整范围
+
+**以下为恢复后的工作队列；当前用户已暂停，不执行。** 上述campaign已terminal，原session69980/PID2009均结束；第1项旧“正在执行”为历史调度约定，只能恢复证据，不能重派。
 
 1. 当前root串行campaign正在执行。先看控制器实际liveness及实时pending；session69980存活时不手动推进同campaign。已过shared/v2 separate布局、两轮普通Release、317标准＋压力1、Mac314及旧三臂screen不重做。控制器terminal后查campaign phase与全部proof；stopped保持未执行人口，未知结果恢复原receipt。
 2. campaign terminal后只做stdlib数据审计E/ops/summarize-pull-coexistence-comparison-v1.py，输出E/pull-coexistence-comparison-verification-v1.json（尚未生成）。S/C每cell/arm/profile360人口、原相对p95×1.10＋20000μs/文件率×0.90与全部原绝对参考门保持；任何未齐/失败只报条件分布，不晋升。若失败按真实业务/调度/选路事实定位，在新版本修复，不改原门或重复已停cohort。若设计门过，继续1/3/5 CPU/RSS/字节/唤醒、小文件首内容、同步/预览/SSH/hop共存及手机成本。**本轮同ELF设计选择不替代最终集成源对公开main的同期回归。**
