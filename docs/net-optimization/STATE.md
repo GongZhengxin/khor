@@ -4,7 +4,7 @@
 
 ## 当前执行
 
-- **A/C原版对照与B策略层隔离均已闭，无在途验证**：[DIRECT-FALLBACK](DIRECT-FALLBACK.md)。A/C190352Z-1ac4a84d原101/196.84秒/178报告：A静默UDP恢复15292.660/15296.229ms，原2s参考失败但最终同连接Relay成功；C601.735/605.340ms过；真实Relay见证约108ms、实际UDP丢包与同连接/原生清理全核。B191518Z-3a4d5411为0/64.22秒/95报告/5case过：603.066/605.311ms，在实际关闭root khor_policy、保持C完整锁/非根features与唯一依赖边严格相同后仍约0.6秒。B保留vendor，**不是原版**；说明该快速接管不依赖RoadOrder/额外transport setter，不证明所有vendor或某一补丁必要，也不能据此删掉U1/peer relay/BBR负载能力。A原失败与所有准备失败保持，15个成功完成的诊断case不等于全App/SLO。
+- **A/C原版对照与B策略层隔离均已闭，无在途验证**：[DIRECT-FALLBACK](DIRECT-FALLBACK.md)。A/C190352Z-1ac4a84d原101/196.84秒/178报告：A静默UDP恢复15292.660/15296.229ms，原2s参考失败但最终同连接Relay成功；C601.735/605.340ms过；真实Relay见证约108ms、实际UDP丢包与同连接/原生清理全核。B191518Z-3a4d5411为0/64.22秒/95报告/5case过：603.066/605.311ms，在实际关闭root khor_policy、保持C完整锁/非根features与唯一依赖边严格相同后仍约0.6秒。B保留vendor，**不是原版**；说明该快速接管不依赖RoadOrder/额外transport setter，不证明所有vendor或某一补丁必要，也不能据此删掉U1/peer relay/BBR负载能力。A原失败与所有准备失败保持，15个已完整收集的诊断case（13原生通过、2原生失败保持）不等于全App/SLO。
 - **当前下一步**：按DIRECT-FALLBACK拆vendor的存活/迁移/在飞重排与质量优化/观测，在相同夹具和依赖闭包上找保留快速接管的最小组合，再跑各专属合同。原A/C10与B5已闭证不重复。当前测试sourcebf4ef784/tree610ebd48（`khor-net-direct-fallback-v1` / `experiment/net-direct-fallback-v1`）只加夹具，产品候选6f7bbf43仍clean。不要直接把B默认tier推广产品，因为它仍会违背U1明显快Relay应胜出的合同。
 
 - **此前原版能力基线两场均已收集闭证**。旧控制器PID2009/session69980已结束，common ledger无pending，不重启旧campaign。已确认新产品原则并写入CONNECTION-POLICY/PLAN U22–U23；不是仅优化RTT，不恢复无条件Direct硬优先。
