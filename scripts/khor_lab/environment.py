@@ -20,4 +20,13 @@ def native_environment(home, name, inherited=None):
     environment.update(HOME=str(profile), KHOR_HOME=str(home / 'store'), KHOR_NAME=name, KHOR_WEB_PORT='0',
                        XDG_CONFIG_HOME=str(profile / '.config'), XDG_CACHE_HOME=str(profile / '.cache'),
                        XDG_DATA_HOME=str(profile / '.local/share'))
+    # A desktop host also writes its own data under the Windows profile. Keep
+    # WebView2 and Tauri state inside the Lab home, otherwise the confined
+    # workspace cannot run the built App at all.
+    desktop = {'APPDATA': profile / 'AppData/Roaming',
+               'LOCALAPPDATA': profile / 'AppData/Local',
+               'WEBVIEW2_USER_DATA_FOLDER': profile / 'WebView2'}
+    for key, value in desktop.items():
+        environment[key] = str(value)
+        value.mkdir(parents=True, exist_ok=True, mode=0o700)
     return environment
