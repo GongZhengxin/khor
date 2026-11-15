@@ -20,6 +20,9 @@ cargo test -p khor-cli --test console                        → 2 failed: 退�
 khor help                                                    → 退出码 78，"拒绝访问。 (os error 5)"
 ```
 
+ConPTY 也逃不掉：一次临时探针里 `openpty → spawn cmd.exe → kill → wait` 全部成功（进程确实被回收），
+但**从 master 读输出永远阻塞**——ConPTY 自己的内部管道同样受限。因此 T1–T4 只能在非沙箱环境验证。
+
 `khor` CLI 除 `--version` 外都要建立本机管道，因此整个 CLI 也在同一限制内；这不是 Khor 的缺陷。
 
 ## 3. 运行器
