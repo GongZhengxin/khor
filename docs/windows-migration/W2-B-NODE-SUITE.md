@@ -63,6 +63,10 @@ cargo fmt --check -p khor-node      exit 0
 
 ## 6. 剩余 4 条失败（明确不修 / 不属本切片）
 
+> 2026-11-15 更新：下表 4 条已全部处置，见 [W2-E](W2-E-UPSTREAM-SYNC.md)。3 条 `live` 期望对齐上游
+> （`7195c55c`）；fanout flake 未复现；处置过程中另修两处 Windows 问题（`fb47796f`），
+> 当前全量 `1055 passed / 2 failed / 14 ignored`，两条红均为受限令牌父进程禁命名管道的环境项。
+
 | 测试 | 状态 | 定性 |
 | --- | --- | --- |
 | `live::tests::a_session_that_is_both_hooked_and_discovered_is_one_row` | 红 | **预存**（基线 936698a6 即红）。上游 `84c9e6fe` 删掉了 claude 适配器读 `name` 字段的逻辑（"directory identity ignores the vendor's generated name"），但该测试仍期望 `one-aa`；属上游期望未同步，与平台无关 |

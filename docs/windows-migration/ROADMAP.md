@@ -9,7 +9,7 @@
 | --- | --- | --- |
 | W0 基线 / 功能矩阵 / 审批包 | ✅ 完成 | [BASELINE](BASELINE.md)、[FEATURE-MATRIX](FEATURE-MATRIX.md)、[APPROVAL-PACKAGE](APPROVAL-PACKAGE.md) |
 | W1 构建底座 + CI | ✅ 完成 | [W1-ACCEPTANCE](W1-ACCEPTANCE.md)、[W1-CI](W1-CI.md)；远端 run 43559639618 success |
-| W2 节点层 Windows 适配 | 🟡 进行中 | W2-A ✅（[验收](W2-TABS-WINDOWS-LOCK.md)）；W2-B ✅ 收敛到 4 条（3 条平台无关预存红 + 1 条已知 flake，[验收](W2-B-NODE-SUITE.md)）；W2-C ✅（[加固记录](W2-C-TABS-HARDENING.md)）；W2-D ✅（[平台 stub 复核](W2-D-STUB-AUDIT.md)：6/8 条旧限制已实现，CLI 测试套件可在 Windows 编译，`quit`/`ws` 实跑通过）；W2-E（3 条上游预存红）待用户决策 |
+| W2 节点层 Windows 适配 | ✅ 完成 | W2-A ✅、W2-C ✅、W2-D ✅ 见各自文档；W2-B 收敛到 2 条环境项（[验收](W2-B-NODE-SUITE.md)）；W2-E 上游对齐与文件身份收口（[W2-E](W2-E-UPSTREAM-SYNC.md)），全量 1055 passed / 2 env / 14 ignored |
 | W3 进程 / 终端 / 文件 smoke | ⬜ 未开始 | — |
 | W4 设备网络 + Session 端到端 | ⬜ 未开始 | — |
 | W5 GUI / Web 桌面端 | ⬜ 未开始 | — |
@@ -27,6 +27,7 @@
 - **W2-B 失败分诊与分批修复**：把当前 125 条全量 lib 失败收敛为 0，或逐条给出 `NOT_TESTED` + 理由（Linux-only 语义）。分批见 [W2-FAILURE-TRIAGE](W2-FAILURE-TRIAGE.md)。
 - **W2-C 评审收尾**：W2-A 评审提出的 6 项（Windows CI 跑 tabs 套件、仓内 rename-vs-reader 回归、锁测试握手、place-pins 幂等、临时文件清理、`Hold` 重入防护）。
 - **W2-D 剩余功能 stub**：`khor serve` keeper 生命周期、`khor quit`、attach 原始终端（ConPTY）、`secret` askpass 父进程检测、`foreground_group` / `tty_path`。
+- **W2-E 上游同步与文件身份** ✅：3 条 `live` 期望对齐上游；提交页测试脱离仓库 HEAD；Windows 文件身份改用卷+索引（[W2-E](W2-E-UPSTREAM-SYNC.md)）。
 
 **验收门**：`cargo test --locked -p khor-node --lib` 在 Windows 上 0 失败或全部 `NOT_TESTED` 有理由；`cargo check --locked -p khor-node` exit 0；`cargo fmt --check` exit 0；Windows CI 包含 node lib 套件。
 
@@ -115,3 +116,4 @@ W2 (node 层) ─┬─> W3 (进程/终端/文件 smoke) ──> W4 (网络 + Se
 ## 5. 变更记录
 
 - 2026-11-14：建立本路线图；W2-A 已验收，W2-B 分诊启动。
+- 2026-11-15：W2-E 收口并完成 W2；全量 node lib `1055 passed / 2 env / 14 ignored`，两条环境项为受限令牌父进程禁命名管道。
