@@ -30,6 +30,9 @@ while [ ! -f "$0.stop" ]; do sleep 0.1; done
 "#;
 
 #[test]
+// Windows: the host never finishes this flood through ConPTY (22+ minutes
+// without completion); recorded as W4 NOT_TESTED in W4-NETWORK.md.
+#[cfg(unix)]
 fn a_replay_trimmed_past_the_modes_still_starts_in_them() {
     let root = std::env::temp_dir().join(format!("khor-hostreplay-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&root);

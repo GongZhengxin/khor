@@ -11,7 +11,7 @@
 | W1 构建底座 + CI | ✅ 完成 | [W1-ACCEPTANCE](W1-ACCEPTANCE.md)、[W1-CI](W1-CI.md)；远端 run 43559639618 success |
 | W2 节点层 Windows 适配 | ✅ 完成 | W2-A ✅、W2-C ✅、W2-D ✅ 见各自文档；W2-B 收敛到 2 条环境项（[验收](W2-B-NODE-SUITE.md)）；W2-E 上游对齐与文件身份收口（[W2-E](W2-E-UPSTREAM-SYNC.md)），全量 1055 passed / 2 env / 14 ignored |
 | W3 进程 / 终端 / 文件 smoke | ✅ 通过（含例外） | [W3-SMOKE](W3-SMOKE.md)：12 PASS / 0 FAIL；T5 attach 用例 NOT_TESTED（ConPTY 读取阻塞，已复现）；B2 GUI 侧延后到 W5 |
-| W4 设备网络 + Session 端到端 | ⬜ 未开始 | — |
+| W4 设备网络 + Session 端到端 | ✅ 通过（含例外） | [W4-NETWORK](W4-NETWORK.md)：25 项通过 / 0 失败（双 node 回环）；远端终端 replay 与 host-replay 两条 NOT_TESTED，物理双机待第二台设备 |
 | W5 GUI / Web 桌面端 | ⬜ 未开始 | — |
 | W6 打包 / 更新 / 回滚 | ⬜ 未开始 | — |
 | W7 性能稳定性 + Windows 10 | ⬜ 未开始 | — |
@@ -118,3 +118,4 @@ W2 (node 层) ─┬─> W3 (进程/终端/文件 smoke) ──> W4 (网络 + Se
 - 2026-11-14：建立本路线图；W2-A 已验收，W2-B 分诊启动。
 - 2026-11-15：W2-E 收口并完成 W2；全量 node lib `1055 passed / 2 env / 14 ignored`，两条环境项为受限令牌父进程禁命名管道。
 - 2026-11-15：W3 完成（含例外）：工作区外构建后 CLI/进程/文件/tabs smoke 全绿；T5 attach 记 NOT_TESTED，B2 延后到 W5。
+- 2026-11-15：W4 完成（含例外）：配对/恢复/暂停/接管/同步/传输 25 项通过（双 node 回环）；两条 ConPTY replay 用例 NOT_TESTED，物理双机待设备。
