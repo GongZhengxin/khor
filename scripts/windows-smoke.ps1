@@ -17,7 +17,11 @@ if ($CargoTargetDir) { $env:CARGO_TARGET_DIR = $CargoTargetDir }
 $stamp = (Get-Date).ToUniversalTime().ToString('yyyyMMddTHHmmssZ')
 $outputDir = Join-Path $root '.cache/w3'
 New-Item -ItemType Directory -Path $outputDir -Force | Out-Null
-$exe = Join-Path $root '.cache/target/debug/khor.exe'
+# Binaries built inside the workspace inherit its Low integrity label and then
+# cannot write the user profile (the runtime store lives there). Point this at a
+# target directory outside the workspace to exercise the CLI as a person would.
+$target = if ($CargoTargetDir) { $CargoTargetDir } else { Join-Path $root '.cache/target' }
+$exe = Join-Path $target 'debug/khor.exe'
 $probe = Join-Path $outputDir "probe-$stamp"
 New-Item -ItemType Directory -Path $probe -Force | Out-Null
 

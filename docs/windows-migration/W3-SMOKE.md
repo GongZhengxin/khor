@@ -23,6 +23,28 @@ khor help                                                    → 退出码 78，
 ConPTY 也逃不掉：一次临时探针里 `openpty → spawn cmd.exe → kill → wait` 全部成功（进程确实被回收），
 但**从 master 读输出永远阻塞**——ConPTY 自己的内部管道同样受限。因此 T1–T4 只能在非沙箱环境验证。
 
+### 2.1 工作区里构建的程序是 Low 进程（2026-11-15 实测）
+
+切到 `full` 之后，同一个 `khor.exe`：
+
+```text
+F:\Temp\khor.exe  help                    → 正常输出 usage
+.cache\target\debug\khor.exe  help        → 拒绝访问。 (os error 5)，退出码 78
+```
+
+根因不是产品缺陷：沙箱给工作区打了 **Low 完整性标签**，在其中构建的可执行文件启动后进程仍是 Low，
+而 `%LOCALAPPDATA%\Khor\runtime`（CLI 启动时打开的运行时 store）是 Medium，Low 进程写不进去。
+用 CreateFileW 从 PowerShell（Medium）对同一文件请求写权限是成功的，换成 Rust 进程（Low）就失败。
+
+这条决定了 W3 的执行方式：
+
+- **CLI / 进程 / 终端 smoke 必须用工作区之外构建的二进制**，例如
+  `CARGO_TARGET_DIR=F:\Temp\khor-target cargo build -p khor-cli`（W2-B 当年用 `F:\khor-target-w2` 同理）；
+- 或者把 store 指到 Low 可写的位置：`KHOR_HOME`、`KHOR_RUNTIME_DIR` 指到工作区内；
+- 库单测不受影响，它们只写临时目录。
+
+`scripts/windows-smoke.ps1 -CargoTargetDir <dir>` 已按这个前提取二进制路径。
+
 `khor` CLI 除 `--version` 外都要建立本机管道，因此整个 CLI 也在同一限制内；这不是 Khor 的缺陷。
 
 ## 3. 运行器
