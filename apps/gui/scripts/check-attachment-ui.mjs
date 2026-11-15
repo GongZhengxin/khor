@@ -39,7 +39,7 @@ try{
   console.log('attachment frontend:',mode.length?'production dist':'development');
   run(join(gui,'node_modules/.bin/vite'),[...mode,'--host','127.0.0.1','--port',String(port),'--strictPort'],{...process.env,KHOR_FACE_GATE:'1'});
   await until(()=>fetch(`http://127.0.0.1:${port}/`,{signal:AbortSignal.timeout(1000)}).then(r=>r.ok));
-  browser=await chromium.launch({channel:'chrome',headless:process.env.CONTENT_HEADED!=='1',args:['--no-proxy-server']});
+  browser=await chromium.launch({channel:(process.env.PLAYWRIGHT_CHROMIUM_CHANNEL??'chrome')||undefined,headless:process.env.CONTENT_HEADED!=='1',args:['--no-proxy-server']});
   const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,reducedMotion:'reduce'});
   // The LAN HTTP face has no secure-context randomUUID API.
   await context.addInitScript(()=>Object.defineProperty(globalThis.crypto,'randomUUID',{configurable:true,value:undefined}));
@@ -107,8 +107,10 @@ try{
     assert(send.y>=header.y&&send.y+send.height<=header.y+header.height+1,'Send stays in the top toolbar, clear of the home gesture');
     await selected.locator('[data-files-open]').click();await previewReady();await closePreview();
     await panel().locator('[data-files-send]').click();await until(()=>sent.length>0);await sentToKeyboard();
-    assert.equal(sent[0].items[0].from,'audit-remote','Selection preserves the source host');
-    assert.equal(sent[0].items[0].path,join(projects[0],'notes.md'));
+    const delivered=sent[0].items??sent[0].paths.map(path=>({path,from:sent[0].from}));
+    assert.equal(sent[0].id,sessions[0],'The original terminal owns the transfer');
+    assert.equal(delivered[0].from,'audit-remote','Selection preserves the source host');
+    assert.equal(delivered[0].path,join(projects[0],'notes.md'));
     note('attachment-send',{sent:sent.length,operation:sent[0]});
   });
   await step('local-file-preview',async()=>{
@@ -132,7 +134,21 @@ try{
     writeFileSync(join(pickedFolder,'README.txt'),'Root file');writeFileSync(join(pickedFolder,'.hidden'),'Hidden file');
     writeFileSync(join(pickedFolder,'nested','folder-preview.txt'),'Actual bytes inside the selected browser folder');
     const before=sent.length,stagedBefore=staged.length;
-    await panel().locator('[data-files-folder-input]').setInputFiles(pickedFolder);
+    const folderInput=panel().locator('[data-files-folder-input]');
+    await folderInput.evaluate(input=>{window.__folderInputEvents=[];for(const kind of ['input','change'])input.addEventListener(kind,()=>window.__folderInputEvents.push({kind,files:[...input.files].map(file=>({name:file.name,path:file.webkitRelativePath}))}),{capture:true});});
+    try{await folderInput.setInputFiles(pickedFolder);}catch(error){
+      const diagnostic={browser:browser.version(),exists:existsSync(pickedFolder),production:await page.evaluate(()=>({events:window.__folderInputEvents,selected:document.querySelectorAll('[data-files-selected]').length,alerts:[...document.querySelectorAll('[role=alert]')].map(node=>node.textContent)})),controls:[]};
+      for(const reset of [false,true]){
+        const control=await context.newPage();
+        try{
+          await control.setContent('<input type="file" multiple webkitdirectory>');
+          await control.locator('input').evaluate((input,reset)=>{window.__files=[];input.addEventListener('change',()=>{window.__files=[...input.files].map(file=>file.webkitRelativePath);if(reset)input.value='';});},reset);
+          let failure=null;try{await control.locator('input').setInputFiles(pickedFolder,{timeout:3000});}catch(error){failure=String(error);}
+          diagnostic.controls.push({reset,failure,files:await control.evaluate(()=>window.__files)});
+        }finally{await control.close();}
+      }
+      writeFileSync(join(out,'folder-input-diagnostic.json'),JSON.stringify(diagnostic,null,2));throw error;
+    }
     const card=panel().locator('[data-files-selected="browser-folder"]');await card.locator('[data-files-name]>button').first().click();
     await directory().locator('[data-files-name="nested"]').waitFor();
     assert.deepEqual(await directory().locator('[data-files-name]').evaluateAll(nodes=>nodes.map(node=>node.dataset.filesName)),['nested','README.txt','.hidden']);

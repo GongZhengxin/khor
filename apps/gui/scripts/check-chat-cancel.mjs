@@ -124,7 +124,9 @@ async function run(engine, name) {
           await page.locator('[data-chat-retry]').click();
         }
         await until(async () => await page.locator('[data-chat-input]').inputValue() === draft, 'cancelled upload restores the exact original input');
-        assert.equal(await page.locator('[data-chat-pending-file][data-placed]').count(), 2);
+        assert.equal(await page.locator('[data-chat-pending-file]').count(),2);
+        const restored=await page.evaluate(async session=>(await import('/src/lib/composer-files.ts')).composerFiles(session).snapshot().map(item=>item.path),session);
+        assert.deepEqual(restored,['/fixture/inbox/tiny.png','/fixture/inbox/notes.txt'],'Cancellation restores both landed paths in the real session draft');
         assert.equal(await page.locator('[data-chat-doc]').count(), 1);
         const reused = await page.evaluate(() => [...document.querySelectorAll('[data-chat-pending-file] img')].some(img => window.__cancelWire.revoked.includes(img.src)));
         assert.equal(reused, false, 'restored thumbnails never reuse revoked object URLs');
