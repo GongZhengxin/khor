@@ -3397,6 +3397,7 @@ mod tests {
         Option<Doing>,
         Option<ObservationRef>,
         bool,
+        Vec<activity::ActivityEvent>,
     );
 
     #[test]
@@ -3427,7 +3428,7 @@ mod tests {
         let bytes = rmp_serde::to_vec(&session).unwrap();
         // Execution remains in its original position; observation identity and
         // input capability are separate tail fields.
-        assert_eq!(&bytes[..3], &[0xdc, 0, 17]);
+        assert_eq!(&bytes[..3], &[0xdc, 0, 18]);
         let SessionFrame(
             id,
             kind,
@@ -3446,6 +3447,7 @@ mod tests {
             _doing,
             observation,
             can_control,
+            activity,
         ) = rmp_serde::from_slice(&bytes).unwrap();
         // Field by field: the tuple deserialization pins field order.
         // Deserializing into the tuple above is what pins the *order* —
@@ -3467,6 +3469,7 @@ mod tests {
         assert_eq!(mux, session.mux);
         assert_eq!(observation, session.observation);
         assert_eq!(can_control, session.can_control);
+        assert_eq!(activity, session.activity);
     }
 
     /// **Over the wire from an older peer**: a machine that predates
