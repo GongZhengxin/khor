@@ -11,15 +11,16 @@
 处置过程中又暴露并修掉两处与 Windows 相关的问题：提交页测试耦合了仓库 HEAD 的文件大小，
 transcript 文件身份在 Windows 上用创建时间（NTFS 隧道会让重建文件沿用旧时间）。
 
-**验收：PASS**（`full` 权限、工作区外构建；一条顺序敏感 flake 隔离后通过）
+**验收：PASS**（`full` 权限、工作区外构建，ConPTY 修复后的一次全量）
 
 ```text
 cargo test --locked -p khor-node --lib -- --test-threads=1
-1060 passed; 1 failed; 14 ignored
-# 唯一失败 khor_agent::accounts::tests::cancelling_account_registration_while_root_is_busy_does_not_publish_account
-# 单独 --exact 运行 → 1 passed（与 W1 的 fanout flake 同类）
+1061 passed; 0 failed; 14 ignored
 cargo fmt --check -p khor-node        exit 0
 ```
+
+（此前一次全量里 `khor_agent::accounts::tests::cancelling_account_registration_while_root_is_busy_does_not_publish_account`
+在串行满载时红过一次，单独 `--exact` 通过；最后一次全量未复现，与 W1 的 fanout flake 同类。）
 
 ## 2. 逐条处置
 
