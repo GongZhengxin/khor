@@ -43,3 +43,7 @@ __pycache__/
 /.cache/
 /.probe/
 
+
+# Session-local executor ledger and scratch.
+/.superpowers/
+
