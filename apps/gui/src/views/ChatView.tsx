@@ -1,4 +1,5 @@
 import {pathAttachment,type Attachment} from "@/lib/term-attachments";
+import {agentPresentation} from '@/lib/acp-session';
 import {AttachmentPicker,AttachmentDestination} from "@/views/TermFiles";
 import { raiseKeyboard } from "@/lib/soft-keyboard";
 import {ScrollToBottom} from '@/components/ScrollToBottom';
@@ -384,7 +385,7 @@ function agentName(category: string | null, said: string | null): string | null 
     case "cursor":
       return gui.vendor_cursor;
     default:
-      return said;
+      return said?agentPresentation(said).name:category?agentPresentation(category).name:null;
   }
 }
 

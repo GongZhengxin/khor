@@ -74,8 +74,9 @@ async function inspect(browser, scene, size, data = {}) {
     await page.screenshot({path:path.join(report,name+'-child-conversation.png')});
     const id=await reader.getAttribute('data-child-session-ref');
     if(size.width>=500){
-      const childTab=page.locator('[data-session-tabs] [data-tab]').filter({has:page.locator('[data-tab-open]').filter({hasText:'codex-acp'})});
+      const childTab=page.locator('[data-session-tabs] [data-tab]').filter({has:page.locator(`[data-tab-open="${id}"]`)});
       assert.equal(await childTab.count(),1,'The delegated conversation participates in the ordinary session tab strip');
+      assert.equal((await childTab.locator('[data-tab-open]').innerText()).trim(),'Codex','Child tabs use the same protocol-free agent name');
       await page.locator('[data-session-tabs] [data-tab-open="wide/all"]').click();
       await page.locator('[data-machine-chat-scroll]:visible').waitFor();
       await page.locator('[data-child-task-row]').first().click();
@@ -469,7 +470,18 @@ let browser;
 const results = [];
 try {
   await waitForPreview();
-  if (process.env.LAB_CHECKS === 'attachment-draft') {
+  if (process.env.LAB_CHECKS === 'agent-names') {
+    for(const engine of ['chromium','webkit']){
+      browser=await (engine==='webkit'?webkit:chromium).launch({headless:true});
+      for(const size of [{width:1280,height:900},{width:390,height:844}]){
+        results.push(await inspect(browser,'terminal',size,{items:2,setup:true,engine}));
+        await writeFile(path.join(report,'results.json'),JSON.stringify(results,null,2));
+        results.push(await inspect(browser,'list',size,{machines:3,engine}));
+        await writeFile(path.join(report,'results.json'),JSON.stringify(results,null,2));
+      }
+      await browser.close();browser=undefined;
+    }
+  } else if (process.env.LAB_CHECKS === 'attachment-draft') {
     for(const engine of ['chromium','webkit']){
       browser=await (engine==='webkit'?webkit:chromium).launch({headless:engine!=='webkit'||process.env.QUALITY_HEADLESS!=='0'});
       for(const width of [1280,412,390,320]){results.push(await checkAttachmentDraft(browser,{port,report,engine,width}));await writeFile(path.join(report,'results.json'),JSON.stringify(results,null,2));}

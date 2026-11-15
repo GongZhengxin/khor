@@ -158,7 +158,7 @@ try{
     assert.match(await directory().locator('[data-files-search] input').inputValue(),/nested/);
     assert.equal(await panel().locator('[data-files-selected]').count(),1,'Browsing preserves the folder as one selected attachment');
     assert.equal(sent.length,before);assert.equal(staged.length,stagedBefore,'Folder browsing and previewing never stages');
-    await directory().locator('[data-up]').click();assert.equal(await directory().locator('[data-files-name="nested"]').count(),1);
+    await directory().locator('[data-up]').click();await directory().locator('[data-files-name="nested"]').waitFor();
     await directory().locator('[data-files-directory-back]').click();await card.locator('[data-files-select]').click();await card.waitFor({state:'detached'});
     note('local-folder-preview',{actualBytes:true,selectionPreserved:true,noEagerUpload:true});
   });

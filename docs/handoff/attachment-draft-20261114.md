@@ -1,3 +1,11 @@
+## 本轮收尾与智能体显示规则（2026-11-16）
+
+本段为当前收尾行为；下文保留的阶段记录只描述各次迭代。Khor 对话已复用 Terminal/ACP 的附件选择、FilesPane 目录、FilePage 预览和默认 khor-drop 落地，发送前保留草稿，失败可重试；执行机器由后端会话所有者确定。手机内容浮层为抓手保留完整点击区，目录第一行可正常返回。56项取消、44项恢复和6项真实私有PTY附件检查已通过，选择期间PTY resize为0；这些不是物理iPhone键盘或系统选择器验收。
+
+用户本轮确认收拢重复 GUI 启动项：Codex、Claude 各一个，其他智能体显示名不带ACP后缀，终端入口继续明确标识终端。注册/路由ID不改，旧会话及已记住的接入方式保留，最近使用顺序按同一显示身份归并；子会话树与标签页保持一致。详情见 [接入调查](agent-gui-adapters-20261114.md)。
+
+最终构建、发布和设备验收以实际 Release、TestFlight 构建及 `/Volumes/disk0/Khor/evidence/attachment-draft-20261114/STATE.md` 的精确源码/证据记录为准。Lab通过不等于物理设备已验收。
+
 # Accepted — attachment interaction (2026-11-14)
 
 User approved the current Lab layout and interaction (「可以，定了吧」). Keep this as the chosen attachment direction. This accepts the Lab design; native integration, Khor/MachineChat adapter alignment, physical-device acceptance and main/release remain outstanding as recorded below. Do not reopen the design or infer ship authorization from this acceptance.
