@@ -155,8 +155,8 @@ manifest 特征不符、路径被占用等场景；每条断言“未发生删�
 
 1. agent 用 `lab clean --inventory F:\khor-*` 生成 manifest 并逐条核对（只读）。
 2. **保留**：`khor-toolchain`（rustup/pnpm/nasm 工具链）、`khor-w1-evidence`（证据）。
-3. **搬进工作区**：`khor-target-w2` 用同盘 rename 移到
-   `<worktree>\.cache\target-w2`，保留 26.5 GiB 暖缓存，之后 `CARGO_TARGET_DIR` 指向它（零重建）。
+3. **不复用旧缓存**：`khor-target-w2` 曾尝试用同盘 rename 搬进 `.cache/target`，但实测同盘移动保留旧 ACL/完整性标签，
+   被限制的子进程既不能写也不能删该树。结论：删除旧缓存，让构建在工作区内**就地新建** `.cache/target`（实测可写）。
 4. **删除**：8 个旧 Cargo target（约 29 GiB）。
 5. **判定后删**：`khor-build`、`khor-build2`、`khor-w2-base` 三个源码检出，先确认 HEAD 已在别处
    （detached HEAD 无 upstream，只有 `.err`/lock 未跟踪文件）；确认无独有提交后随清单删除。
