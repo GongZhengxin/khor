@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
-import {checkMobileNavigation} from './navigation-checks.mjs';
 
 export async function checkAgentSetup(page,mobile,capture){
-  if(mobile)await checkMobileNavigation(page,'terminal',2,async()=>{},'create');
+  if(mobile){
+    await page.locator('[data-session-screen] > [data-session-bar] [data-deck-band]:visible').first().press('ArrowUp');
+    await page.locator('[data-tab-sheet-new]:visible').click();
+  }
   else await page.locator('[data-session-tabs] [data-tab-new]:visible').first().click();
   const body=page.locator('[data-new-session-page]:visible');await body.waitFor();
   const launch=body.locator('[data-new-session-launch] textarea');
