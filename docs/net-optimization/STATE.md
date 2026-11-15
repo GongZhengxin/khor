@@ -1,10 +1,13 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-15T18:20:39.892423+00:00。用户于2026-11-16“好 继续吧”已恢复完整目标；goal服务仍返回旧paused，已记录但不阻止本轮用户授权的实施；完整[GOAL](GOAL.md)、[PLAN](PLAN.md) N0–N5与[REQUIREMENTS](REQUIREMENTS.md)未整体完成。root串行、不派子智能体；本机source-only，重型工作在Turing/macserver/授权khor-build。用户已授权实施与验证，未授权main合并、现装App替换、发行/TestFlight或生产Relay采购部署。
+更新于 2026-11-15T19:19:01.986577+00:00。用户于2026-11-16“好 继续吧”已恢复完整目标；goal服务仍返回旧paused，已记录但不阻止本轮用户授权的实施；完整[GOAL](GOAL.md)、[PLAN](PLAN.md) N0–N5与[REQUIREMENTS](REQUIREMENTS.md)未整体完成。root串行、不派子智能体；本机source-only，重型工作在Turing/macserver/授权khor-build。用户已授权实施与验证，未授权main合并、现装App替换、发行/TestFlight或生产Relay采购部署。
 
 ## 当前执行
 
-- **本轮原版能力基线两场均已收集闭证，无在途验证**。旧控制器PID2009/session69980已结束，common ledger无pending，不重启旧campaign。已确认新产品原则并写入CONNECTION-POLICY/PLAN U22–U23；不是仅优化RTT，不恢复无条件Direct硬优先。
+- **A/C原版对照与B策略层隔离均已闭，无在途验证**：[DIRECT-FALLBACK](DIRECT-FALLBACK.md)。A/C190352Z-1ac4a84d原101/196.84秒/178报告：A静默UDP恢复15292.660/15296.229ms，原2s参考失败但最终同连接Relay成功；C601.735/605.340ms过；真实Relay见证约108ms、实际UDP丢包与同连接/原生清理全核。B191518Z-3a4d5411为0/64.22秒/95报告/5case过：603.066/605.311ms，在实际关闭root khor_policy、保持C完整锁/非根features与唯一依赖边严格相同后仍约0.6秒。B保留vendor，**不是原版**；说明该快速接管不依赖RoadOrder/额外transport setter，不证明所有vendor或某一补丁必要，也不能据此删掉U1/peer relay/BBR负载能力。A原失败与所有准备失败保持，15个成功完成的诊断case不等于全App/SLO。
+- **当前下一步**：按DIRECT-FALLBACK拆vendor的存活/迁移/在飞重排与质量优化/观测，在相同夹具和依赖闭包上找保留快速接管的最小组合，再跑各专属合同。原A/C10与B5已闭证不重复。当前测试sourcebf4ef784/tree610ebd48（`khor-net-direct-fallback-v1` / `experiment/net-direct-fallback-v1`）只加夹具，产品候选6f7bbf43仍clean。不要直接把B默认tier推广产品，因为它仍会违背U1明显快Relay应胜出的合同。
+
+- **此前原版能力基线两场均已收集闭证**。旧控制器PID2009/session69980已结束，common ledger无pending，不重启旧campaign。已确认新产品原则并写入CONNECTION-POLICY/PLAN U22–U23；不是仅优化RTT，不恢复无条件Direct硬优先。
 - **原版库能力已实际执行**：[UPSTREAM-BASELINE](UPSTREAM-BASELINE.md)记录准确source84fb4032/tree74a7fe87、85官方文件、Noq1.4.0纯registry闭包。首轮180649Z-ae2a9603原101/82.20秒，原版编译20.47秒，5个Relay合同过、11个nft0.9.3建NAT失败；原失败保留。隔离工具nft1.1.3在原5.15内核按原规则校准后，补测181626Z-dafd3754原control1/66.74秒、11个native均0且原footer全1pass/0fail；第10项因后台trace插入footer导致观察器false，独立data-only已核，原driver1/rowfalse不改。0新编译/不重复5pass；common pending全闭。不称一次16全绿，不接受完整Node/手机/SLO。
 - **静态职责审查已落盘**：[UPSTREAM-CONSUMERS](UPSTREAM-CONSUMERS.md)给出官方接口已接入、vendor250ms选路/Moving与应用退役/请求活性三层，以及10个原版没有的方法及消费位置。下一步先做运行中Direct-only静默而Relay完好时的同模型原版/候选对照；当前16官方合同不直接覆盖该期限，不能先清空custom或加新的置信逻辑。
 - **完整性能汇总已生成**E/pull-coexistence-comparison-verification-v1.json：六业务块/12case/8640样本/24post-health/12完整文件齐全，原数值门未过。C low bulk目录p95 84790μs（S244009），high614406μs（S1292588），high原绝对门592518.1μs仍失败；文件中位S/C low7.033/7.071、high25.572/25.342Mbit/s。共享S第五块high终端1timeout＋63blocked，不能计算完整成功360人口的TTY比较门；其余功能/身份/清理按原proof保留。
@@ -42,7 +45,7 @@ E=`/Volumes/disk0/Khor/evidence/net`；原receipt、远端execution及E/source-r
 
 ## 接下来的顺序与完整范围
 
-1. 上游16合同分两工具环境已收齐，按UPSTREAM-BASELINE保留原失败与解析误判，不重跑已闭证组。按UPSTREAM-CONSUMERS先固定并执行Direct-only静默/Relay完好时的原版与候选同模型对照，再按API消费闭包消减定制；不能将带本地Moving的default-selector对照称原版iroh，不能静默删除旧行为合同。再按新稳定性原则诊断已完成cohort：保留原完整汇总，核对失败终端与路径选择/ACK/队列事实，先冻结针对性合同和假设，再实现有依据的最小修复。已闭证317＋压力1/Mac314/两轮Release/布局与旧三臂screen不重做。
+1. 上游16合同及A/C10、B5诊断已收齐并闭证，保留全部原失败与解析/准备拒绝，不重跑已闭证组。按DIRECT-FALLBACK继续vendor存活/迁移子集隔离，按API消费闭包与专属合同消减定制；不能将带本地Moving的default-selector对照称原版iroh，不能静默删除旧行为合同。再按新稳定性原则诊断已完成cohort：保留原完整汇总，核对失败终端与路径选择/ACK/队列事实，先冻结针对性合同和假设，再实现有依据的最小修复。已闭证317＋压力1/Mac314/两轮Release/布局与旧三臂screen不重做。
 2. 所有正常迁移/回迁更稳与退化接管更快的改变，须保持明显更好Relay可胜、失败/换网/只剩一个middle可救通及原期限/取消/写边界。体验接近时Direct优选与波动/样本置信判据需要准确源验证，不能把新讨论直接当已证明阈值。N3原相对/绝对门、完整人口、公平/成本/全负载，以及最终公开main同期回归继续必需。
 3. N1置信/多middle/切换和成本、N2完整期限/取消/迟到Endpoint与policy队列变化/写入0-RTT/NET-16负向、N4冷hint/新peer发布/Direct UDP突断/peer relay自身移动/休眠/Wi-Fi蜂窝/Relay故障域与容量/NAT64，以及N5全部60项custom退出审计与最终同源Quality/Mac/phone/报告继续按REQUIREMENTS完成。手机在具体候选可测时重新安排。不得把“Mac＋性能＋手机”缩成全部剩余范围。
 
