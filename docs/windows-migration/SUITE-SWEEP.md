@@ -36,6 +36,17 @@
 | `cwd_pin` | `#[cfg(unix)]` | Windows 不能删除/重命名进程的当前目录，用例前提不存在 |
 | `day_record` | 整文件 `#[cfg(unix)]` | 三个用例都要 `Node::import` 的“已验证原生身份”，本夹具没有 agent home；strip 逻辑由 `khor_node::day` 单测覆盖 |
 | `recognition_wire` | 更新断言后通过 | 用例还在期望 `Enable(Claude)` 变成 `configured`；产品在上游 9e3f33d1 已退役 Claude 状态钩子，`entry()` 恒为 `automatic`、enable/disable 是 no-op。属测试滞后，不是产品缺陷 |
+| `no_host` | 整文件 `#[cfg(unix)]` | 夹具是一个 `#!/bin/sh` 假 tmux，并用 `std::os::unix`；Windows 上**编译不过**（E0433/E0599），tmux 也不存在 |
+
+## 3. 编译门
+
+```text
+cargo test --locked -p khor-node --no-run     exit 0   # 全部 node 测试目标可编译
+cargo test --locked -p khor-cli  --no-run     exit 0   # 全部 CLI 测试目标可编译
+cargo fmt --check -p khor-node / -p khor-cli  exit 0
+```
+
+（`no_host` 是这轮补掉的编译断点；`relays` 中途出现过一次 E0786 无效元数据，是之前被 kill 的 cargo 留下的陈旧产物，重试即通过。）
 
 被 gate 的条目都在文件里写了原因，不当作通过。
 
