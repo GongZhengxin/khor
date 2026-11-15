@@ -1,11 +1,13 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-15T17:29:14.455082+00:00。活动目标“好 完成完整目标”已由用户暂停（2026-11-16 Asia/Singapore），goal服务已确认paused；完整[GOAL](GOAL.md)、[PLAN](PLAN.md) N0–N5与[REQUIREMENTS](REQUIREMENTS.md)未整体完成。root串行、不派子智能体；本机source-only，重型工作在Turing/macserver/授权khor-build。用户已授权实施与验证，未授权main合并、现装App替换、发行/TestFlight或生产Relay采购部署。
+更新于 2026-11-15T17:57:02.318695+00:00。用户于2026-11-16“好 继续吧”已恢复完整目标；goal服务仍返回旧paused，已记录但不阻止本轮用户授权的实施；完整[GOAL](GOAL.md)、[PLAN](PLAN.md) N0–N5与[REQUIREMENTS](REQUIREMENTS.md)未整体完成。root串行、不派子智能体；本机source-only，重型工作在Turing/macserver/授权khor-build。用户已授权实施与验证，未授权main合并、现装App替换、发行/TestFlight或生产Relay采购部署。
 
 ## 当前执行
 
-- **已暂停，无在途任务**。2026-11-15T17:27Z核对goal状态paused；本地串行控制器PID2009已退出，phase finished。原campaign于2026-11-14T13:00:52Z完成全部六个业务块（另有一个校准块），全部已collect/验identity/owner/记录proof；common ledger无pending。不要因下方历史执行说明而重新启动控制器或测试。
-- **整体验收仍未通过**。固定C组high bulk/directory完整360样本中21个超过原592518.1μs绝对上限，超过nearest-rank p95允许的18个，原性能门失败；S组第五业务块turing-20261114T125212Z-1290b1d0有原生功能检查失败。全部原结果及完整分母保留，不能把campaign phase completed当作通过。用户暂停期间不继续实现、汇总、构建或验证；恢复后先核本状态、原progress/proofs和当前实际源码。
+- **按用户继续指令恢复，无在途验证**。旧控制器PID2009/session69980已结束，common ledger无pending，不重启旧campaign。已确认新产品原则并写入CONNECTION-POLICY/PLAN U22–U23；不是仅优化RTT，不恢复无条件Direct硬优先。
+- **完整性能汇总已生成**E/pull-coexistence-comparison-verification-v1.json：六业务块/12case/8640样本/24post-health/12完整文件齐全，原数值门未过。C low bulk目录p95 84790μs（S244009），high614406μs（S1292588），high原绝对门592518.1μs仍失败；文件中位S/C low7.033/7.071、high25.572/25.342Mbit/s。共享S第五块high终端1timeout＋63blocked，不能计算完整成功360人口的TTY比较门；其余功能/身份/清理按原proof保留。
+- **最新用户纠偏与下一步**：用户指出iroh已有Relay，先按[UPSTREAM-BOUNDARY](UPSTREAM-BOUNDARY.md)核对原版能力/当前接线/定制退出；原版1.4.1已核Direct-primary/Relay-backup及滞回，候选也早已使用path_selector/add_custom_transport，不能冒称尚未接入。v5共60项、56待审/1上游替换/3指定ablation保留，不代表60项必需。暂停直接新增波动确认补丁，本轮产品0改动/0编译/0新原生样本。
+- **当前诊断**：共享失败轮y侧同wire有四次Direct/Relay往返选择；回调质量快照Direct约317/328ms与Relay约301ms。当前只能证明存在小幅质量差与切换，不能把终端超时唯一归因于此；接着核对选择器/确认、时间线与实际整形丢包。图谱局部且stale，semantic查询未覆盖production，允许定向源码fallback。旧复验/数值门不改，不重跑完整SCCSSC。
 - **性能冻结协议**E/pull-coexistence-comparison-plan-v1.json，SHA2561d0e1ddf5a74f9938574e51fa0b77fac8ed31644f0019b4d704b63eecc5e857c；control a76425ab3228b1b69ad302f3164e403549f8763f，task net-node，准确source6f7bbf43/treeaddd2218/CLI7454caa6。先唯一同源5case校准，再SCCSSC六块各low/high共12业务case/8640样本/24post-health。源/ELF/原数值门/CPU≥80%idle/PSI≤5/同UID无Cargo/全部owner门保持。数据适配器SHA固定；不启lifecycle日志、不编译、不替换失败；每块collect→identity→行为→recorder后才派下一块，C硬业务或原绝对门固定360人口不可恢复时停止未来块。控制器观察失败只重读同handle，未知stage/launch结果停控制器并保留intent，不能再派。
 - **同源校准123130Z-493d2d67已闭：原退出1、4原生case通过/1冷TCP参考失败，原分层model准入通过**。17files/identity/owner；两个真实ownership/取消守卫、low TCP、独立UDP容量通过；high TCP内容/68echo/双向payload/server/几何及270–420ms RTT通过，而冷TCP平均率未达原40–60Mbit门，原Rust/native失败保留，绝不写成5/5。复用早已版本化MODEL-DECISION原分层谓词；E/pull-coexistence-comparison-design-v2.json在新校准/计时前明确继承，无原数值或几何门变化。当前S/C只改文件连接模式，校准不重复分模式。
 - **布局v2确认122458Z-df120c3c已闭：0/192.624163秒**，16files/identity/owner、720/720、192MiB完整、2真实health、全部1130客户端回复及对应server回复、1128原RPC精确配对；连续缓存前缀2块、唯一extra后缀766块，目录Main/独立Tunnel与最终双向健康均成立。E/run/pull-coexistence-layout-verification-v2.json；原v1布局预测拒绝保留。三场布局均仅诊断，不混入性能人口。
@@ -36,10 +38,8 @@ E=`/Volumes/disk0/Khor/evidence/net`；原receipt、远端execution及E/source-r
 
 ## 接下来的顺序与完整范围
 
-**以下为恢复后的工作队列；当前用户已暂停，不执行。** 上述campaign已terminal，原session69980/PID2009均结束；第1项旧“正在执行”为历史调度约定，只能恢复证据，不能重派。
-
-1. 当前root串行campaign正在执行。先看控制器实际liveness及实时pending；session69980存活时不手动推进同campaign。已过shared/v2 separate布局、两轮普通Release、317标准＋压力1、Mac314及旧三臂screen不重做。控制器terminal后查campaign phase与全部proof；stopped保持未执行人口，未知结果恢复原receipt。
-2. campaign terminal后只做stdlib数据审计E/ops/summarize-pull-coexistence-comparison-v1.py，输出E/pull-coexistence-comparison-verification-v1.json（尚未生成）。S/C每cell/arm/profile360人口、原相对p95×1.10＋20000μs/文件率×0.90与全部原绝对参考门保持；任何未齐/失败只报条件分布，不晋升。若失败按真实业务/调度/选路事实定位，在新版本修复，不改原门或重复已停cohort。若设计门过，继续1/3/5 CPU/RSS/字节/唤醒、小文件首内容、同步/预览/SSH/hop共存及手机成本。**本轮同ELF设计选择不替代最终集成源对公开main的同期回归。**
+1. 先执行UPSTREAM-BOUNDARY原版能力/应用接线/依赖闭包审查；不能将带本地Moving的default-selector对照称原版iroh，不能静默删除旧行为合同。再按新稳定性原则诊断已完成cohort：保留原完整汇总，核对失败终端与路径选择/ACK/队列事实，先冻结针对性合同和假设，再实现有依据的最小修复。已闭证317＋压力1/Mac314/两轮Release/布局与旧三臂screen不重做。
+2. 所有正常迁移/回迁更稳与退化接管更快的改变，须保持明显更好Relay可胜、失败/换网/只剩一个middle可救通及原期限/取消/写边界。体验接近时Direct优选与波动/样本置信判据需要准确源验证，不能把新讨论直接当已证明阈值。N3原相对/绝对门、完整人口、公平/成本/全负载，以及最终公开main同期回归继续必需。
 3. N1置信/多middle/切换和成本、N2完整期限/取消/迟到Endpoint与policy队列变化/写入0-RTT/NET-16负向、N4冷hint/新peer发布/Direct UDP突断/peer relay自身移动/休眠/Wi-Fi蜂窝/Relay故障域与容量/NAT64，以及N5全部60项custom退出审计与最终同源Quality/Mac/phone/报告继续按REQUIREMENTS完成。手机在具体候选可测时重新安排。不得把“Mac＋性能＋手机”缩成全部剩余范围。
 
 ## 不可误用的既有证据与边界
@@ -50,3 +50,5 @@ E=`/Volumes/disk0/Khor/evidence/net`；原receipt、远端execution及E/source-r
 - MacLab与Turing同LAN，macserver另网络。iPhone localhost已配对但尚未接受本候选换网/能耗。khor-build公开已获明确授权，不等于App发行/main合并。LIVE23961未动。
 - Turing UID1110、原flock/磁盘/工具门；计时不与同host编译混跑。root唯一ledger写者；stage一次、launch一次；collect原返回码后核identity/owner及真实合同才闭ledger。Mac另主机可并行。
 - 旧实验worktree图谱0；新夹具commit hook自动局部35nodes/3files，但built_at仍ff3360与新HEAD不匹配，不能代表新源全图。缺口定向fallback，risk/testgap不作覆盖证据；不擅自重索引。本机不跑Cargo/Rustfmt/Node/Bun/Xcode/产品；main9a4219ffe5e3与builder checkout HEAD5d3691保持。
+
+本次恢复前STATE逐字归档[HISTORY-20261116-through-coexistence-paused](HISTORY-20261116-through-coexistence-paused.md)，SHA256 9d245d0f46434a68eef76132d8d09ceabd39b8c08ac4b35cd95735a66adfaeee；其中暂停和在途描述是历史，不用于重新调度。
