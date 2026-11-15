@@ -1,12 +1,14 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-15T17:57:02.318695+00:00。用户于2026-11-16“好 继续吧”已恢复完整目标；goal服务仍返回旧paused，已记录但不阻止本轮用户授权的实施；完整[GOAL](GOAL.md)、[PLAN](PLAN.md) N0–N5与[REQUIREMENTS](REQUIREMENTS.md)未整体完成。root串行、不派子智能体；本机source-only，重型工作在Turing/macserver/授权khor-build。用户已授权实施与验证，未授权main合并、现装App替换、发行/TestFlight或生产Relay采购部署。
+更新于 2026-11-15T18:20:39.892423+00:00。用户于2026-11-16“好 继续吧”已恢复完整目标；goal服务仍返回旧paused，已记录但不阻止本轮用户授权的实施；完整[GOAL](GOAL.md)、[PLAN](PLAN.md) N0–N5与[REQUIREMENTS](REQUIREMENTS.md)未整体完成。root串行、不派子智能体；本机source-only，重型工作在Turing/macserver/授权khor-build。用户已授权实施与验证，未授权main合并、现装App替换、发行/TestFlight或生产Relay采购部署。
 
 ## 当前执行
 
-- **按用户继续指令恢复，无在途验证**。旧控制器PID2009/session69980已结束，common ledger无pending，不重启旧campaign。已确认新产品原则并写入CONNECTION-POLICY/PLAN U22–U23；不是仅优化RTT，不恢复无条件Direct硬优先。
+- **本轮原版能力基线两场均已收集闭证，无在途验证**。旧控制器PID2009/session69980已结束，common ledger无pending，不重启旧campaign。已确认新产品原则并写入CONNECTION-POLICY/PLAN U22–U23；不是仅优化RTT，不恢复无条件Direct硬优先。
+- **原版库能力已实际执行**：[UPSTREAM-BASELINE](UPSTREAM-BASELINE.md)记录准确source84fb4032/tree74a7fe87、85官方文件、Noq1.4.0纯registry闭包。首轮180649Z-ae2a9603原101/82.20秒，原版编译20.47秒，5个Relay合同过、11个nft0.9.3建NAT失败；原失败保留。隔离工具nft1.1.3在原5.15内核按原规则校准后，补测181626Z-dafd3754原control1/66.74秒、11个native均0且原footer全1pass/0fail；第10项因后台trace插入footer导致观察器false，独立data-only已核，原driver1/rowfalse不改。0新编译/不重复5pass；common pending全闭。不称一次16全绿，不接受完整Node/手机/SLO。
+- **静态职责审查已落盘**：[UPSTREAM-CONSUMERS](UPSTREAM-CONSUMERS.md)给出官方接口已接入、vendor250ms选路/Moving与应用退役/请求活性三层，以及10个原版没有的方法及消费位置。下一步先做运行中Direct-only静默而Relay完好时的同模型原版/候选对照；当前16官方合同不直接覆盖该期限，不能先清空custom或加新的置信逻辑。
 - **完整性能汇总已生成**E/pull-coexistence-comparison-verification-v1.json：六业务块/12case/8640样本/24post-health/12完整文件齐全，原数值门未过。C low bulk目录p95 84790μs（S244009），high614406μs（S1292588），high原绝对门592518.1μs仍失败；文件中位S/C low7.033/7.071、high25.572/25.342Mbit/s。共享S第五块high终端1timeout＋63blocked，不能计算完整成功360人口的TTY比较门；其余功能/身份/清理按原proof保留。
-- **最新用户纠偏与下一步**：用户指出iroh已有Relay，先按[UPSTREAM-BOUNDARY](UPSTREAM-BOUNDARY.md)核对原版能力/当前接线/定制退出；原版1.4.1已核Direct-primary/Relay-backup及滞回，候选也早已使用path_selector/add_custom_transport，不能冒称尚未接入。v5共60项、56待审/1上游替换/3指定ablation保留，不代表60项必需。暂停直接新增波动确认补丁，本轮产品0改动/0编译/0新原生样本。
+- **最新用户纠偏与下一步**：用户指出iroh已有Relay，先按[UPSTREAM-BOUNDARY](UPSTREAM-BOUNDARY.md)核对原版能力/当前接线/定制退出；原版1.4.1已核Direct-primary/Relay-backup及滞回，候选也早已使用path_selector/add_custom_transport，不能冒称尚未接入。v5共60项、56待审/1上游替换/3指定ablation保留，不代表60项必需。暂停直接新增波动确认补丁；此前静态核对后，本轮新增上述原版库诊断，产品候选0改动。
 - **当前诊断**：共享失败轮y侧同wire有四次Direct/Relay往返选择；回调质量快照Direct约317/328ms与Relay约301ms。当前只能证明存在小幅质量差与切换，不能把终端超时唯一归因于此；接着核对选择器/确认、时间线与实际整形丢包。图谱局部且stale，semantic查询未覆盖production，允许定向源码fallback。旧复验/数值门不改，不重跑完整SCCSSC。
 - **性能冻结协议**E/pull-coexistence-comparison-plan-v1.json，SHA2561d0e1ddf5a74f9938574e51fa0b77fac8ed31644f0019b4d704b63eecc5e857c；control a76425ab3228b1b69ad302f3164e403549f8763f，task net-node，准确source6f7bbf43/treeaddd2218/CLI7454caa6。先唯一同源5case校准，再SCCSSC六块各low/high共12业务case/8640样本/24post-health。源/ELF/原数值门/CPU≥80%idle/PSI≤5/同UID无Cargo/全部owner门保持。数据适配器SHA固定；不启lifecycle日志、不编译、不替换失败；每块collect→identity→行为→recorder后才派下一块，C硬业务或原绝对门固定360人口不可恢复时停止未来块。控制器观察失败只重读同handle，未知stage/launch结果停控制器并保留intent，不能再派。
 - **同源校准123130Z-493d2d67已闭：原退出1、4原生case通过/1冷TCP参考失败，原分层model准入通过**。17files/identity/owner；两个真实ownership/取消守卫、low TCP、独立UDP容量通过；high TCP内容/68echo/双向payload/server/几何及270–420ms RTT通过，而冷TCP平均率未达原40–60Mbit门，原Rust/native失败保留，绝不写成5/5。复用早已版本化MODEL-DECISION原分层谓词；E/pull-coexistence-comparison-design-v2.json在新校准/计时前明确继承，无原数值或几何门变化。当前S/C只改文件连接模式，校准不重复分模式。
@@ -16,6 +18,8 @@
 - **当前产品普通Release已闭113837Z-6286623e**：0/560.512640秒，sourceff3360/tree4f0e7db7，23files/identity/owner/原fmt/完整依赖闭包/fresh CLI。CLI SHA2567454caa6b7347669b322c64fafa16ac2ae7c4eb86e699f5b3496578552847845；netlab c4d3da80b62be6933fe163bc173cd4b6713232e873c6a3d1bbbe65e5072b092b。E/run/pull-pool-release-compile-verification-v1.json。
 - **新夹具普通Release已闭115519Z-81fbb62f**：0/242.800272秒，source6f7bbf43/treeaddd2218，仅workload.rs一个测试文件变化；CLI逐字仍7454caa6，netlab6ec6753b108877bf516b69a6451295fd11a07136cb1a9e0b7a7f2fb200040eed。E/run/pull-coexistence-compile-verification-v1.json。原标准317＋压力1及Mac314对相同产品继续适用，不因此重跑原组。
 - **同源Mac原生回归GH43590483138/job132433946148已闭：314pass/0fail/原ignored1**（[Actions](https://github.com/colehank/khor-build/actions/runs/43590483138)）。准确source/control与11个control blobs、原12组每个test名、32个明确separate合同、14contact、4个原Linux-only cfg排除均核对；artifact14112262250/38847B/SHA2566c1cc072e169bc19954af8a25055db37645347aec4ea1afe380d767d422f2c56及CRC已保留。E/pull-pool-mac-verification-v1.json；独立Mac pending已闭、common ledger只追加completed，Turing pending未改。Rust1.95/arm64/jobs2/原admission门，未安装或发行App。原iPhone就绪窗口已过，不自动采样。
+
+当前原版能力基线worktree **/Volumes/disk0/Khor/worktrees/current/khor-net-upstream-baseline-v1** / **experiment/net-upstream-baseline-v1**，HEAD **84fb4032a1cda892beafe4e5358d390bba41c891**，clean；仅用于原版库，不用于构建完整Khor。隔离nft工具位于Turing `/tmp/khor-netlab-feat-net-1110/tools/nft113-trixie-v3`，owner/file hashes见E/upstream-native-nft113-tools-verified-v3.json；不改全局工具。
 
 当前新夹具worktree **/Volumes/disk0/Khor/worktrees/current/khor-net-pull-coexistence-v1** / **experiment/net-pull-coexistence-v1**，clean；HEAD **6f7bbf43ca2eafdb2f2f4a02d33872fc88469714** / tree **addd2218068ce891bc8098c194ba59163cc52fd3** / snapshot **8c62bdd17b27ab453c76e4c42952e0f658c1ecd1**；E/pull-coexistence-source-v1.json。产品基准仍ff3360cd6af3629c869e6e47028636e2ee0d46c3/tree4f0e7db7（压力合同源），产品修复29b05533/treee71011ed。新源只加2个独立命名的speed-first ignored workload cases：原几何/字节/周期/调用期限/720样本保持；新case起终允许健康Direct/Relay/SSH/Forwarded，终端关闭后双向实际目录验证完整文件，两端最终Link live/no-down。原三个fixed-Direct case入口/条件及旧screen失败保留。默认仍shared，separate opt-in；未并入canonical feat/net或main。
 
@@ -38,7 +42,7 @@ E=`/Volumes/disk0/Khor/evidence/net`；原receipt、远端execution及E/source-r
 
 ## 接下来的顺序与完整范围
 
-1. 先执行UPSTREAM-BOUNDARY原版能力/应用接线/依赖闭包审查；不能将带本地Moving的default-selector对照称原版iroh，不能静默删除旧行为合同。再按新稳定性原则诊断已完成cohort：保留原完整汇总，核对失败终端与路径选择/ACK/队列事实，先冻结针对性合同和假设，再实现有依据的最小修复。已闭证317＋压力1/Mac314/两轮Release/布局与旧三臂screen不重做。
+1. 上游16合同分两工具环境已收齐，按UPSTREAM-BASELINE保留原失败与解析误判，不重跑已闭证组。按UPSTREAM-CONSUMERS先固定并执行Direct-only静默/Relay完好时的原版与候选同模型对照，再按API消费闭包消减定制；不能将带本地Moving的default-selector对照称原版iroh，不能静默删除旧行为合同。再按新稳定性原则诊断已完成cohort：保留原完整汇总，核对失败终端与路径选择/ACK/队列事实，先冻结针对性合同和假设，再实现有依据的最小修复。已闭证317＋压力1/Mac314/两轮Release/布局与旧三臂screen不重做。
 2. 所有正常迁移/回迁更稳与退化接管更快的改变，须保持明显更好Relay可胜、失败/换网/只剩一个middle可救通及原期限/取消/写边界。体验接近时Direct优选与波动/样本置信判据需要准确源验证，不能把新讨论直接当已证明阈值。N3原相对/绝对门、完整人口、公平/成本/全负载，以及最终公开main同期回归继续必需。
 3. N1置信/多middle/切换和成本、N2完整期限/取消/迟到Endpoint与policy队列变化/写入0-RTT/NET-16负向、N4冷hint/新peer发布/Direct UDP突断/peer relay自身移动/休眠/Wi-Fi蜂窝/Relay故障域与容量/NAT64，以及N5全部60项custom退出审计与最终同源Quality/Mac/phone/报告继续按REQUIREMENTS完成。手机在具体候选可测时重新安排。不得把“Mac＋性能＋手机”缩成全部剩余范围。
 
