@@ -45,7 +45,7 @@
 | P4 | 进程 | 父退出后清理（`khor quit`） | `cargo test -p khor-cli --test quit` | **PASS**（16.1s） |
 | T1 | 终端 | CLI 能起一个会话 | `khor help` | **PASS** |
 | T1–T4 | 终端 | ConPTY 启动 / 回显 / 尺寸 / 关闭 | `cargo test -p khor-cli --test console` | **PASS**（9.9s） |
-| T5 | 终端 | attach 到已存在终端 | `cargo test -p khor-cli --test attach_version` | **NOT_TESTED**：`khor open -d -- cmd.exe` 已能起宿主（2026-11-15 手工验证，退出码 0、打印 `shell/<id>`），但两条 attach 用例越过时限仍阻塞。另两条独立探针同样阻塞（宿主 `last.txt` 永远为空；直接 `portable-pty` 读 `cmd /c echo` 15s 无数据且 `wait()` 不返回），说明是该会话环境的 ConPTY 输出路径问题，留 W5 排查 |
+| T5 | 终端 | attach 到已存在终端 | `cargo test -p khor-cli --test attach_version` | **NOT_TESTED**：`khor open -d -- cmd.exe` 已能起宿主；ConPTY 输出问题已修（`vendor/portable-pty`，见 [W5-GUI](W5-GUI.md) §4.1），但这两条用例仍越过时限阻塞，原因与读取重复无关，待查 |
 | F1 | 文件 | 原子替换 / 句柄语义 | `cargo test -p khor-node --lib session_content::journal::` | **PASS**（4.9s） |
 | F2 | 文件 | 只读表：结构化报错而非 panic | `tabs::tests::a_read_only_table_reports_an_error_instead_of_panicking` | **PASS** |
 | F3 | 文件 | >260 字符路径仍能读写 | `tabs::tests::a_table_beyond_max_path_still_opens` | **PASS** |

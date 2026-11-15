@@ -23,23 +23,24 @@ cargo test --locked -p khor-node --test <target> -- --test-threads=1
 | --- | --- |
 | `pairing`（邀请/加入、双方表、双向 chat、第三台加入、并发配对、过期清扫） | **PASS 6/6** |
 | `open_from_phone`（从手机侧打开会话） | **PASS 1/1**（60.7s） |
-| `resume`（暂停/恢复后对端可达、耳朵保留、回答顺序） | **PASS 6/6** |
+| `resume`（暂停/恢复后对端可达、耳朵保留、远端终端重连后 replay 带上暂停期间内容） | **PASS 7/7** |
 | `machine_pause` / `peer_pause`（整机与对端暂停） | **PASS 各 1/1** |
 | `takeover_safety`（接管安全） | **PASS 1/1** |
 | `sync_doc_isolation`（文档同步隔离） | **PASS 5/5**（1 ignored） |
 | `transfer`（跨设备传输） | **PASS 4/4** |
 
-合计 **25 项通过，0 失败**（其中 `pairing` 的两 node 是真的 TCP 配对，不是 mock）。
+合计 **26 项通过，0 失败**（其中 `pairing` 的两 node 是真的 TCP 配对，不是 mock）。
+
+> 2026-11-16 更新：远端终端重连用例在 ConPTY 修复后通过（`rejoin: caught up in 263.6ms`），已从 §4 移出。
 
 ## 4. NOT_TESTED（显式记录，不当作通过）
 
 | 用例 | 现象 | 归属 |
 | --- | --- | --- |
-| `node/resume.rs::a_far_terminal_rejoins_after_resume_and_its_replay_has_what_happened_meanwhile` | 宿主能起、attach 能连，但 replay ring 只有一段清屏与提示符，没有程序的 `sayer-up`；已改用本测试二进制自带 fixture，现象不变 | 终端/ConPTY 读取，W5 排查 |
-| `node/host_replay.rs::a_replay_trimmed_past_the_modes_still_starts_in_them` | 10,000 行 flood 经 ConPTY 在 Windows 上 22 分钟仍未完成 | 同上 |
+| `node/host_replay.rs::a_replay_trimmed_past_the_modes_still_starts_in_them` | ConPTY 会把 `ESC [ ? 1 h`（应用光标键）自己吃掉、不转发，replay 头部永远拿不到这个模式；宿主本身是跟踪它的。其余 replay 正确 | ConPTY 语义差异，W5 记录 |
 
-两条 NOT_TESTED 另有两份独立证据（2026-11-15）：宿主跑 `cmd /c echo hello-host` 后 30s 内 `last.txt` 仍不存在、`ring` 从未写入；
-直接调用 `portable-pty` 读同一个命令 15s 无输出且 `child.wait()` 不返回。因此问题在 ConPTY 输出路径，不在这两个用例的断言。
+原先的另一条（远端终端 replay）在 ConPTY 修复后通过。剩下的 host_replay 不是读取问题：
+它是 ConPTY 自身不转发 DECCKM，属于平台流翻译差异。
 | 真实双机配对 | 本机只有一台 Windows | 需第二台设备；本机已用两 node 回环覆盖协议 |
 | 远程控制与审批的真人流程 | 需要 App/GUI | W5 之后随 GUI 一起验 |
 

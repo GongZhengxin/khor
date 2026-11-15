@@ -9,7 +9,7 @@
 | --- | --- |
 | `pairing` | 6 passed |
 | `open_from_phone` | 1 passed（60.7s） |
-| `resume` | 6 passed |
+| `resume` | 7 passed（含远端终端重连 replay） |
 | `machine_pause` / `peer_pause` / `takeover_safety` | 各 1 passed |
 | `sync_doc_isolation` | 5 passed / 1 ignored |
 | `transfer` | 4 passed |
@@ -21,18 +21,19 @@
 | `broadcast` | 2 passed（68.7s） |
 | `command_ledger` | 4 passed |
 | `departed` | 1 passed |
-| `workspace_facts` | 3 passed |
+| workspace_facts | 3 passed |
+| `host_output_smoke` | 1 passed（宿主读到 PTY 输出；ConPTY 修复的回归） |
 | `recognition_wire` | 1 passed（先把断言对齐 9e3f33d1 的“Claude 状态钩子退役”） |
 
-合计 **45 项通过**（另有 2 ignored）。
+合计 **47 项通过**（另有 2 ignored）。
 
 ## 2. 本轮改掉/门掉的
 
 | 目标 | 处置 | 原因 |
 | --- | --- | --- |
 | `pairing` | 修夹具（`5dc3be49`） | 端点文件用 `pid: 1`，Windows 没有 pid 1 |
-| `resume`（rejoin 用例） | `#[cfg(unix)]`（`bcc5cafa`） | ConPTY replay 只有提示符 |
-| `host_replay` | `#[cfg(unix)]` | 10,000 行 flood 22 分钟未完成 |
+
+| `host_replay` | `#[cfg(unix)]` | ConPTY 不转发 `ESC [ ? 1 h`（DECCKM），replay 拿不到该模式；其余正确 |
 | `cwd_pin` | `#[cfg(unix)]` | Windows 不能删除/重命名进程的当前目录，用例前提不存在 |
 | `day_record` | 整文件 `#[cfg(unix)]` | 三个用例都要 `Node::import` 的“已验证原生身份”，本夹具没有 agent home；strip 逻辑由 `khor_node::day` 单测覆盖 |
 | `recognition_wire` | 更新断言后通过 | 用例还在期望 `Enable(Claude)` 变成 `configured`；产品在上游 9e3f33d1 已退役 Claude 状态钩子，`entry()` 恒为 `automatic`、enable/disable 是 no-op。属测试滞后，不是产品缺陷 |
@@ -52,8 +53,10 @@ cargo fmt --check -p khor-node / -p khor-cli  exit 0
 
 ## 3. 发现（按影响排序）
 
-1. **ConPTY 输出读取**：宿主 `last.txt` 永远为空、ring 不写入；直接 `portable-pty` 探针只收到 `\x1b[6n`，
-   reader 早于/晚于 spawn 都一样。影响 W3 T5、两条 replay、W5 终端面板。
+1. **ConPTY 输出（已修）**：`portable-pty` 0.9.0 把 `PSUEDOCONSOLE_INHERIT_CURSOR` 传给
+   `CreatePseudoConsole`，在没有控制台的父进程下让 conhost 完全不出输出。已按仓库惯例 vendor
+   （`vendor/portable-pty`）去掉该 flag；`host_output_smoke`、`resume`（含远端重连 replay）、
+   node lib 全量、CLI console/quit/ws 全部转绿。详见 [W5-GUI](W5-GUI.md) §4.1。
 2. **GUI 会话列表不渲染**：节点与 web face 正常（日志 `khor web face: 0.0.0.0:5467`），列表停在骨架。
-3. **Claude recognition 写入/读取不一致（Windows）**：`Enable(Claude)` 成功但读取仍 automatic。
+3. **ConPTY 不转发 DECCKM**：`ESC [ ? 1 h` 被 conhost 消费，replay 头部拿不到该模式（`host_replay` 因此仍 `#[cfg(unix)]`）。
 4. GUI 的 npm 幻影依赖（`@shikijs/langs`、`@shikijs/themes`、`hast`）——npm 提升才成立，需在 `package.json` 声明并重生成 lock。

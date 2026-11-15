@@ -1,9 +1,9 @@
 // The attach protocol itself is portable, and this file was ported to
-// `cmd.exe` + `taskkill`. It stays gated on Windows: with the binary built
-// outside the workspace `khor open -d -- cmd.exe` does stand a host up
-// (verified 2026-11-15), but these two tests still block past their bounds
-// once they attach — a terminal/ConPTY read investigation, recorded as
-// W3 T5 NOT_TESTED in docs/windows-migration/W3-SMOKE.md.
+// `cmd.exe` + `taskkill`. It stays gated on Windows for a second reason:
+// `khor open -d -- cmd.exe` does stand a host up (2026-11-15) and the ConPTY
+// output fix landed (2026-11-16), but these two cases still block past their
+// bounds once they attach. Not the duplicate-reader cause; recorded as W3 T5
+// NOT_TESTED in docs/windows-migration/W3-SMOKE.md.
 #![cfg(unix)]
 
 //! Current terminal protocol rejection and host-kept clear, through the real

@@ -40,15 +40,36 @@
 
 ## 4. 未通过 / 未测
 
-### 4.1 终端读不到输出的根因（2026-11-15 定位）
+### 4.1 终端读不到输出：已修复（2026-11-16）
 
-- **OS 的 ConPTY 本身可用**：用纯 Win32 `CreatePseudoConsole` + 属性列表 + `CreateProcessW` + `ReadFile`
-  直接跑 `cmd.exe /d /c echo khor-conpty-ok`，**读到了 `khor-conpty-ok`**。
-- **portable-pty 这条路不行**：同样的命令经 `native_pty_system().openpty()` → `spawn_command` → `try_clone_reader`，
-  只读到控制台的 `\x1b[6n`；reader 在 spawn 之前或之后取都一样；保留 slave 句柄不 drop 也一样，并且 `child.wait()` 会挂住。
-- 因此问题在 `portable-pty` 的 Windows 实现（或其在本机 DSH 进程环境下的用法），不是 Windows/ConPTY 的能力，
-  也不是 Khor 的终端协议。下一步二选一：给 `portable-pty` 的 Windows 读取路径做最小修复并 pin 版本，
-  或在 Khor 内用 Win32 直接实现 PTY 读写（`host.rs` 的 reader/`pty_size`/`ResizePseudoConsole` 都在一处）。
+**根因**：portable-pty 0.9.0 在 `CreatePseudoConsole` 里硬编码了
+`PSUEDOCONSOLE_INHERIT_CURSOR | RESIZE_QUIRK | WIN32_INPUT_MODE`。其中
+**`PSUEDOCONSOLE_INHERIT_CURSOR`（0x1）会让没有控制台的父进程收不到任何输出**：
+
+```text
+flags = 0 → 收到 "khor-conpty-ok"
+flags = 2 → 收到
+flags = 4 → 收到
+flags = 1 → 什么都收不到
+flags = 7（portable-pty 用的组合）→ 什么都收不到
+```
+
+GUI、服务、测试 harness 都没有控制台，所以 Windows 上终端面板与 replay 永远空白。
+
+**修法**：按仓库既有 `[patch.crates-io]` 惯例 vendor 一份
+`vendor/portable-pty`，只去掉这一个 flag（`vendor/portable-pty/KHOR.md` 记录原因与撤销方式）。
+
+**验证**：
+
+| 用例 | 结果 |
+| --- | --- |
+| `crates/node/tests/host_output_smoke.rs`（新增：宿主读到 `cmd /c echo` 的行） | **PASS 2.1s** |
+| `cargo test -p khor-node --test resume` | **7 passed**（含远端终端重连 replay，`caught up in 263.6ms`） |
+| `cargo test -p khor-node --lib` | **1061 passed / 0 failed / 14 ignored** |
+| `cargo test -p khor-cli --test console --test quit --test ws` | 2 + 1 + 3 passed |
+
+**残留**：ConPTY 不转发 `ESC [ ? 1 h`（DECCKM），所以 replay 头部没有该模式；
+`host_replay` 的那条用例保持 `#[cfg(unix)]`，见 [W4-NETWORK](W4-NETWORK.md) §4。
 
 ### 4.2 其余
 | 项 | 状态 | 说明 |

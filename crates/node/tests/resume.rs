@@ -215,9 +215,12 @@ fn host_fixture() {
     let root = std::path::PathBuf::from(root);
     let say = root.join("sayer.say");
     let stop = root.join("sayer.stop");
+    // Bounded: a normal run of this binary also executes this case, and the
+    // rejoin case has set the variable by then.
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(120);
     println!("sayer-up");
     let _ = std::io::stdout().flush();
-    while !stop.exists() {
+    while !stop.exists() && std::time::Instant::now() < deadline {
         if say.exists() {
             if let Ok(text) = std::fs::read_to_string(&say) {
                 print!("{text}");
@@ -271,10 +274,6 @@ fn ends_within(conn: &mut std::net::TcpStream, budget: Duration) -> bool {
 
 /// **A far terminal rejoins after a resume and its replay has the meanwhile.**
 ///
-/// Windows: the host comes up and the attach connects, but the ring arrives
-/// with only a prompt — the fixture program's first line never reaches the
-/// attach. Recorded as W4 NOT_TESTED in docs/windows-migration/W4-NETWORK.md.
-#[cfg(unix)]
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn a_far_terminal_rejoins_after_resume_and_its_replay_has_what_happened_meanwhile() {
     let ra = root("ta");
