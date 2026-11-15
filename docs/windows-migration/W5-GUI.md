@@ -40,6 +40,17 @@
 
 ## 4. 未通过 / 未测
 
+### 4.1 终端读不到输出的根因（2026-11-15 定位）
+
+- **OS 的 ConPTY 本身可用**：用纯 Win32 `CreatePseudoConsole` + 属性列表 + `CreateProcessW` + `ReadFile`
+  直接跑 `cmd.exe /d /c echo khor-conpty-ok`，**读到了 `khor-conpty-ok`**。
+- **portable-pty 这条路不行**：同样的命令经 `native_pty_system().openpty()` → `spawn_command` → `try_clone_reader`，
+  只读到控制台的 `\x1b[6n`；reader 在 spawn 之前或之后取都一样；保留 slave 句柄不 drop 也一样，并且 `child.wait()` 会挂住。
+- 因此问题在 `portable-pty` 的 Windows 实现（或其在本机 DSH 进程环境下的用法），不是 Windows/ConPTY 的能力，
+  也不是 Khor 的终端协议。下一步二选一：给 `portable-pty` 的 Windows 读取路径做最小修复并 pin 版本，
+  或在 Khor 内用 Win32 直接实现 PTY 读写（`host.rs` 的 reader/`pty_size`/`ResizePseudoConsole` 都在一处）。
+
+### 4.2 其余
 | 项 | 状态 | 说明 |
 | --- | --- | --- |
 | 会话列表渲染 | **未通过** | GUI 与本地节点的握手未完成，列表停在骨架；需查 GUI 侧启动的本机节点（进程存在、store 有 endpoint.json，但列表不更新） |
