@@ -2,7 +2,9 @@ import assert from 'node:assert/strict';
 
 export async function checkAgentSetup(page,mobile,capture){
   if(mobile){
-    await page.locator('[data-session-screen] > [data-session-bar] [data-deck-band]:visible').first().press('ArrowUp');
+    const band=page.locator('[data-session-screen] > [data-session-bar] [data-deck-band]:visible').first();
+    const title=band.locator('button[data-deck-title]');
+    await (await title.count()?title:band).press('ArrowUp');
     await page.locator('[data-tab-sheet-new]:visible').click();
   }
   else await page.locator('[data-session-tabs] [data-tab-new]:visible').first().click();
