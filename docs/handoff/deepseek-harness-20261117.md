@@ -2,65 +2,99 @@
 
 ## Latest checkpoint
 
-Product runtime source is `09ce10a98e77a745a1f5b078e95b7805745c6c1a`;
-latest UI-fixture/check source is `9d086a5e` (normal production UI and Rust
-runtime files are unchanged after 09ce10a9). Branch is clean and pushed as of
-that checkpoint. Goal remains active; end-to-end Khor runtime acceptance is not
-yet executed.
+Product runtime source is `ab6b7e434`; the subsequent checkpoint changes only
+this handoff.
+The real user and Khor-parent-to-DSH paths have passed against trusted runtime
+source `09ce10a98e77a745a1f5b078e95b7805745c6c1a`. That acceptance exposed a
+read-only recovery-offer omission, fixed in ab6b7e434. Goal remains active until
+that exact fix passes native regression and a no-model-call live recheck.
 
-- Direct trusted workflow `43953514368`, source 09ce10a9: frontend passed;
-  macOS native job is running the explicit doctor regression proof. It will
-  build CLI and bridge and test discovery/overrides, GUI-core agents, cross-node
-  refusal, ACP operations and the real Khor-agent delegation runtime. Artifact
-  `dsh-integration-native` is required for the local live acceptance.
-- Wrapper `43951387096` was cancelled while queued after the direct workflow
-  was accepted, avoiding duplicate builds of the same source.
-- Full GUI Quality `43949486204`, source de1ceaf2, is complete: frontend and GUI
-  checks succeeded; developer Lab had 79 passing scenarios and 4 DSH-only
-  assertion timeouts. Those assertions incorrectly observed browser network
-  traffic even though the Lab uses an in-page data boundary. Actual screenshots
-  show the model switched to Pro and the Harness mark is present. The test now
-  reads recorded controls at that boundary; it also uses the established Lab
-  environment to verify real light/dark theme state rather than merely a URL.
-- Focused GUI Quality `43955048330`, source 9d086a5e, is the replacement for
-  those checks: `suite=gui`, `interaction_scope=dsh`, 16 DSH combinations
-  (two engines, four widths, two themes), four full-App setup flows, plus
-  the existing name/creation/shared-mark checks. Poll this exact run.
-- Old private Lab `43947576487` is superseded. Cancellation was attempted;
-  the API returned an inconsistent terminal/queued observation. Do not
-  resubmit it. Owned manager PID 67503 has exited; port 23971 has no ready
-  preview. Existing user Lab 23961 was never changed.
+- Native workflow `43960937477`, source ab6b7e434, is the only current run.
+  It verifies both doctor and read-only recovery regressions red then green,
+  builds the exact CLI/bridge, and runs discovery, sync/GUI agents, far-open,
+  ACP lifecycle and real Khor runtime delegation tests. Poll the same run;
+  do not restart it on a waiting timeout.
+- `43953514368`, source 09ce10a9: frontend and exact binary build passed;
+  discovery/override, green doctor, 11 sync-agent and six GUI-core tests passed.
+  The final job failed on one test-only formatting difference and an old
+  far-open test using a terminal connector against a GUI host. Both are fixed
+  in `425d79501`. ACP/delegation regressions were skipped in that run.
+- `43959393857`, source 425d79501, was cancelled before native execution once
+  the real acceptance found the recovery-offer omission, avoiding an obsolete
+  native build. Early `43947733635` passed agent/Windows checks but lacked
+  runner rustfmt/frontend inputs; those workflow inputs were fixed.
+- Focused GUI Quality `43955048330`, source `9d086a5e`: **success**. All 20
+  complete-App scenarios passed: Chromium/WebKit × four widths (1280, 412,
+  390, 320) × light/dark, plus four setup flows. Focused creation/shared-mark/
+  configuration, type/unit/mobile and hot-update checks passed too. Normal
+  production GUI files have not changed since source 09ce10a9.
+- `lab-final/developer-lab` was verified against 9d086a5e and its Git tree
+  `699dacda1c5788b0ef12dbeefa07773303e03d67`. The 320px WebKit dark and 1280px
+  Chromium light screenshots and the 390px WebKit setup flow were visually
+  inspected. The official mark and
+  readable Pro model label are present. The successful bundle is served at
+  `http://127.0.0.1:23971/app/?scene=dsh` by owned exec session 70277.
+- Previous full GUI run `43949486204` passed frontend/GUI gates and 79/83 Lab
+  cases. Four DSH assertions observed browser network traffic instead of the
+  existing in-page fixture boundary; the successful focused run replaces them
+  and verifies actual theme state. Old private Lab `43947576487` is superseded;
+  its owned manager PID 67503 exited. Existing user Lab 23961 was never changed.
 
 Evidence is under `/Volumes/disk0/Khor/evidence/deepseek-harness-20261117`.
-`frontend-de1` was byte-verified with the expected de1ceaf2 source manifest.
-`lab-de1` is the first Lab artifact and retains failure screenshots/results,
-not a passing review bundle. `icon-provenance.json` proves the vendored SVG's
-path geometry is identical to pinned official commit
-39163dd30f703a79079e2d2446545cff3c453738.
+The trusted `native-09` artifact has matching source SHA/tree and verified
+SHA-256 hashes for both binaries. It contains the controlled doctor red proof.
+`icon-provenance.json` proves the vendored SVG geometry matches official commit
+`39163dd30f703a79079e2d2446545cff3c453738`.
 
-`runtime-acceptance.py` and `parent-probe.py` are prepared external acceptance
-drivers (Python syntax checked, not yet run). They require the trusted artifact,
-verify its binary digests, use their own Khor home/workspace and loopback bridge,
-and close their own sessions/processes. Planned live prompts are one user
-file-read, one bounded sleep/cancel, and one real DSH delegate driven by the
-actual Khor agent runtime with a deterministic localhost planner. Along with
-the already completed raw file-read probe this is four bounded real DSH prompts;
-the planner uses only a synthetic local credential. No production Khor store,
-existing user session, or user model credential is copied or changed.
+## Real acceptance
 
-The optional-installation doctor change has a dedicated behavioral test. The
-native workflow temporarily restores the previous all-agents lookup, requires
-the named test to fail with an explicitly empty `KHOR_PATH`, restores the exact
-committed source and tests the fix. This is a controlled regression proof;
-it must complete before claiming that check passed.
+`runtime-acceptance-baseline09.json` records these successful checks:
 
-Structured self-review used the review-changes skill and both indexes. The
-worktree index is partial/stale; its zero flows is not a no-impact claim. Main
-index found broad file-level Node dependencies; direct call-site review found
-and addressed the optional-installation health regression. Discovery, launch,
-import/listing and explicit recovery still share the same registered/default
-spec; explicit registrations continue to win. Independent review was not
-delegated, in accordance with the serial-execution constraint.
+- Default discovery without registration, execution-home capability setup,
+  opaque model/reasoning selection, and actual file upload to that home.
+- A real DSH file-tool read returned the unpredictable token. Both the tool
+  output and agent message appear in canonical Khor history (21 entries).
+  Reattaching retained that history.
+- A second real DSH prompt was interrupted and returned `Cancelled`.
+- Native `close` control succeeded; explicit Khor recovery resumed the same
+  native session and preserved the canonical history. This works on source 09,
+  but its read-only offer incorrectly projects support `unknown` because that
+  lookup omitted shipped defaults. ab6b7e434 adds the same default/override
+  precedence to the pure snapshot read; the new regression checks parity with
+  actual recovery resolution, including an explicit override.
+- The real embedded Khor agent runtime called `agents`, `delegate`, and
+  `task_wait` twice. A real DSH child completed a separate file-read task; the
+  parent received the actual random token, and the child receipt binds to the
+  parent run. One parent permission was approved. The parent planner was a
+  deterministic localhost model with a synthetic credential, not a paid model;
+  the Khor runtime, MCP transport, permission path and DSH child were actual.
+
+Four bounded real DSH prompt rounds were used in total: the initial raw probe,
+user attachment-read, cancellation probe, and parent delegate. A prompt can
+involve multiple provider requests. No cost amount is inferred. Intermediate
+acceptance-driver fixes did not repeat completed paid user phases. One direct
+embedded-resource request was rejected by DSH before a model call; it is
+retained as negative evidence, while the real GUI uses uploaded `@path` text.
+The driver also learned that row Close deliberately forgets the row and that
+abrupt host termination cannot manufacture recovery authority. Final acceptance
+uses the actual capability-gated native close control and normal explicit
+recovery; it does not edit session metadata.
+
+The Python drivers use an isolated Khor home/workspace and loopback bridge,
+retain original DSH credentials in their existing store, and close only their
+own sessions/processes. Baseline cleanup left zero owned live session metadata;
+the bridge exited by the driver's intentional SIGTERM. No production Khor
+store or existing user session was changed. `runtime-acceptance.py
+--continue-session` reuses recorded user history and skips completed paid phases;
+when the new trusted artifact is available, require recovery support `resume`
+and no `known_baseline_issue` in the resulting final report.
+
+Structured self-review used review-changes and both indexes. The worktree graph
+is partial/stale, so zero graph flows is not a no-impact claim. Direct review
+and actual acceptance found the doctor and read-only recovery omissions; both
+have behavioral regressions. The latter is included by the permanent full-node
+`dsh_` test selection. No independent reviewer was delegated, in accordance
+with the serial-execution constraint.
 
 ## Execution state
 
@@ -87,26 +121,25 @@ delegated, in accordance with the serial-execution constraint.
 3. Verify the complete user and agent flows remotely and through bounded local DSH execution; fix failures and record evidence.
 4. Audit the final diff and each required outcome, commit the independent branch and provide reviewable results.
 
-## Current progress
+## Implementation and completed local baseline
 
-Implemented first candidate `28320506`, verification-runner fix `86220f3e`:
+- Shared default `dsh --profile acp`, explicit registration override, and no
+  synced default/credential writes.
+- Direct GUI choice, readable product/model names and official monochrome
+  Harness whale in shared session marks.
+- Execution-computer credential guidance and no unsupported extra-directory
+  input for official DSH. Existing ACP configuration, tool, permission,
+  cancellation, attachment and history/recovery paths are reused.
+- Complete App DSH Lab scene and permanent discovery/doctor/UI checks.
+- `control-probe.json`: real installed ACP initialize/new/close, clean exit.
+- `real-probe.json`: one real `deepseek-flash` prompt with reasoning off read
+  a random token through the native file tool, returned the exact token, and
+  passed close/list/resume/close with a clean exit. No existing session touched.
+- Installed DSH advertises images false and listing/resume/close/HTTP MCP true.
+  It does not replay provider transcripts; Khor keeps its own event history.
+- 23 Python Lab configuration/lifecycle tests passed locally. No local Node,
+  Rust or Xcode build was run.
 
-- Shared built-in `dsh --profile acp` launch default, explicit registration override and no synced default/credential writes.
-- Direct GUI conversation choice, product name and official monochrome Harness whale shared by session marks.
-- Advertised model labels for opaque configuration values; execution-machine credential guidance; no unsupported additional-directory input for official DSH.
-- Complete App DSH Lab scene and entry/icon/model checks. Additional test/documentation work is currently uncommitted; inspect actual diff.
-
-Local real DSH acceptance at `/Volumes/disk0/Khor/evidence/deepseek-harness-20261117/`:
-
-- `control-probe.json`: actual ACP initialize/new/close, version 0.2.1-rc.5, successful clean exit.
-- `real-probe.json`: one paid prompt on `deepseek-flash`, reasoning off, native file-tool read of a random token from the isolated workspace, exact expected reply, successful close/list/resume/close and clean exit. No existing user session was opened or modified. No API key was logged or copied.
-- Images are actually advertised false; list/resume/close and HTTP MCP are advertised.
-- 23 Python Lab lifecycle/configuration tests passed locally. No Node/Rust/Xcode build ran locally.
-
-Verification handles (poll these exact runs; a timeout is not permission to restart):
-
-- Public Quality `43947733635`, source `86220f3e`: agent and Windows process checks succeeded; trusted macOS DSH job was queued at last inspection. Initial earlier dispatch was rejected for runner-context placement and was corrected; it was not a product failure.
-- Private Developer Lab `43947576487`, request `0c379a1787884c6289abbe64e99c30ab`, snapshot `1de332a1f499403f35a178d34b7e083fe5eab8dc`, source tree `068b3c3ed731940b1e9e9e50fa7a101268262803`: queued at last inspection. Display title has not yet expanded its request id; manager has not discovered the run. Preserve it and reconcile the same run before any resubmission.
-- Owned Lab manager PID 67503 on port 23971; cache `/Volumes/disk0/Khor/caches/deepseek-harness-lab`, manager log under `5e0ad2f18336773e-23971/manager.log`. No bundle available yet; do not present it as ready.
-
-Still required: exact-source Rust/frontend verification and rendered DSH screens; acquire trusted CLI/bridge artifacts; run isolated real Khor user-session and delegation flows against installed DSH, including cancellation and recovery; audit and finish the branch. The native workflow is being extended to include bridge and normal frontend artifacts for that acceptance. Do not mark the goal complete from the raw ACP probe alone.
+Still required: finish native run 43960937477, acquire its trusted artifact,
+recheck the fixed read-only offer and native continuation without new model
+prompts, record exact-source results, and complete the branch audit.
