@@ -2,6 +2,8 @@
 
 静态准确源I3 6f4c8c390ea44f068886dd95716dacd02c1eaa45/treec651b2fbfa2927f00cc1d2b679455d1c77dad9a6。E/request-replay-static-inventory-I3-v2.json包含完整74种Request变体、两段原函数与源SHA；额外逐行匹配验证没有漏掉tuple形状（该枚举当前无tuple变体）。这是静态审计，native_tests=0，不单凭此关闭完整N2。
 
+2026-11-16适用性复核：当前独立候选3d62159e的整个proto.rs SHA仍为`f317c5ec5fa618a54ef5848016cc23219c37cbc39d6abd52cd4b361526d21f29`，与该I3输入逐字相同；两函数原片段与其SHA逐项相符，74/51/28及条件限制保持。`E/request-replay-static-applicability-relay-home-refresh-v1.json`保存准确新源与旧inventory SHA。新增native=0，不能把适用性复核称作token family/包级重放验收。
+
 `Request::is_reading`实际是“可安全重问”许可列表，共51种变体，其中ContentRead仅Cancel、Subscriptions仅Discover、Recognition仅Read等按action限制，不能把整个变体误当允许。`rides_early`单独许可28种，均在可重问集合内；默认拒绝新变体。
 
 以下23种变体都不获自动重问或0-RTT许可：RecoverSession、NewShellRun、Pair、Act、Open、SatRemove、SatMkdir、SatTouch、SatRename、SatLaunch、SatWrite、OpenAgent、Remove、Mkdir、RenamePath、Launch、WritePath、CodeServe、CodeStop、Watch、Vouch、KhorAgent、Delegation。带action的其余变体还受上面的条件约束；这不是“只有23种操作会改变状态”的说法。
