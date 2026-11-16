@@ -84,7 +84,7 @@ export async function checkAttachmentDraft(browser,{port,report,engine,width=390
   await picker.locator('[data-files-machines]:visible').waitFor();assert(await openMachines(),'Narrow source space exposes the overflow selector');
   assert.equal(await machinesMenu.locator('[data-files-machine]').count(),Number(await machineRow.getAttribute('data-files-source-count')),'Every machine remains selectable when all chips overflow');
   await picker.locator('[data-files-source] h3').click();await machinesMenu.waitFor({state:'hidden'});await machineRow.evaluate(node=>node.style.removeProperty('width'));await chips.first().waitFor();
-  assert.equal(await picker.locator('[data-files-destination]').getByRole('heading',{name:'发送目录'}).count(),1);
+  assert.equal(await picker.locator('[data-files-destination]').getByRole('heading',{name:'发送到',exact:true}).count(),1);
   await selected('draft.txt').locator('[data-files-select]').click();await selected('draft.txt').waitFor({state:'hidden'});assert.equal(await picker.locator('[data-files-selection]').count(),0,'Empty selection hides its entire section');
   await choose({name:'draft.txt',mimeType:'text/plain',buffer:Buffer.from('original attachment')});await selected('draft.txt').waitFor();
   await page.screenshot({path:path.join(report,name+'-layout.png')});
