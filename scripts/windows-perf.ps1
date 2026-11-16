@@ -2,27 +2,31 @@
 # W7 · the Windows performance matrix (docs/windows-migration/APPROVAL-PACKAGE.md §5).
 #
 # Measures the load profile that document names, on this machine only: CLI cold
-# start, GUI cold start to interactive, session creation, the session list, a
-# file scan, a fixed file copy, doctor, and the update check when this build
-# has one. Reports median / P95 / peak per metric with the warmup runs dropped,
-# the way §5.2 asks.
+# start, session creation, the session list, a file scan, a fixed file copy,
+# doctor, and GUI cold start to the moment its own transport answers.
+# Reports median / P95 / peak per metric with the warmup runs dropped, the way
+# §5.2 asks.
 #
-# **What this does NOT do**: compare against Linux/macOS. §5.2 wants those as the
-# baseline and this seat has no such host, so the comparison is left to whoever
-# has one — the numbers here are the Windows half, printed in a shape that can
-# be pasted beside them. Saying "within 30%" without the other column would be
-# the exact thing §6 forbids.
+# **What this does NOT do by itself**: compare against Linux/macOS. §5.2 wants
+# those as the baseline; run this same script's metric list on the other host
+# (`scripts/windows-perf.sh` does the same seven there) and put the two columns
+# side by side. Saying "within 30%" without the other column would be the exact
+# thing §6 forbids.
 #
 # Usage:
-#   pwsh -File scripts/windows-perf.ps1 -Khor F:\Temp\khor-target\release\khor.exe `
-#        -Gui F:\Temp\khor-target\release\khor-gui.exe -Runs 5 -Warmup 2
+#   pwsh -File scripts/windows-perf.ps1 -Khor <khor.exe> -Gui <khor-gui.exe> `
+#        -Store <scratch store> -Runs 5 -Warmup 2 -Out <json>
 param(
   [Parameter(Mandatory = $true)][string]$Khor,
   [string]$Gui,
-  [string]$Home = 'F:\Temp\khor-perf\home',
+  # **Not `-Home`.** `$HOME` is a read-only automatic variable; a parameter of
+  # that name fails to bind ("Cannot overwrite variable Home because it is
+  # read-only or constant"). Same shape as the accident this repository's
+  # delete guard exists for, so the name is avoided everywhere.
+  [string]$Store = 'F:\Temp\khor-perf\home',
   [int]$Runs = 5,
   [int]$Warmup = 2,
-  [int]$GuiReadySeconds = 40,
+  [int]$GuiReadySeconds = 60,
   [string]$Out = 'F:\Temp\khor-perf\perf.json'
 )
 
@@ -32,13 +36,15 @@ $ProgressPreference = 'SilentlyContinue'
 foreach ($needed in @($Khor)) {
   if (-not (Test-Path -LiteralPath $needed)) { throw "not found: $needed" }
 }
-New-Item -ItemType Directory -Path $Home -Force | Out-Null
+$root = Split-Path -Parent $Store
+New-Item -ItemType Directory -Path $Store -Force | Out-Null
+New-Item -ItemType Directory -Path $root -Force | Out-Null
 New-Item -ItemType Directory -Path (Split-Path -Parent $Out) -Force | Out-Null
-$env:KHOR_HOME = $Home
-$env:KHOR_RUNTIME_DIR = (Join-Path (Split-Path -Parent $Home) 'runtime')
+$env:KHOR_HOME = $Store
+$env:KHOR_RUNTIME_DIR = Join-Path $root 'runtime'
 
 # A fixed file set for scan/copy, made once so every run reads the same bytes.
-$fixture = Join-Path (Split-Path -Parent $Home) 'perf-files'
+$fixture = Join-Path $root 'perf-files'
 if (-not (Test-Path -LiteralPath $fixture)) {
   New-Item -ItemType Directory -Path $fixture -Force | Out-Null
   for ($i = 0; $i -lt 40; $i++) {
@@ -51,7 +57,6 @@ function Assert-LastExit([string]$what) {
   if ($LASTEXITCODE -ne 0) { throw "$what exited $LASTEXITCODE" }
 }
 
-# One measured run: wall time in ms, plus the child's peak working set.
 function Measure-One([scriptblock]$body) {
   $sw = [System.Diagnostics.Stopwatch]::StartNew()
   $body.Invoke() | Out-Null
@@ -64,8 +69,8 @@ function Measure-One([scriptblock]$body) {
 # has to mean here. A window that draws while every command hangs is not ready.
 function Measure-GuiColdStart([string]$exe, [int]$port) {
   $env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS = ''
-  $out = Join-Path (Split-Path -Parent $Home) 'gui.out'
-  $err = Join-Path (Split-Path -Parent $Home) 'gui.err'
+  $out = Join-Path $root 'gui.out'
+  $err = Join-Path $root 'gui.err'
   $sw = [System.Diagnostics.Stopwatch]::StartNew()
   $proc = Start-Process -FilePath $exe -PassThru -RedirectStandardOutput $out -RedirectStandardError $err
   try {
@@ -91,13 +96,11 @@ function Measure-GuiColdStart([string]$exe, [int]$port) {
 }
 
 $metrics = [ordered]@{}
-function Add-Metric([string]$name, [scriptblock]$body, [string]$unit = 'ms') {
+function Add-Metric([string]$name, [scriptblock]$body) {
   $samples = New-Object System.Collections.ArrayList
   $total = $Warmup + $Runs
   for ($i = 0; $i -lt $total; $i++) {
-    try {
-      $r = $body.Invoke()
-    } catch {
+    try { $r = $body.Invoke() } catch {
       $metrics[$name] = [pscustomobject]@{ status = 'FAILED'; error = $_.Exception.Message }
       Write-Host ("  {0,-22} FAILED: {1}" -f $name, $_.Exception.Message)
       return
@@ -114,55 +117,38 @@ function Add-Metric([string]$name, [scriptblock]$body, [string]$unit = 'ms') {
   $p95 = $sorted[[int][math]::Min($sorted.Count - 1, [math]::Ceiling($sorted.Count * 0.95) - 1)]
   $peak = ($sorted | Select-Object -Last 1)
   $metrics[$name] = [pscustomobject]@{
-    status = 'OK'; unit = $unit; runs = $samples.Count
-    median = $median; p95 = $p95; peak = $peak
-    samples = @($samples)
+    status = 'OK'; unit = 'ms'; runs = $samples.Count
+    median = $median; p95 = $p95; peak = $peak; samples = @($samples)
   }
-  Write-Host ("  {0,-22} median {1,8} {2}   p95 {3,8}   peak {4,8}" -f $name, $median, $unit, $p95, $peak)
+  Write-Host ("  {0,-22} median {1,8} ms   p95 {2,8}   peak {3,8}" -f $name, $median, $p95, $peak)
 }
 
 Write-Host "khor perf · $Khor"
-Write-Host "home $Home · runs $Runs (+$Warmup warmup)"
+Write-Host "store $Store · runs $Runs (+$Warmup warmup)"
 
-Add-Metric 'cli_version' {
-  Measure-One { & $Khor version 2>&1 | Out-Null; Assert-LastExit 'khor version' }
-}
-
-Add-Metric 'cli_doctor' {
-  Measure-One { & $Khor doctor --json 2>&1 | Out-Null; Assert-LastExit 'khor doctor' }
-}
-
-Add-Metric 'session_create' {
-  Measure-One {
-    & $Khor open -d -- cmd.exe 2>&1 | Out-Null
-    Assert-LastExit 'khor open'
-  }
-}
-
-Add-Metric 'sessions_list' {
-  Measure-One { & $Khor sessions 2>&1 | Out-Null; Assert-LastExit 'khor sessions' }
-}
-
-Add-Metric 'file_scan' {
-  Measure-One { & $Khor ls $env:COMPUTERNAME $fixture 2>&1 | Out-Null; Assert-LastExit 'khor ls' }
-}
-
+Add-Metric 'cli_version'  { Measure-One { & $Khor version 2>&1 | Out-Null; Assert-LastExit 'khor version' } }
+Add-Metric 'cli_doctor'   { Measure-One { & $Khor doctor --json 2>&1 | Out-Null; Assert-LastExit 'khor doctor' } }
+# **A command that exits by itself.** `khor open -d -- cmd.exe` leaves a shell
+# waiting for input with no tty behind it, so the call can sit there and the run
+# measures nothing; `/c exit` gives the same session-creation path and returns.
+Add-Metric 'session_create' { Measure-One { & $Khor open -d -- cmd.exe /c exit 2>&1 | Out-Null; Assert-LastExit 'khor open' } }
+Add-Metric 'sessions_list' { Measure-One { & $Khor sessions 2>&1 | Out-Null; Assert-LastExit 'khor sessions' } }
+Add-Metric 'file_scan'    { Measure-One { & $Khor ls $env:COMPUTERNAME $fixture 2>&1 | Out-Null; Assert-LastExit 'khor ls' } }
 Add-Metric 'file_copy' {
   Measure-One {
-    $to = Join-Path (Split-Path -Parent $Home) 'perf-copy'
+    $to = Join-Path $root 'perf-copy'
     if (Test-Path -LiteralPath $to) { Remove-Item -LiteralPath $to -Recurse -Force }
     Copy-Item -LiteralPath $fixture -Destination $to -Recurse -Force
   }
 }
-
 if ($Gui) {
   Add-Metric 'gui_cold_start' { Measure-GuiColdStart $Gui 1432 }
-  Add-Metric 'gui_cold_start_mem' { Measure-GuiColdStart $Gui 1432 } 'MB'
 }
 
 $metrics | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $Out -Encoding utf8
-Write-Host ""
+Write-Host ''
 Write-Host "written: $Out"
-Write-Host ""
-Write-Host "NOTE: Linux/macOS baselines are NOT measured here (no such host in this seat)."
-Write-Host "      §5.2's 30%/100% judgement needs that column; do not paste these as a comparison."
+Write-Host ''
+Write-Host 'NOTE: the Linux/macOS column is not measured here. Run scripts/windows-perf.sh'
+Write-Host '      on that host and put the two side by side; §5.2 s 30%/100% judgement'
+Write-Host '      needs both, and these numbers alone are not a comparison.'

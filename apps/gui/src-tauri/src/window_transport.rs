@@ -92,6 +92,13 @@ fn window_verb(cmd: &str) -> Option<Result<String, String>> {
         // `close`, not `destroy`: closing is a request, and the draft guard
         // hangs on it (`lib.rs`'s own note on `window_close`).
         "window_close" => window().and_then(|w| w.close().map_err(|e| e.to_string())),
+        // **Dragging.** Tauri's own `drag.js` calls
+        // `invoke('plugin:window|start_dragging')` on a `data-tauri-drag-region`
+        // mousedown, which is the same dead custom-protocol road as every other
+        // invoke — so a borderless window could not be moved at all (reported
+        // 2026-11-16). The page's own window controls already come through here,
+        // so the drag does too: `drag_shim` posts to this verb.
+        "window_drag" => window().and_then(|w| w.start_dragging().map_err(|e| e.to_string())),
         // Windows has no system buttons standing over the title row, so the
         // row reserves nothing for them (the same zero the skin answers off
         // macOS).
@@ -176,6 +183,69 @@ fn answer(cmd: &str, args: &serde_json::Value) -> Result<String, String> {
         khor_gui_core::api::answer(&rt, &root, cmd, args)
     }))
     .unwrap_or_else(|_| Err("panic in handler".to_owned()))
+}
+
+/// The initialization script that restores window dragging.
+///
+/// Tauri ships its own (`tauri-2.11.5/src/window/scripts/drag.js`) and it is
+/// correct — but it starts the drag with
+/// `window.__TAURI_INTERNALS__.invoke('plugin:window|start_dragging')`, which is
+/// the custom-protocol IPC that stalls on this platform. With the window
+/// borderless there is nothing else to grab, so it has to be started over the
+/// same loopback road the other commands take.
+///
+/// **Capture phase, and it stops propagation**: tauri's listener is on
+/// `document` in the bubble phase, and letting both run would start a drag and
+/// a double-click maximise at once. Stopping in the capture phase means only one
+/// of them ever sees the event.
+///
+/// The region rules are tauri's own, restated: a clickable element blocks a
+/// drag unless it carries the attribute itself, `="false"` disables, `="deep"`
+/// makes the whole subtree draggable, and a bare/`"true"` value drags only when
+/// the press landed on that very element.
+pub fn drag_shim(port: u16) -> String {
+    format!(
+        r#"(function () {{
+  var PORT = {port};
+  var ATTR = 'data-tauri-drag-region';
+  var CLICKABLE = new Set(['A','BUTTON','INPUT','SELECT','TEXTAREA','LABEL','SUMMARY']);
+  var ROLES = new Set(['button','link','menuitem','tab','checkbox','radio','switch','option']);
+  function clickable(el) {{
+    return CLICKABLE.has(el.tagName)
+      || (el.hasAttribute('contenteditable') && el.getAttribute('contenteditable') !== 'false')
+      || (el.hasAttribute('tabindex') && el.getAttribute('tabindex') !== '-1')
+      || ROLES.has(el.getAttribute('role'));
+  }}
+  function dragRegion(path) {{
+    for (var i = 0; i < path.length; i++) {{
+      var el = path[i];
+      if (!el || el.nodeType !== 1) continue;
+      var attr = el.getAttribute(ATTR);
+      if (clickable(el) && attr === null) return false;
+      if (attr === null) continue;
+      if (attr === 'false') return false;
+      if (attr === 'deep') return true;
+      if (attr === '' || attr === 'true') return el === path[0];
+    }}
+    return false;
+  }}
+  function ask(verb) {{
+    try {{
+      fetch('http://127.0.0.1:' + PORT + '/' + verb, {{
+        method: 'POST', body: '{{}}', headers: {{ 'Content-Type': 'application/json' }}
+      }});
+    }} catch (e) {{ /* nothing to say that the window can act on */ }}
+  }}
+  document.addEventListener('mousedown', function (e) {{
+    if (e.button !== 0 || (e.detail !== 1 && e.detail !== 2)) return;
+    var path = e.composedPath ? e.composedPath() : [];
+    if (!dragRegion(path)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    ask(e.detail === 2 ? 'window_maximize_toggle' : 'window_drag');
+  }}, true);
+}})();"#
+    )
 }
 
 /// Start the window's loopback transport.

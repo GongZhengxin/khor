@@ -2553,6 +2553,7 @@ fn build_the_window(app: &tauri::AppHandle) -> tauri::Result<()> {
     .inner_size(1080.0, 720.0)
     .min_inner_size(400.0, 500.0)
     .transparent(true)
+    .initialization_script(window_transport::drag_shim(window_transport::PORT))
     .initialization_script(window_surface::initial_script())
     .background_color(window_surface::background(chosen_dark(desktop_is_dark)));
     // **Windows is borderless, because the page already draws the controls.**

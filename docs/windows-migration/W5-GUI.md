@@ -240,5 +240,41 @@ window_minimize -> 400: "no such command: window_minimize"
 | 点页面自绘的最小化按钮 | 窗口 `IsIconic` 0 → 1，恢复后回 0（端到端） |
 | 截图 | 只剩一组控件，无系统标题栏 |
 
+### 9.3 无边框窗口无法拖动（同批修）
+
+Tauri 自己的 `drag.js`（`tauri-2.11.5/src/window/scripts/drag.js:104`）在
+`[data-tauri-drag-region]` 上按下时调
+`window.__TAURI_INTERNALS__.invoke('plugin:window|start_dragging')`——正是那条会停摆的
+custom-protocol 路。装饰去掉后窗口没有别的地方可抓，于是**完全拖不动**（用户 2026-11-16 报告）。
+
+修法：`window_transport::drag_shim` 在 **capture 阶段**接管 mousedown，按 Tauri 自己的区域规则
+（clickable 元素阻挡、`"false"` 禁用、`"deep"` 整个子树可拖、裸/`"true"` 只认直接目标）判断，
+然后走 loopback 调新增的 `window_drag` 动词（→ `window.start_dragging()`）；
+双击则调 `window_maximize_toggle`。capture + `stopPropagation` 是为了不让 Tauri 那个监听器
+再跑一遍（它会发一个永远不回的 invoke，还会与双击最大化打架）。
+
+验证：
+
+| 用例 | 结果 |
+| --- | --- |
+| 标题行 `elementFromPoint` | `DIV`，`data-tauri-drag-region="deep"` |
+| CDP 在该点按下 | 传输层收到 `[transport] window_drag` → `start_dragging()` |
+
+> 说明：真实拖动需要真实指针，本机无法用 CDP 伪造（`start_dragging` 用的是 OS 光标状态）。
+> 这里证明的是**接线**：页面正确识别区域并把拖动交给窗口。真机手拖属于人工验收项。
+
+### 9.4 打开 Khor 伴随一个控制台窗口
+
+**debug 构建才有，release 没有**。`main.rs` 第 1 行就是
+`#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]`，实测 PE 头：
+
+| 二进制 | 子系统 |
+| --- | --- |
+| `release/khor-gui.exe` | `WINDOWS_GUI`（2，无控制台） |
+| `debug/khor-gui.exe` | `CONSOLE`（3，带控制台） |
+
+所以给用户的试用要用 **release** 或安装包；debug 是给调试看的。
+
+
 
 
