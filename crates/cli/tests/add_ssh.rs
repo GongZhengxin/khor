@@ -148,7 +148,8 @@ fn far_home(dir: &Path, host: &str) -> PathBuf {
 }
 
 /// Ordinary membership must not depend on a public relay being reachable.
-/// Every home, including a freshly reset far home, uses this world's relay.
+/// Local clients use this world's relay. Far commands receive it through
+/// their environment so `--no-install` can leave the far home empty.
 fn configure_home(dir: &Path, home: &Path) {
     assert!(home.starts_with(dir), "only a scratch home is configured");
     let settings = fs::read(dir.join("relay-settings.json")).unwrap();
@@ -181,7 +182,6 @@ fn reset_far(dir: &Path, host: &str) {
     assert!(home.starts_with(dir), "only a scratch home is emptied");
     let _ = fs::remove_dir_all(&home);
     fs::create_dir_all(&home).unwrap();
-    configure_home(dir, &home);
 }
 
 fn sh(cmd: &mut Command) {
@@ -264,7 +264,7 @@ fn build() -> Option<World> {
     fs::write(
         dir.join("relay-settings.json"),
         serde_json::to_vec(&serde_json::json!({
-            "relays": [{ "url": url }], "only_mine": true
+            "relays": [{ "url": url.clone() }], "only_mine": true
         }))
         .unwrap(),
     )
@@ -288,7 +288,6 @@ fn build() -> Option<World> {
         let fake = d.join("fakebin");
         fs::create_dir_all(&fake).unwrap();
         fs::create_dir_all(d.join("home")).unwrap();
-        configure_home(&dir, &d.join("home"));
         sh(Command::new("ssh-keygen")
             .args(["-q", "-t", "ed25519", "-N", "", "-C", host, "-f"])
             .arg(d.join("hostkey")));
@@ -328,7 +327,7 @@ fn build() -> Option<World> {
         fs::write(
             &wrap,
             format!(
-                "#!/bin/sh\nexport HOME='{h}' KHOR_HOME='{h}' KHOR_NO_MDNS=1 KHOR_WEB_PORT=0 KHOR_NAME='{host}-box' TMUX_TMPDIR='{d}/tmux' KHOR_TMUX_SOCKET=khor-add-{host} LC_ALL=C\n\
+                "#!/bin/sh\nexport HOME='{h}' KHOR_HOME='{h}' KHOR_NO_MDNS=1 KHOR_WEB_PORT=0 KHOR_NAME='{host}-box' KHOR_RELAY='{relay}' TMUX_TMPDIR='{d}/tmux' KHOR_TMUX_SOCKET=khor-add-{host} LC_ALL=C\n\
                  export PATH='{f}':\"$PATH\"\n\
                  case \"$HOME\" in '{w_dir}'/*) ;; *) echo 'scratch HOME not set' >&2; exit 97 ;; esac\n\
                  mkdir -p \"$TMUX_TMPDIR\"; cd \"$HOME\" || exit 97\n\
@@ -336,6 +335,7 @@ fn build() -> Option<World> {
                 h = home.display(),
                 d = d.display(),
                 f = fake.display(),
+                relay = url,
             ),
         )
         .unwrap();
