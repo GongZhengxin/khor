@@ -83,7 +83,21 @@ DeepSeek Harness `已安装 terminal` + `run · resume · send · terminal`；�
 正是这条测试抓出来的）；`khor-gui-core` 的 `command_tables` 4 过（桥接与 Tauri 两张表一致）；
 gui-core `agents` 12 过；前端 `tsc --noEmit` 干净。
 
-### 2.4 DSH 通道：已用实验验证（未提交代码，结论先行）
+### 2.4 列表默认按项目分组（提交 `586043a7`）
+
+Windows 上列表打开时按 `place` 分组（"哪个项目在忙"是这台机器上先要回答的问题），
+macOS/Linux 仍是 `recent`。只改**没有偏好时的默认**：`storedArrange` 仍返回人选过的值。
+证据：同一批行在改动前是平铺的，改动后列表出现 `∨ F:\#Gong\#AI4S\khor`（8 条）与 `∨ 没有目录` 两个分组头。
+
+### 2.5 产物与安装包（本轮最终构建）
+
+用当前 HEAD 重建：`Khor_0.2.0_x64_en-US.msi` / `..._zh-CN.msi`（各 49.72 MiB）、
+`Khor_0.2.0_x64-setup.exe`（36.12 MiB）。
+release 二进制 PE 子系统 = **2（GUI）**，启动后无控制台、单标题栏、列表按项目分组，
+日志文件收到 `khor: window transport on 127.0.0.1:1432 (4 workers)`。
+`scripts/windows-installer-check.ps1` → **6/6 PASS**（install 6059 ms、layout 89、start 2100、stop 711、uninstall 2222、removed 57；既有的 `logs`、`runtime` 保留）。
+
+### 2.6 DSH 通道：已用实验验证（未提交代码，结论先行）
 
 在隔离 `DSH_HOME` 下实跑 `dsh --profile headless --json`：
 
