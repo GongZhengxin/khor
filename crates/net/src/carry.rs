@@ -747,9 +747,7 @@ pub fn choose_settling(
         return candidates
             .iter()
             .enumerate()
-            .filter(|(_, (tier, rtt))| {
-                *tier == Tier::Direct && !improves(best_rtt, *rtt, false)
-            })
+            .filter(|(_, (tier, rtt))| *tier == Tier::Direct && !improves(best_rtt, *rtt, false))
             .min_by_key(|(_, (_, rtt))| *rtt)
             .map(|(i, _)| i)
             .or(Some(best));

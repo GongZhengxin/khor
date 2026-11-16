@@ -1018,8 +1018,6 @@ const PULL_AHEAD: u64 = 8;
 /// priority. A foreground file may need all slices: acceptance still requires
 /// first-usable-content, throughput and starvation checks.
 const CONTINUED_FILE_RESPONSE_PRIORITY: i32 = 0;
-// Foreground listings share Main with the first file slice.
-const DIRECTORY_RESPONSE_PRIORITY: i32 = 1;
 
 /// How often a drop's asker asks how far it got (`Node::drop_file`):
 /// often enough for a progress line to move, and each ask is one small
@@ -4718,15 +4716,8 @@ impl Node {
                 };
                 let continued_file = fetch_offset.is_some_and(|offset| offset > 0)
                     && matches!(&_resp, Response::PathSlice { .. });
-                let response_priority = if listing && matches!(&_resp, Response::Dir { .. }) {
-                    Some(DIRECTORY_RESPONSE_PRIORITY)
-                } else if continued_file {
-                    Some(CONTINUED_FILE_RESPONSE_PRIORITY)
-                } else {
-                    None
-                };
                 let priority_applied =
-                    response_priority.is_none_or(|priority| send.set_priority(priority).is_ok());
+                    !continued_file || send.set_priority(CONTINUED_FILE_RESPONSE_PRIORITY).is_ok();
                 // Read before the first write/FIN, and only for the opt-in
                 // trace. Both experimental sources have the same readback.
                 let observed_priority = accepted_at.and_then(|_| send.priority().ok());
