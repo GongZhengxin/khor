@@ -4,14 +4,35 @@ export type SessionConfigGroup={group:string;name:string;options:SessionConfigVa
 export type SessionConfigOption={id:string;name:string;description?:string|null;category?:string|null;type:string;currentValue?:string|boolean;options?:(SessionConfigValue|SessionConfigGroup)[]};
 export type AgentProtocol={agentInfo?:{name:string;title?:string;version?:string};capabilities?:{sessionCapabilities?:Record<string,unknown>;auth?:{logout?:unknown}};authMethods?:{id:string;name:string;type?:string;description?:string}[]};
 
+/** Protocol suffixes describe the connection, not the agent's identity.
+ * The original registration remains the launch/routing identifier. */
 export function agentPresentation(agent:string){
-  switch(agent){
-    case 'codex':return {name:'Codex',source:'内置对话接入',native:true};
-    case 'claude':return {name:'Claude',source:'内置对话接入',native:true};
-    case 'codex-acp':return {name:'Codex（ACP 扩展）',source:'独立 ACP 适配器',native:false};
-    case 'claude-acp':return {name:'Claude（ACP 扩展）',source:'独立 ACP 适配器',native:false};
-    default:return {name:agent,source:'ACP 对话接入',native:false};
+  const plain=agent.trim().replace(/(?:[-_\s]+acp|\s*[（(]ACP(?:\s*(?:扩展|adapter|extension))?[）)])$/i,'').trim()||agent;
+  const key=plain.toLowerCase();
+  const name=['codex','codex-cli','codex cli'].includes(key)?'Codex':
+    ['claude','claude-agent','claude agent','claude-code','claude code'].includes(key)?'Claude':plain;
+  return {name,native:agent==='codex'||agent==='claude'};
+}
+
+/** One choice per agent. An already remembered connection stays selected;
+ * new choices use the built-in connection where one exists. */
+export function conversationAgents(registered:readonly string[],preferred?:string):string[]{
+  const names=[...new Set(['claude','codex',...registered])];
+  const groups=new Map<string,string>();
+  for(const name of names){
+    const key=agentPresentation(name).name.toLowerCase();
+    if(!groups.has(key)||name===preferred)groups.set(key,name);
   }
+  return [...groups.values()];
+}
+
+export function conversationRecents(recent:readonly string[],agents:readonly string[]):string[]{
+  return [...new Set(recent.map(id=>{
+    if(!id.startsWith('agent:'))return id;
+    const label=agentPresentation(id.slice(6)).name.toLowerCase();
+    const selected=agents.find(name=>agentPresentation(name).name.toLowerCase()===label);
+    return selected?'agent:'+selected:id;
+  }))];
 }
 
 export function agentSetupFailure(reason:unknown,error:unknown):string{

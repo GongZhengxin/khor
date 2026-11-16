@@ -1,3 +1,6 @@
+import {pathAttachment,type Attachment} from "@/lib/term-attachments";
+import {agentPresentation} from '@/lib/acp-session';
+import {AttachmentPicker,AttachmentDestination} from "@/views/TermFiles";
 import { raiseKeyboard } from "@/lib/soft-keyboard";
 import {ScrollToBottom} from '@/components/ScrollToBottom';
 import {useReadableHistoryExport} from '@/hooks/use-readable-history-export';
@@ -40,7 +43,7 @@ import { useCoarse } from "@/hooks/use-coarse";
 import { useChatScroll } from "@/hooks/use-chat-scroll";
 import { BarSeat } from "@/components/SessionBar";
 import { sessionMark } from "@/components/BrandIcons";
-import { FileCard, MachineFilePick, PendingChips, SendInto, usePendingFiles } from "@/views/chat-files";
+import { FileCard, PendingChips, usePendingFiles } from "@/views/chat-files";
 import { LinkHomeProvider, useKnownFiles, useLinkHome, type LinkHome } from "@/views/linkHome";
 import { filesFolderIn, splitAttachments, withAttachments } from "@/lib/paths";
 import { Composer, COMPOSER_TEXT, ModeSeat, SendSeat, StopSeat, WhoSeat, useGrowingText, type AddOption, type Who } from "@/views/Composer";
@@ -382,7 +385,7 @@ function agentName(category: string | null, said: string | null): string | null 
     case "cursor":
       return gui.vendor_cursor;
     default:
-      return said;
+      return said?agentPresentation(said).name:category?agentPresentation(category).name:null;
   }
 }
 
@@ -697,19 +700,24 @@ export function ChatView({
   const control=(operation:string,payload:Record<string,unknown>={})=>withChat(view => view.control(crypto.randomUUID(),operation,payload)).catch(e=>setControlError(String(e)));
   /** The directory on the conversation's machine its files go to, picked
       above the box (「存到」, `SendInto`); `null` is its receive location.
-      Read as each file is added: a file is put there when it is chosen. */
+      Read when the draft is sent; selection does not write to the target. */
   const [into, setInto] = useState<string | null>(null);
   /** The files going along with the line being written (round CHAT,
-      `chat-files`): each put on the conversation's machine as it is
-      chosen, cleared by sending like the text beside them. ⚠️ 墓碑:
+      `chat-files`): sources stay in the draft until explicit sending,
+      and confirmed sends clear only their captured selection. ⚠️ 墓碑:
       `shots` carried pictures as base64 inside the prompt, gated on the
       agent's capabilities; every file is now a path on the machine, and
       a picture also rides inline where the agent takes pictures. */
   const files = usePendingFiles({
     put: (file, target) => withChat(view => view.put(file, target)),
     putPaths: (paths, target) => withChat(view => view.putPaths(paths, target)),
-  }, into, id);
-  const [pickOpen, setPickOpen] = useState(false);
+  }, into, id,machine);
+  // The picker edits the same retained draft as the composer. Reopening
+  // it must show every already-selected file, not a second empty queue.
+  const attachmentSources=files.items.flatMap(item=>item.source?[item.source]:item.path?[pathAttachment(item.path,machine,home??machine??'会话所在机器')]:[]);
+  const pendingKeyFor=(entry:Attachment)=>files.items.find(item=>item.source?.key===entry.key||(!item.source&&item.path===entry.path))?.key;
+  const [attachmentsOpen,setAttachmentsOpen]=useState(false);
+  const sendingDraft=useRef(false);
   /** A terminal block handed to the next conversation (roadmap 2.3), as
       `[name, text]`: it rides as the prompt's own text, there being no
       file on any machine to point at. Cleared by sending. */
@@ -1496,27 +1504,35 @@ export function ChatView({
   };
   const hasComposerContent=!!text.trim()||files.items.length>0||docs.length>0;
   const canSend=hasComposerContent&&!inTurn&&!gone&&files.ready&&facts!==null&&!facts.needsLogin;
-  const say = () => {
+  const say = async () => {
     const line = text.trim();
-    if (!canSend) return;
+    if (!canSend||sendingDraft.current) return false;
+    sendingDraft.current=true;setControlError(null);
+    const reading=reader.current;
+    let prepared:typeof files.items;
+    try{prepared=await files.prepare();}
+    catch(error){setControlError(String(error));sendingDraft.current=false;return false;}
+    sendingDraft.current=false;
+    if(!mounted.current||currentSession.current!==id||reader.current!==reading)return false;
     const owner = chatDraftOwner(id);
-    if (!owner) return;
-    const placed = files.items.filter(file => file.path !== null);
+    if (!owner) return false;
+    const placed = prepared.filter(file => file.path !== null);
     const full = withAttachments(line, placed.map(file => file.path as string));
     const images = facts?.images ? placed.flatMap(file => file.inline ? [file.inline] : []) : [];
-    const draft = rememberChatDraft({owner, reader: reader.current, session: id, token: crypto.randomUUID(), text, full, images, documents: docs, attachments: files.items});
-    if (!draft) return;
+    const draft = rememberChatDraft({owner, reader: reader.current, session: id, token: crypto.randomUUID(), text, full, images, documents: docs, attachments: prepared});
+    if (!draft) return false;
     if (placed.length > 0 && box.current) raiseKeyboard(box.current);
     composer.current = {session: id, text: "", documents: [], attachments: []};
     setText("");
     setInTurn(true);
-    files.clear();
+    for(const item of prepared)files.remove(item.key);
     setDocs([]);
     setPaint(previous => ({...previous, live: boundedLive([...previous.live, {who: "user", text: full, token: draft.token}])}));
     sent.current = line;
     lastSay.current = draft;
     setUnsent(null);
     issueDraft(draft);
+    return true;
   };
   retryDraft.current = previous => {
     if (!mounted.current || currentSession.current !== id || previous.session !== id || inTurn || gone) return;
@@ -1620,15 +1636,6 @@ export function ChatView({
       }}
     >
       <span className="sr-only" role="status">{turnStatus}</span>
-      {home !== null && (
-        <MachineFilePick
-          open={pickOpen}
-          onOpenChange={setPickOpen}
-          machine={home}
-          shown={home}
-          onPick={(p) => files.addPaths([p])}
-        />
-      )}
       <div className="relative flex min-h-0 flex-1 flex-col">
       {readableExport.notice&&<div role="status" className="flex items-center gap-in px-row text-caption">{readableExport.notice}{readableExport.busy&&<Button size="sm" variant="ghost" onClick={readableExport.cancel}>取消</Button>}</div>}
       {!findingHistory && historyExport.notice && <p role="status" className="px-row text-caption">{historyExport.notice}</p>}
@@ -1921,14 +1928,20 @@ export function ChatView({
               machine, and the way to choose another directory there
               (STORE-BRIEF phase 2) — the 留言's line, the same component. */}
           {home !== null && files.items.length > 0 && (
-            <SendInto machine={machine ?? ""} name={home} into={into} onInto={setInto} className="pb-xxs" />
+            <AttachmentDestination machine={machine??null} into={into} onInto={setInto} busy={files.busy}/>
           )}
           {sending && (
             <div data-chat-sending className="px-2 pb-1 text-caption tabular-nums text-muted-foreground">
               {gui.chat_sending((sending[0] / 1e6).toFixed(1), (sending[1] / 1e6).toFixed(1))}
             </div>
           )}
-          <PendingChips key={id} items={files.items} onRemove={files.remove} machine={home ?? machine ?? ""} here={machine === null} />
+          <AttachmentPicker viewport={dropBox} open={attachmentsOpen} onClose={()=>setAttachmentsOpen(false)} onSent={()=>setAttachmentsOpen(false)} road={{
+            machine:machine??null,cwd:null,into,onInto:setInto,filesOnly:true,action:'完成',selected:attachmentSources,
+            add:files.addSources,
+            remove:item=>{const key=pendingKeyFor(item);if(key)files.remove(key);},
+            replace:(item,file)=>{const key=pendingKeyFor(item);if(key)files.replace(key,file);},
+            send:async()=>{if(!canSend)return false;return await say()===true;},dropFiles:files.addFiles,busy:files.busy,progress:null}}/>
+          <PendingChips key={id} items={files.items} onAdd={()=>setAttachmentsOpen(true)} onRemove={key=>{files.remove(key);if(files.items.find(item=>item.key===key)?.error)setControlError(null);}} onReplace={files.replace} onRetry={key=>{files.retry(key);setControlError(null);}} busy={files.busy} machine={home ?? machine ?? ""} here={machine === null} />
           {docs.length > 0 && (
             <div data-chat-shots className="flex flex-wrap items-center gap-1.5 px-2 pb-1 text-caption">
               {docs.map(([name], i) => (
@@ -1974,11 +1987,8 @@ export function ChatView({
             <Composer
               lead={
                 <SessionAdd
-                  destination={home !== null ? <SendInto machine={machine ?? ""} name={home} into={into} onInto={setInto} /> : null}
-                  onAttach={canAttach ? () => picker.current?.click() : undefined}
-                  onAttachMachine={
-                    canAttach && home ? { label: gui.chat_attach_machine_title(home), pick: () => setPickOpen(true) } : undefined
-                  }
+                  destination={undefined}
+                  onAttach={canAttach&&!files.busy ? () => setAttachmentsOpen(true) : undefined}
                   options={addOptions}
                   onFind={sourceBinding?()=>setFindingHistory(true):undefined}
                   onExport={readableExport.available?readableExport.run:undefined} exportBusy={readableExport.busy}
@@ -2030,6 +2040,7 @@ export function ChatView({
             <Textarea
               ref={box}
               data-chat-input
+                readOnly={files.busy}
               aria-label="消息"
               aria-controls={menu.length?commandMenuId:undefined}
               aria-expanded={menu.length>0}

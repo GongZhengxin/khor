@@ -1,12 +1,17 @@
+import {checkKhorAttachments} from './khor-attachment-checks.mjs';
+import {checkAttachmentDraft} from './attachment-draft-checks.mjs';
 import {checkResourceFiles} from './resource-checks.mjs';
 import {checkLongHistory} from './history-checks.mjs';
 import {checkWorkspaceBack} from './workspace-back-checks.mjs';
 import {checkSettingsNavigation} from './settings-checks.mjs';
 import {checkGuiExperience,checkWorkspaceSessions} from './gui-experience-checks.mjs';
 import {checkCommandTab} from './child-command-checks.mjs';
+import {checkConversationNavigation} from './conversation-navigation-checks.mjs';
+import {checkWorkbench} from './workbench-checks.mjs';
+import {checkGlassSelection} from './glass-selection-checks.mjs';
 import {chromium, webkit} from 'playwright-core';
 import {spawn} from 'node:child_process';
-import {mkdir, writeFile} from 'node:fs/promises';
+import {mkdir, readFile, writeFile} from 'node:fs/promises';
 import path from 'node:path';
 import assert from 'node:assert/strict';
 import {checkMobileNavigation} from './navigation-checks.mjs';
@@ -19,6 +24,29 @@ const port = 23918;
 const server = spawn('python3', ['-m', 'khor_lab.preview', process.env.LAB_BUNDLE, '--port', String(port)], {
   cwd: path.resolve('../..'), env: {...process.env, PYTHONPATH: 'scripts'}, stdio: 'inherit',
 });
+let serverError;
+server.on('error', error => { serverError = error; });
+
+async function waitForPreview() {
+  const expected=JSON.parse(await readFile(path.join(process.env.LAB_BUNDLE,'lab-manifest.json'),'utf8'));
+  const deadline=Date.now()+15000;
+  while(Date.now()<deadline) {
+    if(serverError)throw serverError;
+    if(server.exitCode!==null)throw new Error(`Lab preview exited before listening: ${server.exitCode}`);
+    let status;
+    try {
+      const response=await fetch(`http://127.0.0.1:${port}/lab/status`,{signal:AbortSignal.timeout(1000)});
+      if(response.ok)status=await response.json();
+    } catch { /* The owned preview is still copying its pinned bundle. */ }
+    if(status?.available) {
+      assert.equal(status.source?.tree,expected.tree,'The listening preview must serve this exact source tree');
+      assert.equal(status.source?.snapshot_commit,expected.snapshot_commit,'Do not exercise another preview on the same port');
+      return;
+    }
+    await new Promise(resolve=>setTimeout(resolve,100));
+  }
+  throw new Error('The pinned Lab preview did not become ready within 15 seconds');
+}
 
 async function inspect(browser, scene, size, data = {}) {
   const context = await browser.newContext({viewport: size, isMobile: size.width < 500 && !data.fine, hasTouch: size.width < 500 && !data.fine});
@@ -46,8 +74,9 @@ async function inspect(browser, scene, size, data = {}) {
     await page.screenshot({path:path.join(report,name+'-child-conversation.png')});
     const id=await reader.getAttribute('data-child-session-ref');
     if(size.width>=500){
-      const childTab=page.locator('[data-session-tabs] [data-tab]').filter({has:page.locator('[data-tab-open]').filter({hasText:'codex-acp'})});
+      const childTab=page.locator('[data-session-tabs] [data-tab]').filter({has:page.locator(`[data-tab-open="${id}"]`)});
       assert.equal(await childTab.count(),1,'The delegated conversation participates in the ordinary session tab strip');
+      assert.equal((await childTab.locator('[data-tab-open]').innerText()).trim(),'Codex','Child tabs use the same protocol-free agent name');
       await page.locator('[data-session-tabs] [data-tab-open="wide/all"]').click();
       await page.locator('[data-machine-chat-scroll]:visible').waitFor();
       await page.locator('[data-child-task-row]').first().click();
@@ -440,7 +469,50 @@ async function inspect(browser, scene, size, data = {}) {
 let browser;
 const results = [];
 try {
-  if (process.env.LAB_CHECKS === 'child-tree') {
+  await waitForPreview();
+  if (process.env.LAB_CHECKS === 'agent-names') {
+    for(const engine of ['chromium','webkit']){
+      browser=await (engine==='webkit'?webkit:chromium).launch({headless:true});
+      for(const size of [{width:1280,height:900},{width:390,height:844}]){
+        results.push(await inspect(browser,'terminal',size,{items:2,setup:true,engine}));
+        await writeFile(path.join(report,'results.json'),JSON.stringify(results,null,2));
+        results.push(await inspect(browser,'list',size,{machines:3,engine}));
+        await writeFile(path.join(report,'results.json'),JSON.stringify(results,null,2));
+      }
+      await browser.close();browser=undefined;
+    }
+  } else if (process.env.LAB_CHECKS === 'attachment-draft') {
+    for(const engine of ['chromium','webkit']){
+      browser=await (engine==='webkit'?webkit:chromium).launch({headless:engine!=='webkit'||process.env.QUALITY_HEADLESS!=='0'});
+      for(const width of [1280,412,390,320]){results.push(await checkAttachmentDraft(browser,{port,report,engine,width}));await writeFile(path.join(report,'results.json'),JSON.stringify(results,null,2));}
+      results.push(await checkGuiExperience(browser,{port,report,engine}));await writeFile(path.join(report,'results.json'),JSON.stringify(results,null,2));
+      for(const width of [1280,390]){results.push(await checkKhorAttachments(browser,{port,report,engine,width}));await writeFile(path.join(report,'results.json'),JSON.stringify(results,null,2));}
+      await browser.close();browser=undefined;
+    }
+  } else if (process.env.LAB_CHECKS === 'glass-selection') {
+    for(const engine of ['chromium','webkit']){
+      browser=await(engine==='webkit'?webkit:chromium).launch({headless:true});
+      results.push(await checkGlassSelection(browser,{port,report,engine}));
+      await writeFile(path.join(report,'results.json'),JSON.stringify(results,null,2));
+      await browser.close();browser=undefined;
+    }
+  } else if (process.env.LAB_CHECKS === 'workbench') {
+    for(const engine of ['chromium','webkit']){
+      browser=await(engine==='webkit'?webkit:chromium).launch({headless:true});
+      results.push(await checkWorkbench(browser,{port,report,engine}));
+      await writeFile(path.join(report,'results.json'),JSON.stringify(results,null,2));
+      await browser.close();browser=undefined;
+    }
+  } else if (process.env.LAB_CHECKS === 'conversation-navigation') {
+    for(const engine of ['chromium',...(process.env.QUALITY_ENGINES?.includes('webkit')?['webkit']:[])]) {
+      browser=await (engine==='webkit'?webkit:chromium).launch({headless:engine!=='webkit'||process.env.QUALITY_HEADLESS!=='0'});
+      for(const width of [320,390])for(const workspace of [false,true])for(const khor of [true,false]) {
+        results.push(await checkConversationNavigation(browser,{port,report,engine,workspace,khor,width}));
+        await writeFile(path.join(report,'results.json'),JSON.stringify(results,null,2));
+      }
+      await browser.close();browser=undefined;
+    }
+  } else if (process.env.LAB_CHECKS === 'child-tree') {
     for (const engine of ['chromium', ...(process.env.QUALITY_ENGINES?.includes('webkit') ? ['webkit'] : [])]) {
       browser = await (engine === 'webkit' ? webkit : chromium).launch({headless:engine !== 'webkit' || process.env.QUALITY_HEADLESS !== '0'});
       for (const size of [{width:1280,height:900},{width:390,height:844}]) {
@@ -458,18 +530,23 @@ try {
     await new Promise(r => setTimeout(r, 100));
   }
   browser = await chromium.launch({headless: true});
+  for(const width of [1280,412,390,320])results.push(await checkAttachmentDraft(browser,{port,report,engine:'chromium',width}));
+  results.push(await checkWorkbench(browser,{port,report,engine:'chromium'}));
+  results.push(await checkGlassSelection(browser,{port,report,engine:'chromium'}));
+  for(const workspace of [false,true])for(const khor of [true,false])results.push(await checkConversationNavigation(browser,{port,report,engine:'chromium',workspace,khor}));
   results.push(await checkWorkspaceBack(browser,{port,report}));
   for(const mobile of [false,true])results.push(await checkResourceFiles(browser,{port,report,mobile,engine:'chromium'}));
   results.push(await checkSettingsNavigation(browser,{port,report,engine:'chromium'}));
   results.push(await checkSettingsNavigation(browser,{port,report,engine:'chromium',mobile:true}));
   results.push(await checkGuiExperience(browser,{port,report,engine:'chromium'}));
+  for(const width of [1280,390])results.push(await checkKhorAttachments(browser,{port,report,engine:'chromium',width}));
   results.push(await checkWorkspaceSessions(browser,{port,report,engine:'chromium'}));
   results.push(await checkWorkspaceSessions(browser,{port,report,engine:'chromium',mobile:true}));
   results.push(await checkWorkspaceSessions(browser,{port,report,engine:'chromium',mobile:true,khor:true}));
   results.push(await inspect(browser,'workspaces',{width:1280,height:900},{machines:3,nativeMarker:true}));
   await writeFile(path.join(report,'results.json'),JSON.stringify(results,null,2));
   for (const size of [{width: 1280, height: 900}, {width: 390, height: 844}, {width: 320, height: 568}]) {
-    for (const scene of ['gui', 'codex', 'terminal', 'content', 'workspace', ...(size.width < 500 ? ['page'] : []), 'list', 'devices']) {
+    for (const scene of ['gui', 'khor', 'codex', 'terminal', 'content', 'workspace', ...(size.width < 500 ? ['page'] : []), 'list', 'devices']) {
       results.push(await inspect(browser, scene, size));
       await writeFile(path.join(report, 'results.json'), JSON.stringify(results, null, 2));
     }
@@ -505,10 +582,15 @@ try {
   if (process.env.QUALITY_ENGINES?.includes('webkit')) {
     await browser.close();
     browser = await webkit.launch({headless:process.env.QUALITY_HEADLESS!=='0'});
+    for(const width of [1280,412,390,320])results.push(await checkAttachmentDraft(browser,{port,report,engine:'webkit',width}));
+    results.push(await checkWorkbench(browser,{port,report,engine:'webkit'}));
+    results.push(await checkGlassSelection(browser,{port,report,engine:'webkit'}));
+    for(const workspace of [false,true])for(const khor of [true,false])results.push(await checkConversationNavigation(browser,{port,report,engine:'webkit',workspace,khor}));
     for(const mobile of [false,true]){results.push(await checkResourceFiles(browser,{port,report,mobile,engine:'webkit'}));await writeFile(path.join(report,'results.json'),JSON.stringify(results,null,2));}
     results.push(await checkSettingsNavigation(browser,{port,report,engine:'webkit'}));
     results.push(await checkSettingsNavigation(browser,{port,report,engine:'webkit',mobile:true}));
     results.push(await checkGuiExperience(browser,{port,report,engine:'webkit'}));
+    for(const width of [1280,390])results.push(await checkKhorAttachments(browser,{port,report,engine:'webkit',width}));
     results.push(await checkWorkspaceSessions(browser,{port,report,engine:'webkit'}));
     results.push(await checkWorkspaceSessions(browser,{port,report,engine:'webkit',mobile:true}));
     results.push(await checkWorkspaceSessions(browser,{port,report,engine:'webkit',mobile:true,khor:true}));

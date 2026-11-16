@@ -38,6 +38,7 @@ import { caretCoveredAt, editorIn, hasSymbolsIn, placeLine, topLineOf } from "@/
 import type { EditorHistorySlot } from "@/lib/code/history";
 import { preloadEditor } from "@/components/CodeEditor.lazy";
 import { GlassCapsule, GlassCircle, GlassItem } from "@/components/Glass";
+import {ContentPill} from '@/components/ContentDeck';
 import { DeckBand, TabSheet } from "@/components/SessionBar";
 import type { TabFace } from "@/browse/TabStrip";
 import { IconBack, IconBranch, IconCheck, IconEye, IconFiles, IconMore, IconReload } from "@/components/icons";
@@ -141,7 +142,9 @@ function useFileVerbs({
   faceToggle,
   handoff,
   additionalActions = [],
+  more = true,
 }: {
+  more?: boolean;
   handoff?: FileHandoffControl;
   additionalActions?: readonly FileMenuAction[];
   /** The file page's face (UX-14): 字号 and 预览背景 are offered only
@@ -286,9 +289,9 @@ function useFileVerbs({
   const moreCircle = faceToggle ? (
     <GlassCapsule data-file-actions role="group" aria-label={gui.file_actions}>
       <GlassItem data-file-face-toggle={faceToggle.face} aria-label={faceToggle.face === "preview" ? gui.file_face_source : gui.file_face_preview} aria-pressed={faceToggle.face === "preview"} on={faceToggle.face === "preview"} onClick={faceToggle.run} tip={!coarse && (faceToggle.face === "preview" ? gui.file_face_source : gui.file_face_preview)}><IconEye /></GlassItem>
-      {moreMenu}
+      {more && moreMenu}
     </GlassCapsule>
-  ) : moreMenu;
+  ) : more ? moreMenu : null;
   return { moreCircle, dialogs, said, size, ground: ground.ground };
 }
 
@@ -338,7 +341,11 @@ export function FilePage({
   embeddedToolbar,
   contentDeck,
   editorHistory,
+  more = true,
+  localFile,
 }: {
+  more?: boolean;
+  localFile?: File;
   /** Owned by the open file/tab, not by its temporary source view. */
   editorHistory?: EditorHistorySlot;
   /** A retained host owns both the current face and changes to it. */
@@ -425,8 +432,9 @@ export function FilePage({
   const face = faceControl?.value ?? localFace;
   const setFace = faceControl?.set ?? setLocalFace;
   const controlledFace = faceControl !== undefined;
-  const handoff = useFileHandoff(machine,path);
+  const handoff = useFileHandoff(machine,path,!localFile);
   const verbs = useFileVerbs({
+    more,
     machine,
     path,
     here,
@@ -601,6 +609,7 @@ export function FilePage({
         ) : (
         <FileView
           handoff={handoff}
+          localFile={localFile}
           editorHistory={editorHistory ?? localHistory.current}
           key={`${machine} ${path}`}
           machine={machine}
@@ -662,7 +671,7 @@ export function FilePage({
                 when clean and is ✓ save while it differs. A revision keeps
                 its compare switch there. ⚠️ 墓碑 (UX-14): name · 预览 eye ·
                 ✓ — 预览 is the circle beside the pill now. */}
-            <div data-file-pill className="glass flex h-glass-btn min-w-0 flex-1 items-center gap-in rounded-full ps-1 pe-1">
+            <ContentPill data-file-pill>
               {contentDeck && rev === null ? contentDeck.identity : tabs && rev === null ? (
                 <DeckBand faces={tabs.faces} active={tabs.active} onFocus={tabs.onFocus} onOverview={() => setSheet(true)} />
               ) : (
@@ -702,7 +711,7 @@ export function FilePage({
                   <IconReload />
                 </GlassItem>
               )}
-            </div>
+            </ContentPill>
             {rev !== null && !compare && revisionRenders(path) && (
               <GlassCircle
                 aria-label={gui.file_face_preview}

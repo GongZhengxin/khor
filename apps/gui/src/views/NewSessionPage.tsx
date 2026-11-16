@@ -1,5 +1,5 @@
 import {AcpAgentSetup,EMPTY_ENVIRONMENT,type SessionEnvironment} from "@/views/AcpAgentSetup";
-import {agentPresentation} from '@/lib/acp-session';
+import {agentPresentation,conversationAgents,conversationRecents} from '@/lib/acp-session';
 import {managePi} from "@/lib/pi-accounts";
 import {KhorSessionSetup, type KhorModelSelection} from '@/views/KhorSessionSetup';
 // New session: the target, its current directory, and what to run. The same
@@ -146,7 +146,7 @@ export function NewSessionPage({
     return()=>{live=false;window.clearTimeout(wait);};
   },[directoryKey,target?.hosts,channel]);
   const directoryFacts=directory?.key===directoryKey?directory.facts:null;
-  const agents = [...new Set(['claude', 'codex', ...known.map(a => a.name)])];
+  const agents = conversationAgents(known.map(a=>a.name),launch.kind==='agent'?launch.agent:undefined);
   const allChoices: LaunchOption[] = [{id:'khor',label:'khor',icon:kindIcon('gui','khor'),launch:{kind:'khor'}}, {
     id: 'shell',
     label: 'Shell',
@@ -167,8 +167,7 @@ export function NewSessionPage({
     }
   })), ...agents.map(name => ({
     id: 'agent:' + name,
-    label: agentPresentation(name).name + ' · ' + gui.view_chat,
-    aside: agentPresentation(name).source,
+    label: agentPresentation(name).name,
     terms: name,
     icon: kindIcon('agent', name),
     launch: {
@@ -187,7 +186,7 @@ export function NewSessionPage({
       preset: p.id
     }
   }))];
-  const choices = recentLaunchChoices(allChoices, preferences.machines[machineId]?.recent ?? []);
+  const choices = recentLaunchChoices(allChoices, conversationRecents(preferences.machines[machineId]?.recent ?? [],agents));
   const selected = choices.find(c => c.id === launchId(launch));
   const launchReady = !!selected && !(launch.kind === 'shell' && launch.preset && (selected.launch.kind !== 'shell' || selected.launch.command !== launch.command));
   const command = launch.kind === 'shell' ? launch.command : '';
@@ -369,7 +368,7 @@ export function NewSessionPage({
       <span className="text-caption text-muted-foreground">{taken ? gui.new_session_registry_taken(taken[0], taken[1]) : gui.new_session_registry}</span>
       <DialogBody data-launch-catalog-rows>
         {(snapshot || []).filter(k => `${k.id} ${k.name} ${k.about}`.toLowerCase().includes(query.toLowerCase())).map(k => <div key={k.id} className="flex min-w-0 flex-none items-center gap-in py-in">
-          <div className="min-w-0 flex-1"><div className="truncate text-body">{k.name}</div><div className="truncate text-caption text-muted-foreground">{k.argv || k.about}</div></div>
+          <div className="min-w-0 flex-1"><div className="truncate text-body">{agentPresentation(k.name).name}</div><div className="truncate text-caption text-muted-foreground">{k.argv || k.about}</div></div>
           {known.some(a => a.name === k.id) ? <span className="text-caption text-muted-foreground">{gui.new_session_attached}</span> : k.argv === null ? <span className="text-caption text-muted-foreground">{gui.new_session_byhand}</span> : <Button size="sm" disabled={attaching !== null} onClick={() => attach(k.id)}>{gui.new_session_attach}</Button>}
         </div>)}
         {snapshot && !snapshot.some(k=>`${k.id} ${k.name} ${k.about}`.toLowerCase().includes(query.toLowerCase())) && <p className="text-callout text-muted-foreground">{gui.no_matches}</p>}

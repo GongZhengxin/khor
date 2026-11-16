@@ -3,6 +3,10 @@
 > 2026-09-25 从旧 `docs/DESIGN.md` 第一至三节原样搬来(设计系统换成 `docs/design-system/` 时,这几节没有别处可去)。
 > 文中「这份文档」「第二节」指的就是这一份。`npm run gates` 读这份文件:**每个 `npm run` 入口都必须在这里被点名**。
 
+补充：`npm run scroll-surfaces -- --material` 对照固定列表标题的实际背景色像素，覆盖浅深主题与 Chromium/WebKit；`SCROLL_SURFACES_MATERIAL_DIR` 可保留颜色测量与截图。它使用既有正式共享组件夹具，不模拟原生窗口材质。
+
+`npm run lab:workbench` 启动 Storybook 验收工作台；`npm run lab:workbench:build` 构建静态工作台，嵌入完整正式 App Lab，设备尺寸与环境参数仅用于预览。
+
 ## 一、什么必须走 token
 
 字号、行高、字重、圆角、间距、像素尺寸、动效时长——组件里出现这几类的
@@ -942,3 +946,8 @@ Developer Lab 的 `check-app.mjs` 运行 `dev/lab/pairing-checks.mjs`，从真�
 macOS job 编译 macOS / iOS catalog、保留资源清单，并导出 Default / Dark 核验均使用深色图稿。
 浅色版和按主题更换图稿已由用户取消。只需图标生成工具依赖，不触发完整 App 构建；安装验收另记。
 规范唯一入口为 [App 图标规范](../../../apps/gui/src-tauri/icons/src/README.md)。
+
+
+### 透明窗口中的浅色选中玻璃（2026-11-13）
+
+完整 App Lab 的 `glass-selection-checks.mjs` 随既有 `dev/lab/check-app.mjs` 运行；`LAB_CHECKS=glass-selection` 可单独检查两引擎的导航和标签底色、前景 opacity、明暗背景实际像素响应，以及实色／深色控制组。透明浅深选中态均要求填充 alpha0（含非实色窗口100%），实色为1；明暗背景的实际像素响应超过40级，不能接受80%白色板的微弱响应。默认完整 Quality 同样包含它。需要既有 LAB_BUNDLE/LAB_REPORT，远端流程准备依赖与精确源码构建；不在 source-only 本机编译。SB 初始主题在 App 设置读取之前种入隔离夹具，重载中的浅深切换也纳入控制组。

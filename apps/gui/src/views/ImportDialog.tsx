@@ -1,3 +1,4 @@
+import {agentPresentation} from '@/lib/acp-session';
 // 导入 (docs/SHELL.md 第八轮, 2026-09-22:「session 里放什么，应该是用户
 // 决定，不是我们自动。用户可以通过+导入已有 session，包括 acp。」).
 //
@@ -301,7 +302,7 @@ export function ImportDialog({
                     className="flex min-w-0 items-baseline justify-between gap-2"
                   >
                     <span className="min-w-0 flex-1 truncate">
-                      {a.name}
+                      {agentPresentation(a.name).name}
                       {sentence !== null && (
                         <span data-agent-seen-text className="ml-2 text-caption text-muted-foreground">
                           {sentence}

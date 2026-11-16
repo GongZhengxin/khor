@@ -23,7 +23,8 @@ export function pathAttachment(path: string, from: string | null, shown: string,
   return { key: `${from ?? ""}\n${pathKey(path)}`, path, from, shown, name: pathName(path), dir, size, native };
 }
 export function includesAttachment(parent: Attachment, child: Attachment): boolean {
-  return !parent.device && !child.device && parent.dir && parent.from === child.from && pathKey(child.path).startsWith(pathKey(parent.path) + "/");
+  if(parent.device||child.device)return !!(parent.device&&child.device&&parent.dir&&child.key.startsWith(parent.key+"/"));
+  return parent.dir && parent.from === child.from && pathKey(child.path).startsWith(pathKey(parent.path) + "/");
 }
 export function addAttachments(old: Attachment[], entries: Attachment[]): Attachment[] {
   let now = [...old];
@@ -89,9 +90,9 @@ export function deviceFolderEntries(root: Attachment, prefix = ""): DeviceFolder
 }
 /** Capture handles during drop; enumerate asynchronously after the DOM event. */
 export async function droppedAttachments(data: DataTransfer, shown: string): Promise<Attachment[]> {
-  const roots = [...data.items].filter((i) => i.kind === "file").map((i) => i.webkitGetAsEntry());
+  const roots = [...data.items].filter((i) => i.kind === "file").map((i) => i.webkitGetAsEntry?.() ?? null);
   const files = [...data.files];
-  if (!roots.length || roots.some((e) => !e)) return deviceAttachments(files, false, shown);
+  if (!roots.length || roots.some((e) => !e) || (files.length === roots.length && roots.every(entry=>entry?.isFile))) return deviceAttachments(files, false, shown);
   const out: Attachment[] = [];
   for (const root of roots) {
     const tree: DeviceTree = { files: [], dirs: [] };
