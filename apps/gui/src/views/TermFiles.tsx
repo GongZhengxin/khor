@@ -3,7 +3,7 @@ import {useEffect,useLayoutEffect,useMemo,useRef,useState,useId,type RefObject} 
 import {createPortal} from 'react-dom';
 import {fetchDevices,nativeFolders,said,termDropForget,termPickFolders,type DeviceRow} from '@/api';
 import {MachineAvatar} from '@/components/Avatar';
-import {IconBack,IconFile,IconFiles,IconChevronDown,IconDevices} from '@/components/icons';
+import {IconBack,IconFile,IconFiles,IconMore} from '@/components/icons';
 import {ContentSearch} from '@/components/ContentSearch';
 import {ContentDeck,ContentPill,PillFace} from '@/components/ContentDeck';
 import {MachineFace} from '@/components/SessionFace';
@@ -18,6 +18,7 @@ import {keyboardCover,keyboardHeight,holdFoot,footHeld} from '@/lib/viewport';
 import {lowerKeyboard,raiseKeyboard} from '@/lib/soft-keyboard';
 import {isDown} from '@/lib/topology';
 import {hopWord} from '@/words';
+import {cn} from '@/lib/utils';
 import {useNarrow} from '@/hooks/use-narrow';
 import {FilesPane} from '@/views/FilesPane';
 import {AttachmentList} from '@/views/AttachmentList';
@@ -82,7 +83,7 @@ export function TermFiles({road,onClose,onSent,viewport}:{road:FilesRoad;onClose
  },[height,narrow]);
  const finish=(sent=false)=>{if(restore.current?.isConnected)raiseKeyboard(restore.current);sent?onSent():onClose();};
  useEffect(()=>{mounted.current=true;let live=true;void fetchDevices().then(rows=>{if(live)setDevices(rows);},e=>{if(live)setError(said(e));});return()=>{live=false;mounted.current=false;};},[]);
- const sources=machinesFor(devices,road.machine);
+ const sources=machinesFor(devices,road.machine).filter(device=>!device.me);
  const own=(entry:Attachment)=>road.selected.some(item=>item.key===entry.key);
  const inherited=(entry:Attachment)=>road.selected.some(item=>includesAttachment(item,entry));
  const toggle=(entry:Attachment)=>{if(road.busy||inherited(entry))return;own(entry)?road.remove(entry):road.add([entry]);};
@@ -95,43 +96,77 @@ export function TermFiles({road,onClose,onSent,viewport}:{road:FilesRoad;onClose
  const browse=(entry:Attachment)=>{const machine=machineFor(entry);if(machine)setAt({machine,path:entry.device?'/':entry.path,root:entry.device?entry:undefined});};
  const send=async()=>{if(road.busy||sending.current||!road.selected.length)return;sending.current=true;setError(null);try{if(await road.send(road.selected,road.into)){if(mounted.current)finish(true);}else if(mounted.current)setError('附件未能发送，已保留所选文件，可重试');}catch(e){if(mounted.current)setError(said(e));}finally{sending.current=false;}};
  return <>
- {createPortal(<div ref={panel} data-attachment-picker data-files-panel style={{height}} className="fixed bottom-0 z-40 flex min-h-0 flex-col border-t bg-(--canvas-solid) px-row pb-safe-bottom shadow-(--shadow-float)" onKeyDown={e=>{if(e.key==='Escape'&&!road.busy){e.preventDefault();finish();}}}>
+ {createPortal(<div ref={panel} data-attachment-picker data-files-panel style={{height,'--attachment-panel-height':height+'px'} as import('react').CSSProperties} className="fixed bottom-0 z-40 flex min-h-0 flex-col gap-row border-t bg-(--canvas-solid) px-base pt-in pb-safe-bottom shadow-(--shadow-float)" onKeyDown={e=>{if(e.key==='Escape'&&!road.busy){e.preventDefault();finish();}}}>
   <div data-files-actions className="flex min-h-touch flex-none items-center justify-between">
    <Button data-files-cancel variant="ghost" className="min-h-touch" disabled={road.stopping||(road.busy&&!road.cancel)} onClick={()=>road.busy?road.cancel?.():finish()}>{road.busy&&road.cancel?'取消传输':'取消'}</Button>
    <Button data-files-send variant="primary" className={road.selected.length?"min-h-touch":"min-h-touch bg-fill text-muted-foreground"} disabled={road.busy||picking||!road.selected.length} onClick={()=>void send()}>{road.busy?'正在发送':`发送${road.selected.length?' ('+road.selected.length+')':''}`}</Button>
   </div>
-  <div data-attachment-split className="flex min-h-0 flex-1 flex-col">
-   <section data-files-source className="flex flex-none flex-col" aria-labelledby={sourceTitle}>
+  <div data-attachment-split data-files-body className="flex min-h-0 flex-1 flex-col gap-row overflow-y-auto overscroll-contain pb-in">
+   <section data-files-source className="flex flex-none flex-col gap-in" aria-labelledby={sourceTitle}>
     <h3 id={sourceTitle} className="text-headline">选择文件</h3>
-    <div className="flex min-w-0 gap-in">
-     <Button data-files-pick="device" disabled={road.busy} className="h-touch min-w-0 flex-1 flex-col gap-0 p-0 text-caption" onClick={()=>picker.current?.click()}><IconFile className="size-kind-mark"/>本机文件</Button>
-     {!road.filesOnly&&<Button data-files-pick="folder" disabled={road.busy||picking} className="h-touch min-w-0 flex-1 flex-col gap-0 p-0 text-caption" onClick={()=>void pickFolders()}><IconFiles className="size-kind-mark"/>本机文件夹</Button>}
-    <DropdownMenu modal={false}>
-     <DropdownMenuTrigger asChild><Button data-files-machines data-files-machine-count={sources.length} aria-label={`其他机器，${sources.length} 台`} disabled={road.busy||!sources.length} className="h-touch min-w-0 flex-1 flex-col gap-0 p-0 text-caption"><span className="flex items-center gap-xxs"><IconDevices className="size-kind-mark"/><span className="tabular-nums text-muted-foreground">{sources.length}</span><IconChevronDown className="size-kind-mark"/></span><span>其他机器</span></Button></DropdownMenuTrigger>
-     <DropdownMenuContent data-files-machines-menu align="start" aria-label="选择来源机器" className="min-w-nav-menu max-w-[calc(100vw-2*var(--gap-row))]">
-      {sources.map(d=><DropdownMenuItem key={d.id} data-files-machine={d.name} data-files-session={(road.machine===null?d.me:d.name===road.machine)||undefined} onSelect={()=>setAt({machine:d,path:''})}>
-       <MachineAvatar face={d.face} className="size-kind-mark flex-none"/><span className="min-w-0 flex-1 truncate">{d.shown}</span>{(road.machine===null?d.me:d.name===road.machine)?<span className="text-caption text-muted-foreground">{gui.files_session}</span>:!d.me&&d.hop==='quiet'&&isDown(d.down_ms)&&<span className="text-caption text-muted-foreground">{hopWord('down')}</span>}
-      </DropdownMenuItem>)}
-     </DropdownMenuContent>
-    </DropdownMenu>
+    <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-x-row gap-y-in">
+     <span className="text-callout text-muted-foreground">本机</span>
+     <div data-files-local className="flex min-w-0 items-center gap-in">
+      <Button data-files-pick="device" disabled={road.busy} className="min-h-touch gap-in text-callout" onClick={()=>picker.current?.click()}><IconFile className="size-kind-mark"/>文件</Button>
+      {!road.filesOnly&&<Button data-files-pick="folder" disabled={road.busy||picking} className="min-h-touch gap-in text-callout" onClick={()=>void pickFolders()}><IconFiles className="size-kind-mark"/>目录</Button>}
+     </div>
+     <span className="text-callout text-muted-foreground">其他机器</span>
+     <AttachmentMachines sources={sources} machine={road.machine} busy={road.busy} onPick={device=>setAt({machine:device,path:''})}/>
     </div>
    </section>
-   <section data-files-selection aria-labelledby={selectedTitle} className="flex min-h-0 flex-1 flex-col border-t mt-xxs">
-    <h3 id={selectedTitle} className="flex flex-none items-center gap-in text-headline">已选文件<span className="tabular-nums text-muted-foreground">{road.selected.length}</span></h3>
-    <div data-files-selection-scroll className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-     {road.selected.length?<AttachmentList items={road.selected.map(entry=>({...entry,source:entry,detail:entry.shown}))} busy={road.busy} onOpen={key=>{const entry=road.selected.find(item=>item.key===key);if(entry)entry.dir?browse(entry):setLook(entry);}} onRemove={key=>{const entry=road.selected.find(item=>item.key===key);if(entry)toggle(entry);}}/>:<p className="py-in text-callout text-muted-foreground">尚未选择文件或目录</p>}
+   {road.selected.length>0&&<section data-files-selection aria-labelledby={selectedTitle} className="flex flex-none flex-col gap-in">
+    <h3 id={selectedTitle} className="flex items-center gap-in text-headline">已选文件<span className="tabular-nums text-muted-foreground">{road.selected.length}</span></h3>
+    <div data-files-selection-scroll className="min-h-touch max-h-[calc(var(--attachment-panel-height)/2)] overflow-y-auto overscroll-contain rounded-md">
+     <AttachmentList items={road.selected.map(entry=>({...entry,source:entry,detail:entry.shown}))} busy={road.busy} onOpen={key=>{const entry=road.selected.find(item=>item.key===key);if(entry)entry.dir?browse(entry):setLook(entry);}} onRemove={key=>{const entry=road.selected.find(item=>item.key===key);if(entry)toggle(entry);}}/>
     </div>
+   </section>}
+   <section data-files-destination className="flex flex-none flex-col gap-in" aria-label="发送目录">
+    <h3 className="text-headline">发送目录</h3>
+    <AttachmentDestination className="border-0" machine={road.machine} into={road.into??null} onInto={road.onInto??(()=>{})} busy={road.busy}/>
    </section>
   </div>
   <input data-files-input ref={picker} type="file" multiple hidden onChange={e=>{addDevice([...(e.target.files??[])],false);e.target.value='';}}/>
   <input data-files-folder-input ref={folders} type="file" multiple hidden {...{webkitdirectory:''}} onChange={e=>{addDevice([...(e.target.files??[])],true);e.target.value='';}}/>
-  <AttachmentDestination machine={road.machine} into={road.into??null} onInto={road.onInto??(()=>{})} busy={road.busy}/>
   {error&&<p role="alert" className="text-caption text-destructive">{error}</p>}
   {road.busy&&<p data-files-transfer role="status" className="text-caption text-muted-foreground">{road.progress===null?'正在发送':`正在发送 · ${Math.round(road.progress*100)}%`}</p>}
  </div>,document.body)}
  <AttachmentDirectory place={at} onClose={()=>setAt(null)} selected={own} inherited={inherited} onToggle={toggle} onOpen={setLook} busy={road.busy} filesOnly={road.filesOnly}/>
  <AttachmentFile entry={look} devices={devices} onClose={()=>setLook(null)}/>
  </>;
+}
+/** Measure complete chip widths; only the suffix that cannot fit goes in More. */
+function AttachmentMachines({sources,machine,busy,onPick}:{sources:DeviceRow[];machine:string|null;busy:boolean;onPick:(device:DeviceRow)=>void}){
+ const row=useRef<HTMLDivElement>(null),more=useRef<HTMLButtonElement>(null);
+ const [count,setCount]=useState(0);
+ useLayoutEffect(()=>{
+  const root=row.current;if(!root)return;
+  let live=true;
+  const measure=()=>{
+   if(!live)return;
+   const widths=[...root.querySelectorAll<HTMLElement>('[data-files-machine-chip]')].map(node=>node.getBoundingClientRect().width);
+   const gap=parseFloat(getComputedStyle(root).columnGap)||0,room=root.clientWidth;
+   if(widths.reduce((a,b)=>a+b,0)+Math.max(0,widths.length-1)*gap<=room){setCount(widths.length);return;}
+   const reserve=(more.current?.getBoundingClientRect().width??0)+gap;
+   let used=0,visible=0;
+   for(const width of widths){const next=used+(visible?gap:0)+width;if(next+reserve>room)break;used=next;visible++;}
+   setCount(visible);
+  };
+  const observer=new ResizeObserver(measure);observer.observe(root);
+  for(const node of root.querySelectorAll<HTMLElement>('button'))observer.observe(node);
+  measure();void document.fonts.ready.then(measure);
+  return()=>{live=false;observer.disconnect();};
+ },[sources]);
+ const hidden=sources.slice(count);
+ return <div ref={row} data-files-machine-row data-files-source-count={sources.length} className="relative flex min-h-touch min-w-0 items-center gap-in overflow-hidden">
+  {!sources.length&&<span className="text-callout text-muted-foreground">暂无其他机器</span>}
+  {sources.map((device,index)=><Button key={device.id} data-files-machine-chip={device.name} aria-hidden={index>=count||undefined} tabIndex={index>=count?-1:undefined} title={device.shown} disabled={busy} className={cn('w-max min-h-touch max-w-nav-menu min-w-0 flex-none gap-in text-callout',index>=count&&'invisible pointer-events-none absolute left-0 top-0')} onClick={()=>onPick(device)}><MachineAvatar face={device.face} className="size-kind-mark flex-none"/><span className="truncate">{device.shown}</span></Button>)}
+  <DropdownMenu modal={false}>
+   <DropdownMenuTrigger asChild><Button ref={more} data-files-machines data-files-machine-count={hidden.length} aria-label={`更多机器，${hidden.length} 台`} aria-hidden={!hidden.length||undefined} tabIndex={hidden.length?undefined:-1} variant="ghost" disabled={busy||!hidden.length} className={cn('size-touch flex-none p-0',!hidden.length&&'invisible pointer-events-none absolute left-0 top-0')}><IconMore className="size-affordance"/></Button></DropdownMenuTrigger>
+   <DropdownMenuContent data-files-machines-menu align="end" aria-label="选择来源机器" className="min-w-nav-menu max-w-[calc(100vw-2*var(--gap-row))]">
+    {hidden.map(device=><DropdownMenuItem key={device.id} data-files-machine={device.name} data-files-session={device.name===machine||undefined} onSelect={()=>onPick(device)}><MachineAvatar face={device.face} className="size-kind-mark flex-none"/><span className="min-w-0 flex-1 truncate">{device.shown}</span>{device.name===machine?<span className="text-caption text-muted-foreground">{gui.files_session}</span>:device.hop==='quiet'&&isDown(device.down_ms)&&<span className="text-caption text-muted-foreground">{hopWord('down')}</span>}</DropdownMenuItem>)}
+   </DropdownMenuContent>
+  </DropdownMenu>
+ </div>;
 }
 function localEntry(root:Attachment,path:string,dir:boolean):Attachment{
  const relative=path.replace(/^\//,'');const name=relative.split('/').pop()??root.name;
@@ -159,10 +194,10 @@ function DirectoryBody({place,onClose,selected,inherited,onToggle,onOpen,busy,fi
  </div>;
 }
 /** Destination is contextual to the open conversation, not another form. */
-export function AttachmentDestination({machine,into,onInto,busy=false}:{machine:string|null;into:string|null;onInto:(path:string|null)=>void;busy?:boolean}){
+export function AttachmentDestination({machine,into,onInto,busy=false,className}:{machine:string|null;into:string|null;onInto:(path:string|null)=>void;busy?:boolean;className?:string}){
  const [target,setTarget]=useState<DeviceRow|null>(null);
  useEffect(()=>{let live=true;void fetchDevices().then(rows=>{if(live)setTarget(rows.find(row=>machine?row.name===machine:row.me)??null);},()=>{});return()=>{live=false;};},[machine]);
- return <SendInto machine={machine??''} name={target?.name??machine??''} into={into} onInto={onInto} render={({path,pick,reset})=><div data-attachment-destination className="flex w-full min-w-0 flex-none items-center gap-in border-t">
+ return <SendInto machine={machine??''} name={target?.name??machine??''} into={into} onInto={onInto} render={({path,pick,reset})=><div data-attachment-destination className={cn("flex w-full min-w-0 flex-none items-center gap-in border-t",className)}>
   <div data-send-to-machine role="group" aria-label={`发送到 ${target?.shown??machine??'会话所在机器'}，保存文件夹：${path}`} title={`${target?.shown??machine??'会话所在机器'}：${path}`} className="flex min-w-0 flex-1 items-center gap-xxs text-callout text-muted-foreground">
    <MachineAvatar face={target?.face??null} className="size-kind-mark flex-none"/>
    <span aria-hidden="true">：</span><span data-send-into-path className="min-w-0 flex-1 truncate">{path}</span>

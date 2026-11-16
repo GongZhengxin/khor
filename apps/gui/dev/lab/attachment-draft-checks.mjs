@@ -11,8 +11,9 @@ export async function checkAttachmentDraft(browser,{port,report,engine,width=390
  const selected=name=>picker.locator(`[data-files-selected="${name}"]`);
  const choose=file=>picker.locator('[data-files-input]').setInputFiles(file);
  const machinesMenu=page.locator('[data-files-machines-menu]:visible');
- const openMachines=async()=>{await picker.locator('[data-files-machines]').click();await machinesMenu.waitFor();const count=Number(await picker.locator('[data-files-machines]').getAttribute('data-files-machine-count'));assert(count>=2,'Lab exposes more than one source machine');assert.equal(await machinesMenu.locator('[data-files-machine]').count(),count,'Every advertised machine is available in the choice menu');};
- const sessionMachine=async()=>{await openMachines();await machinesMenu.locator('[data-files-machine][data-files-session]').click();};
+ const openMachines=async()=>{const more=picker.locator('[data-files-machines]:visible');if(!await more.count())return false;await more.click();await machinesMenu.waitFor();const count=Number(await more.getAttribute('data-files-machine-count'));assert(count>0,'Only overflowing machines use More');assert.equal(await machinesMenu.locator('[data-files-machine]').count(),count,'Overflow menu contains exactly the hidden machines');return true;};
+ const pickMachine=async name=>{const chip=picker.locator('[data-files-machine-chip="'+name+'"]:visible');if(await chip.count())await chip.click();else{assert(await openMachines(),'A hidden machine remains available in More');await machinesMenu.locator('[data-files-machine="'+name+'"]').click();}};
+ const sourceMachine=async()=>{const sources=(await api('devices')).filter(d=>d.hosts&&!d.me);assert(sources.length);await pickMachine(sources[0].name);};
 
  const grid=()=>page.locator('[data-terminal] .xterm-screen').evaluate(node=>({width:node.style.width,height:node.style.height}));
  const measurePanel=async(label,selector,view=page)=>{
@@ -58,12 +59,21 @@ export async function checkAttachmentDraft(browser,{port,report,engine,width=390
 
   if(mobile)await page.waitForFunction(()=>document.querySelector('#root').getBoundingClientRect().bottom<=document.querySelector('[data-attachment-picker]').getBoundingClientRect().top+1);
   await unchanged('chrome above the keyboard panel');assert.equal(await picker.locator('[data-files-actions]').innerText(),'取消\n发送 (1)');
-  const sourcesVisible=await picker.evaluate(root=>{
-   const source=root.querySelector('[data-files-source]').getBoundingClientRect(),selection=root.querySelector('[data-files-selection]').getBoundingClientRect();
-   return [...root.querySelectorAll('[data-files-pick],[data-files-machines]')].map(node=>{const r=node.getBoundingClientRect();return {label:node.textContent,top:r.top,bottom:r.bottom,left:r.left,right:r.right,visible:r.top>=source.top&&r.bottom<=source.bottom+1&&r.bottom<=selection.top+1};});
-  });assert(sourcesVisible.every(control=>control.visible),'Local files, folders and the counted machine entry are visible without scrolling');
+  const regions=await picker.evaluate(root=>{
+   const box=selector=>{const r=root.querySelector(selector).getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom};};
+   return {source:box('[data-files-source]'),selected:box('[data-files-selection]'),destination:box('[data-files-destination]'),local:box('[data-files-local]'),machines:box('[data-files-machine-row]')};
+  });
+  assert(regions.local.bottom<regions.machines.top,'Local files/folders and network machines occupy separate spaced rows');
+  assert(regions.source.bottom<regions.selected.top&&regions.selected.bottom<regions.destination.top,'Sources, selection and destination have ordered separated sections');
+  assert.equal(regions.source.left,regions.selected.left);assert.equal(regions.selected.left,regions.destination.left,'Section boundaries align');
+  for(const button of await picker.locator('[data-files-pick]').all())assert(await button.evaluate(node=>{const outer=node.getBoundingClientRect();return [...node.children].every(child=>{const r=child.getBoundingClientRect();return r.top>=outer.top&&r.bottom<=outer.bottom;});}),'Source button contents fit without overlapping adjacent elements');
+  const chips=picker.locator('[data-files-machine-chip]:visible');assert(await chips.count()>0,'At least one source machine shows its avatar and name inline');
+  assert(await chips.first().locator('svg').count()>0);assert((await chips.first().innerText()).trim());
+  assert.equal(await picker.locator('[data-files-destination]').getByRole('heading',{name:'发送目录'}).count(),1);
+  await selected('draft.txt').locator('[data-files-select]').click();await selected('draft.txt').waitFor({state:'hidden'});assert.equal(await picker.locator('[data-files-selection]').count(),0,'Empty selection hides its entire section');
+  await choose({name:'draft.txt',mimeType:'text/plain',buffer:Buffer.from('original attachment')});await selected('draft.txt').waitFor();
   assert.match(await picker.locator('[data-send-to-machine]').getAttribute('aria-label'),/发送到.*保存文件夹/);assert.equal(await picker.locator('[data-send-into-label]').count(),0);assert.equal((await picker.locator('[data-send-to-machine]').innerText()).replace(/\s/g,''),'：'+(await picker.locator('[data-send-into-path]').innerText()).replace(/\s/g,''),'Destination displays only avatar, colon and path');assert.equal((await picker.locator('[data-send-into-change]').innerText()).trim(),'更改');
-  await openMachines();const other=machinesMenu.locator('[data-files-machine]').last(),otherLabel=await other.innerText();const otherBounds=await other.boundingBox();assert(otherBounds.y>=0&&otherBounds.y+otherBounds.height<=height+1,'The last machine is reachable inside the viewport');await other.click();await directory.waitFor();assert(otherLabel.includes(await directory.locator('[data-files-directory-avatar]').getAttribute('aria-label')),'Choosing another machine opens that machine');await directory.locator('[data-files-directory-back]').click();await directory.waitFor({state:'hidden'});await unchanged('other machine choice');
+  const other=(await api('devices')).filter(d=>d.hosts&&!d.me).at(-1);assert(other);await pickMachine(other.name);await directory.waitFor();assert.equal(await directory.locator('[data-files-directory-avatar]').getAttribute('aria-label'),other.shown,'Choosing another machine opens that machine');await directory.locator('[data-files-directory-back]').click();await directory.waitFor({state:'hidden'});await unchanged('other machine choice');
   assert.equal(await picker.locator('[data-files-input]').getAttribute('accept'),null);assert.match(await picker.locator('[data-send-into-path]').innerText(),/khor-drop/);await green();assert.equal((await api('__ai_preview/attachment-events')).length,0);
   // Native/internal drops only carry paths. Read metadata from the source,
   // without staging/uploading files or borrowing the destination's facts.
@@ -88,7 +98,7 @@ export async function checkAttachmentDraft(browser,{port,report,engine,width=390
   await directory.locator('[data-files-name="inside.txt"] [data-files-open]').click();await preview.locator('.cm-editor').waitFor();assert.match(await preview.innerText(),/nested original bytes/);await preview.locator('[data-file-back]').click();await preview.waitFor({state:'hidden'});assert.match(await directory.locator('[data-files-search] input').inputValue(),/nested/);await directory.locator('[data-up]').click();await directory.locator('[data-files-name="nested"]').waitFor();await directory.locator('[data-files-directory-back]').click();await directory.waitFor({state:'hidden'});await selected('local-folder').locator('[data-files-select]').click();await unchanged('local folder navigation');
 
   await selected('draft.txt').locator('[data-files-open]').click();await preview.locator('[data-code-editor],.cm-editor').first().waitFor();await preview.locator('[data-file-back]').click();await preview.waitFor({state:'hidden'});
-  await sessionMachine();await directory.waitFor();await directory.locator('[data-files-entry]').first().waitFor();
+  await sourceMachine();await directory.waitFor();await directory.locator('[data-files-entry]').first().waitFor();
   assert(await directory.evaluate(node=>getComputedStyle(node).backgroundColor!=='rgba(0, 0, 0, 0)'),'Source directory candidates retain an opaque owning surface');
   assert.equal(await directory.locator('[data-files-search] input').evaluate(node=>node===document.activeElement),false,'No automatic path/search keyboard');
   // Measure the settled sheet, rather than its entrance below the viewport.
@@ -120,7 +130,7 @@ export async function checkAttachmentDraft(browser,{port,report,engine,width=390
   const field=directory.locator('[data-files-search] input');const previous=await field.inputValue();await field.fill(previous+remoteName.slice(0,3));await page.waitForTimeout(250);assert(await directory.locator(`[data-files-name="${remoteName}"]`).count());await field.fill(previous);
   await directory.locator('[data-files-directory-back]').click();await directory.waitFor({state:'hidden'});await selected(remoteName).waitFor();
   await selected(remoteName).locator('button').first().click();await selected(remoteName).waitFor({state:'hidden'});
-  await sessionMachine();await directory.locator('[data-files-name="project"]').waitFor();await directory.locator('[data-files-select="project"]').click();assert.equal(await directory.locator('[data-files-select="project"]').getAttribute('aria-pressed'),'true');
+  await sourceMachine();await directory.locator('[data-files-name="project"]').waitFor();await directory.locator('[data-files-select="project"]').click();assert.equal(await directory.locator('[data-files-select="project"]').getAttribute('aria-pressed'),'true');
   await directory.locator('[data-files-directory-back]').click();await directory.waitFor({state:'hidden'});await selected('project').locator('button').first().click();await directory.waitFor();await directory.locator('[data-files-entry]').first().waitFor();assert.match(await directory.locator('[data-files-search] input').inputValue(),/project/);await directory.locator('[data-files-directory-back]').click();await directory.waitFor({state:'hidden'});
   await selected('project').locator('[data-files-select]').click();await selected('project').waitFor({state:'hidden'});
   await choose(Array.from({length:12},(_,i)=>({name:`long-${i}.txt`,mimeType:'text/plain',buffer:Buffer.from('draft')})));
