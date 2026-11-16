@@ -25,9 +25,9 @@ E=`/Volumes/disk0/Khor/evidence/net`。已闭证项不因compact/session重跑�
 
 ## 下一步与未完成范围
 
-1. 先闭当前准确b04源的完整358回归，保留所有结果与未执行组；复核原Mac进度，避免重复派。
+1. 先闭当前准确b04源的完整358回归（`143457Z-68b8fbe7`，PID1328932），保留所有结果与未执行组；复核原Mac进度，避免重复派。
 2. 将通过的I8/DNS/cold-hint caller/early fixture/jitter集成canonical，核对准确六文件delta与生产blob，再做最终准确源Quality和原生Mac验收。main基线冻结93f6cb23，不追其他GUI任务，不碰LIVE23961。
-3. 按[REQUIREMENTS](REQUIREMENTS.md)逐项对账，继续N1/N2的多middle、预算/取消/重放及N3的SSH-hop-sync共存、成本，N4独立故障域/冷peer寻址/发布与Relay容量；现有窄合同不冒充完整场景。
+3. 按[REQUIREMENTS](REQUIREMENTS.md)逐项对账；执行归并见[CLOSEOUT](CLOSEOUT.md)。继续N1/N2的多middle、预算/取消/重放及N3的SSH-hop-sync共存、成本，N4独立故障域/冷peer寻址/发布与Relay容量；现有窄合同不冒充完整场景。N4独立测试worktree `khor-net-registry-fault-domain-v1` 从b04建立，仅改pkarr integration，`E/registry-fault-domain-plan-v1.json`固定两场景各3次；尚未格式/编译/运行，等待当前Turing完全闭证后推进，不并发编译。
 4. 物理iPhone localhost现装为**TestFlight**（用户本轮确认），旧0.2.0和先前就绪窗口不能验收新候选。候选发行必须按main ancestor rc tag与签名环境政策；不绕过流程。先把授权范围内候选做具体可评审，再请求所需main合并/rc/TestFlight授权，不能现在半途提审批。
 5. 最终同源报告、设计、持续矩阵与手机换网/锁屏/能耗仍缺，goal保持active。无main合并、现装App替换、rc/发行/TestFlight上传或生产Relay采购部署授权。
 
