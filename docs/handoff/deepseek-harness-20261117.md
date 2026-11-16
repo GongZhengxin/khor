@@ -2,18 +2,28 @@
 
 ## Latest checkpoint
 
-Product runtime source is `ab6b7e434`; the subsequent checkpoint changes only
-this handoff.
+Product runtime source is `ab6b7e434`. Subsequent changes through `525ffc8db`
+affect only integration fixtures, their workflow selection and this handoff.
 The real user and Khor-parent-to-DSH paths have passed against trusted runtime
 source `09ce10a98e77a745a1f5b078e95b7805745c6c1a`. That acceptance exposed a
-read-only recovery-offer omission, fixed in ab6b7e434. Goal remains active until
-that exact fix passes native regression and a no-model-call live recheck.
+read-only recovery-offer omission, fixed in ab6b7e434. The exact fix has passed its red/green regression and a real no-prompt
+recheck. Goal remains active until the two updated integration fixtures pass.
 
-- Native workflow `43960937477`, source ab6b7e434, is the only current run.
-  It verifies both doctor and read-only recovery regressions red then green,
-  builds the exact CLI/bridge, and runs discovery, sync/GUI agents, far-open,
-  ACP lifecycle and real Khor runtime delegation tests. Poll the same run;
-  do not restart it on a waiting timeout.
+- Current scoped workflow `43966829935`, source `525ffc8db`, selects
+  `integration_only=true`. It builds the exact CLI/bridge, checks formatting,
+  and rechecks the two changed far-open/delegation fixtures. Previously passed
+  DSH, sync/GUI and ACP suites are intentionally retained rather than repeated.
+  Poll this run; supervisor exec session 5139 saves status and logs without
+  downloading another large, behavior-identical binary artifact.
+- Full native workflow `43960937477`, source ab6b7e434: frontend/build/format
+  passed, both controlled red proofs passed, all three fixed DSH regressions
+  passed, plus 11 sync-agent, six GUI-core agent and 19 ACP tests (two ignored).
+  Two existing integration fixtures failed. Far-open now uses the GUI connector
+  but also needed to consume the advertised `Capabilities` frame before
+  settings. Delegation needed its in-process resident before the first local
+  task, matching normal App startup, rather than implicitly starting `_serve`
+  through a custom test executable. Both fixture fixes are in 525ffc8db;
+  production runtime sources are unchanged from ab6b7e434.
 - `43953514368`, source 09ce10a9: frontend and exact binary build passed;
   discovery/override, green doctor, 11 sync-agent and six GUI-core tests passed.
   The final job failed on one test-only formatting difference and an old
@@ -41,14 +51,17 @@ that exact fix passes native regression and a no-model-call live recheck.
   its owned manager PID 67503 exited. Existing user Lab 23961 was never changed.
 
 Evidence is under `/Volumes/disk0/Khor/evidence/deepseek-harness-20261117`.
-The trusted `native-09` artifact has matching source SHA/tree and verified
-SHA-256 hashes for both binaries. It contains the controlled doctor red proof.
+The trusted `native-09` and `native-ab6` artifacts have matching source SHA/tree
+and verified SHA-256 hashes for both binaries. The latter retains both
+controlled red proofs. `native-ab6.log` records the passing and failed suites.
 `icon-provenance.json` proves the vendored SVG geometry matches official commit
 `39163dd30f703a79079e2d2446545cff3c453738`.
 
 ## Real acceptance
 
-`runtime-acceptance-baseline09.json` records these successful checks:
+`runtime-acceptance-baseline09.json` records paid-prompt evidence from source
+09ce10a9. `runtime-acceptance-final.json` records the successful final live
+recheck on ab6b7e434, with source attribution and zero new protocol prompts:
 
 - Default discovery without registration, execution-home capability setup,
   opaque model/reasoning selection, and actual file upload to that home.
@@ -60,8 +73,9 @@ SHA-256 hashes for both binaries. It contains the controlled doctor red proof.
   native session and preserved the canonical history. This works on source 09,
   but its read-only offer incorrectly projects support `unknown` because that
   lookup omitted shipped defaults. ab6b7e434 adds the same default/override
-  precedence to the pure snapshot read; the new regression checks parity with
-  actual recovery resolution, including an explicit override.
+  precedence to the pure snapshot read. Its red/green regression passed for
+  default and explicit override; the live final recheck now projects `resume`
+  and successfully resumes the same native identity with its history.
 - The real embedded Khor agent runtime called `agents`, `delegate`, and
   `task_wait` twice. A real DSH child completed a separate file-read task; the
   parent received the actual random token, and the child receipt binds to the
@@ -86,8 +100,8 @@ own sessions/processes. Baseline cleanup left zero owned live session metadata;
 the bridge exited by the driver's intentional SIGTERM. No production Khor
 store or existing user session was changed. `runtime-acceptance.py
 --continue-session` reuses recorded user history and skips completed paid phases;
-when the new trusted artifact is available, require recovery support `resume`
-and no `known_baseline_issue` in the resulting final report.
+the final report has support `resume`, no `known_baseline_issue`, and a zero
+change in actual DSH protocol-prompt records across the recheck.
 
 Structured self-review used review-changes and both indexes. The worktree graph
 is partial/stale, so zero graph flows is not a no-impact claim. Direct review
@@ -140,6 +154,6 @@ with the serial-execution constraint.
 - 23 Python Lab configuration/lifecycle tests passed locally. No local Node,
   Rust or Xcode build was run.
 
-Still required: finish native run 43960937477, acquire its trusted artifact,
-recheck the fixed read-only offer and native continuation without new model
-prompts, record exact-source results, and complete the branch audit.
+Still required: finish scoped fixture run 43966829935, inspect its two integration
+results and formatting outcome, record the final source mapping, and complete
+the branch audit. No new model prompts or repeated full suites are needed.
