@@ -1,42 +1,43 @@
-# Attachment sources and selected files — 2026-11-17
+# Attachment picker — final Lab revision, 2026-11-17
 
 Branch `fix/attachment-picker-regions-20261117`, base main `84e75c57`.
 
-The attachment keyboard panel inherited `background`, which is transparent in
-a translucent native window. Its source/selected sections had only aria labels,
-so selected files visually looked like children of the preceding machine entry.
-Native path drops supplied no file size.
+The panel and nested file/directory content overlays own an opaque
+`canvas-solid` surface. Its body has three spaced, aligned sections:
 
-The panel and nested file/directory content overlays now own an opaque
-`canvas-solid` surface. Visible “选择文件” and “已选文件” sections distinguish
-sources from selected rows. Compact source choices leave a full file touch row
-in a 232-point keyboard panel. Selected files reuse AttachmentList/FileChoiceRow;
-size is separate from truncatable source detail, using the existing size format.
-Missing native-path sizes are read from their source machine through stat_text,
-without staging/uploading, changing the selection or blocking send. Known sizes
-are reused; unknown directory totals are not invented.
+1. 选择文件: local file/directory actions on the first row; other machines'
+   avatars and names on the second. Only complete chips that fit remain inline;
+   the rest are selectable in the More menu. The local machine is not duplicated.
+2. 已选文件: hidden entirely when empty. Selected rows share AttachmentList and
+   FileChoiceRow with the existing workspace geometry and size formatter.
+3. 发送目录: follows selection directly, with the shared avatar/colon/path row.
 
-Desktop terminal's top paperclip HeaderSeat was removed at the user's request.
-Direct browser/native/internal drops still open the draft; Mobile keeps its key
-row attachment entry. File open/preview actions remain on selected rows.
+Short keyboard panels scroll their body instead of squeezing controls. Long
+selected lists retain independent scrolling. Missing native-path sizes are read
+from the source through stat_text without staging, uploading, changing selection
+or blocking send. Known sizes are reused; unknown directory totals stay unknown.
+Desktop terminal's paperclip HeaderSeat is removed. Direct browser/native/internal
+drops open the draft; Mobile retains its key row attachment entry.
 
-Validation: red118904d3/run43906615619 reproduces fully transparent desktop
-background in both browser engines and missing visible section headings. Final
-3ca35b77/run43909943576 passes builds, unit/token/mobile checks and14 actualApp
-attachment/GUI/Khor scenarios, both Chromium and WebKit at1280/412/390/320 widths,
-including source-specific path sizes, no premature upload, preview, deselection,
-send, independent scrolling, short keyboard height and unchanged PTY dimensions.
-Source hot-update checks passed. The first candidate's font token and subsequent
-short-panel spacing failures were corrected without weakening the old checks.
+Both final realApp runs43914447734/e12594ec and43915117547/c0264748 passed14
+Chromium/WebKit attachment/GUI/Khor scenarios at1280/412/390/320, builds, unit,
+token/mobile static and hot-update checks. The latter additionally forces80px
+machine room, checks every overflow machine is reachable and restores inline
+choices; it checks empty-section removal, source row separation, all three
+section boundaries/order/alignment and nonoverlapping button content. Existing
+file size/source, preview, cancel/send, scrolling,232px touch row and unchanged
+PTY dimension checks remain. Desktop and narrow screenshots were inspected.
 
-Live complete App: http://127.0.0.1:23961/app/?scene=terminal&machines=3 .
-Pinned App: http://127.0.0.1:23961/snapshots/3ca35b77bdd0c870/app/?scene=terminal&machines=3 .
-Desktop: drag a file into the terminal. Mobile: use the key row attachment entry.
-Artifact14248021372 SHA25618c12c4d69ebf4baec9cc5767c92aa0fbcb408507ce66d75a445c7e261f8f82d
-was verified against source3ca35b77 and tree81b9b1fb3353ed470e8666dd7a7a33c97098ba14;
-ZIP CRC,14 error-free scenarios and hot-update proof all passed. Desktop/mobile
-screenshots were inspected. LivePID95749/exec36313; only old owned27775 replaced
-after argv/source confirmation. Four entry assets byte-verified and35 historical
-snapshot URLs retained200. This follow-up has not been merged or shipped; the preceding Air
-access/glass follow-up is already on main. Native drag feel and actual platform
-file pickers remain separate installed-App checks; Web Lab does not claim them.
+Live App: http://127.0.0.1:23961/app/?scene=terminal&machines=3
+Pinned App: http://127.0.0.1:23961/snapshots/c026474864e655bd/app/?scene=terminal&machines=3
+Desktop: drag a file into the terminal. Mobile: use the attachment key; scroll
+panel content to reach the destination when the keyboard area is short.
+
+Artifact14251060354 SHA2566933ef468c03d5c2c82907835448a1ad78a40738ef14f0e4cabde301106321ce
+has verified ZIP CRC, exact sourcec0264748 and tree2beaf89d43335bb9d6f0471f836d8970a5763c4a,
+14 error-free scenarios and passed hot-update checks. Only the verified owned
+previous Lab server was replaced; historical snapshot URLs remain available.
+The final documentation commit leaves tested App/native/crate sources unchanged.
+
+This follow-up is not merged or shipped. Installed platform file pickers and
+native drag feel remain separate actual-device checks.
