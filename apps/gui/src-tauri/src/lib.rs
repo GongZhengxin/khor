@@ -2,6 +2,7 @@
 //! is one call into khor-node — CLI and GUI stay equivalent because they
 //! are the same functions (docs/KHOR.md 三条地基).
 
+pub mod diagnostics;
 mod machine_updates;
 mod menu_overlay;
 mod native_io;
