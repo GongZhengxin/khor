@@ -26,6 +26,7 @@ export async function checkAttachmentDraft(browser,{port,report,engine,width=390
  const image=async label=>{
   const media=JSON.parse(await readFile(new URL('./data/media.generated.json',import.meta.url),'utf8'));
   await choose({name:'photo.png',mimeType:'image/png',buffer:Buffer.from(media.image,'base64')});assert.equal(await selected('photo.png').locator('[data-files-open] [data-icon="open"]').count(),1);await selected('photo.png').locator('[data-files-open]').click();await preview.waitFor();
+  assert(await preview.evaluate(node=>getComputedStyle(node).backgroundColor!=='rgba(0, 0, 0, 0)'),'Attachment previews retain an opaque owning surface');
   await page.waitForFunction(()=>{const img=document.querySelector('[data-attachment-file] [data-file-page] img');return img?.complete&&img.naturalWidth>0;});
   assert.equal(await preview.locator('[data-file-more]').count(),0,'Workspace file page has no More action in attachments');
   await page.waitForFunction(()=>{const root=document.querySelector('[data-attachment-file][data-state="open"]');return root&&root.getAnimations().every(animation=>animation.playState==='finished');});
@@ -87,6 +88,7 @@ export async function checkAttachmentDraft(browser,{port,report,engine,width=390
 
   await selected('draft.txt').locator('[data-files-open]').click();await preview.locator('[data-code-editor],.cm-editor').first().waitFor();await preview.locator('[data-file-back]').click();await preview.waitFor({state:'hidden'});
   await sessionMachine();await directory.waitFor();await directory.locator('[data-files-entry]').first().waitFor();
+  assert(await directory.evaluate(node=>getComputedStyle(node).backgroundColor!=='rgba(0, 0, 0, 0)'),'Source directory candidates retain an opaque owning surface');
   assert.equal(await directory.locator('[data-files-search] input').evaluate(node=>node===document.activeElement),false,'No automatic path/search keyboard');
   // Measure the settled sheet, rather than its entrance below the viewport.
   await page.waitForFunction(()=>{const root=document.querySelector('[data-attachment-directory][data-state="open"]');if(!root)return false;const sheet=root.getBoundingClientRect(),back=root.querySelector('[data-files-directory-back]')?.getBoundingClientRect();return back&&back.top>=sheet.top&&back.bottom<=Math.min(sheet.bottom,window.innerHeight)+1;});

@@ -54,3 +54,9 @@
 `npm run dialogs` 验证真实公共组件与表单的视口、操作位置、草稿退出、长列表、焦点和手势归属；`npm run dialogs -- --serve` 提供一次性数据的检查入口。真实 App Lab 同时覆盖键行、配色和设置，发布前另做 iOS 键盘／惯性／安全区与桌面窗口验收。合成 touch 探针不冒充 WKWebView 原生实测。
 
 官方依据：[Sheets](https://developer.apple.com/design/human-interface-guidelines/sheets)、[Modality](https://developer.apple.com/design/human-interface-guidelines/modality)、[Popovers](https://developer.apple.com/design/human-interface-guidelines/popovers)、[Toolbars](https://developer.apple.com/design/human-interface-guidelines/toolbars)、[Alerts](https://developer.apple.com/design/human-interface-guidelines/alerts)。
+
+### 附件的选择区与已选区（2026-11-17）
+
+键盘位置的附件面板使用不透明的 `canvas-solid`，不随原生窗口的透明度穿透。机器目录与文件预览的 `ContentOverlay` 同样持有自己的不透明背景。顶部只保留取消、发送；正文明确显示同级“选择文件”“已选文件”分区，候选来源放前一区，所选行放后一区并独立滚动，避免被读作某台机器的下级。来源按钮紧凑同排，为较短的键盘区域保留完整文件触摸行。
+
+已选区复用 `AttachmentList` 与 `FileChoiceRow`，文件大小使用工作区同一格式并独立于可截断的来源说明。原生路径缺少大小时只从来源机读取文件事实，不提前传输；已知大小不重复读取，未知目录不伪造总大小。实际 App Lab 的附件草稿场景验证毛玻璃背景、分区、来源机大小、取消／发送与终端网格保持。

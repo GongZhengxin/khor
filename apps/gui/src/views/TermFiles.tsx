@@ -1,5 +1,5 @@
 /** A keyboard-position selection panel, with the existing file browser/pages above it. */
-import {useEffect,useLayoutEffect,useMemo,useRef,useState,type RefObject} from 'react';
+import {useEffect,useLayoutEffect,useMemo,useRef,useState,useId,type RefObject} from 'react';
 import {createPortal} from 'react-dom';
 import {fetchDevices,nativeFolders,said,termDropForget,termPickFolders,type DeviceRow} from '@/api';
 import {MachineAvatar} from '@/components/Avatar';
@@ -19,7 +19,8 @@ import {lowerKeyboard,raiseKeyboard} from '@/lib/soft-keyboard';
 import {isDown} from '@/lib/topology';
 import {hopWord} from '@/words';
 import {useNarrow} from '@/hooks/use-narrow';
-import {FilesPane,FileChoiceRow} from '@/views/FilesPane';
+import {FilesPane} from '@/views/FilesPane';
+import {AttachmentList} from '@/views/AttachmentList';
 import {AttachmentFile} from '@/views/AttachmentFile';
 import {SendInto} from '@/views/chat-files';
 export type FilesRoad = {
@@ -47,6 +48,7 @@ export function AttachmentPicker({open,onClose,road,onSent,viewport}:{open:boole
 }
 export function TermFiles({road,onClose,onSent,viewport}:{road:FilesRoad;onClose:()=>void;onSent:()=>void;viewport?:RefObject<HTMLElement|null>}){
  const narrow=useNarrow();
+ const sourceTitle=useId(),selectedTitle=useId();
  const picker=useRef<HTMLInputElement>(null),folders=useRef<HTMLInputElement>(null),panel=useRef<HTMLDivElement>(null);
  const [devices,setDevices]=useState<DeviceRow[]>([]),[error,setError]=useState<string|null>(null),[picking,setPicking]=useState(false);
  const [at,setAt]=useState<Place|null>(null),[look,setLook]=useState<Attachment|null>(null);
@@ -93,26 +95,31 @@ export function TermFiles({road,onClose,onSent,viewport}:{road:FilesRoad;onClose
  const browse=(entry:Attachment)=>{const machine=machineFor(entry);if(machine)setAt({machine,path:entry.device?'/':entry.path,root:entry.device?entry:undefined});};
  const send=async()=>{if(road.busy||sending.current||!road.selected.length)return;sending.current=true;setError(null);try{if(await road.send(road.selected,road.into)){if(mounted.current)finish(true);}else if(mounted.current)setError('附件未能发送，已保留所选文件，可重试');}catch(e){if(mounted.current)setError(said(e));}finally{sending.current=false;}};
  return <>
- {createPortal(<div ref={panel} data-attachment-picker data-files-panel style={{height}} className="fixed bottom-0 z-40 flex min-h-0 flex-col border-t bg-background px-row pb-safe-bottom shadow-(--shadow-float)" onKeyDown={e=>{if(e.key==='Escape'&&!road.busy){e.preventDefault();finish();}}}>
-  <div data-files-actions className="flex min-h-touch flex-none items-center justify-between py-xxs">
+ {createPortal(<div ref={panel} data-attachment-picker data-files-panel style={{height}} className="fixed bottom-0 z-40 flex min-h-0 flex-col border-t bg-(--canvas-solid) px-row pb-safe-bottom shadow-(--shadow-float)" onKeyDown={e=>{if(e.key==='Escape'&&!road.busy){e.preventDefault();finish();}}}>
+  <div data-files-actions className="flex min-h-touch flex-none items-center justify-between">
    <Button data-files-cancel variant="ghost" className="min-h-touch" disabled={road.stopping||(road.busy&&!road.cancel)} onClick={()=>road.busy?road.cancel?.():finish()}>{road.busy&&road.cancel?'取消传输':'取消'}</Button>
    <Button data-files-send variant="primary" className={road.selected.length?"min-h-touch":"min-h-touch bg-fill text-muted-foreground"} disabled={road.busy||picking||!road.selected.length} onClick={()=>void send()}>{road.busy?'正在发送':`发送${road.selected.length?' ('+road.selected.length+')':''}`}</Button>
   </div>
   <div data-attachment-split className="flex min-h-0 flex-1 flex-col">
-   <section data-files-source className="flex flex-none flex-col" aria-label="选择文件">
-    <div className="flex gap-in"><Button data-files-pick="device" disabled={road.busy} className="min-h-touch flex-1" onClick={()=>picker.current?.click()}><span className="grid size-affordance place-items-center [&>svg]:size-affordance"><IconFile/></span>本机文件</Button>{!road.filesOnly&&<Button data-files-pick="folder" disabled={road.busy||picking} className="min-h-touch flex-1" onClick={()=>void pickFolders()}><span className="grid size-affordance place-items-center [&>svg]:size-affordance"><IconFiles/></span>本机文件夹</Button>}</div>
+   <section data-files-source className="flex flex-none flex-col" aria-labelledby={sourceTitle}>
+    <h3 id={sourceTitle} className="pt-xxs text-body font-semibold">选择文件</h3>
+    <div className="flex min-w-0 gap-in">
+     <Button data-files-pick="device" disabled={road.busy} className="min-h-touch min-w-0 flex-1 flex-col gap-0 px-in py-xxs text-caption" onClick={()=>picker.current?.click()}><IconFile className="size-kind-mark"/>本机文件</Button>
+     {!road.filesOnly&&<Button data-files-pick="folder" disabled={road.busy||picking} className="min-h-touch min-w-0 flex-1 flex-col gap-0 px-in py-xxs text-caption" onClick={()=>void pickFolders()}><IconFiles className="size-kind-mark"/>本机文件夹</Button>}
     <DropdownMenu modal={false}>
-     <DropdownMenuTrigger asChild><Button data-files-machines data-files-machine-count={sources.length} variant="ghost" disabled={road.busy||!sources.length} className="min-h-touch w-full justify-start"><span className="grid size-affordance flex-none place-items-center [&>svg]:size-affordance"><IconDevices/></span><span className="min-w-0 flex-1 text-left">其他机器</span><span className="tabular-nums text-muted-foreground">{sources.length} 台</span><IconChevronDown className="size-affordance"/></Button></DropdownMenuTrigger>
+     <DropdownMenuTrigger asChild><Button data-files-machines data-files-machine-count={sources.length} aria-label={`其他机器，${sources.length} 台`} disabled={road.busy||!sources.length} className="min-h-touch min-w-0 flex-1 flex-col gap-0 px-in py-xxs text-caption"><span className="flex items-center gap-xxs"><IconDevices className="size-kind-mark"/><span className="tabular-nums text-muted-foreground">{sources.length}</span><IconChevronDown className="size-kind-mark"/></span><span>其他机器</span></Button></DropdownMenuTrigger>
      <DropdownMenuContent data-files-machines-menu align="start" aria-label="选择来源机器" className="min-w-(--radix-dropdown-menu-trigger-width)">
       {sources.map(d=><DropdownMenuItem key={d.id} data-files-machine={d.name} data-files-session={(road.machine===null?d.me:d.name===road.machine)||undefined} onSelect={()=>setAt({machine:d,path:''})}>
        <MachineAvatar face={d.face} className="size-kind-mark flex-none"/><span className="min-w-0 flex-1 truncate">{d.shown}</span>{(road.machine===null?d.me:d.name===road.machine)?<span className="text-caption text-muted-foreground">{gui.files_session}</span>:!d.me&&d.hop==='quiet'&&isDown(d.down_ms)&&<span className="text-caption text-muted-foreground">{hopWord('down')}</span>}
       </DropdownMenuItem>)}
      </DropdownMenuContent>
     </DropdownMenu>
+    </div>
    </section>
-   <section data-files-selection aria-label="已选附件" className="flex min-h-0 flex-1 flex-col border-t">
+   <section data-files-selection aria-labelledby={selectedTitle} className="flex min-h-0 flex-1 flex-col border-t mt-xxs">
+    <h3 id={selectedTitle} className="flex flex-none items-center gap-in pt-xxs text-body font-semibold">已选文件<span className="tabular-nums text-muted-foreground">{road.selected.length}</span></h3>
     <div data-files-selection-scroll className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-     {road.selected.length?road.selected.map(entry=><div key={entry.key} data-files-selected={entry.name}><FileChoiceRow name={entry.name} dir={entry.dir} size={entry.size} detail={entry.shown} selected disabled={road.busy} onChoose={()=>toggle(entry)} onEnter={()=>entry.dir?browse(entry):toggle(entry)} onOpen={!entry.dir?()=>setLook(entry):undefined}/></div>):<p className="py-in text-callout text-muted-foreground">尚未选择文件或目录</p>}
+     {road.selected.length?<AttachmentList items={road.selected.map(entry=>({...entry,source:entry,detail:entry.shown}))} busy={road.busy} onOpen={key=>{const entry=road.selected.find(item=>item.key===key);if(entry)entry.dir?browse(entry):setLook(entry);}} onRemove={key=>{const entry=road.selected.find(item=>item.key===key);if(entry)toggle(entry);}}/>:<p className="py-in text-callout text-muted-foreground">尚未选择文件或目录</p>}
     </div>
    </section>
   </div>
