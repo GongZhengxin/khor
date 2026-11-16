@@ -589,11 +589,13 @@ fn spawn_host_with(
     startup: Option<&str>,
 ) -> Result<(), String> {
     let image = crate::runtime_image::host()?;
+    crate::startup_trace::mark("client-image");
     let mut c = std::process::Command::new(image.path());
     // A host belongs to the store containing this session. A GUI request may
     // name a different root from its process environment; only the child gets
     // that root, before it changes directory to the session's working path.
     let root = host_store_root(dir)?;
+    crate::startup_trace::mark("client-root");
     c.env("KHOR_HOME", &root);
     // Native TUI resume must read the very store the GUI shim/discovery used.
     // Set these on the child only; a private node cannot inherit the user's
@@ -604,6 +606,7 @@ fn spawn_host_with(
     if let Some(text) = startup {
         c.env(STARTUP_ENV, text);
     }
+    crate::startup_trace::mark("client-env");
     if let Some(cwd) = cwd {
         c.current_dir(cwd);
     }
@@ -660,6 +663,7 @@ fn spawn_host_with(
         }
     }
     crate::mcp_worker::prepare_durable_child(&mut c);
+    crate::startup_trace::mark("client-durable-child");
     // The `PATH` this process worked out travels down rather than
     // being worked out again: `_host` is a fresh process and would
     // otherwise re-run the user's login shell on every single spawn
@@ -667,6 +671,7 @@ fn spawn_host_with(
     // the override that already exists for exactly "khor, here is where
     // things are" — no second mechanism.
     c.env(crate::PATH_ENV, crate::Node::user_path());
+    crate::startup_trace::mark("client-path");
     // The locale travels the same way and for the same reason: `_host`
     // is a fresh process, and a repaired locale set here is one it does
     // not have to go back to the login shell for.
@@ -690,8 +695,10 @@ fn spawn_host_with(
     // this one; nothing else writes this file.
     let _ = std::fs::remove_file(&complaint);
     let mut child = image.spawn(&mut c).map_err(msg::host_wont_start)?;
+    crate::startup_trace::mark("client-spawned");
     for _ in 0..100 {
         if marker.exists() {
+            crate::startup_trace::mark("client-ready");
             return Ok(());
         }
         // The host's own words beat the timeout whenever it managed to
@@ -1823,6 +1830,7 @@ fn host_serving(
     cmd: &[String],
     startup: Option<&str>,
 ) -> Result<(), String> {
+    crate::startup_trace::mark("host-serving");
     let dir = dir.to_path_buf();
     let id = id.clone();
     let live = live.clone();
@@ -1854,6 +1862,7 @@ fn host_serving(
             pixel_height: 0,
         })
         .map_err(msg::cant_open_pty)?;
+    crate::startup_trace::mark("pty-open");
     // **The PTY's command is looked up by khor, against a `PATH` that
     // can answer** — `crate::spawn_path`. A `khor serve` under launchd
     // has `/usr/bin:/bin:/usr/sbin:/sbin` and `tmux` lives in
@@ -1870,6 +1879,7 @@ fn host_serving(
     let path = crate::legacy_codex::clean_path(khor, &path);
     let found = crate::find_program(&cmd[0], &path)
         .ok_or_else(|| msg::command_not_found(&cmd[0], &path))?;
+    crate::startup_trace::mark("program-found");
     let mut builder = CommandBuilder::new(&found);
     // **The shell is taught to mark its commands** (roadmap 1.1,
     // `crate::integration`): a shell this host starts for a shell row,
@@ -1918,6 +1928,7 @@ fn host_serving(
         .slave
         .spawn_command(builder)
         .map_err(|e| msg::wont_start(&cmd[0], e))?;
+    crate::startup_trace::mark("child-spawned");
     drop(pty.slave);
     let child_pid = child.process_id().ok_or(msg::child_has_no_pid())?;
     let master = Arc::new(Mutex::new(pty.master));
@@ -1937,6 +1948,7 @@ fn host_serving(
 
     let listener = TcpListener::bind(("127.0.0.1", 0)).map_err(msg::cant_listen_loopback)?;
     let port = listener.local_addr().map_err(|e| e.to_string())?.port();
+    crate::startup_trace::mark("listener-bind");
     let cookie = crate::link::fresh_hex()?;
     crate::link::write_private(
         // A viewer's address goes in its own file (`view_file_path`).
@@ -1953,6 +1965,7 @@ fn host_serving(
         })
         .map_err(|e| e.to_string())?,
     )?;
+    crate::startup_trace::mark("host-json");
 
     let shared = Arc::new(Shared {
         ring: Mutex::new(Ring::default()),

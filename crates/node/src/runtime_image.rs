@@ -90,6 +90,7 @@ fn current() -> Result<Info, String> {
 
 /// Every native face and the re-executing integration harness enter here before Node::open.
 pub fn process_entry() {
+    crate::startup_trace::begin();
     if std::env::args_os().nth(1).as_deref() == Some(std::ffi::OsStr::new("_verify_release")) {
         let result = (|| -> Result<String, String> {
             let args = std::env::args_os().skip(2).collect::<Vec<_>>();
@@ -175,6 +176,7 @@ pub fn process_entry() {
         eprintln!("cannot enter runtime: {error}");
         std::process::exit(1);
     }
+    crate::startup_trace::mark("runtime-entered");
     #[cfg(not(any(target_os = "ios", target_os = "android")))]
     if let Err(error) = crate::updates::recover_current_installation() {
         eprintln!("{error}");
@@ -185,6 +187,7 @@ pub fn process_entry() {
         eprintln!("{error}");
         std::process::exit(78);
     }
+    crate::startup_trace::mark("contracts-checked");
 }
 
 fn inspect(program: &Path) -> Result<Info, String> {
@@ -319,7 +322,9 @@ pub(crate) fn agent(bundle: &[u8]) -> Result<Image, String> {
 
 pub fn host_at(source: &Path) -> Result<HostImage, String> {
     let expected = current()?.release;
+    crate::startup_trace::mark("image-current");
     let info = inspect_supported(source)?;
+    crate::startup_trace::mark("image-inspected");
     if expected.platform != info.release.platform
         || !expected.contract.accepts(&info.release.contract)
     {
@@ -334,6 +339,7 @@ pub fn host_at(source: &Path) -> Result<HostImage, String> {
     let selected = info.release;
     let executable = std::fs::canonicalize(&info.executable).map_err(|error| error.to_string())?;
     if let Some(image) = Store::image_for_program(&executable).map_err(|error| error.to_string())? {
+        crate::startup_trace::mark("image-cached");
         if image.role() != selected.role || image.contract() != &selected.contract {
             return Err("managed runtime contract differs from its executable".into());
         }
@@ -342,6 +348,7 @@ pub fn host_at(source: &Path) -> Result<HostImage, String> {
             source: source.into(),
         });
     }
+    crate::startup_trace::mark("image-miss");
     let payload = Source::File(&executable);
     #[cfg(target_os = "macos")]
     let payload =

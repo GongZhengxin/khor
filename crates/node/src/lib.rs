@@ -96,6 +96,7 @@ pub mod secret;
 pub mod serves;
 pub mod session_content;
 pub mod shell_start;
+mod startup_trace;
 mod store_owner;
 pub mod subscriptions;
 pub mod tabs;
@@ -6235,16 +6236,34 @@ pub(crate) struct Asked {
 pub(crate) fn asked_shell() -> &'static Asked {
     static ASKED: std::sync::OnceLock<Asked> = std::sync::OnceLock::new();
     ASKED.get_or_init(|| {
-        let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/sh".into());
-        let out = std::process::Command::new(&shell)
-            .args(["-lic", &probe_script()])
-            .stdin(std::process::Stdio::null())
-            .output();
-        let said = match out {
-            Ok(o) if o.status.success() => String::from_utf8_lossy(&o.stdout).into_owned(),
-            _ => String::new(),
+        // **A login shell is a Unix idea.** Windows has no login-shell
+        // `PATH` convention — the process environment is already the
+        // merged user/system value — and `SHELL` there is exported by
+        // whatever tool felt like it. On this machine it names Windows
+        // PowerShell, so the probe started that (loading its profile) and
+        // spent **3.1 s** on an answer that could not apply: every session
+        // creation paid it before the host was ever spawned (measured
+        // 2026-11-17 with `KHOR_STARTUP_TRACE`). Answering nothing leaves
+        // `merge_paths` with the process `PATH`, which is the right
+        // answer, and `KHOR_PATH` still overrides both.
+        #[cfg(windows)]
+        return Asked {
+            path: String::new(),
+            locale: Vec::new(),
         };
-        read_shell_answer(&said)
+        #[cfg(not(windows))]
+        {
+            let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/sh".into());
+            let out = std::process::Command::new(&shell)
+                .args(["-lic", &probe_script()])
+                .stdin(std::process::Stdio::null())
+                .output();
+            let said = match out {
+                Ok(o) if o.status.success() => String::from_utf8_lossy(&o.stdout).into_owned(),
+                _ => String::new(),
+            };
+            read_shell_answer(&said)
+        }
     })
 }
 
