@@ -329,7 +329,7 @@ async fn wait_published(urls: &[&str], ep: &iroh::Endpoint, wanted_home: Option<
     let started = Instant::now();
     let mut first = None;
     let mut attempts = 0;
-    tokio::time::timeout(Duration::from_secs(20), async {
+    let result = tokio::time::timeout(Duration::from_secs(20), async {
         loop {
             if let Some(home) = current_home(ep)
                 && wanted_home.is_none_or(|wanted| wanted == home)
@@ -350,7 +350,32 @@ async fn wait_published(urls: &[&str], ep: &iroh::Endpoint, wanted_home: Option<
             }
             tokio::time::sleep(Duration::from_millis(20)).await;
         }
-    }).await.expect("the advertised Relay must actually be published within the predeclared20s");
+    }).await;
+    if result.is_err() {
+        use iroh::Watcher;
+        let statuses = ep.home_relay_status().get();
+        let states: Vec<_> = statuses
+            .iter()
+            .map(|status| {
+                (
+                    status.url().to_string(),
+                    status.is_connected(),
+                    status.last_error().map(|error| format!("{error:#}")),
+                )
+            })
+            .collect();
+        let observed = current_home(ep);
+        let mut records = Vec::new();
+        if let Some(expected) = wanted_home {
+            for url in urls {
+                records.push(published_record(url, ep.id(), expected).await);
+            }
+        }
+        eprintln!(
+            "[registry-timeout] wanted={wanted_home:?} observed={observed:?} home_states={states:?} last_records={records:?} first={first:?} attempts={attempts}"
+        );
+    }
+    result.expect("the advertised Relay must actually be published within the predeclared20s");
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
