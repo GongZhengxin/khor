@@ -173,11 +173,13 @@ CC Switch（MIT，桌面三平台）管 **13 个工具**，方式是**写各 CLI
 
 ## 5. 尚未开始（后续切片）
 
-- **B 项目化会话**：已完成一半——Windows 默认按 `place` 分组、新建向导默认跟随清单选已装 agent、
-  观察到的 Codex 会话可「在终端里继续」（`codex resume <id>`）。
-  **还差**：`codex queue --thread <id> --message`（发一条消息）、DSH 适配器
-  （读 `session.v4.jsonl.zstd` + headless 驱动）。
-- **D 两机互联**：Windows ↔ LAB 配对与跨机会话（未开始）。
+- **B 项目化会话**：**已按用户决定的形态完成**（`1037cfa9` 之后）。Windows 默认按 `place` 分组、
+  新建向导默认跟随清单选已装 agent、观察到的 Codex 会话可「在终端里继续」（`codex resume <id>`）
+  与「发一条消息」（`codex queue --thread <id> --message`，走 Codex 自己的守护进程，
+  不是接管——所以已装载的 thread 也能说上一句话）。
+  **还差**：DSH 适配器（读 `session.v4.jsonl.zstd` + headless 驱动）。协议已验证（§2.6），
+  但 zstd 依赖与 JSONL 模式映射都未落地，属下一轮。
+- **D 两机互联**：**已打通**，见 §8。
 - **E 启动性能**：**达标**。本机 `ls` 不再建 iroh 端点（**1168 → 80 ms**，`3ce5c5e3`）；
   Windows 不再为 PATH 启动登录 shell（`5df68991`）；按独立验收排第一的项去掉 Windows 上
   不可能命中的 legacy 白名单整份哈希（`684e1d65`）。同口径 `khor open` **~5.0 s → 中位 742 ms**
@@ -230,3 +232,17 @@ Linux 原始计时、macOS 动回归、Win10、双机、DSH 真实凭据——�
 ③ 按目标机器维护 fleet 并与 launcher 共用路线解析、清单加载不阻塞设备展示——**只做了"只对本机生效"
 这一半**，按机器取清单与共用解析未做；④ 设计已发布 runtime generation 的复用（不可变内容 + lease），
 **不能**用路径/大小/mtime/首块摘要直接替代完整信任证明。
+
+### 2.7 给厂商的对话发一条消息（提交 `119ecfd8`、`1037cfa9`）
+
+`khor send`/`tell` 驱动 khor 自己的会话；这一条是另一种情况：Codex 的 thread 在运行，
+人想往里面说一句话，但**不接管**。Codex 自带这条通道——`codex queue --thread <id> --message <text>`，
+写入走它自己的守护进程，所以没有第二个写者、不用抢 writer 锁；这正是"已装载的 thread
+说不上话"的地方能说话的原因（`takeover` 在那里是被明确拒绝的）。
+
+- CLI：`khor agents tell codex 01a1de3a-… khor-send-probe` → 退出码 0，
+  回执是厂商自己的句子：`Queued message 01a1e6a5-… for thread 01a1de3a-…`。
+- GUI：只读 Codex 会话的行菜单多了「发一条消息」，弹层里显示**厂商回执**；拒绝时显示它的 stderr。
+- 文本作为**一个 argv 元素**传给 `Command`，从不经过 shell；只支持 Codex（按名字拒绝其它厂商，
+  不猜命令行）。新增的四条文案走 `[msg]` 段（`native-send-*`），`wont-start` 复用既有键
+  ——catalog 自己的重复校验在发布前抓到了重复文案。
