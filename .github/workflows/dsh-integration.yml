@@ -59,11 +59,12 @@ jobs:
             git restore -- '*.rs'
             exit 1
           fi
-      - name: Prove the optional-installation regression before checking its fix
+      - name: Prove optional-installation and recovery regressions before checking their fixes
         run: |
           mkdir -p "$RUNNER_TEMP/empty-agent-path"
           cp crates/node/src/doctor.rs "$RUNNER_TEMP/doctor.green.rs"
-          trap 'cp "$RUNNER_TEMP/doctor.green.rs" crates/node/src/doctor.rs' EXIT
+          cp crates/node/src/session_recovery.rs "$RUNNER_TEMP/recovery.green.rs"
+          trap 'cp "$RUNNER_TEMP/doctor.green.rs" crates/node/src/doctor.rs; cp "$RUNNER_TEMP/recovery.green.rs" crates/node/src/session_recovery.rs' EXIT
           python3 - <<'PY'
           from pathlib import Path
           path = Path('crates/node/src/doctor.rs')
@@ -71,16 +72,23 @@ jobs:
           green = 'let Ok(rows) = node.agents_loaded().map(|loaded| loaded.doc.all()) else {'
           assert source.count(green) == 1
           path.write_text(source.replace(green, 'let Ok(rows) = node.agents() else {'))
+          path = Path('crates/node/src/session_recovery.rs')
+          source = path.read_text()
+          green = '            .or_else(|| khor_sync::agents::registry::builtin(name).and_then(|agent| agent.spec()))\n'
+          assert source.count(green) == 1
+          path.write_text(source.replace(green, ''))
           PY
-          git diff -- crates/node/src/doctor.rs > "$RUNNER_TEMP/dsh-evidence/doctor-red.patch"
+          git diff -- crates/node/src/doctor.rs crates/node/src/session_recovery.rs > "$RUNNER_TEMP/dsh-evidence/regressions-red.patch"
           set +e
-          KHOR_PATH="$RUNNER_TEMP/empty-agent-path" cargo test --locked -p khor-node --lib doctor::agent_tests -- --test-threads=1 --color never > "$RUNNER_TEMP/dsh-evidence/doctor-red.log" 2>&1
+          KHOR_PATH="$RUNNER_TEMP/empty-agent-path" cargo test --locked -p khor-node --lib dsh_ -- --test-threads=1 --color never > "$RUNNER_TEMP/dsh-evidence/regressions-red.log" 2>&1
           red_status=$?
           set -e
           cp "$RUNNER_TEMP/doctor.green.rs" crates/node/src/doctor.rs
+          cp "$RUNNER_TEMP/recovery.green.rs" crates/node/src/session_recovery.rs
           test "$red_status" -ne 0
-          grep -F 'dsh_default_is_optional_but_an_explicit_missing_agent_is_diagnosed ... FAILED' "$RUNNER_TEMP/dsh-evidence/doctor-red.log"
-          git diff --exit-code -- crates/node/src/doctor.rs
+          grep -F 'dsh_default_is_optional_but_an_explicit_missing_agent_is_diagnosed ... FAILED' "$RUNNER_TEMP/dsh-evidence/regressions-red.log"
+          grep -F 'dsh_readonly_recovery_uses_the_same_default_and_override ... FAILED' "$RUNNER_TEMP/dsh-evidence/regressions-red.log"
+          git diff --exit-code -- crates/node/src/doctor.rs crates/node/src/session_recovery.rs
       - name: Build the exact CLI for isolated local DSH acceptance
         id: native_build
         run: |
@@ -92,8 +100,7 @@ jobs:
           shasum -a 256 "$RUNNER_TEMP/dsh-evidence/khor" "$RUNNER_TEMP/dsh-evidence/bridge" > "$RUNNER_TEMP/dsh-evidence/binaries.sha256"
       - name: Verify default discovery and launch ownership
         run: |
-          cargo test --locked -p khor-node --lib dsh_is_available_without_registration -- --test-threads=1
-          KHOR_PATH="$RUNNER_TEMP/empty-agent-path" cargo test --locked -p khor-node --lib doctor::agent_tests -- --test-threads=1
+          KHOR_PATH="$RUNNER_TEMP/empty-agent-path" cargo test --locked -p khor-node --lib dsh_ -- --test-threads=1
           cargo test --locked -p khor-sync --lib agents -- --test-threads=1
           cargo test --locked -p khor-gui-core --lib agents::tests -- --test-threads=1
           cargo test --locked -p khor-cli --test far_open -- --test-threads=1
