@@ -8,20 +8,37 @@ on:
         type: choice
         options: [full, integration, delegation]
         default: full
+      reuse_frontend_run:
+        description: Optional verified frontend run for fixture-only changes
+        type: string
+        default: ''
+      reuse_frontend_sha:
+        description: Exact source SHA of the reused frontend
+        type: string
+        default: ''
   workflow_call:
     inputs:
       scope:
         type: string
         default: full
+      reuse_frontend_run:
+        type: string
+        default: ''
+      reuse_frontend_sha:
+        type: string
+        default: ''
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
   frontend:
+    if: ${{ inputs.reuse_frontend_run == '' }}
     uses: ./.github/workflows/frontend.yml
   native:
     needs: frontend
+    if: ${{ !cancelled() && (needs.frontend.result == 'success' || inputs.reuse_frontend_run != '') }}
     runs-on: macos-26
     timeout-minutes: 60
     env:
@@ -58,6 +75,42 @@ jobs:
       - name: Embed the real Khor agent
         run: node apps/agent/build.mjs aarch64-apple-darwin "$KHOR_AGENT_BUNDLE"
       - uses: ./.github/actions/restore-frontend
+        if: ${{ inputs.reuse_frontend_run == '' }}
+      - name: Prove reused frontend inputs are unchanged
+        if: ${{ inputs.reuse_frontend_run != '' }}
+        env:
+          FRONTEND_RUN: ${{ inputs.reuse_frontend_run }}
+          FRONTEND_SHA: ${{ inputs.reuse_frontend_sha }}
+        run: |
+          python3 - <<'PY'
+          import os, re, subprocess
+          sha = os.environ['FRONTEND_SHA']
+          assert re.fullmatch('[0-9a-f]{40}', sha)
+          assert re.fullmatch('[0-9]+', os.environ['FRONTEND_RUN'])
+          subprocess.run(['git', 'fetch', '--no-tags', '--depth=1', 'origin', sha], check=True)
+          changed = subprocess.check_output(['git', 'diff', '--name-only', sha, 'HEAD'], text=True).splitlines()
+          allowed = {'.github/workflows/dsh-integration.yml', '.github/workflows/quality.yml', 'crates/node/tests/delegation_wire.rs',
+                     'crates/cli/tests/far_open.rs', 'docs/handoff/deepseek-harness-20261117.md'}
+          assert set(changed) <= allowed, f'Frontend inputs changed: {changed}'
+          PY
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        if: ${{ inputs.reuse_frontend_run != '' }}
+        with:
+          name: frontend
+          path: frontend
+          run-id: ${{ inputs.reuse_frontend_run }}
+          github-token: ${{ github.token }}
+      - name: Restore the source-verified reused frontend
+        if: ${{ inputs.reuse_frontend_run != '' }}
+        env:
+          FRONTEND_SHA: ${{ inputs.reuse_frontend_sha }}
+        run: |
+          python3 scripts/release_manifest.py verify --root frontend --sha "$FRONTEND_SHA"
+          mkdir -p apps/gui/src
+          cp -R frontend/dist apps/gui/dist
+          cp -R frontend/gen apps/gui/src/gen
+          mkdir -p "$RUNNER_TEMP/dsh-evidence"
+          echo "$FRONTEND_SHA" > "$RUNNER_TEMP/dsh-evidence/frontend-source-sha.txt"
       - name: Check formatting and retain a source-only repair patch
         id: formatting
         continue-on-error: true

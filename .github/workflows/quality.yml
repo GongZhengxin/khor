@@ -39,6 +39,9 @@ env:
 jobs:
   dsh-integration:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.suite == 'agent' }}
+    permissions:
+      contents: read
+      actions: read
     uses: ./.github/workflows/dsh-integration.yml
   runtime-store:
     if: ${{ inputs.suite != 'node' && inputs.suite != 'gui' && inputs.suite != 'agent' }}

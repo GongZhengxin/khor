@@ -161,24 +161,19 @@ impl Drop for Hosts {
         }
     }
 }
-struct Serving {
-    root: PathBuf,
-    task: Option<tokio::task::JoinHandle<Result<(), String>>>,
-}
+struct Serving(tokio::task::JoinHandle<Result<(), String>>, PathBuf);
 impl Serving {
     async fn stop(mut self) {
         assert_eq!(
-            khor_node::link::stop_serving(&self.root).await.unwrap(),
+            khor_node::link::stop_serving(&self.1).await.unwrap(),
             khor_node::khor_agent::RuntimeClose::Closed
         );
-        self.task.take().unwrap().await.unwrap().unwrap();
+        (&mut self.0).await.unwrap().unwrap();
     }
 }
 impl Drop for Serving {
     fn drop(&mut self) {
-        if let Some(task) = &self.task {
-            task.abort();
-        }
+        self.0.abort();
     }
 }
 fn root(tag: &str) -> Scratch {
@@ -194,14 +189,14 @@ async fn serve(root: &Path, name: &str) -> Serving {
     let endpoint = root.join(".khor/endpoint.json");
     let previous = std::fs::read(&endpoint).ok();
     let node = Node::open_as(root.to_path_buf(), name).unwrap();
-    let mut serving = Serving {
-        root: root.into(),
-        task: Some(tokio::spawn(async move { node.serve().await })),
-    };
+    let mut serving = Serving(
+        tokio::spawn(async move { node.serve().await }),
+        root.into(),
+    );
     tokio::time::timeout(Duration::from_secs(60), async {
         loop {
-            if serving.task.as_ref().unwrap().is_finished() {
-                let result = serving.task.take().unwrap().await;
+            if serving.0.is_finished() {
+                let result = (&mut serving.0).await;
                 panic!("fixture resident {name} ended before readiness: {result:?}");
             }
             // A stopped resident's file survives while this test process is
