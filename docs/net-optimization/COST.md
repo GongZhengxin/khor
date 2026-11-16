@@ -28,3 +28,8 @@ N3仍须同源共享/分连接共存及同期公开main对照、全部负载、�
 | relay | 5 | 12.60% | 103.7 | 275–278 | 96.5 / 83.1 | 33.479 / 15 |
 
 完整数据 `E/idle-cost-matrix-summary-v1.json` 与原run verifier。没有硬件唤醒/手机能耗结论，也不能把这批CPU全归网络；一设备已约6%单核，五设备每进程约12–13%。当前`commands::rt`沿用Tokio全部可用核默认，拟用其既有`TOKIO_WORKER_THREADS=4`做同ELF ABBAAB六场对照。协议与附录在任何新worker trial之前冻结，要求CPU至少降30%、实际线程中位数至少减半、原业务全成功并满足原相对延迟screen；不为该实验重新编译产品。这个idle screen不单独接受bulk或手机。
+
+
+## 同ELF worker数量消融
+
+`turing-20261116T105411Z-07c2f1ff`原0/775.382s，三节点固定ABBAAB六场，18首读全过；源5f51/普通Release CLI64af与fixture04a8完全相同，只改变子进程`TOKIO_WORKER_THREADS`。4 worker组每case平均resident CPU中位8.464%，默认8.914%；线程中位27.67 vs275.33；有限9样本首读p95 29.360 vs38.643ms。原执行前CPU≤70%门未过，线程≤50%与延迟门通过，因此**不采用生产worker策略**。线程数较大不能解释大部分CPU，下一步需实际profile；硬件wakeups、手机和bulk未验。原数据及冻结门见`E/idle-cost-worker-screen-result-v1.json`，无替代试验、无修改门槛。
