@@ -2,19 +2,26 @@
 
 ## Latest checkpoint
 
-Product runtime source is `ab6b7e434`. Subsequent changes through `525ffc8db`
+Product runtime source is `ab6b7e434`. Subsequent changes through `9ff408574`
 affect only integration fixtures, their workflow selection and this handoff.
 The real user and Khor-parent-to-DSH paths have passed against trusted runtime
 source `09ce10a98e77a745a1f5b078e95b7805745c6c1a`. That acceptance exposed a
 read-only recovery-offer omission, fixed in ab6b7e434. The exact fix has passed its red/green regression and a real no-prompt
-recheck. Goal remains active until the two updated integration fixtures pass.
+recheck. Goal remains active until the resident-restart delegation fixture passes.
 
-- Current scoped workflow `43966829935`, source `525ffc8db`, selects
-  `integration_only=true`. It builds the exact CLI/bridge, checks formatting,
-  and rechecks the two changed far-open/delegation fixtures. Previously passed
-  DSH, sync/GUI and ACP suites are intentionally retained rather than repeated.
-  Poll this run; supervisor exec session 5139 saves status and logs without
-  downloading another large, behavior-identical binary artifact.
+- Current workflow `43971758897`, source `9ff408574`, selects
+  `scope=delegation`: formatting, exact CLI/bridge build and the changed
+  delegation fixture only. Other passed suites are retained. A supervisor
+  saves `native-delegation-final-status.json` and its log; poll this run.
+- Scoped run `43966829935`, source `525ffc8db`: frontend, native build,
+  formatting and the complete cross-machine user test passed. Delegation
+  still failed at its intentional beta-resident restart. Static tracing found
+  that `Serving::drop` aborted the old task without retiring its Root, and
+  `serve()` accepted the old endpoint file as ready while that PID remained
+  alive. 9ff408574 now calls the normal `stop_serving` barrier, joins the old
+  task, and waits for a newly published endpoint before reading the task.
+  It also reports premature resident completion and enables backtraces.
+  Production runtime sources remain byte-identical to ab6b7e434.
 - Full native workflow `43960937477`, source ab6b7e434: frontend/build/format
   passed, both controlled red proofs passed, all three fixed DSH regressions
   passed, plus 11 sync-agent, six GUI-core agent and 19 ACP tests (two ignored).
@@ -154,6 +161,6 @@ with the serial-execution constraint.
 - 23 Python Lab configuration/lifecycle tests passed locally. No local Node,
   Rust or Xcode build was run.
 
-Still required: finish scoped fixture run 43966829935, inspect its two integration
-results and formatting outcome, record the final source mapping, and complete
-the branch audit. No new model prompts or repeated full suites are needed.
+Still required: finish delegation-only run 43971758897, inspect its result and
+formatting outcome, record the final source mapping, and complete the branch
+audit. No new model prompts or repeated passed suites are needed.
