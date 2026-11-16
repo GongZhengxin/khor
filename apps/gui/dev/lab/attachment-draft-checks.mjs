@@ -69,9 +69,15 @@ export async function checkAttachmentDraft(browser,{port,report,engine,width=390
   for(const button of await picker.locator('[data-files-pick]').all())assert(await button.evaluate(node=>{const outer=node.getBoundingClientRect();return [...node.children].every(child=>{const r=child.getBoundingClientRect();return r.top>=outer.top&&r.bottom<=outer.bottom;});}),'Source button contents fit without overlapping adjacent elements');
   const chips=picker.locator('[data-files-machine-chip]:visible');assert(await chips.count()>0,'At least one source machine shows its avatar and name inline');
   assert(await chips.first().locator('svg').count()>0);assert((await chips.first().innerText()).trim());
+  const machineRow=picker.locator('[data-files-machine-row]');
+  await machineRow.evaluate(node=>node.style.width='80px');
+  await picker.locator('[data-files-machines]:visible').waitFor();assert(await openMachines(),'Narrow source space exposes the overflow selector');
+  assert.equal(await machinesMenu.locator('[data-files-machine]').count(),Number(await machineRow.getAttribute('data-files-source-count')),'Every machine remains selectable when all chips overflow');
+  await picker.locator('[data-files-source] h3').click();await machinesMenu.waitFor({state:'hidden'});await machineRow.evaluate(node=>node.style.removeProperty('width'));await chips.first().waitFor();
   assert.equal(await picker.locator('[data-files-destination]').getByRole('heading',{name:'发送目录'}).count(),1);
   await selected('draft.txt').locator('[data-files-select]').click();await selected('draft.txt').waitFor({state:'hidden'});assert.equal(await picker.locator('[data-files-selection]').count(),0,'Empty selection hides its entire section');
   await choose({name:'draft.txt',mimeType:'text/plain',buffer:Buffer.from('original attachment')});await selected('draft.txt').waitFor();
+  await page.screenshot({path:path.join(report,name+'-layout.png')});
   assert.match(await picker.locator('[data-send-to-machine]').getAttribute('aria-label'),/发送到.*保存文件夹/);assert.equal(await picker.locator('[data-send-into-label]').count(),0);assert.equal((await picker.locator('[data-send-to-machine]').innerText()).replace(/\s/g,''),'：'+(await picker.locator('[data-send-into-path]').innerText()).replace(/\s/g,''),'Destination displays only avatar, colon and path');assert.equal((await picker.locator('[data-send-into-change]').innerText()).trim(),'更改');
   const other=(await api('devices')).filter(d=>d.hosts&&!d.me).at(-1);assert(other);await pickMachine(other.name);await directory.waitFor();assert.equal(await directory.locator('[data-files-directory-avatar]').getAttribute('aria-label'),other.shown,'Choosing another machine opens that machine');await directory.locator('[data-files-directory-back]').click();await directory.waitFor({state:'hidden'});await unchanged('other machine choice');
   assert.equal(await picker.locator('[data-files-input]').getAttribute('accept'),null);assert.match(await picker.locator('[data-send-into-path]').innerText(),/khor-drop/);await green();assert.equal((await api('__ai_preview/attachment-events')).length,0);
