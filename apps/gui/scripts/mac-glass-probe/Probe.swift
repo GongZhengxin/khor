@@ -66,21 +66,33 @@ import Darwin
         var value = image(file); value["exit"] = p.terminationStatus
         return value
     }
+    func blur(_ enabled: Bool) -> Bool {
+        typealias Connection = @convention(c) () -> Int32
+        typealias Blur = @convention(c) (Int32, Int32, Int) -> Int32
+        guard let handle = dlopen(nil, RTLD_LAZY), let c = dlsym(handle, "CGSDefaultConnectionForThread"), let b = dlsym(handle, "CGSSetWindowBackgroundBlurRadius") else { return false }
+        let connection = unsafeBitCast(c, to: Connection.self)
+        let apply = unsafeBitCast(b, to: Blur.self)
+        return apply(connection(), Int32(front.windowNumber), enabled ? 25 : 0) == 0
+    }
     func run() async {
+      for frost in [false, true] {
+        let nativeBlur = blur(frost)
         for dark in [false, true] {
-            _ = await js("document.documentElement.classList.toggle('dark',\(dark))")
+            front.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
+            _ = await js("document.documentElement.dataset.theme='\(dark ? "dark" : "light")'")
             for fallback in [false, true] {
                 _ = await js("document.documentElement.toggleAttribute('data-probe-native-backdrop',\(fallback))")
                 for (name, color) in [("magenta", NSColor.magenta), ("cyan", NSColor.cyan)] {
                     stage.backgroundColor = color
                     await pause()
-                    let key = "\(dark ? "dark" : "light")-\(fallback ? "off" : "on")-\(name)"
+                    let key = "\(frost ? "frost" : "clear")-\(dark ? "dark" : "light")-\(fallback ? "off" : "on")-\(name)"
                     let style = await js("JSON.stringify({glass:getComputedStyle(document.querySelector('.glass')).backdropFilter,webkit:getComputedStyle(document.querySelector('.glass')).webkitBackdropFilter,background:getComputedStyle(document.querySelector('.glass')).backgroundColor})") as? String ?? ""
-                    results.append(["case": key, "capture": capture(key), "style": style])
+                    results.append(["case": key, "capture": capture(key), "style": style, "nativeBlurApplied": nativeBlur])
                 }
             }
         }
-        let report: [String: Any] = ["os": ProcessInfo.processInfo.operatingSystemVersionString, "results": results, "limits": ["Native WKWebView and exact released CSS, not the installed Tauri app", "Controlled flat native backdrop; native window frost not simulated"]]
+      }
+        let report: [String: Any] = ["os": ProcessInfo.processInfo.operatingSystemVersionString, "results": results, "limits": ["Native WKWebView and exact released CSS, not the installed Tauri app", "Controlled flat native backdrops, with the same optional WindowServer blur as production"]]
         do {
             try JSONSerialization.data(withJSONObject: report, options: [.prettyPrinted, .sortedKeys]).write(to: output.appendingPathComponent("result.json"))
         } catch { print(error); exit(1) }
