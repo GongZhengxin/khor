@@ -41,6 +41,11 @@ export async function checkAttachmentDraft(browser,{port,report,engine,width=390
   originalGrid=await grid();originalSizes=(await api('__ai_preview/terminal-sizes')).length;
   await page.locator('[data-terminal]').evaluate(node=>{const data=new DataTransfer();data.items.add(new File(['original attachment'],'draft.txt',{type:'text/plain'}));node.dispatchEvent(new DragEvent('drop',{bubbles:true,cancelable:true,dataTransfer:data}));});
   await picker.waitFor();await selected('draft.txt').waitFor();await unchanged('open fixed panel');
+  const selectionPaint=await selected('draft.txt').locator('[data-files-select] > span').evaluate(mark=>{
+   const probe=document.createElement('span');probe.style.backgroundColor='var(--brand-strong)';probe.style.color='var(--on-brand)';mark.append(probe);
+   const expected=getComputedStyle(probe),actual=getComputedStyle(mark),paint={actual:{background:actual.backgroundColor,color:actual.color,border:actual.borderTopColor},expected:{background:expected.backgroundColor,color:expected.color,border:expected.backgroundColor}};probe.remove();return paint;
+  });
+  assert.deepEqual(selectionPaint.actual,selectionPaint.expected,'Selected attachment mark uses the settings active green and contrasting check');
   if(!mobile)assert.equal(await page.locator('[data-term-attachments]').count(),0,'Desktop uses direct drops without a redundant header attachment button');
   const surface=await picker.evaluate(node=>{const color=getComputedStyle(node).backgroundColor;const probe=document.createElement('span');probe.style.background='var(--canvas-solid)';node.append(probe);const expected=getComputedStyle(probe).backgroundColor;probe.remove();return {color,expected};});
   assert.equal(surface.color,surface.expected,'Attachment selection panel must have an opaque surface even in a frosted window');
