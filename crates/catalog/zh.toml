@@ -5575,6 +5575,8 @@ view-chat = "对话"
 # one concept, one word, wherever it appears.
 to-a-chat = "转为对话"
 to-a-terminal = "转为终端"
+resume-native = "在终端里继续"
+resume-native-missing = "这段对话没有记录原生 id，无法在它自己的工具里继续"
 
 # ── Claude 订阅余量(批⑩) ─────────────────────────────
 # 窗口的名字。数字与「已用多少」由环画,这里只给名字——

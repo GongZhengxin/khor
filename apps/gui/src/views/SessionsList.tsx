@@ -11,7 +11,7 @@ import type { DelegatedChild } from "@/lib/delegated-sessions";
 import { BellMark } from "@/components/BellMark";
 import { StatusWord } from "@/components/StatusWord";
 import { SessionUnread } from "@/components/SessionUnread";
-import { takeover, takeoverTerm, type DeviceRow, type SessionRow } from "@/api";
+import { openShell, sessionRecovery, takeover, takeoverTerm, type DeviceRow, type SessionRow } from "@/api";
 import { MachineAvatar } from "@/components/Avatar";
 import { sessionKind } from "@/components/SessionFace";
 import { type RowAction } from "@/components/RowMenu";
@@ -182,6 +182,48 @@ export function SessionsList({
     const refused = turnRefused.get(r.id);
     const said = (e: unknown) =>
       setTurnRefused((m) => new Map(m).set(r.id, String(e instanceof Error ? e.message : e)));
+    // **Somebody else's record, resumed in its own tool.** An observed
+    // conversation has no process for khor to take over — khor never
+    // owned it — but it does have a native id its vendor can resume, so
+    // the action starts that vendor in a terminal khor hosts. Codex only:
+    // `codex resume <id>` is the argv this tree has actually verified, and
+    // offering another vendor's guess is the failure this project keeps
+    // writing comments about. The conversation stays the vendor's; khor
+    // supplies the window.
+    if (r.kind === "observe" && !r.source && r.category === "codex") {
+      return [
+        {
+          key: "resume-native",
+          label: gui.resume_native,
+          note: refused,
+          run: async () => {
+            try {
+              // **Two different names for the same machine**, and the
+              // commands want different ones: `session_recovery` takes the
+              // device id and refuses a channel ("Not a machine id"),
+              // `open_shell` takes the channel and refuses an empty name
+              // ("This machine name can't go in a path"). A row's `home`
+              // is the channel (`DeviceRow::name`), so the id is looked up
+              // from the device table rather than assumed.
+              const host = devices.find((d) => d.name === r.home);
+              const offer = host ? await sessionRecovery(host.id, r.id) : null;
+              const native = offer?.native;
+              if (!native) throw new Error(gui.resume_native_missing);
+              await openShell(
+                r.home,
+                r.place ?? "",
+                `${native.agent} resume ${native.native_id}`,
+                r.title,
+                crypto.randomUUID(),
+              );
+            } catch (e) {
+              said(e);
+              throw e;
+            }
+          },
+        },
+      ];
+    }
     // Somebody else's machine hosts it; the act happens where the
     // process is.
     if (r.source || r.kind === "observe") return [];

@@ -3202,6 +3202,8 @@ view-terminal = "Terminal"
 view-chat = "Chat"
 to-a-chat = "Switch to chat"
 to-a-terminal = "Switch to terminal"
+resume-native = "Continue in a terminal"
+resume-native-missing = "This conversation has no recorded native id, so its own tool cannot be asked to resume it"
 
 quota-five-hour = "5H"
 quota-seven-day = "7D"
