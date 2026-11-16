@@ -40,8 +40,9 @@
 //!   at once** with the connection's close — a reading is asked again
 //!   on a fresh wire, anything else reports that the machine was not
 //!   reached and lets the person decide.
-//! - **Backoff**: a dial that fails makes the pump wait 5 s, then 10,
-//!   20, 40, and 60 s at most before it dials that machine again. A
+//! - **Backoff**: a dial that fails makes the pump wait 5 s, then
+//!   doubles its wait up to 300 s. Repeated failures add a stable
+//!   per-peer offset of up to 25%, under that same cap. A
 //!   person's own request is never refused by backoff — only the
 //!   background pump honours it.
 //!
@@ -50,7 +51,8 @@
 //! questions — the far side may be a one-shot verb with nobody serving
 //! its end. Both wires ride the one path state iroh keeps per machine.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, hash_map::RandomState};
+use std::hash::BuildHasher;
 use std::sync::atomic::{AtomicU64, Ordering::Relaxed};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
@@ -398,6 +400,8 @@ fn bytes_of(conn: &Connection) -> (u64, u64) {
 #[derive(Default)]
 pub(crate) struct Wires {
     pub(crate) pulls: crate::link::pull_pool::Pools,
+    /// Node-specific retry offsets, stable between journaling and scheduling.
+    retry_jitter: RandomState,
     slots: Mutex<HashMap<(String, Proto), Slot>>,
     dialing: Mutex<HashMap<(String, Proto), DialLock>>,
     pending_dials: Mutex<HashMap<String, std::sync::Weak<PendingDialState>>>,
@@ -808,7 +812,13 @@ impl Wires {
         {
             return BACKOFF_MAX;
         }
-        backoff(n)
+        let base = backoff(n);
+        if n <= 1 || base == BACKOFF_MAX {
+            return base;
+        }
+        let spread_ms = (base / 4).as_millis() as u64;
+        let offset_ms = self.retry_jitter.hash_one((id, n)) % (spread_ms + 1);
+        (base + Duration::from_millis(offset_ms)).min(BACKOFF_MAX)
     }
 
     /// [`drop_wire`], written in the journal: why, how long the wire had
