@@ -6,6 +6,6 @@
 
 优先验证现成能力，不新增解析器。新 [NAT64夹具](../../tests/net-nat64-coverage-v1/README.md) 使用patchbay已有IspV6转换器；私有DNS提供固定A/合成AAAA，IPv6-only client的UDP nonce必须实际到IPv4 server并返回，双侧确认地址族，系统DNS先能解析，然后才测试原产品冷配对与双向目录。原十秒冷建联、两秒业务期限保持。前置oracle失败不能当产品红。
 
-这是固定DNS64响应，不是动态DNS64算法、CLAT、IPv4 literal支持或物理手机。夹具已按冻结协议编译并执行：`turing-20261116T104129Z-da0f8846`独立网络/DNS oracle全部通过，产品冷配对在原10秒超时（native101/runner1），0目录操作被执行。原件`E/RUN/nat64-cold-red-verification-v1.json`保持。若复现，设计需同时满足系统DNS/internal DNS64、受控public fallback、换网重读，以及Mac/iOS不阻塞运行时与首次建联预算。隔离候选3bd998e8仅去除固定公共DNS覆盖，交回iroh现成系统DNS与fallback；Mac GH43854682670在测，普通Release同fixtureGREEN未执行。canonical未采用。
+这是固定DNS64响应，不是动态DNS64算法、CLAT、IPv4 literal支持或物理手机。夹具已按冻结协议编译并执行：`turing-20261116T104129Z-da0f8846`独立网络/DNS oracle全部通过，产品冷配对在原10秒超时（native101/runner1），0目录操作被执行。原件`E/RUN/nat64-cold-red-verification-v1.json`保持。若复现，设计需同时满足系统DNS/internal DNS64、受控public fallback、换网重读，以及Mac/iOS不阻塞运行时与首次建联预算。隔离候选3bd998e8仅去除固定公共DNS覆盖，交回iroh现成系统DNS与fallback；Mac GH43854682670原12组319pass/0fail/ignored1已核（artifact/每个名称/原cfg排除不变），普通Release同fixtureGREEN未执行。canonical未采用。
 
 参考：[iroh DnsResolver](https://docs.rs/iroh/latest/iroh/dns/struct.DnsResolver.html)、[旧Apple初始化问题](https://github.com/n0-computer/iroh/issues/4246)、[patchbay IspV6](https://docs.rs/patchbay/latest/patchbay/enum.RouterPreset.html)。版本结论以上述锁定源码审计为准，不以docs latest别名推断。
