@@ -21,7 +21,7 @@ export async function checkAttachmentDraft(browser,{port,report,engine,width=390
   const owner=await view.locator(selector).boundingBox(),panel=await view.locator('[data-attachment-picker]:visible').boundingBox();panelWidths.push({label,owner,panel});
  };
  const assertPanelWidths=()=>{const issues=panelWidths.filter(({owner,panel})=>Math.abs(owner.x-panel.x)>1||Math.abs(owner.width-panel.width)>1);assert.deepEqual(issues,[],'Attachment panel follows its session width instead of a fixed dialog width');};
- const green=async()=>assert(await picker.locator('[data-files-send]').evaluate(button=>{const p=document.createElement('i');p.style.backgroundColor='var(--brand-strong)';document.body.append(p);const expected=getComputedStyle(p).backgroundColor;p.remove();return !button.disabled&&getComputedStyle(button).backgroundColor===expected;}));
+ const green=async()=>assert(await picker.locator('[data-files-send]').evaluate(button=>{const p=document.createElement('i');p.style.backgroundColor='var(--brand-strong)';document.body.append(p);const expected=getComputedStyle(p).backgroundColor;p.remove();const face=getComputedStyle(button,'::before');return !button.disabled&&(face.content!=='none'?face.backgroundColor:getComputedStyle(button).backgroundColor)===expected;}));
  let originalGrid,originalSizes;
  const unchanged=async label=>{assert.deepEqual(await grid(),originalGrid,`${label}: terminal cell grid unchanged`);const current=await api('__ai_preview/terminal-sizes');sizes.push({label,count:current.length});assert.equal(current.length,originalSizes,`${label}: no PTY resize`);};
  const image=async label=>{
@@ -41,6 +41,11 @@ export async function checkAttachmentDraft(browser,{port,report,engine,width=390
   originalGrid=await grid();originalSizes=(await api('__ai_preview/terminal-sizes')).length;
   await page.locator('[data-terminal]').evaluate(node=>{const data=new DataTransfer();data.items.add(new File(['original attachment'],'draft.txt',{type:'text/plain'}));node.dispatchEvent(new DragEvent('drop',{bubbles:true,cancelable:true,dataTransfer:data}));});
   await picker.waitFor();await selected('draft.txt').waitFor();await unchanged('open fixed panel');
+  if(mobile){
+   const action=await picker.locator('[data-files-send]').evaluate(button=>{const box=button.getBoundingClientRect(),face=getComputedStyle(button,'::before'),root=getComputedStyle(document.documentElement);return {hit:box.height,width:box.width,face:parseFloat(face.height),touch:parseFloat(root.getPropertyValue('--touch')),compact:parseFloat(root.getPropertyValue('--ctl-lg')),background:getComputedStyle(button).backgroundColor};});
+   assert(action.hit>=action.touch&&action.width>=action.touch,'The compact send face retains the full mobile touch target');assert.equal(action.face,action.compact,'Send paints the shared compact task-button height');assert.equal(action.background,'rgba(0, 0, 0, 0)');
+  }
+  assert.equal(await picker.locator('[data-files-destination]').getByRole('heading',{name:'发送到',exact:true}).count(),1);
   const selectionPaint=await selected('draft.txt').locator('[data-files-select] > span').evaluate(mark=>{
    const probe=document.createElement('span');probe.style.backgroundColor='var(--brand-strong)';probe.style.color='var(--on-brand)';mark.append(probe);
    const expected=getComputedStyle(probe),actual=getComputedStyle(mark),paint={actual:{background:actual.backgroundColor,color:actual.color,border:actual.borderTopColor},expected:{background:expected.backgroundColor,color:expected.color,border:expected.backgroundColor}};probe.remove();return paint;
@@ -149,7 +154,7 @@ export async function checkAttachmentDraft(browser,{port,report,engine,width=390
   for(let i=0;i<12;i++)await selected(`long-${i}.txt`).locator('[data-files-select]').click();
   await unchanged('selection and navigation');await page.screenshot({path:path.join(report,name+'-panel.png')});
   await picker.locator('[data-files-cancel]').click();await picker.waitFor({state:'hidden'});await page.locator('[data-term-attachment-resume]:visible').click();await picker.waitFor();await selected('draft.txt').waitFor();await unchanged('cancel and reopen');
-  await api('__ai_preview/upload-mode',{mode:'fail'});await picker.locator('[data-files-send]').click();await picker.getByRole('alert').waitFor();await selected('draft.txt').waitFor();await api('__ai_preview/upload-mode',{mode:'ok'});await picker.locator('[data-files-send]').click();await picker.waitFor({state:'hidden'});
+  await api('__ai_preview/upload-mode',{mode:'fail'});await picker.locator('[data-files-send]').click();await picker.getByRole('alert').waitFor();await selected('draft.txt').waitFor();await api('__ai_preview/upload-mode',{mode:'ok'});await picker.locator('[data-files-send]').click(mobile?{position:{x:10,y:2}}:{});await picker.waitFor({state:'hidden'});
   const events=await api('__ai_preview/attachment-events');assert(events.some(e=>e.operation==='term_drop_stage'&&e.name==='draft.txt'&&e.content==='original attachment'));assert(events.some(e=>(e.operation==='term_drop'||e.operation==='term_drop_items')&&e.into===null));
   if(mobile){
    const keyboardEnvironment={...environment,keyboard:232};await page.goto(`http://127.0.0.1:${port}/app/?scene=terminal&machines=3&environment=${encodeURIComponent(JSON.stringify(keyboardEnvironment))}`);await page.locator('[data-terminal] .xterm').waitFor();await page.waitForTimeout(500);originalGrid=await grid();originalSizes=(await api('__ai_preview/terminal-sizes')).length;

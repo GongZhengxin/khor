@@ -99,7 +99,7 @@ export function TermFiles({road,onClose,onSent,viewport}:{road:FilesRoad;onClose
  {createPortal(<div ref={panel} data-attachment-picker data-files-panel style={{height,'--attachment-panel-height':height+'px'} as import('react').CSSProperties} className="fixed bottom-0 z-40 flex min-h-0 flex-col gap-row border-t bg-(--canvas-solid) px-base pt-in pb-safe-bottom shadow-(--shadow-float)" onKeyDown={e=>{if(e.key==='Escape'&&!road.busy){e.preventDefault();finish();}}}>
   <div data-files-actions className="flex min-h-touch flex-none items-center justify-between">
    <Button data-files-cancel variant="ghost" className="min-h-touch" disabled={road.stopping||(road.busy&&!road.cancel)} onClick={()=>road.busy?road.cancel?.():finish()}>{road.busy&&road.cancel?'取消传输':'取消'}</Button>
-   <Button data-files-send variant="primary" className={road.selected.length?"min-h-touch":"min-h-touch bg-fill text-muted-foreground"} disabled={road.busy||picking||!road.selected.length} onClick={()=>void send()}>{road.busy?'正在发送':`发送${road.selected.length?' ('+road.selected.length+')':''}`}</Button>
+   <Button data-files-send compactTouch variant={road.selected.length?"primary":"default"} className={road.selected.length?"min-h-touch":"min-h-touch text-muted-foreground"} disabled={road.busy||picking||!road.selected.length} onClick={()=>void send()}>{road.busy?'正在发送':`发送${road.selected.length?' ('+road.selected.length+')':''}`}</Button>
   </div>
   <div data-attachment-split data-files-body className="flex min-h-0 flex-1 flex-col gap-row overflow-y-auto overscroll-contain pb-in">
    <section data-files-source className="flex flex-none flex-col gap-in" aria-labelledby={sourceTitle}>
@@ -120,8 +120,8 @@ export function TermFiles({road,onClose,onSent,viewport}:{road:FilesRoad;onClose
      <AttachmentList items={road.selected.map(entry=>({...entry,source:entry,detail:entry.shown}))} busy={road.busy} onOpen={key=>{const entry=road.selected.find(item=>item.key===key);if(entry)entry.dir?browse(entry):setLook(entry);}} onRemove={key=>{const entry=road.selected.find(item=>item.key===key);if(entry)toggle(entry);}}/>
     </div>
    </section>}
-   <section data-files-destination className="flex flex-none flex-col gap-in" aria-label="发送目录">
-    <h3 className="text-headline">发送目录</h3>
+   <section data-files-destination className="flex flex-none flex-col gap-in" aria-label="发送到">
+    <h3 className="text-headline">发送到</h3>
     <AttachmentDestination className="border-0" machine={road.machine} into={road.into??null} onInto={road.onInto??(()=>{})} busy={road.busy}/>
    </section>
   </div>
