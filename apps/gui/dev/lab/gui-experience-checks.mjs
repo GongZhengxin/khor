@@ -54,7 +54,7 @@ export async function checkGuiExperience(browser,{port,report,engine}){
   await page.locator('[data-lab-session-settings]:visible').click();
   assert.equal(await page.locator('[data-lab-preferences] [data-history-find-open],[data-lab-preferences] [data-history-readable-export]').count(),0,'Conversation menus do not contain the removed find/export entries');
   await page.keyboard.press('Escape');
-  await input.press('Control+f');
+  await input.press(await page.evaluate(()=>/Mac|iPhone|iPad/.test(navigator.userAgent))?'Meta+f':'Control+f');
   await page.locator('[data-history-search] input').waitFor();
   await page.waitForFunction(()=>document.activeElement?.matches('[data-history-search] input'));
   await page.screenshot({path:path.join(report,`gui-experience-${engine}.png`)});
