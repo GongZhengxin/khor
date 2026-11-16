@@ -35,7 +35,7 @@ import Darwin
     func pause() async { try? await Task.sleep(nanoseconds: 900_000_000) }
     func js(_ value: String) async -> Any? { try? await web.evaluateJavaScript(value) }
     func image(_ file: URL) -> [String: Any] {
-        guard let bitmap = NSBitmapImageRep(contentsOf: file) else { return ["error": "screenshot unavailable"] }
+        guard let data = try? Data(contentsOf: file), let bitmap = NSBitmapImageRep(data: data) else { return ["error": "screenshot unavailable"] }
         let scale = Double(bitmap.pixelsWide) / 600
         var samples: [String: [Double]] = [:]
         for (name, point) in [("glass", NSPoint(x: 100, y: 55)), ("selected", NSPoint(x: 300, y: 55)), ("control", NSPoint(x: 100, y: 155)), ("band", NSPoint(x: 100, y: 255)), ("canvas", NSPoint(x: 100, y: 355))] {
@@ -77,7 +77,11 @@ import Darwin
         NSApp.terminate(nil)
     }
 }
-let app = NSApplication.shared
-let probe = Probe()
-app.delegate = probe
-app.run()
+@main struct Main {
+    @MainActor static func main() {
+        let app = NSApplication.shared
+        let probe = Probe()
+        app.delegate = probe
+        app.run()
+    }
+}
