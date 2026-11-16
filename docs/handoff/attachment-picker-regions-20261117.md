@@ -56,3 +56,25 @@ Desktop1280 and WebKit320 screenshots inspected. Current Lab is now:
 http://127.0.0.1:23961/snapshots/5ac1e0ce340e23a2/app/?scene=terminal&machines=3
 All37 snapshot URLs are retained; four current entry assets byte-verified.
 Only the owned prior Lab process was replaced. No main merge or ship.
+
+## Latest accepted refinements and current Lab
+
+Preview now uses size-6 eyeglasses to balance the size-5 selection disc.
+Selected discs share settings' brand-strong and on-brand; unchecked stays outline.
+Shared Button compactTouch keeps the mobile task primary face at ctl-lg32 and
+its real target at least44. TaskOverlay and TermFiles use the same implementation;
+wide desktop stays28. Neutral empty/busy behavior, focus, press and labels remain
+owned by the real button. Destination heading and accessible name now say发送到.
+
+Final source8882a960 (product code70ac67cb) passed run43941997857: all14 existing
+Chromium/WebKit attachment/GUI/Khor cases, hot-update/build/shared gates, plus
+shared dialog bounds/actions and compact face/touch checks. The mobile send
+flow clicks the transparent strip above the green face and successfully sends.
+Desktop1280, lightWebKit320 and darkChromium412 screenshots inspected.
+Artifact14263193582 digest14b1bf78ba43bdfbc20ee39be64ce240b09557e0433c4764fb29cb4ef0c262cf
+verified against exactsource/tree6aec2568634d6099cb6300635ef669738eb90cf8.
+
+Current pinned App: http://127.0.0.1:23961/snapshots/8882a96033340cb5/app/?scene=terminal&machines=3
+Four entry assets byte-verified and40 snapshots retained. Only owned Lab server
+replaced. Temporary verifier b3c259ee must never merge. This UI follow-up remains
+unmerged/unshipped; no user App or device changed.
