@@ -1,5 +1,24 @@
 # Vendor 补丁覆盖与退出审计
 
+## 2026-11-14当前账目
+
+当前接受的集成底座I4及其N2修复96e999da采用iroh1.4.1／Noq1.4.0，canonical feat/net运行代码仍1.2／1.3；准确源码/验证边界见[STATE](STATE.md)。以下旧日期的“未升级”“当前53/58/59”“未核Noq5”等是历史状态，不能覆盖本节，也不能删除原失败。
+
+60个历史条目以E/iroh-upgrade-patch-ledger-v5.json为逐项入口：**1项已用上游替代并有库合同证据，3项移除在其对应合同中失败而保留，56项仍待逐项等价/退出核查**。这不证明56项都必要，也不要求为了计数机械消融每项；每项须有原因、准确覆盖、上游语义及可执行退出条件，缺证继续明确未完成。
+
+| 条目 | 已有结论 | 边界 |
+| --- | --- | --- |
+| iroh22 | 手工IPv6方括号处理已用上游relay_tls_server_name替代，库合同已核 | IPv6 QAD测试有地址不可用时提前返回的分支，不代IPv6 WAN/手机验收 |
+| Noq2 | 同reporting-both恢复fixture移除保护会在0-RTT带出非法地址报告，保留保护 | 确定性协议fixture，不代全部应用写family或包级真实网重放矩阵 |
+| Noq5 | 有效已发最大号记录回收后，移除保护会错误增加RTT样本计数；三个负控制保留 | 此项已有专门原保护／移除对照，旧表“无专项”不再是现状；不作WAN性能接受 |
+| iroh38 | 当前1.4真实NAT移除对照744读全成功，但强tuple oracle原3/3、移除0/3，故保留 | 可达不等于缓存/测量归属正确；只证明该准确场景，非所有移动必要性 |
+| 其余56 | 保留候选，仍待逐项退出判断 | 通用单元绿、版本号或本地字段同名都不能补上游等价性与实际成本 |
+
+对应原件为E/iroh-upgrade-qad-upstream-source-v1.json、iroh-noq-zero-rtt-exit-comparison-v1.json、iroh-noq-ack-exit-comparison-v1.json和tuple-exit-nat-comparison-verification-v1.json；SHA及准确源在v5 ledger。Noq1闲后突发/BBR、共享多连接测量、探测/手机成本等缺口不由这四项关闭。iroh Relay actor之后的F3静默/健康对照168/168范围见[RELAY-DEMAND](RELAY-DEMAND.md)，不回填成全部vendor专项覆盖。
+
+下面按原时点保留历史审计。
+
+
 2026-11-11 15:25 UTC：同生产候选3de新增动态三轮27/27、恢复三轮6/6原门均绿，原件与实际业务人口已收齐（f2f17750、ce3b1222）。最新同源完整长稳de04bcc1在途，p1原600秒已绿，其余未完成。当前工作负载六轮4320功能绿是观察器实验，不是vendor吞吐/能耗或严重stall关闭；新业务流诊断仅扩原opt-in字段，未改任何vendor源码。以下Noq1/5专项、严重6aa、quiet/成本与全部59上游/退出缺口保持，详STATE。
 
 2026-11-11 13:22 UTC：Iroh48/49与已有carrier拨号候选 **3de372a0** 已取得同源 Mac43022962905 / Linux5c2a0339 全12绿、Mac43023967463 的443Noq/58path/11home绿，Turing6970ad46四peer三轮全6绿（每轮31匹配实际响应流/同business wire/单outer无detach；首内容1.2630/1.2532/1.2230秒、各30持续样本超过15秒）。准确原件/identity/逐门proof/ledger已收齐，见STATE。只接受上述已测scope，不将筛选回归称59补丁全部专项或完整上游/退出接受，不回填旧3.6–5.2秒业务尾巴、严重stall、Noq1/5、移动/quiet成本或N5。当前主仍59，42–44隔离；新N3测量代码无生产vendor diff，正在单独baseline验证。下面各时点“尚待”按历史理解。
