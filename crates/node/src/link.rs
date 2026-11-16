@@ -14621,6 +14621,7 @@ impl Node {
 mod dial_budget {
     use super::*;
 
+    mod cached_quotas;
     mod initial_custom;
     mod peer_contact;
     mod probe;
