@@ -8,13 +8,13 @@
 
 ## 当前运行与真实结果
 
-当前Linux完整候选在途 **172745Z-e5397285**（PID1544326，control20097ad7），同源Mac完整Node/Relay **43918924175**（request ed473813f5c24696aa28cf9c01aa9591，control34cad841/refnet-final-node-mac-v1已远端精确核，`E/final-net-node-mac-progress-v1.json`）；不要重复提交。源 **f99af76e4dd3b183689460666f90349f7a18ba9d** / tree **3899b251101cf0989eafd0a9c5c60acfa676ddd6** / snapshot **e227353d488619e3616c2175a02cbbed087aec17**，`E/cached-quota-resident-green-source-v1.json`。原25组＋新增root锁因果合同＋既有额度缓存合同＋main新增准入合同＋原5 Relay目标，Linux预期368pass/3原ignored，Mac364pass/3原ignored（原4 Linux-only排除）。`E/final-net-node-{plan,controls}-v1.json`；同源iroh vendor逐字3d，已接受的完整库211不重复跑。
+**最终Node/网络准确运行代码已全GREEN并采用canonical**：Linux **172745Z-e5397285** 原0/1169.368秒、32组 **368pass/0fail/3原ignored**；Mac **43918924175** attempt1原成功、相同32组 **364pass/0fail/3原ignored**（原4 Linux-only排除）。两目录`final-net-node-verification-v1.json`，原测试名/门/negative overrides/source/control/格式/原guard/owner及Mac ZIP14254322885/SHA1aa133b2/CRC全部核。旧Mac失败与诊断不抹掉，不重复这些已闭合同。
 
-独立最终候选worktree **`/Volumes/disk0/Khor/worktrees/current/khor-net-final-v1`** / branch **`integrate/net-final-v1`** 已合入main84e75＋#51；12个main变更blob逐字保持，唯一trust改动来自main。bdb84519加入因果测试，f99af76e修复缓存Quota与后台刷新复用现存resident Arc；非resident保留原open fallback。没有新任务、网络/同步重试或放宽门。P尚未采用修复；main未改、未发行。设计与因果见[RESUME-CACHED-QUOTAS](RESUME-CACHED-QUOTAS.md)。
+canonical **050dedc6639dea059d6878838d09d796a42f9ed6** 已采用准确通过源 **f99af76e4dd3b183689460666f90349f7a18ba9d**（tree3899b251/snapshote227353d）。仅Net docs与F99不同，全部12个main UI/准入blob逐字保持，`E/final-net-canonical-adoption-v1.json`。`khor-net-final-v1` / integrate/net-final-v1保留F99准确源；main未合并或发行。#51＋N4故障域与额度缓存复用均已进入feat/net。新账本v12为历史60＋51共61项；iroh包b5b71521同原211库、Noq包2edce601同原467库，不因文档重跑。
 
-- **缓存额度因果RED→GREEN已闭**：Turing171950Z-a373b2ec原101/102.422s，真实root锁保持时收到`Refused: document transfer state busy`；相同测试/5s防挂门、同controlbc44744a，修复后172255Z-b98275b4原0/100.271s、1/1通过。测试源码逐字一致，格式/source/control/清理已核，各目录`cached-quota-resident-{red,green}-verification-v1.json`。
-- **Mac原恢复6/6已闭GREEN** **43918063738** attempt1原成功，0替换/0未执行；原resume.rs与3d逐字一致、30s耳朵/60s同步/立即改名断言全保持，observer产品日志全部移除。每次新耳朵36–41ms、恢复轮455–494ms，均非partial；`E/mac-43918063738/cached-quota-resident-mac-verification-v1.json`；ZIP14250897361/SHAfd0eeb2b、CRC/原11控制/原guard核。不是完整Mac/Release/真机接受。
+- **额度缓存因果RED→GREEN**：171950Z-a373b2ec真实锁下原Refused Busy，172255Z-b98275b4同测试通过；同controlbc44744a、同5s防挂/真实held锁/同谓词，0新增网络或同步重试。Mac原resume6/6 **43918063738** 同原resume.rs、30s耳朵/60s同步/立即改名全保持，0替换，耳朵36–41ms、恢复轮455–494ms。各专项证明及[RESUME-CACHED-QUOTAS](RESUME-CACHED-QUOTAS.md)保留。
 
+当前Turing只有 **Release main基线V2** 刚单次stage/launch，原session39448，`E/final-net-release-baseline-plan-v2.json` / control240e272e / source5686c3d9；先查原receipt/source-refs，勿重派。V1 `174826Z-3ada4e7b` 原1/25.863秒，在历史ELF重新准入的context处拒绝，**0 Cargo编译/0 native测试/0测量/0源迁移**，已闭`final-net-release-baseline-preflight-red-v1.json`。V2仅纠正历史归档与新构建准入的职责：历史源码/linked bytes/generated inputs仍由原验证器核；若仅context变化，则记录哈希差异、旧ELF只归档、不重新准入，传给新build的prior receipts为0，强制全部first-party条目fresh；新产物仍必须过原require_provenance的当前准确context，未放松。
 - **Busy/owner诊断均闭RED**：Mac43915075545最多6次、第1过/第2红后停、4未执行；真实devices接收/apply时`RootPermit::try_acquire`同root已有owner（io.rs:168）。随后Mac **43916219184**第1即红、5未执行；持锁栈完整指向`dispatch_inner → Node::open → open_hosting → RootPermit::acquire`，同步额度读取用新Node初始化与devices apply相撞。原定点谓词/30s耳朵/60s同步门均保持；日志/ZIP/所有11控制/原guard已核。各目录`resume-busy-observer-verification-v1.json`与`resume-root-owner-verification-v1.json`。这些observer源码不进产品候选，不能当修复。
 - **恢复诊断闭证**：仅test observer源b9516300（生产逐字3d），Linux `165705Z-3cd67887`原0/152.532秒，固定10次全过；Mac **43913474400** attempt1原101，固定最多6次，第1过、第2红即停，4未执行、0替换。Mac直接观测：beta已是`beta-while-alpha-was-away`，alpha仍`alpha/beta`；本轮353ms明确devices pending。原耳朵30s/同步60s/立即改名断言不变；还未证明具体Busy源。两目录`resume-partial-observer-verification-v1.json`，Mac ZIP14247534585/SHA1bb6d6f2/原11控制/原guard均核。Linux十绿不抹掉Mac失败。
 - **准确3d完整Linux25组358已闭GREEN** `153547Z-876c1874`原0/944.251秒、358pass/0fail/原2ignored helper，`E/RUN/relay-home-refresh-full-node-verification-v1.json`；source/control/所有原测试名/原门/格式/owner均核。保持沿用，不因session/暂停重跑。
@@ -30,7 +30,7 @@
 
 ## 已准备但未运行的发行对照
 
-最终普通Release双臂producer控制和源已冻结，**均未stage/launch/编译/测量**，Turing完整原生run闭证后再串行执行。不要把它们当在途或已通过。
+最初V1双臂计划已冻结：baseline已出现上述preflight RED并由V2接续，candidate V1仍未stage/launch/编译/测量，不能当已通过。Turing按原receipt串行执行。
 
 - 新main基线worktree `khor-net-main-baseline-v1` / branch `test/net-main-baseline-v1`，commit5686c3d9/treeceb63bcd/snapshot4505a047；生产逐字main84e75，仅14个cli/tests文件overlay，11个工作负载/校准文件与F99候选逐字相同（包括最新lab/workload，原业务门不改）。`E/final-net-main-baseline-{source,overlay}-v1.json`。不是旧C3运行重贴标签。
 - `E/final-net-release-{baseline,candidate}-plan-v1.json`；controls baseline **e711783a** / `net-final-release-baseline-v1`，candidate **811c4604** / `net-final-release-candidate-v1`，task均net-node、compile-only。普通opt3/strip/thinLTO/codegen1、0features/0诊断、先核并保留旧selected文件与4份provenance输入，再精确源迁移/原native_provenance刷新和fresh CLI/native unit验证；原wrapper和同内容iroh mtime刷新保持。baseline37与candidate46个各自准确source的provenance synthetic合同将远端跑，不能混用不同版本的验证器证明。

@@ -7,9 +7,9 @@
 - Noq3项观测接口、1项BBR时序是当前集成依赖审查，不能当作独立性能/删除必要性证明。
 - 剩余45项iroh集成已有当前与发布版源码/接口合同对照，按下表暂留。buffer64、第二Direct备用、家的数字策略和诊断钩子均仍是有明确退出条件的暂留设计。
 
-精确账本 `E/iroh-upgrade-patch-ledger-v11.json`，详细静态审查 `E/iroh-foundation-exit-audit-v1.json`、`E/iroh-measurement-exit-audit-v1.json`，BBR审查 `E/noq-bbr1-exit-audit-v1.json`。E=`/Volumes/disk0/Khor/evidence/net`。现iroh完整包tree `0ec34a5d754b55ac16dbacf6b708066c3b5ea0e0` 与已接受的S源完全相同，复用其208pass/0fail/原ignored1；Noq包tree2edce601同原467库回归。没有为文档重跑库，也不把旧源额外平台/物理覆盖推成新接受。
+当前账本 `E/iroh-upgrade-patch-ledger-v12.json`，保留v11历史60项原审查范围与证据，新增iroh51（全局第61项）。详细静态审查仍为 `E/iroh-foundation-exit-audit-v1.json`、`E/iroh-measurement-exit-audit-v1.json` 与 `E/noq-bbr1-exit-audit-v1.json`。E=`/Volumes/disk0/Khor/evidence/net`。当前iroh完整包tree **b5b7152171ba1c3821c01f27beeabfe6799bf06f** 与3d候选逐字相同，完整库211pass/0fail/原ignored1；Noq包tree2edce601与原467库回归逐字相同。未为文档重跑未改变的库。
 
-当前优先退出实验是iroh45的唯一生产调用：在隔离832c268a中删除冷失败后清旧IP提示的六行，验证后来加入的48/49是否已足以保持真实身份失败→可信middle恢复。原测试/期限不改，Mac完整319在跑；canonical尚未采用。即使调用删除通过，vendor API与旧提示成本也须独立说明后才能退役。
+iroh45的唯一生产caller六行已删除并在I8及最终Node回归接受，vendor API仍保留。新增51在既有SocketActor中将同URL真实Connected→断开事件交给既有全量net_report，不新增task/timer/依赖/Endpoint或常驻家连接。整Relay＋登记域原20秒发布门RED→原测试3轮GREEN（首内容0.497–0.525秒）；当前同运行代码Linux368、Mac364原生合同全过。原因、三条新库合同与退出边界见 `E/iroh-home-failure-report-exit-audit-v1.json`。这些是组件/debug与原生回归证据，不是物理WAN、Release、持续业务或能耗接受；其余参数暂留边界不变。
 
 | iro h历史项 | 当前合同锚点 | 暂留与退出边界（静态审查） |
 | --- | --- | --- |
