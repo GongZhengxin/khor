@@ -123,7 +123,15 @@ export function NewSessionPage({
       const target = creationTarget(rows, picked || restored.machine);
       contextMachine.current = target?.id ?? null;
       setDevices(rows);
-      roster.current = readyAgents(fleet);
+      // **The roster is this machine's, so it may only answer for this
+      // machine.** `agent_fleet` reads the filesystem it runs on; using it
+      // to choose a default for a *remote* target would offer this
+      // computer's agents on another one — the independent review's
+      // example: this machine has Codex, the target has only Claude, and
+      // the wizard would default to a conversation that cannot start.
+      // A remote target keeps the shipped default until the node can
+      // answer for that machine.
+      roster.current = target?.me ? readyAgents(fleet) : [];
       setLaunch(target && restored.machines[target.id]?.launch || preferredLaunch(wantsTerm, roster.current));
     }, e => {
       if (live) why(e);
@@ -214,7 +222,9 @@ export function NewSessionPage({
     if (!target) return;
     const next = remember(target.id);
     setMachine(target.id);
-    setLaunch(next.machines[target.id]?.launch ?? preferredLaunch(wantsTerm, roster.current));
+    // Same rule as the first load: this machine's roster answers for this
+    // machine only.
+    setLaunch(next.machines[target.id]?.launch ?? preferredLaunch(wantsTerm, target.me ? roster.current : []));
     setEnvironment(EMPTY_ENVIRONMENT); setContextValid(true);
   };
   const pickLaunch = (launch: Launch, used = true) => {

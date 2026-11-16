@@ -1,4 +1,5 @@
 import { sessionContentPreview } from "@/lib/session-preview";
+import { askOpenSession } from "@/lib/composer-handoff";
 import { useNotifications, setSessionNotifications } from "@/lib/notifications";
 import { notificationsEnabled } from "@/lib/notification-banners";
 import { sessionCwdOnScreen } from "@/lib/session-cwd";
@@ -209,13 +210,20 @@ export function SessionsList({
               const offer = host ? await sessionRecovery(host.id, r.id) : null;
               const native = offer?.native;
               if (!native) throw new Error(gui.resume_native_missing);
-              await openShell(
+              // **Land on it.** `open_shell` answers the new session's id
+              // and the command is only typed once a face attaches
+              // (`shell_start` holds it until `Ready`), so an action that
+              // dropped the id would look like nothing happened — found by
+              // the independent review. The event is the app's own opener,
+              // shared with the wizard-free paths.
+              const id = await openShell(
                 r.home,
                 r.place ?? "",
                 `${native.agent} resume ${native.native_id}`,
                 r.title,
                 crypto.randomUUID(),
               );
+              askOpenSession(id);
             } catch (e) {
               said(e);
               throw e;

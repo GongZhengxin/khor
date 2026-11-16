@@ -37,10 +37,14 @@ use std::path::Path;
 
 /// The package runner khor would use for registry adapters.
 ///
-/// One name, in the order a machine is likely to have one: an agent that
-/// distributes through `npx` needs Node, and a machine with Node has
-/// `npx`. Otherwise `pnpm dlx` runs the same packages.
-const RUNNERS: &[(&str, &str)] = &[("npx", "npx"), ("pnpm", "pnpm dlx")];
+/// **`npx` only, for now.** The launcher hands a registry entry's argv to
+/// the agent unchanged (`Node::agent_launch`), and every such argv begins
+/// with `npx`; a machine with `pnpm` but no `npx` would therefore be told
+/// "this road works" and fail at spawn. Listing only the runner the
+/// launcher actually uses keeps the answer true. Adding `pnpm dlx` here
+/// means teaching the launcher to rewrite that first word first — the
+/// independent review found this inconsistency before it shipped.
+const RUNNERS: &[(&str, &str)] = &[("npx", "npx")];
 
 /// One agent khor knows how to find, and the roads to it.
 struct Known {

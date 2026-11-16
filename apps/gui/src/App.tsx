@@ -20,7 +20,7 @@ import { tabAct, useTabActs } from "@/lib/tab-acts";
 import { noticesOf, useNotices } from "@/lib/pill-notices";
 import { rungOffScreen } from "@/lib/bell-marks";
 import { FinishedWatch, type Finished } from "@/lib/finished";
-import { NEW_SESSION_EVENT, OPEN_DIR_EVENT, OPEN_PATH_EVENT, OPEN_URL_EVENT, STEP_TAB_EVENT } from "@/lib/composer-handoff";
+import { NEW_SESSION_EVENT, OPEN_DIR_EVENT, OPEN_PATH_EVENT, OPEN_SESSION_EVENT, OPEN_URL_EVENT, STEP_TAB_EVENT } from "@/lib/composer-handoff";
 import {
   faceHere,
   fetchDevices,
@@ -732,6 +732,22 @@ export default function App() {
     window.addEventListener(NEW_SESSION_EVENT, asked);
     return () => window.removeEventListener(NEW_SESSION_EVENT, asked);
   }, [openNewSession]);
+  // **Landing on a session an action created** (`lib/composer-handoff`'s
+  // OPEN_SESSION_EVENT — today the native resume, whose `open_shell`
+  // answers a new id). The person pressed a row's action, so the screen
+  // they should get is that session, not the list it is not on yet.
+  // Through a ref for the reason `openNewTabRef` has one: the opener is
+  // declared further down and must not re-subscribe this listener on
+  // every render.
+  const openSessionRef = useRef<(id: string) => void>(() => {});
+  useEffect(() => {
+    const asked = (e: Event) => {
+      const id = (e as CustomEvent<{ id?: string }>).detail?.id;
+      if (id) openSessionRef.current(id);
+    };
+    window.addEventListener(OPEN_SESSION_EVENT, asked);
+    return () => window.removeEventListener(OPEN_SESSION_EVENT, asked);
+  }, []);
   /** The id a new tab opened from a workspace's own column left there,
       which the column reads. ⚠️ 墓碑 (UX-45): `newSessionInPlace`, while
       the dialog was up; the new tab carries it (`NewTabAt.inPlace`). */
@@ -757,6 +773,15 @@ export default function App() {
   const [morePage, setMorePage] = useState<MorePage | null>(() =>
     isMorePage(place.more) ? place.more === "terminal" ? "session" : place.more : null,
   );
+  // **`OPEN_SESSION_EVENT`'s opener**, assigned after every piece it uses
+  // exists (`sessionTabs` is declared far above, `setMorePage` right here).
+  // The listener's effect was registered before this assignment on purpose:
+  // it fires only on a press, never during a render.
+  openSessionRef.current = (id: string) => {
+    setMorePage(null);
+    sessionTabs.open(id);
+    setScreen("detail");
+  };
   useEffect(() => {
     rememberPlace({ landing, more: morePage, screen, device: selectedDevice, ws: openWs });
     if (isSettingsPage(morePage)) rememberSettingsPage(morePage);
