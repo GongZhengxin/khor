@@ -1,13 +1,18 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-16T06:27:29.431428+00:00。用户最新“做完吧”已明确继续完整目标，goal active；[GOAL](GOAL.md)、[PLAN](PLAN.md) N0–N5、[REQUIREMENTS](REQUIREMENTS.md)尚未整体完成。root串行、不派子智能体。本机source-only：不跑Cargo/Rustfmt/Node/Bun/Xcode/产品；重型工作只在Turing/macserver/授权khor-build。用户已授权实现与验证，未授权main合并、现装App替换、发行/TestFlight或生产Relay采购部署。
+更新于 2026-11-16T07:12:48.101763+00:00。用户最新“做完吧”已明确继续完整目标，goal active；[GOAL](GOAL.md)、[PLAN](PLAN.md) N0–N5、[REQUIREMENTS](REQUIREMENTS.md)尚未整体完成。root串行、不派子智能体。本机source-only：不跑Cargo/Rustfmt/Node/Bun/Xcode/产品；重型工作只在Turing/macserver/授权khor-build。用户已授权实现与验证，未授权main合并、现装App替换、发行/TestFlight或生产Relay采购部署。
 
-## 当前唯一在途与下一步
+## 当前运行与下一步
 
-- Turing **turing-20261116T062319Z-528e34bc**，PID478771，task net-node，revision `selection_view_release_control_v1`，control **d7d9c53210adac2ff544a852834973b842b39315**，准确H源见下。正在跑4个原控制：快Relay胜慢Direct、反向、typing恢复、p3真实UDP黑洞。先查已有receipt/execution，不重派。
-- Mac **43814577842** / job133123595945已完成并独立核验，不在途。独立Mac ledger `E/selection-view-mac-progress-v1.json` pending=false；common仅追加已完成历史，不能覆盖Turing pending。
-- 当前control结束后collect→identity→`E/ops/verify-selection-view-screen-v1.py RUN`。若完整有效且4项原生通过，用相同H source/control/原ELF运行 `selection_view_release_preflight_v1`（5旧守卫/校准），核验后再 `selection_view_release_high_v1`（固定3次原high separate）。协议 **E/selection-view-release-screen-plan-v1.json**。任何功能/观测/清理失败停止后续阶段，保留原结果；旧cold TCP原参考失败仅按已冻结的分层容量准入处理，不抹原native1。不重编译已闭H，不将未执行填绿。
-- 原门保持：idle20s、typing10s、交互caller2s、high目录bulk scheduled p95绝对592518.1μs、完整720人口/192MiB。当前只是方向筛查，最终配对公开main对照仍需。
+- 当前Turing **070611Z-f9eb7a56**、PID553178、revision `directory_priority_release_compile_v1`、controlb30647868f666f4a02ed8f3856df79317ffdd830：新目录priority候选普通Release编译。Mac **43821604934** / job133145712927，同源原316项回归，独立ledger `E/directory-priority-mac-progress-v1.json`；两个不同host并行，Turing计时尚未开始。先查已有receipt，不重派。
+- 新隔离实验X=`khor-net-directory-priority-v1` / branch`experiment/net-directory-priority-v1`，9e3e0609/treebbf26bf0/snapshot5d905075；只改link.rs的有效Ls/Dir响应priority1，文件保持原0、首块/准备/pool/窗口/期限均不变，无新任务timerprobe。尚未采用，详[DIRECTORY-PRIORITY](DIRECTORY-PRIORITY.md)。Turing编译完collect→identity→`E/ops/verify-directory-priority-release-v1.py RUN`，再与Mac回归闭证后原high3固定方向筛查。
+- 先前H `064105Z-83fdc3e3`已collect、identity、原合同/全部720人口与owner闭证；H仍是已测前代，X未证明收益。
+- H普通Release原控制4/4通过：p6两个相反质量、typing恢复1.097295613s、p3 UDP黑洞260回显0失败/max629.3ms。`062319Z-528e34bc`原0/229.801秒。
+- 原preflight `063259Z-64fbfb05`原1/162.558秒，5项4绿/1冷TCP参考红，几何/内容和独立UDP容量有效；按原冻结分层规则准入，不把原1改绿。
+- H high固定3场 `064105Z-83fdc3e3`原0/546.007秒，2160交互全成功、3×192MiB完整文件和6 post-health均通过；**完整目标/N3未接受**。目录bulk scheduled p95分别613863/471558/342102μs，首场仍超原592518.1μs；terminal分别311148/329875/317502μs。原门和全部失败保持。
+- 数据定位：首场目录index0/1服务约604/601ms，index78服务931ms，造成串行目录后续排队；独立调度见证bulk max2255μs、terminal无相应长卡顿，不能归为host CPU卡住。其他两场有单个955/534ms目录。已做同H一次lifecycle，见下一条；新X只检验首块同Main干扰，不声称解释全部长尾。
+
+- 同H诊断 **065748Z-b5ef24fa** 原1/native101，720业务及完整文件/post-health成功，但普通CLI无net-diagnostics初始化marker，fixture保存x后panic，y未保存；原失败保留。已存x确证首两256KiB文件块与全部目录同Main、余766文件块单一extra；前两bulk目录603622/598904μs，首块1211281μs。`E/RUN/selection-view-high-diagnostic-verification-v1.json`，仅部分诊断，不作性能接受。
 
 ## 当前准确产品候选 H
 
@@ -32,7 +37,7 @@ S=`khor-net-stable-gain-v1` / `experiment/net-stable-gain-v1`，最终7d9f1c07/t
 
 ## 仍阻止完整接受的范围
 
-1. **N3未过**：[PULL-COEXISTENCE](PULL-COEXISTENCE.md)旧同ELF SCCSSC六块/12case/8640样本、24post-health和12完整文件全留。分连接low目录p95为84790μs（共享244009），high614406μs（共享1292588），仍超过原592518.1μs；文件中位low7.033/7.071、high25.572/25.342Mbit/s。共享第五块high原1终端timeout＋63blocked保持完整分母，不报成功子集p95。H尚未跑新high。原pool公平性/容量修复与资源合同/旧Linux317＋压力1、Mac314及原布局均只对其准确源成立；H Mac316已新验证。1/3/5成本、SSH/peer relay/同步共存、全负载和最终同期main对照仍缺。
+1. **N3未过**：[PULL-COEXISTENCE](PULL-COEXISTENCE.md)旧同ELF SCCSSC六块/12case/8640样本、24post-health和12完整文件全留。分连接low目录p95为84790μs（共享244009），high614406μs（共享1292588），仍超过原592518.1μs；文件中位low7.033/7.071、high25.572/25.342Mbit/s。共享第五块high原1终端timeout＋63blocked保持完整分母，不报成功子集p95。H新high三场2160交互全成功，但首场目录p95仍超门；见本页当前运行。原pool公平性/容量修复与资源合同/旧Linux317＋压力1、Mac314及原布局均只对其准确源成立；H Mac316已新验证。1/3/5成本、SSH/peer relay/同步共存、全负载和最终同期main对照仍缺。
 2. **N1/N2**：完整置信/多middle/共享测量/quiet成本，以及总期限/取消/迟到Endpoint与policy队列变化、全部写family/包级0RTT、NET-16完整正负向继续按REQUIREMENTS。已有14联系、92hop、pool32等证据不等于完整接受。
 3. **N4**：冷hint/新peer发布、双方和peer-relay移动/睡眠/Wi-Fi蜂窝、Direct UDP突断、Relay整机/半断/出口/登记/容量和NAT64仍有缺口。旧IPv6-only15场630读、双端dual/v4等闭证保留，不能替NAT64/手机。
 4. **N5**：最新H集成canonical feat/net和同期main后，仍需最终同源Quality、native MacLab/真实backend、手机换网与能耗、设计/运维和全报告。不是“只差手机”。未获main合并/发布授权，不因此停实现/验证。
