@@ -2905,6 +2905,14 @@ html:not([data-modality="keyboard"]) :is([data-search-field], [data-search-wrap]
 :root[data-window-transparent] :is([data-terminal], [data-term-ended-screen]) {
   background: color-mix(in srgb, var(--term-bg) var(--window-opacity), transparent);
 }
+/* Native Sequoia window chrome already sits over the desktop material.
+   A second WK backdrop here can paint an opaque surface. Limit the fallback
+   to navigation/tab capsules: portalled controls and scrolling titles still
+   need their in-page blur. Tint, selection, rim and opacity stay shared. */
+:root[data-window-transparent][data-window-native-chrome] :is(.glass[data-float-nav], .glass:has(> [data-tab-strip])) {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
 /* Accessibility and unsupported blur use the same solid window plane,
    rather than adding an opaque plate to every fixed title. */
 @supports not ((backdrop-filter: blur(0)) or (-webkit-backdrop-filter: blur(0))) {
