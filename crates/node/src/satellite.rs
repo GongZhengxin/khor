@@ -193,7 +193,7 @@ impl Dest {
     /// `program` (ssh or scp) with this road's flags and environment,
     /// ready for the caller's own arguments after the destination's.
     pub fn command(&self, program: &str) -> Command {
-        let mut c = Command::new(program);
+        let mut c = crate::console::hidden(program);
         c.envs(self.env()).args(self.road());
         c
     }
@@ -201,7 +201,7 @@ impl Dest {
     /// A finite, owned command may reuse an existing ControlPath master, but
     /// must not create a persistent master or fork its command into background.
     pub(crate) fn finite_ssh_command(&self) -> Command {
-        let mut c = Command::new("ssh");
+        let mut c = crate::console::hidden("ssh");
         // The Windows owned adapter consumes explicit environment entries.
         c.env_clear()
             .envs(std::env::vars_os())
@@ -505,7 +505,7 @@ pub fn key_locked(path: &str) -> bool {
         (Some(rest), Some(home)) => PathBuf::from(home).join(rest),
         _ => PathBuf::from(path),
     };
-    Command::new("ssh-keygen")
+    crate::console::hidden("ssh-keygen")
         .args(["-y", "-P", ""])
         .arg("-f")
         .arg(&path)
@@ -1944,7 +1944,7 @@ pub fn fingerprint_id(to: &Dest) -> Result<String, String> {
 /// One name's known_hosts entry, fingerprinted — `None` when the file
 /// has never seen it.
 pub(crate) fn known_host_id(name: &str) -> Result<Option<String>, String> {
-    let mut find = Command::new("ssh-keygen");
+    let mut find = crate::console::hidden("ssh-keygen");
     if let Some(dir) = ssh_dir() {
         find.arg("-f").arg(dir.join("known_hosts"));
     }
@@ -1967,7 +1967,7 @@ pub(crate) fn known_host_id(name: &str) -> Result<Option<String>, String> {
     }
     let printed = {
         use std::io::Write;
-        let mut c = Command::new("ssh-keygen")
+        let mut c = crate::console::hidden("ssh-keygen")
             .arg("-lf")
             .arg("-")
             .stdin(std::process::Stdio::piped())
@@ -2002,7 +2002,7 @@ pub(crate) fn known_host_id(name: &str) -> Result<Option<String>, String> {
 /// user's config resolves it to, spelled the way ssh itself records it:
 /// bare for port 22, `[host]:port` for any other port.
 fn canonical_hostname(to: &Dest) -> Option<String> {
-    let mut c = Command::new("ssh");
+    let mut c = crate::console::hidden("ssh");
     if let Some(dir) = ssh_dir() {
         c.arg("-F").arg(dir.join("config"));
     }

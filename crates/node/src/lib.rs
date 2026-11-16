@@ -35,6 +35,7 @@ pub mod codex_terminal;
 pub mod codexagent;
 pub mod commands;
 pub mod config;
+mod console;
 pub mod cwd;
 pub mod day;
 pub mod delegation;
