@@ -2540,22 +2540,34 @@ fn build_the_window(app: &tauri::AppHandle) -> tauri::Result<()> {
     // minimise, maximise, close and the title row's measurements are window
     // methods, not the store's (`window_transport::window_verb`).
     window_transport::attach(app.clone());
-    let mut win = WebviewWindowBuilder::new(
-        app,
-        "main",
-        // **`?bridge=`, because the custom protocol cannot be relied on**
-        // (`window_transport`, measured 2026-11-16): the page's `call()` takes
-        // the loopback road first, and the dead transport is never touched.
-        // The query is the page's own, read at `api.ts`'s `call()`.
-        WebviewUrl::App(format!("index.html?bridge={}", window_transport::PORT).into()),
-    )
-    .title("Khor")
-    .inner_size(1080.0, 720.0)
-    .min_inner_size(400.0, 500.0)
-    .transparent(true)
-    .initialization_script(window_transport::drag_shim(window_transport::PORT))
-    .initialization_script(window_surface::initial_script())
-    .background_color(window_surface::background(chosen_dark(desktop_is_dark)));
+    // **`?bridge=` on Windows only.** That is where the custom protocol stalls
+    // (measured 2026-11-16: nine commands arrive, then nothing), so the page's
+    // `call()` is sent down the loopback road instead — see `window_transport`.
+    // macOS and Linux keep `WebviewUrl::default()` and their proven IPC: a
+    // workaround for one platform's transport must not change the path the
+    // others are verified on.
+    // The URL is bound in a statement rather than built inside the call, because
+    // a `#[cfg]`-gated block used as an expression would discard its value.
+    #[cfg(target_os = "windows")]
+    let start_at =
+        WebviewUrl::App(format!("index.html?bridge={}", window_transport::PORT).into());
+    #[cfg(not(target_os = "windows"))]
+    let start_at = WebviewUrl::default();
+    let mut win = WebviewWindowBuilder::new(app, "main", start_at)
+        .title("Khor")
+        .inner_size(1080.0, 720.0)
+        .min_inner_size(400.0, 500.0)
+        .transparent(true)
+        .initialization_script(window_surface::initial_script())
+        .background_color(window_surface::background(chosen_dark(desktop_is_dark)));
+    // **The drag shim, where dragging is what it repairs.** Tauri's own
+    // `drag.js` calls `invoke('plugin:window|start_dragging')`, which only fails
+    // on Windows; registering this elsewhere would take the drag away from
+    // tauri's working handler for no reason.
+    #[cfg(target_os = "windows")]
+    {
+        win = win.initialization_script(window_transport::drag_shim(window_transport::PORT));
+    }
     // **Windows is borderless, because the page already draws the controls.**
     // `components/Region` renders `WindowControls` only on Windows — minimise,
     // maximise, close at the right end of R0 — and its own note says why it
@@ -5447,6 +5459,11 @@ pub fn run() {
     // (`apps/gui/src/api.ts`, `?bridge=`), so the window is built against one
     // in this process. Started here so the port is listening before the first
     // command is asked for.
+    // The window's own command transport, before the window exists. On Windows
+    // it is the road the page takes (`?bridge=`); elsewhere it still listens —
+    // `?bridge=` is not passed there, so nothing asks it for a command, and the
+    // listener costs one thread. Kept unconditional so the port is bound before
+    // the window is built on every platform that might use it.
     window_transport::start();
     // **Stand somewhere that cannot be deleted, before anything else**
     // (docs/SHELL.md 第十四轮 第 4 条). The install script starts this
