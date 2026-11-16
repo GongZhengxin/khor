@@ -102,13 +102,13 @@ export function TermFiles({road,onClose,onSent,viewport}:{road:FilesRoad;onClose
   </div>
   <div data-attachment-split className="flex min-h-0 flex-1 flex-col">
    <section data-files-source className="flex flex-none flex-col" aria-labelledby={sourceTitle}>
-    <h3 id={sourceTitle} className="pt-xxs text-body font-semibold">选择文件</h3>
+    <h3 id={sourceTitle} className="pt-xxs text-headline">选择文件</h3>
     <div className="flex min-w-0 gap-in">
      <Button data-files-pick="device" disabled={road.busy} className="min-h-touch min-w-0 flex-1 flex-col gap-0 px-in py-xxs text-caption" onClick={()=>picker.current?.click()}><IconFile className="size-kind-mark"/>本机文件</Button>
      {!road.filesOnly&&<Button data-files-pick="folder" disabled={road.busy||picking} className="min-h-touch min-w-0 flex-1 flex-col gap-0 px-in py-xxs text-caption" onClick={()=>void pickFolders()}><IconFiles className="size-kind-mark"/>本机文件夹</Button>}
     <DropdownMenu modal={false}>
      <DropdownMenuTrigger asChild><Button data-files-machines data-files-machine-count={sources.length} aria-label={`其他机器，${sources.length} 台`} disabled={road.busy||!sources.length} className="min-h-touch min-w-0 flex-1 flex-col gap-0 px-in py-xxs text-caption"><span className="flex items-center gap-xxs"><IconDevices className="size-kind-mark"/><span className="tabular-nums text-muted-foreground">{sources.length}</span><IconChevronDown className="size-kind-mark"/></span><span>其他机器</span></Button></DropdownMenuTrigger>
-     <DropdownMenuContent data-files-machines-menu align="start" aria-label="选择来源机器" className="min-w-(--radix-dropdown-menu-trigger-width)">
+     <DropdownMenuContent data-files-machines-menu align="start" aria-label="选择来源机器" className="min-w-nav-menu max-w-[calc(100vw-2*var(--gap-row))]">
       {sources.map(d=><DropdownMenuItem key={d.id} data-files-machine={d.name} data-files-session={(road.machine===null?d.me:d.name===road.machine)||undefined} onSelect={()=>setAt({machine:d,path:''})}>
        <MachineAvatar face={d.face} className="size-kind-mark flex-none"/><span className="min-w-0 flex-1 truncate">{d.shown}</span>{(road.machine===null?d.me:d.name===road.machine)?<span className="text-caption text-muted-foreground">{gui.files_session}</span>:!d.me&&d.hop==='quiet'&&isDown(d.down_ms)&&<span className="text-caption text-muted-foreground">{hopWord('down')}</span>}
       </DropdownMenuItem>)}
@@ -117,7 +117,7 @@ export function TermFiles({road,onClose,onSent,viewport}:{road:FilesRoad;onClose
     </div>
    </section>
    <section data-files-selection aria-labelledby={selectedTitle} className="flex min-h-0 flex-1 flex-col border-t mt-xxs">
-    <h3 id={selectedTitle} className="flex flex-none items-center gap-in pt-xxs text-body font-semibold">已选文件<span className="tabular-nums text-muted-foreground">{road.selected.length}</span></h3>
+    <h3 id={selectedTitle} className="flex flex-none items-center gap-in pt-xxs text-headline">已选文件<span className="tabular-nums text-muted-foreground">{road.selected.length}</span></h3>
     <div data-files-selection-scroll className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
      {road.selected.length?<AttachmentList items={road.selected.map(entry=>({...entry,source:entry,detail:entry.shown}))} busy={road.busy} onOpen={key=>{const entry=road.selected.find(item=>item.key===key);if(entry)entry.dir?browse(entry):setLook(entry);}} onRemove={key=>{const entry=road.selected.find(item=>item.key===key);if(entry)toggle(entry);}}/>:<p className="py-in text-callout text-muted-foreground">尚未选择文件或目录</p>}
     </div>
