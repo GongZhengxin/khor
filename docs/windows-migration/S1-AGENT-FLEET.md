@@ -178,11 +178,12 @@ CC Switch（MIT，桌面三平台）管 **13 个工具**，方式是**写各 CLI
   **还差**：`codex queue --thread <id> --message`（发一条消息）、DSH 适配器
   （读 `session.v4.jsonl.zstd` + headless 驱动）。
 - **D 两机互联**：Windows ↔ LAB 配对与跨机会话（未开始）。
-- **E 启动性能**：进行中。已完成：本机 `ls` 不再建 iroh 端点（**1168 → 80 ms**，提交 `3ce5c5e3`）、
-  Windows 不再为 PATH 启动登录 shell（同口径下 `open` **~5.0 s → ~1.67 s** 的一部分，提交 `5df68991`）。
-  剩余：镜像 inspect（0.60 s）与缓存命中上的 publish（0.78 s），两项都在运行时信任边界上，
-  需单独设计，独立验收明确反对"用文件元数据直接替代完整信任证明"。
-  详见 [W7-PERF §2.2](W7-PERF.md)。
+- **E 启动性能**：**达标**。本机 `ls` 不再建 iroh 端点（**1168 → 80 ms**，`3ce5c5e3`）；
+  Windows 不再为 PATH 启动登录 shell（`5df68991`）；按独立验收排第一的项去掉 Windows 上
+  不可能命中的 legacy 白名单整份哈希（`684e1d65`）。同口径 `khor open` **~5.0 s → 中位 742 ms**
+  （6 次 728/742/746/779/648/692），**P95 ≤ 1.5 s 达成**。详见 [W7-PERF §2.2](W7-PERF.md)。
+  仍可优化：缓存命中上的 publish 身份哈希；按验收意见只能以"不可变内容 + lease 复用"设计，
+  不能用文件元数据替代信任证明。
 
 ## 6. 已知限制
 
@@ -223,8 +224,9 @@ Get-Content "$env:LOCALAPPDATA\Khor\logs\gui.log" -Tail 20
 **验收没有做到的事**（照实记录）：构建、测试、安装、GUI 操作、安装包与 HEAD 的对应关系、
 Linux 原始计时、macOS 动回归、Win10、双机、DSH 真实凭据——全部未复核，报告里明确列了。
 
-**验收给下一轮的排序**：① 先筛掉 Windows 不适用的 legacy 镜像白名单检查（`activation.rs:10` 四条只有
-Linux/macOS，但仍先做整份 SHA）；② 续接体验完善（打开目标终端、幂等重试、已有 writer 的处理）；
-③ 按目标机器维护 fleet 并与 launcher 共用路线解析、清单加载不阻塞设备展示；
-④ 设计已发布 runtime generation 的复用（不可变内容 + lease），**不能**用路径/大小/mtime/首块摘要
-直接替代完整信任证明。
+**验收给下一轮的排序**：① ~~先筛掉 Windows 不适用的 legacy 镜像白名单检查~~——**本轮已做**
+（`684e1d65`：debug 热路径 2.4 s → 0.87 s，release 中位 742 ms）；② 续接体验完善
+（打开目标终端、幂等重试、已有 writer 的处理——**本轮已补上"打开目标终端"**，另两项未做）；
+③ 按目标机器维护 fleet 并与 launcher 共用路线解析、清单加载不阻塞设备展示——**只做了"只对本机生效"
+这一半**，按机器取清单与共用解析未做；④ 设计已发布 runtime generation 的复用（不可变内容 + lease），
+**不能**用路径/大小/mtime/首块摘要直接替代完整信任证明。
