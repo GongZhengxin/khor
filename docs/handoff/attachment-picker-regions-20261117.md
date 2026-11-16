@@ -78,3 +78,25 @@ Current pinned App: http://127.0.0.1:23961/snapshots/8882a96033340cb5/app/?scene
 Four entry assets byte-verified and40 snapshots retained. Only owned Lab server
 replaced. Temporary verifier b3c259ee must never merge. This UI follow-up remains
 unmerged/unshipped; no user App or device changed.
+
+## GUI plus and direct file drops — current Lab
+
+The shared SessionAdd plus now opens AttachmentPicker directly in both ACP GUI
+and Khor chat; the intermediate add menu and its find/export items are removed.
+No search/export items are added to the model menu. Standard keyboard find and
+read-only/raw-source utilities remain separate from attachment actions.
+Readable conversation export no longer instantiates a GUI hook or notice.
+ChatView browser File drops and native OS-path drops now open the same retained
+picker after adding files. Khor already did so. Selection stays local until Send.
+No per-agent picker was copied, and protocol file constraints remain intact.
+
+Sourcef4aa291d (product187336e1) passed43946813584, all14 attachment/GUI/Khor
+Chromium/WebKit flows, hot updates, shared dialogs and frontend gates. Desktop
+browser drops in GUI/Khor, retained message text, no premature transfer, previews,
+retry/send and direct plus across widths are covered. Native OS drop integration
+is wired; actual installed-package drop behavior still needs device QA.
+Artifact14266750160 digest18ccd1d92e907cdb7cdd27f7d79f3f92c8600d195787f123dc3bd052d679efe2
+verified against exactsource/tree0dc9c7ad2cd5783c4b9a9e65d8f2038312a7d001.
+Current GUI: http://127.0.0.1:23961/snapshots/f4aa291d46192582/app/?scene=gui&machines=3
+Four current entry assets byte-verified and41 snapshots retained. Only the owned
+previous static Lab process replaced. No main merge, release or user App restart.
