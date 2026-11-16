@@ -6,7 +6,7 @@ on:
       scope:
         description: Retain passed suites and focus a changed integration fixture
         type: choice
-        options: [full, integration, delegation]
+        options: [full, integration, delegation, format]
         default: full
       reuse_frontend_run:
         description: Optional verified frontend run for fixture-only changes
@@ -34,11 +34,11 @@ permissions:
 
 jobs:
   frontend:
-    if: ${{ inputs.reuse_frontend_run == '' }}
+    if: ${{ inputs.scope != 'format' && inputs.reuse_frontend_run == '' }}
     uses: ./.github/workflows/frontend.yml
   native:
     needs: frontend
-    if: ${{ !cancelled() && (needs.frontend.result == 'success' || inputs.reuse_frontend_run != '') }}
+    if: ${{ !cancelled() && (inputs.scope == 'format' || needs.frontend.result == 'success' || inputs.reuse_frontend_run != '') }}
     runs-on: macos-26
     timeout-minutes: 60
     env:
@@ -57,27 +57,32 @@ jobs:
             echo "KHOR_RUNTIME_DIR=$RUNNER_TEMP/dsh-runtime"
           } >> "$GITHUB_ENV"
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        if: ${{ inputs.scope != 'format' }}
         with:
           node-version: 22.19.0
           cache: npm
           cache-dependency-path: apps/agent/package-lock.json
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
+        if: ${{ inputs.scope != 'format' }}
         with:
           bun-version: 1.3.14
       - uses: dtolnay/rust-toolchain@1.95.0
         with:
           components: rustfmt
       - uses: Swatinem/rust-cache@v2
+        if: ${{ inputs.scope != 'format' }}
         with:
           key: dsh-integration
           cache-targets: false
       - run: npm ci --prefix apps/agent
+        if: ${{ inputs.scope != 'format' }}
       - name: Embed the real Khor agent
+        if: ${{ inputs.scope != 'format' }}
         run: node apps/agent/build.mjs aarch64-apple-darwin "$KHOR_AGENT_BUNDLE"
       - uses: ./.github/actions/restore-frontend
-        if: ${{ inputs.reuse_frontend_run == '' }}
+        if: ${{ inputs.scope != 'format' && inputs.reuse_frontend_run == '' }}
       - name: Prove reused frontend inputs are unchanged
-        if: ${{ inputs.reuse_frontend_run != '' }}
+        if: ${{ inputs.scope != 'format' && inputs.reuse_frontend_run != '' }}
         env:
           FRONTEND_RUN: ${{ inputs.reuse_frontend_run }}
           FRONTEND_SHA: ${{ inputs.reuse_frontend_sha }}
@@ -94,14 +99,14 @@ jobs:
           assert set(changed) <= allowed, f'Frontend inputs changed: {changed}'
           PY
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
-        if: ${{ inputs.reuse_frontend_run != '' }}
+        if: ${{ inputs.scope != 'format' && inputs.reuse_frontend_run != '' }}
         with:
           name: frontend
           path: frontend
           run-id: ${{ inputs.reuse_frontend_run }}
           github-token: ${{ github.token }}
       - name: Restore the source-verified reused frontend
-        if: ${{ inputs.reuse_frontend_run != '' }}
+        if: ${{ inputs.scope != 'format' && inputs.reuse_frontend_run != '' }}
         env:
           FRONTEND_SHA: ${{ inputs.reuse_frontend_sha }}
         run: |
@@ -116,6 +121,7 @@ jobs:
         continue-on-error: true
         run: |
           mkdir -p "$RUNNER_TEMP/dsh-evidence"
+          git rev-parse HEAD > "$RUNNER_TEMP/dsh-evidence/format-source-sha.txt"
           if ! python3 scripts/check-rust-format.py --check; then
             python3 scripts/check-rust-format.py --write
             git diff --binary -- '*.rs' > "$RUNNER_TEMP/dsh-evidence/format.patch"
@@ -154,6 +160,7 @@ jobs:
           grep -F 'dsh_readonly_recovery_uses_the_same_default_and_override ... FAILED' "$RUNNER_TEMP/dsh-evidence/regressions-red.log"
           git diff --exit-code -- crates/node/src/doctor.rs crates/node/src/session_recovery.rs
       - name: Build the exact CLI for isolated local DSH acceptance
+        if: ${{ inputs.scope != 'format' }}
         id: native_build
         run: |
           cargo build --locked -p khor-cli --bin khor -p khor-gui-core --bin bridge
@@ -169,7 +176,7 @@ jobs:
           cargo test --locked -p khor-sync --lib agents -- --test-threads=1
           cargo test --locked -p khor-gui-core --lib agents::tests -- --test-threads=1
       - name: Verify cross-machine user sessions
-        if: ${{ inputs.scope != 'delegation' }}
+        if: ${{ inputs.scope == 'full' || inputs.scope == 'integration' }}
         run: cargo test --locked -p khor-cli --test far_open -- --test-threads=1
       - name: Verify ACP configuration, permissions, cancellation and recovery
         if: ${{ inputs.scope == 'full' && !cancelled() && steps.native_build.outcome == 'success' }}
@@ -177,7 +184,7 @@ jobs:
       - name: Verify the real Khor agent delegation path
         env:
           RUST_BACKTRACE: '1'
-        if: ${{ !cancelled() && steps.native_build.outcome == 'success' }}
+        if: ${{ inputs.scope != 'format' && !cancelled() && steps.native_build.outcome == 'success' }}
         run: cargo test --locked -p khor-node --test delegation_wire -- --test-threads=1
       - name: Require clean formatting
         if: always()

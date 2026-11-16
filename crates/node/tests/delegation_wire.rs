@@ -189,10 +189,7 @@ async fn serve(root: &Path, name: &str) -> Serving {
     let endpoint = root.join(".khor/endpoint.json");
     let previous = std::fs::read(&endpoint).ok();
     let node = Node::open_as(root.to_path_buf(), name).unwrap();
-    let mut serving = Serving(
-        tokio::spawn(async move { node.serve().await }),
-        root.into(),
-    );
+    let mut serving = Serving(tokio::spawn(async move { node.serve().await }), root.into());
     tokio::time::timeout(Duration::from_secs(60), async {
         loop {
             if serving.0.is_finished() {
