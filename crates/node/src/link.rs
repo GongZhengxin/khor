@@ -9232,6 +9232,24 @@ impl Node {
                 other => Err(msg::serve_non_answer(format_args!("{other:?}"))),
             };
         }
+        // **This machine answers without an endpoint.** Binding one is the
+        // expensive half of a local listing — mDNS, a socket, and a
+        // shutdown drain — and the answer never touches the wire;
+        // `ls_with` says so once it is inside, but by then the endpoint
+        // already exists. Asking one step earlier keeps a one-shot CLI
+        // from paying for a network it does not use. Measured on Windows
+        // as the whole of a ~1.08 s local listing, in samples that came
+        // in two clusters (1150/1133/1117 ms with the bind, 132/119 ms
+        // without).
+        let (_, here) = self.resolve_or_here(machine)?;
+        if here == self.device() {
+            let (path, root) = (path.to_owned(), self.root().to_path_buf());
+            let (at, entries, truncated) =
+                tokio::task::spawn_blocking(move || listed_with_arrivals(&root, &path))
+                    .await
+                    .map_err(|e| e.to_string())??;
+            return Ok((at.display().to_string(), entries, truncated));
+        }
         let ep = endpoint::bind_with(
             self.secret_key().clone(),
             self.relay_map(),
