@@ -31,3 +31,5 @@ v7账本为60项：50待审、1上游替换、6指定删除实验支持保留、
 `043413Z-c30c817d` source9e31/Noq同2ed树，controlf4a82d77，原101/92.095秒/122报告；4隔离副本各10个相同原合同。补丁4的健康备用本路ACK、6的路径保活不被连接timer缩短、12的ACK-delay近下界质量、13的显式路径PING一网络RTT内取样，各移除后只对应专属1红，其他36控制绿。普通ping、握手、真实TLS 0RTT及元数据/健康旧路控制保持。原断言/期限不改，native失败不作准备错误；0手机/性能接受。
 
 方案 `noq-followup-necessity-plan-v1.json` 在可信control冻结（源测试树逐字不改），独立核验E/run/noq-followup-necessity-verification-v1.json。v8为46待审、1上游替换、10专属删除实验保留、3观测接口依赖保留。Noq仅1 BBR app-limited尚待退出审查；iroh仍需逐项收口，不能据此称全部vendor必要。
+
+2026-11-16补充：Noq1现已完成严格源码时序集成审查，发布版已有ACK路径app_limited支持；当前额外starvation通知/无中间ACK前loss-accounting暂留，无独立性能或删除必要性证明。`E/noq-bbr1-exit-audit-v1.json`；全部60历史逐项审查交付在 [PATCH-REVIEW](PATCH-REVIEW.md) 与ledger-v11，不能沿用旧ledger的未审数量，也不能把静态审查写成完整行为/成本接受。

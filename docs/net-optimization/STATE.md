@@ -21,7 +21,7 @@ E=`/Volumes/disk0/Khor/evidence/net`。准确产品源 **5f51e3409e0e642c26b5b41
 - canonical `feat/net` 已ff集成I5＋5f；I5集成固定main93f6cb23与初始Direct近似质量次选、H/S改善；main现由其他任务继续推进，不自动追每个GUI提交。本任务不改main、LIVE23961/其他用户目录。I5独立树仍9821，供准确源Quality/Lab查验。
 - 初始无current时，near-quality复用原5ms gain floor次选Direct；明显更快Relay/Carried仍赢，健康current原保持逻辑不变。Mac准确RED1/72与GREEN73/0/ignored1、同74测试名已核。`E/initial-direct-green-v2-mac-verification-v1.json`。
 - N3原统计门口径是每profile/phase/op固定3次**pooled360**，并非每次120单独过。H pooled directory p95 **448002μs**/p99 **836037μs**；X **353557/751934μs**，均过原592518.1单条参考，各2160业务/3完整file/6post-health全成功。逐场613/614ms保留。无同期配对不作整体N3接受；X priority无必要性未采用。`E/current-high-pooled-verification-v1.json`。
-- **仍未整体完成**：N1/N2完整合同、N3全部负载/同期main对照/1-3-5成本及separate默认采用决策、N4 NAT64/冷hint/双方和middle移动/Relay故障域、N5剩余46custom逐项审查/设计运维/最终同源Quality/手机能耗。不是仅差手机，不能把旧阶段绿代替完整目标。
+- **仍未整体完成**：N1/N2完整合同、N3全部负载/同期main对照/1-3-5成本及separate默认采用决策、N4 NAT64/冷hint/双方和middle移动/Relay故障域、N5的60项custom审查已交付，行为/成本退出、设计运维、最终同源Quality/手机能耗仍待。不是仅差手机，不能把旧阶段绿代替完整目标。
 
 ## 历史组件候选 H（已集成I5；本节旧在途描述不作调度依据）
 
@@ -49,7 +49,7 @@ S=`khor-net-stable-gain-v1` / `experiment/net-stable-gain-v1`，最终7d9f1c07/t
 1. **N3未过**：[PULL-COEXISTENCE](PULL-COEXISTENCE.md)旧同ELF SCCSSC六块/12case/8640样本、24post-health和12完整文件全留。分连接low目录p95为84790μs（共享244009），high614406μs（共享1292588），仍超过原592518.1μs；文件中位low7.033/7.071、high25.572/25.342Mbit/s。共享第五块high原1终端timeout＋63blocked保持完整分母，不报成功子集p95。H新high三场2160交互全成功，原360 pooled目录p95为448002μs已过该参考；逐场超参考仍保留，见本页统计口径校正。原pool公平性/容量修复与资源合同/旧Linux317＋压力1、Mac314及原布局均只对其准确源成立；H Mac316已新验证。1/3/5成本、SSH/peer relay/同步共存、全负载和最终同期main对照仍缺。
 2. **N1/N2**：完整置信/多middle/共享测量/quiet成本，以及总期限/取消/迟到Endpoint与policy队列变化、全部写family/包级0RTT、NET-16完整正负向继续按REQUIREMENTS。已有14联系、92hop、pool32等证据不等于完整接受。
 3. **N4**：冷hint/新peer发布、双方和peer-relay移动/睡眠/Wi-Fi蜂窝、Direct UDP突断、Relay整机/半断/出口/登记/容量和NAT64仍有缺口。旧IPv6-only15场630读、双端dual/v4等闭证保留，不能替NAT64/手机。
-4. **N5**：最新H集成canonical feat/net和同期main后，仍需最终同源Quality、native MacLab/真实backend、手机换网与能耗、设计/运维和全报告。不是“只差手机”。未获main合并/发布授权，不因此停实现/验证。
+4. **N5**：canonical已集成I5；当前Quality在跑、I5同生产Mac Lab已闭。后续实现选择冻结后仍需最终同源Quality、native MacLab/真实backend、手机换网与能耗、设计/运维和全报告。不是“只差手机”。未获main合并/发布授权，不因此停实现/验证。
 
 ## 上游与定制审计
 
@@ -57,7 +57,13 @@ S=`khor-net-stable-gain-v1` / `experiment/net-stable-gain-v1`，最终7d9f1c07/t
 
 原版A/当前C十运输合同及关闭Khor policy但保留vendor的B五合同均已闭，见[DIRECT-FALLBACK](DIRECT-FALLBACK.md)、[UPSTREAM-BOUNDARY](UPSTREAM-BOUNDARY.md)、[UPSTREAM-CONSUMERS](UPSTREAM-CONSUMERS.md)。A静默UDP原15292/15296ms、2s失败但最终同连接Relay通；C约602/605ms；B约603/605ms。B不是原版且硬tier违背U1，不能推广。上游已承担Direct/Relay/多路径，Khor已用公开path_selector/custom transport；不能称全部自造或全部vendor必要。
 
-账本 **E/iroh-upgrade-patch-ledger-v8.json** 共60历史项：**46待审、1上游替换、10专属删除实验支持保留、3观测接口集成保留**。Noq只1 BBR app-limited尚待；iroh仍45项待审。见[NOQ-RECOVERY-AUDIT](NOQ-RECOVERY-AUDIT.md)。
+账本现为 **E/iroh-upgrade-patch-ledger-v11.json**，**60项历史均有逐项原因/当前上游合同对照/覆盖/保留退出记录**。1项上游替换、10项专属删除实验反例保留、3项Noq观测接口、1项BBR通知时序静态集成、45项iroh静态合同集成审查。**审查交付不等于所有custom必要或行为/成本/手机已接受**；后45项的行为/成本退出仍暂留，buffer64、第二Direct备用、数字home策略和诊断钩子明确无必要性证明。详细 [PATCH-REVIEW](PATCH-REVIEW.md)，原删除反例保持。
+
+Noq1发布版已有ACK app-limited支持，当前额外的是无下一ACK前的starvation通知和loss前inflight扣除；无直接时序等价，暂留，仅原相同2edce601包467集成证据，无新的性能/专属删除证明。`E/noq-bbr1-exit-audit-v1.json`。iroh包0ec34a5d与S接受208库测试完全相同，不因审计重跑。
+
+**Iroh45唯一生产caller删除隔离实验在跑**：`khor-net-cold-hint-exit-v1`，branch `experiment/net-cold-hint-exit-v1`，源 **832c268ae3ffcacd5ea9a96cc5e92f3a0e940cbc** / tree **eabab136afb36163679faf094f7c16d452de59da** / snapshot **dc51492ad0b52cf840294c10549283fc53855cc7**。仅删ask_early清旧提示六行，全部原测试/身份/期限/并发与vendorAPI保留；问48/49是否已使该caller多余。**Mac GH43848132339** 原control68cadb57、net-node全12组319人口，独立 `E/cold-hint-exit-mac-progress-v1.json`，先查此run，不重派。不是已采纳，也尚未删除vendorAPI；后者需说明旧提示长期成本及测试合同迁移。`E/cold-hint-exit-plan-v1.json`。
+
+**NAT64 cold编译已准备、未派**：control **7488c8318832239106cf691091a75459065dc95e**，计划 `E/nat64-cold-plan-v1.json`、driver `E/ops/nat64-cold-compile-network-v1.sh`，来源为已格式化且版本化的独立fixture，对准确5f51产品CLI，先网络/DNSoracle再产品断言。等Turing当前计时完全闭证后才编译；不能同host并发。当前无产品RED/修复结论。见 [DNS-NAT64](DNS-NAT64.md)。
 
 - 032958Z-36318d40原101/66.112秒，Noq7/9/11三隔离×4原合同=8绿/4红；原Noq2ed树与02807 baseline467全库相同，单点变换/原测试和期限/fresh产物/cleanup全核。
 - 043413Z-c30c817d原101/92.095秒/122报告，Noq4/6/12/13四隔离×10原合同=36绿/4红，四专属恰各1红，普通ping/握手/真实0RTT等负控绿，原测试/门不变。证明这些行为当前不能直接删除，不证明唯一实现或整个vendor必要。
