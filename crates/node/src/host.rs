@@ -646,13 +646,20 @@ fn spawn_host_with(
     // outlives the parent's; `CREATE_NEW_PROCESS_GROUP` keeps the parent's
     // Ctrl+C / console close from being delivered to it. Its stdio is already
     // /dev/null above, so it has nothing to say to a console anyway.
+    //
+    // **Conditional because `prepare_durable_child` below also sets flags**, and
+    // `creation_flags` replaces rather than merges: that call carries the same
+    // detach bits (plus breakaway) when this process is a durable worker, so
+    // setting them here first would be undone there and vice versa.
     #[cfg(windows)]
     {
         use std::os::windows::process::CommandExt;
         use windows_sys::Win32::System::Threading::{
             CREATE_NEW_PROCESS_GROUP, DETACHED_PROCESS,
         };
-        c.creation_flags(DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP);
+        if !crate::mcp_worker::worker_process() {
+            c.creation_flags(DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP);
+        }
     }
     crate::mcp_worker::prepare_durable_child(&mut c);
     // The `PATH` this process worked out travels down rather than
