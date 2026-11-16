@@ -823,7 +823,16 @@ export default function App() {
     // a lock is for.
     if (lock.locked) return;
     let live = true;
+    // **One question at a time, for the same reason the device beat has**
+    // (see the note there, audit/net.md F4): the beat is 2 s and a busy node can
+    // take longer than that, so asking on every beat stacks readings whose
+    // answers land in any order and the newest-looking one may be the oldest.
+    // It also kept the window asking while an earlier answer was still being
+    // drawn, which is felt as the list flickering under the pointer.
+    let asking = false;
     const tick = () => {
+      if (asking) return;
+      asking = true;
       const request = ++sessionRequest.current;
       // Counted where the call is made, not where it lands: a read that never
       // answers and a read that was never asked for are different bugs, and
@@ -872,6 +881,9 @@ export default function App() {
           const w = window as unknown as { __sessionReadError?: string };
           w.__sessionReadError = said;
           if (live && request >= sessionApplied.current) setStale(true);
+        })
+        .finally(() => {
+          asking = false;
         });
     };
     tick();

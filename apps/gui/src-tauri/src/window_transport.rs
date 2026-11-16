@@ -165,22 +165,34 @@ fn json(outcome: Result<String, String>) -> tiny_http::Response<std::io::Cursor<
     )
 }
 
+/// How many requests the transport answers at once.
+///
+/// **Not one.** The window polls `sessions` every 2 s, `devices` and
+/// `day_strips` on their own beats, and `tabs_list` twice a second — and some
+/// commands are slow: the W7 matrix measured `session_create` at 6.4 s and
+/// `cli_doctor` at 5.9 s on this platform. A single-threaded loop meant one slow
+/// command held every poll behind it, which is what "the app feels stuck" looks
+/// like from outside (reported by the owner 2026-11-16, and the same reason the
+/// dev bridge has its own note about workers).
+///
+/// Four is enough for the poll set plus one person-initiated command: the polls
+/// are the ones that must never wait, and `tiny_http` hands each thread its own
+/// request.
+pub const WORKERS: usize = 4;
+
 /// One command's answer, through the shared table.
 ///
 /// The belt under the handler, copied from the dev bridge for the same reason:
 /// a panic in one command must be that request's 500, not the death of the
 /// transport the whole window depends on.
-fn answer(cmd: &str, args: &serde_json::Value) -> Result<String, String> {
+///
+/// **The runtime is the caller's**, built once per worker thread. Building one
+/// per request (what this did first) paid a runtime setup on every poll and had
+/// nowhere to keep a driver between them.
+fn answer(rt: &tokio::runtime::Runtime, cmd: &str, args: &serde_json::Value) -> Result<String, String> {
     let root = khor_node::Node::root_from_env();
-    let rt = match tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-    {
-        Ok(rt) => rt,
-        Err(error) => return Err(error.to_string()),
-    };
     std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        khor_gui_core::api::answer(&rt, &root, cmd, args)
+        khor_gui_core::api::answer(rt, &root, cmd, args)
     }))
     .unwrap_or_else(|_| Err("panic in handler".to_owned()))
 }
@@ -261,9 +273,39 @@ pub fn start() {
             return;
         }
     };
-    eprintln!("khor: window transport on 127.0.0.1:{PORT}");
-    std::thread::spawn(move || {
-        for mut request in server.incoming_requests() {
+    eprintln!("khor: window transport on 127.0.0.1:{PORT} ({WORKERS} workers)");
+    let server = std::sync::Arc::new(server);
+    for worker in 0..WORKERS {
+        let server = std::sync::Arc::clone(&server);
+        let spawned = std::thread::Builder::new()
+            .name(format!("khor-window-{worker}"))
+            .spawn(move || serve(server));
+        if let Err(error) = spawned {
+            eprintln!("khor: a window-transport worker did not start: {error}");
+        }
+    }
+}
+
+/// One worker: its own runtime for the life of the thread, then requests until
+/// the server goes away.
+///
+/// A runtime per worker, not per request: `khor_gui_core::api::answer` takes a
+/// runtime for the verbs that dial, and a poll every two seconds should not pay
+/// a runtime's construction each time.
+fn serve(server: std::sync::Arc<tiny_http::Server>) {
+    let rt = match tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+    {
+        Ok(rt) => rt,
+        Err(error) => {
+            eprintln!("khor: a window-transport worker has no runtime: {error}");
+            return;
+        }
+    };
+    // `recv` hands this thread the next request, or an error when the server is
+    // gone; several workers may call it at once, which is the point.
+    while let Ok(mut request) = server.recv() {
             if request.method() == &tiny_http::Method::Options {
                 let _ = request.respond(cors(
                     tiny_http::Response::from_string("").with_status_code(204),
@@ -358,7 +400,6 @@ pub fn start() {
                     }
                 }
             };
-            let _ = request.respond(json(answer(&cmd, &args)));
-        }
-    });
+            let _ = request.respond(json(answer(&rt, &cmd, &args)));
+    }
 }
