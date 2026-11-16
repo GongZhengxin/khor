@@ -1,12 +1,14 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-16T11:07:11.899929+00:00。用户最新“做完吧”已明确继续完整目标，goal active；[GOAL](GOAL.md)、[PLAN](PLAN.md) N0–N5、[REQUIREMENTS](REQUIREMENTS.md)尚未整体完成。root串行、不派子智能体。本机source-only；重型工作只在Turing/macserver/授权khor-build。未获main合并、现装App替换、发行/TestFlight或生产Relay采购部署授权。
+更新于 2026-11-16T12:56:53.448186+00:00。用户最新“做完吧”已明确继续完整目标，goal active；[GOAL](GOAL.md)、[PLAN](PLAN.md) N0–N5、[REQUIREMENTS](REQUIREMENTS.md)尚未整体完成。root串行、不派子智能体。本机source-only；重型工作只在Turing/macserver/授权khor-build。未获main合并、现装App替换、发行/TestFlight或生产Relay采购部署授权。
 
 ## 当前运行与下一步
 
 E=`/Volumes/disk0/Khor/evidence/net`。准确产品源 **5f51e3409e0e642c26b5b41c37cc069213c1d6a5** / tree **395f91ae9e82c3b3819d7fe96be8c3882f6313bd** / snapshot **b846df2162863114a2493a3fe868a2587faf4574**，描述 `E/net-product-v5-fixture-source-v2.json`。本页随后文档提交不冒充该源新接受。
 
-- **当前Turing唯一在途** **turing-20261116T122653Z-2b95ba2f**，PID1163622，revision `cancel_observer_group_v1`，control **f79f1bb69c2323d80f37cf845784a6407d33dfb6**。复用已闭adfc2eb8同Node ELF/provenance、0编译，固定一组原86个dial-budget测试，恢复原libtest capture（不加--nocapture）与原顺序/断言/5s，只观察原取消RED；outer450s仅整个组owner界限。`E/cancel-observer-group-plan-v1.json`。结束查原run，不重派，原RED不被诊断绿覆盖。
+- **当前Turing唯一在途** **turing-20261116T125456Z-c412fbfb**，PID1190621，revision `ssh_local_relay_target_v3`，control **1d4caf0a2a435b2878cb3ba811bfb6d17cc0dea2**。准确I7源0ef5d876，原signed SSH安装/认证/空home/member kept0等全部断言和900s时限不变。V2被宿主现有serve保护拒绝，V3仅以私有user/PID/mount namespace＋同UID1110/GID1002与私有proc隔离；不动宿主daemon/网络/挂载。能力probe仅PID1可见已过，原业务仍待；`E/ssh-local-relay-target-plan-v3.json`。
+- **SSH target V2已闭但拒绝** `124207Z-9bbcef44`原1/100.159s，native101/25.01s；initial HOME guard通过，但目标安装拒绝与已有serve PID2619721并存。`serves::here`不读逐进程HOME，未指定KHOR_HOME的旧daemon被当作当前默认root；现有daemon未停止。source/pub恢复、最终owner清空已核，outer forced_cleanup=true保留，不算正常资源接受。`E/RUN/ssh-local-relay-target-red-verification-v2.json`。V1 `123307Z-4e7c9a2d`原1/100.207s，native101/2.12s则在initial HOME guard失败；Turing OpenSSH8.2不认8.4新增SSH_ASKPASS_REQUIRE，独立同钥匙probe的DISPLAY占位环境已证明修正，原失败保留。
+- **原capture整组取消诊断已闭** `122653Z-2b95ba2f`原0/267.066s，原86 dial-budget全过/0fail，复用同adfc2eb8 Node ELF、0编译、原capture/顺序/5s保持；`E/RUN/cancel-observer-group-verification-v1.json`。未复现不等于修复。下一固定最多50 fresh-native/capture诊断已准备但未派：`E/cancel-observer-captured-plan-v2.json`、control **100774c7dd501735f91417704b04d5b7a2f5b900**，首失败或owner不安全即止，不补样本。V1未执行control a04f1483明确被V2替代；只新增同内容iroh mtime刷新，防共享unhashed库在CLI/Node不同依赖图间复用，并要求实际iroh fresh=False。
 - **六次窄取消诊断已闭** `121315Z-4a4f0fff`原0/106.195s，原Native6/6通过，每次七个RPC实经extra、一个held RPC走cached Main，均实际收齐原8个STOP。源码仅cfg(test)观察，完整原guard/owner/provenance已核，`E/RUN/cancel-observer-native-verification-v1.json`。--nocapture单项不复现，不能称修复；后续整组按原capture继续。
 
 - **I6 global separate原完整回归RED已闭** `114927Z-5192725a`原101/524.082s，源c73052b8，**298pass/1fail/ignored1**、7组未执行。失败`dropping_pull_stops_every_held_rpc_and_keeps_the_shared_wire`在发出0..8/交付0后，等待八个STOP原5s到期。原日志/identity/cleanup完整，`E/RUN/product-v6-standard-red-verification-v1.json`。还不能定性fixture或产品错误，诊断只观察是否extra连接关闭释放了handler而旧观测仅计STOP_SENDING；绝不改原5s或直接忽略失败。
