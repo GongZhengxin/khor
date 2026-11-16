@@ -559,7 +559,7 @@ export function FileChoiceRow({name,dir,size,detail,selected,disabled,onChoose,o
    <span data-files-kind className="grid size-5 flex-none place-items-center [&>svg]:size-5">{dir?<IconFiles className="size-5"/>:<FileKindIcon name={name} className="size-5"/>}</span>
    <span className="min-w-0 flex-1"><span className="block truncate text-body">{name}</span>{(detail||size!==null)&&<span className="flex min-w-0 items-center gap-xxs text-caption text-muted-foreground">{size!==null&&<span data-files-size className="flex-none tabular-nums">{sizeWord(size)}</span>}{size!==null&&detail&&<span aria-hidden="true">·</span>}{detail&&<span className="min-w-0 truncate">{detail}</span>}</span>}</span>
   </button>
-  {onOpen&&<button type="button" data-files-open aria-label={`预览 ${name}`} title="预览" onClick={onOpen} className="grid min-h-touch min-w-touch flex-none place-items-center"><IconPreview className="size-affordance"/></button>}
+  {onOpen&&<button type="button" data-files-open aria-label={`预览 ${name}`} title="预览" onClick={onOpen} className="grid min-h-touch min-w-touch flex-none place-items-center"><IconPreview className="size-6"/></button>}
   <button type="button" data-files-select={name} aria-label={`${selected?gui.files_deselect:gui.files_select} ${name}`} aria-pressed={selected} disabled={disabled} onClick={onChoose} className="grid min-h-touch min-w-touch flex-none place-items-center disabled:opacity-40"><span className={cn("grid size-5 place-items-center rounded-full border",selected&&"border-brand-strong bg-brand-strong text-on-brand")}>{selected&&<IconCheck className="size-3.5"/>}</span></button>
  </div>;
 }
