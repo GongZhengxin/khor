@@ -5097,13 +5097,22 @@ impl Node {
                 // many ask (`accounts::refresh_quotas`). The cache read
                 // is off the reactor for the `Days` arm's reason.
                 let root = self.root().to_path_buf();
-                crate::accounts::refresh_quotas(root.clone());
+                // Reuse the admitted resident. Opening a second Node here
+                // bootstraps under the root mutation fence and can make the
+                // same round's Devices apply return Busy.
+                let resident = self.me();
+                crate::accounts::refresh_quotas(root.clone(), resident.clone());
                 let readings = tokio::task::spawn_blocking(move || {
                     let rt = tokio::runtime::Builder::new_current_thread()
                         .enable_all()
                         .build()
                         .map_err(|e| e.to_string())?;
-                    rt.block_on(crate::Node::open(root)?.quota_readings_held())
+                    rt.block_on(async {
+                        match resident {
+                            Some(node) => node.quota_readings_held().await,
+                            None => crate::Node::open(root)?.quota_readings_held().await,
+                        }
+                    })
                 })
                 .await
                 .map_err(|e| e.to_string())??;

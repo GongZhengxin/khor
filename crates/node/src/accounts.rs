@@ -912,7 +912,7 @@ const REFRESH_AGAIN: Duration = Duration::from_secs(30);
 /// writes the caches [`Node::quota_readings_held`] answers from. Askers
 /// that come while it runs, or within [`REFRESH_AGAIN`] of its end, are
 /// that read — not one more each.
-pub(crate) fn refresh_quotas(root: PathBuf) {
+pub(crate) fn refresh_quotas(root: PathBuf, resident: Option<std::sync::Arc<Node>>) {
     use std::collections::HashMap;
     use std::sync::{LazyLock, Mutex};
     use std::time::Instant;
@@ -947,7 +947,12 @@ pub(crate) fn refresh_quotas(root: PathBuf) {
         else {
             return;
         };
-        let _ = rt.block_on(async { Node::open(root)?.quota_readings().await });
+        let _ = rt.block_on(async {
+            match resident {
+                Some(node) => node.quota_readings().await,
+                None => Node::open(root)?.quota_readings().await,
+            }
+        });
     });
 }
 
