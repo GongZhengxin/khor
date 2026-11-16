@@ -1146,8 +1146,6 @@ impl RemoteStateActor {
             .filter(|(road, _)| road == to)
             .map_or(now, |(_, since)| *since);
         let measured = &self.state.measured;
-        let sampled =
-            |road: &transports::FourTuple, after: Instant| measured.samples_after(road, after) >= 2;
         let mut current_copy_hint = None;
         let step = match silence {
             Some(silence) => {
@@ -1176,14 +1174,7 @@ impl RemoteStateActor {
             }
             // feat/net: every transport compares fresh measured readings. A direct
             // candidate gets neither an unconditional upgrade nor a different gain rule.
-            None => self.state.moving.step(
-                to,
-                now,
-                measured.road(&from).map_or(Duration::ZERO, |(rtt, _)| rtt),
-                measured.road(to).map_or(Duration::MAX, |(rtt, _)| rtt),
-                |after| sampled(&from, after),
-                |after| sampled(to, after),
-            ),
+            None => self.state.moving.measured_step(&from, to, now, measured),
         };
         if step == Step::Go || starting && matches!(step, Step::Hold { .. }) {
             debug!(
@@ -2723,6 +2714,24 @@ enum Step {
 }
 
 impl Moving {
+    /// Normal optimization uses the same representative copies as path selection.
+    fn measured_step(
+        &mut self,
+        from: &transports::FourTuple,
+        to: &transports::FourTuple,
+        now: Instant,
+        measured: &Measured,
+    ) -> Step {
+        self.step(
+            to,
+            now,
+            measured.road(from).map_or(Duration::ZERO, |(rtt, _)| rtt),
+            measured.road(to).map_or(Duration::MAX, |(rtt, _)| rtt),
+            |after| measured.samples_after(from, after) >= 2,
+            |after| measured.samples_after(to, after) >= 2,
+        )
+    }
+
     /// Wake at a finite confirmation boundary, without a timer at rest. A wake
     /// only re-reads evidence; elapsed time alone never supplies a sample.
     fn deadline(&self, now: Instant) -> Option<Instant> {
@@ -3702,6 +3711,10 @@ async fn maybe_next<S: Stream + Unpin>(maybe_stream: Option<&mut S>) -> Option<O
         Some(s) => Some(s.next().await),
     }
 }
+
+#[cfg(test)]
+#[path = "remote_state/normal_gain_tests.rs"]
+mod tests_normal_gain;
 
 #[cfg(test)]
 #[path = "remote_state/confirmation_identity_tests.rs"]
