@@ -37,7 +37,7 @@ import Darwin
         NSApp.activate(ignoringOtherApps: true)
         web.loadFileURL(URL(fileURLWithPath: CommandLine.arguments[1]), allowingReadAccessTo: URL(fileURLWithPath: CommandLine.arguments[1]).deletingLastPathComponent())
     }
-    func navigation(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         log("navigation finished")
         Task { await run() }
     }
