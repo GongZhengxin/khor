@@ -1,10 +1,11 @@
 # feat/net 当前状态与接续入口
 
-更新于2026-11-16 15:04 UTC。用户“做完吧”继续完整目标；最新询问进度不取消执行。[GOAL](GOAL.md)、[PLAN](PLAN.md) N0–N5尚未整体完成。root串行，不派子智能体。本机source-only，重型工作限Turing、macserver与授权khor-build。
+更新于2026-11-16 15:26 UTC。用户“做完吧”继续完整目标；最新询问进度不取消执行。[GOAL](GOAL.md)、[PLAN](PLAN.md) N0–N5尚未整体完成。root串行，不派子智能体。本机source-only，重型工作限Turing、macserver与授权khor-build。
 
 ## 当前唯一运行
 
-- Turing当前唯一提交：登记/整Relay故障域V3，revision `registry_fault_domain_v3`，control `a1c59502fbaad7cfd0e55849eec347e2b718eeea`，`E/registry-fault-domain-native-plan-v3.json`。查`E/source-refs.json`原receipt再观察，不重复启动。准确源1dff35a6/tree455e42c4/snapshot668b4024，只改pkarr测试。新两场景各固定3轮＋原pkarr/Relay restart/token/jitter/stuck合同，预期7pass/原1ignored live test，首红停止，不补样本。
+- Turing当前唯一在途 **turing-20261116T152349Z-f341533a**，PID1414026，revision `relay_home_refresh_native_v1`，control `7b0deb468520c9876b891d67bd54c251738b5748`。查原receipt，不重复启动。准确源 **3d62159eaa635f60ef7fc1078a5d809eef6bb8fd** / tree **153f05926125021ee6f09ddb1101cf492f56415b** / snapshot **cd648b7b976d040baf8b0b425f0011fa9ae70c36**，`E/relay-home-refresh-source-v1.json`。独立worktree `khor-net-relay-home-refresh-v1`，branch `fix/net-relay-home-refresh-v1`，未采用canonical。原完整iroh lib已输出211pass/0fail/原ignored1（含3新合同），整run未闭，正在后续原pkarr固定3轮及Relay restart/token/jitter/stuck，预期后5组7pass/原ignored live1。`E/relay-home-refresh-{plan,native-plan}-v1.json`。
+- 新候选只改vendor socket.rs/net_report.rs及补丁说明#51：同URL实际Connected→非Connected时，现有SocketActor请求一次现有全量net_report；不新增task/timer/依赖/Endpoint/常驻家连接。沿原单pending串行合并，major/full理由不被后来的弱更新覆盖；设原reports.next_full但不谎报网络major，不重置successor cooldown或退役QUIC/重放应用请求。0生产Relay变更；需实际原场景RED→GREEN及后续Node/Mac/Quality，不能因lib211通过即采用。
 - 此源独立worktree `khor-net-background-jitter-v1` / `b04e3cb3d80b8e4628e9a35ebc0b7ed98025d871` / tree `08f8d3c9af754c010402a5fbf7734935c30c59bb` / snapshot `5c1fc9ed9ddca176987bc0b7c237d97f49ca0e4e`。在I8＋early fixture上，只增加每Wires的std RandomState与稳定有界正扰动：首次5秒、睡眠300秒、上限300秒不变，连续失败2起增加0–25%，无新依赖、任务或peer表；前台与联系/换网代次不变。
 - canonical已以merge **eed1ab9af01d78627b3b73dfac7aab1aa60f8ec4**采用I8/DNS/cold-hint caller删除/early fixture/jitter。相对通过完整358的b04，所有非docs文件逐字一致；不是最终canonical整tree的Quality/Mac接受。新N4测试仍在独立worktree，未采用；main未合并、未发行。
 
@@ -15,6 +16,8 @@ E=`/Volumes/disk0/Khor/evidence/net`。已闭证项不因compact/session重跑�
 - **后台错峰原生RED→GREEN**：`142005Z-4e15b0ef`原101/114.097秒，原18＋journal控制通过，新增spread测试真实失败；实现后`142930Z-4cf80a91`原0/102.204秒、20/20通过，同测试/断言保持。各run的`background-jitter-{red,green}-verification-v1.json`，源/控制/清理已核。不是完整网络或物理手机接受。
 - **b04完整网络＋真实集成全GREEN已闭** `143457Z-68b8fbe7`原0/**956.140秒**，原25组 **358pass/0fail/原2ignored helper**，全部测试名/原门/格式/source/control/owner核验完成。`E/RUN/background-jitter-full-regression-verification-v1.json`；global separate与原显式negative override保持，包括最新early跨族握手门、全部联系代次、共享/extra取消、IPC跨进程与真实文件/同步。不是Release性能或手机接受。
 - **N4两次原拒绝已保留并闭证** `145418Z-a06cf28f`原101/34.316秒为测试SocketAddr类型缺失，0native执行；`145735Z-c6ae0446`原101/40.170秒为新增两项首次id-only lookup未找到记录，原pkarr1过/2新增失败/1ignored，0固定fault轮完成、后4组未执行。还不能称产品根因；V3只补原计划20s内的独立HTTP signed-record发布前提，不给客户端resolver预热，不改原15s lookup/2s payload/30s全故障恢复和固定3轮。V3保留首次HTTP状态，等待实际证据；0生产变化。
+- **备用登记点真实3/3已闭** V3 `150311Z-bae8c5af`原101/60.013秒，原pkarr控制＋新cold场景2pass/whole1fail/原liveignored1。cold首内容88496/73980/75710μs，各3实际payload，全部登记下线后held连接仍可用、fresh客户端原8秒内失败，初始HTTP404→200直接观测确认发布准备边界。whole第1轮在原20秒门红，0完整轮、后4组未执行，`registry-fault-domain-partial-verification-v3.json`，不是整N4接受。
+- **整域RED定点观测已闭** `151121Z-2b066df4`原101/56.031秒，0pass/1fail；只跑同whole，未重复cold三绿。原20秒时仍是失效旧URL，native status=false/Connection refused，存活登记服务200但body没有新家，`registry-fault-domain-observer-verification-v1.json`。当前SocketActor无home状态失败触发report分支，Client.follow_home只记drop，普通20–26秒周期/增量保留可能延迟离开坏家；正在用上述最小事件衔接做因果验证，不直接强选新家。原观察源cbc25177仅加失败后快照，未改门/产品。
 - **I8完整Quality** GH43873334184，准确b899669a/tree68f191b3，首个实际run/attempt1原13/13成功，包括signed SSH151.86秒。`E/net-product-quality-v8-verification-v1.json`；CLI/Node各3563文件逐项核3077 checkout＋486同run frontend生成文件、ZIP SHA/CRC/实际fresh产物均核。第一次派发push未完成而422，0run；原拒绝保留。
 - **I8完整Linux原网络回归** `131052Z-bd3bf61a`原0/503.944秒，12组323pass/0fail/原ignored1。`product-v8-separate-node-verification-v1.json`。共享八STOP与独立extra关闭/handler回收/cached STOP均通过；取消旧fixture竞态定因见[CANCEL-LAYOUT](CANCEL-LAYOUT.md)，0生产取消逻辑变更。
 - **I8原生Mac Lab** GH43874780032首轮4/4job，104浏览器case/0错误、98tracked＋18generated来源、实际arm64 backend包均核；`E/public-native-lab-net-product-v8-v1/lab-acquisition-verification-v1.json`。本机0产品运行，无安装替换。不是手机或整N5接受。
@@ -27,9 +30,9 @@ E=`/Volumes/disk0/Khor/evidence/net`。已闭证项不因compact/session重跑�
 
 ## 下一步与未完成范围
 
-1. 先闭当前N4 V3原run，保留所有结果与未执行组；完整358已闭，不重复派。mac旧early上传失败记录已闭partial，不为上传单独重跑。
-2. canonical生产分量已集成且核对相对b04仅docs差异。N4测试通过后纳入，冻结最终准确源，做Quality和原生Mac验收。main基线冻结93f6cb23，不追其他GUI任务，不碰LIVE23961。
-3. 按[REQUIREMENTS](REQUIREMENTS.md)逐项对账；执行归并见[CLOSEOUT](CLOSEOUT.md)。继续N1/N2的多middle、预算/取消/重放及N3的SSH-hop-sync共存、成本，N4独立故障域/冷peer寻址/发布与Relay容量；现有窄合同不冒充完整场景。N4独立测试worktree `khor-net-registry-fault-domain-v1` 从b04建立，仅改pkarr integration，`E/registry-fault-domain-plan-v1.json`固定两场景各3次；当前V3已远端格式/提交/派发，所有原计划与失败保持。
+1. 先闭当前3d候选完整iroh＋N4原run，保留所有结果与未执行组；旧b04完整358已闭。若vendor新改通过物理合同，再对新生产源做适当完整Node回归。mac旧early上传失败记录已闭partial，不为上传单独重跑。
+2. canonical生产分量已集成b04、核对仅docs差异。#51与N4测试尚未采用，先验证，再冻结最终准确源做Quality和原生Mac。main基线冻结93f6cb23，不追其他GUI任务，不碰LIVE23961。
+3. 按[REQUIREMENTS](REQUIREMENTS.md)逐项对账；执行归并见[CLOSEOUT](CLOSEOUT.md)。继续N1/N2的多middle、预算/取消/重放及N3的SSH-hop-sync共存、成本，N4冷Node寻址/发布、非对称出口与容量；现有Endpoint组件合同不冒充持续Node业务或完整场景。N4原测试worktree `khor-net-registry-fault-domain-v1` / cbc25177保持观察源，不覆盖；新#51在另一worktree。原20秒publication/30秒whole/15秒lookup/2秒payload和两场景各3轮均保持；#51是原60项审查之后的新候选，不能冒称旧账已含它。
 4. 物理iPhone localhost现装为**TestFlight**（用户本轮确认），旧0.2.0和先前就绪窗口不能验收新候选。候选发行必须按main ancestor rc tag与签名环境政策；不绕过流程。先把授权范围内候选做具体可评审，再请求所需main合并/rc/TestFlight授权，不能现在半途提审批。
 5. 最终同源报告、设计、持续矩阵与手机换网/锁屏/能耗仍缺，goal保持active。无main合并、现装App替换、rc/发行/TestFlight上传或生产Relay采购部署授权。
 
