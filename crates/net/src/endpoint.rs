@@ -663,24 +663,6 @@ fn builder(
     // TLS (https relays); iroh's own encryption never touched the
     // Keychain in the first place.
     .ca_tls_config(ca_roots())
-    // Explicit public nameservers instead of "read the system's":
-    // on macOS the system route goes through SCDynamicStore, whose
-    // ApplicationBundleID lookup hung 40 SECONDS per process for
-    // unbundled binaries — measured with `sample` on 2026-08-20,
-    // the whole of #73's frozen-timer mystery (the hang is
-    // synchronous, so it froze single-threaded tokio clocks too).
-    // The Khor tier is an IP and needs no DNS at all; these servers
-    // resolve a relay somebody named by its domain. The cost — a
-    // network whose ONLY nameserver is an internal one cannot
-    // resolve such a relay — is on the ledger.
-    .dns_resolver(
-        iroh::dns::DnsResolver::builder()
-            .add_nameserver_configs(
-                ["223.5.5.5", "8.8.8.8", "1.1.1.1", "2400:3200::1"]
-                    .map(|ip| iroh::dns::NameserverConfig::udp(ip.parse().unwrap())),
-            )
-            .build(),
-    )
     .proxy_from_env()
     .transport_config(transport())
     .path_selector(std::sync::Arc::new(crate::carry::RoadOrder::default()))

@@ -40,8 +40,9 @@
 //!   at once** with the connection's close — a reading is asked again
 //!   on a fresh wire, anything else reports that the machine was not
 //!   reached and lets the person decide.
-//! - **Backoff**: a dial that fails makes the pump wait 5 s, then 10,
-//!   20, 40, and 60 s at most before it dials that machine again. A
+//! - **Backoff**: a dial that fails makes the pump wait 5 s, then
+//!   doubles its wait up to 300 s. Repeated failures add a stable
+//!   per-peer offset of up to 25%, under that same cap. A
 //!   person's own request is never refused by backoff — only the
 //!   background pump honours it.
 //!
@@ -50,7 +51,8 @@
 //! questions — the far side may be a one-shot verb with nobody serving
 //! its end. Both wires ride the one path state iroh keeps per machine.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, hash_map::RandomState};
+use std::hash::BuildHasher;
 use std::sync::atomic::{AtomicU64, Ordering::Relaxed};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
@@ -398,6 +400,8 @@ fn bytes_of(conn: &Connection) -> (u64, u64) {
 #[derive(Default)]
 pub(crate) struct Wires {
     pub(crate) pulls: crate::link::pull_pool::Pools,
+    /// Node-specific retry offsets, stable between journaling and scheduling.
+    retry_jitter: RandomState,
     slots: Mutex<HashMap<(String, Proto), Slot>>,
     dialing: Mutex<HashMap<(String, Proto), DialLock>>,
     pending_dials: Mutex<HashMap<String, std::sync::Weak<PendingDialState>>>,
@@ -808,7 +812,13 @@ impl Wires {
         {
             return BACKOFF_MAX;
         }
-        backoff(n)
+        let base = backoff(n);
+        if n <= 1 || base == BACKOFF_MAX {
+            return base;
+        }
+        let spread_ms = (base / 4).as_millis() as u64;
+        let offset_ms = self.retry_jitter.hash_one((id, n)) % (spread_ms + 1);
+        (base + Duration::from_millis(offset_ms)).min(BACKOFF_MAX)
     }
 
     /// [`drop_wire`], written in the journal: why, how long the wire had
@@ -2739,6 +2749,48 @@ mod tests {
     fn backoff_doubles_from_five_seconds_to_five_minutes() {
         let secs: Vec<u64> = (1..=9).map(|n| backoff(n).as_secs()).collect();
         assert_eq!(secs, vec![5, 10, 20, 40, 80, 160, 300, 300, 300]);
+    }
+
+    #[test]
+    fn background_retry_offsets_are_stable_bounded_and_spread_across_peers() {
+        let w = Wires::default();
+        assert_eq!(w.wait_after("first", 1), BACKOFF_FIRST);
+        assert_eq!(w.wait_after("capped", u32::MAX), BACKOFF_MAX);
+        w.asleep("sleeping");
+        assert_eq!(w.wait_after("sleeping", 2), BACKOFF_MAX);
+        for failures in 2..=6 {
+            let base = backoff(failures);
+            let mut waits = std::collections::BTreeSet::new();
+            for index in 0..128 {
+                let peer = format!("peer-{index}");
+                let wait = w.wait_after(&peer, failures);
+                assert!(wait >= base && wait <= (base + base / 4).min(BACKOFF_MAX));
+                assert_eq!(wait, w.wait_after(&peer, failures), "reads do not resample");
+                waits.insert(wait);
+            }
+            assert!(
+                waits.len() > 1,
+                "background retries still share one deadline"
+            );
+        }
+    }
+
+    #[test]
+    fn a_journaled_retry_wait_is_the_wait_stored_after_the_failure() {
+        let w = Wires::default();
+        w.failed("peer", Proto::Main, "first".into());
+        let (failures, wait) = w.next_backoff("peer", Proto::Main);
+        assert_eq!(failures, 2);
+        let before = Instant::now();
+        w.failed("peer", Proto::Main, "second".into());
+        let after = Instant::now();
+        let slots = w.slots.lock().unwrap();
+        let retry_at = slots
+            .get(&("peer".to_owned(), Proto::Main))
+            .unwrap()
+            .retry_at
+            .unwrap();
+        assert!(retry_at >= before + wait && retry_at <= after + wait);
     }
 
     /// **Unreachable is an attempt that failed, until anything is heard**

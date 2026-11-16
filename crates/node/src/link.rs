@@ -4170,7 +4170,6 @@ impl Node {
         };
         drop(attempt);
         drop(carried_attempt);
-        let failed_at = n0_future::time::Instant::now();
         #[cfg(test)]
         if let Ok(Err(failed)) = &outcome {
             let why = match failed {
@@ -4237,11 +4236,6 @@ impl Node {
                         addr.addrs.insert(carried);
                         tried.2 = true;
                         outcome = tokio::time::timeout_at(dial_by, async {
-                            let removed = ep.discard_ip_hints_if_idle(addr.id, failed_at).await;
-                            #[cfg(test)]
-                            eprintln!("[early-fallback-stage] old IP hints discarded={removed}");
-                            #[cfg(not(test))]
-                            let _ = removed;
                             connect_prepared_carrier(ep, addr, ALPN)
                                 .await
                                 .map(|conn| (conn, None))

@@ -421,9 +421,21 @@ async fn slow_head_bounds_real_issued_and_uncommitted_replies() {
 async fn dropping_pull_stops_every_held_rpc_and_keeps_the_shared_wire() {
     let fixture = Fixture::new(Held::All).await;
     {
-        let pull = fixture
-            .node
-            .pull_path_with(&fixture.ep, "peer", PATH, fixture.root.path());
+        // This contract owns eight streams on the shared Main: every one must
+        // receive STOP_SENDING without closing that connection. The explicit
+        // separate-pull contract instead requires the owned extra Main
+        // and all its handlers to close, and STOP on any held cached streams.
+        let landing = crate::files::landing(PATH, fixture.root.path()).unwrap();
+        let pull = fixture.node.pull_into_with_layout(
+            &fixture.ep,
+            "peer",
+            PATH,
+            landing,
+            None,
+            None,
+            true,
+            false,
+        );
         tokio::pin!(pull);
         tokio::select! {
             outcome = &mut pull => panic!("held pull completed: {outcome:?}"),

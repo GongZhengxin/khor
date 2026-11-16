@@ -25,6 +25,8 @@
 //!
 //! One test, run in order: the world is a few seconds to build and the
 //! cases share it.
+mod scratch;
+
 use std::collections::BTreeSet;
 use std::fs;
 use std::io::{Read, Write};
@@ -92,6 +94,7 @@ fn wait_for_serve(dir: &Path, name: &str, keeper: &mut Kept) {
 struct World {
     dir: PathBuf,
     kept: Vec<Kept>,
+    relay: Option<scratch::Reaped>,
     ports: Vec<(&'static str, u16)>,
     /// The `lock` key's passphrase: generated, never printed.
     phrase: String,
@@ -110,6 +113,7 @@ impl Drop for World {
             stop_far(&self.dir, host.0);
         }
         self.kept.clear();
+        drop(self.relay.take());
         if std::env::var_os("KHOR_TEST_KEEP").is_none() {
             let _ = fs::remove_dir_all(&self.dir);
         }
@@ -141,6 +145,20 @@ fn free_port() -> u16 {
 
 fn far_home(dir: &Path, host: &str) -> PathBuf {
     dir.join(host).join("home")
+}
+
+/// Ordinary membership must not depend on a public relay being reachable.
+/// Local clients use this world's relay. Far commands receive it through
+/// their environment so `--no-install` can leave the far home empty.
+fn configure_home(dir: &Path, home: &Path) {
+    assert!(home.starts_with(dir), "only a scratch home is configured");
+    let settings = fs::read(dir.join("relay-settings.json")).unwrap();
+    let store = home.join(".khor");
+    fs::create_dir_all(&store).unwrap();
+    let file = store.join("relays.json");
+    if fs::read(&file).ok().as_deref() != Some(settings.as_slice()) {
+        fs::write(file, settings).unwrap();
+    }
 }
 
 fn stop_far(dir: &Path, host: &str) {
@@ -235,9 +253,22 @@ fn build() -> Option<World> {
     let mut w = World {
         dir: dir.clone(),
         kept: vec![],
+        relay: None,
         ports: vec![],
         phrase,
     };
+    let relay_home = dir.join("relay");
+    fs::create_dir_all(&relay_home).unwrap();
+    let (relay, url) = scratch::local_relay(&relay_home);
+    w.relay = Some(relay);
+    fs::write(
+        dir.join("relay-settings.json"),
+        serde_json::to_vec(&serde_json::json!({
+            "relays": [{ "url": url.clone() }], "only_mine": true
+        }))
+        .unwrap(),
+    )
+    .unwrap();
     sh(Command::new("ssh-keygen")
         .args(["-q", "-t", "ed25519", "-N", "", "-C", "add-ssh", "-f"])
         .arg(client.join("id")));
@@ -296,7 +327,7 @@ fn build() -> Option<World> {
         fs::write(
             &wrap,
             format!(
-                "#!/bin/sh\nexport HOME='{h}' KHOR_HOME='{h}' KHOR_NO_MDNS=1 KHOR_WEB_PORT=0 KHOR_NAME='{host}-box' TMUX_TMPDIR='{d}/tmux' KHOR_TMUX_SOCKET=khor-add-{host} LC_ALL=C\n\
+                "#!/bin/sh\nexport HOME='{h}' KHOR_HOME='{h}' KHOR_NO_MDNS=1 KHOR_WEB_PORT=0 KHOR_NAME='{host}-box' KHOR_RELAY='{relay}' TMUX_TMPDIR='{d}/tmux' KHOR_TMUX_SOCKET=khor-add-{host} LC_ALL=C\n\
                  export PATH='{f}':\"$PATH\"\n\
                  case \"$HOME\" in '{w_dir}'/*) ;; *) echo 'scratch HOME not set' >&2; exit 97 ;; esac\n\
                  mkdir -p \"$TMUX_TMPDIR\"; cd \"$HOME\" || exit 97\n\
@@ -304,6 +335,7 @@ fn build() -> Option<World> {
                 h = home.display(),
                 d = d.display(),
                 f = fake.display(),
+                relay = url,
             ),
         )
         .unwrap();
@@ -386,6 +418,7 @@ fn sponsor_env(w: &World, mirror: &str) -> Vec<(String, String)> {
 /// socket, the scratch ssh world, mirror and secret store.
 fn node_env(w: &World, mirror: &str, who: &str) -> Vec<(String, String)> {
     let d = &w.dir;
+    configure_home(d, &d.join(who));
     [
         ("KHOR_HOME", d.join(who).display().to_string()),
         ("KHOR_NAME", who.to_owned()),
@@ -758,7 +791,12 @@ fn add_over_ssh_in_a_scratch_world() {
         out.status.success() && said.contains("Added box9"),
         "{said}"
     );
-    assert_eq!(kept(&w), 0, "a member's password is dropped once it is in");
+    assert_eq!(
+        kept(&w),
+        0,
+        "a member's password is dropped once it is in: {}",
+        said.replace(&w.phrase, "<password>")
+    );
     // Every far host is this one machine, and a far serve runs without
     // KHOR_HOME, so the next far khor would take box9's serve for one on
     // its own store (`serves::beside`): one far resident at a time.
