@@ -9,3 +9,9 @@ H9acc原三场high2160交互全成功、3完整192MiB文件与6post-health通过
 冻结计划E/directory-priority-plan-v1.json，普通Release编译控制b30647868f666f4a02ed8f3856df79317ffdd830，只迁移准确1文件并保留H原ELF；Mac用原control68cadb57完整12组316＋原ignored1，同32明确separate/14contact合同，不改测试名或门。
 
 下一步收齐Turing070611Z-f9eb7a56编译与Mac43821604934；若同源/回归/owner有效，原high固定3次普通Release方向筛查，任何原失败保留。公平性、所有负载/1/3/5成本、最终同期main对照与N0–N5仍缺，不把此小实验缩成完整任务。
+
+## 已闭结果与不采用决定（2026-11-16）
+
+X普通Release556.403秒完成，Mac316/0/原ignored1、32明确separate/14contact全过；原high三场2160读/3文件/6post-health成功，逐场目录p95为614088/336144/315554μs。原协议实际评级是合并360样本：H448002μs、X353557μs，均过592518.1μs原绝对参考；H/X有限人口p99为836037/751934μs。逐场614ms保留；先前逐场参考解读过严，未改原协议、门或失败分母。证据E/current-high-pooled-verification-v1.json。
+
+无同期配对，不能证明目录priority单独收益或必要性；为减少custom，最终候选J恢复H原link.rs，不采用此实验。X原源/产物/全部结果不删。完整共存/公平性/设备成本与最终同期main比较仍要验证，但不再因这条已过的pooled参考追加调度补丁。

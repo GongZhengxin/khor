@@ -1,22 +1,18 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-16T07:12:48.101763+00:00。用户最新“做完吧”已明确继续完整目标，goal active；[GOAL](GOAL.md)、[PLAN](PLAN.md) N0–N5、[REQUIREMENTS](REQUIREMENTS.md)尚未整体完成。root串行、不派子智能体。本机source-only：不跑Cargo/Rustfmt/Node/Bun/Xcode/产品；重型工作只在Turing/macserver/授权khor-build。用户已授权实现与验证，未授权main合并、现装App替换、发行/TestFlight或生产Relay采购部署。
+更新于 2026-11-16T07:43:59.521290+00:00。用户最新“做完吧”已明确继续完整目标，goal active；[GOAL](GOAL.md)、[PLAN](PLAN.md) N0–N5、[REQUIREMENTS](REQUIREMENTS.md)尚未整体完成。root串行、不派子智能体。本机source-only：不跑Cargo/Rustfmt/Node/Bun/Xcode/产品；重型工作只在Turing/macserver/授权khor-build。用户已授权实现与验证，未授权main合并、现装App替换、发行/TestFlight或生产Relay采购部署。
 
 ## 当前运行与下一步
 
-- 当前Turing **070611Z-f9eb7a56**、PID553178、revision `directory_priority_release_compile_v1`、controlb30647868f666f4a02ed8f3856df79317ffdd830：新目录priority候选普通Release编译。Mac **43821604934** / job133145712927，同源原316项回归，独立ledger `E/directory-priority-mac-progress-v1.json`；两个不同host并行，Turing计时尚未开始。先查已有receipt，不重派。
-- 新隔离实验X=`khor-net-directory-priority-v1` / branch`experiment/net-directory-priority-v1`，9e3e0609/treebbf26bf0/snapshot5d905075；只改link.rs的有效Ls/Dir响应priority1，文件保持原0、首块/准备/pool/窗口/期限均不变，无新任务timerprobe。尚未采用，详[DIRECTORY-PRIORITY](DIRECTORY-PRIORITY.md)。Turing编译完collect→identity→`E/ops/verify-directory-priority-release-v1.py RUN`，再与Mac回归闭证后原high3固定方向筛查。
-- 先前H `064105Z-83fdc3e3`已collect、identity、原合同/全部720人口与owner闭证；H仍是已测前代，X未证明收益。
-- H普通Release原控制4/4通过：p6两个相反质量、typing恢复1.097295613s、p3 UDP黑洞260回显0失败/max629.3ms。`062319Z-528e34bc`原0/229.801秒。
-- 原preflight `063259Z-64fbfb05`原1/162.558秒，5项4绿/1冷TCP参考红，几何/内容和独立UDP容量有效；按原冻结分层规则准入，不把原1改绿。
-- H high固定3场 `064105Z-83fdc3e3`原0/546.007秒，2160交互全成功、3×192MiB完整文件和6 post-health均通过；**完整目标/N3未接受**。目录bulk scheduled p95分别613863/471558/342102μs，首场仍超原592518.1μs；terminal分别311148/329875/317502μs。原门和全部失败保持。
-- 数据定位：首场目录index0/1服务约604/601ms，index78服务931ms，造成串行目录后续排队；独立调度见证bulk max2255μs、terminal无相应长卡顿，不能归为host CPU卡住。其他两场有单个955/534ms目录。已做同H一次lifecycle，见下一条；新X只检验首块同Main干扰，不声称解释全部长尾。
-
-- 同H诊断 **065748Z-b5ef24fa** 原1/native101，720业务及完整文件/post-health成功，但普通CLI无net-diagnostics初始化marker，fixture保存x后panic，y未保存；原失败保留。已存x确证首两256KiB文件块与全部目录同Main、余766文件块单一extra；前两bulk目录603622/598904μs，首块1211281μs。`E/RUN/selection-view-high-diagnostic-verification-v1.json`，仅部分诊断，不作性能接受。
+- 当前无在途Turing/Mac任务，均已收齐原退出码、源/产物/合同与owner；不得重派已闭组。最新待集成J是 `khor-net-initial-direct-v1` / `experiment/net-initial-direct-v1`，HEAD **4b9ef2a63da8d73a252a29b919316615044b72d5** / tree **8dfdcbf4284e4a75e09f0f075f649eed9ae94719** / snapshot **814cf94041bead77515637980b71f6cfb6f26654**，clean，源 `E/initial-direct-green-v2-source-v1.json`。J相对H只改carry.rs（3新测试＋current=None近似质量Direct次级偏好），**无X目录priority改动**。
+- **统计口径校正，门/分母未改**：原 `pull-coexistence-comparison-plan-v1.json` 按三场合并每cell360样本评p95，不是每一场独立卡592518.1μs。H三场目录bulk pooled p95 **448002μs**、p99 **836037μs**，X **353557/751934μs**，各2160业务全成功、3完整192MiB文件、6post-health。两者均过这条原绝对参考；此前逐场614ms等仍保留，但不是独立cohort门失败。`E/current-high-pooled-verification-v1.json`闭证原协议hash/原门/完整人口。没有同期配对或全N3接受。
+- X目录优先级未证明必要，已经从J恢复H原link.rs；X分支和全部原ELF/测试结果保留。X普通Release编译 **070611Z-f9eb7a56**原0/556.403秒、high **071904Z-b8814e80**原0/546.269秒（3场），Mac **43821604934**原316/0/原ignored1，均闭证。详[DIRECTORY-PRIORITY](DIRECTORY-PRIORITY.md)。不再为这条单独参考继续增加调度补丁。
+- J首次选择只复用原5ms收益地板，已存在健康主路的对称收益/settling/新鲜确认保持。RED **Mac43823406334** / job133151481554：72pass/1fail/原ignored1，准确新增near-Direct用例红、其他旧和2负控绿，原native101保留。GREEN V1 **43824063149**格式单行closure拒绝、原1、0编译0native，原记录保留；Turing远端Rustfmt只修格式。GREEN V2 **43824779693** / job133155898284：**73pass/0fail/原ignored1**，全部74测试名和3新测试体逐字相同（SHA555fba7663f3d87e5b7c246542b5ede903c364058781dd18ae891a3bd3a79070）；11control blobs/源/ZIP/CRC/toolchain/resource门全核，artifact14205508982/SHA8c95b6151c7d7ccb3ee314d4c90fffffa942f40113f0c5f10f40211393265d75。`E/initial-direct-green-v2-mac-verification-v1.json`。只组件接受，非整个冷建联/完整N1。
+- 下一步：把J与当前main **93f6cb23**在独立集成树合并（main已由其他任务推进，不改其checkout/dirty文件），保存canonical feat/net最新STATE/PLAN后整合为同一候选，再冻结最终同源native/Quality/MacLab与同期public-main配对矩阵。main合并/安装/发布授权不扩张；源内更新允许，不将旧I4绿当新候选绿。完整N0–N5缺口见下，不缩范围。
 
 ## 当前准确产品候选 H
 
-Worktree `/Volumes/disk0/Khor/worktrees/current/khor-net-selection-view-v1`，branch `experiment/net-selection-view-v1`，HEAD **9acc6097a7bc8fe01edd3f1fe6ef2d998d3d50c3** / tree **06b0c2cda62da87c2c1bb9ec214d0b999cdaeff5** / snapshot **9c54ad636ccbf1b42f1895f8c98a1efa8dd8458f**，clean。源描述 `E/selection-view-events-source-v1.json`。canonical feat/net当前仍保存计划与历史实现，尚未最终集成最新依赖/完整H；main823f29f9未动，builder checkout5d3691未动，LIVE23961未动。
+Worktree `/Volumes/disk0/Khor/worktrees/current/khor-net-selection-view-v1`，branch `experiment/net-selection-view-v1`，HEAD **9acc6097a7bc8fe01edd3f1fe6ef2d998d3d50c3** / tree **06b0c2cda62da87c2c1bb9ec214d0b999cdaeff5** / snapshot **9c54ad636ccbf1b42f1895f8c98a1efa8dd8458f**，clean。源描述 `E/selection-view-events-source-v1.json`。canonical feat/net当前仍保存计划与历史实现，尚未最终集成最新依赖/完整H；main现93f6cb23由其他任务推进，本任务未改，builder checkout5d3691未动，LIVE23961未动。
 
 H在前代S之上只改Node状态传播：复用已有roads::follow的iroh Selected/start/Lagged当前快照，以Weak<Wires>、同peer/stable conn ID、仍存活/当前实际选路检查，及时发布连接词；Opened不算选择、Unknown不造事实、相同词不刷新年龄，旧/闭wire不得污染新wire或另一协议。原tick与两样本fallback/旧合同保留，无新增timer/probe/常驻轮询。见[SELECTION-VIEW](SELECTION-VIEW.md)。
 
@@ -37,7 +33,7 @@ S=`khor-net-stable-gain-v1` / `experiment/net-stable-gain-v1`，最终7d9f1c07/t
 
 ## 仍阻止完整接受的范围
 
-1. **N3未过**：[PULL-COEXISTENCE](PULL-COEXISTENCE.md)旧同ELF SCCSSC六块/12case/8640样本、24post-health和12完整文件全留。分连接low目录p95为84790μs（共享244009），high614406μs（共享1292588），仍超过原592518.1μs；文件中位low7.033/7.071、high25.572/25.342Mbit/s。共享第五块high原1终端timeout＋63blocked保持完整分母，不报成功子集p95。H新high三场2160交互全成功，但首场目录p95仍超门；见本页当前运行。原pool公平性/容量修复与资源合同/旧Linux317＋压力1、Mac314及原布局均只对其准确源成立；H Mac316已新验证。1/3/5成本、SSH/peer relay/同步共存、全负载和最终同期main对照仍缺。
+1. **N3未过**：[PULL-COEXISTENCE](PULL-COEXISTENCE.md)旧同ELF SCCSSC六块/12case/8640样本、24post-health和12完整文件全留。分连接low目录p95为84790μs（共享244009），high614406μs（共享1292588），仍超过原592518.1μs；文件中位low7.033/7.071、high25.572/25.342Mbit/s。共享第五块high原1终端timeout＋63blocked保持完整分母，不报成功子集p95。H新high三场2160交互全成功，原360 pooled目录p95为448002μs已过该参考；逐场超参考仍保留，见本页统计口径校正。原pool公平性/容量修复与资源合同/旧Linux317＋压力1、Mac314及原布局均只对其准确源成立；H Mac316已新验证。1/3/5成本、SSH/peer relay/同步共存、全负载和最终同期main对照仍缺。
 2. **N1/N2**：完整置信/多middle/共享测量/quiet成本，以及总期限/取消/迟到Endpoint与policy队列变化、全部写family/包级0RTT、NET-16完整正负向继续按REQUIREMENTS。已有14联系、92hop、pool32等证据不等于完整接受。
 3. **N4**：冷hint/新peer发布、双方和peer-relay移动/睡眠/Wi-Fi蜂窝、Direct UDP突断、Relay整机/半断/出口/登记/容量和NAT64仍有缺口。旧IPv6-only15场630读、双端dual/v4等闭证保留，不能替NAT64/手机。
 4. **N5**：最新H集成canonical feat/net和同期main后，仍需最终同源Quality、native MacLab/真实backend、手机换网与能耗、设计/运维和全报告。不是“只差手机”。未获main合并/发布授权，不因此停实现/验证。
