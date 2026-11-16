@@ -1,8 +1,19 @@
 # feat/net 当前状态与接续入口
 
-更新于2026-11-16 15:44 UTC。用户“做完吧”继续完整目标；最新询问进度不取消执行。[GOAL](GOAL.md)、[PLAN](PLAN.md) N0–N5尚未整体完成。root串行，不派子智能体。本机source-only，重型工作限Turing、macserver与授权khor-build。
+更新于2026-11-16 16:46 UTC（本地2026-11-17）。用户先明确暂停等待main UI修复，随后“好了, main被更新了”恢复该集成与网络任务；问答期间没有继续构建/合并/发布。[GOAL](GOAL.md)、[PLAN](PLAN.md) N0–N5尚未整体完成。root串行，不派子智能体。本机source-only，重型工作限Turing、macserver与授权khor-build。goal服务仍显示paused是此前暂停状态，不能覆盖用户最新恢复指令；不得另建替代小目标。
 
-## 当前运行
+**本次接续优先**：远端main已同步到 **84e75c57cf87d0dfaffda14149d0d726f15dfe9e**。比df47增加12文件：原生旧macOS透明导航材质、对应UI检查/探针与指南，以及trust::admit区分Pending和Revoked（含新增测试与中英文文案）。这12文件与当前feat/net改动无交叉，必须保留；主仓untracked lab-preview/output不动。当前只集成到开发分支，不直接发布。
+
+**15:50 UTC最新交付要求优先**：用户“后面你会在main去ship对吗”，已答复最终从main ship：feat/net候选验收→保留main同期改动的集成→验证合并后的准确版本→按rc/签名门发布TestFlight。当前不立即合并/发版；本页以下旧“无main/发行授权”文字记录的是此前阶段，不能把它当作永久阻断或要求用户重复确认最终main ship。采购/生产Relay部署和直接替换现装App仍未包含。main目前df47c140（rc17交付记录），其其他任务改动与untracked lab-preview/output不得覆盖。
+
+## 当前运行与真实结果
+
+当前没有Turing在途任务；下列两个旧run都已结束且独立核证，不能按旧在途文字重派。下一步先保存本页与GOAL既有未提交文字、将origin/main合入feat/net，再单独定位Mac resume失败。#51独立候选暂不据部分Mac结果称整体验收。
+
+- **准确3d完整Linux25组358已闭GREEN** `153547Z-876c1874`原0/944.251秒、358pass/0fail/原2ignored helper，`E/RUN/relay-home-refresh-full-node-verification-v1.json`；source/control/所有原测试名/原门/格式/owner均核。保持沿用，不因session/暂停重跑。
+- **Mac43898654929已闭真实RED** 原attempt1/exit101，**547pass/1fail/原2ignored**。完整iroh211与原12网络321全部通过；原13 integration执行至resume（先前5目标全绿，resume5绿1红）。唯一失败`a_deafened_serve_hears_its_peer_again_after_resume_without_being_reopened`：新耳朵约37.9ms、同步轮159.9ms已返回，但回复明确为devices仍在传输的部分同步，立即检查未看到对端改名。后7 integration＋5 Relay目标共12个未执行；不扩大等待或删断言。`E/mac-43898654929/relay-home-refresh-mac-red-verification-v1.json`；artifact14241042904/95,708B/SHA99d29695、CRC、准确source/all11 control blobs/原guard/所有native名字与cfg排除均核。原进度pending已关闭，common ledger已追加失败，不重复整批。
+
+以下两条为原提交信息，执行状态以上述闭证结果为准：
 
 - Turing当前唯一在途 **turing-20261116T153547Z-876c1874**，PID1430422，revision `relay_home_refresh_full_node_v1`，复用原完整25组control `7c4146df6d1bf0ed90bea386ceb0f29eab8eb18b`，预期358pass/原2ignored helper。`E/relay-home-refresh-full-node-plan-v1.json`；结束collect＋identity后用`E/ops/verify-relay-home-refresh-full-node-v1.py RUN`核证。查原receipt，不重复启动。准确源 **3d62159eaa635f60ef7fc1078a5d809eef6bb8fd** / tree **153f05926125021ee6f09ddb1101cf492f56415b** / snapshot **cd648b7b976d040baf8b0b425f0011fa9ae70c36**，`E/relay-home-refresh-source-v1.json`。独立worktree `khor-net-relay-home-refresh-v1`，branch `fix/net-relay-home-refresh-v1`，尚未采用canonical。
 - **Mac同源完整验收 GH43898654929**，job133409000622/network-mac，trusted control **c44d3ec0b78ef2d128c955deec34e4fc74255aa7** / `net-relay-home-refresh-mac-v1`，request `579d064a9ae34eca98416dadcc43dfac`。`E/relay-home-refresh-mac-{progress,plan}-v1.json`；原11控制文件仅network.sh选择组合变化，既有workflow/bootstrap/run-build与其他控制blob不改。原完整iroh库＋Mac原12网络321＋13 Node integration33＋5 Relay/登记目标7（root合计361，原root忽略3）联合验证，global separate/原显式negative override保持。首次push已完成后确认远端精确ref再单次submit，0重复。读原run，不重派。
