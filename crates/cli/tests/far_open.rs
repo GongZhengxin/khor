@@ -19,8 +19,8 @@ use std::process::Command;
 use std::time::{Duration, Instant};
 
 use khor_node::Node;
-use khor_node::gui_host::{GuiNote, GuiOp};
-use khor_node::host::{connect_at, read_frame, write_frame};
+use khor_node::gui_host::{GuiNote, GuiOp, connect_at};
+use khor_node::host::{read_frame, write_frame};
 use tokio::time::timeout;
 
 /// A scratch tree that **takes itself away however the test leaves**
@@ -239,7 +239,9 @@ async fn a_conversation_is_born_on_the_machine_the_wizard_named_and_spoken_to_fr
         .await
         .expect("the reach must not hang")
         .expect("beta's resident pipes onto alpha's host");
-    let mut conn = connect_at(&addr, &cookie, 0, 0).expect("the far host welcomes the pipe");
+    let mut conn = connect_at(&addr, &cookie)
+        .expect("the far host welcomes the GUI pipe")
+        .stream;
     conn.set_read_timeout(Some(Duration::from_secs(30)))
         .unwrap();
     let GuiNote::Agent { .. } = next_note(&mut conn) else {

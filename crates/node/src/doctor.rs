@@ -900,7 +900,10 @@ mod agent_tests {
         .unwrap();
         let (health, text, _) = check_agents(&node).await;
         assert_eq!(health, Health::Warn);
-        assert!(text.contains("dsh"), "Name the explicit broken launch: {text}");
+        assert!(
+            text.contains("dsh"),
+            "Name the explicit broken launch: {text}"
+        );
     }
 }
 
