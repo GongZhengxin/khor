@@ -7,6 +7,7 @@ mod menu_overlay;
 mod native_io;
 mod page_history;
 mod page_navigation;
+mod window_transport;
 #[cfg(any(target_os = "macos", target_os = "ios"))]
 mod page_retire;
 mod updater_commands;
@@ -2535,13 +2536,21 @@ fn on_the_page_store<'a, R: tauri::Runtime, M: tauri::Manager<R>>(
 #[cfg(desktop)]
 fn build_the_window(app: &tauri::AppHandle) -> tauri::Result<()> {
     use tauri::{WebviewUrl, WebviewWindowBuilder};
-    let mut win = WebviewWindowBuilder::new(app, "main", WebviewUrl::default())
-        .title("Khor")
-        .inner_size(1080.0, 720.0)
-        .min_inner_size(400.0, 500.0)
-        .transparent(true)
-        .initialization_script(window_surface::initial_script())
-        .background_color(window_surface::background(chosen_dark(desktop_is_dark)));
+    let mut win = WebviewWindowBuilder::new(
+        app,
+        "main",
+        // **`?bridge=`, because the custom protocol cannot be relied on**
+        // (`window_transport`, measured 2026-11-16): the page's `call()` takes
+        // the loopback road first, and the dead transport is never touched.
+        // The query is the page's own, read at `api.ts`'s `call()`.
+        WebviewUrl::App(format!("index.html?bridge={}", window_transport::PORT).into()),
+    )
+    .title("Khor")
+    .inner_size(1080.0, 720.0)
+    .min_inner_size(400.0, 500.0)
+    .transparent(true)
+    .initialization_script(window_surface::initial_script())
+    .background_color(window_surface::background(chosen_dark(desktop_is_dark)));
     #[cfg(target_os = "macos")]
     {
         win = win
@@ -5414,6 +5423,14 @@ pub fn run() {
         std::process::exit(code);
     }
     eprintln!("khor app ui: {}", khor_web::ui_revision());
+    // **The window's own command transport, before the window exists.**
+    // Tauri's custom-protocol IPC stops after the startup burst on Windows
+    // (2026-11-16: nine arrivals, then nothing, while the page kept calling);
+    // the page already knows how to reach a loopback bridge
+    // (`apps/gui/src/api.ts`, `?bridge=`), so the window is built against one
+    // in this process. Started here so the port is listening before the first
+    // command is asked for.
+    window_transport::start();
     // **Stand somewhere that cannot be deleted, before anything else**
     // (docs/SHELL.md 第十四轮 第 4 条). The install script starts this
     // binary with `nohup` from inside the export directory and then
