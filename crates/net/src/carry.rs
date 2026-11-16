@@ -780,6 +780,42 @@ mod tests {
     }
 
     #[test]
+    fn unselected_near_quality_prefers_direct_in_either_order() {
+        for kind in [Tier::Relay, Tier::Carried] {
+            for direct_ms in [30, 34] {
+                let roads = [(kind, MS(30)), (Tier::Direct, MS(direct_ms))];
+                assert_eq!(choose(None, &roads), Some(1));
+                let reversed = [roads[1], roads[0]];
+                assert_eq!(choose(None, &reversed), Some(0));
+            }
+        }
+    }
+
+    #[test]
+    fn initial_direct_preference_stops_at_the_existing_gain_floor() {
+        for kind in [Tier::Relay, Tier::Carried] {
+            let roads = [(kind, MS(30)), (Tier::Direct, MS(35))];
+            for settling in [false, true] {
+                assert_eq!(choose_settling(None, &roads, settling), Some(0));
+            }
+            let much_faster = [(kind, MS(5)), (Tier::Direct, MS(90))];
+            assert_eq!(choose(None, &much_faster), Some(0));
+        }
+    }
+
+    #[test]
+    fn a_healthy_road_holds_when_a_near_direct_is_available() {
+        for kind in [Tier::Relay, Tier::Carried] {
+            for direct_ms in [26, 30, 34] {
+                let roads = [(kind, MS(30)), (Tier::Direct, MS(direct_ms))];
+                for settling in [false, true] {
+                    assert_eq!(choose_settling(Some(roads[0]), &roads, settling), None);
+                }
+            }
+        }
+    }
+
+    #[test]
     fn settling_filters_noise_without_trapping_a_materially_slower_road() {
         for kind in [Tier::Direct, Tier::Carried, Tier::Relay] {
             let improved = [(kind, MS(500)), (Tier::Relay, MS(300))];
