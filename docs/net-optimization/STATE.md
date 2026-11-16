@@ -1,23 +1,26 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-16T08:40:13.899603+00:00。用户最新“做完吧”已明确继续完整目标，goal active；[GOAL](GOAL.md)、[PLAN](PLAN.md) N0–N5、[REQUIREMENTS](REQUIREMENTS.md)尚未整体完成。root串行、不派子智能体。本机source-only：不跑Cargo/Rustfmt/Node/Bun/Xcode/产品；重型工作只在Turing/macserver/授权khor-build。用户已授权实现与验证，未授权main合并、现装App替换、发行/TestFlight或生产Relay采购部署。
+更新于 2026-11-16T09:22:20.348745+00:00。用户最新“做完吧”已明确继续完整目标，goal active；[GOAL](GOAL.md)、[PLAN](PLAN.md) N0–N5、[REQUIREMENTS](REQUIREMENTS.md)尚未整体完成。root串行、不派子智能体。本机source-only：不跑Cargo/Rustfmt/Node/Bun/Xcode/产品；重型工作只在Turing/macserver/授权khor-build。用户已授权实现与验证，未授权main合并、现装App替换、发行/TestFlight或生产Relay采购部署。
 
 ## 当前运行与下一步
 
-- **当前Turing唯一在途** `turing-20261116T083237Z-362fed6f`、PID703767、task net-node、revision `net_product_v5_window_fixture_standard_v1`、control **41d2e4f6c35a6e734f693e4a9e48ed524dee8891**。源 **23a68888e34154b87a2e45596adf9ac6743e2382** / tree **2cd7316e44efdd67c62184f51f4a4dee1002c8e6** / snapshot **0758175304f0f3e488717dd00004959aadfb1790**，描述 `E/net-product-v5-fixture-source-v1.json`。本源仅改受控测试 responder 支持额外文件连接＋Rust格式分类，**生产代码与I5 9821d929相同**；完整原测试体、处理器assert/token与期限逐字（忽略格式）保持，见 `E/net-product-v5-window-fixture-plan-v1.json`。先查已有receipt/execution，不重派；结束collect→identity→`E/ops/verify-product-v5-window-fixture-standard-v1.py RUN separate`，该成功verifier仅在全部323通过时用。若失败，保留实际Native和未执行人口再诊断。
-- 此run先按原first-party Rust checker检查全仓：只把 `tests/net-connection-boundary-v1/{lib,silent,upstream_util}.rs` 纳入原Rust2024 stdin formatter，不排除检查；随后原12组在global separate下运行。受控responder原只回答cached Main，新连接从未accept导致4个窗口/取消控制不到条件；现同handler/断言服务cached＋新文件连接，nested JoinSets全有owner。需等真结果，不能先称修复。三独立Rust文件本已格式正确，远端格式只改helper缩进。
-- **旧I5完整标准已接受** `075454Z-f11ccfd0` 原0/512.203s，**323pass/0fail/原ignored1**，12组每个测试名/源/控制/owner已核。`E/RUN/product-v5-standard-node-verification-v1.json`。
-- **旧I5 global separate红已闭** `080702Z-38aa0920` 原101/502.035s：已执行5组 **295pass/4fail/原ignored1**，余7 IPC/Content/Resume/STOP组未执行；四红仅原pull_window_wire取消/JobStop/slowHead/StopRPC，都只见issued0/1。完整原红/日志与owner闭证 `E/RUN/product-v5-separate-red-verification-v1.json`。global env不等于每个显式负控都ON，不能作这种覆盖声明。
-- **Quality 43827443762**，准确源I5 **9821d9298dbab876434041bc436a7a97c1d4c1d7** / tree **4b7013df0e89837ddbe1e5d22c010bbf8ecf3cb8** / snapshot **b93d6b7acbc2195d7aefa6b75aba0c1f37f8553c**，分支 `verify/net-product-v5`。已知scripts job133164520860原1：first-party formatter拒绝未分类的独立transport fixture；新23a已分类，未放松原门。其他12组当前已知11成功，node-native133166355726仍在signed SSH安装/认证步骤，先读 `E/quality-43827443762/jobs-current.json` 或原run，不重派原job。需要新准确源Quality，等本轮失败/修复收齐后冻结；原scripts红保留。GitHub connector不支持该运行集合查询，gh只读回执为fallback。
-- **Mac Lab V2 43829392360**，源仍I5 9821d929 / snapshotb93d6，acquirer session **17871**，独立目录 `E/public-native-lab-net-product-v5-v2`，源码仅在远端执行；当前frontend133170773653与native133173046669已success，checks133173046701在完整Chromium/WebKit测试。控制独立branch `net-product-v5-lab-workbench-v1` / **44b954b74fee82ad448909b6e19a9296e69cd30e**，只在源有Storybook配置时运行当前main同一workbench构建命令，再走未改package完整性门；无builder main修改、原生门/源码门/断言改动。`E/net-product-v5-lab-workbench-control-v1.json`。结果先从已有handle收齐，不重派。
-- **Mac Lab V1 43827627887** 原frontend包不完整红：旧builder main9b671缺当前main新增Storybook构建步骤，native/checks未执行，非SSH故障。原acquirer错误/日志/请求在 `E/public-native-lab-net-product-v5`，source与V2逐字相同；只改独立control后重跑V2，未绕过完整性检查。
-- canonical worktree仍 `/Volumes/disk0/Khor/worktrees/current/khor-net` branch feat/net，当前产品/test提交23a68888；独立集成树 `khor-net-product-integration-v5` / experiment/net-product-integration-v5 仍固定9821d929供本轮Quality/Mac Lab。main93f6cb23未被本任务改动、LIVE23961/其他用户目录未动。准确Source收据优先于文档HEAD，STATE后续doc-only更新不冒充新源接受。
-- 本轮整合历史：J4b9ef2a6＋main93f6 merge76448e64，plan lineage e0d7 merge94534148，canonical以ff到9821；GUI实现与main逐字相同，仅attachment测试日志保留同channel与版本记录。`E/net-product-integration-v5-resolution-v1.json`。无main合并/安装/发行/生产Relay部署授权。
-- 原N3统计门已正确核：H360目录bulk pooled p95 **448002μs**、p99 **836037μs**，X **353557/751934μs**，各2160业务、3完整192MiB、6post-health全成功，均过原592518.1μs此单条参考；逐场614ms仍留但不是独立cohort门。`E/current-high-pooled-verification-v1.json`。X优先级无必要性证明已从产品删除。正常同源Release最终配对、1/3/5成本、全部负载、NAT64/冷peer/移动/手机和custom退出审查继续，不缩成当前几个run。
+E=`/Volumes/disk0/Khor/evidence/net`。准确产品源 **5f51e3409e0e642c26b5b41c37cc069213c1d6a5** / tree **395f91ae9e82c3b3819d7fe96be8c3882f6313bd** / snapshot **b846df2162863114a2493a3fe868a2587faf4574**，描述 `E/net-product-v5-fixture-source-v2.json`。本页随后文档提交不冒充该源新接受。
 
-## 当前准确产品候选 H
+- **当前Turing唯一在途** `turing-20261116T092109Z-edcabaac`，PID793500，revision `net_product_v5_release_recovery_v1`，control **01c1af9137bf9e3a5b9a51e5edde478d8025ba39**。复用下列正式Release，固定原5个idle恢复合同；编译0、无diagnostics、原20秒及所有数字/CPU/owner门不变。阶段协议 `E/net-product-v5-release-screen-plan-v1.json`，先查已有execution，不重派。后续control→原preflight→最终同源共存对照与1/3/5成本；与Turing编译计时串行。
+- **普通Release producer已闭** `090926Z-6289823d` 原0/**577.254s**，源5f51，control70e3a994。原opt3/thin-LTO/codegen1/strip、iroh1.4.1/Noq1.4.0、fresh CLI全核，无运行测试、46不变synthetic验证源仅按hash复用。CLI SHA **64af80ac8f5e1d7d1352d7beb7e6137e466836de4e0dd0a3ce11be5fcebb50cc**；netlab **32e35ac5ddd4238c5f914a81b7a0425fc5d39f333ec56111ebec8a23e70e8d6a**。`E/RUN/net-product-v5-release-compile-verification-v2.json`。V1 prepared未启动，已明确superseded，不可启动。
+- **完整global separate回归已闭** `084734Z-e8016ef4` 原0/**546.320s**，准确源5f51，原12组 **323pass/0fail/原ignored1**，所有测试名/源/控制/owner及629个first-party Rust格式输入已核；511原排除不变，0格式差异。`E/RUN/product-v5-separate-node-verification-v1.json`。global env不等于各显式negative override均ON，不能声称这种覆盖。
+- fixture修复只在正向窗口场景接受额外文件连接，专属协商/负控仍独占Incoming。23a第一次fix原4窗口红转绿却让4专属负控红（362fed6f原101/295pass/4fail/7组未执行）；5f只改mock构造/stop setup，全部断言/数字期限/生产代码不改，后续323全绿。原两轮红保持。计划 `E/net-product-v5-window-fixture-plan-v2.json`，旧08:40状态归档 [HISTORY](HISTORY-20261116-v5-fixture-through-0840.md)。
+- **I5 shared标准已接受** `075454Z-f11ccfd0` 原0/512.203s，源9821d929，原12组323/0/ignored1。I5与5f生产逐字相同，后者只测试helper/格式分类/文档变化；不把旧tree当新tree全Quality绿。
+- **Quality43827443762已结束12/13**，准确源I5 **9821d9298dbab876434041bc436a7a97c1d4c1d7** / tree4b7013df / snapshotb93d6b7a。唯一scripts job133164520860红是3个独立transport fixture Rust输入未分类；23a加入完整formatter（非排除），Turing原gate已绿。另12组全部绿，包括node-native/signed SSH。原红保留；最终源码冻结后需新同源Quality，尚未派。
+- **Mac Lab V2 GH43829392360已4/4成功**，源仍I59821/snapshotb93。`E/public-native-lab-net-product-v5-v2` 已获取native/前端及checks ZIP **48,333,004B**；**104浏览器case无错误**，还在独立核对报告源hash/manifest。不是手机/能耗接受。独立控制 **44b954b74fee82ad448909b6e19a9296e69cd30e** (`net-product-v5-lab-workbench-v1`) 只加入当前main同一Storybook构建命令，原门/断言不改。V1 frontend缺workbench原红及native/checks未执行保留；不动builder main。
+- canonical `feat/net` 已ff集成I5＋5f；I5集成固定main93f6cb23与初始Direct近似质量次选、H/S改善；main现由其他任务继续推进，不自动追每个GUI提交。本任务不改main、LIVE23961/其他用户目录。I5独立树仍9821，供准确源Quality/Lab查验。
+- 初始无current时，near-quality复用原5ms gain floor次选Direct；明显更快Relay/Carried仍赢，健康current原保持逻辑不变。Mac准确RED1/72与GREEN73/0/ignored1、同74测试名已核。`E/initial-direct-green-v2-mac-verification-v1.json`。
+- N3原统计门口径是每profile/phase/op固定3次**pooled360**，并非每次120单独过。H pooled directory p95 **448002μs**/p99 **836037μs**；X **353557/751934μs**，均过原592518.1单条参考，各2160业务/3完整file/6post-health全成功。逐场613/614ms保留。无同期配对不作整体N3接受；X priority无必要性未采用。`E/current-high-pooled-verification-v1.json`。
+- **仍未整体完成**：N1/N2完整合同、N3全部负载/同期main对照/1-3-5成本及separate默认采用决策、N4 NAT64/冷hint/双方和middle移动/Relay故障域、N5剩余46custom逐项审查/设计运维/最终同源Quality/手机能耗。不是仅差手机，不能把旧阶段绿代替完整目标。
 
-Worktree `/Volumes/disk0/Khor/worktrees/current/khor-net-selection-view-v1`，branch `experiment/net-selection-view-v1`，HEAD **9acc6097a7bc8fe01edd3f1fe6ef2d998d3d50c3** / tree **06b0c2cda62da87c2c1bb9ec214d0b999cdaeff5** / snapshot **9c54ad636ccbf1b42f1895f8c98a1efa8dd8458f**，clean。源描述 `E/selection-view-events-source-v1.json`。canonical feat/net当前仍保存计划与历史实现，尚未最终集成最新依赖/完整H；main现93f6cb23由其他任务推进，本任务未改，builder checkout5d3691未动，LIVE23961未动。
+## 历史组件候选 H（已集成I5；本节旧在途描述不作调度依据）
+
+Worktree `/Volumes/disk0/Khor/worktrees/current/khor-net-selection-view-v1`，branch `experiment/net-selection-view-v1`，HEAD **9acc6097a7bc8fe01edd3f1fe6ef2d998d3d50c3** / tree **06b0c2cda62da87c2c1bb9ec214d0b999cdaeff5** / snapshot **9c54ad636ccbf1b42f1895f8c98a1efa8dd8458f**，clean。源描述 `E/selection-view-events-source-v1.json`。此处为H阶段历史，当时canonical尚未集成；现已集成I5，main现93f6cb23由其他任务推进，本任务未改，builder checkout5d3691未动，LIVE23961未动。
 
 H在前代S之上只改Node状态传播：复用已有roads::follow的iroh Selected/start/Lagged当前快照，以Weak<Wires>、同peer/stable conn ID、仍存活/当前实际选路检查，及时发布连接词；Opened不算选择、Unknown不造事实、相同词不刷新年龄，旧/闭wire不得污染新wire或另一协议。原tick与两样本fallback/旧合同保留，无新增timer/probe/常驻轮询。见[SELECTION-VIEW](SELECTION-VIEW.md)。
 
@@ -45,7 +48,7 @@ S=`khor-net-stable-gain-v1` / `experiment/net-stable-gain-v1`，最终7d9f1c07/t
 
 ## 上游与定制审计
 
-2026-11-16官方release/crates.io再次核验稳定 **iroh1.4.1、Noq/noq-proto1.4.0**；当前隔离候选已跟上，canonical未最终集成。Noq GitHub latest alias旧1.1.0不作降级依据。`E/upstream-stable-check-20261116-v1.json`保存checksum/metadata。
+2026-11-16官方release/crates.io再次核验稳定 **iroh1.4.1、Noq/noq-proto1.4.0**；当前隔离候选已跟上，canonical已集成I5。Noq GitHub latest alias旧1.1.0不作降级依据。`E/upstream-stable-check-20261116-v1.json`保存checksum/metadata。
 
 原版A/当前C十运输合同及关闭Khor policy但保留vendor的B五合同均已闭，见[DIRECT-FALLBACK](DIRECT-FALLBACK.md)、[UPSTREAM-BOUNDARY](UPSTREAM-BOUNDARY.md)、[UPSTREAM-CONSUMERS](UPSTREAM-CONSUMERS.md)。A静默UDP原15292/15296ms、2s失败但最终同连接Relay通；C约602/605ms；B约603/605ms。B不是原版且硬tier违背U1，不能推广。上游已承担Direct/Relay/多路径，Khor已用公开path_selector/custom transport；不能称全部自造或全部vendor必要。
 
