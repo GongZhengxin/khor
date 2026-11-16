@@ -97,6 +97,13 @@ def main():
         edition = tomllib.loads(inputs[manifest].decode())["package"]["edition"]
         editions[member] = str(workspace["package"]["edition"] if isinstance(edition, dict) else edition)
     standalone = {"apps/gui/lab/terminal-color-answers.rs", "apps/gui/scripts/editor-history-probe/lib.rs", "apps/gui/scripts/native-menu-probe/lib.rs", "scripts/fixtures/native-io.rs", "scripts/fixtures/native-paste.rs"}
+    # The transport comparison uses manifest templates, rendered only in its
+    # isolated runtime copy. Its Rust sources still receive the full check.
+    standalone.update({
+        "tests/net-connection-boundary-v1/lib.rs",
+        "tests/net-connection-boundary-v1/silent.rs",
+        "tests/net-connection-boundary-v1/upstream_util.rs",
+    })
     thirdparty_root = "apps/gui/scripts/fixtures/native-events/tauri-2.11.5/"
     thirdparty = {
         thirdparty_root + "event-mod.rs": "dfcb7cf11d7674903f71196e64ae0fa95286757ac816bfbc3139ebdedcb25dea",

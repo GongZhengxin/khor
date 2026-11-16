@@ -114,6 +114,7 @@ impl Fixture {
         let bytes = Arc::new((0..size).map(|i| (i % 251) as u8).collect::<Vec<_>>());
         let serving = Aborts(Some(tokio::spawn({
             let peer = server.id().to_string();
+            let endpoint = server.clone();
             let (conn, seen, changed, release, bytes) = (
                 remote.clone(),
                 seen.clone(),
@@ -122,88 +123,121 @@ impl Fixture {
                 bytes.clone(),
             );
             async move {
-                // JoinSet owns every responder, including a held stream; an
-                // assertion or outer deadline cannot detach any of them.
-                let mut children = tokio::task::JoinSet::new();
+                let answer = move |conn: iroh::endpoint::Connection| {
+                    let (peer, seen, changed, release, bytes) = (
+                        peer.clone(),
+                        seen.clone(),
+                        changed.clone(),
+                        release.clone(),
+                        bytes.clone(),
+                    );
+                    async move {
+                        // JoinSet owns every responder, including a held stream; an
+                        // assertion or outer deadline cannot detach any of them.
+                        let mut children = tokio::task::JoinSet::new();
+                        loop {
+                            tokio::select! {
+                                stream = conn.accept_bi() => {
+                                    let Ok((mut send, mut recv)) = stream else { break };
+                                    let (seen, changed, release, bytes) =
+                                        (seen.clone(), changed.clone(), release.clone(), bytes.clone());
+                                    let peer = peer.clone();
+                                    children.spawn(async move {
+                                        let request = recv.read_to_end(MAX_FRAME).await.unwrap();
+                                        let question = proto::question(&request).unwrap();
+                                        let offer_request = matches!(&question, Request::Fetch { .. });
+                                        match question {
+                                            Request::FetchPath { path, offset } | Request::Fetch { digest: path, offset } => {
+                                                assert_eq!(offer_request, offered);
+                                                if offered {
+                                                    assert_eq!(path, blake3::hash(&bytes).to_hex().to_string());
+                                                } else {
+                                                    assert_eq!(path, PATH);
+                                                }
+                                                let index = offset / proto::SLICE;
+                                                assert_eq!(offset % proto::SLICE, 0);
+                                                assert!(seen.lock().unwrap().issued.insert(index), "duplicate RPC");
+                                                eprintln!("[pull-window-wire] {}", serde_json::json!({
+                                                    "event":"issued", "peer":peer, "kind":format!("{kind:?}"), "index":index,
+                                                }));
+                                                changed.notify_one();
+                                                let hold = match kind {
+                                                    Held::First => index == 0,
+                                                    Held::Head => index == 1,
+                                                    Held::Tail => index == PULL_AHEAD,
+                                                    Held::All => index > 0,
+                                                };
+                                                if hold {
+                                                    tokio::select! {
+                                                        _ = release.notified() => {},
+                                                        stopped = send.stopped() => {
+                                                            assert!(matches!(stopped, Ok(Some(_))), "only stream STOP_SENDING counts");
+                                                            seen.lock().unwrap().stopped.insert(index);
+                                                            changed.notify_one();
+                                                            return;
+                                                        }
+                                                    }
+                                                }
+                                                let start = offset as usize;
+                                                let end = (start + proto::SLICE as usize).min(bytes.len());
+                                                let reply = if offered {
+                                                    Response::Slice {
+                                                        total: bytes.len() as u64,
+                                                        bytes: bytes[start..end].to_vec().into(),
+                                                    }
+                                                } else {
+                                                    Response::PathSlice {
+                                                        total: bytes.len() as u64,
+                                                        at_ms: 123,
+                                                        bytes: bytes[start..end].to_vec().into(),
+                                                    }
+                                                };
+                                                send.write_all(&proto::encode(&reply).unwrap()).await.unwrap();
+                                                send.finish().unwrap();
+                                                // ACKed data is labelled delivered, never called decoded.
+                                                assert!(matches!(send.stopped().await, Ok(None)));
+                                                seen.lock().unwrap().delivered.insert(index);
+                                                changed.notify_one();
+                                            }
+                                            Request::Sessions => {
+                                                send.write_all(&proto::encode(&Response::SessionRows { rows: vec![] }).unwrap())
+                                                    .await.unwrap();
+                                                send.finish().unwrap();
+                                            }
+                                            other => panic!("unexpected request: {other:?}"),
+                                        }
+                                    });
+                                }
+                                child = children.join_next(), if !children.is_empty() => {
+                                    child.unwrap().unwrap();
+                                }
+                            }
+                        }
+                        children.shutdown().await;
+                    }
+                };
+                // The same authenticated responder serves cached Main and
+                // optional file connections. Every handler stays owned here.
+                let mut connections = tokio::task::JoinSet::new();
+                connections.spawn(answer(conn));
                 loop {
                     tokio::select! {
-                        stream = conn.accept_bi() => {
-                            let Ok((mut send, mut recv)) = stream else { break };
-                            let (seen, changed, release, bytes) =
-                                (seen.clone(), changed.clone(), release.clone(), bytes.clone());
-                            let peer = peer.clone();
-                            children.spawn(async move {
-                                let request = recv.read_to_end(MAX_FRAME).await.unwrap();
-                                let question = proto::question(&request).unwrap();
-                                let offer_request = matches!(&question, Request::Fetch { .. });
-                                match question {
-                                    Request::FetchPath { path, offset } | Request::Fetch { digest: path, offset } => {
-                                        assert_eq!(offer_request, offered);
-                                        if offered {
-                                            assert_eq!(path, blake3::hash(&bytes).to_hex().to_string());
-                                        } else {
-                                            assert_eq!(path, PATH);
-                                        }
-                                        let index = offset / proto::SLICE;
-                                        assert_eq!(offset % proto::SLICE, 0);
-                                        assert!(seen.lock().unwrap().issued.insert(index), "duplicate RPC");
-                                        eprintln!("[pull-window-wire] {}", serde_json::json!({
-                                            "event":"issued", "peer":peer, "kind":format!("{kind:?}"), "index":index,
-                                        }));
-                                        changed.notify_one();
-                                        let hold = match kind {
-                                            Held::First => index == 0,
-                                            Held::Head => index == 1,
-                                            Held::Tail => index == PULL_AHEAD,
-                                            Held::All => index > 0,
-                                        };
-                                        if hold {
-                                            tokio::select! {
-                                                _ = release.notified() => {},
-                                                stopped = send.stopped() => {
-                                                    assert!(matches!(stopped, Ok(Some(_))), "only stream STOP_SENDING counts");
-                                                    seen.lock().unwrap().stopped.insert(index);
-                                                    changed.notify_one();
-                                                    return;
-                                                }
-                                            }
-                                        }
-                                        let start = offset as usize;
-                                        let end = (start + proto::SLICE as usize).min(bytes.len());
-                                        let reply = if offered {
-                                            Response::Slice {
-                                                total: bytes.len() as u64,
-                                                bytes: bytes[start..end].to_vec().into(),
-                                            }
-                                        } else {
-                                            Response::PathSlice {
-                                                total: bytes.len() as u64,
-                                                at_ms: 123,
-                                                bytes: bytes[start..end].to_vec().into(),
-                                            }
-                                        };
-                                        send.write_all(&proto::encode(&reply).unwrap()).await.unwrap();
-                                        send.finish().unwrap();
-                                        // ACKed data is labelled delivered, never called decoded.
-                                        assert!(matches!(send.stopped().await, Ok(None)));
-                                        seen.lock().unwrap().delivered.insert(index);
-                                        changed.notify_one();
-                                    }
-                                    Request::Sessions => {
-                                        send.write_all(&proto::encode(&Response::SessionRows { rows: vec![] }).unwrap())
-                                            .await.unwrap();
-                                        send.finish().unwrap();
-                                    }
-                                    other => panic!("unexpected request: {other:?}"),
+                        incoming = endpoint.accept() => {
+                            let Some(incoming) = incoming else { break };
+                            let Ok(accepting) = incoming.accept() else { continue };
+                            let serve = answer.clone();
+                            connections.spawn(async move {
+                                if let Ok(conn) = accepting.await {
+                                    serve(conn).await;
                                 }
                             });
                         }
-                        child = children.join_next(), if !children.is_empty() => {
+                        child = connections.join_next(), if !connections.is_empty() => {
                             child.unwrap().unwrap();
                         }
                     }
                 }
-                children.shutdown().await;
+                connections.shutdown().await;
             }
         })));
         Self {
