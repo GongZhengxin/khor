@@ -2,6 +2,25 @@
 
 2026-11-09。逐项对齐 PLAN；“已有代码”不等于已验证，“部分”不能支撑整阶段完成。最新运行状态见 STATE，源码/运行收据见证据目录。最终收口时逐行复核，不删除尚未完成的要求。
 
+## 2026-11-16 14:55 UTC 对账
+
+以下为最新增量证据，优先于下方历史快照中的“待跑/在途”文字；没有将未覆盖的要求改为通过。完整执行归并见[CLOSEOUT](CLOSEOUT.md)，准确源码与运行见[STATE](STATE.md)。
+
+| 对应要求 | 最新已核证证据 | 仍缺 |
+| --- | --- | --- |
+| N0.1 / N5.1 | iroh1.4.1/Noq1.4.0与60项custom审查已交付，10项专属消融反例保留；cold-hint生产caller删除已进入I8并过完整回归 | 数值/后台成本与所有必要退出条件不能由静态审查归绿；vendor清理API尚留 |
+| N1.1–N1.5 | 正常选路S要求决策后新鲜确认与持续明显收益，H直接传递selected事件；准确5f恢复5/5及路径正反控制已闭，S对应iroh完整208库与Noq467库源码树一致 | 最终生产源适用性、CPU/稀疏/长尾/多middle与成本对账 |
+| N2.4 | I8完整323已包括IPC跨进程剩余预算、leased response与真实QUIC取消、resume准入等原合同；b04完整358再次全部通过 | 其他尚未核的多阶段/迟到完成组合不能由单个测试推定完成 |
+| N2.5 | 原18 Wires＋新增spread/journal控制实际19绿/1红→b04同20全绿；b04随后25组358pass/0fail/原2ignored全过，首次5s/睡眠300s/上限300s不改 | 多设备真实恢复与成本；不把稳定hash错峰当任意规模网络的容量保证 |
+| N2.6 | d53的真实cross-family UDP门证明握手未完成时Mkdir不执行、完成后执行；Linux原13集成33全过，b04完整358含同门再次过；Mac同门1/1过，附件上传失败原件保留 | 全部token family副作用/持久化与必要包级重放范围继续保持；不是手机接受 |
+| N3.1–N3.3 | 系统DNS同ELF原SCCSSC六块12case、8640交互、12完整file和24post-health成功，原相对/绝对p95与文件率门通过。默认保留shared：separate低profile目录改善，但高profile终端p99更差，详COEXISTENCE-DECISION | 不是最终源同期main或SSH-hop-sync共存；旧所有RED保留，不声称未重现即定因 |
+| N3.4 | 原18场/54 resident interval成本已闭；worker ABBAAB原CPU门未过，明确拒绝生产cap；系统调用汇总包含observer，尚未归因 | 原生手机能耗/硬件唤醒、网络独立CPU归因与可接受预算 |
+| N4.3 / N4.5 / D1–D2 | RELAY-DESIGN明确单Endpoint原生Direct/Relay＋Custom、北京同机双URL不算容灾、独立故障域与登记/数据分离、only-mine及容量运维边界 | 两登记点/整域故障测试准备中；现场可达性、容量与具体供应商/新增节点数据未齐，不部署/采购 |
+| N4.4 | 原双方换址252读、IPv6-only15case/630读及固定NAT64 RED→系统DNS3次冷配对/6双向读GREEN已闭 | 动态DNS64/CLAT、冷新peer发布和物理候选换网/锁屏/能耗 |
+| N5.2–N5.4 | 准确I8 Quality43873334184首个实际run13/13、signed SSH151.86s与来源闭证；I8 native Mac Lab43874780032原104case闭证。最新b04 Linux25组358pass/0fail/原2ignored，source/control/所有测试名/owner清理已核 | 这些不是最终canonical准确源完整Quality/Mac/手机。用户现装TestFlight旧版；不绕过main ancestor rc发行门 |
+
+下表与后附保留原始逐项要求及历史失败，不能因本次对账删除。
+
 | ID | 要求 | 当前证据与缺口 | 状态 |
 | --- | --- | --- | --- |
 | N0.1 | 当前源码、调用链、补丁与覆盖核对 | 选路/注册/确认/看守已跟踪；完整协议与补丁覆盖还未核完 | 部分 |
