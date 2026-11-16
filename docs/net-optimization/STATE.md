@@ -1,15 +1,16 @@
 # feat/net 当前状态与接续入口
 
-更新于2026-11-16 16:46 UTC（本地2026-11-17）。用户先明确暂停等待main UI修复，随后“好了, main被更新了”恢复该集成与网络任务；问答期间没有继续构建/合并/发布。[GOAL](GOAL.md)、[PLAN](PLAN.md) N0–N5尚未整体完成。root串行，不派子智能体。本机source-only，重型工作限Turing、macserver与授权khor-build。goal服务仍显示paused是此前暂停状态，不能覆盖用户最新恢复指令；不得另建替代小目标。
+更新于2026-11-17 01:05 UTC（本地2026-11-17）。用户先明确暂停等待main UI修复，随后“好了, main被更新了”恢复该集成与网络任务；问答期间没有继续构建/合并/发布。[GOAL](GOAL.md)、[PLAN](PLAN.md) N0–N5尚未整体完成。root串行，不派子智能体。本机source-only，重型工作限Turing、macserver与授权khor-build。goal服务仍显示paused是此前暂停状态，不能覆盖用户最新恢复指令；不得另建替代小目标。
 
 **本次接续优先**：远端main已同步到 **84e75c57cf87d0dfaffda14149d0d726f15dfe9e**。比df47增加12文件：原生旧macOS透明导航材质、对应UI检查/探针与指南，以及trust::admit区分Pending和Revoked（含新增测试与中英文文案）。这12文件与当前feat/net改动无交叉，必须保留；主仓untracked lab-preview/output不动。当前只集成到开发分支，不直接发布。
 
-**15:50 UTC最新交付要求优先**：用户“后面你会在main去ship对吗”，已答复最终从main ship：feat/net候选验收→保留main同期改动的集成→验证合并后的准确版本→按rc/签名门发布TestFlight。当前不立即合并/发版；本页以下旧“无main/发行授权”文字记录的是此前阶段，不能把它当作永久阻断或要求用户重复确认最终main ship。采购/生产Relay部署和直接替换现装App仍未包含。main目前df47c140（rc17交付记录），其其他任务改动与untracked lab-preview/output不得覆盖。
+**15:50 UTC最新交付要求优先**：用户“后面你会在main去ship对吗”，已答复最终从main ship：feat/net候选验收→保留main同期改动的集成→验证合并后的准确版本→按rc/签名门发布TestFlight。当前不立即合并/发版；本页以下旧“无main/发行授权”文字记录的是此前阶段，不能把它当作永久阻断或要求用户重复确认最终main ship。采购/生产Relay部署和直接替换现装App仍未包含。main目前84e75c57（已含UI/准入修复），其其他任务改动与untracked lab-preview/output不得覆盖。
 
 ## 当前运行与真实结果
 
-当前没有Turing在途任务；下列两个旧run都已结束且独立核证，不能按旧在途文字重派。下一步先保存本页与GOAL既有未提交文字、将origin/main合入feat/net，再单独定位Mac resume失败。#51独立候选暂不据部分Mac结果称整体验收。
+当前唯一在途是Mac Busy定点诊断 **43915075545**（request26461d13c2394cc39d33858e3167e6ec，复用原control49a52，源6187d90d/treeb4a0f32d/snapshot19ef0267）；最多6次、首红即停，保留原30/60秒与立即改名断言，只加Busy来源/步骤状态日志。`E/resume-busy-observer-{source,plan,mac-progress}-v1.json`；查原run，不重复提交。此前诊断已结束并核证。feat/net已在 **20b354ad012e6c193c5aa2d436e3d6ae3e67fa2c** 合入main84e75；12个main变更文件逐字保留，未改main或发布。下一步定位Mac恢复同步的Busy/未完成路径，再收敛准确候选。
 
+- **恢复诊断闭证**：仅test observer源b9516300（生产逐字3d），Linux `165705Z-3cd67887`原0/152.532秒，固定10次全过；Mac **43913474400** attempt1原101，固定最多6次，第1过、第2红即停，4未执行、0替换。Mac直接观测：beta已是`beta-while-alpha-was-away`，alpha仍`alpha/beta`；本轮353ms明确devices pending。原耳朵30s/同步60s/立即改名断言不变；还未证明具体Busy源。两目录`resume-partial-observer-verification-v1.json`，Mac ZIP14247534585/SHA1bb6d6f2/原11控制/原guard均核。Linux十绿不抹掉Mac失败。
 - **准确3d完整Linux25组358已闭GREEN** `153547Z-876c1874`原0/944.251秒、358pass/0fail/原2ignored helper，`E/RUN/relay-home-refresh-full-node-verification-v1.json`；source/control/所有原测试名/原门/格式/owner均核。保持沿用，不因session/暂停重跑。
 - **Mac43898654929已闭真实RED** 原attempt1/exit101，**547pass/1fail/原2ignored**。完整iroh211与原12网络321全部通过；原13 integration执行至resume（先前5目标全绿，resume5绿1红）。唯一失败`a_deafened_serve_hears_its_peer_again_after_resume_without_being_reopened`：新耳朵约37.9ms、同步轮159.9ms已返回，但回复明确为devices仍在传输的部分同步，立即检查未看到对端改名。后7 integration＋5 Relay目标共12个未执行；不扩大等待或删断言。`E/mac-43898654929/relay-home-refresh-mac-red-verification-v1.json`；artifact14241042904/95,708B/SHA99d29695、CRC、准确source/all11 control blobs/原guard/所有native名字与cfg排除均核。原进度pending已关闭，common ledger已追加失败，不重复整批。
 
