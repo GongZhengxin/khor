@@ -4,7 +4,9 @@
 
 ## 当前收敛的结构与决策
 
-候选 `integrate/net-product-v2 @ 3093f866` 使用 iroh1.4.1 / Noq1.4.0，runtime 与已测 R9081b94d 相同，尚未晋升到 canonical feat/net。版本升级不表示已经移除本地补丁。GUI 与 workflow 仍冻结在公开 main c3b098bd，本轮没有界面、安装或发布动作。
+当前测试候选为 I8 `integrate/net-product-v8 @ b899669a`，iroh1.4.1 / Noq1.4.0；canonical feat/net 的已测试生产源仍为5f51e340，后续提交以文档为主。I8加入系统DNS默认解析、删除冷失败后共享hint清理的唯一生产调用，以及两个测试fixture修正；准确源验收见 STATE，不把组件证据当全树接受。GUI 与 workflow 冻结在本任务已有main93f6cb23基线，不追其他任务后续界面变动。尚未合并main、替换安装或发布。
+
+连接原则见 CONNECTION-POLICY；文件取消的两种所有权合同见 [CANCEL-LAYOUT](CANCEL-LAYOUT.md)，中继/登记/容量的故障域与运行设计见 [RELAY-DESIGN](RELAY-DESIGN.md)。这些决策页不代替尚未执行的验收。
 
 ```mermaid
 flowchart TD
