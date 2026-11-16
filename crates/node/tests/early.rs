@@ -60,24 +60,37 @@ async fn wait_for_endpoint_file(root: &Path) {
 /// reaches `to`; what comes back reaches the client only while `back` is
 /// set. Cleared, the client never sees the server's handshake and never
 /// finishes it — exactly as a replay of captured early data never does.
-/// Its address.
+/// Its address. The proxy crosses address families: the server has only IPv4
+/// and the client only IPv6, so exchanged direct candidates cannot bypass it.
 async fn road(
     to: std::net::SocketAddr,
     back: std::sync::Arc<std::sync::atomic::AtomicBool>,
 ) -> std::net::SocketAddr {
-    let sock = tokio::net::UdpSocket::bind("127.0.0.1:0").await.unwrap();
-    let at = sock.local_addr().unwrap();
+    assert!(to.is_ipv4());
+    let front = tokio::net::UdpSocket::bind("[::1]:0").await.unwrap();
+    let back_socket = tokio::net::UdpSocket::bind("127.0.0.1:0").await.unwrap();
+    let at = front.local_addr().unwrap();
     tokio::spawn(async move {
-        let mut buf = vec![0u8; 65536];
+        let mut outgoing = vec![0u8; 65536];
+        let mut incoming = vec![0u8; 65536];
         let mut client: Option<std::net::SocketAddr> = None;
-        while let Ok((n, from)) = sock.recv_from(&mut buf).await {
-            if client.is_none() || client == Some(from) {
-                client = Some(from);
-                let _ = sock.send_to(&buf[..n], to).await;
-            } else if back.load(std::sync::atomic::Ordering::SeqCst)
-                && let Some(c) = client
-            {
-                let _ = sock.send_to(&buf[..n], c).await;
+        loop {
+            tokio::select! {
+                packet = front.recv_from(&mut outgoing) => {
+                    let Ok((n, from)) = packet else { break };
+                    if client.is_none() || client == Some(from) {
+                        client = Some(from);
+                        let _ = back_socket.send_to(&outgoing[..n], to).await;
+                    }
+                }
+                packet = back_socket.recv_from(&mut incoming) => {
+                    let Ok((n, from)) = packet else { break };
+                    if from == to && back.load(std::sync::atomic::Ordering::SeqCst)
+                        && let Some(c) = client
+                    {
+                        let _ = front.send_to(&incoming[..n], c).await;
+                    }
+                }
             }
         }
     });
@@ -90,6 +103,9 @@ async fn bare(key: iroh::SecretKey) -> iroh::Endpoint {
     iroh::Endpoint::builder(iroh::endpoint::presets::Minimal)
         .secret_key(key)
         .relay_mode(iroh::RelayMode::Disabled)
+        .clear_ip_transports()
+        .bind_addr("[::1]:0")
+        .unwrap()
         .bind()
         .await
         .unwrap()
@@ -138,6 +154,9 @@ async fn early(
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn an_early_write_waits_for_a_handshake_that_a_replay_never_completes() {
+    // This process contains just this test. Keep the real server IPv4-only;
+    // bare clients below bind IPv6-only and can reach it only through road().
+    unsafe { std::env::set_var(endpoint::BIND_IP_ENV, "127.0.0.1") };
     let ra = root("a");
     let rb = root("b");
     let sa = Node::open_as(ra.to_path_buf(), "alpha").unwrap();
