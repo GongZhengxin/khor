@@ -158,6 +158,232 @@ async fn peers_find_each_other_through_the_registry_their_entries_name() {
     let _ = std::fs::remove_dir_all(&dir);
 }
 
+struct FaultDomain {
+    relay: Option<Server>,
+    registry: Option<iroh_dns_server::Server>,
+    entry: Relay,
+}
+
+impl FaultDomain {
+    async fn new(dir: &std::path::Path) -> Self {
+        std::fs::create_dir(dir).unwrap();
+        let (registry, pkarr) = registry(dir).await;
+        let mut config = ServerConfig::default();
+        config.relay = Some(RelayConfig::new("127.0.0.1:0".parse().unwrap()));
+        let relay = Server::spawn(config).await.unwrap();
+        let entry = Relay {
+            url: format!("http://{}/", relay.http_addr().unwrap()),
+            pkarr: Some(pkarr),
+            ..Relay::default()
+        };
+        Self {
+            relay: Some(relay),
+            registry: Some(registry),
+            entry,
+        }
+    }
+
+    async fn stop_registry(&mut self) {
+        self.registry.take().unwrap().shutdown().await.unwrap();
+    }
+
+    async fn shutdown(&mut self) {
+        if let Some(relay) = self.relay.take() {
+            relay.shutdown().await.unwrap();
+        }
+        if let Some(registry) = self.registry.take() {
+            registry.shutdown().await.unwrap();
+        }
+    }
+}
+
+fn fault_environment() {
+    // Each test runs serially, before constructing its endpoints.
+    for key in [
+        "http_proxy",
+        "https_proxy",
+        "HTTP_PROXY",
+        "HTTPS_PROXY",
+        "ALL_PROXY",
+        "all_proxy",
+    ] {
+        unsafe { std::env::remove_var(key) };
+    }
+    unsafe {
+        std::env::set_var(endpoint::RELAY_ONLY_ENV, "1");
+        std::env::set_var(endpoint::NO_MDNS_ENV, "1");
+    }
+}
+
+fn fault_directory(tag: &str, round: u32) -> std::path::PathBuf {
+    let nonce = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_nanos();
+    let dir = std::env::temp_dir().join(format!(
+        "khor-pkarr-{tag}-{}-{round}-{nonce}",
+        std::process::id()
+    ));
+    std::fs::create_dir(&dir).unwrap();
+    dir
+}
+
+async fn fault_bind(entries: &[Relay]) -> iroh::Endpoint {
+    endpoint::bind_with(iroh::SecretKey::generate(), entries, false)
+        .await
+        .unwrap()
+}
+
+fn echoing(ep: &iroh::Endpoint) -> tokio::task::JoinHandle<()> {
+    let ep = ep.clone();
+    tokio::spawn(async move {
+        let mut replies = tokio::task::JoinSet::new();
+        while let Some(incoming) = ep.accept().await {
+            let Ok(conn) = incoming.await else {
+                continue;
+            };
+            replies.spawn(async move {
+                while let Ok((mut send, mut recv)) = conn.accept_bi().await {
+                    let Ok(body) = recv.read_to_end(16).await else {
+                        break;
+                    };
+                    if send.write_all(&body).await.is_err() || send.finish().is_err() {
+                        break;
+                    }
+                }
+            });
+        }
+        replies.shutdown().await;
+    })
+}
+
+async fn payload(conn: &iroh::endpoint::Connection) {
+    tokio::time::timeout(Duration::from_secs(2), async {
+        let (mut send, mut recv) = conn.open_bi().await.unwrap();
+        send.write_all(b"registry-fault!!").await.unwrap();
+        send.finish().unwrap();
+        assert_eq!(recv.read_to_end(16).await.unwrap(), b"registry-fault!!");
+    })
+    .await
+    .expect("an actual payload must complete within the original foreground2s");
+}
+
+async fn cold_connection(
+    from: &iroh::Endpoint,
+    id: iroh::EndpointId,
+) -> iroh::endpoint::Connection {
+    tokio::time::timeout(
+        Duration::from_secs(15),
+        from.connect(iroh::EndpointAddr::new(id), ALPN),
+    )
+    .await
+    .expect("id-only cold discovery must keep the existing15s cap")
+    .expect("an independent allowed registry must discover the peer")
+}
+
+fn current_home(ep: &iroh::Endpoint) -> Option<String> {
+    ep.addr().addrs.iter().find_map(|addr| match addr {
+        iroh::TransportAddr::Relay(url) => Some(url.to_string()),
+        _ => None,
+    })
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn cold_peers_use_the_other_registry_and_warm_connections_need_neither() {
+    fault_environment();
+    for round in 1..=3 {
+        let dir = fault_directory("cold", round);
+        let mut domains = [
+            FaultDomain::new(&dir.join("a")).await,
+            FaultDomain::new(&dir.join("b")).await,
+        ];
+        let entries = domains.each_ref().map(|domain| domain.entry.clone());
+        assert_eq!(endpoint::registries(&entries).len(), 2);
+        domains[0].stop_registry().await;
+        let alpha = fault_bind(&entries).await;
+        let replies = echoing(&alpha);
+        let beta = fault_bind(&entries).await;
+        let started = Instant::now();
+        let conn = cold_connection(&beta, alpha.id()).await;
+        payload(&conn).await;
+        let cold_us = started.elapsed().as_micros();
+
+        domains[1].stop_registry().await;
+        payload(&conn).await;
+        let blind = fault_bind(&entries).await;
+        let absent = by_id_alone(&blind, alpha.id(), Duration::from_secs(8)).await;
+        assert!(
+            absent.is_err(),
+            "a fresh peer has no remaining discovery source"
+        );
+        payload(&conn).await;
+        eprintln!(
+            "[registry-fault] cold round={round} cold_content_us={cold_us} warm_payloads=3 no_registry_negative=true"
+        );
+        for ep in [blind, beta, alpha] {
+            ep.close().await;
+        }
+        replies.await.unwrap();
+        for domain in &mut domains {
+            domain.shutdown().await;
+        }
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn a_whole_relay_and_registry_domain_can_fail_without_restarting_the_peer() {
+    fault_environment();
+    for round in 1..=3 {
+        let dir = fault_directory("whole", round);
+        let mut domains = [
+            FaultDomain::new(&dir.join("a")).await,
+            FaultDomain::new(&dir.join("b")).await,
+        ];
+        let entries = domains.each_ref().map(|domain| domain.entry.clone());
+        let alpha = fault_bind(&entries).await;
+        let replies = echoing(&alpha);
+        let beta = fault_bind(&entries).await;
+        let conn = cold_connection(&beta, alpha.id()).await;
+        payload(&conn).await;
+        let old_home = current_home(&alpha).expect("the working peer publishes its Relay");
+        let failed = entries
+            .iter()
+            .position(|entry| entry.url == old_home)
+            .unwrap();
+        let live_home = entries[1 - failed].url.clone();
+        let started = Instant::now();
+        let (fresh, content_us) = tokio::time::timeout(Duration::from_secs(30), async {
+            domains[failed].shutdown().await;
+            tokio::time::timeout(Duration::from_secs(20), async {
+                while current_home(&alpha).as_deref() != Some(live_home.as_str()) {
+                    tokio::time::sleep(Duration::from_millis(20)).await;
+                }
+            })
+            .await
+            .expect("the original endpoint must publish the independent Relay");
+            let fresh = fault_bind(&entries).await;
+            let replacement = cold_connection(&fresh, alpha.id()).await;
+            payload(&replacement).await;
+            (fresh, started.elapsed().as_micros())
+        })
+        .await
+        .expect("whole-domain failure to id-only content must stay within30s");
+        assert_eq!(current_home(&alpha).as_deref(), Some(live_home.as_str()));
+        eprintln!(
+            "[registry-fault] whole round={round} recovery_content_us={content_us} changed_home=true server_restarted=false"
+        );
+        for ep in [fresh, beta, alpha] {
+            ep.close().await;
+        }
+        replies.await.unwrap();
+        for domain in &mut domains {
+            domain.shutdown().await;
+        }
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+}
+
 /// **The live registry** (not a gate; `KHOR_PKARR_LIVE=<registry url>`):
 /// two throwaway endpoints, relay only on the Khor tier's Beijing relay,
 /// publish to the named registry and meet by id alone. Nothing of a real
