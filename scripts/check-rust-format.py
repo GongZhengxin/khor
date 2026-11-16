@@ -103,6 +103,8 @@ def main():
         "tests/net-connection-boundary-v1/lib.rs",
         "tests/net-connection-boundary-v1/silent.rs",
         "tests/net-connection-boundary-v1/upstream_util.rs",
+        "tests/net-idle-cost-v1/lib.rs",
+        "tests/net-nat64-coverage-v1/lib.rs",
     })
     thirdparty_root = "apps/gui/scripts/fixtures/native-events/tauri-2.11.5/"
     thirdparty = {

@@ -1,18 +1,23 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-16T09:22:20.348745+00:00。用户最新“做完吧”已明确继续完整目标，goal active；[GOAL](GOAL.md)、[PLAN](PLAN.md) N0–N5、[REQUIREMENTS](REQUIREMENTS.md)尚未整体完成。root串行、不派子智能体。本机source-only：不跑Cargo/Rustfmt/Node/Bun/Xcode/产品；重型工作只在Turing/macserver/授权khor-build。用户已授权实现与验证，未授权main合并、现装App替换、发行/TestFlight或生产Relay采购部署。
+更新于 2026-11-16T09:56:53.510752+00:00。用户最新“做完吧”已明确继续完整目标，goal active；[GOAL](GOAL.md)、[PLAN](PLAN.md) N0–N5、[REQUIREMENTS](REQUIREMENTS.md)尚未整体完成。root串行、不派子智能体。本机source-only：不跑Cargo/Rustfmt/Node/Bun/Xcode/产品；重型工作只在Turing/macserver/授权khor-build。用户已授权实现与验证，未授权main合并、现装App替换、发行/TestFlight或生产Relay采购部署。
 
 ## 当前运行与下一步
 
 E=`/Volumes/disk0/Khor/evidence/net`。准确产品源 **5f51e3409e0e642c26b5b41c37cc069213c1d6a5** / tree **395f91ae9e82c3b3819d7fe96be8c3882f6313bd** / snapshot **b846df2162863114a2493a3fe868a2587faf4574**，描述 `E/net-product-v5-fixture-source-v2.json`。本页随后文档提交不冒充该源新接受。
 
-- **当前Turing唯一在途** `turing-20261116T092109Z-edcabaac`，PID793500，revision `net_product_v5_release_recovery_v1`，control **01c1af9137bf9e3a5b9a51e5edde478d8025ba39**。复用下列正式Release，固定原5个idle恢复合同；编译0、无diagnostics、原20秒及所有数字/CPU/owner门不变。阶段协议 `E/net-product-v5-release-screen-plan-v1.json`，先查已有execution，不重派。后续control→原preflight→最终同源共存对照与1/3/5成本；与Turing编译计时串行。
+- **当前Turing唯一在途** `turing-20261116T095503Z-3cb48ff8`，PID852829，revision `idle_cost_matrix_v1`，control **795b3eafac014ec2ffea7f4f2c76b237d81b3d85**。准确产品源仍5f51，普通Release CLI不变；固定18场（1/3/5×Direct-capable/Relay-only×3），编译0，按 `E/idle-cost-runtime-plan-v1.json`，native/计数/owner失败停止、不替换。先查原execution/已执行case日志，不重派；结束collect→identity→`E/ops/verify-idle-cost-runtime-v1.py RUN`。CPU与包数是原始桌面观测，不冒充手机唤醒/能耗。
+- **成本probe已闭** `094918Z-b4a35bc1` 原0/132.304s，3个真实resident、完整有向目录、30s settle/60s quiet、原2s后读全过。每进程CPU约单核8.57–8.81%、RSS约97–105MiB、275–276线程；静默eth0每方向约30–43KiB，后读23.606/26.774/28.170ms。进程PID/start与owner、接口单调、HZ、全部源码/ELF/环境/清理核验，`E/RUN/idle-cost-runtime-verification-v1.json`。开销有待解释；不能全归网络或由这一个cohort声称成本好。
+- **正式Release恢复/控制已闭**：`092109Z-edcabaac` 原0/198.662s，5个原idle恢复全绿，phase0三次18.133/17.942/18.135s、phase5 13.046s、phase14 3.877s，原20s不改；`092523Z-d3726f6d` 原0，两个相反快慢路径、typing恢复1.392s与真实黑洞260回显/0fail/最大574.1ms全绿。准确源5f51，`E/RUN/net-product-v5-screen-verification-v1.json`。后续同源原preflight与共存固定6块仍需执行。
+- **成本夹具编译已闭** `093646Z-60fe4209` 原0/576.331s，fixture ELF **04a83431022fd071310a26efefbab4ddce46359a985965163b51993cb8b33cfe**，原普通Release配置、原root全部8个patch绑定、原lock依赖子集与格式0全核；产品CLI仍64af80ac。`E/RUN/idle-cost-build-verification-v4.json`。前三轮控制器身份/PATH与offline解析拒绝保留：179241b7、f03d408b、b147ca33，分别0编译/0编译/0 compiler-artifact，均0运行，不是产品功能失败。源在 `/Volumes/disk0/Khor/test-fixtures/net/idle-cost-v1`，已复制canonical `tests/net-idle-cost-v1` 供最终版本化（本页后续doc/source提交不是已测5f源）。
+- **同ELF最终shared/separate协议已冻结未派** `E/net-product-v5-coexistence-plan-v1.json`、control **9d1a905297805cde37f55442a472503f4b639373**，保留原SCCSSC/12case/8640 population、原相对/绝对门、原preflight分层准入和失败。不得将它写成已执行；N3未完成。
 - **普通Release producer已闭** `090926Z-6289823d` 原0/**577.254s**，源5f51，control70e3a994。原opt3/thin-LTO/codegen1/strip、iroh1.4.1/Noq1.4.0、fresh CLI全核，无运行测试、46不变synthetic验证源仅按hash复用。CLI SHA **64af80ac8f5e1d7d1352d7beb7e6137e466836de4e0dd0a3ce11be5fcebb50cc**；netlab **32e35ac5ddd4238c5f914a81b7a0425fc5d39f333ec56111ebec8a23e70e8d6a**。`E/RUN/net-product-v5-release-compile-verification-v2.json`。V1 prepared未启动，已明确superseded，不可启动。
 - **完整global separate回归已闭** `084734Z-e8016ef4` 原0/**546.320s**，准确源5f51，原12组 **323pass/0fail/原ignored1**，所有测试名/源/控制/owner及629个first-party Rust格式输入已核；511原排除不变，0格式差异。`E/RUN/product-v5-separate-node-verification-v1.json`。global env不等于各显式negative override均ON，不能声称这种覆盖。
 - fixture修复只在正向窗口场景接受额外文件连接，专属协商/负控仍独占Incoming。23a第一次fix原4窗口红转绿却让4专属负控红（362fed6f原101/295pass/4fail/7组未执行）；5f只改mock构造/stop setup，全部断言/数字期限/生产代码不改，后续323全绿。原两轮红保持。计划 `E/net-product-v5-window-fixture-plan-v2.json`，旧08:40状态归档 [HISTORY](HISTORY-20261116-v5-fixture-through-0840.md)。
 - **I5 shared标准已接受** `075454Z-f11ccfd0` 原0/512.203s，源9821d929，原12组323/0/ignored1。I5与5f生产逐字相同，后者只测试helper/格式分类/文档变化；不把旧tree当新tree全Quality绿。
+- **新Quality GH43842976362已派一次在跑**，准确5f51/tree395f，branch `verify/net-product-v5-fixture`，原suite=all/interaction_scope=all不改。`E/net-product-quality-v5-fixture-intent-v1.json`；先查原run，不能重复派。
 - **Quality43827443762已结束12/13**，准确源I5 **9821d9298dbab876434041bc436a7a97c1d4c1d7** / tree4b7013df / snapshotb93d6b7a。唯一scripts job133164520860红是3个独立transport fixture Rust输入未分类；23a加入完整formatter（非排除），Turing原gate已绿。另12组全部绿，包括node-native/signed SSH。原红保留；最终源码冻结后需新同源Quality，尚未派。
-- **Mac Lab V2 GH43829392360已4/4成功**，源仍I59821/snapshotb93。`E/public-native-lab-net-product-v5-v2` 已获取native/前端及checks ZIP **48,333,004B**；**104浏览器case无错误**，还在独立核对报告源hash/manifest。不是手机/能耗接受。独立控制 **44b954b74fee82ad448909b6e19a9296e69cd30e** (`net-product-v5-lab-workbench-v1`) 只加入当前main同一Storybook构建命令，原门/断言不改。V1 frontend缺workbench原红及native/checks未执行保留；不动builder main。
+- **Mac Lab V2 GH43829392360已4/4成功**，源仍I59821/snapshotb93。`E/public-native-lab-net-product-v5-v2` 已获取native/前端及checks ZIP **48,333,004B**；**104浏览器case无错误**，独立核验已闭：98条tracked hash、18条generated lineage、内ZIP SHA/CRC/arm64与真实backend一致，`E/public-native-lab-net-product-v5-v2/lab-acquisition-verification-v1.json`。不是手机/能耗接受。独立控制 **44b954b74fee82ad448909b6e19a9296e69cd30e** (`net-product-v5-lab-workbench-v1`) 只加入当前main同一Storybook构建命令，原门/断言不改。V1 frontend缺workbench原红及native/checks未执行保留；不动builder main。
 - canonical `feat/net` 已ff集成I5＋5f；I5集成固定main93f6cb23与初始Direct近似质量次选、H/S改善；main现由其他任务继续推进，不自动追每个GUI提交。本任务不改main、LIVE23961/其他用户目录。I5独立树仍9821，供准确源Quality/Lab查验。
 - 初始无current时，near-quality复用原5ms gain floor次选Direct；明显更快Relay/Carried仍赢，健康current原保持逻辑不变。Mac准确RED1/72与GREEN73/0/ignored1、同74测试名已核。`E/initial-direct-green-v2-mac-verification-v1.json`。
 - N3原统计门口径是每profile/phase/op固定3次**pooled360**，并非每次120单独过。H pooled directory p95 **448002μs**/p99 **836037μs**；X **353557/751934μs**，均过原592518.1单条参考，各2160业务/3完整file/6post-health全成功。逐场613/614ms保留。无同期配对不作整体N3接受；X priority无必要性未采用。`E/current-high-pooled-verification-v1.json`。
@@ -64,6 +69,6 @@ E=`/Volumes/disk0/Khor/evidence/net`。实际调度以`E/source-refs.json`、rec
 
 Turing UID1110，自有`/tmp/khor-netlab-feat-net-1110`、原owner/flock/build.lock；Rust1.95/jobs16/nice10，start50/stop40GiB。计时CPU idle≥.8/PSI≤5/同UID无Cargo，同host编译和计时串行；Mac不同host可并行。只恢复自有精确归档文件，不碰其他用户/任务。原nft1.1.3隔离工具保持，不改宿主全局工具。
 
-MacLab与Turing同LAN，macserver另一网络；macserver SSH本轮banner超时，授权公开colehank/khor-build通道正常。iPhone localhost仍旧安装版，先前前台就绪窗口已过，具体候选可测时再安排，不自动采样。无部署/采购/发行。
+MacLab与Turing同LAN，macserver另一网络；macserver SSH本轮再次banner超时，授权公开colehank/khor-build通道正常。iPhone localhost仍旧安装版，先前前台就绪窗口已过，具体候选可测时再安排，不自动采样。无部署/采购/发行。
 
 本入口整理前逐字档案[HISTORY-20261116-through-selection-view-recovery](HISTORY-20261116-through-selection-view-recovery.md)，SHA256 967f7c3fffff9a8037503fa5f4d4ac6c279ce36e85945065fdbb072394a2c3c6；其“在途/下一步”均是历史，不可据此重派。更早全部原失败/未执行及证据见该档案与其链接、RUNS/REQUIREMENTS，未被本页删除或重新归绿。
