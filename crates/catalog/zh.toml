@@ -347,11 +347,13 @@ usage = """
   attach <session>      接上一个持久 session（Ctrl-\\ 断开）；
                         行在哪台机器上就接哪台，不用说
   takeover <session>    接管一个 agent 会话：结束它的终端，对话从这里继续
-  agents [known | sessions <名字> [--ask] | add <名字> [...] | rm <名字>]
+  agents [known | fleet | sessions <名字> [--ask] | add <名字> [...] | rm <名字>]
                         登记会说 ACP 的 agent：不带参数看登记过哪些。
                         登记一次全网都认得（命令在不在各机器上，起的时候才知道）；
                         claude、codex、khor、shell 这四个名字 khor 自己在用。
                         known 看随包带的 ACP 注册表快照；@<id> 直接用快照里那条命令。
+                        fleet 看这台机器实际有什么：程序路径、khor 会怎么起它、
+                        能拿它做什么——注册表里有条目和机器上装了，是两件事。
                         sessions 看它有哪些对话（读记下来的；--ask 才真去问，那会起一个进程）；
                         问过的答案全网同步，别的机器不用再起一遍
          connect <名字> <地址> [--token-stdin]
@@ -641,6 +643,10 @@ doctor-agents-ok = "已登记的 {0} 个命令均可找到"
 doctor-agents-missing = "找不到命令：{0}"
 doctor-agents-none = "未登记智能体"
 doctor-agents-unread = "无法读取智能体登记表"
+agents-fleet-head = "已知 {0} 个，已安装 {1} 个，包运行器：{2}"
+agents-fleet-installed = "已安装"
+agents-fleet-absent = "未安装"
+agents-fleet-no-runner = "无"
 doctor-vscode-ready = "{0}，服务端已下载"
 doctor-vscode-fetch = "{0}，服务端尚未下载（首次打开时下载）"
 doctor-vscode-none = "这台机器上没有 code"

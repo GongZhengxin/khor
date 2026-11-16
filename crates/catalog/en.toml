@@ -348,7 +348,7 @@ usage: khor <verb>
                         row is on — you don't say which
   takeover <session>    takes over an agent session: ends its
                         terminal, the conversation continues from here
-  agents [known | sessions <name> [--ask] | add <name> [...] | rm <name>]
+  agents [known | fleet | sessions <name> [--ask] | add <name> [...] | rm <name>]
                         registers agents that speak ACP: no arguments
                         shows what's registered. Register once and the
                         whole network knows it (whether the command
@@ -357,6 +357,10 @@ usage: khor <verb>
                         khor uses those four names itself. known shows
                         the ACP registry snapshot bundled with khor;
                         @<id> uses that snapshot's command directly.
+                        fleet shows what this machine actually has:
+                        the program's path, how khor would start it,
+                        and what it can do with it — a registry entry
+                        and an installed agent are different facts.
                         sessions shows its conversations (reads what's
                         recorded; --ask actually asks, which starts a
                         process); once asked, the answer syncs across
@@ -678,6 +682,10 @@ doctor-agents-ok = "all {0} registered command(s) found"
 doctor-agents-missing = "command not found: {0}"
 doctor-agents-none = "no agent registered"
 doctor-agents-unread = "cannot read the agent registry"
+agents-fleet-head = "{0} known, {1} installed, package runner: {2}"
+agents-fleet-installed = "installed"
+agents-fleet-absent = "not installed"
+agents-fleet-no-runner = "none"
 doctor-vscode-ready = "{0}, server already fetched"
 doctor-vscode-fetch = "{0}, server not fetched yet (the first open fetches it)"
 doctor-vscode-none = "no code on this machine"

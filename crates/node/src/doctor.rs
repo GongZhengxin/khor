@@ -463,10 +463,9 @@ async fn check_version() -> (Health, String, Option<String>) {
     // workspace's tokio is built without the `process` feature, and one
     // spawn on a page that already runs everything concurrently is not
     // worth growing every binary in the tree for.
-    let out = tokio::task::spawn_blocking(move || {
-        crate::console::hidden(&exe).arg("version").output()
-    })
-    .await;
+    let out =
+        tokio::task::spawn_blocking(move || crate::console::hidden(&exe).arg("version").output())
+            .await;
     let Ok(Ok(out)) = out else {
         return (Health::Warn, cli::doctor_version_no_cli().to_owned(), None);
     };

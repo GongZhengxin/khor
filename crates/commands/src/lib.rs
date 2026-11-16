@@ -5474,6 +5474,44 @@ fn agents(rest: &[String]) -> Result<(), String> {
             }
             Ok(())
         }
+        // **What this machine has, not what khor knows about.** The two
+        // were one table for as long as it took to notice that DSH is
+        // installed here and absent from the registry, while a dozen
+        // registry entries are absent from the machine. A person looking
+        // for "what can I use" is asking this question, and the registry
+        // listing answers the other one.
+        Some((word, tail)) if word == "fleet" => {
+            if !tail.is_empty() {
+                return Err(usage_text().into());
+            }
+            let roster = khor_node::agent_fleet::fleet();
+            let installed = roster.agents.iter().filter(|r| r.program.is_some()).count();
+            let runner = roster
+                .runner
+                .map(str::to_owned)
+                .unwrap_or_else(|| cli::agents_fleet_no_runner().to_owned());
+            println!(
+                "{}",
+                cli::agents_fleet_head(roster.agents.len(), installed, runner)
+            );
+            for row in &roster.agents {
+                let state = if row.program.is_some() {
+                    cli::agents_fleet_installed()
+                } else {
+                    cli::agents_fleet_absent()
+                };
+                println!(
+                    "{}\t{}\t{}\t{}\t{}\t{}",
+                    row.id,
+                    row.name,
+                    state,
+                    row.program.as_deref().unwrap_or("-"),
+                    row.launch.as_ref().map_or("-", |launch| launch.road),
+                    row.capabilities.join(" ")
+                );
+            }
+            Ok(())
+        }
         // **Ask the agent itself what it has.** The only discovery
         // path for an agent khor did not write a disk reader for —
         // and one that starts a real process, so it is a verb a person
