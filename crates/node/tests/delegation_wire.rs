@@ -161,10 +161,24 @@ impl Drop for Hosts {
         }
     }
 }
-struct Serving(tokio::task::JoinHandle<Result<(), String>>);
+struct Serving {
+    root: PathBuf,
+    task: Option<tokio::task::JoinHandle<Result<(), String>>>,
+}
+impl Serving {
+    async fn stop(mut self) {
+        assert_eq!(
+            khor_node::link::stop_serving(&self.root).await.unwrap(),
+            khor_node::khor_agent::RuntimeClose::Closed
+        );
+        self.task.take().unwrap().await.unwrap().unwrap();
+    }
+}
 impl Drop for Serving {
     fn drop(&mut self) {
-        self.0.abort();
+        if let Some(task) = &self.task {
+            task.abort();
+        }
     }
 }
 fn root(tag: &str) -> Scratch {
@@ -177,10 +191,24 @@ fn root(tag: &str) -> Scratch {
     Scratch(dir)
 }
 async fn serve(root: &Path, name: &str) -> Serving {
+    let endpoint = root.join(".khor/endpoint.json");
+    let previous = std::fs::read(&endpoint).ok();
     let node = Node::open_as(root.to_path_buf(), name).unwrap();
-    let serving = Serving(tokio::spawn(async move { node.serve().await }));
+    let mut serving = Serving {
+        root: root.into(),
+        task: Some(tokio::spawn(async move { node.serve().await })),
+    };
     tokio::time::timeout(Duration::from_secs(60), async {
-        while !root.join(".khor/endpoint.json").exists() {
+        loop {
+            if serving.task.as_ref().unwrap().is_finished() {
+                let result = serving.task.take().unwrap().await;
+                panic!("fixture resident {name} ended before readiness: {result:?}");
+            }
+            // A stopped resident's file survives while this test process is
+            // alive. Only a newly published endpoint is the new resident.
+            if std::fs::read(&endpoint).is_ok_and(|bytes| Some(bytes) != previous) {
+                break;
+            }
             tokio::time::sleep(Duration::from_millis(20)).await;
         }
     })
@@ -433,7 +461,7 @@ async fn run() {
     assert_eq!(remote.target.home, alpha.device());
     let remote = wait(&beta, alpha.device_str(), &remote.task.id, false).await;
     let after_restart = {
-        drop(_beta);
+        _beta.stop().await;
         let beta_again = serve(&beta_root.0, "beta").await;
         let row = read(&beta, alpha.device_str(), &remote.task.id).await;
         assert_eq!(row.task.id, remote.task.id);
