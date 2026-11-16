@@ -5,7 +5,7 @@ import {KhorSessionSetup, type KhorModelSelection} from '@/views/KhorSessionSetu
 // New session: the target, its current directory, and what to run. The same
 // page sits behind the desktop strip and the narrow screen's bottom deck.
 import { useEffect, useRef, useState } from 'react';
-import { agentAsk, fetchLs, makeDir, agents as fetchAgents, agentsKnown, agentsKnownTaken, fetchDevices, launchPresets, saveLaunchPreset, deleteLaunchPreset, openShell, openSession, khorAgent, registerKnownAgent, type AgentRow, type DeviceRow, type KnownAgent, type LaunchPreset } from '@/api';
+import { agentAsk, agentFleet, fetchLs, makeDir, agents as fetchAgents, agentsKnown, agentsKnownTaken, fetchDevices, launchPresets, saveLaunchPreset, deleteLaunchPreset, openShell, openSession, khorAgent, registerKnownAgent, type AgentFleet, type AgentRow, type DeviceRow, type KnownAgent, type LaunchPreset } from '@/api';
 import { MachineField } from '@/components/MachineField';
 import { PathField, settledPath } from '@/components/PathField';
 import { sessionKind } from '@/components/SessionFace';
@@ -17,7 +17,7 @@ import { Dialog, DialogContent, TaskOverlay, TaskActions, DialogBody, DialogTitl
 import { IconClose, IconGear, IconPencil, IconPlus } from '@/components/icons';
 import { gui } from '@/gen/catalog';
 import { dropHandOff, peekHandOff } from '@/lib/composer-handoff';
-import {launchId, readNewSessionChoices, recentLaunchChoices, rememberNewSessionChoice, type SessionLaunch as Launch} from '@/lib/new-session-choices';
+import {launchId, preferredLaunch, readNewSessionChoices, recentLaunchChoices, rememberNewSessionChoice, type SessionLaunch as Launch} from '@/lib/new-session-choices';
 import { useHereHosts } from '@/lib/here';
 import { useSetting } from '@/settings';
 import { imeKey } from '@/lib/ime';
@@ -25,8 +25,13 @@ import {inspectSessionDirectory,ensureSessionDirectory,type SessionDirectory} fr
 type LaunchOption = ChoiceOption & {
   launch: Launch;
 };
-const defaultLaunch = (terminal: boolean): Launch => terminal ? {kind: 'shell', command: 'claude'} : {kind: 'agent', agent: 'claude'};
 const creationTarget = (devices: DeviceRow[], machine: string) => devices.find(d => d.name === machine || d.id === machine) ?? (machine === '' ? devices.find(d => d.me && d.hosts) ?? devices.find(d => d.hosts && d.sponsor === null) ?? devices.find(d => d.me) : undefined);
+
+/** The installed agents, in the order the roster prefers them — which is
+    the shipped table's order, builtin roads first. `preferredLaunch` reads
+    this and nothing else, so the choice is testable without a machine. */
+const readyAgents = (fleet: AgentFleet | null): {id: string; road: string | null}[] =>
+  (fleet?.agents ?? []).filter(agent => agent.program).map(agent => ({id: agent.id, road: agent.road}));
 const kindIcon = (kind: string, agent: string | null) => sessionKind(kind, agent).glyph('size-kind-mark');
 function returnedSession(value: unknown): string {
   const session = (value as {session?: unknown} | null)?.session;
@@ -63,7 +68,7 @@ export function NewSessionPage({
   const [known, setKnown] = useState<AgentRow[]>([]),
     [presets, setPresets] = useState<LaunchPreset[]>([]);
   const [launchesLoaded, setLaunchesLoaded] = useState(false);
-  const [launch, setLaunch] = useState<Launch>(() => defaultLaunch(wantsTerm));
+  const [launch, setLaunch] = useState<Launch>(() => preferredLaunch(wantsTerm, []));
   const [name, setName] = useState('');
   const [contextValid,setContextValid]=useState(true);
   const [environment,setEnvironment]=useState<SessionEnvironment>(EMPTY_ENVIRONMENT);
@@ -87,6 +92,7 @@ export function NewSessionPage({
   const contextMachine = useRef<string | null>(null),
     startedAgent = useRef(false),
     generation = useRef(0),
+    roster = useRef<{id: string; road: string | null}[]>([]),
     creation = useRef<{key: string; token: string} | null>(null);
   const why = (e: unknown) => setError(String(e instanceof Error ? e.message : e));
   useEffect(() => {
@@ -107,12 +113,18 @@ export function NewSessionPage({
     setError(null);
     setHanded(peekHandOff());
     startedAgent.current = false;
-    fetchDevices().then(rows => {
+    // **The default follows what this machine has**, so the roster is
+    // asked for in the same breath as the machine list: a wizard that
+    // opened on an agent nobody installed offers a button whose only
+    // outcome is a failure the person cannot act on (issue: the default
+    // was `claude`, absent here, so "new conversation" opened nothing).
+    void Promise.all([fetchDevices(), agentFleet().catch(() => null)]).then(([rows, fleet]) => {
       if (!live) return;
       const target = creationTarget(rows, picked || restored.machine);
       contextMachine.current = target?.id ?? null;
       setDevices(rows);
-      setLaunch(target && restored.machines[target.id]?.launch || defaultLaunch(wantsTerm));
+      roster.current = readyAgents(fleet);
+      setLaunch(target && restored.machines[target.id]?.launch || preferredLaunch(wantsTerm, roster.current));
     }, e => {
       if (live) why(e);
     });
@@ -202,7 +214,7 @@ export function NewSessionPage({
     if (!target) return;
     const next = remember(target.id);
     setMachine(target.id);
-    setLaunch(next.machines[target.id]?.launch ?? defaultLaunch(wantsTerm));
+    setLaunch(next.machines[target.id]?.launch ?? preferredLaunch(wantsTerm, roster.current));
     setEnvironment(EMPTY_ENVIRONMENT); setContextValid(true);
   };
   const pickLaunch = (launch: Launch, used = true) => {

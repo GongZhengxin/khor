@@ -1,4 +1,37 @@
 export type SessionLaunch = {kind: 'shell'; command: string; preset?: string} | {kind: 'agent'; agent: string} | {kind: 'khor'};
+
+/** The agent the wizard ships pointing at, and the one a machine with
+    nothing installed still names: Claude Code is the most common
+    install, and naming an agent that is absent is at least a sentence a
+    person can act on ("install this"), where a substituted name they
+    cannot start would not be. */
+export const DEFAULT_AGENT = 'claude';
+
+/**
+ * The launch a wizard should open on, given what this machine has.
+ *
+ * The shipped default is `claude`. That is right on a machine where
+ * Claude Code is installed and wrong on this one: it opens a
+ * conversation whose agent cannot start, which reads as "khor is
+ * broken" rather than "that agent is not installed". So the default
+ * follows the roster (`agent_fleet`): an agent with a **builtin** road
+ * first — khor's own shims need no npm and no registration — and only
+ * then the shipped default.
+ *
+ * Only for the agent form: a terminal can run any command, so it gets
+ * the first installed program.
+ *
+ * **Only a default.** The caller applies this when there is no
+ * remembered choice; a person's own pick is never routed around.
+ */
+export function preferredLaunch(
+  terminal: boolean,
+  agents: readonly {id: string; road: string | null}[],
+): SessionLaunch {
+  const builtin = agents.find(a => a.road === 'builtin')?.id;
+  if (terminal) return {kind: 'shell', command: agents[0]?.id ?? DEFAULT_AGENT};
+  return {kind: 'agent', agent: builtin ?? DEFAULT_AGENT};
+}
 type MachineChoices = {dir?: string; launch?: SessionLaunch; recent: string[]};
 export type NewSessionChoices = {machine: string; machines: Record<string, MachineChoices>};
 type StoragePort = Pick<Storage, 'getItem' | 'setItem'>;
