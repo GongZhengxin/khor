@@ -5033,6 +5033,7 @@ dependencies = [
  "tauri-plugin-notification",
  "tauri-plugin-updater",
  "tempfile",
+ "tiny_http",
  "tokio",
  "webkit2gtk",
 ]
