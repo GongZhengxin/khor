@@ -11,3 +11,9 @@
 该21项是组件接受，尚未证明原p7i物理20秒已绿。当前正准备准确H普通Release，原S/N失败、原数字门和未运行的N3阶段保持。原screen后5校准/3high未执行。
 
 E=`/Volumes/disk0/Khor/evidence/net`。方案selection-view-events-plan-v1.json，源selection-view-events-source-v1.json，固定六场汇总normal-gain-idle-pair-verification-v1.json。未合main、替换现装App或发行。
+
+## 原物理合同转绿与Mac同源回归
+
+H普通Release `060326Z-8d23414f` 原0/598.316秒，CLI0d3e520f、netlabd70ac65e，原opt3/thin-LTO/codegen1及严格源码/产物链不改。固定原p7i phase0三次17.548313504/17.945023214/18.163609805s，phase5为13.046626094s、phase14为3.880704890s；`061753Z-6aa64695` 原0/231.532秒，5/5同原20s通过。原S/N六场1绿/5红及最初20.199s失败保留；不将此5绿等同所有换网/性能接受。下一步相反快路、typing、UDP黑洞原控制，再恢复N3原筛查。
+
+Mac GH43814577842同源H的原12组316通过/0失败/原ignored1，含2个新Wires合同、32个明确separate和14联系控制；4个原Linux-only排除按相同cfg核验。源码/控制11 blobs/实际artifact14202416459的SHA与CRC已闭，Mac独立pending关闭，Turing ledger未被改写。Mac proof E/selection-view-mac-verification-v1.json。未安装/发行App。
