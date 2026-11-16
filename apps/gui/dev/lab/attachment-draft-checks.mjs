@@ -5,7 +5,7 @@ export async function checkAttachmentDraft(browser,{port,report,engine,width=390
  const height=width===320?568:844,mobile=width<500,name=`attachment-draft-${engine}-${width}`;
  const context=await browser.newContext({viewport:{width,height},hasTouch:mobile,isMobile:mobile});
  const page=await context.newPage(),errors=[],imagePreviews=[],sizes=[],directoryLayouts=[],panelWidths=[],previewLayouts=[];page.setDefaultTimeout(15000);page.on('pageerror',e=>errors.push(String(e)));
- const environment={platform:mobile?width===412?'android':'ios':'desktop',theme:width===412?'dark':'light',material:'solid',background:'dark',opacity:100,keyboard:0,safeTop:mobile?width===412?24:47:0,safeBottom:mobile?width===412?24:34:0};
+ const environment={platform:mobile?width===412?'android':'ios':'desktop',theme:width===412||!mobile?'dark':'light',material:mobile?'solid':'frost',background:'dark',opacity:mobile?100:20,keyboard:0,safeTop:mobile?width===412?24:47:0,safeBottom:mobile?width===412?24:34:0};
  const api=(command,body={})=>page.evaluate(async({command,body})=>(await fetch('/api/'+command,{method:'POST',body:JSON.stringify(body)})).json(),{command,body});
  const picker=page.locator('[data-attachment-picker]:visible'),directory=page.locator('[data-attachment-directory]:visible'),preview=page.locator('[data-attachment-file]:visible');
  const selected=name=>picker.locator(`[data-files-selected="${name}"]`);
@@ -39,6 +39,12 @@ export async function checkAttachmentDraft(browser,{port,report,engine,width=390
   originalGrid=await grid();originalSizes=(await api('__ai_preview/terminal-sizes')).length;
   await page.locator('[data-terminal]').evaluate(node=>{const data=new DataTransfer();data.items.add(new File(['original attachment'],'draft.txt',{type:'text/plain'}));node.dispatchEvent(new DragEvent('drop',{bubbles:true,cancelable:true,dataTransfer:data}));});
   await picker.waitFor();await selected('draft.txt').waitFor();await unchanged('open fixed panel');
+  const surface=await picker.evaluate(node=>{const color=getComputedStyle(node).backgroundColor;const probe=document.createElement('span');probe.style.background='var(--canvas-solid)';node.append(probe);const expected=getComputedStyle(probe).backgroundColor;probe.remove();return {color,expected};});
+  assert.equal(surface.color,surface.expected,'Attachment selection panel must have an opaque surface even in a frosted window');
+  assert.equal(await picker.locator('[data-files-source]').getByRole('heading',{name:'选择文件',exact:true}).count(),1,'Sources have their own visible section title');
+  assert.equal(await picker.locator('[data-files-selection]').getByRole('heading',{name:/已选文件/}).count(),1,'Selected files have their own visible section title');
+  assert.equal(await picker.locator('[data-files-source] [data-files-selected]').count(),0,'Selected files never belong to a source-machine group');
+  assert.equal(await selected('draft.txt').locator('[data-files-size]').innerText(),'19 B','Browser file size is visible in the selected row');
   assert.equal(await picker.evaluate(node=>getComputedStyle(node).position),'fixed');
   await measurePanel('initial-'+width,'[data-terminal]');
   assertPanelWidths();
@@ -57,6 +63,23 @@ export async function checkAttachmentDraft(browser,{port,report,engine,width=390
   assert.match(await picker.locator('[data-send-to-machine]').getAttribute('aria-label'),/发送到.*保存文件夹/);assert.equal(await picker.locator('[data-send-into-label]').count(),0);assert.equal((await picker.locator('[data-send-to-machine]').innerText()).replace(/\s/g,''),'：'+(await picker.locator('[data-send-into-path]').innerText()).replace(/\s/g,''),'Destination displays only avatar, colon and path');assert.equal((await picker.locator('[data-send-into-change]').innerText()).trim(),'更改');
   await openMachines();const other=machinesMenu.locator('[data-files-machine]').last(),otherLabel=await other.innerText();const otherBounds=await other.boundingBox();assert(otherBounds.y>=0&&otherBounds.y+otherBounds.height<=height+1,'The last machine is reachable inside the viewport');await other.click();await directory.waitFor();assert(otherLabel.includes(await directory.locator('[data-files-directory-avatar]').getAttribute('aria-label')),'Choosing another machine opens that machine');await directory.locator('[data-files-directory-back]').click();await directory.waitFor({state:'hidden'});await unchanged('other machine choice');
   assert.equal(await picker.locator('[data-files-input]').getAttribute('accept'),null);assert.match(await picker.locator('[data-send-into-path]').innerText(),/khor-drop/);await green();assert.equal((await api('__ai_preview/attachment-events')).length,0);
+  // Native/internal drops only carry paths. Read metadata from the source,
+  // without staging/uploading files or borrowing the destination's facts.
+  const nativeSources=[null,(await api('devices')).find(d=>d.hosts&&!d.me)?.name].filter(source=>source!==undefined);
+  for(const from of nativeSources){
+   let listing=await api('ls',{machine:from??'',path:''});
+   if(listing.entries.some(e=>e.name==='project'&&e.dir))listing=await api('ls',{machine:from??'',path:listing.path.replace(/\/$/,'')+'/project'});
+   const file=listing.entries.find(e=>!e.dir);assert(file,'Native-drop fixture has a source file');const filePath=listing.path.replace(/\/$/,'')+'/'+file.name;
+   const expected=await api('stat_text',{machine:from??'',path:filePath});
+   await page.evaluate(()=>{window.__attachmentSizeReads=[];const fetch=window.fetch;window.fetch=(input,init)=>{if(String(input).endsWith('/api/stat_text'))window.__attachmentSizeReads.push(JSON.parse(init.body));return fetch(input,init);};});
+   await page.locator('[data-terminal]').evaluate((node,{from,filePath})=>{const data=new DataTransfer();data.setData('application/x-khor-path',JSON.stringify({machine:from,path:filePath}));node.dispatchEvent(new DragEvent('drop',{bubbles:true,cancelable:true,dataTransfer:data}));},{from,filePath});
+   const native=selected(file.name);await native.waitFor();
+   const size=expected.total<1024?expected.total+' B':null;if(size)await native.locator('[data-files-size]').filter({hasText:size}).waitFor();
+   else await native.locator('[data-files-size]').waitFor();
+   const reads=await page.evaluate(()=>window.__attachmentSizeReads);assert(reads.some(read=>read.machine===(from??'')&&read.path===filePath),'Unknown file sizes are read from the source machine');
+   await native.locator('[data-files-select]').click();await native.waitFor({state:'hidden'});
+  }
+  assert.equal((await api('__ai_preview/attachment-events')).length,0,'Metadata lookup never uploads or sends a file');
   await image('terminal');await unchanged('local file page and return');
   await picker.locator('[data-files-folder-input]').evaluate(input=>{const file=new File(['nested original bytes'],'inside.txt',{type:'text/plain'});Object.defineProperty(file,'webkitRelativePath',{value:'local-folder/nested/inside.txt'});const data=new DataTransfer();data.items.add(file);input.files=data.files;input.dispatchEvent(new Event('change',{bubbles:true}));});
   await selected('local-folder').locator('button').first().click();await directory.waitFor();await directory.locator('[data-files-name="nested"] button').first().click();await directory.locator('[data-files-name="inside.txt"]').waitFor();assert.equal(await directory.locator('[data-files-select="inside.txt"]').isDisabled(),true,'Selected local folder includes its descendants');
