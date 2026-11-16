@@ -7,10 +7,10 @@ mod menu_overlay;
 mod native_io;
 mod page_history;
 mod page_navigation;
-mod window_transport;
 #[cfg(any(target_os = "macos", target_os = "ios"))]
 mod page_retire;
 mod updater_commands;
+mod window_transport;
 
 #[cfg(all(desktop, unix))]
 mod app_companions;
@@ -90,7 +90,10 @@ async fn sessions(by: String) -> Result<Vec<SessionRow>, String> {
     }
     let out = off_main(move || khor_gui_core::list_sessions(&Node::root_from_env(), &by)).await;
     if std::env::var_os("KHOR_GUI_TRACE").is_some() {
-        eprintln!("[sessions] answered: {:?}", out.as_ref().map(|rows| rows.len()));
+        eprintln!(
+            "[sessions] answered: {:?}",
+            out.as_ref().map(|rows| rows.len())
+        );
     }
     out
 }
@@ -538,7 +541,10 @@ async fn devices() -> Result<Vec<DeviceRow>, String> {
     }
     let out = khor_gui_core::list_devices(&Node::root_from_env()).await;
     if std::env::var_os("KHOR_GUI_TRACE").is_some() {
-        eprintln!("[devices] answered: {:?}", out.as_ref().map(|rows| rows.len()));
+        eprintln!(
+            "[devices] answered: {:?}",
+            out.as_ref().map(|rows| rows.len())
+        );
     }
     out
 }
@@ -2549,8 +2555,7 @@ fn build_the_window(app: &tauri::AppHandle) -> tauri::Result<()> {
     // The URL is bound in a statement rather than built inside the call, because
     // a `#[cfg]`-gated block used as an expression would discard its value.
     #[cfg(target_os = "windows")]
-    let start_at =
-        WebviewUrl::App(format!("index.html?bridge={}", window_transport::PORT).into());
+    let start_at = WebviewUrl::App(format!("index.html?bridge={}", window_transport::PORT).into());
     #[cfg(not(target_os = "windows"))]
     let start_at = WebviewUrl::default();
     let mut win = WebviewWindowBuilder::new(app, "main", start_at)

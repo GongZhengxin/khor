@@ -189,7 +189,11 @@ pub const WORKERS: usize = 4;
 /// **The runtime is the caller's**, built once per worker thread. Building one
 /// per request (what this did first) paid a runtime setup on every poll and had
 /// nowhere to keep a driver between them.
-fn answer(rt: &tokio::runtime::Runtime, cmd: &str, args: &serde_json::Value) -> Result<String, String> {
+fn answer(
+    rt: &tokio::runtime::Runtime,
+    cmd: &str,
+    args: &serde_json::Value,
+) -> Result<String, String> {
     let root = khor_node::Node::root_from_env();
     std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         khor_gui_core::api::answer(rt, &root, cmd, args)
@@ -306,100 +310,96 @@ fn serve(server: std::sync::Arc<tiny_http::Server>) {
     // `recv` hands this thread the next request, or an error when the server is
     // gone; several workers may call it at once, which is the point.
     while let Ok(mut request) = server.recv() {
-            if request.method() == &tiny_http::Method::Options {
-                let _ = request.respond(cors(
-                    tiny_http::Response::from_string("").with_status_code(204),
-                ));
-                continue;
-            }
-            let url = request.url().trim_start_matches('/').to_owned();
-            let (cmd, query) = url.split_once('?').unwrap_or((url.as_str(), ""));
-            let cmd = cmd.to_owned();
-            let query = query.to_owned();
-            // Named on stderr when `KHOR_GUI_TRACE` is set, so which commands the
-            // page asks for — and which it never asks for — is answerable without
-            // a devtools session (whose isolated world cannot see invoke callbacks).
-            if std::env::var_os("KHOR_GUI_TRACE").is_some() {
-                eprintln!("[transport] {cmd}");
-            }
-            // The window's own verbs first: they are not the store's to answer.
-            if let Some(outcome) = window_verb(&cmd) {
-                let _ = request.respond(json(outcome));
-                continue;
-            }
-            // The raw-body routes carry a file, which is not UTF-8 and must
-            // never pass through a String. Each keeps the road the dev bridge
-            // gives it (`bridge.rs`), so the two faces cannot drift.
-            let raw = matches!(
-                cmd.as_str(),
-                "upload" | "chat_put" | "term_drop_stage" | "term_drop_stage_into"
-            );
-            if raw {
-                let root = khor_node::Node::root_from_env();
-                let outcome: Result<String, String> = if cmd == "term_drop_stage_into" {
-                    khor_gui_core::drop_stage_into_args(&query)
-                        .ok_or_else(|| "term_drop_stage_into needs folder and path".to_owned())
-                        .and_then(|(folder, path)| {
-                            khor_gui_core::term::term_drop_stage_into(
-                                &root,
-                                &folder,
-                                &path,
-                                request.as_reader(),
-                            )
+        if request.method() == &tiny_http::Method::Options {
+            let _ = request.respond(cors(
+                tiny_http::Response::from_string("").with_status_code(204),
+            ));
+            continue;
+        }
+        let url = request.url().trim_start_matches('/').to_owned();
+        let (cmd, query) = url.split_once('?').unwrap_or((url.as_str(), ""));
+        let cmd = cmd.to_owned();
+        let query = query.to_owned();
+        // Named on stderr when `KHOR_GUI_TRACE` is set, so which commands the
+        // page asks for — and which it never asks for — is answerable without
+        // a devtools session (whose isolated world cannot see invoke callbacks).
+        if std::env::var_os("KHOR_GUI_TRACE").is_some() {
+            eprintln!("[transport] {cmd}");
+        }
+        // The window's own verbs first: they are not the store's to answer.
+        if let Some(outcome) = window_verb(&cmd) {
+            let _ = request.respond(json(outcome));
+            continue;
+        }
+        // The raw-body routes carry a file, which is not UTF-8 and must
+        // never pass through a String. Each keeps the road the dev bridge
+        // gives it (`bridge.rs`), so the two faces cannot drift.
+        let raw = matches!(
+            cmd.as_str(),
+            "upload" | "chat_put" | "term_drop_stage" | "term_drop_stage_into"
+        );
+        if raw {
+            let root = khor_node::Node::root_from_env();
+            let outcome: Result<String, String> = if cmd == "term_drop_stage_into" {
+                khor_gui_core::drop_stage_into_args(&query)
+                    .ok_or_else(|| "term_drop_stage_into needs folder and path".to_owned())
+                    .and_then(|(folder, path)| {
+                        khor_gui_core::term::term_drop_stage_into(
+                            &root,
+                            &folder,
+                            &path,
+                            request.as_reader(),
+                        )
+                        .map(|id| serde_json::to_string(&id).unwrap_or_default())
+                    })
+            } else if cmd == "term_drop_stage" {
+                khor_gui_core::drop_stage_args(&query)
+                    .ok_or_else(|| "term_drop_stage needs a name query arg".to_owned())
+                    .and_then(|name| {
+                        khor_gui_core::term::term_drop_stage(&root, &name, request.as_reader())
                             .map(|id| serde_json::to_string(&id).unwrap_or_default())
-                        })
-                } else if cmd == "term_drop_stage" {
-                    khor_gui_core::drop_stage_args(&query)
-                        .ok_or_else(|| "term_drop_stage needs a name query arg".to_owned())
-                        .and_then(|name| {
-                            khor_gui_core::term::term_drop_stage(
-                                &root,
-                                &name,
-                                request.as_reader(),
-                            )
-                            .map(|id| serde_json::to_string(&id).unwrap_or_default())
-                        })
-                } else if cmd == "chat_put" {
-                    khor_gui_core::chat_put_args(&query)
-                        .ok_or_else(|| "chat_put needs id, lease and name query args".to_owned())
-                        .and_then(|(id, lease, name)| {
-                            khor_gui_core::chat::chat_put(
-                                &root,
-                                &id,
-                                &lease,
-                                &name,
-                                &khor_gui_core::into_arg(&query),
-                                request.as_reader(),
-                            )
-                            .map(|paths| serde_json::to_string(&paths).unwrap_or_default())
-                        })
-                } else {
-                    khor_gui_core::upload_args(&query)
-                        .ok_or_else(|| "upload needs a name query arg".to_owned())
-                        .and_then(|name| {
-                            khor_gui_core::stage_upload(&root, &name, request.as_reader())
-                                .map(|id| serde_json::to_string(&id).unwrap_or_default())
-                        })
-                };
-                let _ = request.respond(json(outcome));
-                continue;
-            }
-            let mut body = String::new();
-            if let Err(error) = request.as_reader().read_to_string(&mut body) {
-                let _ = request.respond(json(Err(error.to_string())));
-                continue;
-            }
-            let args: serde_json::Value = if body.trim().is_empty() {
-                serde_json::Value::Null
+                    })
+            } else if cmd == "chat_put" {
+                khor_gui_core::chat_put_args(&query)
+                    .ok_or_else(|| "chat_put needs id, lease and name query args".to_owned())
+                    .and_then(|(id, lease, name)| {
+                        khor_gui_core::chat::chat_put(
+                            &root,
+                            &id,
+                            &lease,
+                            &name,
+                            &khor_gui_core::into_arg(&query),
+                            request.as_reader(),
+                        )
+                        .map(|paths| serde_json::to_string(&paths).unwrap_or_default())
+                    })
             } else {
-                match serde_json::from_str(&body) {
-                    Ok(value) => value,
-                    Err(error) => {
-                        let _ = request.respond(json(Err(error.to_string())));
-                        continue;
-                    }
-                }
+                khor_gui_core::upload_args(&query)
+                    .ok_or_else(|| "upload needs a name query arg".to_owned())
+                    .and_then(|name| {
+                        khor_gui_core::stage_upload(&root, &name, request.as_reader())
+                            .map(|id| serde_json::to_string(&id).unwrap_or_default())
+                    })
             };
-            let _ = request.respond(json(answer(&rt, &cmd, &args)));
+            let _ = request.respond(json(outcome));
+            continue;
+        }
+        let mut body = String::new();
+        if let Err(error) = request.as_reader().read_to_string(&mut body) {
+            let _ = request.respond(json(Err(error.to_string())));
+            continue;
+        }
+        let args: serde_json::Value = if body.trim().is_empty() {
+            serde_json::Value::Null
+        } else {
+            match serde_json::from_str(&body) {
+                Ok(value) => value,
+                Err(error) => {
+                    let _ = request.respond(json(Err(error.to_string())));
+                    continue;
+                }
+            }
+        };
+        let _ = request.respond(json(answer(&rt, &cmd, &args)));
     }
 }
