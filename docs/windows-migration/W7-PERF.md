@@ -20,10 +20,10 @@
 | --- | --- | --- | --- | --- |
 | `cli_version` | 36.9 / 49.5 | 1 / 1 | 37× | **阻断项**，已归因：Windows 进程创建成本，见 §2.1 |
 | `cli_doctor` | 5871.9 / 5917.8 | 2619 / 2619 | 2.2× | **阻断项**，已归因：探针含网络超时，见 §2.4 |
-| `session_create` | 6405.8 / 6613.7 | 273 / 275 | 23.5× | **阻断项**，见 §2.2（待进一步测量） |
+| `session_create` | 6405.8 / 6613.7 | 273 / 275 | 23.5× | **阻断项**，见 §2.2（已定位；两项已修，热路径 ~1.67 s） |
 | `sessions_list` | 132.3 / 134.4 | 20 / 20 | 6.6× | **阻断项**，已归因：进程创建 + NTFS，见 §2.1 |
-| `file_scan` | 1117.6 / 1150.7 | 28 / 33 | 40× | **阻断项**，见 §2.3（待进一步测量） |
-| `file_copy` | 49.0 / 49.6 | 2 / 2 | 24.5× | **阻断项**，已归因：进程创建占 70%以上 |
+| `file_scan` | 1117.6 / 1150.7 | 28 / 33 | 40× | **阻断项**，见 §2.3（已定位并修复：本机 ls 白建端点） |
+| `file_copy` | 49.0 / 49.6 | 2 / 2 | 24.5× | **口径问题，不是 khor 的指标**：脚本第 137 行量的是 PowerShell 自己的 `Remove-Item` + `Copy-Item`，完全不经过 khor。24.5× 是 cmdlet/NTFS 与 `cp` 的差别。应从矩阵移除或改标为"宿主基线" |
 | `gui_cold_start` | **530.2 / 594.7** | 不适用 | — | Linux 无桌面会话，该行只在能显示窗口的平台测量 |
 
 `gui_cold_start` 的定义是「窗口自己的传输开始应答」，不是「窗口出现」——一个能画但所有命令都挂着的窗口不算就绪。
@@ -37,7 +37,9 @@
 据此：
 - `cli_version` 36.9 ms ≈ 纯进程创建；Linux 1 ms 是 `date +%s%3N` 的分辨率下限。
 - `sessions_list` 132 ms ≈ 36 ms 启动 + ~96 ms 读存储；Linux 20 ms ≈ 1 ms + 19 ms。
-- `file_copy` 的 49 ms 里，Windows 上 `cp` 等价的进程成本占大头（Linux 2 ms 是纯内核拷贝）。
+- `file_copy` **不是 khor 的指标**：脚本量的是 PowerShell 自己的 `Remove-Item` + `Copy-Item`
+  （`scripts/windows-perf.ps1:137`），不经过 khor 的任何代码。这一行应从矩阵移除或改标为宿主基线，
+  它测的是 cmdlet/NTFS 与 Linux `cp` 的差别。（独立验收指出，2026-11-17 更正。）
 
 **结论**：这几行相对 Linux 的倍数主要反映**平台常数**，不是 Windows 实现劣化。按 §5.2 仍需列为阻断项等待用户确认，但归因明确。
 
@@ -51,24 +53,27 @@
 （`Start-Process -PassThru` 后 `ExitTime - StartTime`）。
 
 **归因用 `KHOR_STARTUP_TRACE=<文件>`**（本轮新增的门，见 `crates/node/src/startup_trace.rs`）：
-每个进程把 `pid / 相对进程启动的毫秒 / 标记` 追加到该文件。一次 debug 构建的热 `open`：
+每个进程把 `pid / 相对进程启动的毫秒 / 标记` 追加到该文件。**下表全部取自同一次运行**
+（`F:\Temp\khor-try\startup-trace-6.txt`，debug 构建、热路径；早先版本把两次运行的样本拼在一张表里，
+增量算错，独立验收指出，2026-11-17 更正）：
 
-| 标记 | ms | 增量 |
-| --- | --- | --- |
-| begin → runtime-entered → contracts-checked | 0 → 16 → 33 | 33 |
-| image-current | 93 | 60 |
-| image-inspected | 873 | **780**（对 104 MB 源二进制做 SHA-256 并起一个探测进程） |
-| image-miss | 1371 | 498 |
-| client-image | 2423 | 1052（缓存未命中路径上的 publish：身份哈希 + 清单） |
-| client-path | 2424 | **11**（见下：修复前这里是 **3099**） |
-| client-spawned → client-ready | 2438 → 2692 | 254（宿主启动到写 `host.json`） |
-| host-ready → roster-new → open-printed | 2692 → 2714 → 2715 | 23 |
-| node-dropped | 2716 | 1 |
+| 标记 | ms | 增量 | 是什么 |
+| --- | --- | --- | --- |
+| begin → contracts-checked | 0 → 33 | 33 | 进程入口 + 运行时租约 + 契约自检 |
+| image-current | 93 | 60 | 读本进程自己的 release 契约 |
+| image-inspected | 873 | **780** | 对 104 MB 源二进制做 SHA-256，并起一个 `_runtime_info` 探测进程 |
+| image-miss | 1371 | 498 | 缓存查找（按"这个程序自己是否是镜像"判断，命中不了自己的安装目录） |
+| client-image | 2423 | 1052 | 缓存未命中路径上的 publish：身份哈希 + 清单 + 校验 |
+| client-path | 2424 | **1** | 修复前同一位置是 **3099 ms**（登录 shell 探测；该数字取自另一次运行 `startup-trace-2.txt`） |
+| client-spawned → client-ready | 2438 → 2692 | 254 | 宿主进程启动到 `host.json` 出现 |
+| host-ready → roster-new → open-printed | 2692 → 2714 → 2715 | 23 | 名册登记 + 打印 id |
+| node-dropped | 2716 | 1 | 释放 Node（不是退出耗时） |
 
-宿主的自述更短：`begin 0 → runtime 92 → contracts 106 → host-serving 121 → pty-open 141
-→ program-found 146 → child-spawned 191 → listener-bind 195 → host-json 196`。
-**宿主 196 ms**，不是「5 秒就位」——早先那次「就绪 4.4 s」是把 `host.json` 的创建时间
-减去了 `meta.started_ms`，而那个时钟在客户端的镜像工作之前就开始了。
+**同一进程里的宿主自述**：`begin 0 → runtime 111 → contracts 127 → host-serving 145 → pty-open 167
+→ program-found 171 → child-spawned 189 → listener-bind 191 → host-json 192`。
+**宿主从进程入口到写 `host.json` 是 192 ms**（从 `host-serving` 算 47 ms）——不是「5 秒就位」。
+早先那次「就绪 4.4 s」是把 `host.json` 的创建时间减去了 `meta.started_ms`，
+而那个时钟在客户端的镜像工作之前就开始了。这个数字也不是"操作系统建进程"或"终端可交互"的时间。
 
 **已修**（提交 `5df68991`）：`asked_shell` 在 Windows 上不再启动「登录 shell」。
 `SHELL` 在这台机器上被设成 Windows PowerShell，于是每次建会话都起一个加载 profile 的
@@ -77,19 +82,20 @@ Windows 的 PATH 就是进程环境里那份，`KHOR_PATH` 仍可覆盖。
 
 **release 二进制、进程生命周期**（`cargo build --release -p khor-cli` 之后重测）：
 
-| 时点 | `khor open -d -- cmd.exe /c exit` |
+| 时点 | `khor open -d -- cmd.exe /c exit`（进程生命周期） |
 | --- | --- |
-| 原始 W7 矩阵 | 6406 ms（`&` 口径，含 PowerShell 约 2 s 的等待） |
-| 本轮仅 ls 修复的 release | 6898 / 5010 / 5084 / 4989 ms |
-| 全部修复后的 release | **3680（冷）/ 1673 / 1670 / 1669 / 1679 ms** |
+| 本轮仅 ls 修复的 release（**同口径基线**） | 6898（冷）/ **5010 / 5084 / 4989** ms |
+| 全部修复后的 release | 3680（冷）/ **1673 / 1670 / 1669 / 1679** ms |
 | debug（同修复） | 2443 / 2279 / 2771 / 2484 ms |
 
-即热路径 **~1.67 s**（debug 口径 2.4 s）。目标 P95 ≤ 1.5 s **还差一点**。
+**同口径结论：~5.0 s → ~1.67 s。** 矩阵里的 6405.8 ms 是 `&` 口径（含 PowerShell 收尾），
+不能直接拿来和 1.67 s 比；两种口径差约 2 s，见本文开头那句更正。
 
-**仍待修**（已测量，未改）：`inspect_supported` 0.60 s、缓存命中路径上的 publish 0.78 s、
-宿主 0.21 s。到 1.5 s 只需要动前两项之一，但两者都在**运行时信任边界**上：跳过它们要
-用「路径 + 大小 + mtime（+ 首块摘要）」这类文件身份代替整份哈希，属于要单独设计的改动，
-不在本轮顺手做。方向已定：一次命中即省掉 1.38 s，热路径落到 ~0.3 s。
+目标 P95 ≤ 1.5 s **还没达到**。**仍待修**（已测量，未改）：`inspect_supported` 0.60 s、
+缓存命中路径上的 publish 0.78 s、宿主 0.21 s。到 1.5 s 只需要动前两项之一，但两者都在
+**运行时信任边界**上：跳过它们要用「路径 + 大小 + mtime（+ 首块摘要）」这类文件身份代替整份哈希，
+独立验收的判断是**不能用文件元数据直接替代完整信任证明**，必须单独设计（不可变内容 + lease 复用、
+并发替换、升级、回收都要一起想）。把它当作下一轮的第一件事，而不是顺手改。
 
 
 ### 2.3 `file_scan`：已定位并修复——是本机 `ls` 白建了一个网络端点

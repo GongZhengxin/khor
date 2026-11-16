@@ -28,9 +28,9 @@
 | A1 Agent 清单（node + CLI） | ✅ | 提交 `678c25c7`；`khor agents fleet` 报 9 已知 / 2 已安装、路线与能力 |
 | A2 清单页（GUI） | ✅ | 提交 `d277c83d`；诊断 → 会话关联 → 「这台机器上的智能体」，9 行 |
 | DSH headless 协议验证 | ✅ 实验 | `--json` NDJSON 带 sessionId；`--session-id` 续接（`turn:1→2`） |
-| B 项目化会话与原生接管 | ⬜ 未开始 | `codex resume/queue`、DSH 适配器、默认按 `place` 分组 |
+| B 项目化会话与原生接管 | 🟡 部分 | 已做：默认按 `place` 分组（`586043a7`）、向导默认跟随清单（`c3b5fcf1`）、观察会话「在终端里继续」（`1dbf9f4b`，落地页与远端清单见 `004262e9`）。未做：`codex queue` 发消息、DSH 适配器 |
 | D 两机互联（Windows ↔ LAB） | ⬜ 未开始 | 配对、跨机会话 |
-| E 启动性能四项改造 | ⬜ 未开始 | 本机 ls 跳过 endpoint、契约缓存等；目标 P95 ≤ 1.5 s |
+| E 启动性能四项改造 | 🟡 部分 | 已做：本机 `ls` 不建端点（**1168→80 ms**，`3ce5c5e3`）、Windows 不启动登录 shell（`5df68991`，`open` 同口径 **~5.0→~1.67 s**）。未做：inspect/publish 的信任边界缓存；目标 P95 ≤ 1.5 s 未达 |
 
 ### 0.1 会话稳定性（2026-11-16，W5 收口时发现并修复）
 

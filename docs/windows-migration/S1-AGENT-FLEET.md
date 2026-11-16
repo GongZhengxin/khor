@@ -6,6 +6,9 @@
 ## 1. 定下的方向（用户决策）
 
 1. **默认 Khor 对话**，原生终端可选；两条栏位并存。
+   这里说的是**形态**：默认创建 khor 拥有的对话（`kind='agent'`，手机可直接用），
+   具体由哪个 agent 回答**跟随清单**（本机是 Codex，因为它是唯一内置可用的）；
+   Khor 自有 agent（Pi/DeepSeek）需要账户，不是默认。
 2. **两个都做**：Khor 自建对话（`_ghost` + ACP/Pi）与「原生应用拥有对话」。
 3. **原生会话在手机上接受按键中转**（`term_key`），并在界面上标注为远程终端。
 4. **npm 可选、自动探测、绝不强制**：主路径（内置 Codex、Pi/DeepSeek、原生接管）零依赖；
@@ -22,8 +25,13 @@
 轮换使用就成了「窗口在两种形态间横跳」。
 
 **改法**：Windows 恒为 GUI 子系统；原本由控制台承担的诊断改由 `diagnostics` 模块写日志文件
-（`%LOCALAPPDATA%\Khor\logs\gui.log`，`KHOR_LOG_FILE` 可覆盖，8 MiB 一轮转），
-`KHOR_GUI_CONSOLE=1` 改分配真实控制台给开发用。
+（`%LOCALAPPDATA%\Khor\logs\gui.log`，`KHOR_LOG_FILE` 可覆盖；8 MiB 上限**在启动时检查一次**，
+不是运行中的硬上限），`KHOR_GUI_CONSOLE` 分配真实控制台给开发用（`1` 开，空/`0`/`false` 关）。
+
+**只在"没有任何标准流"时才重定向**：`main` 里调用但先问 `GetStdHandle` —— 同一个二进制还会被
+再执行为 `_host`/`_ghost`/`_cagent`/`_codexagent`/MCP worker，它们拿到的是**父进程给的管道**，
+重定向会把协议握写进日志、让父进程一直等。这一条是独立验收（见 §8）抓住的阻断项，
+修复见 `8089527c`。
 
 **证据**：
 
@@ -36,18 +44,21 @@
 
 ### 2.2 子进程不再闪控制台（提交 `992f2ebd`）
 
-GUI 进程没有控制台，Windows 会给每个控制台子进程**新开一个可见控制台**。仓库里此前**从未**设置过
-`CREATE_NO_WINDOW`。新增 `console::hidden`（返回带 `CREATE_NO_WINDOW` 的 `Command`，
-而不是接收 `Command`——`creation_flags` 是**替换**语义，见模块注释），覆蓋 doctor 的两处
+GUI 进程没有控制台，Windows 会给每个控制台子进程**新开一个可见控制台**。`CREATE_NO_WINDOW`
+此前只有一处（`crates/node/src/khor_agent_process_windows.rs:199`，自有进程适配器），
+**本轮新增 10 处调用点**。新增 `console::hidden`（返回带 `CREATE_NO_WINDOW` 的 `Command`，
+而不是接收 `Command`——`creation_flags` 是**替换**语义，见模块注释），覆盖 doctor 的两处
 （`khor.exe version`、`khor serve`）、编辑器的两处（`code --version`、`code serve-web`）、
 以及添加机器时走的 6 处 ssh/ssh-keygen。
 
-顺带修掉一个真 bug：`khor_cli_binary` 在 Windows 上找的是没有 `.exe` 的 `khor`，永远找不到，
-于是「诊断」在明明有 CLI 的机器上报「没有 CLI」。现在用平台自己的后缀。
-证据：`doctor_fix(serve)` 返回「a resident was started」（修复前这条调用定位不到二进制）。
+顺带修掉一个真 bug：`khor_cli_binary` 的**邻接查找**在 Windows 上找的是没有 `.exe` 的 `khor`，
+所以只有 PATH 回退能命中；「诊断」在 CLI 不在 PATH 的机器上就会报「没有 CLI」。现在邻接查找也带
+平台后缀（PATH 回退仍在）。
+证据：`doctor_fix(serve)` 返回「a resident was started」（修复前该调用在本机定位不到二进制）。
 
 测试：`doctor` 1、`code` 9、`satellite` 26 全过。node 全量 lib 首轮 8 失败、复跑 4 失败（1053 / 1057 passed），
-逐个隔离跑全部通过（35 + 15 + 2），是既有的全量并发 flaky，与本次改动无关。
+逐个隔离跑全部通过（35 + 15 + 2）。**只能说明这几条与本次改动没有可见关联，不能证明全量并发下的失败
+是"既有且无关"**——独立验收指出这个推断越界，这里收窄为"未证实与本轮有关，也未证实无关"。
 
 ### 2.3 Agent 清单：这台机器实际有什么（提交 `678c25c7`、`d277c83d`）
 
@@ -55,17 +66,27 @@ GUI 进程没有控制台，Windows 会给每个控制台子进程**新开一个
 而人先问的是「**这台机器上有什么用、在哪、khor 能拿它做什么**」。两件事不能并成一张表：
 本机装着的 DSH 从不在 ACP 注册表里，注册表里十几个条目本机一个都没装。
 
-`agent_fleet` 用文件系统能回答的事实构建清单（PATH / 已知安装目录 / 配置目录是否存在），
-**绝不启动任何东西**（起 10 个 CLI 判断它们活不活要花几秒，而多数 agent 未登录前什么也不答）。
+`agent_fleet` 用文件系统能回答的事实构建清单（PATH / 安装目录 / 配置目录是否存在）。
+**"绝不启动任何东西"只在 Windows 成立**：Windows 分支不碰登录 shell；macOS/Linux 上
+`fleet → user_path → asked_shell` 的首次调用仍可能起一次登录 shell（进程内 `OnceLock`，只一次）。
 路线的优先级写死在数据里：`builtin`（khor 自带 shim，零 npm）→ `native-acp`（工具自带 ACP，零 npm）
 → `registry-acp`（包运行器适配器，唯一需要 runner 的一档，行上直接标 `needs-runner`）
 → `terminal`（地板，任何 agent 都能被敲进终端）。
+
+**两条自我限制**（独立验收后收紧，2026-11-17）：
+
+- **只认 `npx` 作 runner**。`Node::agent_launch` 把注册表 argv 原样交给启动器，而那些 argv 都以
+  `npx` 开头；本机只有 `pnpm` 时若标 `registry-acp` 就会出现「清单说可用、启动找不到 npx」。
+  `pnpm dlx` 是下一步（要先教启动器改写第一个词），不是现在的承诺。
+- **生产表里的 `program_dirs` 目前全空**：安装目录查找这条路径由测试里的构造条目证明，
+  真正生效的是 PATH 与配置目录。文档不再声称"发现了安装目录"。
+
 
 **证据（CLI）**：
 
 ```
 $ khor agents fleet
-9 known, 2 installed, package runner: pnpm dlx
+9 known, 2 installed, package runner: none
 codex   Codex              installed  C:\Users\admin\AppData\Local\OpenAI\Codex\bin\…\codex.exe  builtin   acp run list read resume send terminal
 claude  Claude Code        not installed  -  -  terminal
 dsh     DeepSeek Harness   installed  F:\DeepSeek Harness\…\dsh.cmd  terminal  run resume send terminal
@@ -73,11 +94,14 @@ gemini  Gemini CLI         not installed  -  -  terminal
 …
 ```
 
+（上面的 `package runner` 在本机是 `none`：只有 `pnpm`、没有 `npx`，按上面那条自我限制不算数。
+最初版本这里印的是 `pnpm dlx`，独立验收指出与实际启动器矛盾后改正。）
+
 **证据（界面）**：诊断 → 会话关联 → 「这台机器上的智能体」。
 Codex 显示 `已安装 builtin` + 路径 + `acp · run · list · read · resume · send · terminal`；
-DeepSeek Harness `已安装 terminal` + `run · resume · send · terminal`；未安装的九个仍在表上。
-`POST /agent_fleet` 经窗口传输返回 200、`runner: pnpm dlx`、`agents: 9`（截图见
-`F:\Temp\khor-try\shot-fleet2.png`）。
+DeepSeek Harness `已安装 terminal` + `run · resume · send · terminal`；**未安装的七个**仍在表上。
+`POST /agent_fleet` 经窗口传输返回 200、`agents: 9`（截图见
+`F:\Temp\khor-try\shot-fleet2.png`；截图中那行 runner 是收紧之前的构建）。
 
 测试：`agent_fleet` 5 个单元测试（含「按安装目录查找」——第一版在 Windows 上漏了 `.exe` 后缀，
 正是这条测试抓出来的）；`khor-gui-core` 的 `command_tables` 4 过（桥接与 Tauri 两张表一致）；
@@ -89,13 +113,21 @@ Windows 上列表打开时按 `place` 分组（"哪个项目在忙"是这台机�
 macOS/Linux 仍是 `recent`。只改**没有偏好时的默认**：`storedArrange` 仍返回人选过的值。
 证据：同一批行在改动前是平铺的，改动后列表出现 `∨ F:\#Gong\#AI4S\khor`（8 条）与 `∨ 没有目录` 两个分组头。
 
-### 2.5 产物与安装包（本轮最终构建）
+### 2.5 产物与安装包
 
-用当前 HEAD 重建：`Khor_0.2.0_x64_en-US.msi` / `..._zh-CN.msi`（各 49.72 MiB）、
-`Khor_0.2.0_x64-setup.exe`（36.12 MiB）。
-release 二进制 PE 子系统 = **2（GUI）**，启动后无控制台、单标题栏、列表按项目分组，
-日志文件收到 `khor: window transport on 127.0.0.1:1432 (4 workers)`。
-`scripts/windows-installer-check.ps1` → **6/6 PASS**（install 6059 ms、layout 89、start 2100、stop 711、uninstall 2222、removed 57；既有的 `logs`、`runtime` 保留）。
+构建产物与提交的对应关系（避免"当前 HEAD 的构建"这种无法核对的说法）：
+
+| 产物 | 构建时间 | 含哪些提交 |
+| --- | --- | --- |
+| 早期 03:41 版本 | 03:41 | 到 `c74a3cc77` 前后，**不含** `1dbf9f4b` 及其后的验收修正 |
+| 05:37 版本 | 05:37 | 到 `1dbf9f4b`，**不含** `8089527c`/`004262e9`（验收修正） |
+| 最终版本 | 见 [HANDOFF-20261117-0600](HANDOFF-20261117-0600.md) §2 | 含全部验收修正 |
+
+`Khor_0.2.0_x64-setup.exe` 约 36.1 MiB；release 二进制 PE 子系统 = **2（GUI）**，启动后无控制台、
+单标题栏、列表按项目分组，日志文件收到 `khor: window transport on 127.0.0.1:1432 (4 workers)`。
+`scripts/windows-installer-check.ps1` 在 04:32 那个产物上是 **6/6 PASS**
+（install 6059 ms、layout 89、start 2100、stop 711、uninstall 2222、removed 57；既有 `logs`、`runtime` 保留）。
+⚠️ 那次检查**不覆盖**其后的验收修正；最终产物需要再跑一次，见交接文档。
 
 ### 2.6 DSH 通道：已用实验验证（未提交代码，结论先行）
 
@@ -141,14 +173,15 @@ CC Switch（MIT，桌面三平台）管 **13 个工具**，方式是**写各 CLI
 
 ## 5. 尚未开始（后续切片）
 
-- **B 项目化会话**：Windows 默认按 `place` 分组；新建向导默认 Khor 对话；Codex 原生接管
-  （`codex resume <id>` / `codex queue --thread <id> --message`）；DSH 适配器
+- **B 项目化会话**：已完成一半——Windows 默认按 `place` 分组、新建向导默认跟随清单选已装 agent、
+  观察到的 Codex 会话可「在终端里继续」（`codex resume <id>`）。
+  **还差**：`codex queue --thread <id> --message`（发一条消息）、DSH 适配器
   （读 `session.v4.jsonl.zstd` + headless 驱动）。
-- **D 两机互联**：Windows ↔ LAB 配对与跨机会话。
+- **D 两机互联**：Windows ↔ LAB 配对与跨机会话（未开始）。
 - **E 启动性能**：进行中。已完成：本机 `ls` 不再建 iroh 端点（**1168 → 80 ms**，提交 `3ce5c5e3`）、
-  Windows 不再为 PATH 启动登录 shell（每次建会话省 **3.1 s**，提交 `5df68991`），
-  `session_create` release 热路径 **~1.67 s**（原 6.4 s 口径）。剩余：镜像 inspect（0.60 s）与
-  缓存命中上的 publish（0.78 s），两项都在运行时信任边界上，需单独设计「文件身份代替整份哈希」。
+  Windows 不再为 PATH 启动登录 shell（同口径下 `open` **~5.0 s → ~1.67 s** 的一部分，提交 `5df68991`）。
+  剩余：镜像 inspect（0.60 s）与缓存命中上的 publish（0.78 s），两项都在运行时信任边界上，
+  需单独设计，独立验收明确反对"用文件元数据直接替代完整信任证明"。
   详见 [W7-PERF §2.2](W7-PERF.md)。
 
 ## 6. 已知限制
@@ -170,3 +203,28 @@ khor agents fleet
 # 诊断日志（无控制台时）
 Get-Content "$env:LOCALAPPDATA\Khor\logs\gui.log" -Tail 20
 ```
+
+## 8. 独立验收（2026-11-17，codex 进程 · ccs-kapestack/gpt-6-astra · reasoning max · read-only）
+
+报告：`F:\Temp\khor-acceptance-report.md`（1.0 MB，含逐文件阅读记录与最终七节结论）。
+
+**结论是"暂不建议合入 main"**，理由是三条：日志重定向会破坏 GUI 自复用角色的协议管道；
+原生续接与远端默认选择没有闭环；新测试在 Unix 上有可执行权限缺陷。三条都已在本轮修掉：
+
+| 验收发现 | 处理 | 提交 |
+| --- | --- | --- |
+| **P1 阻断**：`diagnostics::attach` 无条件替换 stdout/stderr，会吃掉 `_host`/`_ghost`/`_cagent`/`_codexagent`/MCP worker 继承的**管道**，握手写进日志、父进程一直等 | 改为"只在没有任何标准流时才重定向"（`GetStdHandle`），并修 `KHOR_GUI_CONSOLE=0` 被当成开的读法 | `8089527c` |
+| **P2** 原生续接丢弃 `open_shell` 返回的新 id，终端不会打开（启动命令要等 `Ready`） | 新增 `khor:open-session` 事件 + App 自己的打开流程（`sessionTabs.open` + 详情页） | `004262e9` |
+| **P2** 远端目标沿用本机清单，可能默认一个对方没有的 agent | 清单只对 `DeviceRow::me` 生效；远端保持出厂默认，直到节点能为那台机器回答 | `004262e9` |
+| **P2** 清单宣称 `pnpm dlx` 可用，启动器却只会用 `npx` | runner 只认 `npx`（并注明 `pnpm` 需先教启动器改写） | `004262e9` |
+| 测试在 Unix 上缺可执行位 | `write_program` 在 unix 设 `0o755` | `8089527c` |
+| 文档事实错误十余条 | 逐条改正：`file_copy` 口径、trace 表算术与样本混用、`open` 两口径不可直接比、`CREATE_NO_WINDOW` 并非"从未设置"、CLI 查找不是"永远找不到"、未安装是七个不是九个、`program_dirs` 生产为空、Windows 分支才"不启动任何东西"、8 MiB 只在启动时检查、ROADMAP 状态过期 | `2f…`（见 git log） |
+
+**验收没有做到的事**（照实记录）：构建、测试、安装、GUI 操作、安装包与 HEAD 的对应关系、
+Linux 原始计时、macOS 动回归、Win10、双机、DSH 真实凭据——全部未复核，报告里明确列了。
+
+**验收给下一轮的排序**：① 先筛掉 Windows 不适用的 legacy 镜像白名单检查（`activation.rs:10` 四条只有
+Linux/macOS，但仍先做整份 SHA）；② 续接体验完善（打开目标终端、幂等重试、已有 writer 的处理）；
+③ 按目标机器维护 fleet 并与 launcher 共用路线解析、清单加载不阻塞设备展示；
+④ 设计已发布 runtime generation 的复用（不可变内容 + lease），**不能**用路径/大小/mtime/首块摘要
+直接替代完整信任证明。
