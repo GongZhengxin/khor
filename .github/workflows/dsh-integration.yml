@@ -2,7 +2,16 @@ name: DSH integration
 
 on:
   workflow_dispatch:
+    inputs:
+      integration_only:
+        description: Recheck changed cross-machine/delegation fixtures after the full suite
+        type: boolean
+        default: false
   workflow_call:
+    inputs:
+      integration_only:
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -60,6 +69,7 @@ jobs:
             exit 1
           fi
       - name: Prove optional-installation and recovery regressions before checking their fixes
+        if: ${{ !inputs.integration_only }}
         run: |
           mkdir -p "$RUNNER_TEMP/empty-agent-path"
           cp crates/node/src/doctor.rs "$RUNNER_TEMP/doctor.green.rs"
@@ -99,13 +109,15 @@ jobs:
           git rev-parse 'HEAD^{tree}' > "$RUNNER_TEMP/dsh-evidence/source-tree.txt"
           shasum -a 256 "$RUNNER_TEMP/dsh-evidence/khor" "$RUNNER_TEMP/dsh-evidence/bridge" > "$RUNNER_TEMP/dsh-evidence/binaries.sha256"
       - name: Verify default discovery and launch ownership
+        if: ${{ !inputs.integration_only }}
         run: |
           KHOR_PATH="$RUNNER_TEMP/empty-agent-path" cargo test --locked -p khor-node --lib dsh_ -- --test-threads=1
           cargo test --locked -p khor-sync --lib agents -- --test-threads=1
           cargo test --locked -p khor-gui-core --lib agents::tests -- --test-threads=1
-          cargo test --locked -p khor-cli --test far_open -- --test-threads=1
+      - name: Verify cross-machine user sessions
+        run: cargo test --locked -p khor-cli --test far_open -- --test-threads=1
       - name: Verify ACP configuration, permissions, cancellation and recovery
-        if: ${{ !cancelled() && steps.native_build.outcome == 'success' }}
+        if: ${{ !inputs.integration_only && !cancelled() && steps.native_build.outcome == 'success' }}
         run: cargo test --locked -p khor-acp --test conversation -- --test-threads=1
       - name: Verify the real Khor agent delegation path
         if: ${{ !cancelled() && steps.native_build.outcome == 'success' }}

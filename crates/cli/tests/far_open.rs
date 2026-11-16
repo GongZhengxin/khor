@@ -247,6 +247,14 @@ async fn a_conversation_is_born_on_the_machine_the_wizard_named_and_spoken_to_fr
     let GuiNote::Agent { .. } = next_note(&mut conn) else {
         panic!("the facts come first")
     };
+    let GuiNote::Capabilities(protocol) = next_note(&mut conn) else {
+        panic!("the complete protocol capabilities follow the facts")
+    };
+    assert!(
+        serde_json::from_str::<serde_json::Value>(&protocol)
+            .unwrap()
+            .is_object()
+    );
     let GuiNote::Settings(_) = next_note(&mut conn) else {
         panic!("then the settings — alpha's shim lists claude's modes")
     };

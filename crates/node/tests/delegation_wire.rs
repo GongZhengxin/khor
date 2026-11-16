@@ -260,6 +260,10 @@ async fn run() {
         )
         .unwrap();
     let _hosts = Hosts(alpha_root.0.clone());
+    // A detached host reports through its execution home's resident. Stand it
+    // up before the first local task, just as the App/bridge does; this custom
+    // harness is a GUI host executable, not a CLI that implements `_serve`.
+    let _alpha = serve(&alpha_root.0, "alpha").await;
     let local_input = message("local-first", None);
     let local = task(
         alpha
@@ -383,7 +387,6 @@ async fn run() {
 
     pi::run(&alpha).await;
 
-    let _alpha = serve(&alpha_root.0, "alpha").await;
     let beta = Node::open_as(beta_root.0.clone(), "beta").unwrap();
     tokio::time::timeout(Duration::from_secs(45), beta.pair(&alpha.invite().unwrap()))
         .await
