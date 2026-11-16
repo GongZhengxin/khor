@@ -145,8 +145,11 @@ CC Switch（MIT，桌面三平台）管 **13 个工具**，方式是**写各 CLI
   （`codex resume <id>` / `codex queue --thread <id> --message`）；DSH 适配器
   （读 `session.v4.jsonl.zstd` + headless 驱动）。
 - **D 两机互联**：Windows ↔ LAB 配对与跨机会话。
-- **E 启动性能**：`session_create` 6.4 s 的四项改造（本机 `ls` 跳过 endpoint、契约跨进程缓存、
-  命中后不重复 inspect、已验证载荷不重复哈希）。
+- **E 启动性能**：进行中。已完成：本机 `ls` 不再建 iroh 端点（**1168 → 80 ms**，提交 `3ce5c5e3`）、
+  Windows 不再为 PATH 启动登录 shell（每次建会话省 **3.1 s**，提交 `5df68991`），
+  `session_create` release 热路径 **~1.67 s**（原 6.4 s 口径）。剩余：镜像 inspect（0.60 s）与
+  缓存命中上的 publish（0.78 s），两项都在运行时信任边界上，需单独设计「文件身份代替整份哈希」。
+  详见 [W7-PERF §2.2](W7-PERF.md)。
 
 ## 6. 已知限制
 

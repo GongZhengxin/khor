@@ -73,12 +73,24 @@
 **已修**（提交 `5df68991`）：`asked_shell` 在 Windows 上不再启动「登录 shell」。
 `SHELL` 在这台机器上被设成 Windows PowerShell，于是每次建会话都起一个加载 profile 的
 PowerShell，花 **3.1 s** 去回答一个 Windows 上不成立的 `-lic printf` 问题。
-Windows 的 PATH 就是进程环境里那份，`KHOR_PATH` 仍可覆盖。修后 debug 热路径 5.0 s → 2.4 s
-（进程生命周期）。
+Windows 的 PATH 就是进程环境里那份，`KHOR_PATH` 仍可覆盖。
 
-**仍待修**（已测量，未改）：`inspect_supported` 0.78 s、缓存命中路径上的 publish 1.05 s
-——两者都要把整份镜像读一遍；以及会话建立之后的收尾（本轮测到 `Node` 析构只要 1 ms，
-但 `open-printed` 之后仍有时间，尚待用标记继续切分）。
+**release 二进制、进程生命周期**（`cargo build --release -p khor-cli` 之后重测）：
+
+| 时点 | `khor open -d -- cmd.exe /c exit` |
+| --- | --- |
+| 原始 W7 矩阵 | 6406 ms（`&` 口径，含 PowerShell 约 2 s 的等待） |
+| 本轮仅 ls 修复的 release | 6898 / 5010 / 5084 / 4989 ms |
+| 全部修复后的 release | **3680（冷）/ 1673 / 1670 / 1669 / 1679 ms** |
+| debug（同修复） | 2443 / 2279 / 2771 / 2484 ms |
+
+即热路径 **~1.67 s**（debug 口径 2.4 s）。目标 P95 ≤ 1.5 s **还差一点**。
+
+**仍待修**（已测量，未改）：`inspect_supported` 0.60 s、缓存命中路径上的 publish 0.78 s、
+宿主 0.21 s。到 1.5 s 只需要动前两项之一，但两者都在**运行时信任边界**上：跳过它们要
+用「路径 + 大小 + mtime（+ 首块摘要）」这类文件身份代替整份哈希，属于要单独设计的改动，
+不在本轮顺手做。方向已定：一次命中即省掉 1.38 s，热路径落到 ~0.3 s。
+
 
 ### 2.3 `file_scan`：已定位并修复——是本机 `ls` 白建了一个网络端点
 
