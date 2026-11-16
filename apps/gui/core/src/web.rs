@@ -796,7 +796,8 @@ mod loopback_tests {
             eprintln!("native loopback {host}: {facts:?}");
             assert_eq!(
                 result["body"], "BORROWED_EXIT",
-                "{host}: {result}; {facts:?}"
+                "{host}: {result}; {facts:?}; native stderr: {}",
+                String::from_utf8_lossy(&output.stderr)
             );
             assert!(facts.errors.is_empty(), "{host}: {facts:?}");
             assert!(facts.served > 0, "{host}: {facts:?}");
