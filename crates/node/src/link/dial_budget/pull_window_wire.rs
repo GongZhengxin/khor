@@ -45,7 +45,18 @@ struct Fixture {
 
 impl Fixture {
     async fn new(kind: Held) -> Self {
-        Self::build(kind, false).await
+        Self::with_active_files(kind, false).await
+    }
+
+    async fn with_active_files(kind: Held, node_identity: bool) -> Self {
+        Self::with_payload_and_files(
+            kind,
+            false,
+            node_identity,
+            (12 * proto::SLICE + 1234) as usize,
+            true,
+        )
+        .await
     }
 
     async fn build(kind: Held, offered: bool) -> Self {
@@ -67,6 +78,16 @@ impl Fixture {
     }
 
     async fn with_payload(kind: Held, offered: bool, node_identity: bool, size: usize) -> Self {
+        Self::with_payload_and_files(kind, offered, node_identity, size, false).await
+    }
+
+    async fn with_payload_and_files(
+        kind: Held,
+        offered: bool,
+        node_identity: bool,
+        size: usize,
+        accept_files: bool,
+    ) -> Self {
         assert!(PULL_AHEAD >= 2);
         let server = iroh::Endpoint::builder(iroh::endpoint::presets::Minimal)
             .relay_mode(iroh::RelayMode::Disabled)
@@ -222,7 +243,7 @@ impl Fixture {
                 connections.spawn(answer(conn));
                 loop {
                     tokio::select! {
-                        incoming = endpoint.accept() => {
+                        incoming = endpoint.accept(), if accept_files => {
                             let Some(incoming) = incoming else { break };
                             let Ok(accepting) = incoming.accept() else { continue };
                             let serve = answer.clone();

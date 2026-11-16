@@ -25,7 +25,7 @@ async fn endpoint() -> iroh::Endpoint {
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn only_an_admitted_stop_for_the_right_token_cancels_a_live_pull() {
-    let fixture = Fixture::with_identity(Held::All, true).await;
+    let fixture = Fixture::with_active_files(Held::All, true).await;
     let controller = endpoint().await;
     let stranger = endpoint().await;
     {
