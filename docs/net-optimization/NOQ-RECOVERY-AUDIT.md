@@ -25,3 +25,9 @@ E=`/Volumes/disk0/Khor/evidence/net`。冻结方案 `noq-recovery-necessity-abla
 这三组暂保留为当前观测接口集成依赖；结论来自具体公开字段/消费者/已有合同审查，不冒称逐项物理删除红，也不证明唯一架构或能耗接受。退出条件是上游提供等价观测，或经过相同新鲜性/故障/停顿合同验证的消费者迁移且不增加探测或qlog要求。详细文件SHA、字段与测试名见E/noq-observation-api-exit-audit-v1.json。
 
 v7账本为60项：50待审、1上游替换、6指定删除实验支持保留、3观测接口集成保留。不同证据类型不得混称“全部必要”。
+
+## ACK、保活与质量行为删除对照
+
+`043413Z-c30c817d` source9e31/Noq同2ed树，controlf4a82d77，原101/92.095秒/122报告；4隔离副本各10个相同原合同。补丁4的健康备用本路ACK、6的路径保活不被连接timer缩短、12的ACK-delay近下界质量、13的显式路径PING一网络RTT内取样，各移除后只对应专属1红，其他36控制绿。普通ping、握手、真实TLS 0RTT及元数据/健康旧路控制保持。原断言/期限不改，native失败不作准备错误；0手机/性能接受。
+
+方案 `noq-followup-necessity-plan-v1.json` 在可信control冻结（源测试树逐字不改），独立核验E/run/noq-followup-necessity-verification-v1.json。v8为46待审、1上游替换、10专属删除实验保留、3观测接口依赖保留。Noq仅1 BBR app-limited尚待退出审查；iroh仍需逐项收口，不能据此称全部vendor必要。
