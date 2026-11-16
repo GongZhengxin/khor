@@ -5478,6 +5478,18 @@ fn agents(rest: &[String]) -> Result<(), String> {
             }
             Ok(())
         }
+        // **A message for a conversation the vendor keeps.** The `send`
+        // verb above drives khor's own sessions; this one asks Codex's own
+        // daemon to queue a message into a thread it owns, which is the
+        // only way to say something to a loaded thread without becoming a
+        // second writer (that is refused on purpose, `takeover`).
+        Some((word, tail)) if word == "tell" => {
+            let [agent, id, text] = tail else {
+                return Err(usage_text().into());
+            };
+            println!("{}", khor_node::native_queue::send(agent, id, text)?);
+            Ok(())
+        }
         // **What this machine has, not what khor knows about.** The two
         // were one table for as long as it took to notice that DSH is
         // installed here and absent from the registry, while a dozen

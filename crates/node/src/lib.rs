@@ -74,6 +74,7 @@ pub mod mcp;
 pub mod mcp_worker;
 pub mod merge;
 pub mod modes;
+pub mod native_queue;
 pub(crate) mod once;
 pub mod pause;
 pub mod pictures;

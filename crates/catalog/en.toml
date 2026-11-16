@@ -361,6 +361,10 @@ usage: khor <verb>
                         the program's path, how khor would start it,
                         and what it can do with it — a registry entry
                         and an installed agent are different facts.
+                        tell <agent> <id> <text> queues one message into
+                        a conversation the vendor already owns (Codex
+                        today), without taking it over: the write goes
+                        through the vendor's own daemon.
                         sessions shows its conversations (reads what's
                         recorded; --ask actually asks, which starts a
                         process); once asked, the answer syncs across
@@ -993,6 +997,13 @@ roads-jump = "the jump host"
 roads-broken-auth = "{0} accepts password logins only"
 
 [msg]
+native-send-empty = "A message with nothing in it is not sent"
+native-send-long = "That message is {0} bytes; {1} is the most one send carries"
+native-send-nul = "A message or id containing a NUL byte is not sent"
+native-send-unknown = "khor has no way to put a message into a {0} conversation yet"
+native-send-no-program = "{0} is not on this machine's PATH"
+native-send-accepted = "{0} accepted the message"
+native-send-refused = "{0} refused it (exit {1})"
 launch-preset-name = "Enter a startup preset name"
 launch-preset-duplicate = "A startup preset already has this name"
 launch-command-invalid = "The startup command contains an invalid character or exceeds 32 KiB"
