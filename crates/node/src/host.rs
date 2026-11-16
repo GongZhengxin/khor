@@ -634,6 +634,26 @@ fn spawn_host_with(
             Ok(())
         });
     }
+    // **The same promise on Windows, which had no counterpart** (measured
+    // 2026-11-16). `setsid` above is what lets the opener's terminal go away
+    // without taking the session with it; without an equivalent, a host was an
+    // ordinary child of whoever ran `open`, so it died with that process and the
+    // session came back `Failed / 宿主被结束` for good. Reproduced both ways on
+    // Windows: with no resident the session died when the CLI exited, and
+    // sessions hosted by `khor serve` died when that serve was stopped.
+    //
+    // `DETACHED_PROCESS` gives the child no console of its own to inherit and
+    // outlives the parent's; `CREATE_NEW_PROCESS_GROUP` keeps the parent's
+    // Ctrl+C / console close from being delivered to it. Its stdio is already
+    // /dev/null above, so it has nothing to say to a console anyway.
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        use windows_sys::Win32::System::Threading::{
+            CREATE_NEW_PROCESS_GROUP, DETACHED_PROCESS,
+        };
+        c.creation_flags(DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP);
+    }
     crate::mcp_worker::prepare_durable_child(&mut c);
     // The `PATH` this process worked out travels down rather than
     // being worked out again: `_host` is a fresh process and would
