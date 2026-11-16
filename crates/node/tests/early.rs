@@ -115,7 +115,16 @@ async fn early(
     send.write_all(&proto::encode(req).unwrap()).await.unwrap();
     send.finish().unwrap();
     if !finish {
-        tokio::time::sleep(Duration::from_secs(1)).await;
+        let completed = timeout(Duration::from_secs(1), early.handshake_completed()).await;
+        eprintln!(
+            "[early-barrier] handshake_returned={} completed_ok={}",
+            completed.is_ok(),
+            matches!(&completed, Ok(Ok(_)))
+        );
+        assert!(
+            completed.is_err(),
+            "the one-way fixture let a resumed handshake complete"
+        );
         early.close(0u32.into(), b"abandoned");
         return None;
     }
