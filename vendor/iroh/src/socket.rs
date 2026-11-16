@@ -750,12 +750,35 @@ enum UpdateReason {
     LinkChangeMajor,
     LinkChangeMinor,
     RelayMapChange,
+    RelayConnectionLost,
 }
 
 impl UpdateReason {
     fn is_major(self) -> bool {
         matches!(self, Self::LinkChangeMajor | Self::RelayMapChange)
     }
+
+    fn coalesce(self, next: Self) -> Self {
+        if self.is_major() {
+            self
+        } else if next.is_major() {
+            next
+        } else if self == Self::RelayConnectionLost {
+            self
+        } else {
+            next
+        }
+    }
+}
+
+/// A retry or a new home is not another loss of the established home.
+fn home_connection_lost(previous: &[RelayStatus], current: &[RelayStatus]) -> bool {
+    current.iter().any(|now| {
+        !now.is_connected()
+            && previous
+                .iter()
+                .any(|was| was.url() == now.url() && was.is_connected())
+    })
 }
 
 impl DirectAddrUpdateState {
@@ -786,7 +809,7 @@ impl DirectAddrUpdateState {
                 self.run(why, if_state, net_reporter);
             }
             Err(_) => {
-                let _ = self.want_update.insert(why);
+                self.want_update = Some(self.want_update.map_or(why, |old| old.coalesce(why)));
             }
         }
     }
@@ -829,6 +852,13 @@ impl DirectAddrUpdateState {
 
         self.sock.metrics.net_report.portmap_attempts.inc();
         self.port_mapper.procure_mapping();
+
+        // A known dead home needs current Relay reachability, not an
+        // incremental report that deliberately preserves an unprobed home.
+        // This is not a change of network and keeps successor cooldowns.
+        if why == UpdateReason::RelayConnectionLost {
+            net_reporter.request_full_report();
+        }
 
         trace!("requesting net_report report");
         let sock = self.sock.clone();
@@ -1592,6 +1622,9 @@ impl Actor {
         let mut portmap_watcher_closed = false;
 
         let mut net_report_watcher = self.sock.net_report.watch();
+        let mut home_relay_watcher = self.sock.home_relay_status();
+        let mut previous_home = home_relay_watcher.get();
+        let mut home_relay_watcher_closed = false;
 
         // ensure we are doing an initial publish of our addresses
         self.sock.publish_my_addr();
@@ -1629,6 +1662,22 @@ impl Actor {
                     trace!("tick: re_stun {:?}", tick);
                     self.sock.metrics.socket.actor_tick_re_stun.inc();
                     self.re_stun(UpdateReason::Periodic);
+                }
+                home = home_relay_watcher.updated(), if !home_relay_watcher_closed => {
+                    match home {
+                        Ok(current) => {
+                            let lost = home_connection_lost(&previous_home, &current);
+                            previous_home = current;
+                            if lost {
+                                self.sock.metrics.socket.actor_tick_other.inc();
+                                self.re_stun(UpdateReason::RelayConnectionLost);
+                            }
+                        }
+                        Err(_) => {
+                            home_relay_watcher_closed = true;
+                            warn!("home relay watcher stopped");
+                        }
+                    }
                 }
                 new_addr = local_addrs_watcher.updated() => {
                     match new_addr {
@@ -2305,6 +2354,72 @@ mod tests {
     };
 
     const ALPN: &[u8] = b"n0/test/1";
+
+    #[test]
+    fn khor_only_an_established_current_home_loss_requests_a_report() {
+        use super::{RelayStatus, home_connection_lost, transports::RelayConnectionState};
+        let status = |url: &str, state| RelayStatus::new(url.parse().unwrap(), state);
+        let url = "http://127.0.0.1:3340/";
+        let up = status(url, RelayConnectionState::Connected);
+        let connecting = status(url, RelayConnectionState::Connecting);
+        let down = status(
+            url,
+            RelayConnectionState::Disconnected { last_failure: None },
+        );
+        assert!(home_connection_lost(
+            std::slice::from_ref(&up),
+            std::slice::from_ref(&down)
+        ));
+        assert!(home_connection_lost(
+            std::slice::from_ref(&up),
+            std::slice::from_ref(&connecting)
+        ));
+        assert!(!home_connection_lost(
+            &[],
+            std::slice::from_ref(&connecting)
+        ));
+        assert!(!home_connection_lost(
+            std::slice::from_ref(&connecting),
+            std::slice::from_ref(&down)
+        ));
+        assert!(!home_connection_lost(
+            std::slice::from_ref(&down),
+            std::slice::from_ref(&connecting)
+        ));
+        assert!(!home_connection_lost(
+            std::slice::from_ref(&up),
+            std::slice::from_ref(&up)
+        ));
+        let new = status("http://127.0.0.1:3341/", RelayConnectionState::Connecting);
+        assert!(!home_connection_lost(&[up], &[new]));
+    }
+
+    #[test]
+    fn khor_relay_loss_report_is_not_overwritten_by_a_weak_update() {
+        use super::UpdateReason::*;
+        for weak in [None, Periodic, PortmapUpdated, LinkChangeMinor] {
+            assert_eq!(RelayConnectionLost.coalesce(weak), RelayConnectionLost);
+            assert_eq!(weak.coalesce(RelayConnectionLost), RelayConnectionLost);
+        }
+        assert_eq!(
+            RelayConnectionLost.coalesce(RelayConnectionLost),
+            RelayConnectionLost
+        );
+        assert!(
+            !RelayConnectionLost.is_major(),
+            "Relay loss does not reset network cooldowns"
+        );
+    }
+
+    #[test]
+    fn khor_major_network_updates_keep_priority_over_relay_loss() {
+        use super::UpdateReason::*;
+        for major in [LinkChangeMajor, RelayMapChange] {
+            assert_eq!(major.coalesce(RelayConnectionLost), major);
+            assert_eq!(RelayConnectionLost.coalesce(major), major);
+            assert_eq!(major.coalesce(Periodic), major);
+        }
+    }
 
     #[test]
     fn khor_container_and_vm_bridges_are_not_offered() {

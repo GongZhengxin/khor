@@ -370,6 +370,11 @@ impl Client {
         self._follow_home = Some(AbortOnDropHandle::new(task));
     }
 
+    /// Refresh Relay reachability without declaring a network interface change.
+    pub(crate) fn request_full_report(&mut self) {
+        self.reports.next_full = true;
+    }
+
     /// Generates a [`Report`].
     ///
     /// Look at [`Options`] for the different configuration options.

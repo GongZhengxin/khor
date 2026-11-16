@@ -18,6 +18,26 @@
 
 ## 补丁
 
+### 51. 当前家中继连接断开后立即重测原Relay表（2026-11-16，隔离候选待验）
+
+独立整Relay＋同域登记服务关停场景已实际RED；20秒时仍发布旧家，native home状态为
+Disconnected/Connection refused，而另一登记服务返回200却仍保存旧家。原冷启动备用登记点
+3/3、暖连接在所有登记点下线后继续传输及新端点无登记失败的控制通过。
+
+SocketActor监听已有home_relay_status，仅同URL从Connected变为非Connected时请求一次现有
+net_report全量探测。不创建任务/计时器/依赖、第二Endpoint或额外常驻家连接；初始Connecting、
+重复错误、健康同家和已换URL不触发。沿原DirectAddrUpdateState串行与单pending合并，弱更新
+不得覆盖待处理的完整Relay刷新或网络major变化。只设原reports.next_full，不谎报接口切换，
+保留successor cooldown、QUIC连接、原认证和应用请求重放边界。
+
+原RelayMap/HTTP与QAD探测、home选择/防抖、TCP重连、pkarr发布继续由iroh负责；不会直接指定
+新家或绕过用户允许的中继集合。先保留原20秒发布、30秒总恢复、15秒冷lookup与2秒载荷门，
+同场景固定3轮及原restart/token/jitter/stuck、vendor/Node/Mac回归后才讨论采用。
+三个新增库合同覆盖真实连接丢失边界、重复/初始/换URL负控制与pending原因优先级。
+
+若上游原生具备当前家失败触发完整Relay健康报告、等价合并和上述物理/健康负控制，则退役本补丁。
+当前仅为待验证候选，不把旧60项审查当成本项已审查或全N4完成。
+
 ### 50. 隔离诊断的STREAM计数与连接集合见证（2026-11-12，默认库/诊断准入过，完整N1未接受）
 
 N1首次前台操作已有有效配置/成本数据，但十秒没有前台调用并不证明传输层STREAM静默。
