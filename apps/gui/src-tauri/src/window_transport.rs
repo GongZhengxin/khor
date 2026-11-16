@@ -137,6 +137,12 @@ pub fn start() {
             let (cmd, query) = url.split_once('?').unwrap_or((url.as_str(), ""));
             let cmd = cmd.to_owned();
             let query = query.to_owned();
+            // Named on stderr when `KHOR_GUI_TRACE` is set, so which commands the
+            // page asks for — and which it never asks for — is answerable without
+            // a devtools session (whose isolated world cannot see invoke callbacks).
+            if std::env::var_os("KHOR_GUI_TRACE").is_some() {
+                eprintln!("[transport] {cmd}");
+            }
             // The raw-body routes carry a file, which is not UTF-8 and must
             // never pass through a String. Each keeps the road the dev bridge
             // gives it (`bridge.rs`), so the two faces cannot drift.
