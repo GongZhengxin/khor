@@ -26,7 +26,7 @@ export async function checkAttachmentDraft(browser,{port,report,engine,width=390
  const unchanged=async label=>{assert.deepEqual(await grid(),originalGrid,`${label}: terminal cell grid unchanged`);const current=await api('__ai_preview/terminal-sizes');sizes.push({label,count:current.length});assert.equal(current.length,originalSizes,`${label}: no PTY resize`);};
  const image=async label=>{
   const media=JSON.parse(await readFile(new URL('./data/media.generated.json',import.meta.url),'utf8'));
-  await choose({name:'photo.png',mimeType:'image/png',buffer:Buffer.from(media.image,'base64')});assert.equal(await selected('photo.png').locator('[data-files-open] [data-icon="open"]').count(),1);await selected('photo.png').locator('[data-files-open]').click();await preview.waitFor();
+  await choose({name:'photo.png',mimeType:'image/png',buffer:Buffer.from(media.image,'base64')});assert.equal(await selected('photo.png').locator('[data-files-open] [data-icon="preview"]').count(),1);await selected('photo.png').locator('[data-files-open]').click();await preview.waitFor();
   assert(await preview.evaluate(node=>getComputedStyle(node).backgroundColor!=='rgba(0, 0, 0, 0)'),'Attachment previews retain an opaque owning surface');
   await page.waitForFunction(()=>{const img=document.querySelector('[data-attachment-file] [data-file-page] img');return img?.complete&&img.naturalWidth>0;});
   assert.equal(await preview.locator('[data-file-more]').count(),0,'Workspace file page has no More action in attachments');
