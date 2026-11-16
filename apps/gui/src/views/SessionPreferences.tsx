@@ -34,7 +34,7 @@ export function HeaderSeat({children}:{children:ReactNode}){
 }
 /** Session actions share App's 更多 menu. Choices replace its rows, so
  * phone users never have to chase a submenu beside the screen. */
-function Preferences({model,agent,mode,options,disabled=false,children,danger,open,onOpen,onCloseAutoFocus}:{model:string|null;agent:string;mode?:string;options:AddOption[];disabled?:boolean;children:ReactNode;danger?:ReactNode;open:boolean;onOpen:(open:boolean)=>void;onCloseAutoFocus?:(event:Event)=>void}){
+function Preferences({model,agent,mode,options,disabled=false,children,danger,open,onOpen}:{model:string|null;agent:string;mode?:string;options:AddOption[];disabled?:boolean;children:ReactNode;danger?:ReactNode;open:boolean;onOpen:(open:boolean)=>void}){
   const inBar=useInBar(),docked=false,light=false,modelBar=inBar;
   const thought=options.find(o=>o.kind==='values'&&o.category==='thought_level');
   const levels:Record<string,string>={off:'关闭',minimal:'最低',low:'低',medium:'中',high:'高',xhigh:'极高',standard:'标准',deep:'深入',default:'默认',auto:'自动'};
@@ -51,7 +51,7 @@ function Preferences({model,agent,mode,options,disabled=false,children,danger,op
     <DropdownMenuTrigger asChild><button type="button" data-lab-session-settings data-lab-dock-settings={docked||undefined} data-lab-config-trigger={light||undefined} data-lab-model-trigger={modelBar||undefined} title={light?'会话配置':undefined} aria-label={`会话配置：${shortModel(model)}${modelBar&&effort?' · '+effort:''}`} className={`${light||modelBar?'':'glass '}composer-lab-trigger data-[state=open]:glass-sel`}>
       {modelBar?<><span className="lab-model-summary"><span>{shortModel(model)}</span>{effort&&<><span aria-hidden>·</span><span data-lab-effort>{effort}</span></>}</span><IconChevronDown/></>:light?<IconFilter/>:docked?<IconMore/>:<><span className="composer-lab-trigger-words"><span>{shortModel(model)}</span>{mode&&<small data-lab-execution-badge>{mode}</small>}</span><IconChevronDown/></>}
     </button></DropdownMenuTrigger>
-    <DropdownMenuContent ref={panel} side={docked?'top':'bottom'} align="end" sideOffset={8} data-lab-preferences className="min-w-nav-menu composer-lab-menu" onCloseAutoFocus={onCloseAutoFocus} onKeyDown={e=>{if(e.key==='ArrowLeft'&&page){e.preventDefault();back();}}}>
+    <DropdownMenuContent ref={panel} side={docked?'top':'bottom'} align="end" sideOffset={8} data-lab-preferences className="min-w-nav-menu composer-lab-menu" onKeyDown={e=>{if(e.key==='ArrowLeft'&&page){e.preventDefault();back();}}}>
       {page?<>
         <DropdownMenuItem data-session-menu-back onSelect={e=>{e.preventDefault();back();}}><IconBack className="size-affordance"/>返回</DropdownMenuItem>
         <DropdownMenuSeparator/>
@@ -81,21 +81,17 @@ function Preferences({model,agent,mode,options,disabled=false,children,danger,op
 function Fact({name,children}:{name:string;children:ReactNode}){
   return <DropdownMenuLabel className="composer-lab-fact"><span>{name}</span><span>{children}</span></DropdownMenuLabel>;
 }
-export function AcpHeader({who,mode,options,protocol,onControl,onFind,onExport,exportBusy=false,disabled=false,pending=false}:{who:Who;mode:ReactNode;options:AddOption[];protocol?:AgentProtocol|null;onControl?:(operation:string,payload?:Record<string,unknown>)=>unknown;onFind?:()=>void;onExport?:()=>void;exportBusy?:boolean;disabled?:boolean;pending?:boolean}){
+export function AcpHeader({who,mode,options,protocol,onControl,disabled=false,pending=false}:{who:Who;mode:ReactNode;options:AddOption[];protocol?:AgentProtocol|null;onControl?:(operation:string,payload?:Record<string,unknown>)=>unknown;disabled?:boolean;pending?:boolean}){
   const [open,setOpen]=useState(false),[deleting,setDeleting]=useState(false);
-  const historyFocus=useRef(false);
   const m=isValidElement(mode)?mode.props as ComponentProps<typeof ModeSeat>:null;
   const automatic=m&&['workspace','auto','acceptEdits','bypassPermissions','full-access'].includes(m.current);
   let permissionId='execution-permission';while(options.some(o=>o.id===permissionId))permissionId+='-';
   const permissions:AddOption[]=m?.choices?.some(v=>!v.fixed)&&m.onPick?[{kind:'values',id:permissionId,name:'执行权限',note:null,current:m.current,values:m.choices.filter(v=>!v.fixed).map(v=>({value:v.id,name:v.name,note:v.note??null,heading:null})),onPick:value=>m.onPick?.(value)}]:[];
-  return <><Preferences model={who.model} agent={who.name??'智能体'} mode={automatic?m.word:undefined} options={[...options,...permissions]} disabled={disabled} open={open} onOpen={setOpen} onCloseAutoFocus={event=>{if(historyFocus.current){event.preventDefault();historyFocus.current=false;}}}
+  return <><Preferences model={who.model} agent={who.name??'智能体'} mode={automatic?m.word:undefined} options={[...options,...permissions]} disabled={disabled} open={open} onOpen={setOpen}
     danger={protocol?.capabilities?.sessionCapabilities?.delete!=null&&<DropdownMenuItem className="text-destructive" disabled={disabled} onSelect={()=>{setOpen(false);setDeleting(true);}}>删除会话记录</DropdownMenuItem>}>
     {disabled&&options.length>0&&<DropdownMenuLabel className="composer-lab-menu-note">{pending?"正在应用设置":"本轮结束后可修改模型设置"}</DropdownMenuLabel>}
     {m&&!permissions.length&&<Fact name="执行权限">{m.word}</Fact>}
     {who.usage&&<Fact name="上下文">{Math.round(who.usage.used/who.usage.size*100)}%</Fact>}
-    {(onFind||onExport)&&<DropdownMenuSeparator/>}
-    {onFind&&<DropdownMenuItem data-history-find-open onSelect={()=>{historyFocus.current=true;onFind();}}>查找对话</DropdownMenuItem>}
-    {onExport&&<DropdownMenuItem data-history-readable-export disabled={exportBusy} onSelect={onExport}>导出对话</DropdownMenuItem>}
     {protocol?.authMethods?.filter(method=>!method.type||method.type==='agent').map(method=><DropdownMenuItem key={method.id} disabled={disabled} onSelect={()=>onControl?.('authenticate',{methodId:method.id})}>{method.name}</DropdownMenuItem>)}
     {protocol?.capabilities?.auth?.logout!=null&&<DropdownMenuItem disabled={disabled} onSelect={()=>onControl?.('logout')}>退出登录</DropdownMenuItem>}
     {protocol?.capabilities?.sessionCapabilities?.close!=null&&<DropdownMenuItem disabled={disabled} onSelect={()=>onControl?.('close')}>结束会话</DropdownMenuItem>}
