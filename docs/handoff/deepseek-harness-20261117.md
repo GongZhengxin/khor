@@ -1,5 +1,67 @@
 # DeepSeek Harness integration
 
+## Latest checkpoint
+
+Product runtime source is `09ce10a98e77a745a1f5b078e95b7805745c6c1a`;
+latest UI-fixture/check source is `9d086a5e` (normal production UI and Rust
+runtime files are unchanged after 09ce10a9). Branch is clean and pushed as of
+that checkpoint. Goal remains active; end-to-end Khor runtime acceptance is not
+yet executed.
+
+- Direct trusted workflow `43953514368`, source 09ce10a9: frontend passed;
+  macOS native job is running the explicit doctor regression proof. It will
+  build CLI and bridge and test discovery/overrides, GUI-core agents, cross-node
+  refusal, ACP operations and the real Khor-agent delegation runtime. Artifact
+  `dsh-integration-native` is required for the local live acceptance.
+- Wrapper `43951387096` was cancelled while queued after the direct workflow
+  was accepted, avoiding duplicate builds of the same source.
+- Full GUI Quality `43949486204`, source de1ceaf2, is complete: frontend and GUI
+  checks succeeded; developer Lab had 79 passing scenarios and 4 DSH-only
+  assertion timeouts. Those assertions incorrectly observed browser network
+  traffic even though the Lab uses an in-page data boundary. Actual screenshots
+  show the model switched to Pro and the Harness mark is present. The test now
+  reads recorded controls at that boundary; it also uses the established Lab
+  environment to verify real light/dark theme state rather than merely a URL.
+- Focused GUI Quality `43955048330`, source 9d086a5e, is the replacement for
+  those checks: `suite=gui`, `interaction_scope=dsh`, 16 DSH combinations
+  (two engines, four widths, two themes), four full-App setup flows, plus
+  the existing name/creation/shared-mark checks. Poll this exact run.
+- Old private Lab `43947576487` is superseded. Cancellation was attempted;
+  the API returned an inconsistent terminal/queued observation. Do not
+  resubmit it. Owned manager PID 67503 has exited; port 23971 has no ready
+  preview. Existing user Lab 23961 was never changed.
+
+Evidence is under `/Volumes/disk0/Khor/evidence/deepseek-harness-20261117`.
+`frontend-de1` was byte-verified with the expected de1ceaf2 source manifest.
+`lab-de1` is the first Lab artifact and retains failure screenshots/results,
+not a passing review bundle. `icon-provenance.json` proves the vendored SVG's
+path geometry is identical to pinned official commit
+39163dd30f703a79079e2d2446545cff3c453738.
+
+`runtime-acceptance.py` and `parent-probe.py` are prepared external acceptance
+drivers (Python syntax checked, not yet run). They require the trusted artifact,
+verify its binary digests, use their own Khor home/workspace and loopback bridge,
+and close their own sessions/processes. Planned live prompts are one user
+file-read, one bounded sleep/cancel, and one real DSH delegate driven by the
+actual Khor agent runtime with a deterministic localhost planner. Along with
+the already completed raw file-read probe this is four bounded real DSH prompts;
+the planner uses only a synthetic local credential. No production Khor store,
+existing user session, or user model credential is copied or changed.
+
+The optional-installation doctor change has a dedicated behavioral test. The
+native workflow temporarily restores the previous all-agents lookup, requires
+the named test to fail with an explicitly empty `KHOR_PATH`, restores the exact
+committed source and tests the fix. This is a controlled regression proof;
+it must complete before claiming that check passed.
+
+Structured self-review used the review-changes skill and both indexes. The
+worktree index is partial/stale; its zero flows is not a no-impact claim. Main
+index found broad file-level Node dependencies; direct call-site review found
+and addressed the optional-installation health regression. Discovery, launch,
+import/listing and explicit recovery still share the same registered/default
+spec; explicit registrations continue to win. Independent review was not
+delegated, in accordance with the serial-execution constraint.
+
 ## Execution state
 
 - Owner: root, serial execution; no delegated agents.
