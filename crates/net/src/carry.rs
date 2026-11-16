@@ -474,8 +474,8 @@ impl CustomSender for Links {
     }
 }
 
-/// A path's transport, used for reporting and spare-path management.
-/// Selection compares measurements, not this enum's declaration order.
+/// A path's transport, used for reporting, spare paths and equivalent initial choices.
+/// Selection compares measurements before transport; enum order is not a ranking.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Tier {
     Direct,
@@ -556,10 +556,10 @@ impl Spare {
     }
 }
 
-/// **khor's path selector**: the answering path with the lowest measured
-/// RTT, changing only past [`switch_margin`]. The measurement of a
-/// carried road includes both legs and the middle. Initial connection
-/// and later upgrades use the same transport-independent ordering.
+/// **khor's path selector**: measured answering paths, with Direct preferred
+/// for equivalent initial choices and a healthy current path kept until a
+/// gain exceeds [`switch_margin`] and passes fresh-sample confirmation.
+/// A carried road's measurement includes both legs and the middle.
 ///
 /// **A path that stopped answering is no candidate** (vendor/iroh patch
 /// 17, `PathSelectionData::answering`): two probe timeouts in a row with
@@ -742,7 +742,17 @@ pub fn choose_settling(
         .map(|(i, _)| i)?;
     let (_, best_rtt) = candidates[best];
     let Some((_, rtt)) = current else {
-        return Some(best);
+        // With no healthy incumbent, Direct breaks a near-quality choice.
+        // Reuse the ordinary gain floor, even during a previous path's dwell.
+        return candidates
+            .iter()
+            .enumerate()
+            .filter(|(_, (tier, rtt))| {
+                *tier == Tier::Direct && !improves(best_rtt, *rtt, false)
+            })
+            .min_by_key(|(_, (_, rtt))| *rtt)
+            .map(|(i, _)| i)
+            .or(Some(best));
     };
     improves(best_rtt, rtt, settling).then_some(best)
 }
