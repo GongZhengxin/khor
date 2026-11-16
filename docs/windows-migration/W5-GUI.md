@@ -74,8 +74,8 @@ GUI、服务、测试 harness 都没有控制台，所以 Windows 上终端面�
 ### 4.2 其余
 | 项 | 状态 | 说明 |
 | --- | --- | --- |
-| 会话列表渲染 | **未通过** | GUI 与本地节点的握手未完成，列表停在骨架；需查 GUI 侧启动的本机节点（进程存在、store 有 endpoint.json，但列表不更新） |
-| 打开会话 / 终端面板 | **NOT_TESTED** | 依赖上一条；终端还依赖 ConPTY 输出（见 [W3 T5](W3-SMOKE.md)），本会话环境里读取会阻塞 |
+| 会话列表渲染 | **通过**（2026-11-16） | 根因是 Tauri 的 custom-protocol IPC 在 Windows 上启动后即停摆，不是列表本身。改由窗口内 loopback 传输承担命令，详见 §6 |
+| 打开会话 / 终端面板 | **通过**（2026-11-16） | 端到端证据见 §6.3：截图里是 cmd.exe 横幅、键入的 `echo khor-terminal-ok` 与其输出 |
 | `npm ci` 路径 | **NOT_TESTED** | 本机无 npm；CI 用 npm，需在 CI 复核幻影依赖仍能通过 |
 | 幻影依赖修复 | 未做 | 应在 `package.json` 声明 `@shikijs/langs`、`@shikijs/themes`、`@types/hast` 并重生成 `package-lock.json`（需要 npm，本机没有） |
 
@@ -83,4 +83,48 @@ GUI、服务、测试 harness 都没有控制台，所以 Windows 上终端面�
 
 - **构建链在 Windows 上可重复**（在 pnpm hoisted 前提下）：generate / tsc / vite / Tauri 全部 exit 0。
 - **GUI 冷启动与渲染通过**：真实窗口、WebView2、侧栏与机器行都出现。
-- **端到端未通过**：列表不渲染会话，终端面板无法验证。W5 判为 **未完成**，下一步先查 GUI 侧节点握手。
+- **端到端通过（2026-11-16 补）**：会话列表渲染、实时更新、打开会话、终端面板输入输出全部验证，证据见 §6.3。当时的"端到端未通过"是两个传输层缺陷造成的，与列表/终端自身的代码无关。
+
+## 6. 收口（2026-11-16）
+
+### 6.1 现象与排除
+
+窗口能画机器仪表盘，但会话列表永远停在骨架屏，页面无任何报错。逐条排除（每条都有实测）：
+
+| 假设 | 结论 | 证据 |
+| --- | --- | --- |
+| 后端查询慢/失败 | 排除 | `list_sessions` 5 种排列各 80–120ms；`POST /api/sessions` → 200 |
+| `RootPermit` 进程内自锁 | 排除 | 同进程第二个 `Node` 126ms 应答（`apps/gui/core/tests/self_open_probe.rs`） |
+| tokio 阻塞池饱和 | 排除 | `off_main` 追踪：进入 14ms、完成 310ms、正常结算 |
+| 窗口最小化节流 | 非根因 | 恢复窗口后 `document.hidden` 变 `false`，IPC 仍然死 |
+| WebView2 profile 损坏 | 排除 | 全新 profile 表现一致 |
+| Tauri IPC 队列上限 | 不存在 | 通读 `tauri-2.11.5/src/ipc/`，无 pending map、无计数器 |
+| DevTools 可判断 IPC | 假象 | 隔离世界收不到 `invoke` 回调，DevTools 发起的 invoke 永远 pending |
+
+### 6.2 两个真根因
+
+**其一：custom-protocol IPC 停摆。** 在 `invoke_handler` 首行加逐条追踪，每次运行都只到达 9 条命令，之后永远为空；页面同时发 38 次 `sessions`，Rust 一次没收到，两边都无报错。决定性实验：页面直接 `fetch('http://ipc.localhost/lock_state')`——不经过 invoke、不涉及命令——**40 次全部超时**。缺陷在 wry 的 `WebResourceRequested` deferral（`wry-0.55.1/src/webview2/mod.rs:992/1008`）：响应要靠 `PostMessageW` 跳回主线程，该跳不执行时 deferral 永久泄漏，Chromium 每源 6 条连接占满。上游无修复版本可升（[tauri#15435](https://github.com/tauri-apps/tauri/issues/15435) 同类问题维护者明确称暂无解法）。
+
+**其二：资源协议同样停摆。** 命令改走 loopback 后列表正常了，但打开会话时终端面板空白、一条 `term_*` 都不发。终端是懒加载的（`views/DetailPane` `lazy(() => import("@/views/TerminalPane"))`），其 chunk 永远载不进来：从运行中的页面 `fetch('/assets/...')` 同样不返回，而 `Suspense fallback={null}` 把它变成一块空白，无声无息。
+
+### 6.3 修法与验证
+
+- **`apps/gui/src-tauri/src/window_transport.rs`（新增）**：在应用进程内起 loopback HTTP 服务（端口 1432），分派到与 dev bridge、web face **同一张** `khor_gui_core::api::answer` 表（190 条命令）。窗口改为加载 `index.html?bridge=1432`，前端 `call()` 的首个分支（`api.ts`）直接走本机 HTTP，死的 custom protocol 不再被触碰。事件、窗口控制、拖拽、原生菜单是 Tauri 自己的 API，不受影响。
+- **`apps/gui/vite.config.ts`**：`build.rollupOptions.output.inlineDynamicImports = true`，把懒加载模块并入首包，页面不再需要在启动后取任何 chunk。代价：首包 2.9 MB → 14 MB，只在启动时付一次。
+
+| 用例 | 结果 |
+| --- | --- |
+| `cargo test -p khor-gui-core --test list_sessions_probe` | **1 passed**（recent/category/device/state/place，80–120ms） |
+| `cargo test -p khor-gui-core --test self_open_probe` | **1 passed**（126ms） |
+| `cargo build -p khor-gui`（`CARGO_TARGET_DIR=F:\Temp\khor-target`） | **exit 0** |
+| 窗口启动日志 | `khor: window transport on 127.0.0.1:1432` |
+| 会话列表 | **0 骨架**；新建会话数秒内出现（实测 `shell/c7d0561afec4a17f`） |
+| 打开会话后到达 Rust 的终端命令 | `term_open`、`term_attach`、`term_ready`、`term_resize`、`term_key`、`term_wait ×448` |
+| 终端 DOM | 3 canvas、1 `.xterm-helper-textarea`、1 `.xterm`，seat 子节点 23 |
+| 终端画面（`Page.captureScreenshot`） | cmd.exe 横幅、`F:\...>echo khor-terminal-ok`、输出 `khor-terminal-ok`、新提示符与光标 |
+
+### 6.4 残留
+
+- 首包 14 MB 是本次修法的代价；若上游修好资源协议，应回退这一条并改回代码分割（文档已写在该配置项注释里）。
+- `?bridge=` 意味着窗口命令走 loopback；`term_drop_stage` 等 raw-body 路由已按 dev bridge 的分派实现，但**拖放文件到终端**未在 Windows 上实测（NOT_TESTED）。
+
