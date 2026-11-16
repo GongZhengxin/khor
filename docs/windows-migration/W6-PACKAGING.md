@@ -84,7 +84,27 @@ MSI 恒为 per-machine（`tauri-utils` 的 `WixConfig` 没有 install-mode 选�
 
 脚本：**`scripts/windows-upgrade-check.ps1`**（`-Base 0.2.0 -Newer 0.2.1`）。步骤：装 0.2.0 → 证明能跑 → 覆盖安装 0.2.1 → 证明能跑 → 回装 0.2.0 → 证明能跑 → 卸载 → 断言干净。版本用可执行文件的 `ProductVersion` 判定，能跑以"窗口在自己的传输上应答"判定。
 
-> 状态：**待补**（0.2.1 安装包正在构建；构建完成后填结果）。
+```
+install dir: C:\Users\admin\AppData\Local\Khor (only what the installer creates is removed)
+already present (must survive): runtime
+
+upgrade
+  PASS  install base                 5162ms
+  PASS  base runs                    2027ms
+  PASS  upgrade to newer             5402ms   0.2.1 覆盖 0.2.0
+  PASS  newer runs                   1740ms
+rollback
+  PASS  roll back to base            5096ms   0.2.0 覆盖 0.2.1
+  PASS  rolled-back runs             1732ms
+  PASS  uninstall                    1283ms
+  PASS  clean                          42ms   installer 的文件消失，runtime\ 保留
+8/8 steps passed
+```
+
+**升级与回滚各一次，均通过**（`F:\Temp\khor-upgrade-check\report.json`）。
+
+第二个版本由 `tauri.v021.conf.json` 只改 `version` 构建；实测这会触发 release 全量重编译（8m42s）。
+
 
 ### 4.2 应用内签名更新器
 
