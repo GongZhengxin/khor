@@ -4103,6 +4103,14 @@ fn agents_known() -> Vec<khor_gui_core::agents::KnownAgent> {
     khor_gui_core::agents::agents_known()
 }
 
+/// **What this machine has**, not what the registry lists (`khor agents
+/// fleet` answers the same question in the terminal). No store is
+/// opened and no agent is started, so this answers on a broken store.
+#[tauri::command]
+fn agent_fleet() -> khor_gui_core::agents::AgentFleet {
+    khor_gui_core::agents::agent_fleet()
+}
+
 #[tauri::command]
 fn agents_known_taken() -> (String, usize, usize) {
     khor_gui_core::agents::agents_known_taken()
@@ -6009,6 +6017,7 @@ pub fn run() {
             term_pick_folders,
             agents,
             agents_known,
+            agent_fleet,
             agents_known_taken,
             register_known_agent,
             agent_seen,

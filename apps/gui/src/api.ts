@@ -102,6 +102,8 @@ import type { PaneHistory } from "./gen/bindings/PaneHistory";
 import type { LaunchPreset } from "./gen/bindings/LaunchPreset";
 import type { AgentRow } from "./gen/bindings/AgentRow";
 import type { KnownAgent } from "./gen/bindings/KnownAgent";
+import type { AgentFleet } from "./gen/bindings/AgentFleet";
+import type { FleetAgent } from "./gen/bindings/FleetAgent";
 import type { AgentSaid } from "./gen/bindings/AgentSaid";
 import type { CandidateRow } from "./gen/bindings/CandidateRow";
 import type { FindHit } from "./gen/bindings/FindHit";
@@ -890,6 +892,19 @@ export const agents = () => call<AgentRow[]>("agents");
     the point: 「khor 不替你装这个」 and 「khor 接不了这个」 are
     different sentences and only the first is true. */
 export const agentsKnown = () => call<KnownAgent[]>("agents_known");
+/** **What this machine has, not what khor knows about** (`khor agents
+    fleet`). Each row is one known agent, whether its program is here, the
+    road khor would take to it (`builtin` / `native-acp` /
+    `registry-acp` / `terminal`), and what that road delivers.
+
+    Not {@link agentsKnown}: an installed DSH is not in that registry, and
+    a registry entry nobody installed is not usable. A row with no
+    `program` is a failed lookup, not an agent khor cannot speak to — so
+    it stays on the list, which is the only place "install this" can be
+    said. No store is opened and nothing is started, so this answers on a
+    machine whose store refuses. */
+export const agentFleet = () => call<AgentFleet>("agent_fleet");
+export type { AgentFleet, FleetAgent };
 /** `[when it was taken, how many, how many khor can start]`. A table
     that ages has to say when it is from. */
 export const agentsKnownTaken = () => call<[string, number, number]>("agents_known_taken");

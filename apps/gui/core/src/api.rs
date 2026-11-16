@@ -1258,6 +1258,11 @@ pub fn answer(
         // first on every keystroke of its filter and the second never.
         "agents_known" => to_json(&crate::agents::agents_known()),
         "agents_known_taken" => to_json(&crate::agents::agents_known_taken()),
+        // **What this machine has, not what khor knows about.** No store
+        // and no process: the node's own module explains why this is a
+        // lookup rather than a probe, and a page opened to find out why
+        // something is broken must not need that thing to work first.
+        "agent_fleet" => to_json(&crate::agents::agent_fleet()),
         // **By id, never by argv.** The command is looked up on this
         // side (`Node::register_known_agent`); an arm that accepted the
         // argv would be an arm that spawns whatever it is handed, and
