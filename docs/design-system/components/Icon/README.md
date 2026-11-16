@@ -117,3 +117,13 @@
 检查入口仍是 `npm run khor-conversations-ui`：新建入口与真实 `SessionFace` 的行/标签
 尺寸共用相同图稿，桌面/手机、浅/深色验证 khor 的 65% 占比；Claude、Codex、Cursor、
 未知 Agent、广播和其他专属类型的图稿及尺寸不被替换。
+
+## DeepSeek Harness 会话标记（2026-11-17）
+
+`BrandIcons.IconDsh` 使用官方 Harness 的鲸鱼图稿，唯一资源为
+`apps/gui/src/assets/brands/deepseek-harness.svg`，来源与规范化记录在同目录 README。
+保留官方路径，只以 `currentColor` 跟随头像的墨；不加底板或固定品牌蓝。
+`category=dsh` 的新建入口、列表、桌面标签和手机药丸共用 `sessionMark` /
+`SessionFace`，不落到通用 Agent。Shell、传输和借网按专属 kind 优先。
+现有 `npm run khor-conversations-ui` 验证新建、行与标签共用图稿及浅深主题；
+完整 App 的 DSH 场景验证窄屏、模型选择和实际类型标记。

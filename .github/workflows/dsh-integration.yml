@@ -11,6 +11,7 @@ jobs:
   frontend:
     uses: ./.github/workflows/frontend.yml
   native:
+    needs: frontend
     runs-on: macos-26
     timeout-minutes: 60
     env:
@@ -37,6 +38,8 @@ jobs:
         with:
           bun-version: 1.3.14
       - uses: dtolnay/rust-toolchain@1.95.0
+        with:
+          components: rustfmt
       - uses: Swatinem/rust-cache@v2
         with:
           key: dsh-integration
@@ -44,6 +47,7 @@ jobs:
       - run: npm ci --prefix apps/agent
       - name: Embed the real Khor agent
         run: node apps/agent/build.mjs aarch64-apple-darwin "$KHOR_AGENT_BUNDLE"
+      - uses: ./.github/actions/restore-frontend
       - name: Check formatting and retain a source-only repair patch
         id: formatting
         continue-on-error: true
@@ -55,6 +59,28 @@ jobs:
             git restore -- '*.rs'
             exit 1
           fi
+      - name: Prove the optional-installation regression before checking its fix
+        run: |
+          mkdir -p "$RUNNER_TEMP/empty-agent-path"
+          cp crates/node/src/doctor.rs "$RUNNER_TEMP/doctor.green.rs"
+          trap 'cp "$RUNNER_TEMP/doctor.green.rs" crates/node/src/doctor.rs' EXIT
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('crates/node/src/doctor.rs')
+          source = path.read_text()
+          green = 'let Ok(rows) = node.agents_loaded().map(|loaded| loaded.doc.all()) else {'
+          assert source.count(green) == 1
+          path.write_text(source.replace(green, 'let Ok(rows) = node.agents() else {'))
+          PY
+          git diff -- crates/node/src/doctor.rs > "$RUNNER_TEMP/dsh-evidence/doctor-red.patch"
+          set +e
+          KHOR_PATH="$RUNNER_TEMP/empty-agent-path" cargo test --locked -p khor-node --lib doctor::agent_tests -- --test-threads=1 --color never > "$RUNNER_TEMP/dsh-evidence/doctor-red.log" 2>&1
+          red_status=$?
+          set -e
+          cp "$RUNNER_TEMP/doctor.green.rs" crates/node/src/doctor.rs
+          test "$red_status" -ne 0
+          grep -F 'dsh_default_is_optional_but_an_explicit_missing_agent_is_diagnosed ... FAILED' "$RUNNER_TEMP/dsh-evidence/doctor-red.log"
+          git diff --exit-code -- crates/node/src/doctor.rs
       - name: Build the exact CLI for isolated local DSH acceptance
         run: |
           cargo build --locked -p khor-cli --bin khor -p khor-gui-core --bin bridge
@@ -66,6 +92,7 @@ jobs:
       - name: Verify default discovery and launch ownership
         run: |
           cargo test --locked -p khor-node --lib dsh_is_available_without_registration -- --test-threads=1
+          KHOR_PATH="$RUNNER_TEMP/empty-agent-path" cargo test --locked -p khor-node --lib doctor::agent_tests -- --test-threads=1
           cargo test --locked -p khor-sync --lib agents -- --test-threads=1
           cargo test --locked -p khor-gui-core --lib agents::tests -- --test-threads=1
           cargo test --locked -p khor-cli --test far_open -- --test-threads=1
