@@ -1134,6 +1134,7 @@ invite-expired = "This ticket has expired (valid for {0} minutes after issue). I
 cant-burn-invite = "Can't burn pairing code: {0}"
 not-paired = "This machine isn't in the machine table — pair first"
 # The roster is the one source of trust (docs/CONNECT.md 身份).
+admission-revoked = "Access from this machine was revoked; pair it again through the root holder to restore access"
 not-in-roster = "This machine is not on the roster: it is waiting for the root holder to approve it, or it was revoked"
 words-need-confirm = "The recovery words restore the whole network's root key; anyone who sees them can sign their own machine into your network. To see them, type this machine's name back: khor root words {0}"
 words-names-another = "\"{0}\" is not this machine's name. To see the recovery words, type this machine's name: khor root words {1}"

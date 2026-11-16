@@ -2386,6 +2386,27 @@ mod tests {
         );
     }
 
+    #[test]
+    fn admission_separates_waiting_approval_from_revoked_access() {
+        let (ta, tb) = (
+            TempTree::fresh("trust-admission-a"),
+            TempTree::fresh("trust-admission-b"),
+        );
+        let a = node(&ta, "alpha");
+        let b = node(&tb, "beta");
+        join_through_a_member(&a, &b);
+        assert_eq!(a.admit(b.device_str()).unwrap_err(), msg::not_in_roster());
+        assert!(a.pending().unwrap().iter().any(|r| r.id == b.device_str()));
+        a.approve_here("beta").unwrap();
+        assert_eq!(a.admit(b.device_str()), Ok(()));
+        a.revoke_here("beta").unwrap();
+        assert_eq!(
+            a.admit(b.device_str()).unwrap_err(),
+            msg::admission_revoked()
+        );
+        assert!(a.pending().unwrap().is_empty(), "revocation is not a pending request");
+    }
+
     /// B4 without the wire: a machine joining through one without the
     /// root waits — on both sides — and the holder's approval lets it in.
     #[test]
