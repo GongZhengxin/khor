@@ -41,3 +41,18 @@ The final documentation commit leaves tested App/native/crate sources unchanged.
 
 This follow-up is not merged or shipped. Installed platform file pickers and
 native drag feel remain separate actual-device checks.
+
+## Eyeglasses preview follow-up
+
+User chose eyeglasses for in-app previews. Product5ac1e0ce replaces the outward
+arrow with shared IconPreview, using Khor line weight and the same box. Tooltip
+and accessible name say预览. FileChoiceRow shares it across attachment drafts
+and directory selection; preview handlers and ContentOverlay remain unchanged.
+Run43921867791 passed all14 existing attachment flows plus build/shared gates
+and hot-update checks. Artifact14254044348 digest
+9bad38d9504c2513feef6923a89d127b41bc52a029ecf0e140d474d9a7becbde
+verified against source5ac1e0ce/tree1577bc4c14a6a0ca6039c12eb85399c6c3889ee2.
+Desktop1280 and WebKit320 screenshots inspected. Current Lab is now:
+http://127.0.0.1:23961/snapshots/5ac1e0ce340e23a2/app/?scene=terminal&machines=3
+All37 snapshot URLs are retained; four current entry assets byte-verified.
+Only the owned prior Lab process was replaced. No main merge or ship.
