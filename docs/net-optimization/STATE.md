@@ -1,12 +1,13 @@
 # feat/net 当前状态与接续入口
 
-更新于 2026-11-16T13:48:03.428909+00:00。用户最新“做完吧”已明确继续完整目标，goal active；[GOAL](GOAL.md)、[PLAN](PLAN.md) N0–N5、[REQUIREMENTS](REQUIREMENTS.md)尚未整体完成。root串行、不派子智能体。本机source-only；重型工作只在Turing/macserver/授权khor-build。未获main合并、现装App替换、发行/TestFlight或生产Relay采购部署授权。
+更新于 2026-11-16T13:56:40.863300+00:00。用户最新“做完吧”已明确继续完整目标，goal active；[GOAL](GOAL.md)、[PLAN](PLAN.md) N0–N5、[REQUIREMENTS](REQUIREMENTS.md)尚未整体完成。root串行、不派子智能体。本机source-only；重型工作只在Turing/macserver/授权khor-build。未获main合并、现装App替换、发行/TestFlight或生产Relay采购部署授权。
 
 ## 当前运行与下一步
 
 E=`/Volumes/disk0/Khor/evidence/net`。准确产品源 **5f51e3409e0e642c26b5b41c37cc069213c1d6a5** / tree **395f91ae9e82c3b3819d7fe96be8c3882f6313bd** / snapshot **b846df2162863114a2493a3fe868a2587faf4574**，描述 `E/net-product-v5-fixture-source-v2.json`。本页随后文档提交不冒充该源新接受。
 
-- **当前Turing性能campaign在途** 首个preflight **turing-20261116T131950Z-c71eea9e**，PID1227158，control **507ae51d25154f977ad1c061df95426d10046226**；准确已闭DNS ordinary Release d6cad597 CLI/cd286865 netlab，0编译。原observer/kernel/容量准入后固定SCCSSC六块/12case/8640人口、原绝对/相对门/早停/无替代保持；`E/system-dns-coexistence-plan-v1.json`。本机stdlib controller `E/ops/run-system-dns-coexistence-campaign-v1.py`只观察/采证/核验后串行派原下一块；进度 `E/system-dns-coexistence-campaign-controller-v1.json`。controller存活时不要另写common source-refs或做其他Turing构建/格式/计时任务。不是I8全树/同期main/手机接受。
+- **同ELF性能对照已完整GREEN** `system_dns_coexistence` 原preflight＋SCCSSC六块全部闭证，最后 `134336Z-6cd1dc9e`；原12case/8640交互、12完整文件、24post-health全成功，相对/绝对延迟与文件率门全过，`E/system-dns-coexistence-verification-v1.json`。原coldTCP参考RED仍保留，明确分层网络/容量准入通过。低profile目录bulk pooled p95共享273082μs/分连接84206μs，高为558742/507479μs；高终端p95 341240/350202μs、p99 639109/916769μs（n360描述，不作全网尾概率）。先保留shared默认：分连接改善低延迟目录，但未证明高延迟交互尾部更稳定；opt-in实验不等于默认晋升。0编译/固定原门/无替代与全部清理保持。不是同期main/SSH-hop-sync/手机或整N3接受。
+- **原I8真实integration第一组RED已闭** `134922Z-3fffed32`原101/82.095s，原early写入负控制native0pass/1fail/6.54s：拟阻断握手后Mkdir仍创建目录。原测试/断言/1s＋3s未改，12后续组未执行，不称安全漏洞或fixture根因已证明。`E/RUN/integration-early-red-verification-v1.json`；需确认是否新版iroh绕过老单向代理实际完成握手。只cfg(test)增加客户端真实握手完成观察的独立候选 `khor-net-early-barrier-observer-v1` / 657dda0e/tree297b995b，`E/early-barrier-observer-plan-v1.json`，control **303f0e9bdfdf3300d1ddcee12398a7ea3e21d819**已派，见实际receipt，不重派。0生产变更；原33个预期integration/1ignored helper未整体验收。
 - **I8完整global separate原回归GREEN已闭** **131052Z-bd3bf61a**原0/503.944s，准确 **b899669ac31ea98c6d9b3b0350cd622ef4e153cc** / tree **68f191b37766a8e4e10192daa543ad40b197da30** / snapshot **efa459f1500dc42aff6ef9cd6e37426e4245d21c**。原12组 **323pass/0fail/原ignored1**、全部测试名、原模式/断言/时限与资源清理已核；共享八STOP与独立extra关闭/全部handler回收/cached STOP都通过，`E/RUN/product-v8-separate-node-verification-v1.json`。原I6 RED/DIAG第五次RED均保留；不是生产取消逻辑改动或N3性能接受。
 - **准确I8 native Mac Lab已闭 GH43874780032**，原attempt1/4jobs全成功，trusted control44b954不变，`E/public-native-lab-net-product-v8-v1/lab-acquisition-verification-v1.json`。104原case/0错误、98 tracked hash＋18 generated lineage、真实backend/arm64内ZIP CRC/SHA均核。host SHA **7f5bbef794ca7013714b36754616f9a66a9a1f4f47e735fcb0c034a7c1989df3**；checks artifact14231226709/48,339,341B/SHA5886cbdc；本机0产品执行，未替换现装App。原生包是可评审产物，不是手机/能耗接受。
 - **I8完整Quality已13/13成功 GH43873334184**，verify/net-product-v8准确b899/tree68f1，suite=all/interaction_scope=all，原13组均首个实际run通过，包括原signed SSH安装与认证；源码head b899已核，原始artifact仍在获取核验。第一次派发在push完成前被GitHub422 No ref found拒绝、0run；确认远端ref后第二请求只成功启动本run一次，原拒绝留证。`E/net-product-quality-v8-intent-v1.json`；不是全N0–N5/发行。
@@ -102,3 +103,5 @@ Turing UID1110，自有`/tmp/khor-netlab-feat-net-1110`、原owner/flock/build.l
 MacLab与Turing同LAN，macserver另一网络；macserver SSH本轮再次banner超时，授权公开colehank/khor-build通道正常。iPhone localhost仍旧安装版，先前前台就绪窗口已过，具体候选可测时再安排，不自动采样。无部署/采购/发行。
 
 本入口整理前逐字档案[HISTORY-20261116-through-selection-view-recovery](HISTORY-20261116-through-selection-view-recovery.md)，SHA256 967f7c3fffff9a8037503fa5f4d4ac6c279ce36e85945065fdbb072394a2c3c6；其“在途/下一步”均是历史，不可据此重派。更早全部原失败/未执行及证据见该档案与其链接、RUNS/REQUIREMENTS，未被本页删除或重新归绿。
+
+2026-11-16补充：用户已确认iPhone现装来源为TestFlight。候选真机接受仍缺；发布策略要求main上rc tag与签名环境，不绕过该门。本轮仍无main合并/rc/TestFlight分发授权。
