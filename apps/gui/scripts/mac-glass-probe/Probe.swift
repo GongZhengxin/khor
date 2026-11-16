@@ -10,7 +10,15 @@ import Darwin
     var web: WKWebView!
     let output = URL(fileURLWithPath: CommandLine.arguments[2], isDirectory: true)
     var results: [[String: Any]] = []
+    func log(_ text: String) {
+        let line = Data((text + "\n").utf8)
+        FileHandle.standardError.write(line)
+        let file = output.appendingPathComponent("probe.log")
+        if !FileManager.default.fileExists(atPath: file.path) { FileManager.default.createFile(atPath: file.path, contents: nil) }
+        if let handle = try? FileHandle(forWritingTo: file) { handle.seekToEndOfFile(); handle.write(line); try? handle.close() }
+    }
     func applicationDidFinishLaunching(_ note: Notification) {
+        log("application launched")
         NSApp.setActivationPolicy(.regular)
         let area = NSScreen.main!.visibleFrame
         let rect = NSRect(x: area.minX + 60, y: area.minY + 80, width: 600, height: 420)
@@ -30,6 +38,7 @@ import Darwin
         web.loadFileURL(URL(fileURLWithPath: CommandLine.arguments[1]), allowingReadAccessTo: URL(fileURLWithPath: CommandLine.arguments[1]).deletingLastPathComponent())
     }
     func navigation(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        log("navigation finished")
         Task { await run() }
     }
     func pause() async { try? await Task.sleep(nanoseconds: 900_000_000) }
@@ -52,6 +61,7 @@ import Darwin
         let p = Process()
         p.executableURL = URL(fileURLWithPath: "/usr/sbin/screencapture")
         p.arguments = ["-x", "-R\(Int(r.minX)),\(Int(top)),\(Int(r.width)),\(Int(r.height))", file.path]
+        log("capture " + name)
         do { try p.run(); p.waitUntilExit() } catch { return ["error": String(describing: error)] }
         var value = image(file); value["exit"] = p.terminationStatus
         return value
@@ -82,6 +92,6 @@ import Darwin
         let app = NSApplication.shared
         let probe = Probe()
         app.delegate = probe
-        app.run()
+        withExtendedLifetime(probe) { app.run() }
     }
 }
