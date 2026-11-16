@@ -290,6 +290,69 @@ fn current_home(ep: &iroh::Endpoint) -> Option<String> {
     })
 }
 
+/// Observe the registry itself, without warming any endpoint's address lookup.
+async fn published_record(url: &str, id: iroh::EndpointId, relay: &str) -> (u16, bool) {
+    use tokio::io::{AsyncReadExt as _, AsyncWriteExt as _};
+    let (authority, path) = url
+        .strip_prefix("http://")
+        .unwrap()
+        .split_once('/')
+        .unwrap();
+    tokio::time::timeout(Duration::from_millis(250), async {
+        let mut stream = tokio::net::TcpStream::connect(authority).await.ok()?;
+        let request = format!(
+            "GET /{path}/{} HTTP/1.1\r\nHost: {authority}\r\nConnection: close\r\n\r\n",
+            id.to_z32()
+        );
+        stream.write_all(request.as_bytes()).await.ok()?;
+        let mut bytes = Vec::new();
+        stream.take(65536).read_to_end(&mut bytes).await.ok()?;
+        let status = std::str::from_utf8(bytes.split(|b| *b == b'\n').next()?)
+            .ok()?
+            .split_whitespace()
+            .nth(1)?
+            .parse::<u16>()
+            .ok()?;
+        let at = bytes.windows(4).position(|part| part == b"\r\n\r\n")? + 4;
+        let has_relay = bytes[at..]
+            .windows(relay.len())
+            .any(|part| part == relay.as_bytes());
+        Some((status, status == 200 && has_relay))
+    })
+    .await
+    .ok()
+    .flatten()
+    .unwrap_or((0, false))
+}
+
+async fn wait_published(urls: &[&str], ep: &iroh::Endpoint, wanted_home: Option<&str>) {
+    let started = Instant::now();
+    let mut first = None;
+    let mut attempts = 0;
+    tokio::time::timeout(Duration::from_secs(20), async {
+        loop {
+            if let Some(home) = current_home(ep)
+                && wanted_home.is_none_or(|wanted| wanted == home)
+            {
+                let mut statuses = Vec::new();
+                let mut ready = true;
+                for url in urls {
+                    let (status, published) = published_record(url, ep.id(), &home).await;
+                    statuses.push(status);
+                    ready &= published;
+                }
+                attempts += 1;
+                first.get_or_insert(statuses.clone());
+                if ready {
+                    eprintln!("[registry-publication] sources={} attempts={attempts} first={first:?} last={statuses:?} elapsed_us={}", urls.len(), started.elapsed().as_micros());
+                    break;
+                }
+            }
+            tokio::time::sleep(Duration::from_millis(20)).await;
+        }
+    }).await.expect("the advertised Relay must actually be published within the predeclared20s");
+}
+
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn cold_peers_use_the_other_registry_and_warm_connections_need_neither() {
     fault_environment();
@@ -304,6 +367,7 @@ async fn cold_peers_use_the_other_registry_and_warm_connections_need_neither() {
         domains[0].stop_registry().await;
         let alpha = fault_bind(&entries).await;
         let replies = echoing(&alpha);
+        wait_published(&[entries[1].pkarr.as_deref().unwrap()], &alpha, None).await;
         let beta = fault_bind(&entries).await;
         let started = Instant::now();
         let conn = cold_connection(&beta, alpha.id()).await;
@@ -345,6 +409,14 @@ async fn a_whole_relay_and_registry_domain_can_fail_without_restarting_the_peer(
         let entries = domains.each_ref().map(|domain| domain.entry.clone());
         let alpha = fault_bind(&entries).await;
         let replies = echoing(&alpha);
+        wait_published(
+            &entries
+                .each_ref()
+                .map(|entry| entry.pkarr.as_deref().unwrap()),
+            &alpha,
+            None,
+        )
+        .await;
         let beta = fault_bind(&entries).await;
         let conn = cold_connection(&beta, alpha.id()).await;
         payload(&conn).await;
@@ -357,13 +429,12 @@ async fn a_whole_relay_and_registry_domain_can_fail_without_restarting_the_peer(
         let started = Instant::now();
         let (fresh, content_us) = tokio::time::timeout(Duration::from_secs(30), async {
             domains[failed].shutdown().await;
-            tokio::time::timeout(Duration::from_secs(20), async {
-                while current_home(&alpha).as_deref() != Some(live_home.as_str()) {
-                    tokio::time::sleep(Duration::from_millis(20)).await;
-                }
-            })
-            .await
-            .expect("the original endpoint must publish the independent Relay");
+            wait_published(
+                &[entries[1 - failed].pkarr.as_deref().unwrap()],
+                &alpha,
+                Some(&live_home),
+            )
+            .await;
             let fresh = fault_bind(&entries).await;
             let replacement = cold_connection(&fresh, alpha.id()).await;
             payload(&replacement).await;
