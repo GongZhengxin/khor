@@ -2725,10 +2725,13 @@ impl Moving {
         self.step(
             to,
             now,
-            measured.road(from).map_or(Duration::ZERO, |(rtt, _)| rtt),
-            measured.road(to).map_or(Duration::MAX, |(rtt, _)| rtt),
+            (
+                measured.road(from).map_or(Duration::ZERO, |(rtt, _)| rtt),
+                measured.road(to).map_or(Duration::MAX, |(rtt, _)| rtt),
+            ),
             |after| measured.samples_after(from, after) >= 2,
             |after| measured.samples_after(to, after) >= 2,
+            |after| measured.normal_gain(from, to, after),
         )
     }
 
@@ -2805,10 +2808,10 @@ impl Moving {
         &mut self,
         to: &transports::FourTuple,
         now: Instant,
-        from_rtt: Duration,
-        to_rtt: Duration,
+        (from_rtt, to_rtt): (Duration, Duration),
         from_sampled: impl Fn(Instant) -> bool,
         to_sampled: impl Fn(Instant) -> bool,
+        normal_gain: impl Fn(Instant) -> bool,
     ) -> Step {
         if let Some((rest, until)) = &self.rest {
             if now < *until {
@@ -2834,7 +2837,10 @@ impl Moving {
             self.to = None;
             return Step::Go;
         }
-        if now >= since + CONFIRM_FOR && (!from_needed || from_sampled(since)) && to_sampled(since)
+        if now >= since + CONFIRM_FOR
+            && (!from_needed || from_sampled(since))
+            && to_sampled(since)
+            && (from_slow || normal_gain(since))
         {
             self.to = None;
             return Step::Go;
@@ -3333,6 +3339,38 @@ impl Measured {
         let speaks = self.representative(road)?;
         (speaks.samples > 0 && speaks.sent.is_some())
             .then(|| PathMeasurement::new(speaks.quality, speaks.at, speaks.recent.len()))
+    }
+
+    /// A normal optimization must beat the variation actually observed after its
+    /// decision, on the same copies that supply quality and freshness. The
+    /// existing bounded window supplies the range; no new history or probes.
+    fn normal_gain(
+        &self,
+        from: &transports::FourTuple,
+        to: &transports::FourTuple,
+        after: Instant,
+    ) -> bool {
+        let range = |road: &transports::FourTuple| {
+            let reading = self.representative(road)?;
+            let mut count = 0;
+            let mut low = Duration::MAX;
+            let mut high = Duration::ZERO;
+            for (at, rtt) in &reading.recent {
+                if reading
+                    .changed
+                    .iter()
+                    .any(|(sent, received)| sent > &after && received == at)
+                {
+                    count += 1;
+                    low = low.min(*rtt);
+                    high = high.max(*rtt);
+                }
+            }
+            (count >= 2).then_some((low, high))
+        };
+        range(from)
+            .zip(range(to))
+            .is_some_and(|((from_low, _), (_, to_high))| to_high < from_low)
     }
 
     /// A numerical EWMA change is not a sample counter. Require two
@@ -4398,29 +4436,43 @@ mod tests {
         let mut moving = Moving::default();
         assert!(moving.deadline(t).is_none());
         assert!(matches!(
-            moving.step(&road, t, MS(100), MS(60), |_| true, |_| true),
+            moving.step(&road, t, (MS(100), MS(60)), |_| true, |_| true, |_| true),
             Step::Hold { .. }
         ));
         let early = t + CONFIRM_FOR - Duration::from_nanos(1);
         assert_eq!(moving.deadline(early), Some(t + CONFIRM_FOR));
         assert!(matches!(
-            moving.step(&road, early, MS(100), MS(60), |_| true, |_| true),
+            moving.step(
+                &road,
+                early,
+                (MS(100), MS(60)),
+                |_| true,
+                |_| true,
+                |_| true
+            ),
             Step::Hold { .. }
         ));
         assert!(matches!(
             moving.step(
                 &road,
                 t + CONFIRM_FOR,
-                MS(100),
-                MS(60),
+                (MS(100), MS(60)),
                 |_| false,
-                |_| false
+                |_| false,
+                |_| true
             ),
             Step::Hold { .. }
         ));
         assert_eq!(moving.deadline(t + CONFIRM_FOR), Some(t + CONFIRM_MAX));
         assert_eq!(
-            moving.step(&road, t + CONFIRM_FOR, MS(100), MS(60), |_| true, |_| true),
+            moving.step(
+                &road,
+                t + CONFIRM_FOR,
+                (MS(100), MS(60)),
+                |_| true,
+                |_| true,
+                |_| true
+            ),
             Step::Go
         );
         assert!(moving.deadline(t + CONFIRM_FOR).is_none());
@@ -4952,7 +5004,7 @@ mod tests {
         let yes = |_| true;
         let no = |_| false;
         assert_eq!(
-            m.step(&to, t0, MS(8), MS(3), no, yes),
+            m.step(&to, t0, (MS(8), MS(3)), no, yes, |_| true),
             Step::Hold {
                 from: true,
                 to: false
@@ -4960,14 +5012,14 @@ mod tests {
         );
         assert_eq!(m.to(), Some(&to));
         assert_eq!(
-            m.step(&to, t0 + MS(1000), MS(8), MS(3), yes, yes),
+            m.step(&to, t0 + MS(1000), (MS(8), MS(3)), yes, yes, |_| true),
             Step::Hold {
                 from: false,
                 to: false
             }
         );
         assert_eq!(
-            m.step(&to, t0 + CONFIRM_FOR, MS(8), MS(3), yes, yes),
+            m.step(&to, t0 + CONFIRM_FOR, (MS(8), MS(3)), yes, yes, |_| true),
             Step::Go
         );
         assert_eq!(m.to(), None);
@@ -4985,7 +5037,7 @@ mod tests {
         let mut pinged = 0;
         let mut t = t0;
         loop {
-            match m.step(&to, t, MS(8), MS(3), yes, no) {
+            match m.step(&to, t, (MS(8), MS(3)), yes, no, |_| true) {
                 Step::Hold { to: true, .. } => pinged += 1,
                 Step::Rest => break,
                 step => panic!("{step:?} at {:?}", t - t0),
@@ -4995,20 +5047,20 @@ mod tests {
         assert_eq!(t - t0, CONFIRM_MAX, "given up after four seconds");
         assert_eq!(pinged, 16, "a ping a tick until then");
         assert_eq!(
-            m.step(&to, t + MS(10_000), MS(8), MS(3), yes, yes),
+            m.step(&to, t + MS(10_000), (MS(8), MS(3)), yes, yes, |_| true),
             Step::Rest,
             "resting"
         );
         assert!(
             matches!(
-                m.step(&other, t + MS(10_000), MS(8), MS(3), yes, no),
+                m.step(&other, t + MS(10_000), (MS(8), MS(3)), yes, no, |_| true),
                 Step::Hold { .. }
             ),
             "another move is not"
         );
         assert!(
             matches!(
-                m.step(&to, t + CONFIRM_REST, MS(8), MS(3), yes, yes),
+                m.step(&to, t + CONFIRM_REST, (MS(8), MS(3)), yes, yes, |_| true),
                 Step::Hold { .. }
             ),
             "tried again after the rest"
@@ -5063,7 +5115,7 @@ mod tests {
         let mut moving = Moving::default();
         let sent = [t0 - MS(200), t0 - MS(100)];
         let sampled = |after: Instant| sent.iter().filter(|sent| **sent > after).count() >= 2;
-        let step = moving.step(&to, t0, MS(300), MS(2), |_| false, sampled);
+        let step = moving.step(&to, t0, (MS(300), MS(2)), |_| false, sampled, |_| true);
         assert_ne!(
             step,
             Step::Go,
@@ -5089,7 +5141,14 @@ mod tests {
             "probe the suspected current copy as well; a pre-decision backup ACK cannot end confirmation"
         );
         let mut older_move = Moving::default();
-        let _ = older_move.step(&to, now - MS(1000), MS(30), MS(20), |_| false, |_| false);
+        let _ = older_move.step(
+            &to,
+            now - MS(1000),
+            (MS(30), MS(20)),
+            |_| false,
+            |_| false,
+            |_| true,
+        );
         let before_fault = now - MS(600);
         assert_eq!(
             older_move.leave(&to, now, now - MS(500), true, |after| before_fault > after),
@@ -5135,7 +5194,7 @@ mod tests {
         let t0 = Instant::now();
         let to = addr(2);
         let mut moving = Moving::default();
-        let step = moving.step(&to, t0, MS(300), MS(2), |_| false, |_| false);
+        let step = moving.step(&to, t0, (MS(300), MS(2)), |_| false, |_| false, |_| true);
         assert_eq!(
             step,
             Step::Hold {
@@ -5157,39 +5216,46 @@ mod tests {
         let no = |_| false;
         assert!(
             matches!(
-                m.step(&to, t0, MS(1743), MS(20), no, no),
+                m.step(&to, t0, (MS(1743), MS(20)), no, no, |_| true),
                 Step::Hold { to: true, .. }
             ),
             "ping the fast one"
         );
         let tick = t0 + RESELECT_INTERVAL;
         assert_eq!(
-            m.step(&to, tick, MS(1743), MS(20), no, |after| after < tick),
+            m.step(
+                &to,
+                tick,
+                (MS(1743), MS(20)),
+                no,
+                |after| after < tick,
+                |_| true
+            ),
             Step::Go,
             "it answered: go"
         );
         let mut m = Moving::default();
         let yes = |_| true;
         assert!(matches!(
-            m.step(&to, t0, MS(30), MS(20), yes, yes),
+            m.step(&to, t0, (MS(30), MS(20)), yes, yes, |_| true),
             Step::Hold { .. }
         ));
         assert!(
             matches!(
-                m.step(&to, tick, MS(30), MS(20), yes, yes),
+                m.step(&to, tick, (MS(30), MS(20)), yes, yes, |_| true),
                 Step::Hold { .. }
             ),
             "one speed: the two seconds"
         );
         assert!(
             matches!(
-                m.step(&to, tick, MS(300), MS(150), yes, yes),
+                m.step(&to, tick, (MS(300), MS(150)), yes, yes, |_| true),
                 Step::Hold { .. }
             ),
             "twice and 10 ms is not"
         );
         assert_eq!(
-            m.step(&to, tick, MS(309), MS(116), yes, yes),
+            m.step(&to, tick, (MS(309), MS(116)), yes, yes, |_| true),
             Step::Go,
             "the relay at 309 ms, the hop at 116 ms"
         );
@@ -5197,7 +5263,7 @@ mod tests {
         let mut m = Moving::default();
         let last_tick = |after: Instant| after < t0 - MS(100);
         assert_eq!(
-            m.step(&to, t0, MS(856), MS(174), no, last_tick),
+            m.step(&to, t0, (MS(856), MS(174)), no, last_tick, |_| true),
             Step::Hold {
                 from: true,
                 to: true
@@ -5205,15 +5271,21 @@ mod tests {
         );
         let answered = t0 + MS(500);
         assert_eq!(
-            m.step(&to, answered, MS(856), MS(174), no, |after| after
-                < answered),
+            m.step(
+                &to,
+                answered,
+                (MS(856), MS(174)),
+                no,
+                |after| after < answered,
+                |_| true
+            ),
             Step::Go
         );
         let mut m = Moving::default();
         let older = |after: Instant| after < t0 - MS(400);
         assert!(
             matches!(
-                m.step(&to, t0, MS(856), MS(174), no, older),
+                m.step(&to, t0, (MS(856), MS(174)), no, older, |_| true),
                 Step::Hold { to: true, .. }
             ),
             "an older one is not"
@@ -5230,31 +5302,47 @@ mod tests {
         let no = |_| false;
         let sampled_at = |t: Instant| move |after: Instant| after < t;
         let mut m = Moving::default();
-        let _ = m.step(&to, t0, MS(4994), MS(54), no, no);
+        let _ = m.step(&to, t0, (MS(4994), MS(54)), no, no, |_| true);
         let late = t0 + CONFIRM_MAX;
         assert_ne!(
-            m.step(&to, late, MS(4994), MS(54), no, sampled_at(late)),
+            m.step(&to, late, (MS(4994), MS(54)), no, sampled_at(late), |_| {
+                true
+            }),
             Step::Rest,
             "far faster"
         );
         // Not far faster, both slow: the slow one's sample is not asked for.
         let mut m = Moving::default();
-        let _ = m.step(&to, t0, MS(2500), MS(1400), no, no);
+        let _ = m.step(&to, t0, (MS(2500), MS(1400)), no, no, |_| true);
         let first = t0 + MS(500);
         assert!(matches!(
-            m.step(&to, first, MS(2500), MS(1400), no, sampled_at(first)),
+            m.step(
+                &to,
+                first,
+                (MS(2500), MS(1400)),
+                no,
+                sampled_at(first),
+                |_| true
+            ),
             Step::Hold { .. }
         ));
         let done = t0 + CONFIRM_FOR;
         assert_eq!(
-            m.step(&to, done, MS(2500), MS(1400), no, sampled_at(first)),
+            m.step(
+                &to,
+                done,
+                (MS(2500), MS(1400)),
+                no,
+                sampled_at(first),
+                |_| { true }
+            ),
             Step::Go,
             "after the two seconds"
         );
         // And the slow one is not pinged for it.
         let mut m = Moving::default();
         assert_eq!(
-            m.step(&to, t0, MS(2500), MS(1400), no, no),
+            m.step(&to, t0, (MS(2500), MS(1400)), no, no, |_| true),
             Step::Hold {
                 from: false,
                 to: true
