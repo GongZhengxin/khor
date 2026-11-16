@@ -4,11 +4,11 @@
 
 ## 当前运行与下一步
 
-- 当前无在途Turing/Mac任务，均已收齐原退出码、源/产物/合同与owner；不得重派已闭组。最新待集成J是 `khor-net-initial-direct-v1` / `experiment/net-initial-direct-v1`，HEAD **4b9ef2a63da8d73a252a29b919316615044b72d5** / tree **8dfdcbf4284e4a75e09f0f075f649eed9ae94719** / snapshot **814cf94041bead77515637980b71f6cfb6f26654**，clean，源 `E/initial-direct-green-v2-source-v1.json`。J相对H只改carry.rs（3新测试＋current=None近似质量Direct次级偏好），**无X目录priority改动**。
-- **统计口径校正，门/分母未改**：原 `pull-coexistence-comparison-plan-v1.json` 按三场合并每cell360样本评p95，不是每一场独立卡592518.1μs。H三场目录bulk pooled p95 **448002μs**、p99 **836037μs**，X **353557/751934μs**，各2160业务全成功、3完整192MiB文件、6post-health。两者均过这条原绝对参考；此前逐场614ms等仍保留，但不是独立cohort门失败。`E/current-high-pooled-verification-v1.json`闭证原协议hash/原门/完整人口。没有同期配对或全N3接受。
-- X目录优先级未证明必要，已经从J恢复H原link.rs；X分支和全部原ELF/测试结果保留。X普通Release编译 **070611Z-f9eb7a56**原0/556.403秒、high **071904Z-b8814e80**原0/546.269秒（3场），Mac **43821604934**原316/0/原ignored1，均闭证。详[DIRECTORY-PRIORITY](DIRECTORY-PRIORITY.md)。不再为这条单独参考继续增加调度补丁。
-- J首次选择只复用原5ms收益地板，已存在健康主路的对称收益/settling/新鲜确认保持。RED **Mac43823406334** / job133151481554：72pass/1fail/原ignored1，准确新增near-Direct用例红、其他旧和2负控绿，原native101保留。GREEN V1 **43824063149**格式单行closure拒绝、原1、0编译0native，原记录保留；Turing远端Rustfmt只修格式。GREEN V2 **43824779693** / job133155898284：**73pass/0fail/原ignored1**，全部74测试名和3新测试体逐字相同（SHA555fba7663f3d87e5b7c246542b5ede903c364058781dd18ae891a3bd3a79070）；11control blobs/源/ZIP/CRC/toolchain/resource门全核，artifact14205508982/SHA8c95b6151c7d7ccb3ee314d4c90fffffa942f40113f0c5f10f40211393265d75。`E/initial-direct-green-v2-mac-verification-v1.json`。只组件接受，非整个冷建联/完整N1。
-- 下一步：把J与当前main **93f6cb23**在独立集成树合并（main已由其他任务推进，不改其checkout/dirty文件），保存canonical feat/net最新STATE/PLAN后整合为同一候选，再冻结最终同源native/Quality/MacLab与同期public-main配对矩阵。main合并/安装/发布授权不扩张；源内更新允许，不将旧I4绿当新候选绿。完整N0–N5缺口见下，不缩范围。
+- 当前无在途Turing/Mac任务。J4b9ef2a6的Mac GREEN V2 **43824779693**已收齐并独立核验 **73pass/0fail/原ignored1**，与原RED完全相同74测试名/3新测试体；格式拒绝43824063149原1/0编译0native仍留。源/控制/ZIP/CRC/resource门均闭，不重派。
+- 当前集成树 `/Volumes/disk0/Khor/worktrees/current/khor-net-product-integration-v5`，branch `experiment/net-product-integration-v5`。已合并当前main **93f6cb23** 与J4b9ef2a6（merge76448e64），仅一个attachment测试脚本日志冲突，保留相同browser channel设置与实际版本记录；GUI实现与当前main逐字一致。再以merge94534148接回canonical feat/net **e0d7e948**的计划历史，所有canonical net-optimization文档覆盖为权威最新，保留集成树独有证据文档，产品源不被旧canonical实现覆盖。`E/net-product-integration-v5-resolution-v1.json`记录范围；无canonical-only非GUI产品文件被删除。main、LIVE23961与其他worktree未改。
+- 本提交后将canonical feat/net仅fast-forward到此集成，再保存 `E/net-product-integration-v5-source-v1.json` 准确源；下一步冻结并调度同源完整原生、Quality与MacLab和同期public-main网络对照，继续原N0–N5缺口，不把集成视作接受/发布。
+- 原统计口径保持且已核：H原high每cell合并360样本的目录p95 **448002μs**、p99 **836037μs**；X **353557/751934μs**，均过原592518.1μs单条绝对参考。每arm2160逻辑请求、3×192MiB、6post-health全成功。各场614ms/更长停顿保留，不误把每场单独与pooled门相较。`E/current-high-pooled-verification-v1.json`；没有同期配对或完整N3接受。X目录priority无必要性证明，已从J和本集成删除，不再为这条已过的pooled参考追加调度补丁。
+- 下文H/S/旧cohort证据仍只对其准确源成立。完整空闲1/3/5成本、SSH/peer relay/同步共存/公平、移动/NAT64、全部预算写入边界、45 iro h＋1Noq补丁退出审查、最终同源验收与手机均不能省略。未授权main合并、安装替换、发行或生产Relay部署。
 
 ## 当前准确产品候选 H
 
