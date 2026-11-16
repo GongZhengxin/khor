@@ -825,16 +825,54 @@ export default function App() {
     let live = true;
     const tick = () => {
       const request = ++sessionRequest.current;
+      // Counted where the call is made, not where it lands: a read that never
+      // answers and a read that was never asked for are different bugs, and
+      // the window is the only place that can tell them apart.
+      const w = window as unknown as { __sessionCalls?: number };
+      w.__sessionCalls = (w.__sessionCalls ?? 0) + 1;
       fetchSessions(arrangeBy)
         .then((rows) => {
           if (!live || request < sessionApplied.current) return;
           sessionApplied.current = request;
+          const w = window as unknown as {
+            __sessionReadError?: string;
+            __sessionReads?: number;
+            __announceError?: string;
+          };
+          delete w.__sessionReadError;
+          w.__sessionReads = (w.__sessionReads ?? 0) + 1;
+          // **The read succeeded, so the list is drawn — before anything is
+          // announced about it.** Announcing is a side effect of a read, not a
+          // condition of one: with the announcement first, anything it threw
+          // left `rowsRead` false and the list on its skeleton for ever, while
+          // the error the page recorded said the read had failed when it had
+          // not (measured on Windows, 2026-11-16).
           setRows(rows);
-          announceFinished(rows);
           setRowsRead(true);
           setStale(false);
+          try {
+            announceFinished(rows);
+          } catch (error) {
+            // Said, not swallowed: a broken announcer is its own bug, and it
+            // must not be able to hide a list that arrived.
+            console.error("khor: finished-announce failed", error);
+            w.__announceError = error instanceof Error ? error.message : String(error);
+          }
         })
-        .catch(() => live && request >= sessionApplied.current && setStale(true));
+        .catch((error) => {
+          // **Said, not swallowed.** A failed read leaves the skeleton up and
+          // sets the stale mark; without the reason the next person sees an
+          // empty list and no way to ask why. The reason goes to the console
+          // *and* onto `document` — the window's own page is the only witness
+          // that saw the app's call, and a devtools evaluation is not
+          // (measured 2026-11-16: an invoke issued from devtools never
+          // settles while the app's own answers arrive).
+          const said = error instanceof Error ? error.message : String(error);
+          console.error("khor: session list read failed", error);
+          const w = window as unknown as { __sessionReadError?: string };
+          w.__sessionReadError = said;
+          if (live && request >= sessionApplied.current) setStale(true);
+        });
     };
     tick();
     const t = setInterval(tick, hidden ? HIDDEN_MS : POLL_MS);

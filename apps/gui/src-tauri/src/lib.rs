@@ -48,9 +48,30 @@ use khor_node::Node;
 async fn off_main<T: Send + 'static>(
     work: impl FnOnce() -> Result<T, String> + Send + 'static,
 ) -> Result<T, String> {
-    tauri::async_runtime::spawn_blocking(work)
-        .await
-        .map_err(|e| e.to_string())?
+    // **Said on stderr, so a pool that never runs its work is visible**
+    // (2026-11-16: every `off_main` command stayed pending on Windows while
+    // the direct ones answered, and nothing anywhere said so). `KHOR_GUI_TRACE`
+    // turns it on; the pair of lines bounds the wait without changing it.
+    let traced = std::env::var_os("KHOR_GUI_TRACE").is_some();
+    let started = std::time::Instant::now();
+    if traced {
+        eprintln!("[off_main] submitted");
+    }
+    let joined = tauri::async_runtime::spawn_blocking(move || {
+        if traced {
+            eprintln!("[off_main] closure entered after {:?}", started.elapsed());
+        }
+        let out = work();
+        if traced {
+            eprintln!("[off_main] closure done after {:?}", started.elapsed());
+        }
+        out
+    })
+    .await;
+    if traced {
+        eprintln!("[off_main] settled after {:?}", started.elapsed());
+    }
+    joined.map_err(|e| e.to_string())?
 }
 
 /// `by` is the arrangement key (`khor_node::list::Arrange`). The window
@@ -63,7 +84,14 @@ async fn off_main<T: Send + 'static>(
 /// held the window still for as long as that took.
 #[tauri::command]
 async fn sessions(by: String) -> Result<Vec<SessionRow>, String> {
-    off_main(move || khor_gui_core::list_sessions(&Node::root_from_env(), &by)).await
+    if std::env::var_os("KHOR_GUI_TRACE").is_some() {
+        eprintln!("[sessions] entered with by={by:?}");
+    }
+    let out = off_main(move || khor_gui_core::list_sessions(&Node::root_from_env(), &by)).await;
+    if std::env::var_os("KHOR_GUI_TRACE").is_some() {
+        eprintln!("[sessions] answered: {:?}", out.as_ref().map(|rows| rows.len()));
+    }
+    out
 }
 
 /// The day strips, on their own beat rather than riding the row list
@@ -504,7 +532,14 @@ fn remove_account(id: String) -> Result<(), String> {
 
 #[tauri::command]
 async fn devices() -> Result<Vec<DeviceRow>, String> {
-    khor_gui_core::list_devices(&Node::root_from_env()).await
+    if std::env::var_os("KHOR_GUI_TRACE").is_some() {
+        eprintln!("[devices] entered");
+    }
+    let out = khor_gui_core::list_devices(&Node::root_from_env()).await;
+    if std::env::var_os("KHOR_GUI_TRACE").is_some() {
+        eprintln!("[devices] answered: {:?}", out.as_ref().map(|rows| rows.len()));
+    }
+    out
 }
 
 /// The machine's process top and the CPU day its serve recorded.
@@ -5716,6 +5751,16 @@ pub fn run() {
             }
         })
         .invoke_handler(|invoke| {
+            // **Every command that reaches Rust says so here**, before any
+            // dispatch decision. This is the only point that separates "the
+            // page never sent it" from "Rust refused it" — measured on Windows
+            // 2026-11-16, where the page made 8 `sessions` calls and not one
+            // arrived, with no error on either side.
+            if std::env::var_os("KHOR_GUI_TRACE").is_some() {
+                static SEEN: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+                let n = SEEN.fetch_add(1, std::sync::atomic::Ordering::Relaxed) + 1;
+                eprintln!("[ipc] #{n} {}", invoke.message.command());
+            }
             let invoke = match native_io::dispatch(invoke) {
                 Ok(()) => return true,
                 Err(invoke) => invoke,
