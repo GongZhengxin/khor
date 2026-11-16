@@ -17,3 +17,11 @@
 E=`/Volumes/disk0/Khor/evidence/net`。冻结方案 `noq-recovery-necessity-ablation-plan-v1.json`，独立核验 `turing-20261116T032958Z-36318d40/noq-recovery-necessity-verification-v1.json`，逐项账本 `iroh-upgrade-patch-ledger-v6.json`（53待审/1上游替换/6专属保留）。原失败日志、控制器原101和所有8绿保留。
 
 2026-11-16再次查官方release与crates.io：iroh稳定1.4.1，Noq/noq-proto稳定1.4.0，均与独立产品候选一致。Noq GitHub latest alias仍指旧1.1.0，不能据此降级。准确metadata/checksum记录 `upstream-stable-check-20261116-v1.json`。canonical feat/net依赖尚未最终集成。
+
+## 观测接口依赖（与删除实验分开）
+
+最新版Noq-proto1.4.0公开PathStats仍无补丁3的pto_count/last_received/unacked_since/pto、8的latest_rtt/rtt_samples、10的latest_rtt_sent/latest_rtt_received。当前iroh生产消费者使用这些数据区分静默、相同数值新ACK与迟到旧ACK；467原库合同与当前208项iroh库已有准确源证据。普通PathStats.rtt或可选qlog不是这些字段的直接替代。
+
+这三组暂保留为当前观测接口集成依赖；结论来自具体公开字段/消费者/已有合同审查，不冒称逐项物理删除红，也不证明唯一架构或能耗接受。退出条件是上游提供等价观测，或经过相同新鲜性/故障/停顿合同验证的消费者迁移且不增加探测或qlog要求。详细文件SHA、字段与测试名见E/noq-observation-api-exit-audit-v1.json。
+
+v7账本为60项：50待审、1上游替换、6指定删除实验支持保留、3观测接口集成保留。不同证据类型不得混称“全部必要”。
