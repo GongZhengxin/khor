@@ -96,7 +96,7 @@ pub mod secret;
 pub mod serves;
 pub mod session_content;
 pub mod shell_start;
-mod startup_trace;
+pub mod startup_trace;
 mod store_owner;
 pub mod subscriptions;
 pub mod tabs;
@@ -4740,7 +4740,9 @@ impl Node {
             .dir_of(&id)
             .ok_or_else(|| msg::not_a_session_id(&id.0))?;
         host::spawn_host(&dir, &id, cmd, size)?;
+        crate::startup_trace::mark("host-ready");
         self.roster_new(&id)?;
+        crate::startup_trace::mark("roster-new");
         Ok(id)
     }
 

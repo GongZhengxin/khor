@@ -20,13 +20,13 @@ static START: OnceLock<Instant> = OnceLock::new();
 
 /// The moment this process began — called first thing, so the marks are
 /// measured from a point the person's wait also started at.
-pub(crate) fn begin() {
+pub fn begin() {
     START.get_or_init(Instant::now);
     mark("begin");
 }
 
 /// Appends one line, when tracing is on and this process has a start.
-pub(crate) fn mark(name: &str) {
+pub fn mark(name: &str) {
     let Some(path) = std::env::var_os("KHOR_STARTUP_TRACE") else {
         return;
     };

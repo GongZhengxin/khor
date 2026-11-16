@@ -4664,10 +4664,14 @@ fn open(rest: &[String]) -> Result<(), String> {
         return Ok(());
     }
     let id = n.open_persistent(kind, &title, &cmd, size)?;
+    khor_node::startup_trace::mark("open-returned");
     eprintln!("session: {}", id.0);
     if detached {
         navigate(&id.0);
         println!("{}", id.0);
+        khor_node::startup_trace::mark("open-printed");
+        drop(n);
+        khor_node::startup_trace::mark("node-dropped");
         return Ok(());
     }
     attach_to(&n, &id)

@@ -41,25 +41,62 @@
 
 **结论**：这几行相对 Linux 的倍数主要反映**平台常数**，不是 Windows 实现劣化。按 §5.2 仍需列为阻断项等待用户确认，但归因明确。
 
-### 2.2 `session_create`：23.5×，待进一步测量（最可能是 Defender 扫描）
+### 2.2 `session_create`：已定位，不是 Defender（2026-11-17）
 
-6.4 s 对 273 ms。这 6 s 花在「派生宿主并等它就位」上，而宿主是从**不可变运行时镜像**重新执行的
-（`crates/node/src/runtime_image.rs`，`%LOCALAPPDATA%\Khor\runtime\<hash>`，与主二进制同为 ~104 MB）。
-每个新会话都要重新映射/扫描这 104 MB，Windows 的实时防护对每次执行都要过一遍。
+原先的假设是「每次都要重新映射/扫描 104 MB 运行时镜像，Defender 每次执行都过一遍」。
+**假设不成立**：原因是三处可测的代码开销，且宿主本身很快。
 
-**这不是结论，是待验证的假设。** 下一步测法（未做）：
-1. 把 `%LOCALAPPDATA%\Khor\runtime` 加入 Defender 排除项前后各测 5 次，比较。
-2. 直接计时 `Start-Process` 该运行时镜像（不经 khor），与 `Start-Process cmd.exe` 对比。
-3. 若确认，产品侧的解法是缩小运行时镜像（宿主只需要 node 的一小部分），而不是改会话逻辑。
+**测量方法先修正一次**：PowerShell 的 `& khor …` 会多等约 2 秒（控制台/管道收尾），
+所以「`open` 用了 6.5 s」里有一截不是 khor。可靠数字取**进程自身生命周期**
+（`Start-Process -PassThru` 后 `ExitTime - StartTime`）。
 
-### 2.3 `file_scan`：40×，待进一步测量
+**归因用 `KHOR_STARTUP_TRACE=<文件>`**（本轮新增的门，见 `crates/node/src/startup_trace.rs`）：
+每个进程把 `pid / 相对进程启动的毫秒 / 标记` 追加到该文件。一次 debug 构建的热 `open`：
 
-`khor ls <本机> <40 个小文件的目录>`：1118 ms 对 28 ms。其中进程创建只占 ~36 ms，
-剩下 ~1080 ms 落在目录遍历/元数据读取。可能的来源：Defender 对每个文件的首次访问、NTFS 元数据、
-以及 `khor ls` 走的是「列出后逐个 stat」而非批量。
+| 标记 | ms | 增量 |
+| --- | --- | --- |
+| begin → runtime-entered → contracts-checked | 0 → 16 → 33 | 33 |
+| image-current | 93 | 60 |
+| image-inspected | 873 | **780**（对 104 MB 源二进制做 SHA-256 并起一个探测进程） |
+| image-miss | 1371 | 498 |
+| client-image | 2423 | 1052（缓存未命中路径上的 publish：身份哈希 + 清单） |
+| client-path | 2424 | **11**（见下：修复前这里是 **3099**） |
+| client-spawned → client-ready | 2438 → 2692 | 254（宿主启动到写 `host.json`） |
+| host-ready → roster-new → open-printed | 2692 → 2714 → 2715 | 23 |
+| node-dropped | 2716 | 1 |
 
-**待验证**：同一目录连续调用第二次是否变快（缓存）；用 `Measure-Command` 直接 `Get-ChildItem` 同目录作对照。
-若直接 `Get-ChildItem` 也是秒级，则与 Khor 无关。
+宿主的自述更短：`begin 0 → runtime 92 → contracts 106 → host-serving 121 → pty-open 141
+→ program-found 146 → child-spawned 191 → listener-bind 195 → host-json 196`。
+**宿主 196 ms**，不是「5 秒就位」——早先那次「就绪 4.4 s」是把 `host.json` 的创建时间
+减去了 `meta.started_ms`，而那个时钟在客户端的镜像工作之前就开始了。
+
+**已修**（提交 `5df68991`）：`asked_shell` 在 Windows 上不再启动「登录 shell」。
+`SHELL` 在这台机器上被设成 Windows PowerShell，于是每次建会话都起一个加载 profile 的
+PowerShell，花 **3.1 s** 去回答一个 Windows 上不成立的 `-lic printf` 问题。
+Windows 的 PATH 就是进程环境里那份，`KHOR_PATH` 仍可覆盖。修后 debug 热路径 5.0 s → 2.4 s
+（进程生命周期）。
+
+**仍待修**（已测量，未改）：`inspect_supported` 0.78 s、缓存命中路径上的 publish 1.05 s
+——两者都要把整份镜像读一遍；以及会话建立之后的收尾（本轮测到 `Node` 析构只要 1 ms，
+但 `open-printed` 之后仍有时间，尚待用标记继续切分）。
+
+### 2.3 `file_scan`：已定位并修复——是本机 `ls` 白建了一个网络端点
+
+`khor ls <本机> <40 个小文件目录>` 的 1118 ms 与目录、文件数、元数据都无关：
+`ls_of` 先问常驻服务，问不到就**绑定一个 iroh 端点**（mDNS、套接字、关闭时还要等传输收尾），
+而本机目录的答案根本不上网络。样本的双峰（1150/1133/1117 与 132/119）就是「绑了端点」与「没绑」两簇。
+
+**修法**（提交 `3ce5c5e3`）：先解析机器，是本机就直接 `listed_with_arrivals`，不建端点。
+release 二进制、无常驻、40 个文件、六次：**1354/1162/1168/1168/1186/1168 ms → 700/84/82/79/77/83 ms**
+（首条是刚链接完的冷页缓存），其后复测 76–101 ms。约 **14×**。
+
+### 2.3.1 打包发现：`cargo tauri build` 不重建 CLI
+
+`release\khor.exe` 与 `release\khor-gui.exe` 的时间戳会相差很远：`tauri build` 只构建 app，
+CLI 作为 `externalBin` 被原样打包进去。本轮因此出现过一次「安装包里的 CLI 是旧版」。
+打包要么单独 `cargo build --release -p khor-cli`，要么走 `scripts/desktop_installer.py`
+（它在打包前构建 CLI 并校验 app 与 CLI 的 build/contract 一致）。
+
 
 ### 2.4 `cli_doctor`：2.2×
 
