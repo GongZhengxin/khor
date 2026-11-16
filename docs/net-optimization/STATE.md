@@ -1,8 +1,10 @@
 # feat/net 当前状态与接续入口
 
-更新于2026-11-16 17:20 UTC（本地2026-11-17）。用户先明确暂停等待main UI修复，随后“好了, main被更新了”恢复该集成与网络任务；问答期间没有继续构建/合并/发布。[GOAL](GOAL.md)、[PLAN](PLAN.md) N0–N5尚未整体完成。root串行，不派子智能体。本机source-only，重型工作限Turing、macserver与授权khor-build。goal服务仍显示paused是此前暂停状态，不能覆盖用户最新恢复指令；不得另建替代小目标。
+更新于2026-11-16 18:04 UTC（本地2026-11-17）。用户先明确暂停等待main UI修复，随后“好了, main被更新了”恢复该集成与网络任务；问答期间没有继续构建/合并/发布。[GOAL](GOAL.md)、[PLAN](PLAN.md) N0–N5尚未整体完成。root串行，不派子智能体。本机source-only，重型工作限Turing、macserver与授权khor-build。goal服务仍显示paused是此前暂停状态，不能覆盖用户最新恢复指令；不得另建替代小目标。
 
 **本次接续优先**：远端main已同步到 **84e75c57cf87d0dfaffda14149d0d726f15dfe9e**。比df47增加12文件：原生旧macOS透明导航材质、对应UI检查/探针与指南，以及trust::admit区分Pending和Revoked（含新增测试与中英文文案）。这12文件与当前feat/net改动无交叉，必须保留；主仓untracked lab-preview/output不动。当前只集成到开发分支，不直接发布。
+
+**2026-11-17用户再次确认main ship**：用户“你不打算合并到main? 如果不合并咋ship?”随后“好的”。最终按已有授权执行：候选发行性能/完整Quality与native Lab→保留main UI修复合入main→准确main合并源质量/rc签名门→TestFlight→候选iPhone换网/锁屏/能耗。物理候选必须先有TestFlight，不能反过来把尚未安装候选的真机验收当main候选合并永久前置。main合并/ship不是待重复确认项；生产Relay采购/部署和直接替换现装App仍独立。
 
 **15:50 UTC最新交付要求优先**：用户“后面你会在main去ship对吗”，已答复最终从main ship：feat/net候选验收→保留main同期改动的集成→验证合并后的准确版本→按rc/签名门发布TestFlight。当前不立即合并/发版；本页以下旧“无main/发行授权”文字记录的是此前阶段，不能把它当作永久阻断或要求用户重复确认最终main ship。采购/生产Relay部署和直接替换现装App仍未包含。main目前84e75c57（已含UI/准入修复），其其他任务改动与untracked lab-preview/output不得覆盖。
 
@@ -14,7 +16,7 @@ canonical **050dedc6639dea059d6878838d09d796a42f9ed6** 已采用准确通过源 
 
 - **额度缓存因果RED→GREEN**：171950Z-a373b2ec真实锁下原Refused Busy，172255Z-b98275b4同测试通过；同controlbc44744a、同5s防挂/真实held锁/同谓词，0新增网络或同步重试。Mac原resume6/6 **43918063738** 同原resume.rs、30s耳朵/60s同步/立即改名全保持，0替换，耳朵36–41ms、恢复轮455–494ms。各专项证明及[RESUME-CACHED-QUOTAS](RESUME-CACHED-QUOTAS.md)保留。
 
-当前Turing只有 **Release main基线V2** 刚单次stage/launch，原session39448，`E/final-net-release-baseline-plan-v2.json` / control240e272e / source5686c3d9；先查原receipt/source-refs，勿重派。V1 `174826Z-3ada4e7b` 原1/25.863秒，在历史ELF重新准入的context处拒绝，**0 Cargo编译/0 native测试/0测量/0源迁移**，已闭`final-net-release-baseline-preflight-red-v1.json`。V2仅纠正历史归档与新构建准入的职责：历史源码/linked bytes/generated inputs仍由原验证器核；若仅context变化，则记录哈希差异、旧ELF只归档、不重新准入，传给新build的prior receipts为0，强制全部first-party条目fresh；新产物仍必须过原require_provenance的当前准确context，未放松。
+当前Turing只有 **Release main基线V3** 刚单次stage/launch，原session72949 / `E/final-net-release-baseline-plan-v3.json` / control3cfdd7e0 / source5686c3d9；先查原receipt/source-refs，勿重派。V1 `174826Z-3ada4e7b` 原1/25.863秒，在历史ELF当前context重新准入处拒绝，0编译/0native/0测量/0迁移；V2 `175538Z-a9735fc5` 原1/47.962秒，旧缓存context只有PATH哈希不同，历史selected已核并归档、0 prior credit；源迁移后新加的独立vendor fmt检查因main既有iroh1.2格式拒绝，0编译/0native/0测量。两个原拒绝都已独立闭证。V3恢复证明过的owned clean旧源作历史归档核对，不改main vendor字节，基线保留原first-party格式政策；candidate仍保留独立vendor格式门。新产物全套原require_provenance/current context/fresh first-party门不放松。
 - **Busy/owner诊断均闭RED**：Mac43915075545最多6次、第1过/第2红后停、4未执行；真实devices接收/apply时`RootPermit::try_acquire`同root已有owner（io.rs:168）。随后Mac **43916219184**第1即红、5未执行；持锁栈完整指向`dispatch_inner → Node::open → open_hosting → RootPermit::acquire`，同步额度读取用新Node初始化与devices apply相撞。原定点谓词/30s耳朵/60s同步门均保持；日志/ZIP/所有11控制/原guard已核。各目录`resume-busy-observer-verification-v1.json`与`resume-root-owner-verification-v1.json`。这些observer源码不进产品候选，不能当修复。
 - **恢复诊断闭证**：仅test observer源b9516300（生产逐字3d），Linux `165705Z-3cd67887`原0/152.532秒，固定10次全过；Mac **43913474400** attempt1原101，固定最多6次，第1过、第2红即停，4未执行、0替换。Mac直接观测：beta已是`beta-while-alpha-was-away`，alpha仍`alpha/beta`；本轮353ms明确devices pending。原耳朵30s/同步60s/立即改名断言不变；还未证明具体Busy源。两目录`resume-partial-observer-verification-v1.json`，Mac ZIP14247534585/SHA1bb6d6f2/原11控制/原guard均核。Linux十绿不抹掉Mac失败。
 - **准确3d完整Linux25组358已闭GREEN** `153547Z-876c1874`原0/944.251秒、358pass/0fail/原2ignored helper，`E/RUN/relay-home-refresh-full-node-verification-v1.json`；source/control/所有原测试名/原门/格式/owner均核。保持沿用，不因session/暂停重跑。
@@ -59,11 +61,11 @@ E=`/Volumes/disk0/Khor/evidence/net`。已闭证项不因compact/session重跑�
 
 ## 下一步与未完成范围
 
-1. 底层3d完整iroh＋N4已闭GREEN，先闭当前准确3d的Linux358与Mac联合验收，保留所有结果与未执行组；旧b04完整358及3d底层218不因compact重复派。mac旧early上传失败记录已闭partial，不为上传单独重跑。
-2. canonical生产分量已集成b04、核对仅docs差异。#51与N4测试尚未采用，先验证，再冻结最终准确源做Quality和原生Mac。main基线冻结93f6cb23，不追其他GUI任务，不碰LIVE23961。
-3. 按[REQUIREMENTS](REQUIREMENTS.md)逐项对账；执行归并见[CLOSEOUT](CLOSEOUT.md)。继续N1/N2的多middle、预算/取消/重放及N3的SSH-hop-sync共存、成本，N4冷Node寻址/发布、非对称出口与容量；现有Endpoint组件合同不冒充持续Node业务或完整场景。N4原测试worktree `khor-net-registry-fault-domain-v1` / cbc25177保持观察源，不覆盖；新#51在另一worktree。原20秒publication/30秒whole/15秒lookup/2秒payload和两场景各3轮均保持；#51是原60项审查之后的新候选，不能冒称旧账已含它。
-4. 物理iPhone localhost现装为**TestFlight**（用户本轮确认），旧0.2.0和先前就绪窗口不能验收新候选。候选发行必须按main ancestor rc tag与签名环境政策；不绕过流程。先把授权范围内候选做具体可评审，再请求所需main合并/rc/TestFlight授权，不能现在半途提审批。
-5. 最终同源报告、设计、持续矩阵与手机换网/锁屏/能耗仍缺，goal保持active。无main合并、现装App替换、rc/发行/TestFlight上传或生产Relay采购部署授权。
+1. Linux368/Mac364准确F99的32组已闭，canonical已采用；不重派旧358/211/当前368/364。先闭基线V3实际producer，再同host串行编译最终canonical普通Release候选，冻结AB人口与原性能门后计时；已准备但未跑的candidate V1不当在途。
+2. 将包含main UI与已通过修复的准确candidate冻结，执行完整Quality与native Mac Lab；本机0产品执行，不重跑没有源码变化的旧组件。候选生产代码与F99逐字相同的适用性须留下证明，main同期12变更blob保持。
+3. 按GOAL/PLAN/REQUIREMENTS完成N1/N2剩余边界、N3最终Release/SSH-hop-sync共存与成本、N4持续Node业务/冷寻址/非对称出口/容量；既有组件与静态审查不扩大成这些接受。全部原RED、未执行人口与原门保留。
+4. 通过候选门后按用户已确认路径合入main，验证准确main合并版本，按仓库rc/签名环境流程ship到TestFlight。iPhone localhost现装旧版不能替代候选真机；TestFlight候选就绪后协调实际换网/锁屏/能耗窗口。
+5. 最终同源设计、持续矩阵、性能/成本报告和真机验收仍缺，完整N0–N5未完成。main合并/ship已获最新用户确认，但当前尚未执行；生产Relay采购/部署及直接替换现装App仍单列。
 
 ## 环境与调度
 
