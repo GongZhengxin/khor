@@ -26,6 +26,7 @@ window.showKhorMarks=()=>render(<div data-khor-mark-samples>{[
   ['row','gui','khor','row'],['tab','gui','khor','tab'],['broadcast','broadcast',null,'row'],
   ['transfer','transfer','khor','row'],['borrow','borrow','khor','row'],['shell','shell','khor','row'],['unknown','gui',null,'row'],
   ['claude-row','gui','claude','row'],['claude-tab','gui','claude','tab'],['codex-row','gui','codex','row'],['cursor-row','gui','cursor','row'],
+  ['dsh-row','gui','dsh','row'],['dsh-tab','gui','dsh','tab'],
 ].map(([name,kind,category,size])=><div key={name} data-khor-mark-sample={name} className="flex items-center gap-row"><SessionFace face={null} word={null} kind={kind} category={category} size={size}/><span>{name}</span></div>)}</div>);
 window.showNew();`);
 let server,browser;
@@ -77,6 +78,10 @@ try {
   // The page and API share one server; bridge POSTs are intercepted above.
   await page.goto(`http://localhost:${port}/${basename(fixture)}/index.html?bridge=${port}`);
   const choose=async id=>{await page.locator('[data-new-session-launch] textarea').click();await page.locator(`[data-choice-option="${id}"]`).click();};
+  await choose('agent:dsh');
+  const dshMark=page.locator('[data-new-session-launch][data-selected="agent:dsh"] [data-brand-mark="dsh"]');
+  await dshMark.waitFor();const dshArtwork=await dshMark.innerHTML();
+  assert.equal(await page.locator('[data-new-session-launch] textarea').inputValue(),'DeepSeek Harness');
   await choose('agent:fixture-acp');await page.locator('[data-acp-setup] > summary').click();await page.getByLabel('MCP servers',{exact:true}).fill('{');
   assert(await page.locator('[data-new-session-create]').isDisabled());
   await choose('khor');await page.locator('[data-new-khor-model] input').waitFor();
@@ -175,6 +180,13 @@ try {
      assert.equal(await glyph.innerHTML(),khorArtwork,`${sample} must share the new-session artwork`);
      const coverage=await glyph.evaluate(svg=>svg.getBoundingClientRect().width*.92/svg.closest('[data-side-face]').getBoundingClientRect().width);
      assert.ok(Math.abs(coverage-.65)<.002,`${sample} must keep the accepted 65% painted coverage`);
+    }
+    for(const sample of ['dsh-row','dsh-tab']) {
+     const glyph=page.locator(`[data-khor-mark-sample="${sample}"] [data-brand-mark="dsh"]`);
+     assert.equal(await glyph.count(),1,`${sample} must identify DeepSeek Harness`);
+     assert.equal(await glyph.innerHTML(),dshArtwork,`${sample} must share the new-session artwork`);
+     const color=await glyph.evaluate(svg=>getComputedStyle(svg).fill);
+     assert(!['none','transparent','rgba(0, 0, 0, 0)'].includes(color),`${sample} must use the face's visible ink`);
     }
     for(const sample of ['broadcast','transfer','borrow','shell','unknown','claude-row','claude-tab','codex-row','cursor-row']) {
      const face=page.locator(`[data-khor-mark-sample="${sample}"]`);

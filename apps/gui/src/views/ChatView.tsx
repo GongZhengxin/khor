@@ -16,7 +16,7 @@ import {useUpdateBlocker} from '@/lib/update-readiness';
 import {unifiedSession,AcpHeader,SessionAdd} from "@/views/SessionPreferences";
 import {AgentInteraction,type InteractionRequest} from "@/components/AgentInteraction";
 import {chatAttachment} from "@/api";
-import {configOptions,type AgentProtocol} from "@/lib/acp-session";
+import {configOptions,configValueName,type AgentProtocol} from "@/lib/acp-session";
 import { useReadingSession, type SessionReading } from "@/hooks/use-session-attention";
 import { offerTabAct } from "@/lib/tab-acts";
 import { failedNotice, offerNotice, rejoinNotice, type PillNotice } from "@/lib/pill-notices";
@@ -1458,10 +1458,11 @@ export function ChatView({
         },
   );
   /** Who is answering, for the capsule's who seat. */
+  const modelOption=settings?.options.find(option=>option.category==='model');
   const who: Who = {
     Mark: sessionMark("gui", category),
     name: agentName(category, facts?.name ?? null),
-    model: modelOf(settings),
+    model: modelOption?configValueName(modelOption):modelOf(settings),
     usage: usage ? { used: usage.used, size: usage.size } : null,
   };
   /** The mode: a menu where the agent offers modes; the word alone where

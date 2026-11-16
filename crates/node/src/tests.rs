@@ -301,7 +301,26 @@ fn a_registration_needs_both_a_name_and_a_command() {
         n.register_agent("ok", &[]).is_err(),
         "a registration with no command starts nothing"
     );
-    assert!(n.agents().unwrap().is_empty(), "neither wrote anything");
+    assert!(n.agents_loaded().unwrap().doc.all().is_empty(), "neither wrote anything");
+}
+
+#[test]
+fn dsh_is_available_without_registration_and_explicit_launches_still_win() {
+    let r = root("dsh-default");
+    let n = Node::open(r.to_path_buf()).unwrap();
+    let expected = AgentSpec {
+        command: "dsh".into(),
+        args: vec!["--profile".into(), "acp".into()],
+    };
+    assert_eq!(n.agent_or_refuse("dsh").unwrap(), expected);
+    assert_eq!(n.agents().unwrap(), vec![("dsh".into(), expected.clone())]);
+    assert!(n.agents_loaded().unwrap().doc.all().is_empty());
+    n.register_agent("dsh", &["/custom/dsh".into(), "--profile".into(), "work".into()]).unwrap();
+    assert_eq!(n.agent_or_refuse("dsh").unwrap().command, "/custom/dsh");
+    assert_eq!(n.agents().unwrap().len(), 1, "one identity, one launch");
+    n.forget_agent("dsh").unwrap();
+    assert_eq!(n.agent("dsh").unwrap(), Some(expected));
+    assert!(n.agents_loaded().unwrap().doc.all().is_empty());
 }
 
 #[test]

@@ -1,0 +1,79 @@
+name: DSH integration
+
+on:
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  native:
+    runs-on: macos-26
+    timeout-minutes: 60
+    env:
+      CARGO_INCREMENTAL: '0'
+      CARGO_BUILD_JOBS: '2'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      CARGO_TARGET_DIR: ${{ runner.temp }}/dsh-target
+      KHOR_AGENT_BUNDLE: ${{ runner.temp }}/khor-agent
+      KHOR_TEST_MCP_EXECUTABLE: ${{ runner.temp }}/dsh-target/debug/khor
+      KHOR_RUNTIME_DIR: ${{ runner.temp }}/dsh-runtime
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: 22.19.0
+          cache: npm
+          cache-dependency-path: apps/agent/package-lock.json
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
+        with:
+          bun-version: 1.3.14
+      - uses: dtolnay/rust-toolchain@1.95.0
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: dsh-integration
+          cache-targets: false
+      - run: npm ci --prefix apps/agent
+      - name: Embed the real Khor agent
+        run: node apps/agent/build.mjs aarch64-apple-darwin "$KHOR_AGENT_BUNDLE"
+      - name: Check formatting and retain a source-only repair patch
+        id: formatting
+        continue-on-error: true
+        run: |
+          mkdir -p "$RUNNER_TEMP/dsh-evidence"
+          if ! python3 scripts/check-rust-format.py --check; then
+            python3 scripts/check-rust-format.py --write
+            git diff --binary -- '*.rs' > "$RUNNER_TEMP/dsh-evidence/format.patch"
+            git restore -- '*.rs'
+            exit 1
+          fi
+      - name: Build the exact CLI for isolated local DSH acceptance
+        run: |
+          cargo build --locked -p khor-cli --bin khor
+          cp "$CARGO_TARGET_DIR/debug/khor" "$RUNNER_TEMP/dsh-evidence/khor"
+          git rev-parse HEAD > "$RUNNER_TEMP/dsh-evidence/source-sha.txt"
+          git rev-parse 'HEAD^{tree}' > "$RUNNER_TEMP/dsh-evidence/source-tree.txt"
+          shasum -a 256 "$RUNNER_TEMP/dsh-evidence/khor" > "$RUNNER_TEMP/dsh-evidence/khor.sha256"
+      - name: Verify default discovery and launch ownership
+        run: |
+          cargo test --locked -p khor-node --lib dsh_is_available_without_registration -- --test-threads=1
+          cargo test --locked -p khor-sync --lib agents -- --test-threads=1
+          cargo test --locked -p khor-gui-core --lib agents::tests -- --test-threads=1
+      - name: Verify ACP configuration, permissions, cancellation and recovery
+        run: cargo test --locked -p khor-acp --test conversation -- --test-threads=1
+      - name: Verify the real Khor agent delegation path
+        run: cargo test --locked -p khor-node --test delegation_wire -- --test-threads=1
+      - name: Require clean formatting
+        if: always()
+        env:
+          FORMAT_OUTCOME: ${{ steps.formatting.outcome }}
+        run: test "$FORMAT_OUTCOME" = success
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: dsh-integration-native
+          path: ${{ runner.temp }}/dsh-evidence
+          if-no-files-found: error
+          retention-days: 7

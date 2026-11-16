@@ -10,14 +10,15 @@ export function agentPresentation(agent:string){
   const plain=agent.trim().replace(/(?:[-_\s]+acp|\s*[（(]ACP(?:\s*(?:扩展|adapter|extension))?[）)])$/i,'').trim()||agent;
   const key=plain.toLowerCase();
   const name=['codex','codex-cli','codex cli'].includes(key)?'Codex':
-    ['claude','claude-agent','claude agent','claude-code','claude code'].includes(key)?'Claude':plain;
+    ['claude','claude-agent','claude agent','claude-code','claude code'].includes(key)?'Claude':
+    ['dsh','deepseek-harness','deepseek harness'].includes(key)?'DeepSeek Harness':plain;
   return {name,native:agent==='codex'||agent==='claude'};
 }
 
 /** One choice per agent. An already remembered connection stays selected;
  * new choices use the built-in connection where one exists. */
 export function conversationAgents(registered:readonly string[],preferred?:string):string[]{
-  const names=[...new Set(['claude','codex',...registered])];
+  const names=[...new Set(['claude','codex','dsh',...registered])];
   const groups=new Map<string,string>();
   for(const name of names){
     const key=agentPresentation(name).name.toLowerCase();
@@ -48,4 +49,10 @@ export function agentSetupFailure(reason:unknown,error:unknown):string{
 
 export function configOptions(value:unknown):SessionConfigOption[]{
   return Array.isArray(value)?value.filter((v):v is SessionConfigOption=>v&&typeof v==='object'&&typeof v.id==='string'&&typeof v.name==='string'&&(v.type==='boolean'?typeof v.currentValue==='boolean':v.type==='select'&&typeof v.currentValue==='string'&&Array.isArray(v.options))):[];
+}
+
+/** Display advertised labels while preserving opaque values on the wire. */
+export function configValueName(option:Pick<SessionConfigOption,'currentValue'|'options'>):string{
+  const values=(option.options??[]).flatMap(item=>'options'in item?item.options:[item]);
+  return values.find(item=>item.value===option.currentValue)?.name??String(option.currentValue??'');
 }
