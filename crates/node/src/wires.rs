@@ -2741,6 +2741,48 @@ mod tests {
         assert_eq!(secs, vec![5, 10, 20, 40, 80, 160, 300, 300, 300]);
     }
 
+    #[test]
+    fn background_retry_offsets_are_stable_bounded_and_spread_across_peers() {
+        let w = Wires::default();
+        assert_eq!(w.wait_after("first", 1), BACKOFF_FIRST);
+        assert_eq!(w.wait_after("capped", u32::MAX), BACKOFF_MAX);
+        w.asleep("sleeping");
+        assert_eq!(w.wait_after("sleeping", 2), BACKOFF_MAX);
+        for failures in 2..=6 {
+            let base = backoff(failures);
+            let mut waits = std::collections::BTreeSet::new();
+            for index in 0..128 {
+                let peer = format!("peer-{index}");
+                let wait = w.wait_after(&peer, failures);
+                assert!(wait >= base && wait <= (base + base / 4).min(BACKOFF_MAX));
+                assert_eq!(wait, w.wait_after(&peer, failures), "reads do not resample");
+                waits.insert(wait);
+            }
+            assert!(
+                waits.len() > 1,
+                "background retries still share one deadline"
+            );
+        }
+    }
+
+    #[test]
+    fn a_journaled_retry_wait_is_the_wait_stored_after_the_failure() {
+        let w = Wires::default();
+        w.failed("peer", Proto::Main, "first".into());
+        let (failures, wait) = w.next_backoff("peer", Proto::Main);
+        assert_eq!(failures, 2);
+        let before = Instant::now();
+        w.failed("peer", Proto::Main, "second".into());
+        let after = Instant::now();
+        let slots = w.slots.lock().unwrap();
+        let retry_at = slots
+            .get(&("peer".to_owned(), Proto::Main))
+            .unwrap()
+            .retry_at
+            .unwrap();
+        assert!(retry_at >= before + wait && retry_at <= after + wait);
+    }
+
     /// **Unreachable is an attempt that failed, until anything is heard**
     /// (round NET-13): a dial's failure says it, letting a machine go
     /// does not, and hearing from it clears it.
