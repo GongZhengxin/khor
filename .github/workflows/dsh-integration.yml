@@ -16,12 +16,16 @@ jobs:
       CARGO_BUILD_JOBS: '2'
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
-      CARGO_TARGET_DIR: ${{ runner.temp }}/dsh-target
-      KHOR_AGENT_BUNDLE: ${{ runner.temp }}/khor-agent
-      KHOR_TEST_MCP_EXECUTABLE: ${{ runner.temp }}/dsh-target/debug/khor
-      KHOR_RUNTIME_DIR: ${{ runner.temp }}/dsh-runtime
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Isolate build and runtime paths
+        run: |
+          {
+            echo "CARGO_TARGET_DIR=$RUNNER_TEMP/dsh-target"
+            echo "KHOR_AGENT_BUNDLE=$RUNNER_TEMP/khor-agent"
+            echo "KHOR_TEST_MCP_EXECUTABLE=$RUNNER_TEMP/dsh-target/debug/khor"
+            echo "KHOR_RUNTIME_DIR=$RUNNER_TEMP/dsh-runtime"
+          } >> "$GITHUB_ENV"
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version: 22.19.0
