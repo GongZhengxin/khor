@@ -128,3 +128,41 @@ GUI、服务、测试 harness 都没有控制台，所以 Windows 上终端面�
 - 首包 14 MB 是本次修法的代价；若上游修好资源协议，应回退这一条并改回代码分割（文档已写在该配置项注释里）。
 - `?bridge=` 意味着窗口命令走 loopback；`term_drop_stage` 等 raw-body 路由已按 dev bridge 的分派实现，但**拖放文件到终端**未在 Windows 上实测（NOT_TESTED）。
 
+## 7. 试用的正确姿势（2026-11-16 更正）
+
+**不要设 `KHOR_HOME`。** 默认 store 根就是用户主目录本身——`Node::store_under` 在本机拥有
+`<root>/.khor/owner` 时直接返回该 root（`crates/node/src/lib.rs`）——而 `usage::meters_for` 用的
+`adaptor::vendor_home(&root)` 默认等于 root。于是默认运行时：
+
+- `vendor_home` = `~` → `~/.codex`、`~/.claude` 被真正读到；
+- 额度页的 token 图表、模型明细、缓存占比全部有数据；
+- agent 识别（`recognition`）也能看到本机真实安装的 Codex。
+
+反过来，把 `KHOR_HOME` 指到一个隔离目录会让 `vendor_home` 变成那个目录，于是：
+
+- `khor usage` 报「No spend these past few days」；
+- 额度页只有订阅额度、没有 token 图表；
+- `doctor` 的 `agents` 说「no agent registered」。
+
+**这不是 Windows 的缺失，是隔离 store 的应有行为**（macOS 用隔离 store 同样为空）。
+早前交给用户的试用命令带上了 `KHOR_HOME=F:\Temp\khor-try\home-nohash`，因此看起来像功能缺失。
+
+### 7.1 证据
+
+| 项 | 结果 |
+| --- | --- |
+| `cargo test -p khor-node --test real_disk khor_can_read_every_spending_record_on_this_machine -- --ignored` | **1 passed**，读到 10-31 → 11-16 的真实记录，`one cold pass` 12.14s |
+| `khor usage --days 3`（默认 store） | 报出 11-16 / 11-15 / 11-14 的 Input/Output/Cache 与模型分类 |
+| `khor usage --days 7`（隔离 store） | 「No spend these past few days」 |
+| `khor usage --days 7`（隔离 store + `KHOR_VENDOR_HOME=~`） | 与默认 store 相同的完整数据 |
+| GUI 额度页（默认 store，截图） | 7% 仪表、剩余 49,300、按天柱状图（11-09 峰值 502.3M、中位 28.9M）、模型散点、明细表 **2.1B 总量 / 98.4% 缓存占比 / 4 模型 / 30 天** |
+
+GUI 额度页与 macOS 截图同一套内容，确认**功能对等，不是缺失**。
+
+## 8. 会话形态（待办）
+
+用户指出会话应当参照 Codex / DSH Desktop 的对话形态，而不是只有终端。仓库已有
+`views/ChatView`、`MachineChat`（`views/DetailPane` 里按会话类型分派），需要确认 Windows 上
+**通过 khor 启动的 agent 会话**能进入对话视图并在 GUI 里可用。列入 W5 收尾后的继续项。
+
+
