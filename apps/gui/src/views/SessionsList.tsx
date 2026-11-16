@@ -1,5 +1,6 @@
 import { sessionContentPreview } from "@/lib/session-preview";
 import { askOpenSession } from "@/lib/composer-handoff";
+import { SendMessageDialog } from "@/components/SendMessageDialog";
 import { useNotifications, setSessionNotifications } from "@/lib/notifications";
 import { notificationsEnabled } from "@/lib/notification-banners";
 import { sessionCwdOnScreen } from "@/lib/session-cwd";
@@ -12,7 +13,7 @@ import type { DelegatedChild } from "@/lib/delegated-sessions";
 import { BellMark } from "@/components/BellMark";
 import { StatusWord } from "@/components/StatusWord";
 import { SessionUnread } from "@/components/SessionUnread";
-import { openShell, sessionRecovery, takeover, takeoverTerm, type DeviceRow, type SessionRow } from "@/api";
+import { openShell, nativeSend, sessionRecovery, takeover, takeoverTerm, type DeviceRow, type SessionRow } from "@/api";
 import { MachineAvatar } from "@/components/Avatar";
 import { sessionKind } from "@/components/SessionFace";
 import { type RowAction } from "@/components/RowMenu";
@@ -121,6 +122,9 @@ export function SessionsList({
   const [turnRefused, setTurnRefused] = useState<Map<string, string>>(new Map());
   /** The row whose title box the menu's 重命名 opened, if any. */
   const [renaming, setRenaming] = useState<string | null>(null);
+  /** The conversation a message is being written for, when the dialog is
+      up: the vendor's id, not the row's — the row may not outlive it. */
+  const [messaging, setMessaging] = useState<{ agent: string; id: string } | null>(null);
   // The ticked words narrow here; the box is `SideList`'s one rule,
   // against what each row says it can be found by (`find` below) — the
   // same four things `visibleSessions` reads, so the two agree.
@@ -192,6 +196,16 @@ export function SessionsList({
     // writing comments about. The conversation stays the vendor's; khor
     // supplies the window.
     if (r.kind === "observe" && !r.source && r.category === "codex") {
+      /** The vendor's own id for this row, or the sentence saying why it
+          cannot be had: both actions below need it, and neither may invent
+          one. */
+      const nativeOf = async (): Promise<{ agent: string; id: string } | null> => {
+        const host = devices.find((d) => d.name === r.home);
+        const offer = host ? await sessionRecovery(host.id, r.id) : null;
+        const native = offer?.native;
+        if (!native) throw new Error(gui.resume_native_missing);
+        return { agent: native.agent, id: native.native_id };
+      };
       return [
         {
           key: "resume-native",
@@ -206,10 +220,8 @@ export function SessionsList({
               // ("This machine name can't go in a path"). A row's `home`
               // is the channel (`DeviceRow::name`), so the id is looked up
               // from the device table rather than assumed.
-              const host = devices.find((d) => d.name === r.home);
-              const offer = host ? await sessionRecovery(host.id, r.id) : null;
-              const native = offer?.native;
-              if (!native) throw new Error(gui.resume_native_missing);
+              const native = await nativeOf();
+              if (!native) return;
               // **Land on it.** `open_shell` answers the new session's id
               // and the command is only typed once a face attaches
               // (`shell_start` holds it until `Ready`), so an action that
@@ -219,11 +231,28 @@ export function SessionsList({
               const id = await openShell(
                 r.home,
                 r.place ?? "",
-                `${native.agent} resume ${native.native_id}`,
+                `${native.agent} resume ${native.id}`,
                 r.title,
                 crypto.randomUUID(),
               );
               askOpenSession(id);
+            } catch (e) {
+              said(e);
+              throw e;
+            }
+          },
+        },
+        {
+          key: "send-message",
+          label: gui.send_message,
+          note: refused,
+          run: async () => {
+            try {
+              const native = await nativeOf();
+              if (!native) return;
+              // Opened once the menu has gone, for `rename`'s reason: a box
+              // mounted while the menu still holds focus is refused it.
+              requestAnimationFrame(() => requestAnimationFrame(() => setMessaging(native)));
             } catch (e) {
               said(e);
               throw e;
@@ -488,6 +517,7 @@ export function SessionsList({
     };
   });
   return (
+    <>
     <SideList
       rows={side}
       loading={loading}
@@ -502,5 +532,16 @@ export function SessionsList({
       rest={gui.group_recent}
       old={{ more: (n) => gui.old_sessions(n), less: gui.collapse_old }}
     />
+    {/* One dialog for the column, driven by `messaging`: the row it was
+        opened from may be gone by the time it closes (a poll, a filter),
+        so what it needs — the vendor's id — was copied when it opened. */}
+    <SendMessageDialog
+      open={messaging !== null}
+      onClose={() => setMessaging(null)}
+      onSend={(text) =>
+        messaging ? nativeSend(messaging.agent, messaging.id, text) : Promise.resolve("")
+      }
+    />
+    </>
   );
 }

@@ -317,6 +317,18 @@ pub fn resume_session(
         .0)
 }
 
+/// Puts one message into a conversation the vendor keeps (`khor agents
+/// tell`). The answer is the vendor's own receipt, and a refusal is its
+/// stderr: the write goes through Codex's daemon, so Codex is the one that
+/// knows whether it took.
+///
+/// **Not `resume_session`.** That opens a conversation khor recorded and
+/// starts a host of its own; this leaves the conversation where it is and
+/// says one thing to it, which is what a *loaded* thread allows.
+pub fn native_send(agent: &str, native_id: &str, text: &str) -> Result<String, String> {
+    khor_node::native_queue::send(agent, native_id, text)
+}
+
 /// One agent on this machine, as a screen shows it.
 ///
 /// The node's [`khor_node::agent_fleet::FleetRow`] carries `&'static str`

@@ -4219,6 +4219,13 @@ async fn resume_session(agent: String, session: String) -> Result<String, String
     .await
 }
 
+/// One message into a conversation the vendor keeps (`khor agents tell`).
+/// A process start, so it waits off the main thread like every other one.
+#[tauri::command(rename_all = "snake_case")]
+async fn native_send(agent: String, id: String, text: String) -> Result<String, String> {
+    off_main(move || khor_gui_core::agents::native_send(&agent, &id, &text)).await
+}
+
 #[tauri::command(rename_all = "snake_case")]
 async fn session_recovery(
     home_id: String,
@@ -6023,6 +6030,7 @@ pub fn run() {
             agent_seen,
             agent_ask,
             resume_session,
+            native_send,
             session_recovery,
             recover_session,
             new_shell_run,

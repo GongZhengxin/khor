@@ -940,6 +940,18 @@ export const agentAsk = (name: string) => call<AgentSaid>("agent_ask", { name })
 export const resumeSession = (agent: string, session: string) =>
   call<string>("resume_session", { agent, session });
 
+/** **One message into a conversation the vendor keeps** — Codex only for
+    now (`khor agents tell` runs the same function). The write goes through
+    the vendor's own daemon, so the conversation stays its owner's and a
+    *loaded* thread can still be spoken to; nothing khor owns changes.
+
+    Answers the vendor's receipt (`Queued message … for thread …`), or
+    refuses with its own words — a wrong id should read like Codex saying
+    the id is wrong. The text travels as one argument, never through a
+    shell. */
+export const nativeSend = (agent: string, id: string, text: string) =>
+  call<string>("native_send", { agent, id, text });
+
 /** Read an offer on the exact execution device; this does not start a provider. */
 export const sessionRecovery = (home_id: string, id: string) =>
   call<SessionRecovery>("session_recovery", { home_id, id });
