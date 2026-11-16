@@ -28,6 +28,14 @@
 - 此源独立worktree `khor-net-background-jitter-v1` / `b04e3cb3d80b8e4628e9a35ebc0b7ed98025d871` / tree `08f8d3c9af754c010402a5fbf7734935c30c59bb` / snapshot `5c1fc9ed9ddca176987bc0b7c237d97f49ca0e4e`。在I8＋early fixture上，只增加每Wires的std RandomState与稳定有界正扰动：首次5秒、睡眠300秒、上限300秒不变，连续失败2起增加0–25%，无新依赖、任务或peer表；前台与联系/换网代次不变。
 - canonical已以merge **eed1ab9af01d78627b3b73dfac7aab1aa60f8ec4**采用I8/DNS/cold-hint caller删除/early fixture/jitter。相对通过完整358的b04，所有非docs文件逐字一致；不是最终canonical整tree的Quality/Mac接受。新N4测试仍在独立worktree，未采用；main未合并、未发行。
 
+## 已准备但未运行的发行对照
+
+最终普通Release双臂producer控制和源已冻结，**均未stage/launch/编译/测量**，Turing完整原生run闭证后再串行执行。不要把它们当在途或已通过。
+
+- 新main基线worktree `khor-net-main-baseline-v1` / branch `test/net-main-baseline-v1`，commit5686c3d9/treeceb63bcd/snapshot4505a047；生产逐字main84e75，仅14个cli/tests文件overlay，11个工作负载/校准文件与F99候选逐字相同（包括最新lab/workload，原业务门不改）。`E/final-net-main-baseline-{source,overlay}-v1.json`。不是旧C3运行重贴标签。
+- `E/final-net-release-{baseline,candidate}-plan-v1.json`；controls baseline **e711783a** / `net-final-release-baseline-v1`，candidate **811c4604** / `net-final-release-candidate-v1`，task均net-node、compile-only。普通opt3/strip/thinLTO/codegen1、0features/0诊断、先核并保留旧selected文件与4份provenance输入，再精确源迁移/原native_provenance刷新和fresh CLI/native unit验证；原wrapper和同内容iroh mtime刷新保持。baseline37与candidate46个各自准确source的provenance synthetic合同将远端跑，不能混用不同版本的验证器证明。
+- baseline复用旧035824稳定arm缓存，candidate复用DNS111352稳定arm缓存，但必须实际新编译、独立核新CLI/ELF与所有编译单元；不是直接复用旧ELF。模板`E/ops/final-net-release-producer-template-v1.py`，实际带Frozen程序/控制脚本按role同名前缀保存。尚无新的Release性能结果；后续AB比较仍要在计时前冻结完整人口与原工程门，全部旧RED继续保留。
+
 ## 最新已核证结果
 
 E=`/Volumes/disk0/Khor/evidence/net`。已闭证项不因compact/session重跑；所有原红、未执行与原门继续保留。
