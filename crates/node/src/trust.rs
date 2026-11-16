@@ -340,13 +340,10 @@ impl Node {
         if loaded.doc.get(remote).is_none() {
             return Err(msg::not_paired().into());
         }
-        if self
-            .standing_in(&loaded.doc, remote, crate::now_ms())
-            .admitted()
-        {
-            Ok(())
-        } else {
-            Err(msg::not_in_roster().into())
+        match self.standing_in(&loaded.doc, remote, crate::now_ms()) {
+            Standing::Legacy | Standing::Trusted => Ok(()),
+            Standing::Pending => Err(msg::not_in_roster().into()),
+            Standing::Revoked => Err(msg::admission_revoked().into()),
         }
     }
 

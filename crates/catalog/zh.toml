@@ -1568,7 +1568,7 @@ not-paired = "这台机器不在机器列表中，需要先配对"
 # 名单是信任的唯一出处（docs/CONNECT.md 身份）。「不在名单上」和「没配对」是两件事：
 # 前者配过、在等持根的机器批（或已被撤销），后者从没配过。
 admission-revoked = "这台机器的访问已被撤销；如需恢复，请在持根机上重新配对"
-not-in-roster = "这台机器不在名单上：在等持根的机器批准，或者已被撤销"
+not-in-roster = "这台机器正在等待持根机批准"
 words-need-confirm = "恢复词能找回整张网的根钥匙，谁看见谁就能把自己的机器签进你的网。确认要看，把本机的名字原样打一遍：khor root words {0}"
 words-names-another = "「{0}」不是本机的名字。要看恢复词，打本机的名字：khor root words {1}"
 peer-not-in-roster = "那台机器不在名单上（待批或已撤销），不和它同步"
