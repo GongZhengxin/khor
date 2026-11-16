@@ -40,6 +40,7 @@ export async function checkAttachmentDraft(browser,{port,report,engine,width=390
   originalGrid=await grid();originalSizes=(await api('__ai_preview/terminal-sizes')).length;
   await page.locator('[data-terminal]').evaluate(node=>{const data=new DataTransfer();data.items.add(new File(['original attachment'],'draft.txt',{type:'text/plain'}));node.dispatchEvent(new DragEvent('drop',{bubbles:true,cancelable:true,dataTransfer:data}));});
   await picker.waitFor();await selected('draft.txt').waitFor();await unchanged('open fixed panel');
+  if(!mobile)assert.equal(await page.locator('[data-term-attachments]').count(),0,'Desktop uses direct drops without a redundant header attachment button');
   const surface=await picker.evaluate(node=>{const color=getComputedStyle(node).backgroundColor;const probe=document.createElement('span');probe.style.background='var(--canvas-solid)';node.append(probe);const expected=getComputedStyle(probe).backgroundColor;probe.remove();return {color,expected};});
   assert.equal(surface.color,surface.expected,'Attachment selection panel must have an opaque surface even in a frosted window');
   assert.equal(await picker.locator('[data-files-source]').getByRole('heading',{name:'选择文件',exact:true}).count(),1,'Sources have their own visible section title');

@@ -82,7 +82,7 @@ import { termPredict } from "@/lib/term-predict-setting";
 import { rememberTermSize } from "@/lib/term-size-hint";
 import { TermHistory } from "@/views/TermHistory";
 import { TermPeek } from "@/views/TermPeek";
-import { IconAttach, IconChevronDown, IconChevronUp, IconClose, IconReload } from "@/components/icons";
+import { IconChevronDown, IconChevronUp, IconClose, IconReload } from "@/components/icons";
 import { RegionState, Waiting } from "@/components/RegionState";
 import { gui, menu, msg } from "@/gen/catalog";
 import { levelOf, treeChanged } from "@/lib/tree-changed";
@@ -117,7 +117,6 @@ import type { Doing } from "@/gen/bindings/Doing";
 import { tapAsks, termWake, useTermWake, watchesCursor } from "@/lib/term-tap";
 import { holdFocus, keyboardUp, lowerKeyboard, onKeyboardChange, raiseKeyboard, terminalShown } from "@/lib/soft-keyboard";
 import { dropsComposition } from "@/lib/term-compose-drop";
-import {HeaderSeat} from "@/views/SessionPreferences";
 import {AttachmentPicker} from "@/views/TermFiles";
 import { KeyboardSwitch, KeyRowSwitch, TermKeys } from "@/views/TermKeys";
 import { useKeyRowOpen } from "@/lib/key-row-open";
@@ -3685,7 +3684,6 @@ export function TerminalPane({
         </KeyRowSeats>
       </>
     )}
-    {active&&!coarse&&<HeaderSeat><GlassCircle data-term-attachments aria-label="添加附件" onClick={()=>setAttachmentOpen(true)}><IconAttach className="size-affordance"/></GlassCircle></HeaderSeat>}
     {active&&<AttachmentPicker viewport={boxRef} open={attachmentOpen} onClose={()=>setAttachmentOpen(false)} onSent={()=>{setAttachmentOpen(false);const field=termRef.current?.textarea;if(field?.isConnected)raiseKeyboard(field);}}
       road={{machine:machine??null,cwd:doing?.cwd??null,selected:attachments,into:attachmentInto,onInto:setAttachmentInto,
        add:items=>changeAttachments(addAttachments(attachmentsRef.current,items)),
