@@ -4,7 +4,7 @@
 import { useEffect, useState } from "react";
 import { inApp, isMenuFace, windowAppearanceSupport, setWindowAppearance, type ConfigRow } from "@/api";
 
-declare global { interface Window { __KHOR_WINDOW_SURFACE__?: boolean; __KHOR_WINDOW_PLATFORM__?: string; __KHOR_WINDOW_PREF__?: WindowChoice } }
+declare global { interface Window { __KHOR_WINDOW_SURFACE__?: boolean; __KHOR_WINDOW_PLATFORM__?: string; __KHOR_WINDOW_NATIVE_CHROME__?: boolean; __KHOR_WINDOW_PREF__?: WindowChoice } }
 export type WindowMaterial = "solid" | "clear" | "frost";
 export type WindowChoice = { material: WindowMaterial; opacity: number; outline?: boolean };
 export const WINDOW_MIRROR = "khor.window-surface";
@@ -32,6 +32,7 @@ export function paintWindowChoice(next: WindowChoice, platform = window.__KHOR_W
   root.toggleAttribute("data-window-transparent", next.material !== "solid");
   root.toggleAttribute("data-window-outline", next.outline !== false);
   if(platform)root.dataset.windowPlatform=platform;
+  root.toggleAttribute("data-window-native-chrome", platform === "macos" && window.__KHOR_WINDOW_NATIVE_CHROME__ === true);
   root.style.setProperty("--window-opacity", `${windowOpacity() * 100}%`);
   followWindowGround();
   queueGround();

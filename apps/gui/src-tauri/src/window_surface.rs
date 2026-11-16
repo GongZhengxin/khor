@@ -67,15 +67,33 @@ pub fn apply(app: &AppHandle, material: &str) {
     // offered there; an imported frost preference becomes clear tint.
 }
 
+/// Sequoia's transparent WK chrome does not composite backdrop filters
+/// consistently with the native window. Keep its navigation on that window
+/// material; ordinary in-page controls still sample their own CSS backdrop.
+fn native_chrome() -> bool {
+    #[cfg(target_os = "macos")]
+    {
+        objc2_foundation::NSProcessInfo::processInfo()
+            .operatingSystemVersion()
+            .majorVersion
+            == 15
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        false
+    }
+}
+
 pub fn initial_script() -> String {
     let opacity = khor_node::config::get(&Node::root_from_env(), "window-opacity")
         .ok()
         .and_then(|s| s.parse::<u8>().ok())
         .unwrap_or(100);
     format!(
-        "window.__KHOR_WINDOW_SURFACE__ = true; window.__KHOR_WINDOW_PREF__ = {}; window.__KHOR_WINDOW_PLATFORM__ = {};",
+        "window.__KHOR_WINDOW_SURFACE__ = true; window.__KHOR_WINDOW_PREF__ = {}; window.__KHOR_WINDOW_PLATFORM__ = {}; window.__KHOR_WINDOW_NATIVE_CHROME__ = {};",
         serde_json::json!({"material": material(), "opacity": opacity, "outline": khor_node::config::get(&Node::root_from_env(), "window-outline").unwrap_or("on") != "off"}),
-        serde_json::json!(std::env::consts::OS)
+        serde_json::json!(std::env::consts::OS),
+        native_chrome()
     )
 }
 
