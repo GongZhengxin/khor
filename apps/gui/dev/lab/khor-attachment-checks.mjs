@@ -10,7 +10,7 @@ export async function checkKhorAttachments(browser,{port,report,engine,width=390
   await page.locator('[data-machine-chat-scroll]:visible').waitFor();
   // The shared mobile BarSeat portals the composer outside the body.
   const composer=page.locator('[data-chat-composer]:visible');await composer.waitFor();
-  await page.locator('[data-lab-add]:visible').click();await page.locator('[data-lab-attach-device]').click();
+  await page.locator('[data-lab-add]:visible').click();await page.locator('[data-attachment-picker]:visible').waitFor();assert.equal(await page.locator('[data-lab-attachments]').count(),0,'Khor plus opens the shared picker directly');
   const input=page.locator('[data-attachment-picker] [data-files-input],[data-machine-chat] [data-file-input]');
   await input.setInputFiles({name:'khor-note.txt',mimeType:'text/plain',buffer:Buffer.from('Retained Khor attachment')});
   await page.locator('[data-chat-pending-file="khor-note.txt"],[data-files-selected="khor-note.txt"]').first().waitFor();await page.waitForTimeout(250);

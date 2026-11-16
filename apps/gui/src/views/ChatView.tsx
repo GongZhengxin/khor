@@ -1815,7 +1815,7 @@ export function ChatView({
           has its row of accessory keys, a chat has its input box」) —
           above the deck (2026-10-13); the deck sits on the keyboard.
           On the wide face it stands here, as it always did. */}
-      <BarSeat at="above">{unifiedSession && <AcpHeader who={who} mode={modeSeat} options={addOptions} protocol={protocol} onControl={control} disabled={inTurn||settingRequest.pending} pending={settingRequest.pending} />}
+      <BarSeat at="above">{unifiedSession && <AcpHeader who={who} mode={modeSeat} options={addOptions} protocol={protocol} onControl={control} disabled={inTurn||settingRequest.pending} pending={settingRequest.pending} onFind={!still&&sourceBinding?()=>setFindingHistory(true):undefined} onExport={!still&&readableExport.available?readableExport.run:undefined} exportBusy={readableExport.busy} />}
       {settingRequest.pending&&<p role="status" className="px-row text-caption text-muted-foreground">正在应用{settingRequest.name}</p>}
       {settingRequest.error&&<div role="alert" className="flex items-center gap-in px-row text-caption text-destructive">未能确认{settingRequest.name}，保留当前设置<Button size="sm" variant="ghost" onClick={settingRequest.retry}>重试</Button></div>}
       {/* A recorded past has no channel to speak into: no input, and
@@ -1987,11 +1987,7 @@ export function ChatView({
             <Composer
               lead={
                 <SessionAdd
-                  destination={undefined}
                   onAttach={canAttach&&!files.busy ? () => setAttachmentsOpen(true) : undefined}
-                  options={addOptions}
-                  onFind={sourceBinding?()=>setFindingHistory(true):undefined}
-                  onExport={readableExport.available?readableExport.run:undefined} exportBusy={readableExport.busy}
                 />
               }
               // The seat gives way while there is text to send, where the

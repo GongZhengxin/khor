@@ -2,15 +2,14 @@ import {KhorAgentSettings} from '@/views/KhorAgent';
 import {gui} from '@/gen/catalog';
 import {useSessionSettingsSeat} from '@/components/SessionFrame';
 /** Shared model, permissions, context and attachment controls for GUI sessions. */
-import {useEffect,useLayoutEffect,useRef,useState,isValidElement,cloneElement,Fragment,type ReactNode,type ReactElement,type ComponentProps} from 'react';
+import {useEffect,useLayoutEffect,useRef,useState,isValidElement,Fragment,type ReactNode,type ComponentProps} from 'react';
 import {createPortal} from 'react-dom';
 import {BarSeat,useInBar} from '@/components/SessionBar';
 import {DropdownMenu,DropdownMenuTrigger,DropdownMenuContent,DropdownMenuItem,DropdownMenuLabel,DropdownMenuSeparator,DropdownMenuCheckboxItem,DropdownMenuRadioGroup,DropdownMenuRadioItem} from '@/components/ui/dropdown-menu';
-import {IconBack,IconChevronDown,IconChevronRight,IconFiles,IconUpload,IconMore,IconFilter} from '@/components/icons';
+import {IconBack,IconChevronDown,IconChevronRight,IconMore,IconFilter} from '@/components/icons';
 import {Button} from '@/components/ui/button';
 import {Dialog,DialogContent,DialogTitle,DialogBody,DialogFooter} from '@/components/ui/dialog';
-import {SendInto,type SendIntoControl} from '@/views/chat-files';
-import {AddSeat,PlusSeat,SendSeat,StopSeat,ModeSeat,type AddOption,type Who} from '@/views/Composer';
+import {PlusSeat,SendSeat,StopSeat,ModeSeat,type AddOption,type Who} from '@/views/Composer';
 import {piJob} from '@/lib/pi-accounts';
 import type {AgentProtocol,SessionConfigOption} from '@/lib/acp-session';
 import {khorAgent,type KhorAgentView} from '@/api';
@@ -35,7 +34,7 @@ export function HeaderSeat({children}:{children:ReactNode}){
 }
 /** Session actions share App's 更多 menu. Choices replace its rows, so
  * phone users never have to chase a submenu beside the screen. */
-function Preferences({model,agent,mode,options,disabled=false,children,danger,open,onOpen}:{model:string|null;agent:string;mode?:string;options:AddOption[];disabled?:boolean;children:ReactNode;danger?:ReactNode;open:boolean;onOpen:(open:boolean)=>void}){
+function Preferences({model,agent,mode,options,disabled=false,children,danger,open,onOpen,onCloseAutoFocus}:{model:string|null;agent:string;mode?:string;options:AddOption[];disabled?:boolean;children:ReactNode;danger?:ReactNode;open:boolean;onOpen:(open:boolean)=>void;onCloseAutoFocus?:(event:Event)=>void}){
   const inBar=useInBar(),docked=false,light=false,modelBar=inBar;
   const thought=options.find(o=>o.kind==='values'&&o.category==='thought_level');
   const levels:Record<string,string>={off:'关闭',minimal:'最低',low:'低',medium:'中',high:'高',xhigh:'极高',standard:'标准',deep:'深入',default:'默认',auto:'自动'};
@@ -52,7 +51,7 @@ function Preferences({model,agent,mode,options,disabled=false,children,danger,op
     <DropdownMenuTrigger asChild><button type="button" data-lab-session-settings data-lab-dock-settings={docked||undefined} data-lab-config-trigger={light||undefined} data-lab-model-trigger={modelBar||undefined} title={light?'会话配置':undefined} aria-label={`会话配置：${shortModel(model)}${modelBar&&effort?' · '+effort:''}`} className={`${light||modelBar?'':'glass '}composer-lab-trigger data-[state=open]:glass-sel`}>
       {modelBar?<><span className="lab-model-summary"><span>{shortModel(model)}</span>{effort&&<><span aria-hidden>·</span><span data-lab-effort>{effort}</span></>}</span><IconChevronDown/></>:light?<IconFilter/>:docked?<IconMore/>:<><span className="composer-lab-trigger-words"><span>{shortModel(model)}</span>{mode&&<small data-lab-execution-badge>{mode}</small>}</span><IconChevronDown/></>}
     </button></DropdownMenuTrigger>
-    <DropdownMenuContent ref={panel} side={docked?'top':'bottom'} align="end" sideOffset={8} data-lab-preferences className="min-w-nav-menu composer-lab-menu" onKeyDown={e=>{if(e.key==='ArrowLeft'&&page){e.preventDefault();back();}}}>
+    <DropdownMenuContent ref={panel} side={docked?'top':'bottom'} align="end" sideOffset={8} data-lab-preferences className="min-w-nav-menu composer-lab-menu" onCloseAutoFocus={onCloseAutoFocus} onKeyDown={e=>{if(e.key==='ArrowLeft'&&page){e.preventDefault();back();}}}>
       {page?<>
         <DropdownMenuItem data-session-menu-back onSelect={e=>{e.preventDefault();back();}}><IconBack className="size-affordance"/>返回</DropdownMenuItem>
         <DropdownMenuSeparator/>
@@ -82,17 +81,21 @@ function Preferences({model,agent,mode,options,disabled=false,children,danger,op
 function Fact({name,children}:{name:string;children:ReactNode}){
   return <DropdownMenuLabel className="composer-lab-fact"><span>{name}</span><span>{children}</span></DropdownMenuLabel>;
 }
-export function AcpHeader({who,mode,options,protocol,onControl,disabled=false,pending=false}:{who:Who;mode:ReactNode;options:AddOption[];protocol?:AgentProtocol|null;onControl?:(operation:string,payload?:Record<string,unknown>)=>unknown;disabled?:boolean;pending?:boolean}){
+export function AcpHeader({who,mode,options,protocol,onControl,onFind,onExport,exportBusy=false,disabled=false,pending=false}:{who:Who;mode:ReactNode;options:AddOption[];protocol?:AgentProtocol|null;onControl?:(operation:string,payload?:Record<string,unknown>)=>unknown;onFind?:()=>void;onExport?:()=>void;exportBusy?:boolean;disabled?:boolean;pending?:boolean}){
   const [open,setOpen]=useState(false),[deleting,setDeleting]=useState(false);
+  const historyFocus=useRef(false);
   const m=isValidElement(mode)?mode.props as ComponentProps<typeof ModeSeat>:null;
   const automatic=m&&['workspace','auto','acceptEdits','bypassPermissions','full-access'].includes(m.current);
   let permissionId='execution-permission';while(options.some(o=>o.id===permissionId))permissionId+='-';
   const permissions:AddOption[]=m?.choices?.some(v=>!v.fixed)&&m.onPick?[{kind:'values',id:permissionId,name:'执行权限',note:null,current:m.current,values:m.choices.filter(v=>!v.fixed).map(v=>({value:v.id,name:v.name,note:v.note??null,heading:null})),onPick:value=>m.onPick?.(value)}]:[];
-  return <><Preferences model={who.model} agent={who.name??'智能体'} mode={automatic?m.word:undefined} options={[...options,...permissions]} disabled={disabled} open={open} onOpen={setOpen}
+  return <><Preferences model={who.model} agent={who.name??'智能体'} mode={automatic?m.word:undefined} options={[...options,...permissions]} disabled={disabled} open={open} onOpen={setOpen} onCloseAutoFocus={event=>{if(historyFocus.current){event.preventDefault();historyFocus.current=false;}}}
     danger={protocol?.capabilities?.sessionCapabilities?.delete!=null&&<DropdownMenuItem className="text-destructive" disabled={disabled} onSelect={()=>{setOpen(false);setDeleting(true);}}>删除会话记录</DropdownMenuItem>}>
     {disabled&&options.length>0&&<DropdownMenuLabel className="composer-lab-menu-note">{pending?"正在应用设置":"本轮结束后可修改模型设置"}</DropdownMenuLabel>}
     {m&&!permissions.length&&<Fact name="执行权限">{m.word}</Fact>}
     {who.usage&&<Fact name="上下文">{Math.round(who.usage.used/who.usage.size*100)}%</Fact>}
+    {(onFind||onExport)&&<DropdownMenuSeparator/>}
+    {onFind&&<DropdownMenuItem data-history-find-open onSelect={()=>{historyFocus.current=true;onFind();}}>查找对话</DropdownMenuItem>}
+    {onExport&&<DropdownMenuItem data-history-readable-export disabled={exportBusy} onSelect={onExport}>导出对话</DropdownMenuItem>}
     {protocol?.authMethods?.filter(method=>!method.type||method.type==='agent').map(method=><DropdownMenuItem key={method.id} disabled={disabled} onSelect={()=>onControl?.('authenticate',{methodId:method.id})}>{method.name}</DropdownMenuItem>)}
     {protocol?.capabilities?.auth?.logout!=null&&<DropdownMenuItem disabled={disabled} onSelect={()=>onControl?.('logout')}>退出登录</DropdownMenuItem>}
     {protocol?.capabilities?.sessionCapabilities?.close!=null&&<DropdownMenuItem disabled={disabled} onSelect={()=>onControl?.('close')}>结束会话</DropdownMenuItem>}
@@ -130,23 +133,9 @@ export function KhorHeader({view,onChanged,disabled,updates=[],session="wide/all
     {error&&<DropdownMenuLabel role="alert" className="composer-lab-menu-note text-state-failed">{error}</DropdownMenuLabel>}
   </Preferences><KhorAgentSettings session={session} view={view} onChanged={onChanged} disabled={disabled} openRequest={configure} hideTrigger/></>;
 }
-export function SessionAdd({destination,onFind,onExport,exportBusy,...props}:ComponentProps<typeof AddSeat>&{destination?:ReactElement<ComponentProps<typeof SendInto>>|null;onFind?:()=>void;onExport?:()=>void;exportBusy?:boolean}){
-
-  if(!props.onAttach&&!props.onAttachMachine&&!onFind&&!onExport)return null;
-  const menu=(target?:SendIntoControl)=><DropdownMenu>
-    <DropdownMenuTrigger asChild><PlusSeat data-lab-add aria-label="添加附件"/></DropdownMenuTrigger>
-    <DropdownMenuContent side="top" align="start" sideOffset={16} alignOffset={-6} data-lab-attachments className="min-w-nav-menu composer-lab-menu" onCloseAutoFocus={e=>e.preventDefault()}>
-      {onFind&&<DropdownMenuItem data-history-find-open onSelect={onFind}>查找对话</DropdownMenuItem>}
-      {onExport&&<DropdownMenuItem data-history-readable-export disabled={exportBusy} onSelect={onExport}>导出对话</DropdownMenuItem>}
-      {props.onAttach&&<DropdownMenuItem data-lab-attach-device onSelect={props.onAttach}><IconUpload className="size-nav-glyph"/>从这台设备添加</DropdownMenuItem>}
-      {props.onAttachMachine&&<DropdownMenuItem onSelect={props.onAttachMachine.pick}><IconFiles className="size-nav-glyph"/>{props.onAttachMachine.label}</DropdownMenuItem>}
-      {target&&<><DropdownMenuSeparator/><DropdownMenuItem data-send-into-change onSelect={target.pick}><span>上传位置</span><span data-send-into-path className="composer-lab-menu-value ml-auto">{target.path}</span><IconChevronRight className="size-affordance text-muted-foreground"/></DropdownMenuItem>
-        {target.reset&&<DropdownMenuItem data-send-into-reset onSelect={target.reset}>恢复默认位置</DropdownMenuItem>}
-      </>}
-    </DropdownMenuContent>
-  </DropdownMenu>;
-  // DirPicker must survive closing the menu that opened it.
-  return destination?cloneElement(destination,{render:menu}):menu();
+/** The composer plus has one job: enter the shared attachment draft. */
+export function SessionAdd({onAttach}:{onAttach?:()=>void}){
+  return onAttach?<PlusSeat data-lab-add aria-label="添加附件" onClick={onAttach}/>:null;
 }
 export function KhorSend({record,onStopped,ready,sending,onSend,blocked=false,session="wide/all"}:{session?:string;record:CommandRecord|null;onStopped:()=>void;ready:boolean;sending:boolean;onSend:()=>void;blocked?:boolean}){
   if(record)return <StopSeat tip={false} onStop={()=>{void khorAgent('stop',record.owner,{run:record.id,session}).then(onStopped);}}/>;
