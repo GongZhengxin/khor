@@ -41,8 +41,29 @@ export const arrange = () =>
     Separate so a lookup by key costs no wording at all. */
 export const ARRANGE_KEYS = ["recent", "category", "device", "state", "place"] as const;
 
-/** WeChat's opening: the thing you touched last is the thing you want. */
-export const ARRANGE_DEFAULT = "recent";
+/**
+ * What the list opens to.
+ *
+ * WeChat's opening — the thing you touched last is the thing you want —
+ * is right for a list of *chats*. On Windows this list is mostly agent
+ * conversations taken over from elsewhere, and they arrive in groups
+ * that already mean something: the directory each was opened in (the
+ * node's `place` axis). A person opening the app asks "which project is
+ * busy", so that is the arrangement Windows starts on. The stored
+ * preference still wins once somebody picks one, and this only decides
+ * the answer before there is a preference.
+ *
+ * **The platform test is spelled here rather than imported**: this
+ * module is read by the store the list is derived from, and api.ts
+ * already carries the one long reason for `navigator.platform`
+ * (`windowsApp`); a second caller importing it would drag the whole API
+ * surface into every module that arranges rows.
+ */
+export const ARRANGE_DEFAULT = /win/i.test(
+  typeof navigator === "undefined" ? "" : navigator.platform || navigator.userAgent,
+)
+  ? "place"
+  : "recent";
 const ARRANGE_KEY = "khor.sessions.arrange";
 
 /**
