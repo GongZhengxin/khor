@@ -1,6 +1,6 @@
 # feat/net 当前状态与接续入口
 
-更新于2026-11-17 01:05 UTC（本地2026-11-17）。用户先明确暂停等待main UI修复，随后“好了, main被更新了”恢复该集成与网络任务；问答期间没有继续构建/合并/发布。[GOAL](GOAL.md)、[PLAN](PLAN.md) N0–N5尚未整体完成。root串行，不派子智能体。本机source-only，重型工作限Turing、macserver与授权khor-build。goal服务仍显示paused是此前暂停状态，不能覆盖用户最新恢复指令；不得另建替代小目标。
+更新于2026-11-16 17:20 UTC（本地2026-11-17）。用户先明确暂停等待main UI修复，随后“好了, main被更新了”恢复该集成与网络任务；问答期间没有继续构建/合并/发布。[GOAL](GOAL.md)、[PLAN](PLAN.md) N0–N5尚未整体完成。root串行，不派子智能体。本机source-only，重型工作限Turing、macserver与授权khor-build。goal服务仍显示paused是此前暂停状态，不能覆盖用户最新恢复指令；不得另建替代小目标。
 
 **本次接续优先**：远端main已同步到 **84e75c57cf87d0dfaffda14149d0d726f15dfe9e**。比df47增加12文件：原生旧macOS透明导航材质、对应UI检查/探针与指南，以及trust::admit区分Pending和Revoked（含新增测试与中英文文案）。这12文件与当前feat/net改动无交叉，必须保留；主仓untracked lab-preview/output不动。当前只集成到开发分支，不直接发布。
 
@@ -8,8 +8,14 @@
 
 ## 当前运行与真实结果
 
-当前唯一在途是Mac Busy定点诊断 **43915075545**（request26461d13c2394cc39d33858e3167e6ec，复用原control49a52，源6187d90d/treeb4a0f32d/snapshot19ef0267）；最多6次、首红即停，保留原30/60秒与立即改名断言，只加Busy来源/步骤状态日志。`E/resume-busy-observer-{source,plan,mac-progress}-v1.json`；查原run，不重复提交。此前诊断已结束并核证。feat/net已在 **20b354ad012e6c193c5aa2d436e3d6ae3e67fa2c** 合入main84e75；12个main变更文件逐字保留，未改main或发布。下一步定位Mac恢复同步的Busy/未完成路径，再收敛准确候选。
+当前Linux完整候选在途 **172745Z-e5397285**（PID1544326，control20097ad7），同源Mac完整Node/Relay **43918924175**（request ed473813f5c24696aa28cf9c01aa9591，control34cad841/refnet-final-node-mac-v1已远端精确核，`E/final-net-node-mac-progress-v1.json`）；不要重复提交。源 **f99af76e4dd3b183689460666f90349f7a18ba9d** / tree **3899b251101cf0989eafd0a9c5c60acfa676ddd6** / snapshot **e227353d488619e3616c2175a02cbbed087aec17**，`E/cached-quota-resident-green-source-v1.json`。原25组＋新增root锁因果合同＋既有额度缓存合同＋main新增准入合同＋原5 Relay目标，Linux预期368pass/3原ignored，Mac364pass/3原ignored（原4 Linux-only排除）。`E/final-net-node-{plan,controls}-v1.json`；同源iroh vendor逐字3d，已接受的完整库211不重复跑。
 
+独立最终候选worktree **`/Volumes/disk0/Khor/worktrees/current/khor-net-final-v1`** / branch **`integrate/net-final-v1`** 已合入main84e75＋#51；12个main变更blob逐字保持，唯一trust改动来自main。bdb84519加入因果测试，f99af76e修复缓存Quota与后台刷新复用现存resident Arc；非resident保留原open fallback。没有新任务、网络/同步重试或放宽门。P尚未采用修复；main未改、未发行。设计与因果见[RESUME-CACHED-QUOTAS](RESUME-CACHED-QUOTAS.md)。
+
+- **缓存额度因果RED→GREEN已闭**：Turing171950Z-a373b2ec原101/102.422s，真实root锁保持时收到`Refused: document transfer state busy`；相同测试/5s防挂门、同controlbc44744a，修复后172255Z-b98275b4原0/100.271s、1/1通过。测试源码逐字一致，格式/source/control/清理已核，各目录`cached-quota-resident-{red,green}-verification-v1.json`。
+- **Mac原恢复6/6已闭GREEN** **43918063738** attempt1原成功，0替换/0未执行；原resume.rs与3d逐字一致、30s耳朵/60s同步/立即改名断言全保持，observer产品日志全部移除。每次新耳朵36–41ms、恢复轮455–494ms，均非partial；`E/mac-43918063738/cached-quota-resident-mac-verification-v1.json`；ZIP14250897361/SHAfd0eeb2b、CRC/原11控制/原guard核。不是完整Mac/Release/真机接受。
+
+- **Busy/owner诊断均闭RED**：Mac43915075545最多6次、第1过/第2红后停、4未执行；真实devices接收/apply时`RootPermit::try_acquire`同root已有owner（io.rs:168）。随后Mac **43916219184**第1即红、5未执行；持锁栈完整指向`dispatch_inner → Node::open → open_hosting → RootPermit::acquire`，同步额度读取用新Node初始化与devices apply相撞。原定点谓词/30s耳朵/60s同步门均保持；日志/ZIP/所有11控制/原guard已核。各目录`resume-busy-observer-verification-v1.json`与`resume-root-owner-verification-v1.json`。这些observer源码不进产品候选，不能当修复。
 - **恢复诊断闭证**：仅test observer源b9516300（生产逐字3d），Linux `165705Z-3cd67887`原0/152.532秒，固定10次全过；Mac **43913474400** attempt1原101，固定最多6次，第1过、第2红即停，4未执行、0替换。Mac直接观测：beta已是`beta-while-alpha-was-away`，alpha仍`alpha/beta`；本轮353ms明确devices pending。原耳朵30s/同步60s/立即改名断言不变；还未证明具体Busy源。两目录`resume-partial-observer-verification-v1.json`，Mac ZIP14247534585/SHA1bb6d6f2/原11控制/原guard均核。Linux十绿不抹掉Mac失败。
 - **准确3d完整Linux25组358已闭GREEN** `153547Z-876c1874`原0/944.251秒、358pass/0fail/原2ignored helper，`E/RUN/relay-home-refresh-full-node-verification-v1.json`；source/control/所有原测试名/原门/格式/owner均核。保持沿用，不因session/暂停重跑。
 - **Mac43898654929已闭真实RED** 原attempt1/exit101，**547pass/1fail/原2ignored**。完整iroh211与原12网络321全部通过；原13 integration执行至resume（先前5目标全绿，resume5绿1红）。唯一失败`a_deafened_serve_hears_its_peer_again_after_resume_without_being_reopened`：新耳朵约37.9ms、同步轮159.9ms已返回，但回复明确为devices仍在传输的部分同步，立即检查未看到对端改名。后7 integration＋5 Relay目标共12个未执行；不扩大等待或删断言。`E/mac-43898654929/relay-home-refresh-mac-red-verification-v1.json`；artifact14241042904/95,708B/SHA99d29695、CRC、准确source/all11 control blobs/原guard/所有native名字与cfg排除均核。原进度pending已关闭，common ledger已追加失败，不重复整批。
