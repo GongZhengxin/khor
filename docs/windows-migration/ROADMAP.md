@@ -17,6 +17,21 @@
 | W7 性能稳定性 + Windows 10 | ✅ 完成（含例外） | [W7-PERF](W7-PERF.md)：Windows 与 Linux（LAB 192.168.3.6）两列矩阵；每行超 100% 均已归因或登记为待查；首屏 FCP 1280→664–712 ms、传输层并发化；**Windows 10 NOT_TESTED**（本席位无 Win10） |
 | W8 发布就绪包 | ✅ 完成 | [RELEASE-READINESS](RELEASE-READINESS.md)：三档试用、已知限制、NOT_TESTED 归属、证据索引、合并建议 |
 
+### 0.2 第一阶段（S1）：Agent 大同世界（W0–W8 之后的新目标）
+
+用户定的方向：默认 Khor 对话、原生会话并存、npm 可选。详见 [S1-AGENT-FLEET](S1-AGENT-FLEET.md)。
+
+| 切片 | 状态 | 交付 |
+| --- | --- | --- |
+| C1 窗口恒 GUI + 日志文件 | ✅ | 提交 `40093bd7`；debug 子系统 3→2、无控制台、`gui.log` 收到应用输出 |
+| C3 子进程不闪控制台 + CLI 查找修复 | ✅ | 提交 `992f2ebd`；doctor/code/ssh 共 10 处加 `CREATE_NO_WINDOW` |
+| A1 Agent 清单（node + CLI） | ✅ | 提交 `678c25c7`；`khor agents fleet` 报 9 已知 / 2 已安装、路线与能力 |
+| A2 清单页（GUI） | ✅ | 提交 `d277c83d`；诊断 → 会话关联 → 「这台机器上的智能体」，9 行 |
+| DSH headless 协议验证 | ✅ 实验 | `--json` NDJSON 带 sessionId；`--session-id` 续接（`turn:1→2`） |
+| B 项目化会话与原生接管 | ⬜ 未开始 | `codex resume/queue`、DSH 适配器、默认按 `place` 分组 |
+| D 两机互联（Windows ↔ LAB） | ⬜ 未开始 | 配对、跨机会话 |
+| E 启动性能四项改造 | ⬜ 未开始 | 本机 ls 跳过 endpoint、契约缓存等；目标 P95 ≤ 1.5 s |
+
 ### 0.1 会话稳定性（2026-11-16，W5 收口时发现并修复）
 
 Windows 上的会话宿主**从未 detach**——unix 分支有 `setsid()`，Windows 分支缺失，于是宿主是开启者的
