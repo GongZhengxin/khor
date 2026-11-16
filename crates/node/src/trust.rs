@@ -2401,7 +2401,10 @@ mod tests {
             a.admit(b.device_str()).unwrap_err(),
             msg::admission_revoked()
         );
-        assert!(a.pending().unwrap().is_empty(), "revocation is not a pending request");
+        assert!(
+            a.pending().unwrap().is_empty(),
+            "revocation is not a pending request"
+        );
     }
 
     /// B4 without the wire: a machine joining through one without the
