@@ -1806,6 +1806,7 @@ impl Node {
                                 conn,
                                 n.wires.journal.get().cloned(),
                                 &n.carry,
+                                &n.wires,
                             );
                             // **A machine that dials in is back**: one this
                             // node holds no wire to — a phone returning to
@@ -4320,6 +4321,7 @@ impl Node {
                     &conn,
                     self.wires.journal.get().cloned(),
                     &self.carry,
+                    &self.wires,
                 );
                 self.wires.adopt(&d.id, wires::Proto::Main, conn.clone());
                 drop(hop);
@@ -14521,7 +14523,7 @@ impl Node {
                     Some(Ok((won, Ok(Ok(conn))))) => {
                         note(Some(won), None, false, offered_carried);
                         crate::roads::replied(&self.roads, id, started.elapsed());
-                        crate::roads::watch(&self.roads, id, &conn, self.wires.journal.get().cloned(), &self.carry);
+                        crate::roads::watch(&self.roads, id, &conn, self.wires.journal.get().cloned(), &self.carry, &self.wires);
                         return Ok(conn);
                     }
                     // **Refused is the far machine's own answer** (net-dial

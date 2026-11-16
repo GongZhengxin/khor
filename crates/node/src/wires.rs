@@ -652,6 +652,19 @@ fn backoff(failures: u32) -> Duration {
     doubled.min(BACKOFF_MAX)
 }
 
+/// A transport selection is already a committed fact. Repeating it keeps its age.
+fn selected_word(slot: &mut Slot, kind: PathKind) {
+    if kind == PathKind::Unknown {
+        return;
+    }
+    if slot.word != Some(kind) {
+        slot.word = Some(kind);
+        slot.last_word = Some(kind);
+        slot.word_at = Some(Instant::now());
+    }
+    slot.leaning = None;
+}
+
 /// One sample of the road: the first one settles at once, a different
 /// one only after [`SETTLE`] in a row.
 fn settle(slot: &mut Slot, kind: PathKind) {
@@ -660,10 +673,7 @@ fn settle(slot: &mut Slot, kind: PathKind) {
     }
     match slot.word {
         None => {
-            slot.word = Some(kind);
-            slot.last_word = Some(kind);
-            slot.word_at = Some(Instant::now());
-            slot.leaning = None;
+            selected_word(slot, kind);
         }
         Some(w) if w == kind => slot.leaning = None,
         Some(_) => {
@@ -672,10 +682,7 @@ fn settle(slot: &mut Slot, kind: PathKind) {
                 _ => 1,
             };
             if n >= SETTLE {
-                slot.word = Some(kind);
-                slot.last_word = Some(kind);
-                slot.word_at = Some(Instant::now());
-                slot.leaning = None;
+                selected_word(slot, kind);
             } else {
                 slot.leaning = Some((kind, n));
             }
@@ -2207,6 +2214,32 @@ impl Wires {
         retired
     }
 
+    /// Publish the live transport's selected path after its authoritative
+    /// event. A retired connection's queued event cannot change its replacement.
+    /// This reads the current selection, so a lagged event cannot replay an old road.
+    pub(crate) fn selected(&self, id: &str, wire: usize) -> bool {
+        let mut slots = self.slots.lock().unwrap_or_else(|p| p.into_inner());
+        let mut changed = false;
+        for proto in [Proto::Main, Proto::Tunnel] {
+            let Some(slot) = slots.get_mut(&(id.to_owned(), proto)) else {
+                continue;
+            };
+            let Some(conn) = slot
+                .conn
+                .as_ref()
+                .filter(|conn| conn.stable_id() == wire && conn.close_reason().is_none())
+            else {
+                continue;
+            };
+            let kind = road_now(conn);
+            if kind != PathKind::Unknown {
+                changed |= slot.word != Some(kind);
+                selected_word(slot, kind);
+            }
+        }
+        changed
+    }
+
     /// What this node can say about one machine right now: the settled
     /// road of its live wire (requests first, a borrow wire otherwise)
     /// and how long since it was last heard on either.
@@ -2390,6 +2423,10 @@ impl Slot {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "wires/selection_event_tests.rs"]
+mod tests_selection_events;
 
 #[cfg(test)]
 #[path = "wires/wake_epoch_tests.rs"]

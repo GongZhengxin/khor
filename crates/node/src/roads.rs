@@ -81,10 +81,16 @@ pub(crate) fn watch(
     conn: &iroh::endpoint::Connection,
     journal: Option<Arc<crate::journal::Journal>>,
     carry: &khor_net::carry::Links,
+    wires: &Arc<crate::wires::Wires>,
 ) {
-    if let Some(j) = journal.clone() {
-        follow(id, conn.path_events(), conn.weak_handle(), j, carry.clone());
-    }
+    follow(
+        id,
+        conn.path_events(),
+        conn.weak_handle(),
+        journal.clone(),
+        carry.clone(),
+        Arc::downgrade(wires),
+    );
     let (roads, id, weak) = (roads.clone(), id.to_owned(), conn.weak_handle());
     tokio::spawn(async move {
         let deadline = tokio::time::Instant::now() + SETTLE;
@@ -154,10 +160,16 @@ pub(crate) fn follow_inbound(
     conn: &iroh::endpoint::Connection,
     journal: Option<Arc<crate::journal::Journal>>,
     carry: &khor_net::carry::Links,
+    wires: &Arc<crate::wires::Wires>,
 ) {
-    if let Some(j) = journal {
-        follow(id, conn.path_events(), conn.weak_handle(), j, carry.clone());
-    }
+    follow(
+        id,
+        conn.path_events(),
+        conn.weak_handle(),
+        journal,
+        carry.clone(),
+        Arc::downgrade(wires),
+    );
 }
 
 /// Every machine's tally, in no particular order.
@@ -241,8 +253,9 @@ fn follow(
     id: &str,
     events: iroh::endpoint::PathEventStream,
     weak: iroh::endpoint::WeakConnectionHandle,
-    journal: Arc<crate::journal::Journal>,
+    journal: Option<Arc<crate::journal::Journal>>,
     carry: khor_net::carry::Links,
+    wires: std::sync::Weak<crate::wires::Wires>,
 ) {
     let id = id.to_owned();
     let wire = weak
@@ -282,7 +295,9 @@ fn follow(
                     // 21): how many, then the selection as it stands, so the
                     // road it moved to is not lost with them.
                     PathEvent::Lagged { missed, .. } => {
-                        journal.note(Some(&id), crate::journal::What::PathsMissed { missed });
+                        if let Some(journal) = &journal {
+                            journal.note(Some(&id), crate::journal::What::PathsMissed { missed });
+                        }
                         let Some(now) = selected_now() else { continue };
                         now
                     }
@@ -305,6 +320,14 @@ fn follow(
                     _ => continue,
                 }
             };
+            if change != "opened"
+                && let (Some(wires), Some(conn)) = (wires.upgrade(), weak.upgrade())
+            {
+                wires.selected(&id, conn.stable_id());
+            }
+            // State propagation is independent of optional journaling. No new
+            // observer or timer is needed when recording is enabled.
+            let Some(journal) = &journal else { continue };
             let (road, addr) = match &remote {
                 iroh::TransportAddr::Ip(sa) => ("direct", sa.to_string()),
                 iroh::TransportAddr::Relay(url) => (
