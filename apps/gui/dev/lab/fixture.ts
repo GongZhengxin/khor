@@ -215,7 +215,7 @@ export function createLabFixture(terminal = true, options: {origin?: string; con
       acpSetupCalls.push({agent:String(p.agent),machine:String(body.machine),operation:p.operation});
       const id=`acp-${++jobCounter}`;
       jobs.set(id,failAcpSetup?{status:'failed',error:'Incoming transport closed: initialize',reason:'npm_cache_unavailable'}:
-        {status:'done',result:{agentInfo:{name:String(p.agent).startsWith('codex')?'Codex':String(p.agent).startsWith('claude')?'Claude':String(p.agent),version:'lab'},capabilities:{},authMethods:[]}});
+        {status:'done',result:{agentInfo:{name:p.agent==='dsh'?'deepseek-harness-acp':String(p.agent).startsWith('codex')?'Codex':String(p.agent).startsWith('claude')?'Claude':String(p.agent),version:'lab'},capabilities:{},authMethods:[]}});
       return view({job:id,status:'running'});
     }
     if (p.operation === 'acp_poll') return view(jobs.get(p.job)??{status:'failed',error:'示例已结束'});
@@ -445,6 +445,7 @@ export function createLabFixture(terminal = true, options: {origin?: string; con
           case "usage": answer = labUsage(); break;
           case "quota": answer = { quota:quota[0] ? {windows:quota[0].reading.windows,as_of:null,plan:'Max 20x',credits:null,fill:.36,source:'lab',limit_reached:false} : null,trouble:null }; break;
           case "agents": answer = [{name:'codex-acp',command:'npx -y @agentclientprotocol/codex-acp@2.2.2'},
+            {name:'dsh',command:'dsh --profile acp'},
             {name:'claude-acp',command:'npx -y @agentclientprotocol/claude-agent-acp@0.94.0'},
             {name:'reviewer-acp',command:'reviewer'}];break;
           case "about": answer=labAbout;break;

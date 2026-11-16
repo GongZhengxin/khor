@@ -27,4 +27,24 @@
 
 ## Current progress
 
-Independent worktree created. Design-system entry and icon/behavior rules read. Repository already supports ACP v1 resume, generic registered agents and shared session marks. No product changes yet; installed DSH protocol and delegation discovery are being investigated.
+Implemented first candidate `28320506`, verification-runner fix `86220f3e`:
+
+- Shared built-in `dsh --profile acp` launch default, explicit registration override and no synced default/credential writes.
+- Direct GUI conversation choice, product name and official monochrome Harness whale shared by session marks.
+- Advertised model labels for opaque configuration values; execution-machine credential guidance; no unsupported additional-directory input for official DSH.
+- Complete App DSH Lab scene and entry/icon/model checks. Additional test/documentation work is currently uncommitted; inspect actual diff.
+
+Local real DSH acceptance at `/Volumes/disk0/Khor/evidence/deepseek-harness-20261117/`:
+
+- `control-probe.json`: actual ACP initialize/new/close, version 0.2.1-rc.5, successful clean exit.
+- `real-probe.json`: one paid prompt on `deepseek-flash`, reasoning off, native file-tool read of a random token from the isolated workspace, exact expected reply, successful close/list/resume/close and clean exit. No existing user session was opened or modified. No API key was logged or copied.
+- Images are actually advertised false; list/resume/close and HTTP MCP are advertised.
+- 23 Python Lab lifecycle/configuration tests passed locally. No Node/Rust/Xcode build ran locally.
+
+Verification handles (poll these exact runs; a timeout is not permission to restart):
+
+- Public Quality `43947733635`, source `86220f3e`: agent and Windows process checks succeeded; trusted macOS DSH job was queued at last inspection. Initial earlier dispatch was rejected for runner-context placement and was corrected; it was not a product failure.
+- Private Developer Lab `43947576487`, request `0c379a1787884c6289abbe64e99c30ab`, snapshot `1de332a1f499403f35a178d34b7e083fe5eab8dc`, source tree `068b3c3ed731940b1e9e9e50fa7a101268262803`: queued at last inspection. Display title has not yet expanded its request id; manager has not discovered the run. Preserve it and reconcile the same run before any resubmission.
+- Owned Lab manager PID 67503 on port 23971; cache `/Volumes/disk0/Khor/caches/deepseek-harness-lab`, manager log under `5e0ad2f18336773e-23971/manager.log`. No bundle available yet; do not present it as ready.
+
+Still required: exact-source Rust/frontend verification and rendered DSH screens; acquire trusted CLI/bridge artifacts; run isolated real Khor user-session and delegation flows against installed DSH, including cancellation and recovery; audit and finish the branch. The native workflow is being extended to include bridge and normal frontend artifacts for that acceptance. Do not mark the goal complete from the raw ACP probe alone.

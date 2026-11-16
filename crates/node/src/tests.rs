@@ -301,7 +301,10 @@ fn a_registration_needs_both_a_name_and_a_command() {
         n.register_agent("ok", &[]).is_err(),
         "a registration with no command starts nothing"
     );
-    assert!(n.agents_loaded().unwrap().doc.all().is_empty(), "neither wrote anything");
+    assert!(
+        n.agents_loaded().unwrap().doc.all().is_empty(),
+        "neither wrote anything"
+    );
 }
 
 #[test]
@@ -315,7 +318,11 @@ fn dsh_is_available_without_registration_and_explicit_launches_still_win() {
     assert_eq!(n.agent_or_refuse("dsh").unwrap(), expected);
     assert_eq!(n.agents().unwrap(), vec![("dsh".into(), expected.clone())]);
     assert!(n.agents_loaded().unwrap().doc.all().is_empty());
-    n.register_agent("dsh", &["/custom/dsh".into(), "--profile".into(), "work".into()]).unwrap();
+    n.register_agent(
+        "dsh",
+        &["/custom/dsh".into(), "--profile".into(), "work".into()],
+    )
+    .unwrap();
     assert_eq!(n.agent_or_refuse("dsh").unwrap().command, "/custom/dsh");
     assert_eq!(n.agents().unwrap().len(), 1, "one identity, one launch");
     n.forget_agent("dsh").unwrap();

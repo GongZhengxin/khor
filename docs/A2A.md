@@ -76,6 +76,10 @@ HTTP 线上的 messageId 由连接端、调用设备、agent 名和 request 确�
 
 ## 使用方式
 
+DeepSeek Harness 的内置名称是 `dsh`，无需先登记命令；执行机器须已安装并配置
+DSH。它与用户 GUI 会话复用 `dsh --profile acp`。详见
+[DeepSeek Harness 接入](DEEPSEEK-HARNESS.md)。
+
 在 Khor 主对话里直接说“让某台机器上的某智能体处理这个任务”。模型先用 `agents` 确认名称，再调用 `delegate`。发起委派和回答子智能体的权限请求分别经过 Khor 写操作审批；用户也可打开返回的 ACP 工作 session，直接回答其原有审批。
 
 | MCP 工具 | 参数 |

@@ -210,8 +210,8 @@ async fn a_conversation_is_born_on_the_machine_the_wizard_named_and_spoken_to_fr
     );
 
     // The control: a name alpha never registered is refused *by alpha*,
-    // in its registry's own words — alpha has registered nothing, and
-    // that is the sentence — not opened on some default.
+    // in its registry's own words, including the shipped DSH launch —
+    // not opened on some default.
     let refused = timeout(
         Duration::from_secs(30),
         b.open_agent_on(
@@ -226,8 +226,8 @@ async fn a_conversation_is_born_on_the_machine_the_wizard_named_and_spoken_to_fr
     .await
     .expect("the refusal must not hang");
     assert_eq!(
-        refused.as_ref().err().map(String::as_str),
-        Some(khor_catalog::msg::no_agents_registered()),
+        refused.as_ref().err(),
+        Some(&khor_catalog::msg::no_such_agent("nobody-here", "dsh")),
         "an unregistered name must come back as alpha's own refusal: {refused:?}"
     );
 

@@ -199,6 +199,20 @@ async function inspect(browser, scene, size, data = {}) {
     const selector = scene === 'page' ? '[data-content-visible="true"] .mobile-content-page' : scene === 'list' ? '[data-list]' : scene === 'terminal' ? '[data-terminal]'
       : ['content','workspace'].includes(scene) ? '.cm-editor, [data-file-preview]' : scene === 'quota' ? '[data-quota-row]' : ['devices','workspaces'].includes(scene) ? '[data-list]' : '[data-chat-box]';
     await page.waitForSelector(selector);
+    if(scene==='dsh'){
+      await page.getByText('KHOR_DSH_PREVIEW_VERIFIED',{exact:true}).waitFor();
+      const settings=page.locator('[data-lab-session-settings]:visible').first();
+      assert.match(await settings.getAttribute('aria-label'),/DeepSeek-V4.1-Flash/);
+      assert(!(await settings.getAttribute('aria-label')).includes('deepseek-official'),'Opaque model routing data must not become the visible model name');
+      assert(await page.locator('[data-brand-mark="dsh"]:visible').count(),'The active session must use the official Harness mark');
+      await settings.click();await page.locator('[data-lab-option="model"]').click();
+      const changed=page.waitForRequest(request=>request.method()==='POST'&&request.url().endsWith('/api/chat_control')&&request.postDataJSON()?.operation==='set_option');
+      await page.getByRole('menuitemradio',{name:'DeepSeek-V4-Pro',exact:true}).click();
+      assert.equal((await changed).postDataJSON().payload.value,'["deepseek-official","deepseek-v4-pro"]','Send the exact advertised opaque value');
+      await page.keyboard.press('Escape');
+      await page.waitForFunction(()=>[...document.querySelectorAll('[data-lab-session-settings]')].some(button=>button.getAttribute('aria-label')?.includes('DeepSeek-V4-Pro')));
+      await page.screenshot({path:path.join(report,`${name}-dsh-model.png`)});
+    }
     if(data.nativeMarker){
       await page.locator('[data-ws-row]').first().click();
       await page.locator('[data-workspace-navigation]').waitFor();
@@ -575,6 +589,10 @@ try {
     results.push(await inspect(browser,'terminal',size,{items:2,setup:true}));
     await writeFile(path.join(report,'results.json'),JSON.stringify(results,null,2));
   }
+  for(const width of [1280,412,390,320]){
+    results.push(await inspect(browser,'dsh',{width,height:900},{items:5,engine:'chromium'}));
+    await writeFile(path.join(report,'results.json'),JSON.stringify(results,null,2));
+  }
   for(const size of [{width:1280,height:900},{width:900,height:440},{width:390,height:844},{width:390,height:400}]){
     results.push(await inspect(browser,'devices',size,{machines:1,pairing:true}));
     await writeFile(path.join(report,'results.json'),JSON.stringify(results,null,2));
@@ -582,6 +600,7 @@ try {
   if (process.env.QUALITY_ENGINES?.includes('webkit')) {
     await browser.close();
     browser = await webkit.launch({headless:process.env.QUALITY_HEADLESS!=='0'});
+    for(const width of [1280,412,390,320])results.push(await inspect(browser,'dsh',{width,height:900},{items:5,engine:'webkit'}));
     for(const width of [1280,412,390,320])results.push(await checkAttachmentDraft(browser,{port,report,engine:'webkit',width}));
     results.push(await checkWorkbench(browser,{port,report,engine:'webkit'}));
     results.push(await checkGlassSelection(browser,{port,report,engine:'webkit'}));
