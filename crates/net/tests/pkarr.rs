@@ -169,7 +169,9 @@ impl FaultDomain {
         std::fs::create_dir(dir).unwrap();
         let (registry, pkarr) = registry(dir).await;
         let mut config = ServerConfig::default();
-        config.relay = Some(RelayConfig::new("127.0.0.1:0".parse().unwrap()));
+        config.relay = Some(RelayConfig::new(
+            "127.0.0.1:0".parse::<std::net::SocketAddr>().unwrap(),
+        ));
         let relay = Server::spawn(config).await.unwrap();
         let entry = Relay {
             url: format!("http://{}/", relay.http_addr().unwrap()),
