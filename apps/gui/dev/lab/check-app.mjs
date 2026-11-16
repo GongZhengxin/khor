@@ -57,7 +57,7 @@ async function inspect(browser, scene, size, data = {}) {
   const page = await context.newPage(), errors = [];
   const machines = data.machines ?? 1;
   const items=data.items??5;
-  const name = `${scene}-${size.width}x${size.height}${data.machines===undefined?'':`-machines-${machines}`}${data.gesture?`-gesture-${data.gesture}-${items}`:''}${data.engine?`-${data.engine}`:''}${data.fine?'-fine':''}${data.setup?'-setup':''}${data.pairing?'-pairing':''}${data.nativeMarker?'-embedded':''}`;
+  const name = `${scene}-${size.width}x${size.height}${data.machines===undefined?'':`-machines-${machines}`}${data.gesture?`-gesture-${data.gesture}-${items}`:''}${data.engine?`-${data.engine}`:''}${data.theme?`-${data.theme}`:''}${data.fine?'-fine':''}${data.setup?'-setup':''}${data.pairing?'-pairing':''}${data.nativeMarker?'-embedded':''}`;
   let geometry = null;
   const contentLayout = [];
   const expectedConsoleErrors = [];
@@ -195,7 +195,9 @@ async function inspect(browser, scene, size, data = {}) {
   try {
     // Select data only; every layout and action belongs to the production App.
     await page.route('**/lab/runtime*', route => route.fulfill({contentType: 'application/json', body: JSON.stringify({mode: 'frontend', scene, tree: 'browser-check', revision: 'one'})}));
-    await page.goto(`http://127.0.0.1:${port}/app/?scene=${scene}&theme=dark&machines=${machines}&items=${items}`);
+    const environment=data.theme?{platform:size.width<500?'ios':'desktop',theme:data.theme,material:'solid',opacity:100,keyboard:0,safeTop:0,safeBottom:0,background:'light'}:null;
+    await page.goto(`http://127.0.0.1:${port}/app/?scene=${scene}&theme=${data.theme??'dark'}&machines=${machines}&items=${items}${environment?'&environment='+encodeURIComponent(JSON.stringify(environment)):''}`);
+    if(data.theme)await page.locator(`html[data-theme="${data.theme}"]`).waitFor();
     const selector = scene === 'page' ? '[data-content-visible="true"] .mobile-content-page' : scene === 'list' ? '[data-list]' : scene === 'terminal' ? '[data-terminal]'
       : ['content','workspace'].includes(scene) ? '.cm-editor, [data-file-preview]' : scene === 'quota' ? '[data-quota-row]' : ['devices','workspaces'].includes(scene) ? '[data-list]' : '[data-chat-box]';
     await page.waitForSelector(selector);
@@ -206,9 +208,14 @@ async function inspect(browser, scene, size, data = {}) {
       assert(!(await settings.getAttribute('aria-label')).includes('deepseek-official'),'Opaque model routing data must not become the visible model name');
       assert(await page.locator('[data-brand-mark="dsh"]:visible').count(),'The active session must use the official Harness mark');
       await settings.click();await page.locator('[data-lab-option="model"]').click();
-      const changed=page.waitForRequest(request=>request.method()==='POST'&&request.url().endsWith('/api/chat_control')&&request.postDataJSON()?.operation==='set_option');
       await page.getByRole('menuitemradio',{name:'DeepSeek-V4-Pro',exact:true}).click();
-      assert.equal((await changed).postDataJSON().payload.value,'["deepseek-official","deepseek-v4-pro"]','Send the exact advertised opaque value');
+      await page.waitForFunction(async()=>{
+        const controls=await(await fetch('/api/__ai_preview/control-calls',{method:'POST',body:'{}'})).json();
+        return controls.some(call=>call.operation==='set_option'&&call.payload?.option==='model');
+      });
+      const controls=await page.evaluate(async()=>await(await fetch('/api/__ai_preview/control-calls',{method:'POST',body:'{}'})).json());
+      const changed=controls.findLast(call=>call.operation==='set_option'&&call.payload?.option==='model');
+      assert.equal(changed?.payload.value,'["deepseek-official","deepseek-v4-pro"]','Send the exact advertised opaque value through the actual fixture boundary');
       await page.keyboard.press('Escape');
       await page.waitForFunction(()=>[...document.querySelectorAll('[data-lab-session-settings]')].some(button=>button.getAttribute('aria-label')?.includes('DeepSeek-V4-Pro')));
       await page.screenshot({path:path.join(report,`${name}-dsh-model.png`)});
@@ -484,7 +491,20 @@ let browser;
 const results = [];
 try {
   await waitForPreview();
-  if (process.env.LAB_CHECKS === 'agent-names') {
+  if (process.env.LAB_CHECKS === 'dsh') {
+    for(const engine of ['chromium','webkit']){
+      browser=await (engine==='webkit'?webkit:chromium).launch({headless:true});
+      for(const theme of ['light','dark'])for(const width of [1280,412,390,320]){
+        results.push(await inspect(browser,'dsh',{width,height:900},{items:5,engine,theme}));
+        await writeFile(path.join(report,'results.json'),JSON.stringify(results,null,2));
+      }
+      for(const width of [1280,390]){
+        results.push(await inspect(browser,'terminal',{width,height:900},{items:2,setup:true,engine}));
+        await writeFile(path.join(report,'results.json'),JSON.stringify(results,null,2));
+      }
+      await browser.close();browser=undefined;
+    }
+  } else if (process.env.LAB_CHECKS === 'agent-names') {
     for(const engine of ['chromium','webkit']){
       browser=await (engine==='webkit'?webkit:chromium).launch({headless:true});
       for(const size of [{width:1280,height:900},{width:390,height:844}]){

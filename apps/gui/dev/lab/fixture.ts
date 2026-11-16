@@ -285,6 +285,7 @@ export function createLabFixture(terminal = true, options: {origin?: string; con
   const attachmentEvents:Record<string,unknown>[]=[];
   const terminalSizes:Record<string,unknown>[]=[];
   let pollMode='ok';let uploadMode='ok';const sentPrompts:unknown[]=[];
+  const controlCalls:Record<string,unknown>[]=[];
   let holdSettings=false,refuseSetting=false;const pendingSettings:(()=>void)[]=[];
   const applySetting=(apply:()=>void)=>{if(holdSettings)pendingSettings.push(apply);else apply();};
   return {
@@ -294,6 +295,7 @@ export function createLabFixture(terminal = true, options: {origin?: string; con
           settingsValues={...settingsProfile};try { localStorage.removeItem(settingsKey); } catch { /* Server fixture has no browser storage. */ }
           holdSettings=false;refuseSetting=false;pendingSettings.length=0;
           failAcpSetup=false;acpSetupCalls.length=0;
+          controlCalls.length=0;
           for (const timer of timers) clearTimeout(timer); timers.clear(); streaming.clear(); khorRunning=false; khorApproval=null; khorAnswers.length=0; generation.fill(0);
           preferences.splice(0,preferences.length,...structuredClone(initialPreferences));
           modelConfig={home:device.id,account:account.id,model:account.default_model,options:{thought_level:"medium",auto_compaction:true}};
@@ -307,6 +309,7 @@ export function createLabFixture(terminal = true, options: {origin?: string; con
       if(path==='__ai_preview/upload-mode'){uploadMode=String(body.mode??'ok');return uploadMode;}
       if(path==='__ai_preview/upload-state')return uploadMode;
       if(path==='__ai_preview/says')return structuredClone(sentPrompts);
+      if(path==='__ai_preview/control-calls')return structuredClone(controlCalls);
       if(path==='__ai_preview/settings-hold'){
         holdSettings=body.hold===true;
         if(!holdSettings)for(const apply of pendingSettings.splice(0))apply();
@@ -393,6 +396,7 @@ export function createLabFixture(terminal = true, options: {origin?: string; con
           case "__ai_preview/answers":answer=interactionAnswers;break;
           case "chat_respond":interactionAnswers.push(body);frames[index].push({kind:'elicit_answered',ask:body.ask,response:{action:'accept'}});break;
           case "chat_control":{
+            controlCalls.push(structuredClone(body));
             if(body.operation==='set_option'||body.operation==='set_mode'){
               const refused=refuseSetting;
               applySetting(()=>{

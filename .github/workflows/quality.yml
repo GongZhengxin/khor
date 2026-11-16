@@ -15,7 +15,7 @@ on:
       interaction_scope:
         description: Focus UI iteration checks; releases always use all interactions
         type: choice
-        options: [all, settings]
+        options: [all, settings, dsh]
         default: all
   workflow_call:
     inputs:
@@ -88,13 +88,19 @@ jobs:
         env:
           LAB_BUNDLE: ${{ runner.temp }}/developer-lab
           LAB_REPORT: ${{ runner.temp }}/lab-report
+          LAB_CHECKS: ${{ inputs.interaction_scope == 'dsh' && 'dsh' || '' }}
+          KHOR_INTERACTION_SCOPE: ${{ inputs.interaction_scope }}
         run: |
           npm run deck-scrub
           npm run session-navigation
           npm run session-follow
           sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' /etc/apt/apt-mirrors.txt
           sudo apt-get -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 -o Acquire::Retries=2 install --no-install-recommends -y fonts-noto-cjk
-          npx playwright-core install chromium
+          if [ "$KHOR_INTERACTION_SCOPE" = dsh ]; then
+            npx playwright-core install --with-deps chromium webkit
+          else
+            npx playwright-core install chromium
+          fi
           node dev/lab/check-app.mjs
           node dev/lab/check-hot.mjs
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
@@ -456,7 +462,7 @@ jobs:
             echo 'channel=' >> "$GITHUB_OUTPUT"
           fi
       - name: Build the real attachment transport for full interaction checks
-        if: ${{ inputs.interaction_scope != 'settings' && inputs.suite != 'updates' }}
+        if: ${{ inputs.interaction_scope != 'settings' && inputs.interaction_scope != 'dsh' && inputs.suite != 'updates' }}
         working-directory: .
         run: cargo build --locked -p khor-cli --bin khor -p khor-gui-core --bin bridge
       - name: Run the selected interaction groups and retain all failures
@@ -467,6 +473,8 @@ jobs:
             gates=(updates-ui)
           elif [ "$KHOR_INTERACTION_SCOPE" = settings ]; then
             gates=(notification-ui key-row-ui appearance dialogs)
+          elif [ "$KHOR_INTERACTION_SCOPE" = dsh ]; then
+            gates=(acp-setup new-session-choices khor-conversations-ui)
           fi
           for gate in "${gates[@]}"; do
             echo "::group::$gate"
