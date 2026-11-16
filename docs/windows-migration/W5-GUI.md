@@ -159,10 +159,86 @@ GUI、服务、测试 harness 都没有控制台，所以 Windows 上终端面�
 
 GUI 额度页与 macOS 截图同一套内容，确认**功能对等，不是缺失**。
 
-## 8. 会话形态（待办）
+## 8. 会话形态
 
 用户指出会话应当参照 Codex / DSH Desktop 的对话形态，而不是只有终端。仓库已有
-`views/ChatView`、`MachineChat`（`views/DetailPane` 里按会话类型分派），需要确认 Windows 上
-**通过 khor 启动的 agent 会话**能进入对话视图并在 GUI 里可用。列入 W5 收尾后的继续项。
+`views/ChatView`、`MachineChat`（`views/DetailPane` 里按会话类型分派）。**Windows 上已验证可用**：
+
+| 步骤 | 命令 / 观察 | 结果 |
+| --- | --- | --- |
+| 识别本机 agent | `khor agents known` | ACP 注册表 40 个、22 个可启动；本机装有原生 `codex.exe` |
+| 登记 ACP 桥 | `khor agents add codex-acp2 -- cmd.exe /c <pnpm.cmd> dlx @agentclientprotocol/codex-acp` | `Registered: codex-acp2`，并报「says it has 32 conversations」 |
+| 开会话 | `khor open -d --agent codex-acp2 --title acp-probe` | `tui/01a1e489-…`，会话出现在列表 |
+| GUI 形态 | 点该行 | **对话视图**：标签页、`连接待确认`、`模型设置`、会话记录区、`对话已结束` |
+
+**Windows 上的两个前置条件**（都是环境而非 Khor 缺陷）：
+
+1. **`.cmd` 批处理需要显式解释器**。直接登记 `pnpm.cmd` 会被拒，错误信息明确：
+   「batch sidecars require an explicit command interpreter」。前缀 `cmd.exe /c` 即可。
+2. **ACP 桥要跑 npm 包**，本机有 pnpm 无 npm/npx，用 `pnpm dlx` 等效替代。
+
+### 8.1 「宿主被结束」是缺常驻进程，不是缺陷
+
+`khor open -d` 建的会话在 **没有常驻 `khor serve`** 时，宿主是那个短命 CLI 的子进程，
+CLI 退出即 `Failed / 宿主被结束`。实测对照：
+
+| 前置 | `khor open -d -- cmd.exe` 之后 | `khor sessions` |
+| --- | --- | --- |
+| 无常驻 | CLI 退出后 | `Failed` |
+| 先起 `khor serve` | CLI 退出后 | **`Idle`（存活）** |
+
+GUI 自己带常驻，所以从应用里新建的会话不会这样。
+
+## 9. Windows 窗口自身（2026-11-16 修）
+
+### 9.1 两重窗口控制栏
+
+用户截图发现顶部有两组最小化/最大化/关闭。病根：`components/Region` 的 `WindowControls`
+**只在 Windows 渲染**（注释写「Windows has no buttons of its own over it」），但窗口构建时
+没有 `decorations(false)`，于是系统标题栏与页面自绘控件同时出现。
+
+修法（`build_the_window`）：
+
+```rust
+#[cfg(target_os = "windows")]
+{
+    win = win.decorations(false).shadow(true);
+}
+```
+
+macOS 仍走 `TitleBarStyle::Overlay`，Linux 保留系统装饰，两者不进这段。
+
+### 9.2 自绘控件在 loopback 传输下失效（同批修）
+
+页面那三个按钮走 `call("window_minimize")` 等。改走 `?bridge=` 后它们被送进
+`api::answer`——而那是**存储**的命令表，没有窗口方法，于是回 400：
+
+```
+window_minimize -> 400: "no such command: window_minimize"
+```
+
+修法：`window_transport` 先认这五个命令，转给真实的 Tauri 窗口
+（`window_transport::window_verb`，窗口构建时 `attach` AppHandle）：
+
+| 命令 | 传输层答复 |
+| --- | --- |
+| `window_minimize` | `window.minimize()` |
+| `window_maximize_toggle` | `is_maximized()` 后 maximize/unmaximize |
+| `window_close` | `window.close()`（close 而非 destroy，草稿守卫挂在 close 上） |
+| `traffic_room` | `0`（Windows 标题行没有系统按钮占位） |
+| `window_appearance_support` | `{"supported":false,"blur":false}` |
+| `set_window_theme` / `set_window_appearance` | `null`（窗口由页面绘制，无需着色） |
+
+验证：
+
+| 用例 | 结果 |
+| --- | --- |
+| `POST /traffic_room` | 200 `0` |
+| `POST /window_appearance_support` | 200 `{"supported":false,"blur":false}` |
+| `POST /window_maximize_toggle` ×2 | 200 `null`，窗口最大化后再还原 |
+| `POST /window_minimize` | 200 `null`，窗口最小化 |
+| 点页面自绘的最小化按钮 | 窗口 `IsIconic` 0 → 1，恢复后回 0（端到端） |
+| 截图 | 只剩一组控件，无系统标题栏 |
+
 
 

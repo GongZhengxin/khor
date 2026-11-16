@@ -42,6 +42,73 @@
 //! process and answers this window. The LAN face is `khor_web`'s job.
 
 use std::io::Read;
+use std::sync::OnceLock;
+// `get_webview_window` is a `Manager` method; without this the call does not
+// resolve on `&AppHandle`.
+use tauri::Manager;
+
+/// The window this transport answers for.
+///
+/// Set once, when the window is built. The loopback server starts earlier (the
+/// port has to be listening before the page's first command), so it cannot take
+/// the handle at construction time.
+static WINDOW: OnceLock<tauri::AppHandle> = OnceLock::new();
+
+/// Tell the transport which app it serves. Called from the window's build.
+pub fn attach(app: tauri::AppHandle) {
+    let _ = WINDOW.set(app);
+}
+
+/// The commands that are about *this window* rather than about the store.
+///
+/// **They cannot go through [`khor_gui_core::api::answer`]**, which is the
+/// store's table: minimise, maximise, close and the title-row measurements are
+/// Tauri window methods, and the page asks for them like any other command
+/// (`apps/gui/src/api.ts`). Before the loopback transport they reached the
+/// skin's own `#[tauri::command]`s; with the window on `?bridge=` they arrive
+/// here instead, so this is where they have to be answered — otherwise the
+/// borderless window's own three buttons do nothing at all (found 2026-11-16,
+/// the day the decorations came off).
+///
+/// `None` means "not a window verb, ask the store's table".
+fn window_verb(cmd: &str) -> Option<Result<String, String>> {
+    let window = || {
+        WINDOW
+            .get()
+            .ok_or_else(|| "the window is not attached yet".to_owned())?
+            .get_webview_window("main")
+            .ok_or_else(|| "no main window".to_owned())
+    };
+    let answer = match cmd {
+        "window_minimize" => window().and_then(|w| w.minimize().map_err(|e| e.to_string())),
+        "window_maximize_toggle" => window().and_then(|w| {
+            let full = w.is_maximized().map_err(|e| e.to_string())?;
+            if full {
+                w.unmaximize().map_err(|e| e.to_string())
+            } else {
+                w.maximize().map_err(|e| e.to_string())
+            }
+        }),
+        // `close`, not `destroy`: closing is a request, and the draft guard
+        // hangs on it (`lib.rs`'s own note on `window_close`).
+        "window_close" => window().and_then(|w| w.close().map_err(|e| e.to_string())),
+        // Windows has no system buttons standing over the title row, so the
+        // row reserves nothing for them (the same zero the skin answers off
+        // macOS).
+        "traffic_room" => return Some(Ok("0".to_owned())),
+        // No vibrancy and no backdrop material on this platform; saying so is
+        // the honest answer, and the page already branches on it.
+        "window_appearance_support" => {
+            return Some(Ok(r#"{"supported":false,"blur":false}"#.to_owned()));
+        }
+        // Accepted and nothing to paint: the window is drawn by the page.
+        "set_window_theme" | "set_window_appearance" => {
+            return Some(Ok("null".to_owned()));
+        }
+        _ => return None,
+    };
+    Some(answer.map(|()| "null".to_owned()))
+}
 
 /// The port the window's `?bridge=` names.
 ///
@@ -142,6 +209,11 @@ pub fn start() {
             // a devtools session (whose isolated world cannot see invoke callbacks).
             if std::env::var_os("KHOR_GUI_TRACE").is_some() {
                 eprintln!("[transport] {cmd}");
+            }
+            // The window's own verbs first: they are not the store's to answer.
+            if let Some(outcome) = window_verb(&cmd) {
+                let _ = request.respond(json(outcome));
+                continue;
             }
             // The raw-body routes carry a file, which is not UTF-8 and must
             // never pass through a String. Each keeps the road the dev bridge

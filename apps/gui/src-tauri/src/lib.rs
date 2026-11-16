@@ -2536,6 +2536,10 @@ fn on_the_page_store<'a, R: tauri::Runtime, M: tauri::Manager<R>>(
 #[cfg(desktop)]
 fn build_the_window(app: &tauri::AppHandle) -> tauri::Result<()> {
     use tauri::{WebviewUrl, WebviewWindowBuilder};
+    // The transport answers for this window from the next command onwards:
+    // minimise, maximise, close and the title row's measurements are window
+    // methods, not the store's (`window_transport::window_verb`).
+    window_transport::attach(app.clone());
     let mut win = WebviewWindowBuilder::new(
         app,
         "main",
@@ -2551,6 +2555,18 @@ fn build_the_window(app: &tauri::AppHandle) -> tauri::Result<()> {
     .transparent(true)
     .initialization_script(window_surface::initial_script())
     .background_color(window_surface::background(chosen_dark(desktop_is_dark)));
+    // **Windows is borderless, because the page already draws the controls.**
+    // `components/Region` renders `WindowControls` only on Windows — minimise,
+    // maximise, close at the right end of R0 — and its own note says why it
+    // may: 「Windows has no buttons of its own over it」. That was true only
+    // while somebody removed the system's; with decorations left on, the window
+    // showed two sets, the native bar above the page's (seen 2026-11-16).
+    // macOS keeps its overlay title bar and Linux keeps its decorations, so
+    // neither enters here.
+    #[cfg(target_os = "windows")]
+    {
+        win = win.decorations(false).shadow(true);
+    }
     #[cfg(target_os = "macos")]
     {
         win = win
