@@ -51,11 +51,22 @@ mod windows {
     unsafe extern "system" {
         fn GetConsoleWindow() -> Handle;
         fn AllocConsole() -> i32;
+        fn GetStdHandle(handle: u32) -> Handle;
         fn SetStdHandle(handle: u32, value: Handle) -> i32;
     }
 
+    /// Whether this process has a standard stream at all — a console, or a
+    /// **pipe its parent handed it**.
+    fn stream_present(which: u32) -> bool {
+        let handle = unsafe { GetStdHandle(which) };
+        !handle.is_null() && handle as isize != -1
+    }
+
     pub(super) fn attach() {
-        let wanted = std::env::var_os("KHOR_GUI_CONSOLE").is_some();
+        let wanted = std::env::var_os("KHOR_GUI_CONSOLE").is_some_and(|v| {
+            let said = v.to_string_lossy();
+            !(said.is_empty() || said == "0" || said.eq_ignore_ascii_case("false"))
+        });
         let already_has_one = unsafe { !GetConsoleWindow().is_null() };
         if already_has_one {
             // Launched from a terminal (or a debugger): those streams are
@@ -66,6 +77,17 @@ mod windows {
             // A fresh console: the standard handles the process never had
             // are now bound to it, so `eprintln!` reaches the new window
             // without this module touching a handle.
+            return;
+        }
+        // **No console is not the same as no streams.** This same binary is
+        // re-executed as `_host`, `_ghost`, `_cagent`, `_codexagent` and the
+        // MCP worker (`main_if_host` in `khor_gui::run`); those get pipes
+        // from their parent and speak a protocol on them. Redirecting here
+        // would write the handshake into a log file that nobody reads, and
+        // the parent would wait forever — found by the independent review
+        // before it shipped. A real window launched from Explorer has no
+        // handles at all, which is what this asks.
+        if stream_present(STD_OUTPUT_HANDLE) || stream_present(STD_ERROR_HANDLE) {
             return;
         }
         let Some(path) = log_path() else {

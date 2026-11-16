@@ -412,6 +412,20 @@ mod tests {
         }
     }
 
+    /// A file `find_program` will call runnable.
+    ///
+    /// Windows only asks that it be a file; unix asks for the executable
+    /// bit, and a test that wrote a plain file passed on Windows and would
+    /// have failed in CI — the independent review caught it.
+    fn write_program(path: &std::path::Path) {
+        std::fs::write(path, b"x").unwrap();
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o755)).unwrap();
+        }
+    }
+
     /// A `codex` on `PATH` and its home: the row must find both and offer
     /// khor's own shim rather than an npm adapter, because one exists.
     #[test]
@@ -419,7 +433,7 @@ mod tests {
         let scratch = Scratch::new("builtin");
         let bin = scratch.dir("bin");
         let exe = bin.join(format!("codex{}", std::env::consts::EXE_SUFFIX));
-        std::fs::write(&exe, b"x").unwrap();
+        write_program(&exe);
         scratch.dir(".codex");
         let fleet = fleet_at(Some(&scratch.0), &bin.display().to_string());
         let row = fleet.agents.iter().find(|r| r.id == "codex").unwrap();
@@ -457,7 +471,7 @@ mod tests {
         let bin = scratch.dir("bin");
         let elsewhere = scratch.dir("apps");
         let exe = elsewhere.join(format!("aider{}", std::env::consts::EXE_SUFFIX));
-        std::fs::write(&exe, b"x").unwrap();
+        write_program(&exe);
         // `aider` has no `program_dirs` in the shipped table, so this uses
         // a table-shaped lookup of its own rather than pretending the real
         // entry would find it.
@@ -490,9 +504,9 @@ mod tests {
         let scratch = Scratch::new("registry");
         let bin = scratch.dir("bin");
         let exe = bin.join(format!("qwen{}", std::env::consts::EXE_SUFFIX));
-        std::fs::write(&exe, b"x").unwrap();
+        write_program(&exe);
         let npx = bin.join(format!("npx{}", std::env::consts::EXE_SUFFIX));
-        std::fs::write(&npx, b"x").unwrap();
+        write_program(&npx);
         let path = bin.display().to_string();
 
         let with_runner = fleet_at(Some(&scratch.0), &path);
