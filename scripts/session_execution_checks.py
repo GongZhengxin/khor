@@ -13,13 +13,18 @@ def main():
     output = Path(os.environ.get("SESSION_EXECUTION_EVIDENCE", "session-execution-evidence"))
     output.mkdir(parents=True, exist_ok=True)
     source = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
+    filters = ["command_task", "user_environment", "shell_start::", "integration::", "answers::", "host::ring_file_tests", "host::handshake_tests", "once::shell_claim_tests", "live::tests::startup_failure", "host::startup_failure_tests", "platform_path_tests", "mcp::tests", "link::execution::tests", "link::legacy_shell_tests", "runtime_image::compatibility_tests"]
+    if sys.platform == "win32":
+        # This bounded login probe is Unix-only; Windows uses its native
+        # inherited environment, covered by the path and real worker checks.
+        filters.remove("user_environment")
     commands = [
         ["cargo", "test", "--locked", "-p", "khor-node", "--lib", name,
          "--", "--nocapture", "--test-threads=1"]
-        for name in ["command_task", "user_environment", "shell_start::", "integration::", "answers::", "host::snapshot_tests", "host::handshake_tests", "once::shell_claim_tests", "live::tests::startup_failure", "host::startup_failure_tests", "platform_path_tests", "mcp::tests", "link::execution::tests", "link::legacy_shell_tests", "runtime_image::compatibility_tests"]
+        for name in filters
     ]
     commands.append(["cargo", "test", "--locked", "-p", "khor-node", "--test", "execution_wire", "--", "--nocapture", "--test-threads=1"])
-    commands.append(["cargo", "test", "--locked", "-p", "khor-cli", "--test", "command_tasks",
+    commands.append(["cargo", "test", "--locked", "--no-fail-fast", "-p", "khor-cli", "--test", "command_tasks",
                      "--test", "mcp_terminals", "--test", "run", "--test", "open",
                      "--", "--nocapture", "--test-threads=1"])
     report = {"source": source, "platform": platform.platform(), "checks": []}
@@ -35,8 +40,10 @@ def main():
                                       "seconds": time.monotonic() - started, "log": log.name})
             if completed.returncode:
                 print(log.read_text(encoding="utf-8", errors="replace")[-24000:])
-                code = completed.returncode
-                break
+                # These contracts run in separate processes. Retain the first
+                # failure while still collecting worker, MCP and CLI evidence.
+                if not code:
+                    code = completed.returncode
     finally:
         (output / "result.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
     return code

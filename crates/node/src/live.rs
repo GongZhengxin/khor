@@ -4232,7 +4232,11 @@ impl RowGate {
         }
     }
     fn sync_meta(&self) -> Result<(), String> {
-        fs::File::open(self.dir.join("meta.json"))
+        // Windows FlushFileBuffers needs write access even when no bytes
+        // change through this handle. Opening for sync must not truncate it.
+        fs::OpenOptions::new()
+            .write(true)
+            .open(self.dir.join("meta.json"))
             .and_then(|file| file.sync_all())
             .map_err(|e| e.to_string())?;
         #[cfg(unix)]

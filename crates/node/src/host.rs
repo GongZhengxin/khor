@@ -2264,6 +2264,7 @@ fn host_serving(
             let mut repainted: Option<std::time::Instant> = None;
             let mut prompt = crate::shell_start::PromptReady::default();
             let mut shell_announced = false;
+            let mut startup_released = false;
             loop {
                 let n = match reader.read(&mut buf) {
                     Ok(0) | Err(_) => break,
@@ -2275,9 +2276,15 @@ fn host_serving(
                     .lock()
                     .unwrap()
                     .saw_output(&buf[..n], std::time::Instant::now());
-                if waits_for_prompt && !shell_announced && prompt.feed(&buf[..n]) {
+                if waits_for_prompt
+                    && (!shell_announced || !startup_released)
+                    && prompt.feed(&buf[..n])
+                {
+                    prompt.take_ready();
                     shell_announced = true;
-                    let _ = writer.lock().unwrap().shell_ready();
+                    let mut input = writer.lock().unwrap();
+                    let _ = input.shell_ready();
+                    startup_released = input.readiness().1;
                 }
                 // **Mouse tracking off once the shell has the terminal
                 // back** (item 25; the owner's zsh prompt filling with

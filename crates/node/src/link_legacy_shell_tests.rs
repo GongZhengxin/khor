@@ -117,7 +117,7 @@ async fn a_missing_or_malformed_legacy_receipt_row_refuses_instead_of_repeating_
 async fn a_legacy_receipt_requires_its_exact_registered_shell_identity() {
     let root = crate::testdir::TempTree::fresh("legacy-shell-mismatched-receipt");
     let node = Node::open_as(root.path(), "legacy-shell-test").unwrap();
-    let id = crate::SessionId("shell/legacy-mismatched-terminal".into());
+    let id = crate::SessionId("shell/legacy-mismatch".into());
     node.live
         .register(&id, crate::kind::SHELL, "original shell", None, None)
         .unwrap();

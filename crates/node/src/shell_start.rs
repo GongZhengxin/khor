@@ -263,7 +263,7 @@ pub fn input(command: &str) -> Vec<u8> {
 }
 
 /// One host owns the startup, even when several viewers attach or retry.
-/// Early keys follow it; ordinary hosts without startup input write directly.
+/// Explicit input stays interactive while only the automatic startup waits.
 pub(crate) struct StartupInput<W> {
     writer: W,
     pending: Option<Vec<u8>>,
@@ -271,6 +271,7 @@ pub(crate) struct StartupInput<W> {
     terminal_ready: bool,
     revision: u64,
     user_line: bool,
+    startup_line: bool,
     accepted: VecDeque<(String, [u8; 32], Result<u64, String>)>,
     receipt_dir: Option<PathBuf>,
 }
@@ -288,6 +289,7 @@ impl<W: Write> StartupInput<W> {
             terminal_ready: false,
             revision: 0,
             user_line: false,
+            startup_line: false,
             accepted: VecDeque::new(),
             receipt_dir: None,
         }
@@ -309,7 +311,7 @@ impl<W: Write> StartupInput<W> {
     }
 
     fn release(&mut self) -> io::Result<()> {
-        if self.shell_ready && self.terminal_ready {
+        if self.shell_ready && self.terminal_ready && !self.user_line && !self.startup_line {
             if let Some(bytes) = self.pending.take() {
                 self.writer.write_all(&bytes)?;
                 self.writer.flush()?;
@@ -384,9 +386,6 @@ impl<W: Write> StartupInput<W> {
                 Err(error) => return Err(error.to_string()),
             }
         }
-        if !self.shell_ready || !self.terminal_ready || self.pending.is_some() {
-            return Err("Terminal startup is not ready for input".into());
-        }
         if expected != self.revision {
             return Err(
                 "Terminal input changed; read its current state before sending input".into(),
@@ -406,6 +405,7 @@ impl<W: Write> StartupInput<W> {
             )?;
         }
         self.revision = revision;
+        self.operator_input(bytes);
         // A write may partially succeed. Reserve its token before the write so
         // retrying an uncertain outcome can never execute the bytes twice.
         self.accepted.push_back((
@@ -422,6 +422,11 @@ impl<W: Write> StartupInput<W> {
             .and_then(|()| self.writer.flush())
             .map(|()| revision)
             .map_err(|e| e.to_string());
+        if result.is_err() && self.pending.is_some() {
+            // An uncertain partial write cannot be treated as a completed
+            // profile answer or an empty editable line.
+            self.startup_line = true;
+        }
         self.accepted.back_mut().unwrap().2 = result.clone();
         if let Some(path) = &receipt {
             // The durable reservation remains a non-replayable unknown if
@@ -438,18 +443,20 @@ impl<W: Write> StartupInput<W> {
         &mut self,
         bytes: &[u8],
         keys: &[u8],
-        replies: &[u8],
+        _replies: &[u8],
     ) -> io::Result<()> {
-        if self.pending.is_some() {
-            self.reply(replies)?;
-            self.write_all(keys)?;
-            self.flush()
-        } else {
-            self.writer.write_all(bytes)?;
-            self.writer.flush()?;
-            self.user_input(keys);
-            Ok(())
+        self.user_input(keys);
+        let result = self
+            .writer
+            .write_all(bytes)
+            .and_then(|()| self.writer.flush());
+        if result.is_err() && !keys.is_empty() {
+            self.user_line = true;
+            if self.pending.is_some() {
+                self.startup_line = true;
+            }
         }
+        result
     }
 
     /// Replies to startup terminal queries bypass commands waiting for readiness.
@@ -459,6 +466,7 @@ impl<W: Write> StartupInput<W> {
     }
 
     fn user_input(&mut self, bytes: &[u8]) {
+        self.operator_input(bytes);
         if !bytes.is_empty() {
             self.revision = self.revision.wrapping_add(1);
         }
@@ -472,29 +480,29 @@ impl<W: Write> StartupInput<W> {
             }
         }
     }
+
+    fn operator_input(&mut self, bytes: &[u8]) {
+        if self.pending.is_some() && !bytes.is_empty() {
+            // Profile questions and authentication prompts accept explicit
+            // input immediately. Automatic input must wait for a fresh prompt
+            // after that interaction, even when an older B was already seen.
+            self.shell_ready = false;
+            for byte in bytes {
+                self.startup_line = !matches!(byte, b'\r' | b'\n' | 3);
+            }
+        }
+    }
 }
 
 impl<W: Write> Write for StartupInput<W> {
     fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
-        let written = if let Some(pending) = &mut self.pending {
-            if pending.len().saturating_add(bytes.len()) > 1 << 20 {
-                return Err(io::Error::other("terminal startup input exceeds 1 MiB"));
-            }
-            pending.extend_from_slice(bytes);
-            bytes.len()
-        } else {
-            self.writer.write(bytes)?
-        };
+        let written = self.writer.write(bytes)?;
         self.user_input(&bytes[..written]);
         Ok(written)
     }
 
     fn flush(&mut self) -> io::Result<()> {
-        if self.pending.is_some() {
-            Ok(())
-        } else {
-            self.writer.flush()
-        }
+        self.writer.flush()
     }
 }
 
@@ -508,6 +516,10 @@ pub(crate) struct PromptReady {
 }
 
 impl PromptReady {
+    pub(crate) fn take_ready(&mut self) -> bool {
+        std::mem::take(&mut self.ready)
+    }
+
     pub(crate) fn feed(&mut self, bytes: &[u8]) -> bool {
         for &byte in bytes {
             match (self.state, byte) {
@@ -669,6 +681,11 @@ mod tests {
                 assert!(!prompt.feed(&[*byte]));
             }
             assert!(prompt.feed(&mark[mark.len() - 1..]));
+            assert!(prompt.take_ready());
+            assert!(!prompt.feed(b"ordinary output"));
+            assert!(!prompt.take_ready());
+            assert!(prompt.feed(mark));
+            assert!(prompt.take_ready());
         }
         assert!(!PromptReady::default().feed(b"\x1b]133;BLAH\x07"));
     }
@@ -741,32 +758,171 @@ mod tests {
     }
 
     #[test]
-    fn startup_waits_for_readiness_once_and_precedes_early_keys() {
-        let mut input = StartupInput::new(Vec::new(), Some("export CHECK=kept"));
-        input.write_all(b"echo $CHECK\r").unwrap();
-        input.flush().unwrap();
-        assert!(input.writer.is_empty());
+    fn profile_answers_reach_the_shell_before_automatic_startup() {
+        let mut input = StartupInput::with_shell_readiness(Vec::new(), Some("startup"), true);
         input.ready().unwrap();
+        input.write_classified(b"n\r", b"n\r", b"").unwrap();
+        assert_eq!(input.writer, b"n\r");
+        assert_eq!(input.readiness(), (false, false));
+        input.shell_ready().unwrap();
         input.ready().unwrap();
+        input.shell_ready().unwrap();
         input.write_all(b"later\r").unwrap();
-        assert_eq!(input.writer, b"export CHECK=kept\recho $CHECK\rlater\r");
+        assert_eq!(input.writer, b"n\rstartup\rlater\r");
     }
 
     #[test]
-    fn ordinary_and_empty_shells_do_not_wait_for_a_viewer() {
-        for startup in [None, Some(" \n")] {
-            let mut input = StartupInput::new(Vec::new(), startup);
-            input.write_all(b"immediate\r").unwrap();
-            assert_eq!(input.writer, b"immediate\r");
+    fn an_operator_answer_invalidates_readiness_until_a_fresh_prompt() {
+        for control in [false, true] {
+            let mut input = StartupInput::with_shell_readiness(Vec::new(), Some("startup"), true);
+            input.shell_ready().unwrap();
+            if control {
+                assert_eq!(
+                    input.automated_input("profile-answer-001", 0, b"n\r"),
+                    Ok(1)
+                );
+            } else {
+                input.write_all(b"n\r").unwrap();
+            }
+            input.ready().unwrap();
+            assert_eq!(input.writer, b"n\r");
+            assert_eq!(input.readiness(), (false, false));
+            input.shell_ready().unwrap();
+            assert_eq!(input.writer, b"n\rstartup\r");
         }
     }
 
     #[test]
-    fn early_input_is_bounded() {
-        let mut input = StartupInput::new(Vec::new(), Some("command"));
-        assert!(input.write_all(&vec![b'x'; 1 << 20]).is_err());
+    fn prompt_redraws_do_not_append_startup_to_a_partial_operator_line() {
+        for control in [false, true] {
+            let mut input = StartupInput::with_shell_readiness(Vec::new(), Some("startup"), true);
+            input.ready().unwrap();
+            if control {
+                assert_eq!(
+                    input.automated_input("profile-partial-01", 0, b"partial"),
+                    Ok(1)
+                );
+            } else {
+                input.write_classified(b"partial", b"partial", b"").unwrap();
+            }
+            input.shell_ready().unwrap();
+            assert_eq!(input.writer, b"partial");
+            if control {
+                assert_eq!(input.automated_input("profile-finish-001", 1, b"\r"), Ok(2));
+            } else {
+                // A redraw must not clear the human editing fence either.
+                assert!(
+                    input
+                        .automated_input("profile-interfere", 1, b"robot\r")
+                        .is_err()
+                );
+                input.write_classified(b"\r", b"\r", b"").unwrap();
+            }
+            input.ready().unwrap();
+            assert_eq!(input.writer, b"partial\r");
+            input.shell_ready().unwrap();
+            assert_eq!(input.writer, b"partial\rstartup\r");
+        }
+    }
+
+    #[test]
+    fn pre_ready_control_input_keeps_cas_and_durable_idempotence() {
+        let dir = crate::testdir::TempTree::fresh("profile-answer-receipts");
+        let mut input = StartupInput::with_shell_readiness(Vec::new(), Some("startup"), true)
+            .with_receipts(dir.path());
+        assert_eq!(
+            input.automated_input("profile-answer-001", 0, b"n\r"),
+            Ok(1)
+        );
+        assert_eq!(
+            input.automated_input("profile-answer-001", 0, b"n\r"),
+            Ok(1)
+        );
+        assert!(
+            input
+                .automated_input("profile-answer-001", 0, b"y\r")
+                .is_err()
+        );
+        assert!(
+            input
+                .automated_input("profile-stale-0001", 0, b"n\r")
+                .is_err()
+        );
+        assert_eq!(input.writer, b"n\r");
+        // A host reconstructed against the durable token cannot replay it.
+        let mut retry = StartupInput::with_shell_readiness(Vec::new(), Some("startup"), true)
+            .with_receipts(dir.path());
+        assert_eq!(
+            retry.automated_input("profile-answer-001", 0, b"n\r"),
+            Ok(1)
+        );
+        assert!(retry.writer.is_empty());
         input.ready().unwrap();
-        assert_eq!(input.writer, b"command\r");
+        input.shell_ready().unwrap();
+        assert_eq!(input.writer, b"n\rstartup\r");
+    }
+
+    #[test]
+    fn an_uncertain_operator_write_cannot_release_automatic_startup() {
+        #[derive(Default)]
+        struct PartialWriter {
+            bytes: Vec<u8>,
+            fail: bool,
+        }
+        impl Write for PartialWriter {
+            fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
+                if self.fail {
+                    return Err(io::Error::other("write stopped"));
+                }
+                self.bytes.extend_from_slice(&bytes[..1]);
+                self.fail = true;
+                Ok(1)
+            }
+            fn flush(&mut self) -> io::Result<()> {
+                Ok(())
+            }
+        }
+        for control in [false, true] {
+            let mut input =
+                StartupInput::with_shell_readiness(PartialWriter::default(), Some("startup"), true);
+            input.ready().unwrap();
+            if control {
+                assert!(
+                    input
+                        .automated_input("profile-answer-001", 0, b"n\r")
+                        .is_err()
+                );
+            } else {
+                assert!(input.write_classified(b"n\r", b"n\r", b"").is_err());
+            }
+            input.shell_ready().unwrap();
+            assert_eq!(input.writer.bytes, b"n");
+            assert_eq!(input.readiness(), (true, false));
+        }
+    }
+
+    #[test]
+    fn ordinary_and_empty_shells_accept_profile_answers_before_readiness() {
+        for startup in [None, Some(" \n")] {
+            let mut input = StartupInput::with_shell_readiness(Vec::new(), startup, true);
+            input.write_all(b"immediate\r").unwrap();
+            assert_eq!(input.writer, b"immediate\r");
+            assert_eq!(
+                input.automated_input("profile-answer-001", 1, b"n\r"),
+                Ok(2)
+            );
+            assert_eq!(input.writer, b"immediate\rn\r");
+        }
+    }
+
+    #[test]
+    fn classified_terminal_replies_do_not_invalidate_a_ready_prompt() {
+        let mut input = StartupInput::with_shell_readiness(Vec::new(), Some("startup"), true);
+        input.shell_ready().unwrap();
+        input.write_classified(b"\x1b[0n", b"", b"\x1b[0n").unwrap();
+        assert_eq!(input.revision(), 0);
+        input.ready().unwrap();
+        assert_eq!(input.writer, b"\x1b[0nstartup\r");
     }
 
     #[test]

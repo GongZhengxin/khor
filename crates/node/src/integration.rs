@@ -275,9 +275,9 @@ mod tests {
 
     #[cfg(unix)]
     #[test]
-    fn login_shell_loads_profile_rc_and_theme_widgets_before_startup_input() {
+    fn login_profile_answers_and_theme_widgets_precede_automatic_startup() {
         use portable_pty::{CommandBuilder, PtySize, native_pty_system};
-        use std::io::{Read, Write};
+        use std::io::Read;
         use std::time::{Duration, Instant};
         for shell in ["/bin/zsh", "/bin/bash"] {
             if !Path::new(shell).exists() {
@@ -295,6 +295,9 @@ mod tests {
             std::fs::write(
                 home.join(".zshrc"),
                 r#"
+builtin printf 'RC-QUESTION [Y/n]'
+read REPLY
+[[ "$REPLY" == n ]] || exit 19
 export KHOR_RC_TEST=rc-loaded
 function zle-line-init() { builtin printf 'USER-ZLE-INIT'; }
 zle -N zle-line-init
@@ -310,7 +313,7 @@ precmd_functions+=(khor_test_theme_precmd)
             )
             .unwrap();
             std::fs::write(home.join(".bash_profile"), "shopt -q login_shell || exit 9\nexport KHOR_PROFILE_TEST=profile-loaded\n. \"$HOME/.bashrc\"\n").unwrap();
-            std::fs::write(home.join(".bashrc"), "export KHOR_RC_TEST=rc-loaded\n").unwrap();
+            std::fs::write(home.join(".bashrc"), "printf 'RC-QUESTION [Y/n]'\nread -r reply\n[ \"$reply\" = n ] || exit 19\nexport KHOR_RC_TEST=rc-loaded\n").unwrap();
             write_scripts(&scripts).unwrap();
             let cmd = vec![shell.into(), "-l".into(), "-i".into()];
             let plan = plan(&scripts, &cmd, env(&[])).unwrap();
@@ -334,7 +337,12 @@ precmd_functions+=(khor_test_theme_precmd)
             let mut child = pair.slave.spawn_command(builder).unwrap();
             drop(pair.slave);
             let mut reader = pair.master.try_clone_reader().unwrap();
-            let mut writer = pair.master.take_writer().unwrap();
+            let mut writer = crate::shell_start::StartupInput::with_shell_readiness(
+                pair.master.take_writer().unwrap(),
+                Some("printf 'PROFILE-RESULT:%s:%s\\n' \"$KHOR_PROFILE_TEST\" \"$KHOR_RC_TEST\""),
+                true,
+            );
+            writer.ready().unwrap();
             let (tx, rx) = std::sync::mpsc::channel();
             let reading = std::thread::spawn(move || {
                 let mut buffer = [0; 4096];
@@ -347,51 +355,53 @@ precmd_functions+=(khor_test_theme_precmd)
             let result = (|| {
                 let deadline = Instant::now() + Duration::from_secs(5);
                 let mut prompt = crate::shell_start::PromptReady::default();
-                let mut initial = Vec::new();
-                while Instant::now() < deadline {
-                    let bytes = rx
-                        .recv_timeout(deadline.saturating_duration_since(Instant::now()))
-                        .map_err(|e| e.to_string())?;
-                    initial.extend_from_slice(&bytes);
-                    if prompt.feed(&bytes) {
-                        break;
-                    }
-                }
-                if !prompt.feed(&[]) {
-                    return Err("shell never reported prompt readiness".to_owned());
-                }
-                if shell.ends_with("zsh")
-                    && !initial
-                        .windows(b"USER-ZLE-INIT".len())
-                        .any(|w| w == b"USER-ZLE-INIT")
-                {
-                    return Err("readiness replaced the person's line-init widget".to_owned());
-                }
-                writer
-                .write_all(
-                    b"printf 'PROFILE-RESULT:%s:%s\\n' \"$KHOR_PROFILE_TEST\" \"$KHOR_RC_TEST\"\r",
-                )
-                .map_err(|e| e.to_string())?;
-                writer.flush().map_err(|e| e.to_string())?;
                 let mut output = Vec::new();
+                let mut answered = false;
+                let mut prompts = 0;
                 while Instant::now() < deadline {
                     let bytes = rx
                         .recv_timeout(deadline.saturating_duration_since(Instant::now()))
                         .map_err(|e| e.to_string())?;
                     output.extend_from_slice(&bytes);
-                    if output
-                        .windows(b"PROFILE-RESULT:profile-loaded:rc-loaded".len())
-                        .any(|w| w == b"PROFILE-RESULT:profile-loaded:rc-loaded")
+                    if !answered
+                        && output
+                            .windows(b"RC-QUESTION [Y/n]".len())
+                            .any(|w| w == b"RC-QUESTION [Y/n]")
                     {
+                        if writer.readiness() != (false, false) {
+                            return Err("automatic startup bypassed the profile question".into());
+                        }
+                        writer
+                            .write_classified(b"n\r", b"n\r", b"")
+                            .map_err(|e| e.to_string())?;
+                        answered = true;
+                    }
+                    if prompt.feed(&bytes) {
+                        prompt.take_ready();
+                        prompts += 1;
+                        writer.shell_ready().map_err(|e| e.to_string())?;
+                    }
+                    let result = b"PROFILE-RESULT:profile-loaded:rc-loaded";
+                    let results = output
+                        .windows(result.len())
+                        .filter(|w| *w == result)
+                        .count();
+                    if results > 1 {
+                        return Err("automatic startup ran more than once".into());
+                    }
+                    // A second editor entry must announce readiness too. The
+                    // first B can be invalidated by explicit profile input.
+                    if results == 1 && prompts >= 2 {
+                        if !answered {
+                            return Err("the profile question was never answered".into());
+                        }
                         if shell.ends_with("zsh") {
-                            initial.extend_from_slice(&output);
-                            if !initial
-                                .windows(b"THEME-ZLE-INIT".len())
-                                .any(|w| w == b"THEME-ZLE-INIT")
-                            {
-                                return Err(
-                                    "the theme's later line-init widget was lost".to_owned()
-                                );
+                            for widget in [b"USER-ZLE-INIT".as_slice(), b"THEME-ZLE-INIT"] {
+                                if !output.windows(widget.len()).any(|w| w == widget) {
+                                    return Err(
+                                        "readiness replaced an existing line-init widget".into()
+                                    );
+                                }
                             }
                         }
                         return Ok(());

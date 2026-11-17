@@ -26,15 +26,14 @@
 # so they come last and a theme that rebuilds PS1 cannot drop the input
 # mark (Kitty and VS Code defer the same way). A shell that already has an
 # integration emitting these marks (VS Code's, iTerm2's, Kitty's, WezTerm's,
-# Ghostty's, Warp's) keeps its command hooks. The first editor entry still
-# emits one readiness mark, independent of how that integration draws PS1.
+# Ghostty's, Warp's) keeps its command hooks. Editor entries still report
+# readiness, independent of how that integration draws PS1.
 #
 # Opt out: KHOR_SHELL_INTEGRATION=0 in the environment khor runs in.
 
 [[ -n "$_khor_loaded" ]] && return
 typeset -g _khor_loaded=1
 typeset -gi _khor_ran=0
-typeset -gi _khor_editor_ready=0
 
 _khor_osc() {
   if [[ -n "$TMUX" ]]; then
@@ -104,12 +103,9 @@ _khor_other() {
 
 _khor_line_init() {
   # A theme can rebuild PS1 after our precmd, even moving its own hook last.
-  # The first real line-editor entry proves native startup has completed and
+  # Each real line-editor entry proves native startup has completed and
   # cannot be erased with the prompt. Keep the person's existing widgets.
-  if (( ! _khor_editor_ready )); then
-    _khor_editor_ready=1
-    _khor_osc '133;B'
-  fi
+  _khor_osc '133;B'
   return 0
 }
 

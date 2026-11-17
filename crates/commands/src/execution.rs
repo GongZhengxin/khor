@@ -406,8 +406,17 @@ fn grammar(word: &str) -> &'static str {
         "retry" => "retry <transfer>",
         "log" => "log [<machine>]",
         "run" => "run [--tui] [--title <title>] -- <command>...",
+        "exec" => {
+            "exec [--on <machine>] --request <token> --command <command> [--cwd <directory>] [--timeout-ms <number>]"
+        }
+        "execution" => {
+            "execution status|cancel|forget [--on <machine>] <task> | execution read [--on <machine>] <task> [--stdout-cursor <number>] [--stderr-cursor <number>] [--limit <number>] [--wait-ms <number>]"
+        }
+        "terminal" => {
+            "terminal read [--on <machine>] <session> [--cursor <number>] [--limit <number>] [--wait-ms <number>] | terminal input [--on <machine>] <session> --request <token> --generation <generation> --revision <number> [--text <text>] [--enter] | terminal ended [--on <machine>] <session>"
+        }
         "open" => {
-            "open [-d] [--tui|--gui] [--agent <agent> [--resume <id>]] [--on <machine>] [--title <title>] [-- <command>...]"
+            "open [-d] [--tui|--gui] [--agent <agent> [--resume <id>]] [--on <machine>] [--title <title>] [--command <command>|-- <command>...]"
         }
         "attach" => "attach <session>",
         "takeover" => "takeover <session>",
@@ -486,7 +495,7 @@ mod tests {
     #[test]
     fn every_public_verb_has_one_catalog_entry_and_internal_verbs_stay_private() {
         let rows = catalog();
-        assert_eq!(rows.len(), 73);
+        assert_eq!(rows.len(), 76);
         for row in &rows {
             assert!(!row.word.starts_with('_'));
             assert!(row.usage.starts_with(&row.word));
