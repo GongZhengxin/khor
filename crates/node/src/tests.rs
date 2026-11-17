@@ -363,7 +363,9 @@ fn session_import_addition_preserves_existing_wire_messages() {
     for (request, bytes) in [
         (Request::Sessions, b"\xa8Sessions".as_slice()),
         (
-            Request::Ls { path: "/tmp".into() },
+            Request::Ls {
+                path: "/tmp".into(),
+            },
             b"\x81\xa2Ls\x91\xa4/tmp".as_slice(),
         ),
         (
