@@ -29,7 +29,7 @@ export async function checkAgentSetup(page,mobile,capture){
   await directory.fill(original);
   await body.locator('[data-new-session-directory-missing]').waitFor({state:'detached'});
   await launch.click();
-  for(const name of ['Codex','Claude'])assert.equal(await page.getByRole('option').filter({has:page.getByText(name,{exact:true})}).count(),1,'One GUI entry for '+name);
+  for(const name of ['Codex','Claude','DeepSeek Harness'])assert.equal(await page.getByRole('option').filter({has:page.getByText(name,{exact:true})}).count(),1,'One GUI entry for '+name);
   assert(!(await page.locator('[data-choice-option^="agent:"]').allTextContents()).some(label=>/acp/i.test(label)),'Protocol suffixes never appear in agent choices');
   await page.locator('[data-choice-option="agent:codex"]').click();
   for(const name of ['Codex','Claude']){
@@ -41,6 +41,12 @@ export async function checkAgentSetup(page,mobile,capture){
   }
   await select('reviewer');const other=await read();await other.locator('[data-acp-setup-ready]').waitFor();
   assert.equal((await other.locator('[data-acp-setup-ready]').innerText()).trim(),'已连接 reviewer','Extension-reported names also omit the protocol suffix');
+  await select('DeepSeek Harness');const dsh=await read();await dsh.locator('[data-acp-setup-ready]').waitFor();
+  assert.equal((await dsh.locator('[data-acp-setup-ready]').innerText()).trim(),'已连接 DeepSeek Harness');
+  assert.match(await dsh.locator('[data-dsh-credentials]').innerText(),/所选电脑/);
+  assert.equal(await dsh.getByText('附加工作目录（每行一个，位于执行机器）',{exact:true}).count(),0);
+  assert.equal(await body.locator('[data-new-session-launch] [data-brand-mark="dsh"]').count(),1);
+  await capture('dsh-setup');
   await select('Codex · 终端');assert.equal(await body.locator('[data-acp-setup]').count(),0,'Native terminal never sends ACP setup');
   await select('Codex');
   await page.evaluate(()=>fetch('/api/__ai_preview/acp-setup',{method:'POST',body:JSON.stringify({fail:true})}));
@@ -51,7 +57,7 @@ export async function checkAgentSetup(page,mobile,capture){
   setup=await read();await setup.locator('[data-acp-setup-ready]').waitFor();
   assert.equal(await setup.locator('[role=alert]').count(),0,'Retry clears the prior error');
   const calls=await page.evaluate(async()=>await(await fetch('/api/__ai_preview/acp-setup-calls',{method:'POST',body:'{}'})).json());
-  assert.deepEqual(calls.map(call=>call.agent),['codex','claude','reviewer-acp','codex','codex']);
+  assert.deepEqual(calls.map(call=>call.agent),['codex','claude','reviewer-acp','dsh','codex','codex']);
   assert(calls.every(call=>call.machine===machine&&call.operation==='acp_initialize'),'Setup follows the selected execution machine');
   assert(await body.evaluate(el=>el.scrollWidth<=el.clientWidth),'The actual new session page must fit its viewport');
   await capture('setup-ready');
