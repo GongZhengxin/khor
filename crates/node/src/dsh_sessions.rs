@@ -162,17 +162,31 @@ pub(crate) fn sessions_in(home: &Path) -> Result<Vec<DshSession>, String> {
 /// Answers the text the transcript reader parses: every frame, up to
 /// [`WHOLE`] decompressed bytes — a session longer than that is truncated
 /// rather than refused, because half a conversation is still readable and
-/// the alternative is nothing. The id is matched against each session's
-/// own header, the same scan [`sessions`] uses; nothing is decoded from a
-/// directory name.
+/// the alternative is nothing.
 pub fn conversation(native_id: &str) -> Result<String, String> {
-    let home = home().ok_or("this machine has no DSH home")?;
-    conversation_in(&home, native_id)
+    let file = file_for(native_id)
+        .ok_or_else(|| format!("this machine has no DSH session {native_id}"))?;
+    transcript_at(&file)
 }
 
-/// [`conversation`] against a stated home, so the lookup is testable.
-pub(crate) fn conversation_in(home: &Path, native_id: &str) -> Result<String, String> {
+/// Where one session's file is.
+///
+/// **The directory is named after the session id** (newer stores
+/// `session-<uuid>`, older ones a bare uuid), so the usual lookup is one
+/// path probe per project and needs no decompression at all. A store that
+/// ever names directories differently falls back to matching the headers
+/// — the same scan [`sessions`] does.
+pub(crate) fn file_for(native_id: &str) -> Option<PathBuf> {
+    if native_id.is_empty() || native_id.contains(['/', '\\']) || native_id.contains("..") {
+        return None;
+    }
+    let home = home()?;
     let root = home.join("sessions");
+    for project in dirs(&root) {
+        if let Some(file) = file_in(&project.join(native_id)) {
+            return Some(file);
+        }
+    }
     for project in dirs(&root) {
         for session in dirs(&project) {
             let Some(file) = file_in(&session) else {
@@ -181,17 +195,49 @@ pub(crate) fn conversation_in(home: &Path, native_id: &str) -> Result<String, St
             let Ok(scan) = read_session(&file) else {
                 continue;
             };
-            let Some(header) = scan.header else {
-                continue;
-            };
-            if header.id != native_id {
-                continue;
+            if scan
+                .header
+                .as_ref()
+                .is_some_and(|header| header.id == native_id)
+            {
+                return Some(file);
             }
-            let bytes = decompress(&file, WHOLE)?;
-            return Ok(String::from_utf8_lossy(&bytes).into_owned());
         }
     }
-    Err(format!("this machine has no DSH session {native_id}"))
+    None
+}
+
+/// One session file, decompressed. The reader's half of
+/// [`conversation`], split out so a caller that already has the path (a
+/// content source resolving by id) does not scan the store twice.
+pub(crate) fn transcript_at(file: &Path) -> Result<String, String> {
+    let bytes = decompress(file, WHOLE)?;
+    Ok(String::from_utf8_lossy(&bytes).into_owned())
+}
+
+/// The directory one session recorded, from its header frame alone.
+pub(crate) fn cwd_of(file: &Path) -> Option<String> {
+    read_session(file).ok()?.header.map(|header| header.cwd)
+}
+
+/// One session by id, for a caller that has the id and needs its facts
+/// (an import naming a candidate): the same locator, one small read.
+pub(crate) fn session_of(native_id: &str) -> Option<DshSession> {
+    let file = file_for(native_id)?;
+    let scan = read_session(&file).ok()?;
+    let header = scan.header.as_ref()?;
+    if header.kind != "session" {
+        return None;
+    }
+    Some(DshSession {
+        id: header.id.clone(),
+        cwd: header.cwd.clone(),
+        created_at_ms: header.created_at,
+        title: scan.name(),
+        parent: header.parent_session.clone(),
+        origin: header.origin.clone(),
+        path: file.display().to_string(),
+    })
 }
 
 fn home() -> Option<PathBuf> {
@@ -394,5 +440,69 @@ mod tests {
             found.name().as_deref(),
             Some("Clarifying questions for agent-delete safety design")
         );
+    }
+}
+
+/// End-to-end against **this machine's own DSH store**: an import, the row
+/// it makes, and the content the reader resolves. Ignored by default —
+/// CI has no DSH store — and run with:
+///
+/// ```text
+/// KHOR_DSH_E2E=1 cargo test -p khor-node --lib dsh_observation_e2e -- --ignored --nocapture
+/// ```
+#[cfg(test)]
+mod dsh_observation_e2e {
+    use super::*;
+
+    #[test]
+    #[ignore = "needs a real DSH store on this machine"]
+    fn a_conversation_imports_as_an_observation_and_resolves_to_a_readable_transcript() {
+        if std::env::var_os("KHOR_DSH_E2E").is_none() {
+            return;
+        }
+        let root = std::env::temp_dir().join(format!("khor-dsh-e2e-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        std::fs::create_dir_all(&root).expect("root");
+        let node = crate::Node::open(root.clone()).expect("node");
+        let sessions = sessions().expect("this machine's DSH store");
+        let session = sessions
+            .iter()
+            .find(|session| session.title.is_some())
+            .expect("a named conversation");
+        let candidate = format!("{}{}", crate::DSH_CANDIDATE, session.id);
+        let row = node.import(&candidate).expect("import the candidate");
+
+        // The row is the observation: its own title, its project, and the
+        // category the content road keys on.
+        let views = node.every_session().expect("every session");
+        let view = views
+            .into_iter()
+            .find(|view| view.session.id == row)
+            .expect("the imported row is on the list");
+        assert_eq!(Some(view.session.title.clone()), session.title.clone());
+        assert_eq!(view.session.place.as_deref(), Some(session.cwd.as_str()));
+        assert_eq!(view.session.category.as_deref(), Some("dsh"));
+
+        // The content road answers Available, and the snapshot it wrote
+        // parses into lines with the conversation's own speaker.
+        assert!(matches!(
+            node.session_content(&row, None).expect("content"),
+            crate::session_content::Availability::Available { .. }
+        ));
+        let snapshot = root
+            .join(".khor")
+            .join("cache")
+            .join("dsh")
+            .join(format!("{}.jsonl", crate::live::clean_leaf(&session.id)));
+        let text = std::fs::read_to_string(&snapshot).expect("decompressed snapshot");
+        let lines = crate::adaptor::dsh::lines_of(&text);
+        assert!(!lines.is_empty(), "the snapshot has no readable lines");
+        assert!(
+            lines
+                .iter()
+                .any(|line| line.who == "user" || line.who == "assistant"),
+            "the transcript has a speaker"
+        );
+        let _ = std::fs::remove_dir_all(&root);
     }
 }

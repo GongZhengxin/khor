@@ -3137,8 +3137,59 @@ impl Node {
                 });
             }
         }
+        // **DSH's conversations are local but not an agent's**: nothing
+        // lists them over ACP, so the store it writes is the source. They
+        // come in as read-only observations like any other imported
+        // conversation, with the directory each was recorded in as its
+        // place — which is what the project grouping groups by.
+        if let Ok(sessions) = crate::dsh_sessions::sessions() {
+            for session in sessions {
+                let alias = session_content::Observation::id(
+                    self.device(),
+                    khor_core::ObservationNamespace::Native,
+                    "dsh",
+                    &session.id,
+                );
+                if roster.doc.entry(&alias.0).is_some() {
+                    continue;
+                }
+                out.push(Candidate {
+                    id: format!("{DSH_CANDIDATE}{}", session.id),
+                    form: khor_core::kind::OBSERVE.to_owned(),
+                    home: self.device().hex(),
+                    title: session.title.unwrap_or_default(),
+                    place: Some(session.cwd),
+                    at_ms: session.created_at_ms,
+                    category: Some("dsh".to_owned()),
+                    agent: Some("dsh".to_owned()),
+                    command: None,
+                });
+            }
+        }
         out.sort_by_key(|c| std::cmp::Reverse(c.at_ms));
         Ok(out)
+    }
+
+    /// One DSH candidate onto the list: a read-only observation whose
+    /// content is the conversation in the store it came from.
+    ///
+    /// The candidate carries the session id; its facts (title, directory,
+    /// start) are read back from the store rather than trusted from the
+    /// candidate string, so a stale panel cannot import a wrong name.
+    fn import_dsh_candidate(&self, id: &str) -> Result<SessionId, String> {
+        let native = id.strip_prefix(DSH_CANDIDATE).unwrap_or(id);
+        let session =
+            crate::dsh_sessions::session_of(native).ok_or_else(|| msg::not_a_candidate(id))?;
+        self.register_observation(session_content::Observation::new(
+            self.device(),
+            self.device(),
+            khor_core::ObservationNamespace::Native,
+            "dsh".to_owned(),
+            session.id.clone(),
+            session.title.clone().unwrap_or_default(),
+            Some(session.cwd.clone()),
+            Some(khor_core::Millis(session.created_at_ms.max(0) as u64)),
+        ))
     }
 
     /// Brings one candidate onto the list, by the id
@@ -3148,6 +3199,9 @@ impl Node {
     pub fn import(&self, id: &str) -> Result<SessionId, String> {
         if id.starts_with(ACP_CANDIDATE) {
             return self.import_listed_observation(id);
+        }
+        if id.starts_with(DSH_CANDIDATE) {
+            return self.import_dsh_candidate(id);
         }
         // Any row this machine can see and the list does not have — an
         // ended one too, when somebody names it: the panel offers only
@@ -5997,6 +6051,12 @@ impl KindSurface for LiveKind {
 /// How an ACP conversation is spelled among the candidates: it is not a
 /// session yet. Its opaque payload pins the answer's home, agent and exact ID.
 pub const ACP_CANDIDATE: &str = "acp:";
+
+/// How a DSH conversation is spelled among the candidates. DSH is not a
+/// registered agent, so nothing lists its conversations over ACP — the
+/// candidate names the session in DSH's own store, and importing it makes
+/// the usual read-only observation.
+pub const DSH_CANDIDATE: &str = "dsh:";
 
 /// One thing [`Node::find`] found: what it is, how a face jumps to it,
 /// what a person reads, and where it lives.
