@@ -147,7 +147,7 @@ export function AgentFleetSection({ devices }: { devices: DeviceRow[] }) {
               className="flex flex-col gap-0 px-row py-in"
             >
               <span className="flex flex-wrap items-baseline gap-x-in text-body">
-                <span>{project(conversation.cwd)}</span>
+                <span>{conversation.title ?? project(conversation.cwd)}</span>
                 {conversation.parent !== null && (
                   <span className="text-callout text-muted-foreground">↳</span>
                 )}

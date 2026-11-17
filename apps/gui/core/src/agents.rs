@@ -330,6 +330,10 @@ pub struct DshConversation {
     pub id: String,
     pub cwd: String,
     pub created_at_ms: i64,
+    /// The name the person sees: DSH's last `session/title`, or a
+    /// subagent's descriptor label. `None` when the conversation was never
+    /// named — a row then shows its directory instead.
+    pub title: Option<String>,
     /// A subagent's session names the session it was delegated from.
     pub parent: Option<String>,
     pub origin: Option<String>,
@@ -347,6 +351,7 @@ pub fn dsh_conversations() -> Vec<DshConversation> {
             id: session.id,
             cwd: session.cwd,
             created_at_ms: session.created_at_ms,
+            title: session.title,
             parent: session.parent,
             origin: session.origin,
         })

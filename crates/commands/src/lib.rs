@@ -5503,8 +5503,18 @@ fn agents(rest: &[String]) -> Result<(), String> {
                     // A subagent's session names the one it came from; printed
                     // after the row rather than indented, because the parent may
                     // be an older session the reader never sees.
-                    Some(parent) => println!("{}\t{}\t↳ {parent}", session.id, session.cwd),
-                    None => println!("{}\t{}", session.id, session.cwd),
+                    Some(parent) => println!(
+                        "{}\t{}\t{}\t↳ {parent}",
+                        session.id,
+                        session.title.as_deref().unwrap_or(""),
+                        session.cwd
+                    ),
+                    None => println!(
+                        "{}\t{}\t{}",
+                        session.id,
+                        session.title.as_deref().unwrap_or(""),
+                        session.cwd
+                    ),
                 }
             }
             Ok(())

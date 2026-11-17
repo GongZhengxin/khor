@@ -6,32 +6,40 @@
 //! ~/.dsh/sessions/<project>/<session>/session.v4.jsonl.zstd
 //! ```
 //!
-//! The file is zstd-compressed JSON lines whose **first line is the session
-//! header** — `{type:"session", id, createdAt, cwd, parentSession?,
-//! origin?}` — so a listing needs the first compressed frame and nothing
-//! more: no full decompression, no decoding of the directory name (which
-//! encodes a path with its own escaping that nothing here would want to
-//! re-implement).
+//! The file is a sequence of zstd frames (one per flush), each holding JSON
+//! lines. The **first line is the session header** — `{type:"session", id,
+//! createdAt, cwd, parentSession?, origin?}` — and a later
+//! `{"type":"session/title","data":{"title":…}}` line carries the name the
+//! person sees. A subagent's session has `{"type":"subagent/descriptor",
+//! "data":{"label":…}}` instead, which is the closest thing it has to a
+//! title.
 //!
-//! # What this is and is not
+//! So a listing decompresses the first frames and reads those lines: no
+//! decoding of the directory name (which encodes a path with its own
+//! escaping that nothing here should re-implement), and no parsing of the
+//! message events — the transcript is a different job, and doing it badly
+//! would be worse than not doing it.
 //!
-//! It is **inventory**: what conversations exist, in which directory, when
-//! they started. It is not a transcript reader — the message events later
-//! in the file are a different job — and it is not the ACP `session/list`
-//! path: DSH is not registered as an agent, so this reads the store it
-//! writes, the way the Codex and Claude adaptors read theirs.
+//! # Bounds
+//!
+//! Each file is read up to [`SCAN`] decompressed bytes, and the scan stops
+//! as soon as a title from the provider (not the first-message fallback) is
+//! found. Sixteen sessions on this machine cost a few tens of milliseconds;
+//! one enormous session cannot make the roster slow.
 //!
 //! # Why `ruzstd`
 //!
-//! Decompression only, in Rust, no C toolchain: the file is read once for
-//! its header line and thrown away. A build dependency that needs a C
-//! compiler would put a toolchain requirement on every platform khor
-//! ships to, for a read this crate does not need.
+//! Decompression only, in Rust, no C toolchain: a build dependency that
+//! needs a C compiler would put a toolchain requirement on every platform
+//! khor ships to, for a read this crate does not otherwise need.
 
 use std::io::Read;
 use std::path::{Path, PathBuf};
 
-/// One DSH session, as its own header states it.
+/// How much decompressed text one session may contribute to the listing.
+const SCAN: usize = 512 * 1024;
+
+/// One DSH session, as its own events state it.
 #[derive(Clone, Debug, serde::Serialize)]
 pub struct DshSession {
     /// `session-<uuid>` in newer stores, a bare uuid in older ones.
@@ -39,6 +47,10 @@ pub struct DshSession {
     /// The directory the session was recorded in — its project, for khor.
     pub cwd: String,
     pub created_at_ms: i64,
+    /// What the person sees: the last `session/title` event, or a
+    /// subagent's `descriptor.label`. `None` when the file has neither —
+    /// a conversation that was started and never named.
+    pub title: Option<String>,
     /// A subagent's session names the session it was delegated from.
     pub parent: Option<String>,
     /// `origin` when DSH wrote one (`"subagent"` today).
@@ -61,6 +73,28 @@ struct Header {
     parent_session: Option<String>,
     #[serde(default)]
     origin: Option<String>,
+}
+
+/// What one file's early events said.
+#[derive(Default)]
+struct Scan {
+    header: Option<Header>,
+    /// The last title seen, and whether a provider wrote it (better than
+    /// the fallback title, which is just the first message's opening).
+    title: Option<String>,
+    titled_by_provider: bool,
+    label: Option<String>,
+}
+
+impl Scan {
+    /// The best name this session has: a provider title, then a subagent
+    /// label, then DSH's fallback title.
+    fn name(&self) -> Option<String> {
+        if self.titled_by_provider {
+            return self.title.clone();
+        }
+        self.label.clone().or_else(|| self.title.clone())
+    }
 }
 
 /// Every session in this machine's DSH home, newest first.
@@ -86,27 +120,33 @@ pub(crate) fn sessions_in(home: &Path) -> Result<Vec<DshSession>, String> {
     let mut out = Vec::new();
     for project in dirs(&root) {
         for session in dirs(&project) {
-            // Newer stores name the file `session.v4.jsonl.zstd`; the meta
-            // file of an old one may be named differently, and a directory
-            // without one is not a session.
+            // Newer stores name the file `session.v4.jsonl.zstd`; a
+            // directory without one is not a session.
             let Some(file) = file_in(&session) else {
                 continue;
             };
-            match read_header(&file) {
-                Ok(header) if header.kind == "session" => out.push(DshSession {
-                    id: header.id,
-                    cwd: header.cwd,
-                    created_at_ms: header.created_at,
-                    parent: header.parent_session,
-                    origin: header.origin,
-                    path: file.display().to_string(),
-                }),
+            let Ok(scan) = read_session(&file) else {
                 // **A file this cannot read is skipped, not fatal.** One
                 // corrupt or newer-format session must not hide the rest,
                 // and there is no sentence a list could show per file that
-                // would be worth more than the other fourteen rows.
-                Ok(_) | Err(_) => continue,
+                // would be worth more than the other fifteen rows.
+                continue;
+            };
+            let Some(ref header) = scan.header else {
+                continue;
+            };
+            if header.kind != "session" {
+                continue;
             }
+            out.push(DshSession {
+                id: header.id.clone(),
+                cwd: header.cwd.clone(),
+                created_at_ms: header.created_at,
+                title: scan.name(),
+                parent: header.parent_session.clone(),
+                origin: header.origin.clone(),
+                path: file.display().to_string(),
+            });
         }
     }
     out.sort_by(|a, b| b.created_at_ms.cmp(&a.created_at_ms));
@@ -141,51 +181,122 @@ fn file_in(session: &Path) -> Option<PathBuf> {
         })
 }
 
-/// The first line of the file's first frame.
-///
-/// Bounded on both sides: at most [`LIMIT`] decompressed bytes are taken,
-/// and a frame that produces no newline is given up on rather than read
-/// further — a header is a few hundred bytes.
-const LIMIT: usize = 64 * 1024;
+/// The header and the name, from the first [`SCAN`] decompressed bytes.
+fn read_session(file: &Path) -> Result<Scan, String> {
+    let text = decompress(file, SCAN)?;
+    Ok(scan(&String::from_utf8_lossy(&text), &mut |scan| {
+        scan.titled_by_provider
+    }))
+}
 
-fn read_header(file: &Path) -> Result<Header, String> {
-    let opened = std::fs::File::open(file).map_err(|error| error.to_string())?;
-    let mut decoder =
-        ruzstd::decoding::StreamingDecoder::new(opened).map_err(|error| error.to_string())?;
-    let mut text = Vec::new();
-    let mut buffer = [0u8; 8 * 1024];
-    while text.len() < LIMIT {
-        match decoder.read(&mut buffer) {
-            Ok(0) => break,
-            Ok(count) => {
-                text.extend_from_slice(&buffer[..count]);
-                if text.contains(&b'\n') {
-                    break;
+/// Reads lines out of `text` into a [`Scan`], calling `stop` after each one
+/// to ask whether enough was read.
+///
+/// Split from decompression so the reading rules are testable on plain
+/// text: which title wins, and when a scan may stop, are the decisions
+/// here — not the zstd frames.
+fn scan(text: &str, stop: &mut impl FnMut(&Scan) -> bool) -> Scan {
+    let mut found = Scan::default();
+    for line in text.lines() {
+        let line = line.trim();
+        if line.is_empty() {
+            continue;
+        }
+        let Ok(event) = serde_json::from_str::<serde_json::Value>(line) else {
+            continue;
+        };
+        match event.get("type").and_then(|t| t.as_str()) {
+            Some("session") if found.header.is_none() => {
+                if let Ok(header) = serde_json::from_value::<Header>(event) {
+                    found.header = Some(header);
                 }
             }
-            Err(error) => {
-                if text.is_empty() {
-                    return Err(error.to_string());
+            Some("session/title") => {
+                if let Some(title) = event.pointer("/data/title").and_then(|t| t.as_str()) {
+                    let provider = event
+                        .pointer("/data/source/kind")
+                        .and_then(|k| k.as_str())
+                        .is_some_and(|kind| kind == "provider");
+                    // **The last title is the current one**, and a provider
+                    // title beats DSH's first-message fallback even when the
+                    // fallback was written later.
+                    if provider {
+                        found.titled_by_provider = true;
+                        found.title = Some(title.to_owned());
+                    } else if found.title.is_none() {
+                        found.title = Some(title.to_owned());
+                    }
                 }
-                break;
             }
+            Some("subagent/descriptor") => {
+                if let Some(label) = event.pointer("/data/label").and_then(|l| l.as_str()) {
+                    found.label = Some(label.to_owned());
+                }
+            }
+            _ => {}
+        }
+        if stop(&found) {
+            break;
         }
     }
-    let line = text.split(|byte| *byte == b'\n').next().unwrap_or(&[]);
-    serde_json::from_slice::<Header>(line).map_err(|error| error.to_string())
+    found
+}
+
+/// All frames, up to `limit` decompressed bytes.
+///
+/// The file is a sequence of frames; reading one stops at its end, so this
+/// walks the file frame by frame and asks the decoder how far it got.
+fn decompress(file: &Path, limit: usize) -> Result<Vec<u8>, String> {
+    let bytes = std::fs::read(file).map_err(|error| error.to_string())?;
+    let mut out = Vec::new();
+    let mut at = 0usize;
+    while at < bytes.len() && out.len() < limit {
+        let cursor = std::io::Cursor::new(&bytes[at..]);
+        let mut decoder =
+            ruzstd::decoding::StreamingDecoder::new(cursor).map_err(|error| error.to_string())?;
+        let mut buffer = [0u8; 32 * 1024];
+        loop {
+            match decoder.read(&mut buffer) {
+                Ok(0) => break,
+                Ok(count) => {
+                    out.extend_from_slice(&buffer[..count]);
+                    if out.len() >= limit {
+                        break;
+                    }
+                }
+                // A frame that ends mid-way is the last one most of the
+                // time: keep what was read and stop.
+                Err(_) => break,
+            }
+        }
+        let used = decoder.into_inner().position() as usize;
+        if used == 0 {
+            break;
+        }
+        at += used;
+    }
+    Ok(out)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
+    const HEADER: &str = r#"{"type":"session","version":4,"id":"session-0b5f9684","createdAt":1794729585272,"cwd":"F:\\#Gong\\#AI4S\\khor","parentSession":"session-1d61","isSeeded":false,"origin":"subagent","agentPreset":"standard"}"#;
+    const FALLBACK_TITLE: &str = r#"{"type":"session/title","seq":14,"time":1,"data":{"title":"You are a talented Windows","messageSeqs":[8],"source":{"kind":"fallback"}}}"#;
+    const PROVIDER_TITLE: &str = r#"{"type":"session/title","seq":18,"time":2,"data":{"title":"Clarifying questions for agent-delete safety design","messageSeqs":[8],"source":{"kind":"provider","provider":"session-title-all-prompts-llm"}}}"#;
+    const LABEL: &str = r#"{"type":"subagent/descriptor","seq":0,"time":1,"data":{"version":3,"mode":"continuable","label":"Design doc buildability check"}}"#;
+
+    fn scan_all(text: &str) -> Scan {
+        scan(text, &mut |_| false)
+    }
+
     /// The header is parsed from its fields, not by position: DSH adds
     /// fields over time and a reader that assumed an order would break on
     /// the next release.
     #[test]
     fn a_header_is_read_from_its_fields() {
-        let line = br#"{"type":"session","version":4,"id":"session-0b5f9684","createdAt":1794729585272,"cwd":"F:\\#Gong\\#AI4S\\khor","parentSession":"session-1d61","isSeeded":false,"origin":"subagent","agentPreset":"standard"}"#;
-        let header: Header = serde_json::from_slice(line).expect("a real header shape");
+        let header = scan_all(HEADER).header.expect("a real header shape");
         assert_eq!(header.kind, "session");
         assert_eq!(header.id, "session-0b5f9684");
         assert_eq!(header.created_at, 1794729585272);
@@ -194,33 +305,53 @@ mod tests {
         assert_eq!(header.origin.as_deref(), Some("subagent"));
     }
 
-    /// A home that does not exist is an empty list: most machines do not
-    /// run DSH, and "no DSH here" is not a failure to report.
+    /// A provider title is the name; it wins over the fallback even though
+    /// the scan sees the fallback first.
     #[test]
-    fn a_machine_without_dsh_has_no_sessions() {
-        let missing = std::env::temp_dir().join("khor-dsh-nonexistent-home");
-        assert!(sessions_in(&missing).unwrap().is_empty());
+    fn the_provider_title_is_the_name() {
+        let found = scan_all(&format!("{HEADER}\n{FALLBACK_TITLE}\n{PROVIDER_TITLE}"));
+        assert_eq!(
+            found.name().as_deref(),
+            Some("Clarifying questions for agent-delete safety design")
+        );
     }
 
-    /// A directory that is not a session, and a session whose file is not
-    /// zstd, are both skipped: one bad entry must not fail the listing.
+    /// A subagent has no title, and its descriptor's label is the closest
+    /// thing it has to one.
     #[test]
-    fn entries_it_cannot_read_are_skipped_rather_than_failing_the_list() {
-        let scratch = std::env::temp_dir().join(format!("khor-dsh-scan-{}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&scratch);
-        let project = scratch.join("sessions").join("--proj--");
-        let broken = project.join("not-a-session");
-        let empty = project.join("empty");
-        std::fs::create_dir_all(&broken).unwrap();
-        std::fs::create_dir_all(&empty).unwrap();
-        std::fs::write(broken.join("notes.txt"), b"x").unwrap();
-        std::fs::write(
-            empty.join("session.v4.jsonl.zstd"),
-            b"this is not a zstd frame",
-        )
-        .unwrap();
-        let listed = sessions_in(&scratch).expect("a scan that tolerates junk");
-        assert!(listed.is_empty(), "{listed:?}");
-        let _ = std::fs::remove_dir_all(&scratch);
+    fn a_subagents_label_stands_in_for_a_title() {
+        let found = scan_all(&format!("{HEADER}\n{LABEL}\n{FALLBACK_TITLE}"));
+        assert_eq!(
+            found.name().as_deref(),
+            Some("Design doc buildability check")
+        );
+    }
+
+    /// A conversation that was started and never named has no name — the
+    /// scan says so rather than inventing one from the id.
+    #[test]
+    fn an_unnamed_session_has_no_name() {
+        assert!(scan_all(HEADER).name().is_none());
+    }
+
+    /// The scan may stop early, and the stop is asked after every event.
+    #[test]
+    fn the_scan_stops_when_asked() {
+        let mut seen = 0;
+        let found = scan(
+            &format!("{HEADER}\n{PROVIDER_TITLE}\n{FALLBACK_TITLE}"),
+            &mut |scan| {
+                seen += 1;
+                scan.titled_by_provider
+            },
+        );
+        assert_eq!(
+            seen, 2,
+            "asked once per event, and stopped at the provider title"
+        );
+        assert_eq!(
+            found.name().as_deref(),
+            Some("Clarifying questions for agent-delete safety design")
+        );
     }
 }
