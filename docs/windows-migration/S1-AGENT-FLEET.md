@@ -306,3 +306,26 @@ detect 与 launch 留在 `agent_fleet`（它们是查找与 argv，不是对话�
 
 **两条测试守住矩阵，双向**：行上每个徽标都必须是本模块实现了的动词；本模块实现的每个动词都必须在行上显示。
 第二条正是能抓住那次 `false` 的测试。
+
+### 2.11 DSH 会话进入导入与项目列表（提交 `d266014e`）
+
+之前 DSH 只在清单页可见；它不在会话列表里，所以项目分组看不到、聊天面板也没有路。现在它们是
+**普通的导入会话**，`place` 就是每段被记录时的目录——项目分组正是按它分的。三处：
+
+1. **候选**：`import_candidates` 把 DSH 仓库里每段会话列为只读候选（`dsh:<session>`），已导入的跳过。
+   DSH 不是注册 agent，没有 ACP `session/list`，所以来源就是它写的仓库。
+2. **导入**：`import` 路由 `dsh:` 到 `import_dsh_candidate`，生成通常的 `Observation`（Native 命名空间、
+   agent `dsh`），**标题/目录/起始时间从仓库读回**而不是信任候选字符串——旧面板不能导入错名字。
+3. **阅读**：`Provider::Dsh` 加入 claude/codex。它的仓库是 zstd 帧不是 JSONL，所以
+   `NativeTranscript::resolve` 给它一份 `{root}/.khor/cache/dsh/` 下的解压快照，每次 resolve 重写
+   （刷新视图就能看到最新一轮）；之后 parser、协议块、binding 与任何厂商同一条路。定位先按
+   "目录名=会话 id" 单路径探测，命名不同再回退到比对头帧。
+
+**验证**（隔离 `KHOR_HOME`，真实 DSH 仓库）：
+```
+$ khor import            → 16 个 dsh 候选（标题/项目/年龄/`dsh:` id）
+$ khor import dsh:session-146aa58b-… → observe/42a4d2c2…
+$ khor sessions          → Probe request READY reply only（该行）
+```
+另有 `#[ignore]` 端到端测试（`KHOR_DSH_E2E=1 … --ignored`，0.54 s）：导入 → 行带标题/项目/category=dsh →
+`session_content` 返回 Available → 快照解析出有说话人的行。`session_content` 全套 41 个测试仍过。
