@@ -430,7 +430,11 @@ fn try_hold_loopback(host: &str, port: u16, proxy: &str) -> Result<Option<Loopba
             loop {
                 tokio::select! {
                     accepted = listener.accept() => {
-                        let Ok((sock, _)) = accepted else { break };
+                        let (sock, _) = match accepted {
+                            Ok(peer) => peer,
+                            Err(error) if recoverable_loopback_accept(&error) => continue,
+                            Err(_) => break,
+                        };
                         let (target, proxy) = (target.clone(), proxy.clone());
                         pipes.spawn(async move { let _ = through(sock, &target, &proxy).await; });
                     }
@@ -446,6 +450,19 @@ fn try_hold_loopback(host: &str, port: u16, proxy: &str) -> Result<Option<Loopba
     });
     loops.insert(port, std::sync::Arc::downgrade(&held));
     Ok(Some(LoopbackLease(held)))
+}
+
+fn recoverable_loopback_accept(error: &std::io::Error) -> bool {
+    use std::io::ErrorKind;
+    // A canceled queued connection must not retire a listener with live leases.
+    // On Darwin Mio can accept it, then fail to decode its peer address. That
+    // InvalidInput has no OS errno; an actual OS EINVAL remains fatal.
+    matches!(
+        error.kind(),
+        ErrorKind::ConnectionAborted | ErrorKind::ConnectionReset | ErrorKind::Interrupted
+    ) || (cfg!(any(target_os = "macos", target_os = "ios"))
+        && error.kind() == ErrorKind::InvalidInput
+        && error.raw_os_error().is_none())
 }
 
 pub fn loopback_held(port: u16) -> bool {
@@ -689,7 +706,12 @@ mod loopback_tests {
     #[ignore = "requires KHOR_WEBKIT_PROBE, an isolated native WKWebView fixture"]
     async fn native_webkit_reaches_the_borrowed_loopback_origin() {
         let program = std::env::var_os("KHOR_WEBKIT_PROBE").expect("native fixture required");
-        for host in ["127.0.0.1", "localhost", "[::1]"] {
+        for (host, canceled) in [
+            ("127.0.0.1", 0),
+            ("localhost", 0),
+            ("[::1]", 0),
+            ("[::1]", 16),
+        ] {
             let proxy = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
             let proxy_port = proxy.local_addr().unwrap().port();
             let free = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
@@ -773,6 +795,20 @@ mod loopback_tests {
             let lease = hold_loopback(host, port, &format!("127.0.0.1:{proxy_port}"))
                 .await
                 .unwrap();
+            // Queue real canceled preconnections before this current-thread
+            // runtime polls accept, then require an ordinary WebKit load.
+            for _ in 0..canceled {
+                let address = std::net::SocketAddr::from((std::net::Ipv6Addr::LOCALHOST, port));
+                let stream = std::net::TcpStream::connect_timeout(
+                    &address,
+                    std::time::Duration::from_secs(2),
+                )
+                .unwrap();
+                stream.set_nonblocking(true).unwrap();
+                let stream = tokio::net::TcpStream::from_std(stream).unwrap();
+                stream.set_zero_linger().unwrap();
+                drop(stream);
+            }
             let mut process = tokio::process::Command::new(&program);
             process.args([
                 "default",
@@ -793,7 +829,7 @@ mod loopback_tests {
             answering.abort();
             let _ = answering.await;
             let facts = facts.lock().unwrap();
-            eprintln!("native loopback {host}: {facts:?}");
+            eprintln!("native loopback {host}, canceled={canceled}: {facts:?}");
             assert_eq!(
                 result["body"],
                 "BORROWED_EXIT",
