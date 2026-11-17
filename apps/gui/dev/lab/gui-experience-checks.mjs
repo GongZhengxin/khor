@@ -1,5 +1,5 @@
 import {checkCommandTab} from './child-command-checks.mjs';
-import {readFile,writeFile} from 'node:fs/promises';
+import {writeFile} from 'node:fs/promises';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 export async function checkGuiExperience(browser,{port,report,engine}){
@@ -51,8 +51,12 @@ export async function checkGuiExperience(browser,{port,report,engine}){
    return node&&Math.abs(node.getBoundingClientRect().top-root.getBoundingClientRect().top-anchor.top)<3;
   },anchor);
   await page.locator('[data-chat-message] [data-message-actions]').first().waitFor();
-  await page.locator('[data-lab-add]').click();await page.locator('[role=menuitem][data-history-find-open]').click();
+  await page.locator('[data-lab-session-settings]:visible').click();
+  assert.equal(await page.locator('[data-lab-preferences] [data-history-find-open],[data-lab-preferences] [data-history-readable-export]').count(),0,'Conversation menus do not contain the removed find/export entries');
+  await page.keyboard.press('Escape');
+  await input.press(await page.evaluate(()=>/Mac|iPhone|iPad/.test(navigator.userAgent))?'Meta+f':'Control+f');
   await page.locator('[data-history-search] input').waitFor();
+  await page.waitForFunction(()=>document.activeElement?.matches('[data-history-search] input'));
   await page.screenshot({path:path.join(report,`gui-experience-${engine}.png`)});
   await page.keyboard.press('Escape');
   await api('__ai_preview/settings-hold',{hold:true});
@@ -75,10 +79,7 @@ export async function checkGuiExperience(browser,{port,report,engine}){
   await api('__ai_preview/settings-refuse',{refuse:false});await refusal.getByRole('button',{name:'重试'}).click();
   await refusal.waitFor({state:'detached'});
   await page.waitForFunction(()=>document.querySelector('[data-lab-session-settings]')?.textContent.includes('Sonnet'));
-  const download=page.waitForEvent('download');
-  await page.locator('[data-lab-add]').click();await page.locator('[data-history-readable-export]').click();
-  const exported=await download,body=await readFile(await exported.path(),'utf8');
-  assert(body.includes('修一下编辑器')&&!body.includes('iVBOR'),'Readable export reads canonical text and media names, never encoded payloads');
+  await page.keyboard.press('Escape');
   await api('__ai_preview/poll-mode',{mode:'fail'});
   await page.locator('[data-session-tabs] [data-tab-notice="rejoin"]').waitFor();
   assert.equal(await input.inputValue(),'Draft belongs to the original session');

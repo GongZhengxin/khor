@@ -3,7 +3,6 @@ import {agentPresentation} from '@/lib/acp-session';
 import {AttachmentPicker,AttachmentDestination} from "@/views/TermFiles";
 import { raiseKeyboard } from "@/lib/soft-keyboard";
 import {ScrollToBottom} from '@/components/ScrollToBottom';
-import {useReadableHistoryExport} from '@/hooks/use-readable-history-export';
 import {ReadFreshness} from '@/lib/read-freshness';
 import {useConfirmedSetting} from '@/hooks/use-confirmed-setting';
 import {MessageActions} from '@/components/MessageActions';
@@ -642,7 +641,6 @@ export function ChatView({
   const [historyBinding, setHistoryBinding] = useState<{ id: string; binding: string } | null>(null);
   const sourceBinding = historyBinding?.id === id && (!still || historyBinding.binding === binding) ? historyBinding.binding : null;
   const historyExport = useHistoryExport(id, sourceBinding);
-  const readableExport=useReadableHistoryExport(id,sourceBinding,category??"对话");
   const [findingHistory, setFindingHistory] = useState(false);
   const stopHistorySearch = useRef<(() => void) | null>(null);
   const historyMatch = useRef<FindHit | null>(null);
@@ -1413,7 +1411,7 @@ export function ChatView({
         return;
       }
       setDropping(false);
-      if (over && e.payload.paths.length > 0) files.addLocalPaths(e.payload.paths);
+      if (over && e.payload.paths.length > 0) {files.addLocalPaths(e.payload.paths);setAttachmentsOpen(true);}
     });
     // `files`' adders are fresh closures each render; the subscription
     // is per conversation, and the adders read only setters and `id`.
@@ -1633,11 +1631,11 @@ export function ChatView({
         if (!canAttach || e.dataTransfer.files.length === 0) return;
         e.preventDefault();
         files.addFiles([...e.dataTransfer.files]);
+        setAttachmentsOpen(true);
       }}
     >
       <span className="sr-only" role="status">{turnStatus}</span>
       <div className="relative flex min-h-0 flex-1 flex-col">
-      {readableExport.notice&&<div role="status" className="flex items-center gap-in px-row text-caption">{readableExport.notice}{readableExport.busy&&<Button size="sm" variant="ghost" onClick={readableExport.cancel}>取消</Button>}</div>}
       {!findingHistory && historyExport.notice && <p role="status" className="px-row text-caption">{historyExport.notice}</p>}
       {sourceBinding && <HistorySearch key={`${id}:${sourceBinding}:${historyEpoch}`} id={id} binding={sourceBinding}
         stop={stopHistorySearch} exporter={historyExport} open={findingHistory} onClose={() => { setFindingHistory(false); setMatchedEntry(null); }} onJump={jumpHistoryMatch} />}
@@ -1987,11 +1985,7 @@ export function ChatView({
             <Composer
               lead={
                 <SessionAdd
-                  destination={undefined}
                   onAttach={canAttach&&!files.busy ? () => setAttachmentsOpen(true) : undefined}
-                  options={addOptions}
-                  onFind={sourceBinding?()=>setFindingHistory(true):undefined}
-                  onExport={readableExport.available?readableExport.run:undefined} exportBusy={readableExport.busy}
                 />
               }
               // The seat gives way while there is text to send, where the

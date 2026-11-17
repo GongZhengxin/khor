@@ -309,7 +309,7 @@ export function MachineChat({ id, active = true, onSession, sessions = [] }: { i
         <PendingChips key={id} items={pending} onRemove={attachments.remove} onRetry={key=>{attachments.retry(key);setRefused(null);}} onAdd={attach} busy={sending||attachments.busy} machine={home?.name??landsOn} here={attachmentMachine===null}/>
         <Composer
           lead={
-            <SessionAdd onAttach={attach} options={[]} />
+            <SessionAdd onAttach={attach} />
           }
           trail={
             // Drawn only once there is something to send (progressive

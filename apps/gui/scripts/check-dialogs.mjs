@@ -150,6 +150,8 @@ if(process.argv.includes('--serve')){
       if(boxes.narrow){
         assert.ok(boxes.leading.right<=boxes.title.left+1&&boxes.title.right<=boxes.primary.left+1,'Long title cannot overlap actions');
         assert.ok(Math.abs((boxes.title.left+boxes.title.right-boxes.body.left-boxes.body.right)/2)<1,'Mobile title stays on the screen centre despite different action widths');
+        const submit=await task.locator('[data-task-action="primary"] button').evaluate(button=>{const b=button.getBoundingClientRect(),face=getComputedStyle(button,'::before'),root=getComputedStyle(document.documentElement);return {height:b.height,width:b.width,face:parseFloat(face.height),touch:parseFloat(root.getPropertyValue('--touch')),compact:parseFloat(root.getPropertyValue('--ctl-lg'))};});
+        assert.ok(submit.height>=submit.touch&&submit.width>=submit.touch,'Task submit keeps its full touch target');assert.equal(submit.face,submit.compact,'Shared task submit paints the compact face');
       }
       if(report)await task.screenshot({path:path.join(report,`task-frame-${size}.png`),animations:'disabled'});
       await input.press('Escape');
