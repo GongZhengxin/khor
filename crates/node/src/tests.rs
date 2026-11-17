@@ -316,7 +316,16 @@ fn dsh_is_available_without_registration_and_explicit_launches_still_win() {
         args: vec!["--profile".into(), "acp".into()],
     };
     assert_eq!(n.agent_or_refuse("dsh").unwrap(), expected);
-    assert_eq!(n.agents().unwrap(), vec![("dsh".into(), expected.clone())]);
+    let defaults = n.agents().unwrap();
+    assert_eq!(
+        defaults.iter().filter(|(name, _)| name == "dsh").count(),
+        1,
+        "the default catalog exposes one DSH identity"
+    );
+    assert_eq!(
+        defaults.iter().find(|(name, _)| name == "dsh").unwrap().1,
+        expected
+    );
     assert!(n.agents_loaded().unwrap().doc.all().is_empty());
     n.register_agent(
         "dsh",
@@ -324,9 +333,26 @@ fn dsh_is_available_without_registration_and_explicit_launches_still_win() {
     )
     .unwrap();
     assert_eq!(n.agent_or_refuse("dsh").unwrap().command, "/custom/dsh");
-    assert_eq!(n.agents().unwrap().len(), 1, "one identity, one launch");
+    let overridden = n.agents().unwrap();
+    assert_eq!(
+        overridden.len(),
+        defaults.len(),
+        "an override adds no identity"
+    );
+    assert_eq!(
+        overridden
+            .iter()
+            .filter(|(name, _)| name != "dsh")
+            .collect::<Vec<_>>(),
+        defaults
+            .iter()
+            .filter(|(name, _)| name != "dsh")
+            .collect::<Vec<_>>(),
+        "other default launches are unchanged"
+    );
     n.forget_agent("dsh").unwrap();
     assert_eq!(n.agent("dsh").unwrap(), Some(expected));
+    assert_eq!(n.agents().unwrap(), defaults);
     assert!(n.agents_loaded().unwrap().doc.all().is_empty());
 }
 
