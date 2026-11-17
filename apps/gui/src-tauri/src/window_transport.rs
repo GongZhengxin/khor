@@ -72,11 +72,20 @@ pub fn attach(app: tauri::AppHandle) {
 ///
 /// `None` means "not a window verb, ask the store's table".
 fn window_verb(cmd: &str) -> Option<Result<String, String>> {
+    // **`get_window`, not `get_webview_window`.** A Tauri window that has
+    // child webviews at it — the browsing face is added with `add_child`
+    // (`lib.rs`) — is no longer returned by `get_webview_window(label)`:
+    // that call answers `None`, so every verb here answered "no main
+    // window" and the page's own three buttons did nothing at all, with the
+    // error silently dropped (`Region.tsx` ignores the answer). The menu
+    // code had already met this and asks for the `Window` instead; this is
+    // the same window, and it exists whether or not anything is embedded in
+    // it.
     let window = || {
         WINDOW
             .get()
             .ok_or_else(|| "the window is not attached yet".to_owned())?
-            .get_webview_window("main")
+            .get_window("main")
             .ok_or_else(|| "no main window".to_owned())
     };
     let answer = match cmd {
@@ -102,14 +111,15 @@ fn window_verb(cmd: &str) -> Option<Result<String, String>> {
         // belongs: the main window's own `Destroyed` handler destroys the
         // auxiliaries, which is what used to keep the process alive.
         "window_close" => window().and_then(|w| w.close().map_err(|e| e.to_string())),
-        // **Closing past the guard**, for the case where the face has
-        // already asked itself. The close button is the page's own, and the
-        // page knows whether there is a draft to protect
-        // (`lib/drafts`'s count) — so it decides: no draft, destroy now;
-        // draft, show the dialog and come back through `window_close`.
-        // Going round the close-requested event for the simple case is not
-        // a way past the guard; it is the same decision taken where the
-        // answer is known, and it is what makes the button reliable.
+        // **Closing past the event, not past the guard.** The close button
+        // is the page's own, and the page already counts unsaved drafts
+        // (`lib/drafts`). With none, it destroys the window here; with one,
+        // it goes through `window_close` and the dialog. The
+        // `close-requested` event turned out not to finish reliably — five
+        // release launches, one exit, and the failing rounds had no
+        // "main window was closed" line at all, so the window was never
+        // destroyed — while this path measured five of five in under a
+        // second. Same decision, taken where the answer is known.
         "window_destroy" => window().and_then(|w| w.destroy().map_err(|e| e.to_string())),
         // **Dragging.** Tauri's own `drag.js` calls
         // `invoke('plugin:window|start_dragging')` on a `data-tauri-drag-region`

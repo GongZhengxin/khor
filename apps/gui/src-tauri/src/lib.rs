@@ -5741,23 +5741,23 @@ pub fn run() {
                     tauri::WindowEvent::Destroyed => {
                         let stamp = jiff::Zoned::now().strftime("%Y-%m-%d %H:%M:%S").to_string();
                         eprintln!("[{stamp}] khor app: the main window was closed");
-                        // **Destroy the rest, do not ask them to close.**
-                        //
-                        // Tauri ends an app when its last window goes, and
-                        // this app's exit handler then flushes the agent
-                        // runtime (`RunEvent::Exit`, up to the resident's
-                        // 15-second retirement wait). The window that used
-                        // to keep the process alive was an auxiliary whose
-                        // own `close()` is a *request* — the same request
-                        // the draft guard can veto — so a settings window,
-                        // an editor or the menu overlay could sit there
-                        // refusing to go, and with it the whole process.
-                        // `destroy` is immediate and is what this moment
-                        // asks: the main window has already gone through the
-                        // guard, so the session is over.
+                        // **The overlay is destroyed; the others are
+                        // asked.** Tauri ends an app when its last window
+                        // goes, and a window that refuses to close keeps
+                        // the process alive — that is how a windowless
+                        // `khor-gui` came to hold port 1432. But an editor
+                        // (`code:*`) or the settings window may hold
+                        // unsaved text, and this is not the moment to
+                        // decide that for somebody: they are `close`d, so
+                        // their own guard runs. The menu overlay carries no
+                        // data at all, so it is destroyed.
                         for (label, w) in window.app_handle().webview_windows() {
                             if label != "main" {
-                                let _ = w.destroy();
+                                if label.starts_with("code:") || label == SETTINGS {
+                                    let _ = w.close();
+                                } else {
+                                    let _ = w.destroy();
+                                }
                             }
                         }
                         // **Then end the app, off the event loop.** Asking

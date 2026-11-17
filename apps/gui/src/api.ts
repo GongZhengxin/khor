@@ -1005,11 +1005,10 @@ export const windowMaximizeToggle = () => call<null>("window_maximize_toggle");
  * Close the window, asking the draft guard only when it has something to
  * protect.
  *
- * **The page already knows the answer** (`lib/drafts`'s count), so going
- * round the `close-requested` event for the simple case is not a way past
- * the guard — it is the same decision taken where it is known. That event
- * is how a title-bar click and Alt+F4 arrive, and it is the path that
- * turned out not to finish reliably; the button is the path a person
+ * **The page already knows the answer** (`lib/drafts`'s count), so using it
+ * is not a way past the guard — it is the same decision taken where it is
+ * known. The `close-requested` event (a title-bar click, Alt+F4) still
+ * arrives and still meets the guard; the button is the path a person
  * presses, and it must work every time.
  */
 export const windowClose = () => (draftCount() === 0 ? call<null>("window_destroy") : call<null>("window_close"));
