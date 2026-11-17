@@ -949,8 +949,11 @@ export const resumeSession = (agent: string, session: string) =>
     refuses with its own words — a wrong id should read like Codex saying
     the id is wrong. The text travels as one argument, never through a
     shell. */
-export const nativeSend = (agent: string, id: string, text: string) =>
-  call<string>("native_send", { agent, id, text });
+/** Where the vendor expects to stand: DSH refuses a session adopted by
+    `--session-id` from any directory but the one it was recorded in, so a
+    row's recorded place travels with its message. */
+export const nativeSend = (agent: string, id: string, text: string, cwd?: string | null) =>
+  call<string>("native_send", { agent, id, text, ...(cwd ? { cwd } : {}) });
 
 /** Read an offer on the exact execution device; this does not start a provider. */
 export const sessionRecovery = (home_id: string, id: string) =>

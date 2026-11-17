@@ -124,7 +124,7 @@ export function SessionsList({
   const [renaming, setRenaming] = useState<string | null>(null);
   /** The conversation a message is being written for, when the dialog is
       up: the vendor's id, not the row's — the row may not outlive it. */
-  const [messaging, setMessaging] = useState<{ agent: string; id: string } | null>(null);
+  const [messaging, setMessaging] = useState<{ agent: string; id: string; cwd: string | null } | null>(null);
   // The ticked words narrow here; the box is `SideList`'s one rule,
   // against what each row says it can be found by (`find` below) — the
   // same four things `visibleSessions` reads, so the two agree.
@@ -250,9 +250,12 @@ export function SessionsList({
             try {
               const native = await nativeOf();
               if (!native) return;
-              // Opened once the menu has gone, for `rename`'s reason: a box
-              // mounted while the menu still holds focus is refused it.
-              requestAnimationFrame(() => requestAnimationFrame(() => setMessaging(native)));
+              // Opened once the menu has gone, for the same reason the
+              // rename editor is: a box mounted while the menu still holds
+              // focus is refused it. The place travels with it — DSH
+              // refuses a session resumed from any other directory.
+              const asked = { ...native, cwd: r.place };
+              requestAnimationFrame(() => requestAnimationFrame(() => setMessaging(asked)));
             } catch (e) {
               said(e);
               throw e;
@@ -539,7 +542,7 @@ export function SessionsList({
       open={messaging !== null}
       onClose={() => setMessaging(null)}
       onSend={(text) =>
-        messaging ? nativeSend(messaging.agent, messaging.id, text) : Promise.resolve("")
+        messaging ? nativeSend(messaging.agent, messaging.id, text, messaging.cwd) : Promise.resolve("")
       }
     />
     </>

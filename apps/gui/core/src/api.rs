@@ -1309,6 +1309,10 @@ pub fn answer(
             &arg("agent")?,
             &arg("id")?,
             &arg("text")?,
+            // **Where the vendor expects to stand.** DSH refuses a session
+            // adopted by `--session-id` from any other directory, so the
+            // face passes the row's recorded place.
+            opt_str("cwd")?.as_deref(),
         )?),
         "session_recovery" => to_json(&rt.block_on(crate::agents::session_recovery(
             root,

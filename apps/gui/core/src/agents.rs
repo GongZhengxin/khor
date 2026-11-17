@@ -325,8 +325,13 @@ pub fn resume_session(
 /// **Not `resume_session`.** That opens a conversation khor recorded and
 /// starts a host of its own; this leaves the conversation where it is and
 /// says one thing to it, which is what a *loaded* thread allows.
-pub fn native_send(agent: &str, native_id: &str, text: &str) -> Result<String, String> {
-    khor_node::native_queue::send(agent, native_id, text)
+pub fn native_send(
+    agent: &str,
+    native_id: &str,
+    text: &str,
+    cwd: Option<&str>,
+) -> Result<String, String> {
+    khor_node::native_queue::send(agent, native_id, text, cwd)
 }
 
 /// One agent on this machine, as a screen shows it.

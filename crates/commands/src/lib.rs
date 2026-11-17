@@ -5487,7 +5487,7 @@ fn agents(rest: &[String]) -> Result<(), String> {
             let [agent, id, text] = tail else {
                 return Err(usage_text().into());
             };
-            println!("{}", khor_node::native_queue::send(agent, id, text)?);
+            println!("{}", khor_node::native_queue::send(agent, id, text, None)?);
             Ok(())
         }
         // **What this machine has, not what khor knows about.** The two
