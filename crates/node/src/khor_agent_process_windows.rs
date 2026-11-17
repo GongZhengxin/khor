@@ -502,36 +502,102 @@ fn command_line<'a>(
     program: &'a OsStr,
     arguments: impl Iterator<Item = &'a OsStr>,
 ) -> io::Result<Vec<u16>> {
+    let arguments = arguments.collect::<Vec<_>>();
     let mut line = Vec::new();
-    for argument in std::iter::once(program).chain(arguments) {
-        if !line.is_empty() {
+    quote_argument(program, &mut line)?;
+    let literal_cmd_script = Path::new(program)
+        .file_name()
+        .and_then(OsStr::to_str)
+        .is_some_and(|name| name.eq_ignore_ascii_case("cmd.exe"))
+        && arguments.len() == 4
+        && arguments[..3]
+            .iter()
+            .zip(["/d", "/s", "/c"])
+            .all(|(actual, expected)| {
+                actual
+                    .to_str()
+                    .is_some_and(|actual| actual.eq_ignore_ascii_case(expected))
+            });
+    if literal_cmd_script {
+        // cmd /s /c strips one outer quote pair, then parses the literal
+        // script itself. CRT backslash-escaping would alter its inner quotes.
+        line.extend(" /d /s /c \"".encode_utf16());
+        line.extend(wide(arguments[3])?);
+        line.push(b'"' as u16);
+    } else {
+        for argument in arguments {
             line.push(b' ' as u16);
+            quote_argument(argument, &mut line)?;
         }
-        line.push(b'"' as u16);
-        let mut slashes = 0;
-        for unit in wide(argument)? {
-            if unit == b'\\' as u16 {
-                slashes += 1;
-            } else {
-                line.extend(std::iter::repeat_n(
-                    b'\\' as u16,
-                    slashes * if unit == b'"' as u16 { 2 } else { 1 },
-                ));
-                if unit == b'"' as u16 {
-                    line.push(b'\\' as u16);
-                }
-                line.push(unit);
-                slashes = 0;
-            }
-        }
-        line.extend(std::iter::repeat_n(b'\\' as u16, slashes * 2));
-        line.push(b'"' as u16);
     }
     line.push(0);
     if line.len() > 32_767 {
         return Err(invalid("process command line is too long"));
     }
     Ok(line)
+}
+
+fn quote_argument(argument: &OsStr, line: &mut Vec<u16>) -> io::Result<()> {
+    line.push(b'"' as u16);
+    let mut slashes = 0;
+    for unit in wide(argument)? {
+        if unit == b'\\' as u16 {
+            slashes += 1;
+        } else {
+            line.extend(std::iter::repeat_n(
+                b'\\' as u16,
+                slashes * if unit == b'"' as u16 { 2 } else { 1 },
+            ));
+            if unit == b'"' as u16 {
+                line.push(b'\\' as u16);
+            }
+            line.push(unit);
+            slashes = 0;
+        }
+    }
+    line.extend(std::iter::repeat_n(b'\\' as u16, slashes * 2));
+    line.push(b'"' as u16);
+    Ok(())
+}
+
+#[cfg(test)]
+mod command_line_tests {
+    use super::*;
+
+    #[test]
+    fn command_task_cmd_literal_script_keeps_inner_quotes_and_percent_expansion() {
+        let program = OsStr::new(r"C:\Windows\System32\cmd.exe");
+        let script = OsStr::new(r#"echo "%KEEP%"& type "中文 空格.txt""#);
+        let arguments = [OsStr::new("/d"), OsStr::new("/s"), OsStr::new("/c"), script];
+        let line = command_line(program, arguments.into_iter()).unwrap();
+        assert_eq!(
+            String::from_utf16(&line[..line.len() - 1]).unwrap(),
+            r#""C:\Windows\System32\cmd.exe" /d /s /c "echo "%KEEP%"& type "中文 空格.txt"""#
+        );
+    }
+
+    #[test]
+    fn command_task_ordinary_program_arguments_keep_crt_quote_rules() {
+        let arguments = [OsStr::new(r#"quote"value"#), OsStr::new(r"trailing\")];
+        let line = command_line(OsStr::new("program.exe"), arguments.into_iter()).unwrap();
+        assert_eq!(
+            String::from_utf16(&line[..line.len() - 1]).unwrap(),
+            r#""program.exe" "quote\"value" "trailing\\""#,
+        );
+        assert!(
+            command_line(
+                OsStr::new("cmd.exe"),
+                [
+                    OsStr::new("/d"),
+                    OsStr::new("/s"),
+                    OsStr::new("/c"),
+                    OsStr::new("a\0b")
+                ]
+                .into_iter()
+            )
+            .is_err()
+        );
+    }
 }
 
 fn environment_order(left: &[u16], right: &[u16]) -> Ordering {

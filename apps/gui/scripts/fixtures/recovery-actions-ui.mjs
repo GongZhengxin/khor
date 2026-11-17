@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 
 // Fixed UI facts and controlled external IO. No Node execution qualification,
 // idempotency/reservation algorithm, canonical parser or replacement IDB owner.
-export const recoveryActionCases = ['offer-and-same-sid-rebind', 'idb-retries-and-shared-pages', 'directory-required-shell', 'terminal-owner-transfer', 'automatic-entry-and-later-exit', 'initial-terminal-connect-recovers', 'initial-terminal-connect-cancelled', 'initial-terminal-refused', 'foreground-metadata-failure', 'retained-remote-ended-shell'];
+export const recoveryActionCases = ['offer-and-same-sid-rebind', 'idb-retries-and-shared-pages', 'directory-required-shell', 'terminal-owner-transfer', 'automatic-entry-and-later-exit', 'initial-terminal-connect-recovers', 'initial-terminal-connect-cancelled', 'initial-terminal-refused', 'foreground-metadata-failure', 'retained-remote-ended-shell', 'remote-ended-metadata-failure'];
 export const usesRecoveryClock = scenario => scenario !== 'directory-required-shell';
 
 export async function advanceRecoveryClock(page, milliseconds) {
@@ -61,14 +61,14 @@ export function installRecoveryActionsTransport() {
     releaseDrop(index) { const held=wire.drops[index];if(!held||held.done)throw new Error('drop not held');held.done=true;held.resolve({landed:['/fixture/landed'],miss:null}); },
   };
   if(new URL(location.href).searchParams.get('recovery_case')==='automatic-entry-and-later-exit') {
-    wire.rows.alpha={...wire.rows.alpha,word:'failed',ended:{exit:1}};
+    wire.rows.alpha={...wire.rows.alpha,word:'failed',dead:true,ended:{exit:1}};
     wire.offer(A,'alpha',{execution:'ended',action:'native'});
     wire.holdAction=true;
   }
   window.__TAURI_INTERNALS__.invoke = async (cmd,args={}) => {
     wire.calls.push({cmd,args:structuredClone(args)});
     if(cmd==='session_recovery') {
-      if(scenario==='foreground-metadata-failure' && wire.failOffer)throw new Error('Diagnostic query unavailable fixture');
+      if(wire.failOffer)throw new Error('Diagnostic query unavailable fixture');
       const answer=offers.get(JSON.stringify([args.home_id,args.id]));if(!answer)throw new Error('unknown fixed offer target');
       if(wire.holdOffer||wire.holdOfferTargets.includes(JSON.stringify([args.home_id,args.id])))return new Promise(resolve=>wire.offers.push({args,answer,resolve,done:false}));
       return structuredClone(answer);
@@ -154,7 +154,7 @@ async function action(page,label){
 async function closeMenu(page){await page.keyboard.press('Escape');}
 async function pendingCount(page){return page.evaluate(()=>new Promise((resolve,reject)=>{const q=indexedDB.open('khor-session-recovery',1);q.onsuccess=()=>{const db=q.result,t=db.transaction('caller'),r=t.objectStore('caller').count();r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);t.oncomplete=()=>db.close();};q.onerror=()=>reject(q.error);}));}
 async function newTerminal(page) {
-  await page.evaluate(()=>window.__recoveryProbe.patch({kind:'shell',category:'shell',can_control:true,attachable:true,word:'idle',ended:null}));
+  await page.evaluate(()=>window.__recoveryProbe.patch({kind:'shell',category:'shell',can_control:true,attachable:true,word:'idle',dead:false,ended:null}));
   await page.clock.runFor(500);
   await advanceUntil(page,()=>page.evaluate(()=>window.__recoveryWire.calls.some(call=>call.cmd==='term_ready')),'actual terminal attached and ready');
   await page.waitForFunction(()=>document.querySelector('[data-terminal]')?.__xterm?.buffer.active.getLine(0)?.translateToString().includes('TERMINAL'));
@@ -215,6 +215,27 @@ export async function exerciseRecoveryActions(scenario,page,helpers) {
     assert.equal((await publicCalls('term_open')).filter(call=>call.args.id==='beta').length,0,'a dead remote mux cannot bypass terminal admission');
     return;
   }
+  if(scenario==='remote-ended-metadata-failure') {
+    await page.evaluate(B=>window.__recoveryProbe.patch({kind:'shell',category:'shell',source:'Remote machine',home:'fixture-B',execution_home:B,can_control:false,attachable:false,hosted:false,dead:false,word:'idle',ended:null}),B);
+    await advanceUntil(page,()=>page.evaluate(B=>window.__recoveryWire.calls.some(call=>call.cmd==='session_recovery'&&call.args.home_id===B),B),'remote live row reads its recovery metadata');
+    const before=(await publicCalls('session_recovery')).length;
+    await page.evaluate(()=>{
+      window.__recoveryWire.failOffer=true;
+      // A seen clean ending can keep the same idle word and has no local
+      // ending detail. The explicit dead flag must still refresh the offer.
+      window.__recoveryProbe.patch({dead:true,ended:null});
+    });
+    await advanceUntil(page,async()=>(await publicCalls('session_recovery')).length>before,'remote death refreshes metadata even when word and local ending detail do not change');
+    await until(()=>page.locator('[data-tab=alpha][data-pill-signal=unconfirmed]').count().then(n=>n===1),'a dead remote row keeps an actionable diagnostic failure on its pill');
+    await menu(page);
+    assert.equal(await page.locator('[data-notice-panel=open] [data-notice-act]').count(),1,'unavailable metadata offers the existing safe refresh');
+    const refreshed=(await publicCalls('session_recovery')).length;
+    await page.locator('[data-notice-panel=open] [data-notice-act]').click();
+    await advanceUntil(page,async()=>(await publicCalls('session_recovery')).length>refreshed,'the visible refresh retries only the metadata read');
+    assert.equal((await publicCalls('recover_session')).length,0);
+    assert.equal((await publicCalls('new_shell_run')).length,0);
+    return;
+  }
   if(scenario==='foreground-metadata-failure') {
     await newTerminal(page);
     const before=(await publicCalls('session_recovery')).length;
@@ -237,7 +258,7 @@ export async function exerciseRecoveryActions(scenario,page,helpers) {
     return;
   }
   if(scenario.startsWith('initial-terminal-')) {
-    await page.evaluate(()=>window.__recoveryProbe.patch({kind:'shell',category:'shell',can_control:true,attachable:true,word:'idle',ended:null}));
+    await page.evaluate(()=>window.__recoveryProbe.patch({kind:'shell',category:'shell',can_control:true,attachable:true,word:'idle',dead:false,ended:null}));
     await page.clock.runFor(500);
     await advanceUntil(page,async()=>(await publicCalls('term_open')).length===1,'first terminal connection attempted');
     if(scenario==='initial-terminal-refused') {
@@ -277,14 +298,14 @@ export async function exerciseRecoveryActions(scenario,page,helpers) {
     await closeMenu(page);
     await page.evaluate(({A})=>{
       window.__recoveryWire.offer(A,'alpha',{current_run:'continued-run',next_attempt_epoch:'2'});
-      window.__recoveryProbe.patch({word:'idle',ended:null});
+      window.__recoveryProbe.patch({word:'idle',dead:false,ended:null});
       window.__recoveryWire.releaseAction(0,{kind:'opened',id:'alpha',run_id:'continued-run'});
     },{A});
     await until(()=>page.locator('[data-tab=alpha][data-pill-signal=rejoin]').count().then(n=>n===0),'successful continuation clears activity');
     await until(async()=>(await helpers.calls('chat_open')).length>0,'continued owner really opens a new view');await helpers.capture();await helpers.check(['Complete known history.']);
     await page.evaluate(({A})=>{
       window.__recoveryWire.offer(A,'alpha',{execution:'ended',action:'native',current_run:'continued-run',next_attempt_epoch:'2'});
-      window.__recoveryProbe.patch({word:'failed',ended:{exit:1}});
+      window.__recoveryProbe.patch({word:'failed',dead:true,ended:{exit:1}});
     },{A});
     await page.clock.runFor(2000);
     assert.equal((await publicCalls('recover_session')).length,1,'a later explicit exit while viewing is never automatically restarted');
@@ -297,11 +318,11 @@ export async function exerciseRecoveryActions(scenario,page,helpers) {
     assert.equal((await publicCalls('recover_session')).length,0);assert.equal((await publicCalls('new_shell_run')).length,0);
     await page.evaluate(()=>{const w=window.__recoveryWire;w.holdOffer=false;w.releaseOffer(0,w.offers[0].answer);});
     await page.clock.runFor(200);assert.equal(await page.locator('[data-tab=alpha][data-pill-signal]').count(),0,'healthy connected GUI has no relationship warning');assert.equal(await page.getByRole('button',{name:(await words(page)).title,exact:true}).count(),0);
-    await page.evaluate(({A})=>{window.__recoveryWire.offer(A,'alpha',{execution:'ended',action:'native'});window.__recoveryProbe.patch({word:'done',ended:{exit:0}});},{A});
+    await page.evaluate(({A})=>{window.__recoveryWire.offer(A,'alpha',{execution:'ended',action:'native'});window.__recoveryProbe.patch({word:'done',dead:true,ended:{exit:0}});},{A});
     await page.waitForFunction(()=>window.__recoveryProbe.row().word==='done'&&window.__recoveryProbe.row().ended?.exit===0);
     const before=(await helpers.calls('chat_open')).length;
     const firstAction=await heldAction((await words(page)).resume);await closeMenu(page);
-    await page.evaluate(({A})=>{window.__chatWire.source(['Recovered after own row transition.']);window.__recoveryWire.offer(A,'alpha',{current_run:'published-new-run',next_attempt_epoch:'2'});window.__recoveryProbe.patch({word:'idle',ended:null,can_control:true});},{A});
+    await page.evaluate(({A})=>{window.__chatWire.source(['Recovered after own row transition.']);window.__recoveryWire.offer(A,'alpha',{current_run:'published-new-run',next_attempt_epoch:'2'});window.__recoveryProbe.patch({word:'idle',dead:false,ended:null,can_control:true});},{A});
     await page.waitForFunction(()=>window.__recoveryProbe.row().word==='idle'&&window.__recoveryProbe.row().ended===null);
     assert.equal((await helpers.calls('chat_open')).length,before,'row polling alone does not fake the required sameSID rebind');
     await page.evaluate(index=>window.__recoveryWire.releaseAction(index,{kind:'opened',id:'alpha',run_id:'published-new-run'}),firstAction);
@@ -343,7 +364,7 @@ export async function exerciseRecoveryActions(scenario,page,helpers) {
     }catch(error){const diagnostics=await peer.evaluate(()=>({id:window.__recoveryProbe.current(),calls:window.__recoveryWire.calls.slice(-24),tabs:[...document.querySelectorAll('[data-tab]')].map(t=>({id:t.getAttribute('data-tab'),signal:t.getAttribute('data-pill-signal')})),text:document.body.innerText.slice(0,1500)}));console.log('RECOVERY_PEER_FAILURE',JSON.stringify(diagnostics));throw error;}finally{await peer.close();}
   } else if(scenario==='directory-required-shell') {
     // Independent new Shell UI coverage; original13 do not claim this behavior.
-    await page.evaluate(({A})=>{window.__recoveryWire.offer(A,'alpha',{action:'new_shell',execution:'ended',current_run:'alpha',next_attempt_epoch:'4',native:null});window.__recoveryWire.replies.push({kind:'directory_required',id:'alpha'});window.__recoveryProbe.patch({kind:'shell',category:'shell',word:'failed',can_control:false,attachable:false,ended:{exit:0}});},{A});
+    await page.evaluate(({A})=>{window.__recoveryWire.offer(A,'alpha',{action:'new_shell',execution:'ended',current_run:'alpha',next_attempt_epoch:'4',native:null});window.__recoveryWire.replies.push({kind:'directory_required',id:'alpha'});window.__recoveryProbe.patch({kind:'shell',category:'shell',word:'failed',can_control:false,attachable:false,dead:true,ended:{exit:0}});},{A});
     const newLabel=await page.evaluate(()=>window.__recoveryWords.recovery_new_shell);await action(page,newLabel);
     await until(async()=>(await publicCalls('new_shell_run')).length===1,'old cwd request completed');const first=(await publicCalls('new_shell_run'))[0].args;
     await page.evaluate(({A})=>{window.__recoveryWire.holdOfferTargets.push(JSON.stringify([A,'fresh-shell']));window.__recoveryWire.offer(A,'alpha',{action:'new_shell',execution:'ended',current_run:'alpha',next_attempt_epoch:'5',native:null});window.__recoveryWire.replies.push({kind:'opened',id:'fresh-shell',previous:'alpha'});},{A});

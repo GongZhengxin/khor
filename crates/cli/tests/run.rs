@@ -9,8 +9,13 @@ fn khor(home: &std::path::Path) -> Command {
     c.env("KHOR_HOME", home)
         .env("KHOR_NAME", "box")
         .env("HOME", home)
-        .env("KHOR_SHELL", "/bin/sh")
+        .env("KHOR_RUNTIME_DIR", home.join("runtime"))
+        .env("KHOR_RUNTIME_INSTALL_SOURCE", env!("CARGO_BIN_EXE_khor"))
         .env_remove("KHOR_SESSION");
+    #[cfg(unix)]
+    c.env("KHOR_SHELL", "/bin/sh");
+    #[cfg(windows)]
+    c.env_remove("KHOR_SHELL");
     c
 }
 
@@ -75,16 +80,23 @@ fn wrapped_commands_report_exit_and_read_state_without_hooks() {
 
     // A failing one-shot command preserves its code and both output streams,
     // with a durable task receipt instead of a retained terminal row.
-    let out = khor(&home)
-        .args([
-            "run",
-            "--",
-            "sh",
-            "-c",
-            "printf run-output; printf run-error >&2; exit 3",
-        ])
-        .output()
-        .unwrap();
+    let mut run = khor(&home);
+    run.args(["run", "--"]);
+    #[cfg(unix)]
+    run.args([
+        "sh",
+        "-c",
+        "printf run-output; printf run-error >&2; exit 3",
+    ]);
+    #[cfg(windows)]
+    run.args([
+        "cmd.exe",
+        "/d",
+        "/s",
+        "/c",
+        r#"<nul set /p "=run-output"& <nul set /p "=run-error" >&2& exit /b 3"#,
+    ]);
+    let out = run.output().unwrap();
     assert_eq!(
         out.status.code(),
         Some(3),
@@ -119,10 +131,13 @@ fn wrapped_commands_report_exit_and_read_state_without_hooks() {
     let receipt: serde_json::Value = serde_json::from_slice(&receipt.stdout).unwrap();
     assert_eq!(receipt["task"]["exit"], 3);
 
-    let out = khor(&home)
-        .args(["run", "--title", "quick", "--", "true"])
-        .output()
-        .unwrap();
+    let mut run = khor(&home);
+    run.args(["run", "--title", "quick", "--"]);
+    #[cfg(unix)]
+    run.arg("true");
+    #[cfg(windows)]
+    run.args(["cmd.exe", "/d", "/s", "/c", "exit /b 0"]);
+    let out = run.output().unwrap();
     assert_eq!(out.status.code(), Some(0));
     let text = listed(&home);
     assert!(

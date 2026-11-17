@@ -395,6 +395,7 @@ jobs:
           cargo test --locked -p khor-gui-core --lib resource_preview:: -- --test-threads=1
           cargo test --locked -p khor-gui-core --lib file_handoff:: -- --test-threads=1
           cargo test --locked -p khor-gui-core --lib history_export:: -- --test-threads=1
+          cargo test --locked -p khor-gui-core --lib term::tests::ended_ -- --test-threads=1
           cargo test --locked -p khor-gui-core --lib chat::put_tests -- --test-threads=1
           cargo test --locked -p khor-cli --test runtime_image -- --test-threads=1
           cargo test --locked -p khor-node --lib accounts::pi_usage -- --test-threads=1
@@ -507,7 +508,7 @@ jobs:
       - name: Run the selected interaction groups and retain all failures
         run: |
           failed=0
-          gates=(updates-ui recent-places-ui lock-state ai-elements scroll-lifecycle scroll-compose editor-overwrite chat-poll chat-cancel viewport-resume page-retention-ui browser-yield native-events native-helpers chat-recovery khor-conversations-ui list-scroll-ui file-handoff quicklook file-pdf-ui workspace-content-ui terminal-links-ui notification-ui key-row-ui workspace-move-ui dialogs attachment-ui)
+          gates=(updates-ui recent-places-ui lock-state ai-elements scroll-lifecycle scroll-compose editor-overwrite chat-poll chat-cancel viewport-resume page-retention-ui browser-yield native-events native-helpers chat-recovery ended-terminal khor-conversations-ui list-scroll-ui file-handoff quicklook file-pdf-ui workspace-content-ui terminal-links-ui notification-ui key-row-ui workspace-move-ui dialogs attachment-ui)
           if [ "$KHOR_QUALITY_SUITE" = updates ]; then
             gates=(updates-ui)
           elif [ "$KHOR_INTERACTION_SCOPE" = settings ]; then
@@ -544,6 +545,7 @@ jobs:
           CHAT_POLL_WEBKIT: '1'
           CHAT_CANCEL_WEBKIT: '1'
           CHAT_RECOVERY_WEBKIT: '1'
+          ENDED_TERMINAL_OUT: ${{ runner.temp }}/quality-ended-terminal
           CHAT_RECOVERY_CHECK_DIR: ${{ runner.temp }}/quality-chat-recovery
           COMPOSE_OUT: ${{ runner.temp }}/quality-compose
           NATIVE_HELPERS_CHECK_DIR: ${{ runner.temp }}/quality-native-helpers
@@ -575,6 +577,7 @@ jobs:
             ${{ runner.temp }}/quality-overwrite
             ${{ runner.temp }}/quality-chat-poll
             ${{ runner.temp }}/quality-chat-cancel
+            ${{ runner.temp }}/quality-ended-terminal
             ${{ runner.temp }}/quality-chat-recovery
             ${{ runner.temp }}/quality-pages
             ${{ runner.temp }}/quality-native-events

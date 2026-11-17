@@ -58,8 +58,8 @@ use khor_node::{
 mod execution;
 mod task_commands;
 use execution::{
-    CLI_EXIT, START_WEB, command_root, emit_output, err, in_request, input_all, input_line,
-    json_output, navigate, record_data,
+    CLI_EXIT, START_WEB, command_root, emit_output, err, in_request, input_line, json_output,
+    navigate, record_data,
 };
 pub use execution::{
     CommandOutcome, CommandProgress, CommandSpec, ProgressSink, catalog, execute, execute_with,
@@ -4605,6 +4605,9 @@ fn open(rest: &[String]) -> Result<(), String> {
             "--" if cmd.is_empty() => {}
             _ => cmd.push(a.clone()),
         }
+    }
+    if startup.is_some() && !cmd.is_empty() {
+        return Err(usage_text().into());
     }
     let n = node()?;
     if !gui && !tui && agent.is_none() {

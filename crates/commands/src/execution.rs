@@ -156,22 +156,6 @@ pub(crate) fn input_line(text: &mut String) -> std::io::Result<usize> {
         None => std::io::stdin().read_line(text),
     })
 }
-pub(crate) fn input_all(text: &mut String) -> std::io::Result<usize> {
-    use std::io::Read;
-    REQUEST.with(|slot| match slot.borrow_mut().as_mut() {
-        Some(r) => r
-            .input
-            .as_mut()
-            .ok_or_else(|| {
-                std::io::Error::new(
-                    std::io::ErrorKind::InvalidInput,
-                    khor_catalog::msg::command_input_required(),
-                )
-            })?
-            .read_to_string(text),
-        None => std::io::stdin().read_to_string(text),
-    })
-}
 
 /// Split command arguments without shell expansion or execution. Backslashes
 /// remain literal in Windows paths unless they escape a quote or whitespace.

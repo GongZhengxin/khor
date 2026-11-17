@@ -12,6 +12,34 @@ use std::time::{Duration, Instant};
 
 use khor_node::host::{self, ClientOp, HostFile};
 
+#[test]
+fn literal_startup_and_structured_arguments_cannot_be_combined() {
+    let home = std::env::temp_dir().join(format!("khor-open-ambiguous-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&home);
+    let output = khor(&home)
+        .args([
+            "open",
+            "-d",
+            "--command",
+            "echo literal",
+            "--",
+            "echo",
+            "argument",
+        ])
+        .output()
+        .unwrap();
+    assert!(!output.status.success(), "ambiguous startup was accepted");
+    assert!(
+        output.stdout.is_empty(),
+        "no terminal ID should be admitted"
+    );
+    assert!(
+        !home.join(".khor/sessions").exists(),
+        "argument rejection must happen before session registration"
+    );
+    let _ = std::fs::remove_dir_all(home);
+}
+
 fn khor(home: &Path) -> Command {
     // The subprocess resolves its CLI language from the environment. This
     // test process otherwise keeps the catalog's unresolved Chinese default,
@@ -141,6 +169,7 @@ fn read_until(stream: &mut std::net::TcpStream, needle: &str, secs: u64) -> Stri
 /// already `xterm-256color`, so an implementation that simply inherits
 /// would look correct exactly where nobody is affected, and stay broken
 /// exactly where everybody is.
+#[cfg(unix)]
 #[test]
 fn the_child_is_told_what_terminal_it_is_in_not_what_the_opener_had() {
     let home = std::env::temp_dir().join(format!("khor-term-{}", std::process::id()));
@@ -204,6 +233,7 @@ fn the_child_is_told_what_terminal_it_is_in_not_what_the_opener_had() {
     let _ = std::fs::remove_dir_all(&home);
 }
 
+#[cfg(unix)]
 #[test]
 fn a_hosted_session_outlives_its_opener_and_walks_the_shell_face() {
     let home = std::env::temp_dir().join(format!("khor-open-{}", std::process::id()));
@@ -386,6 +416,7 @@ fn a_nonzero_startup_command_returns_to_the_same_interactive_shell() {
 /// with it, and so does an interactive `zsh`. Only a child that ignores
 /// the signal outlives its host, which is both why this hole is narrow
 /// and why the test has to say `trap "" HUP` out loud.
+#[cfg(unix)]
 #[test]
 fn a_host_that_dies_while_its_child_lives_is_not_a_failure() {
     let home = std::env::temp_dir().join(format!("khor-orphan-{}", std::process::id()));
@@ -467,6 +498,7 @@ fn a_host_that_dies_while_its_child_lives_is_not_a_failure() {
     let _ = std::fs::remove_dir_all(&home);
 }
 
+#[cfg(unix)]
 #[test]
 fn closing_a_live_hosted_session_leaves_no_process_behind() {
     let home = std::env::temp_dir().join(format!("khor-open-close-{}", std::process::id()));
@@ -515,6 +547,7 @@ fn closing_a_live_hosted_session_leaves_no_process_behind() {
 /// where everybody is affected. `KHOR_PATH` is pinned too because
 /// otherwise the login-shell repair finds the program and there is
 /// nothing to report.
+#[cfg(unix)]
 #[test]
 fn a_host_that_cannot_find_its_program_says_so_instead_of_timing_out() {
     let home = std::env::temp_dir().join(format!("khor-nopath-{}", std::process::id()));
@@ -559,6 +592,7 @@ fn a_host_that_cannot_find_its_program_says_so_instead_of_timing_out() {
 /// differing.** Without this the test above passes for an
 /// implementation that merely says a nicer sentence and still cannot
 /// start anything — a message is not a repair.
+#[cfg(unix)]
 #[test]
 fn the_same_command_starts_once_khor_is_told_where_to_look() {
     let home = std::env::temp_dir().join(format!("khor-onpath-{}", std::process::id()));
@@ -615,6 +649,7 @@ fn the_same_command_starts_once_khor_is_told_where_to_look() {
     let _ = std::fs::remove_dir_all(&home);
 }
 
+#[cfg(unix)]
 #[test]
 fn a_private_host_does_not_inherit_an_unrelated_native_agent_store() {
     let home = std::env::temp_dir().join(format!("khor-host-vendor-home-{}", std::process::id()));
@@ -659,4 +694,211 @@ fn a_private_host_does_not_inherit_an_unrelated_native_agent_store() {
             .success()
     );
     let _ = std::fs::remove_dir_all(home);
+}
+
+#[cfg(windows)]
+mod windows {
+    use super::*;
+    use khor_node::terminal_control::{self, HostOutput, Reply, Request};
+    use std::{
+        fs,
+        process::Stdio,
+        time::{SystemTime, UNIX_EPOCH},
+    };
+
+    struct Fixture(PathBuf, std::cell::Cell<bool>);
+
+    impl Fixture {
+        fn new() -> Self {
+            let stamp = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_nanos();
+            let home = std::env::temp_dir()
+                .join(format!("khor-open-windows-{}-{stamp}", std::process::id()));
+            fs::create_dir_all(home.join(".khor")).unwrap();
+            fs::write(
+                home.join(".khor/relays.json"),
+                br#"{"relays":[],"only_mine":true}"#,
+            )
+            .unwrap();
+            Self(home, std::cell::Cell::new(false))
+        }
+
+        fn command(&self) -> Command {
+            let mut command = Command::new(env!("CARGO_BIN_EXE_khor"));
+            command
+                .env("KHOR_HOME", &self.0)
+                .env("KHOR_NAME", "open-windows")
+                .env("KHOR_NO_MDNS", "1")
+                .env("KHOR_RUNTIME_DIR", self.0.join("runtime"))
+                .env("KHOR_RUNTIME_INSTALL_SOURCE", env!("CARGO_BIN_EXE_khor"))
+                .env(
+                    "KHOR_SHELL",
+                    PathBuf::from(std::env::var_os("SystemRoot").unwrap())
+                        .join("System32/WindowsPowerShell/v1.0/powershell.exe"),
+                )
+                .env_remove("KHOR_SHELL_INTEGRATION")
+                .env_remove("KHOR_SESSION")
+                .current_dir(&self.0);
+            if let Some(path) = std::env::var_os("PATH") {
+                command.env("KHOR_PATH", path);
+            }
+            command
+        }
+
+        fn cli(&self, args: &[&str]) -> Option<std::process::Output> {
+            let mut child = self
+                .command()
+                .args(args)
+                .stdout(Stdio::piped())
+                .stderr(Stdio::piped())
+                .spawn()
+                .ok()?;
+            let deadline = Instant::now() + Duration::from_secs(40);
+            loop {
+                if child.try_wait().ok()?.is_some() {
+                    return child.wait_with_output().ok();
+                }
+                if Instant::now() >= deadline {
+                    let _ = child.kill();
+                    let _ = child.wait();
+                    return None;
+                }
+                std::thread::sleep(Duration::from_millis(25));
+            }
+        }
+
+        fn read_until(&self, id: &str, marker: &str) -> HostOutput {
+            let deadline = Instant::now() + Duration::from_secs(30);
+            let mut cursor = None;
+            let mut text = String::new();
+            loop {
+                let reply = terminal_control::handle(
+                    &self.0,
+                    Request::Read {
+                        session: id.into(),
+                        cursor,
+                        limit: 16 * 1024,
+                        wait_ms: 100,
+                    },
+                )
+                .unwrap();
+                let Reply::Read { output, .. } = reply else {
+                    panic!("unexpected terminal reply: {reply:?}")
+                };
+                text.push_str(&String::from_utf8_lossy(&output.bytes));
+                if text.contains(marker) {
+                    return output;
+                }
+                assert!(
+                    Instant::now() < deadline,
+                    "native Windows terminal never produced {marker:?}: {text}"
+                );
+                cursor = Some(output.cursor);
+            }
+        }
+    }
+
+    impl Drop for Fixture {
+        fn drop(&mut self) {
+            if self.1.get() {
+                let _ = fs::remove_dir_all(&self.0);
+                return;
+            }
+            let mut stopped = true;
+            // Discover admitted hosts even after a failed/late CLI response.
+            // The native close path owns process identity; a recorded PID alone
+            // cannot safely authorize taskkill after a deadline.
+            if let Ok(entries) = fs::read_dir(self.0.join(".khor/sessions")) {
+                for entry in entries.flatten() {
+                    let directory = entry.path();
+                    let id = fs::read(directory.join("meta.json"))
+                        .ok()
+                        .and_then(|bytes| serde_json::from_slice::<serde_json::Value>(&bytes).ok())
+                        .and_then(|meta| meta["id"].as_str().map(str::to_owned));
+                    let closed = id
+                        .as_deref()
+                        .and_then(|id| self.cli(&["close", id]))
+                        .is_some_and(|output| output.status.success());
+                    if !closed {
+                        stopped = false;
+                    }
+                }
+            }
+            if stopped {
+                let _ = fs::remove_dir_all(&self.0);
+            } else {
+                eprintln!(
+                    "Windows terminal cleanup unconfirmed; preserving {:?}",
+                    self.0
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn native_powershell_open_remains_interactive_after_a_failed_startup() {
+        let fixture = Fixture::new();
+        let output = fixture
+            .cli(&[
+                "open",
+                "-d",
+                "--command",
+                "Write-Output ('STARTUP-' + 'WINDOWS'); & $env:ComSpec /d /c 'exit 9'",
+            ])
+            .expect("native open CLI did not finish");
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        let id = String::from_utf8(output.stdout).unwrap().trim().to_owned();
+        assert!(id.starts_with("shell/"), "{id}");
+        let directory = fixture.0.join(".khor/sessions").join(id.replace('/', "-"));
+        let host = host::read_host_file(&directory).unwrap();
+        assert_ne!(host.host_pid, host.child_pid);
+        let observed = fixture.read_until(&id, "STARTUP-WINDOWS");
+        assert!(
+            observed.shell_ready && observed.startup_released,
+            "headless open must initialize its native shell"
+        );
+        wait_until("native nonzero command to return to the prompt", 15, || {
+            khor_node::commands::read_saved(&directory)
+                .is_some_and(|saved| saved.recent.iter().any(|command| command.exit == Some(9)))
+        });
+        let node = khor_node::Node::open(fixture.0.clone()).unwrap();
+        assert!(
+            node.every_session()
+                .unwrap()
+                .iter()
+                .any(|row| row.session.id.0 == id && !row.session.dead)
+        );
+        let acknowledged = terminal_control::handle(
+            &fixture.0,
+            Request::Input {
+                session: id.clone(),
+                token: "windows-open-followup".into(),
+                generation: observed.generation,
+                revision: observed.input_revision,
+                text: "Write-Output ('FOLLOWUP-' + 'WINDOWS')".into(),
+                enter: true,
+            },
+        )
+        .unwrap();
+        assert!(matches!(acknowledged, Reply::Input { .. }));
+        fixture.read_until(&id, "FOLLOWUP-WINDOWS");
+        let closed = fixture
+            .cli(&["close", &id])
+            .expect("native close CLI did not finish");
+        assert!(
+            closed.status.success(),
+            "{}",
+            String::from_utf8_lossy(&closed.stderr)
+        );
+        wait_until("native terminal ending", 10, || {
+            node.ended(&khor_node::SessionId(id.clone())).is_some()
+        });
+        fixture.1.set(true);
+    }
 }

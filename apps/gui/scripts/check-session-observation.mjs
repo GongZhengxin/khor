@@ -174,10 +174,12 @@ const cases = [
     assert.equal(execution.props['data-status-word'], 'busy');
   }],
   ['displayed shell form never grants an outside agent input', async () => {
-    const outside = {kind: 'shell', mux: true, attachable: true, can_control: false, ended: null};
+    const outside = {kind: 'shell', mux: true, attachable: true, can_control: false, dead: false, ended: null};
     assert.equal(isTerminal(outside), false); assert.equal(isObserved(outside), true);
     assert.equal(isObserved({...outside, can_control: true}), false);
-    assert.equal(isObserved({...outside, ended: {kind: 'exit', code: 0}}), false);
+    assert.equal(isObserved({...outside, dead: true, ended: {kind: 'exit', code: 0}}), false);
+    assert.equal(isObserved({...outside, dead: true, ended: null}), false, 'remote death does not depend on local ending metadata');
+    assert.equal(isTerminal({...outside, can_control: true, dead: true}), false, 'a dead mux cannot admit a new terminal');
     assert.equal(isObserved({kind: 'observe', can_control: true}), true);
   }],
   ['source-owned ACP catalogs never apply to another execution home', async () => {

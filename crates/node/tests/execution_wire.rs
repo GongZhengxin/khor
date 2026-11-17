@@ -52,6 +52,11 @@ async fn monitor_and_ended_content_cross_the_execution_home_instead_of_reading_l
     .unwrap()
     .unwrap();
     let _caller = resident(caller_root.path(), "caller").await;
+    // A visible label may collide with the source's canonical channel.
+    // Home-ID requests must still authenticate and cache the actual source.
+    caller
+        .rename_machine(caller.device_str(), "source")
+        .unwrap();
     let id = source
         .open_ephemeral("shell", "remote terminal fixture")
         .unwrap();
@@ -101,13 +106,13 @@ async fn monitor_and_ended_content_cross_the_execution_home_instead_of_reading_l
             &mut stream,
             &Welcome {
                 ok: true,
-                why: format!("khor-host/{}", host::HOST_VERSION),
+                why: format!("khor-host/{}", host::CONTROL_VERSION),
             },
         )
         .unwrap();
         assert!(matches!(
             host::read_frame::<ClientOp>(&mut stream).unwrap(),
-            ClientOp::Version(host::HOST_VERSION)
+            ClientOp::Version(host::CONTROL_VERSION)
         ));
         assert!(matches!(
             host::read_frame::<HostRequest>(&mut stream).unwrap(),

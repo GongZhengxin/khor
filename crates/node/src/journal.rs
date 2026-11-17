@@ -1909,6 +1909,7 @@ mod tests {
     /// does. `note` used to append in its caller's thread — the wire
     /// watch's tick and every retirement among them, under the wires'
     /// lock — so that caller stayed out with it.
+    #[cfg(unix)]
     #[test]
     fn a_journal_file_that_never_opens_does_not_hold_the_caller() {
         use std::os::unix::ffi::OsStrExt;

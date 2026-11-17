@@ -102,6 +102,15 @@ pub struct Hello {
     pub control: bool,
 }
 
+// Ordinary viewers retain the positional three-field v5 greeting. An added
+// serialized field would prevent an already-running v5 host from decoding it.
+#[derive(Serialize)]
+struct ViewerHello<'a> {
+    cookie: &'a str,
+    cols: u16,
+    rows: u16,
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct Welcome {
     pub ok: bool,
@@ -131,8 +140,18 @@ pub enum ClientOp {
     Ready,
 }
 
-/// Both sides require this exact current terminal protocol.
-pub const HOST_VERSION: u32 = 6;
+/// The viewer protocol is unchanged, including already-running durable hosts.
+pub const HOST_VERSION: u32 = 5;
+/// Bounded automation requests use a distinct connection and protocol.
+pub const CONTROL_VERSION: u32 = 6;
+
+fn hello_version(hello: &Hello) -> u32 {
+    if hello.control {
+        CONTROL_VERSION
+    } else {
+        HOST_VERSION
+    }
+}
 
 /// Far attachers return Version over the network after receiving Welcome.
 /// Use the shared handshake budget for that complete round trip as well.
@@ -823,15 +842,7 @@ fn connect_welcomed_typed(
     let _ = s.set_nodelay(true);
     let _ = s.set_read_timeout(Some(HANDSHAKE));
     let _ = s.set_write_timeout(Some(HANDSHAKE));
-    write_handshake(
-        &mut s,
-        &Hello {
-            cookie: cookie.to_owned(),
-            cols,
-            rows,
-            control: false,
-        },
-    )?;
+    write_handshake(&mut s, &ViewerHello { cookie, cols, rows })?;
     let welcome: Welcome = read_handshake_typed(&mut s, HANDSHAKE)?;
     if !welcome.ok {
         return Err(ConnectError::Refused(welcome.why));
@@ -2532,11 +2543,12 @@ fn host_serving(
                     );
                     continue;
                 }
+                let version = hello_version(&hello);
                 if write_frame(
                     &mut conn,
                     &Welcome {
                         ok: true,
-                        why: format!("{GREETING}{HOST_VERSION}"),
+                        why: format!("{GREETING}{version}"),
                     },
                 )
                 .is_err()
@@ -2551,7 +2563,7 @@ fn host_serving(
                     // current Version arrives whole inside its fixed deadline.
                     if !matches!(
                         read_handshake_frame::<ClientOp>(&mut readable, FIRST_FRAME),
-                        Ok(ClientOp::Version(HOST_VERSION))
+                        Ok(ClientOp::Version(current)) if current == version
                     ) {
                         continue;
                     }
@@ -3738,7 +3750,7 @@ mod handshake_tests {
     use std::time::Instant;
 
     #[test]
-    fn a_current_client_sends_current_version_before_any_input() {
+    fn a_current_viewer_sends_the_legacy_three_field_hello_and_v5_before_input() {
         let listener = TcpListener::bind("127.0.0.1:0").unwrap();
         let addr = listener.local_addr().unwrap().to_string();
         let host = std::thread::spawn(move || {
@@ -3746,7 +3758,17 @@ mod handshake_tests {
             stream
                 .set_read_timeout(Some(Duration::from_secs(2)))
                 .unwrap();
-            let hello: Hello = read_frame(&mut stream).unwrap();
+            let mut length = [0; 4];
+            stream.read_exact(&mut length).unwrap();
+            let mut body = vec![0; u32::from_be_bytes(length) as usize];
+            stream.read_exact(&mut body).unwrap();
+            assert_eq!(body[0], 0x93, "legacy hosts require a three-field Hello");
+            let hello: Hello = proto::decode(&body).unwrap();
+            assert!(
+                !hello.control,
+                "new hosts accept missing control as a viewer"
+            );
+            assert_eq!(hello_version(&hello), 5);
             assert_eq!(
                 (hello.cookie.as_str(), hello.cols, hello.rows),
                 ("owned-cookie", 80, 24)
@@ -3776,12 +3798,28 @@ mod handshake_tests {
     }
 
     #[test]
+    fn control_connections_declare_v6_without_changing_the_viewer_protocol() {
+        let hello = Hello {
+            cookie: "owned-cookie".into(),
+            cols: 0,
+            rows: 0,
+            control: true,
+        };
+        assert_eq!(hello_version(&hello), 6);
+        assert_eq!(HOST_VERSION, 5);
+        assert_eq!(CONTROL_VERSION, 6);
+        let frame = proto::encode(&hello).unwrap();
+        assert_eq!(frame[0], 0x94);
+        assert!(proto::decode::<Hello>(&frame).unwrap().control);
+    }
+
+    #[test]
     fn empty_old_future_unknown_and_gui_welcomes_are_protocol_errors() {
         for greeting in [
             "",
             "khor-host/1",
             "khor-host/4",
-            "khor-host/5",
+            "khor-host/6",
             "khor-host/06",
             "unknown",
             "khor-gui/1",

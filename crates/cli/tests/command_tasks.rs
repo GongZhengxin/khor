@@ -13,7 +13,12 @@ struct Fixture {
 
 impl Fixture {
     fn new() -> Self {
-        let home = std::env::temp_dir().join(format!("khor-command-cli-{}", std::process::id()));
+        let stamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let home =
+            std::env::temp_dir().join(format!("khor-command-cli-{}-{stamp}", std::process::id()));
         std::fs::create_dir_all(&home).unwrap();
         Self {
             home,
@@ -27,6 +32,8 @@ impl Fixture {
             .env("KHOR_NAME", "command-test")
             .env("KHOR_RUNTIME_DIR", self.home.join("runtime"))
             .env("KHOR_RUNTIME_INSTALL_SOURCE", env!("CARGO_BIN_EXE_khor"))
+            .env("KHOR_TASK_LITERAL", "space value %KEEP_LITERAL%")
+            .env("KHOR_TASK_INPUT", self.home.join("literal input 中文.txt"))
             .env_remove("KHOR_SESSION")
             .env_remove("KHOR_PATH");
         command
@@ -206,6 +213,28 @@ fn actual_worker_keeps_receipts_not_sessions_and_supports_retry_cancel_and_forge
     let listed = fixture.run(&["sessions", "--all"]);
     assert!(listed.status.success());
     assert!(!String::from_utf8_lossy(&listed.stdout).contains("command/"));
+
+    #[cfg(windows)]
+    {
+        std::fs::write(
+            fixture.home.join("literal input 中文.txt"),
+            "unicode 中文\n",
+        )
+        .unwrap();
+        let started = fixture.start(
+            "cli-cmd-literal-1234",
+            r#"echo "%KHOR_TASK_LITERAL%"& type "%KHOR_TASK_INPUT%""#,
+        );
+        let literal_id = started["task"]["id"].as_str().unwrap();
+        assert_eq!(fixture.terminal(literal_id)["task"]["phase"], "completed");
+        let output = fixture.action("read", literal_id);
+        let text = output["stdout"]["text"].as_str().unwrap();
+        assert!(
+            text.starts_with("\"space value %KEEP_LITERAL%\"\r\n"),
+            "{text:?}"
+        );
+        assert!(text.ends_with("unicode 中文\n"), "{text:?}");
+    }
 
     let literals = [
         "space value",

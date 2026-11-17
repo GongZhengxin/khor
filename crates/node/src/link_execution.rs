@@ -3,6 +3,24 @@ use crate::SessionId;
 use crate::execution::{Action, Reply};
 
 impl Node {
+    /// Tools may name a machine, while terminal rows carry its stable home ID.
+    /// The empty target and our own ID remain local even without a device row.
+    pub(super) fn execution_target(
+        &self,
+        machine: &str,
+    ) -> Result<(String, khor_core::DeviceId), String> {
+        if machine.is_empty() {
+            return Ok((self.name().to_owned(), self.device()));
+        }
+        if let Ok(home) = crate::device_id_from_hex(machine) {
+            if home == self.device() {
+                return Ok((self.name().to_owned(), home));
+            }
+            return self.recovery_peer(home).map(|device| (device.name, home));
+        }
+        self.resolve(machine)
+    }
+
     pub async fn execution_on(&self, machine: &str, action: Action) -> Result<Reply, String> {
         action.validate()?;
         if let Some(reply) = self
@@ -18,7 +36,7 @@ impl Node {
                 other => Err(msg::serve_non_answer(format_args!("{other:?}"))),
             };
         }
-        let (_, home) = self.resolve(machine)?;
+        let (_, home) = self.execution_target(machine)?;
         if home == self.device() {
             return self.execution_here(action).await;
         }
@@ -41,15 +59,16 @@ impl Node {
         action: Action,
     ) -> Result<Reply, String> {
         action.validate()?;
-        let (channel, home) = self.resolve(machine)?;
-        if self.sat_and_sponsor(&channel)?.is_some() {
-            return Err("Command tasks and terminal control require a Khor host".into());
-        }
+        let (channel, home) = self.execution_target(machine)?;
         if home == self.device() {
             return self.execution_here(action).await;
         }
+        if self.sat_and_sponsor(&channel)?.is_some() {
+            return Err("Command tasks and terminal control require a Khor host".into());
+        }
+        let device = self.recovery_peer(home)?;
         match self
-            .ask(ep, &channel, &Request::Execution { action })
+            .ask_on(ep, &device, &Request::Execution { action })
             .await?
         {
             Response::Execution { value } => Ok(value),
@@ -119,5 +138,53 @@ impl Node {
             crate::terminal_control::Reply::Ended { value } => Ok(value),
             _ => Err("Unexpected ended terminal response".into()),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn execution_targets_accept_empty_and_self_id_but_refuse_an_unknown_home() {
+        let root = crate::testdir::TempTree::fresh("execution-target");
+        let node = Node::open_as(root.path(), "execution-target").unwrap();
+        for target in ["", node.device_str(), node.name()] {
+            assert_eq!(
+                node.execution_target(target).unwrap(),
+                (node.name().to_owned(), node.device())
+            );
+        }
+        let unknown = khor_core::DeviceId([0; 32]);
+        assert_ne!(unknown, node.device());
+        assert!(node.execution_target(&unknown.hex()).is_err());
+    }
+
+    #[test]
+    fn execution_home_ids_do_not_follow_another_devices_colliding_label() {
+        let root = crate::testdir::TempTree::fresh("execution-label-collision");
+        let node = Node::open_as(root.path(), "execution-caller").unwrap();
+        let peer = khor_core::DeviceId([4; 32]);
+        let loaded = node.devices_loaded().unwrap();
+        loaded
+            .doc
+            .upsert(&peer.hex(), "execution-peer", &[])
+            .unwrap();
+        loaded
+            .doc
+            .set_label(node.device_str(), "execution-peer")
+            .unwrap();
+        let mut store = loaded.store;
+        store.flush(&loaded.doc).unwrap();
+        assert_eq!(
+            node.execution_target("execution-peer").unwrap().1,
+            node.device(),
+            "a human-visible label retains its usual precedence"
+        );
+        assert_eq!(
+            node.execution_target(&peer.hex()).unwrap(),
+            ("execution-peer".to_owned(), peer),
+            "the stable home still names the actual remote device"
+        );
     }
 }

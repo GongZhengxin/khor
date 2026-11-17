@@ -51,7 +51,7 @@ export function useSessionRowLookup(rows: readonly SessionRow[], devices: readon
       id, kind: "delegated", title: child?.agent?(delegatedSessionRef(id)?.kind==='command'?child.agent:agentPresentation(child.agent).name):gui.child_sessions, category: delegatedSessionRef(id)?.kind==="command"?"shell":child?.agent ?? null,
       activity: [], observation_owner: null, content_locator: null, can_control: false,
       word, at_ms: 0, unread: 0, source: null, pinned: false, imported: false, stale: false, quiet: false,
-      group: "", face: device?.face ?? null, hosted: false, attachable: false, last: child?.result ?? null,
+      group: "", face: device?.face ?? null, hosted: false, attachable: false, dead: false, last: child?.result ?? null,
       doing: null, via: null, via_face: null, home: device?.name ?? child?.machine ?? child?.home ?? "",
       place: child?.cwd ?? null, mux: false, ended: null, execution_home: child?.home ?? null,
     };

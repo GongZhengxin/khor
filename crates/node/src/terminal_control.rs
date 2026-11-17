@@ -141,10 +141,16 @@ fn host_call(dir: &Path, request: &HostRequest) -> Result<HostReply, String> {
         },
     )?;
     let welcome: host::Welcome = host::read_frame(&mut stream)?;
-    if !welcome.ok || welcome.why != format!("khor-host/{}", host::HOST_VERSION) {
+    if !welcome.ok {
         return Err(welcome.why);
     }
-    host::write_frame(&mut stream, &host::ClientOp::Version(host::HOST_VERSION))?;
+    if welcome.why != format!("khor-host/{}", host::CONTROL_VERSION) {
+        return Err(format!(
+            "Terminal monitoring protocol mismatch: {}",
+            welcome.why
+        ));
+    }
+    host::write_frame(&mut stream, &host::ClientOp::Version(host::CONTROL_VERSION))?;
     host::write_frame(&mut stream, request)?;
     host::read_frame(&mut stream)
 }

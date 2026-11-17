@@ -3227,11 +3227,23 @@ impl Node {
         else {
             return;
         };
+        self.list_what_opened_on(ep, &d, id, within).await;
+    }
+
+    /// Populate the row from the exact device that authenticated the open.
+    /// Stable home IDs must not be translated back through visible labels.
+    async fn list_what_opened_on(
+        &self,
+        ep: &iroh::Endpoint,
+        device: &DeviceInfo,
+        id: &crate::SessionId,
+        within: Duration,
+    ) {
         let _ = self.roster_new(id);
         if let Ok(Ok(Response::SessionRows { rows })) =
-            tokio::time::timeout(within, self.ask_on(ep, &d, &Request::Sessions)).await
+            tokio::time::timeout(within, self.ask_on(ep, device, &Request::Sessions)).await
         {
-            let _ = self.cache_peer_rows(&d.id, &d.name, &rows);
+            let _ = self.cache_peer_rows(&device.id, &device.name, &rows);
         }
     }
 
@@ -6928,13 +6940,12 @@ impl Node {
         machine: &str,
         start: crate::shell_start::ShellStart,
     ) -> Result<crate::SessionId, String> {
-        let (channel, home) = self.resolve(machine)?;
-        if self
-            .devices_loaded()?
-            .doc
-            .by_name(&channel)
-            .is_some_and(|device| device.sponsor.is_some())
-        {
+        let (channel, home) = self.execution_target(machine)?;
+        if home == self.device() {
+            return self.open_shell_here(start).await;
+        }
+        let device = self.recovery_peer(home)?;
+        if device.sponsor.is_some() {
             if !start.command.trim().is_empty()
                 || start.argv.as_ref().is_some_and(|args| !args.is_empty())
             {
@@ -6943,7 +6954,7 @@ impl Node {
             return self
                 .open_on_with(
                     ep,
-                    machine,
+                    &channel,
                     crate::kind::SHELL,
                     &start.title,
                     &start.cwd,
@@ -6954,11 +6965,22 @@ impl Node {
                 .await;
         }
 
-        if home == self.device() {
-            return self.open_shell_here(start).await;
+        let asked = std::time::Instant::now();
+        match self
+            .ask_on(ep, &device, &Request::OpenShellOnce { start })
+            .await?
+        {
+            Response::Opened { session } => {
+                let left =
+                    (ipc::DEADLINE_FAR - Duration::from_secs(3)).saturating_sub(asked.elapsed());
+                let id = crate::SessionId(session);
+                self.list_what_opened_on(ep, &device, &id, LISTED_WITHIN.min(left))
+                    .await;
+                Ok(id)
+            }
+            Response::Refused { why } => Err(why),
+            other => Err(msg::peer_non_answer(format_args!("{other:?}"))),
         }
-        self.ask_open(ep, &channel, Request::OpenShellOnce { start }, None)
-            .await
     }
     async fn open_shell_here(
         &self,

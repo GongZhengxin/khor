@@ -160,7 +160,7 @@ pub(super) fn terminal(args: &[String]) -> Result<(), String> {
     let reply = rt()?.block_on(node()?.terminal_on(&args.machine, request))?;
     match reply {
         terminal_control::Reply::Read { session, output } => print_json(
-            &serde_json::json!({"session":session,"output":{"text":String::from_utf8_lossy(&output.bytes),"cursor":output.cursor,"end":output.end,"reset":output.reset,"generation":output.generation,"input_revision":output.input_revision,"shell_ready":output.shell_ready,"startup_released":output.startup_released}}),
+            &serde_json::json!({"session":session,"output":{"text":String::from_utf8_lossy(&output.bytes),"bytes":output.bytes,"cursor":output.cursor,"end":output.end,"reset":output.reset,"generation":output.generation,"input_revision":output.input_revision,"shell_ready":output.shell_ready,"startup_released":output.startup_released}}),
         ),
         other => print_json(&other),
     }

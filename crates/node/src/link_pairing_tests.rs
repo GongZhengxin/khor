@@ -179,6 +179,7 @@ impl Worker {
         }
     }
     fn kill_wait(&mut self) {
+        #[cfg(unix)]
         use std::os::unix::process::ExitStatusExt;
         self.0.kill().unwrap();
         let by = Instant::now() + Duration::from_secs(5);
@@ -186,7 +187,13 @@ impl Worker {
             if let Some(status) = self.0.try_wait().unwrap() {
                 self.1 = true;
                 self.2.store(true, std::sync::atomic::Ordering::SeqCst);
+                #[cfg(unix)]
                 assert_eq!(status.signal(), Some(9));
+                #[cfg(windows)]
+                assert!(
+                    !status.success(),
+                    "killed Pair caller must not report success"
+                );
                 break;
             }
             assert!(Instant::now() < by, "owned Pair caller must be reaped");
