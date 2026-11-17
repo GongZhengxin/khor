@@ -14,6 +14,33 @@ pub const MAX_FRAME: usize = 6 * 1024 * 1024;
 /// resume-by-offset free. Room is left for the msgpack envelope.
 pub const SLICE: u64 = 256 * 1024;
 
+// Published startup payload. Keep its positional MessagePack fields fixed;
+// headless readiness and structured argv use OpenTerminalOnce instead.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LegacyShellStart {
+    pub token: String,
+    pub title: String,
+    pub cwd: String,
+    pub command: String,
+    pub cols: u16,
+    pub rows: u16,
+}
+
+impl From<LegacyShellStart> for crate::shell_start::ShellStart {
+    fn from(start: LegacyShellStart) -> Self {
+        Self {
+            token: start.token,
+            title: start.title,
+            cwd: start.cwd,
+            command: start.command,
+            cols: start.cols,
+            rows: start.rows,
+            headless: false,
+            argv: None,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Request {
     Execution {
@@ -787,8 +814,13 @@ pub enum Request {
         sat: String,
         path: String,
     },
-    /// Atomic shell creation plus initial input; old peers refuse this word.
+    /// Published six-field startup request, retained for older callers.
     OpenShellOnce {
+        start: LegacyShellStart,
+    },
+    /// Prompt readiness, headless startup and exact argv require this word.
+    /// An older peer must refuse it before it can ignore new startup fields.
+    OpenTerminalOnce {
         start: crate::shell_start::ShellStart,
     },
     /// Logins on the asked machine, or an explicit import there. No secrets.
@@ -1607,6 +1639,7 @@ impl Request {
                 | Request::OpenOnce { .. }
                 | Request::OpenAgentOnce { .. }
                 | Request::OpenShellOnce { .. }
+                | Request::OpenTerminalOnce { .. }
                 | Request::WorkspaceFacts
                 // A drop names its job by token: asked twice, it answers
                 // the one job's progress (`crate::drops`).
@@ -1734,7 +1767,8 @@ impl Request {
             | Request::OpenAgent { .. }
             | Request::OpenOnce { .. }
             | Request::OpenAgentOnce { .. }
-            | Request::OpenShellOnce { .. } => Duration::from_secs(25),
+            | Request::OpenShellOnce { .. }
+            | Request::OpenTerminalOnce { .. } => Duration::from_secs(25),
             Request::Execution { .. } => Duration::from_secs(35),
             _ => Duration::from_secs(15),
         }

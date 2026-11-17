@@ -16,7 +16,7 @@ def main():
     commands = [
         ["cargo", "test", "--locked", "-p", "khor-node", "--lib", name,
          "--", "--nocapture", "--test-threads=1"]
-        for name in ["command_task", "user_environment", "shell_start::", "integration::", "answers::", "host::snapshot_tests", "host::handshake_tests", "once::shell_claim_tests", "live::tests::startup_failure", "host::startup_failure_tests", "platform_path_tests", "mcp::tests", "link::execution::tests"]
+        for name in ["command_task", "user_environment", "shell_start::", "integration::", "answers::", "host::snapshot_tests", "host::handshake_tests", "once::shell_claim_tests", "live::tests::startup_failure", "host::startup_failure_tests", "platform_path_tests", "mcp::tests", "link::execution::tests", "link::legacy_shell_tests", "runtime_image::compatibility_tests"]
     ]
     commands.append(["cargo", "test", "--locked", "-p", "khor-node", "--test", "execution_wire", "--", "--nocapture", "--test-threads=1"])
     commands.append(["cargo", "test", "--locked", "-p", "khor-cli", "--test", "command_tasks",

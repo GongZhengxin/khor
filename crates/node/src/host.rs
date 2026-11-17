@@ -637,7 +637,10 @@ fn spawn_host_with(
 ) -> Result<(), String> {
     let mut host_spawned = false;
     let result = (|| -> Result<(), String> {
-        let image = crate::runtime_image::host()?;
+        // Public viewer compatibility permits older installed runtimes. This
+        // child implements our private startup/control ABI and must use the
+        // same code as its opener, including when the opener is the GUI.
+        let image = crate::runtime_image::running_host()?;
         let mut c = std::process::Command::new(image.path());
         // A host belongs to the store containing this session. A GUI request may
         // name a different root from its process environment; only the child gets

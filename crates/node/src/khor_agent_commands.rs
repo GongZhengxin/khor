@@ -123,7 +123,14 @@ fn run(
     #[cfg(windows)]
     let mut process = Command::new("cmd.exe");
     #[cfg(windows)]
-    process.args(["/d", "/s", "/c", command]);
+    {
+        use std::os::windows::process::CommandExt;
+        // cmd /s removes this one wrapper pair. Its literal script must not
+        // receive CRT backslash escapes around the script's own inner quotes.
+        process
+            .args(["/d", "/s", "/c"])
+            .raw_arg(format!("\"{command}\""));
+    }
     #[cfg(not(windows))]
     let mut process = Command::new("sh");
     #[cfg(not(windows))]
@@ -238,6 +245,26 @@ pub(super) fn detail(node: &Node, board: &str, run: &str, key: &str) -> Result<V
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[cfg(windows)]
+    #[test]
+    fn command_task_owned_windows_literal_keeps_quotes_percent_and_unicode_paths() {
+        let scratch = tempfile::tempdir().unwrap();
+        let folder = scratch.path().join("owned command 中文");
+        fs::create_dir(&folder).unwrap();
+        fs::write(folder.join("literal input 中文.txt"), "raw-中文").unwrap();
+        let command = r#"chcp 65001 >nul& <nul set /p "=quoted space value"& type "literal input 中文.txt"& <nul set /p "=%CD%"& <nul set /p "=owned-error" >&2& exit /b 7"#;
+        let (status, stdout, stderr, truncated) = run(command, &folder).unwrap();
+        assert_eq!(status.code(), Some(7));
+        let expanded = stdout.strip_prefix("quoted space valueraw-中文").unwrap();
+        assert_eq!(
+            fs::canonicalize(expanded).unwrap(),
+            fs::canonicalize(&folder).unwrap()
+        );
+        assert_eq!(stderr, "owned-error");
+        assert!(!truncated);
+        assert!(!folder.join(".khor").exists());
+    }
 
     #[test]
     fn child_command_detail_reads_only_its_owned_receipt_without_reexecution() {

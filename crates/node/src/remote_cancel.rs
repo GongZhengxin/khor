@@ -1421,7 +1421,7 @@ fn start(root: PathBuf, operation: Operation) -> Result<OwnedWorker, String> {
     // event. The process and its I/O retain Worker's original absolute budget.
     ensure_driver()?;
     wake_driver();
-    #[cfg(test)]
+    #[cfg(all(test, unix))]
     let traced = match &operation {
         Operation::CancelStep { run } => Some((root.clone(), run.clone())),
         _ => None,
@@ -1438,7 +1438,7 @@ fn start(root: PathBuf, operation: Operation) -> Result<OwnedWorker, String> {
     if let Some(pid) = worker.pid() {
         crate::khor_agent::runtime_close_tests::owner_started(&worker_root, pid);
     }
-    #[cfg(test)]
+    #[cfg(all(test, unix))]
     if let Some((root, run)) = traced
         && let Some(pid) = worker.pid()
     {

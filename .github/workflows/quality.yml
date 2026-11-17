@@ -38,8 +38,11 @@ env:
 
 jobs:
   session-execution:
-    if: ${{ inputs.suite == 'all' || inputs.suite == 'node' || inputs.suite == '' }}
+    needs: frontend
+    if: ${{ !cancelled() && (inputs.suite == 'all' || inputs.suite == 'node' || inputs.suite == '') && (needs.frontend.result == 'success' || inputs.reuse_frontend) }}
     uses: ./.github/workflows/session-execution.yml
+    with:
+      reuse_frontend: true
   dsh-integration:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.suite == 'agent' }}
     permissions:

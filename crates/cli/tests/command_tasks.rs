@@ -9,6 +9,7 @@ use std::{
 struct Fixture {
     home: PathBuf,
     tasks: Vec<String>,
+    install_source: PathBuf,
 }
 
 impl Fixture {
@@ -23,6 +24,7 @@ impl Fixture {
         Self {
             home,
             tasks: Vec::new(),
+            install_source: env!("CARGO_BIN_EXE_khor").into(),
         }
     }
     fn command(&self) -> Command {
@@ -31,7 +33,7 @@ impl Fixture {
             .env("KHOR_HOME", &self.home)
             .env("KHOR_NAME", "command-test")
             .env("KHOR_RUNTIME_DIR", self.home.join("runtime"))
-            .env("KHOR_RUNTIME_INSTALL_SOURCE", env!("CARGO_BIN_EXE_khor"))
+            .env("KHOR_RUNTIME_INSTALL_SOURCE", &self.install_source)
             .env("KHOR_TASK_LITERAL", "space value %KEEP_LITERAL%")
             .env("KHOR_TASK_INPUT", self.home.join("literal input 中文.txt"))
             .env_remove("KHOR_SESSION")
@@ -125,6 +127,28 @@ impl Drop for Fixture {
             let _ = std::fs::remove_dir_all(&self.home);
         }
     }
+}
+
+#[test]
+fn actual_worker_uses_its_running_image_after_the_installation_source_has_moved() {
+    let mut fixture = Fixture::new();
+    fixture.install_source = fixture.home.join("retired-installation-program");
+    assert!(!fixture.install_source.exists());
+    #[cfg(not(windows))]
+    let command = "printf current-image";
+    #[cfg(windows)]
+    let command = r#"<nul set /p "=current-image"& exit /b 0"#;
+    let started = fixture.start("cli-running-image-token", command);
+    let id = started["task"]["id"].as_str().unwrap();
+    let done = fixture.terminal(id);
+    assert_eq!(done["task"]["phase"], "completed");
+    assert_eq!(done["task"]["exit"], 0);
+    assert_eq!(
+        fixture.action("read", id)["stdout"]["text"],
+        "current-image"
+    );
+    fixture.assert_no_sessions();
+    assert!(!fixture.install_source.exists());
 }
 
 #[test]

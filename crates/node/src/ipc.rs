@@ -518,6 +518,10 @@ pub enum Op {
     },
     OpenShellOn {
         machine: String,
+        start: crate::proto::LegacyShellStart,
+    },
+    OpenTerminalOn {
+        machine: String,
         start: crate::shell_start::ShellStart,
     },
     SubscriptionsOn {
@@ -646,6 +650,7 @@ impl Op {
             Op::WritePathOn { .. } => ("WritePathOn", DEADLINE_FAR),
             Op::OpenOn { .. } => ("OpenOn", DEADLINE_FAR),
             Op::OpenShellOn { .. } => ("OpenShellOn", DEADLINE_FAR),
+            Op::OpenTerminalOn { .. } => ("OpenTerminalOn", DEADLINE_FAR),
             Op::OpenAgentOn { .. } => ("OpenAgentOn", DEADLINE_FAR),
             Op::ReachOn { .. } => ("ReachOn", DEADLINE_FAR),
             Op::Rejoin { .. } => ("Rejoin", DEADLINE_FAR),

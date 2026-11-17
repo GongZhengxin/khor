@@ -55,14 +55,19 @@ fn current() -> Result<Info, String> {
     embedded.insert("pi".into(), env!("KHOR_AGENT_BUNDLE_BLAKE3").to_owned());
     let wire = include_str!("proto.rs").replace("\r\n", "\n");
     let fingerprint = format!("{:x}", Sha256::digest(wire.as_bytes()));
-    // These exact audited revisions add FileResource, then SessionImport.
+    // These exact audited revisions add FileResource, SessionImport, then
+    // Execution and OpenTerminalOnce (including new startup fields).
     // MessagePack carries operation names; existing words and positional
-    // fields are unchanged. Old peers refuse unknown words rather than
-    // executing another operation. Keep published live residents eligible.
+    // fields are unchanged, including the six-field LegacyShellStart.
+    // Old peers refuse the new words before any command can execute or lose
+    // its startup arguments. Existing viewer connections remain protocol v5;
+    // automation requires a separate v6 control connection. Keep published
+    // live residents eligible for their existing capabilities.
     // Every other source revision keeps its own fingerprint and fails closed.
     let compatible_fingerprint = match fingerprint.as_str() {
         "f317c5ec5fa618a54ef5848016cc23219c37cbc39d6abd52cd4b361526d21f29"
-        | "f0c20d8ece8dda5bab4025bf550149bba8be5a4b399459f656a9449a566f4f4f" => {
+        | "f0c20d8ece8dda5bab4025bf550149bba8be5a4b399459f656a9449a566f4f4f"
+        | "4c41bbe5e02bf1883c5cfa0764f53d862accdff50a2714516a3daa7caafc8773" => {
             "7bdf9a8cedcc26b783f3a6714899df875cbcb429e2f1ee64aa5a7d065e75fcda"
         }
         other => other,

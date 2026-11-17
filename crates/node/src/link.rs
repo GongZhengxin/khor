@@ -28,6 +28,9 @@ use crate::doc_transfer_state::registry::{ROUND_DOCS, with_doc};
 pub(crate) mod documents;
 #[path = "link_execution.rs"]
 mod execution;
+#[cfg(test)]
+#[path = "link_legacy_shell_tests.rs"]
+mod legacy_shell_tests;
 #[path = "link_pairing.rs"]
 pub(crate) mod pairing;
 
@@ -2652,6 +2655,12 @@ impl Node {
                 }
             }
             ipc::Op::OpenShellOn { machine, start } => {
+                match self.open_legacy_shell_on_with(ep, &machine, start).await {
+                    Ok(id) => ipc::Reply::OpenedOn { session: id.0 },
+                    Err(why) => ipc::Reply::Refused { why },
+                }
+            }
+            ipc::Op::OpenTerminalOn { machine, start } => {
                 match self.open_shell_on_with(ep, &machine, start).await {
                     Ok(id) => ipc::Reply::OpenedOn { session: id.0 },
                     Err(why) => ipc::Reply::Refused { why },
@@ -5388,6 +5397,10 @@ impl Node {
                 value: self.execution_here(action).await?,
             }),
             Request::OpenShellOnce { start } => {
+                let id = self.open_legacy_shell_here(start).await?;
+                Ok(Response::Opened { session: id.0 })
+            }
+            Request::OpenTerminalOnce { start } => {
                 let id = self.open_shell_here(start).await?;
                 Ok(Response::Opened { session: id.0 })
             }
@@ -6911,7 +6924,7 @@ impl Node {
         start.validate()?;
         self.refuse_unless_it_hosts(machine)?;
         if let Some(reply) = self
-            .via_serve(ipc::Op::OpenShellOn {
+            .via_serve(ipc::Op::OpenTerminalOn {
                 machine: machine.into(),
                 start: start.clone(),
             })
@@ -6940,9 +6953,33 @@ impl Node {
         machine: &str,
         start: crate::shell_start::ShellStart,
     ) -> Result<crate::SessionId, String> {
+        self.open_shell_on_with_contract(ep, machine, start, None)
+            .await
+    }
+
+    async fn open_legacy_shell_on_with(
+        &self,
+        ep: &iroh::Endpoint,
+        machine: &str,
+        legacy: crate::proto::LegacyShellStart,
+    ) -> Result<crate::SessionId, String> {
+        self.open_shell_on_with_contract(ep, machine, legacy.clone().into(), Some(legacy))
+            .await
+    }
+
+    async fn open_shell_on_with_contract(
+        &self,
+        ep: &iroh::Endpoint,
+        machine: &str,
+        start: crate::shell_start::ShellStart,
+        legacy: Option<crate::proto::LegacyShellStart>,
+    ) -> Result<crate::SessionId, String> {
         let (channel, home) = self.execution_target(machine)?;
         if home == self.device() {
-            return self.open_shell_here(start).await;
+            return match legacy {
+                Some(legacy) => self.open_legacy_shell_here(legacy).await,
+                None => self.open_shell_here(start).await,
+            };
         }
         let device = self.recovery_peer(home)?;
         if device.sponsor.is_some() {
@@ -6966,10 +7003,13 @@ impl Node {
         }
 
         let asked = std::time::Instant::now();
-        match self
-            .ask_on(ep, &device, &Request::OpenShellOnce { start })
-            .await?
-        {
+        // Preserve the published operation for an older caller and peer. New
+        // argv/readiness semantics must travel only under their new word.
+        let request = match legacy {
+            Some(start) => Request::OpenShellOnce { start },
+            None => Request::OpenTerminalOnce { start },
+        };
+        match self.ask_on(ep, &device, &request).await? {
             Response::Opened { session } => {
                 let left =
                     (ipc::DEADLINE_FAR - Duration::from_secs(3)).saturating_sub(asked.elapsed());
@@ -6982,6 +7022,44 @@ impl Node {
             other => Err(msg::peer_non_answer(format_args!("{other:?}"))),
         }
     }
+
+    fn legacy_shell_receipt(&self, token: &str) -> Result<Option<crate::SessionId>, String> {
+        let receipt = self.root().join(".khor/opened").join(token);
+        if !receipt.try_exists().map_err(|error| error.to_string())? {
+            return Ok(None);
+        }
+        let id = crate::once::made(self.root(), token)
+            .filter(|id| id.starts_with("shell/") && id.len() > "shell/".len() && id.len() <= 512)
+            .map(crate::SessionId)
+            .ok_or("Legacy shell creation receipt is invalid; refusing to repeat startup")?;
+        let directory = self.live.dir_of(&id).ok_or(
+            "Legacy shell creation receipt names an invalid session; refusing to repeat startup",
+        )?;
+        let meta = std::fs::read(directory.join("meta.json"))
+            .ok()
+            .and_then(|bytes| serde_json::from_slice::<crate::live::Meta>(&bytes).ok())
+            .ok_or("Legacy shell creation receipt has no registered session; refusing to repeat startup")?;
+        if meta.kind != crate::kind::SHELL || meta.id != id.0 || meta.gui_run.is_some() {
+            return Err("Legacy shell creation receipt does not name its registered shell; refusing to repeat startup".into());
+        }
+        Ok(Some(id))
+    }
+
+    async fn open_legacy_shell_here(
+        &self,
+        legacy: crate::proto::LegacyShellStart,
+    ) -> Result<crate::SessionId, String> {
+        self.refuse_unless_hosting()?;
+        let start: crate::shell_start::ShellStart = legacy.into();
+        start.validate()?;
+        let token = start.token.clone();
+        let id = self.open_shell_here(start).await?;
+        // Retain the published ledger too, so an older resident still answers
+        // this legacy caller's retry after a rollback without another startup.
+        crate::once::note(self.root(), &token, &id.0)?;
+        Ok(id)
+    }
+
     async fn open_shell_here(
         &self,
         start: crate::shell_start::ShellStart,
@@ -6997,7 +7075,6 @@ impl Node {
         self.refuse_unless_hosting()?;
         start.validate()?;
         let _held = crate::once::lock(&start.token).await;
-        let cwd = crate::shell_start::directory(&start.cwd)?;
         let fingerprint = blake3::hash(
             &serde_json::to_vec(&(
                 &start.title,
@@ -7011,6 +7088,23 @@ impl Node {
         )
         .to_hex()
         .to_string();
+        if let Some(id) = self.legacy_shell_receipt(&start.token)? {
+            let equivalent = !start.headless
+                && start.argv.is_none()
+                && selected_shell.is_none()
+                && ancestry.is_none();
+            let binding = if equivalent {
+                fingerprint.as_str()
+            } else {
+                "legacy-startup-reserved"
+            };
+            let (_durable, original) =
+                crate::once::claim_shell_with_id(self.root(), &start.token, binding, Some(&id.0))?;
+            if !equivalent {
+                return Err("Legacy shell creation token already ran; new startup options require a new token".into());
+            }
+            return Ok(crate::SessionId(original));
+        }
         let (_durable, id) = crate::once::claim_shell(self.root(), &start.token, &fingerprint)?;
         let id = crate::SessionId(id);
         if self
@@ -7020,6 +7114,7 @@ impl Node {
         {
             return Ok(id);
         }
+        let cwd = crate::shell_start::directory(&start.cwd)?;
         let live = self.live.clone();
         let shell_scripts = crate::integration::dir(&self.root().join(".khor"));
         let id = tokio::task::spawn_blocking(move || {

@@ -89,6 +89,9 @@ async fn monitor_and_ended_content_cross_the_execution_home_instead_of_reading_l
             );
             thread::sleep(Duration::from_millis(20));
         };
+        // BSD accept inherits the listener's O_NONBLOCK; Linux does not.
+        // Framed IO below is blocking with explicit bounded timeouts on both.
+        stream.set_nonblocking(false).unwrap();
         stream
             .set_read_timeout(Some(Duration::from_secs(5)))
             .unwrap();

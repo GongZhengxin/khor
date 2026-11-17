@@ -431,7 +431,9 @@ fn start(
 }
 
 fn spawn_worker(root: &Path, id: &str) -> Result<u32, String> {
-    let image = crate::runtime_image::host()?;
+    // The published node contract remains compatible with older residents;
+    // this private worker entry must come from the image implementing it.
+    let image = crate::runtime_image::running_host()?;
     let mut command = Command::new(image.path());
     command
         .args([WORKER, id])

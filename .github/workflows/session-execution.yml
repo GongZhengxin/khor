@@ -3,6 +3,10 @@ name: Session execution
 on:
   workflow_dispatch:
   workflow_call:
+    inputs:
+      reuse_frontend:
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -14,7 +18,12 @@ env:
   CARGO_BUILD_JOBS: '2'
 
 jobs:
+  frontend:
+    if: ${{ !inputs.reuse_frontend }}
+    uses: ./.github/workflows/frontend.yml
   native-contracts:
+    needs: frontend
+    if: ${{ !cancelled() && (needs.frontend.result == 'success' || inputs.reuse_frontend) }}
     strategy:
       fail-fast: false
       matrix:
@@ -28,6 +37,7 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
         with:
           python-version: '3.13'
+      - uses: ./.github/actions/restore-frontend
       - uses: dtolnay/rust-toolchain@1.95.0
       - uses: Swatinem/rust-cache@v2
         with:
