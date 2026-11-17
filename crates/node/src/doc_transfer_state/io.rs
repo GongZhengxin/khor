@@ -420,13 +420,27 @@ pub(super) fn bootstrap_view(root: &Path) -> Result<BootstrapView, String> {
         {
             return Err("unrecognized transfer metadata file; reconciliation required".into());
         }
-        check_file(&entry.path())?;
+        let metadata = match fs::symlink_metadata(entry.path()) {
+            Ok(metadata) => metadata,
+            Err(why) if why.kind() == std::io::ErrorKind::NotFound => {
+                return Ok(BootstrapView::Recover);
+            }
+            Err(why) => return Err(error(why)),
+        };
+        if !metadata.is_file() || metadata.file_type().is_symlink() {
+            return Err("unsafe transfer metadata file".into());
+        }
+        if entry.file_name().to_str() == Some("gate") {
+            private(&metadata)?;
+        } else {
+            private_snapshot(&metadata)?;
+        }
     }
     // Read next first. Reading only the committed image could miss the first
     // Ready intent left there by a dead writer. A rename between these reads
     // is deliberately ambiguous and goes through the locked recovery path.
-    let next = read_optional(&root.join("registry.next"))?;
-    let current = read_optional(&root.join("registry"))?;
+    let next = read_snapshot(&root.join("registry.next"))?;
+    let current = read_snapshot(&root.join("registry"))?;
     let mut images = Vec::new();
     let generation = if let Some(bytes) = current {
         let (generation, body) = decode(&bytes)?;
@@ -637,6 +651,32 @@ fn read_optional(path: &Path) -> Result<Option<Vec<u8>>, String> {
         Ok(_) => {}
     }
     let file = open(path, false)?;
+    read_image(file).map(Some)
+}
+
+fn read_snapshot(path: &Path) -> Result<Option<Vec<u8>>, String> {
+    let mut options = options();
+    options.write(false);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::OpenOptionsExt;
+        // A replaced special file must not block before its type is checked.
+        options.custom_flags(libc::O_NOFOLLOW | libc::O_NONBLOCK);
+    }
+    let file = match options.open(path) {
+        Ok(file) => file,
+        Err(why) if why.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+        Err(why) => return Err(error(why)),
+    };
+    let metadata = file.metadata().map_err(error)?;
+    if !metadata.is_file() {
+        return Err("transfer metadata control is not a file".into());
+    }
+    private_snapshot(&metadata)?;
+    read_image(file).map(Some)
+}
+
+fn read_image(file: File) -> Result<Vec<u8>, String> {
     if file.metadata().map_err(error)?.len() > (MAX_IMAGE + HEADER) as u64 {
         return Err("transfer metadata file exceeds budget".into());
     }
@@ -647,7 +687,7 @@ fn read_optional(path: &Path) -> Result<Option<Vec<u8>>, String> {
     if bytes.len() > MAX_IMAGE + HEADER {
         return Err("transfer metadata file grew past budget".into());
     }
-    Ok(Some(bytes))
+    Ok(bytes)
 }
 
 fn options() -> OpenOptions {
@@ -702,6 +742,24 @@ fn private_dir(path: &Path) -> Result<(), String> {
         return Err("unsafe transfer metadata directory".into());
     }
     private(&metadata)
+}
+
+fn private_snapshot(metadata: &fs::Metadata) -> Result<(), String> {
+    // Atomic registry replacement can unlink a read-only observer's inode.
+    // Zero links is safe for this snapshot; extra links, owner/mode changes,
+    // writers and lockfiles retain the original strict checks.
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::MetadataExt;
+        if metadata.is_file()
+            && metadata.nlink() == 0
+            && metadata.uid() == unsafe { libc::geteuid() }
+            && metadata.mode() & 0o077 == 0
+        {
+            return Ok(());
+        }
+    }
+    private(metadata)
 }
 
 fn private(metadata: &fs::Metadata) -> Result<(), String> {
@@ -824,6 +882,76 @@ mod tests {
             assert_eq!(fs::read(fixture.0.join("registry.next")).unwrap(), bytes);
             assert_eq!(fs::read(fixture.0.join("registry")).unwrap(), previous);
         }
+    }
+    #[cfg(unix)]
+    #[test]
+    fn an_atomic_registry_replacement_keeps_the_opened_read_snapshot_valid() {
+        use std::os::unix::fs::MetadataExt;
+        let _serial = TEST_SERIAL.lock().unwrap_or_else(|e| e.into_inner());
+        let fixture = Fixture::new();
+        let _gate = gate(&fixture.0).unwrap();
+        let (mut journal, _) = Journal::load(&fixture.0, |_| Ok(())).unwrap();
+        journal.save(b"previous").unwrap();
+        let opened = options().open(fixture.0.join("registry")).unwrap();
+        journal.save(b"current").unwrap();
+        let metadata = opened.metadata().unwrap();
+        assert_eq!(
+            metadata.nlink(),
+            0,
+            "real atomic replacement unlinked the old inode"
+        );
+        assert_eq!(metadata.mode() & 0o077, 0);
+        assert_eq!(metadata.uid(), unsafe { libc::geteuid() });
+        assert_ne!(
+            metadata.ino(),
+            fs::metadata(fixture.0.join("registry")).unwrap().ino()
+        );
+        assert!(
+            private_snapshot(&metadata).is_ok(),
+            "a private opened read snapshot is still valid after replacement"
+        );
+        assert!(
+            private(&metadata).is_err(),
+            "writers must still require exactly one live pathname link"
+        );
+        let mut bytes = Vec::new();
+        (&opened).read_to_end(&mut bytes).unwrap();
+        assert_eq!(decode(&bytes).unwrap(), (1, b"previous".as_slice()));
+    }
+    #[cfg(unix)]
+    #[test]
+    fn read_snapshots_still_refuse_hard_links_symlinks_and_public_files() {
+        use std::os::unix::{
+            ffi::OsStrExt,
+            fs::{PermissionsExt, symlink},
+        };
+        let _serial = TEST_SERIAL.lock().unwrap_or_else(|e| e.into_inner());
+        let fixture = Fixture::new();
+        let _gate = gate(&fixture.0).unwrap();
+        let (mut journal, _) = Journal::load(&fixture.0, |_| Ok(())).unwrap();
+        journal.save(b"private").unwrap();
+        let registry = fixture.0.join("registry");
+        let original = fs::read(&registry).unwrap();
+        let linked = fixture.0.join("registry.next");
+        fs::hard_link(&registry, &linked).unwrap();
+        assert!(read_snapshot(&registry).is_err());
+        fs::remove_file(&linked).unwrap();
+        symlink(&registry, &linked).unwrap();
+        assert!(read_snapshot(&linked).is_err());
+        fs::remove_file(&linked).unwrap();
+        fs::set_permissions(&registry, fs::Permissions::from_mode(0o644)).unwrap();
+        assert!(read_snapshot(&registry).is_err());
+        fs::set_permissions(&registry, fs::Permissions::from_mode(0o600)).unwrap();
+        assert_eq!(read_snapshot(&registry).unwrap(), Some(original.clone()));
+        let fifo = fixture.0.join("registry.next");
+        let path = std::ffi::CString::new(fifo.as_os_str().as_bytes()).unwrap();
+        assert_eq!(unsafe { libc::mkfifo(path.as_ptr(), 0o600) }, 0);
+        assert!(
+            read_snapshot(&fifo).is_err(),
+            "a FIFO must fail without waiting for a writer"
+        );
+        fs::remove_file(&fifo).unwrap();
+        assert_eq!(fs::read(&registry).unwrap(), original);
     }
     #[cfg(unix)]
     #[test]

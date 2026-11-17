@@ -50,7 +50,7 @@ export async function checkSessionImport(browser,{port,report,engine,width,theme
   assert.equal(await dialog.locator('[data-import-row]').evaluateAll((rows,key)=>rows.filter(row=>row.dataset.importRow===key).length,JSON.stringify(identity)),0,'Already managed history leaves the import catalog');
   await dialog.locator('[data-import-field]').fill('其他宿主运行中的任务');
   await dialog.locator('[data-import-intent="fork"]').first().click();await dialog.waitFor({state:'detached'});
-  await page.locator('[data-chat-scroll]:visible').waitFor();
+  await page.locator('[data-chat-scroll]:visible').filter({hasText:'独立分支'}).waitFor();
   assert.match(await page.locator('[data-chat-scroll]:visible').innerText(),/独立分支/);
   const applied=(await calls()).filter(call=>call.action.kind==='apply');assert.equal(applied.length,2);assert.deepEqual(applied.map(call=>call.action.intent),['import','fork']);
   assert.notEqual(applied[0].action.token,applied[1].action.token);

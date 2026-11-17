@@ -188,6 +188,10 @@ jobs:
           KHOR_TEST_PYTHON="$(python3 -c 'import pathlib,sys; p=pathlib.Path(sys.executable).resolve(); f=p.parent.parent/"Resources/Python.app/Contents/MacOS/Python"; print(f if f.is_file() else p)')"
           export KHOR_TEST_PYTHON
           cargo test --locked -p khor-acp --lib startup_frame_pressure_is_bounded_and_cancellation_retires_the_actual_agent
+      - name: Verify native metadata snapshots and published runtime compatibility
+        run: |
+          cargo test --locked -p khor-node --lib doc_transfer_state::io::tests -- --test-threads=1
+          cargo test --locked -p khor-node --lib runtime_image::compatibility_tests -- --test-threads=1
       - name: Verify closed WebKit documents stop media
         run: python3 apps/gui/scripts/page-retirement-probe/run.py --out "$RUNNER_TEMP/page-retirement"
       - name: Verify borrowed loopback in actual native WebKit
@@ -354,6 +358,7 @@ jobs:
           set -euo pipefail
           export KHOR_RUNTIME_DIR="$RUNNER_TEMP/doc-query-runtime"
           mkdir -m 700 "$KHOR_RUNTIME_DIR"
+          cargo test --locked -p khor-node --lib runtime_image::compatibility_tests -- --test-threads=1 2>&1 | tee "$RUNNER_TEMP/runtime-node-compatibility.log"
           cargo test --locked -p khor-node --lib doc_transfer_state:: -- --test-threads=1 2>&1 | tee "$RUNNER_TEMP/doc-state-guards.log"
           KHOR_QUERY_CLI="$CARGO_TARGET_DIR/debug/khor" cargo test --locked -p khor-node --lib link::documents::query_concurrency_tests::ordinary_query_ -- --ignored --nocapture --test-threads=1 2>&1 | tee "$RUNNER_TEMP/doc-query-admission.log"
           cargo test --locked -p khor-node --lib link::pairing::tests::interrupted_pair_settlement_recovers_before_bootstrap_and_never_replays_after_leave -- --ignored --exact --nocapture --test-threads=1 2>&1 | tee "$RUNNER_TEMP/pair-settlement-recovery.log"
@@ -445,6 +450,7 @@ jobs:
             ${{ runner.temp }}/doc-state-guards.log
             ${{ runner.temp }}/doc-query-admission.log
             ${{ runner.temp }}/pair-settlement-recovery.log
+            ${{ runner.temp }}/runtime-node-compatibility.log
           if-no-files-found: warn
 
   gui:
