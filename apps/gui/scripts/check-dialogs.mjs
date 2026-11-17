@@ -10,7 +10,8 @@ const root=fileURLToPath(new URL('..',import.meta.url));
 const port=Number(process.env.DIALOGS_PORT||23604);
 let presets=Array.from({length:15},(_,i)=>({id:'preset-'+i,name:'工作流 '+(i+1),command:'codex --profile project-'+(i+1)}));
 const catalog=Array.from({length:40},(_,i)=>({id:'agent-'+i,name:['OpenCode','Poolside','Mistral Vibe'][i%3]+' '+(i+1),about:'The open source coding agent',argv:i%3===0?null:'agent-'+i}));
-const candidates=Array.from({length:30},(_,i)=>({id:'candidate-'+i,form:'shell',machine:'fixture',device:'fixture',title:'终端 '+(i+1),place:'~/project-'+i,at_ms:Date.now()-i*60000,category:null,agent:null,command:'zsh'}));
+const candidates=Array.from({length:30},(_,i)=>({agent:'codex-acp',native_id:'candidate-'+i,title:'终端 '+(i+1),cwd:'/fixture/project-'+i,updated_at:new Date(Date.now()-i*60000).toISOString(),intent:'import',reason:null}));
+const importCatalog={home:'fixture',at_ms:Date.now(),agents:[{agent:'codex-acp',at_ms:Date.now(),status:'sessions',reason:null,load:true,resume:true,fork:true,archive:true}],rows:candidates};
 const html=`<!doctype html><html data-theme="dark"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><body><div id="root"></div><script type="module">import RefreshRuntime from '/@react-refresh';RefreshRuntime.injectIntoGlobalHook(window);window.$RefreshReg$=()=>{};window.$RefreshSig$=()=>type=>type;window.__vite_plugin_react_preamble_installed__=true;</script><script type="module" src="/scripts/fixtures/dialog-bounds.tsx"></script></body></html>`;
 const wrapper=`<!doctype html><meta charset="utf-8"><style>body{margin:0;background:#111;color:#ddd;font:14px system-ui}header{height:42px;display:flex;gap:12px;align-items:center;padding:0 20px}button{padding:4px 12px}iframe{display:block;border:1px solid #555;width:1080px;height:680px;margin:auto}</style><header>正式弹窗组件验收 <button onclick="size(1080,680)">桌面</button><button onclick="size(900,440)">低窗口</button><button onclick="size(390,760)">手机</button><button onclick="size(390,400)">手机短视口</button><button onclick="let d=document.querySelector('iframe').contentDocument.documentElement;d.dataset.theme=d.dataset.theme==='dark'?'light':'dark'">浅深主题</button></header><iframe src="/dialog-frame?bridge=${port}"></iframe><script>function size(w,h){let f=document.querySelector('iframe');f.style.width=w+'px';f.style.height=h+'px'}</script>`;
 const server=await createServer({root,configFile:path.join(root,'vite.config.ts'),cacheDir:path.join(tmpdir(),'khor-dialogs-vite'),server:{port,host:'127.0.0.1',strictPort:true},optimizeDeps:{entries:['scripts/fixtures/dialog-bounds.tsx']},plugins:[{name:'disposable-dialog-fixture',configureServer(s){s.middlewares.use(async(req,res,next)=>{
@@ -28,7 +29,11 @@ const server=await createServer({root,configFile:path.join(root,'vite.config.ts'
   else if(cmd==='launch_preset_delete'){presets=presets.filter(p=>p.id!==args.id);result=presets;}
   else if(cmd==='agents_known')result=catalog;
   else if(cmd==='agents_known_taken')result=['2026-08-30',40,40];
-  else if(cmd==='import_candidates')result=candidates;
+  else if(cmd==='session_import'){
+    assert.equal(args.home,'fixture','import discovery stays on its execution home');
+    assert.equal(args.action.kind,'read','opening the dialog reads without starting an agent');
+    result={kind:'catalog',value:importCatalog};
+  }
   else if(cmd==='ls')result={path:'/home/fixture/',entries:Array.from({length:40},(_,i)=>({name:'project-'+(i+1),dir:true})),truncated:false};
   else {res.statusCode=500;return res.end(JSON.stringify('Unexpected fixture command: '+cmd));}
   res.setHeader('Content-Type','application/json');res.end(JSON.stringify(result));
@@ -70,6 +75,7 @@ if(process.argv.includes('--serve')){
       await frame.getByRole('button',{name:'关闭',exact:true}).click();
       await frame.getByRole('button',{name:'导入会话',exact:true}).click();
       await frame.locator('[data-import-row]').last().waitFor();
+      assert.equal(await frame.locator('[data-import-row]').count(),candidates.length,'the current ACP catalog supplies the layout fixture');
       await bounded();
       if(size.startsWith('手机')){
         const ratio=await frame.getByRole('dialog').evaluate(el=>el.getBoundingClientRect().height/innerHeight);
@@ -84,6 +90,8 @@ if(process.argv.includes('--serve')){
       await settled();
       const fitted=await frame.getByRole('dialog').evaluate(el=>el.getBoundingClientRect().height);
       await frame.getByRole('searchbox',{name:'搜索可导入的会话'}).fill('终端 30');
+      await frame.locator('[data-import-row]').filter({hasText:'终端 30'}).waitFor();
+      assert.equal(await frame.locator('[data-import-row]').count(),1,'search filters the real import rows');
       assert(Math.abs(await frame.getByRole('dialog').evaluate(el=>el.getBoundingClientRect().height)-fitted)<1,'filter moved the import sheet');
       await frame.getByRole('button',{name:'关闭',exact:true}).click();
     }
