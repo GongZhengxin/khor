@@ -178,7 +178,8 @@ CC Switch（MIT，桌面三平台）管 **13 个工具**，方式是**写各 CLI
   与「发一条消息」（`codex queue --thread <id> --message`，走 Codex 自己的守护进程，
   不是接管——所以已装载的 thread 也能说上一句话）。
   **DSH 已接入三样**（§2.8）：headless 驱动（`agents tell dsh`）、会话清单（`agents dsh`）、
-  界面按项目列出并可「在终端里继续」。**还差**：读消息事件（transcript）——只解了头，标题与正文未读。
+  界面按项目列出并可「在终端里继续」。**正文也已读**（§2.9）：解析器 + `agents dsh <session>` + 界面「读一下」。仍未做：把 DSH 会话接进
+  导入/聊天面板（`ImportCandidates`/`ContentSource` 管线）——现在是清单页里的独立读入口。
 - **D 两机互联**：**已打通**，见 §8。
 - **E 启动性能**：**达标**。本机 `ls` 不再建 iroh 端点（**1168 → 80 ms**，`3ce5c5e3`）；
   Windows 不再为 PATH 启动登录 shell（`5df68991`）；按独立验收排第一的项去掉 Windows 上
@@ -271,3 +272,20 @@ DSH 不是 ACP 注册表里的 agent，所以它没有 `session/list` 可问。K
 
 **桥接层运行时证据**：`/dsh_sessions` → 200、16 行；`/agent_fleet` → 200、9 个 agent。
 **NOT_TESTED**：这一节的像素呈现（WebView2 里 CDP 重载没生效），以及带凭据的真实一轮。
+
+### 2.9 DSH 正文：一段对话读得出来（提交 `ff519450`、`c245f31b`、`5b8d31be`）
+
+清单只解头帧；**正文**是另外三片：
+
+1. **解析器**（`ff519450`）：DSH 的事件映射成仓库已有的 `Utterance`——`user/message` → User、
+   `assistant/message` 的 reasoning → Thought、text → Agent、`tool-call` → Tool（**转成 claude 的
+   `tool_use` 块**，参数从字符串解析成对象）、`tool/result` → ToolDone（claude 的 `tool_result`）。
+   复用的是 `cagent::said`/`settled` 这条唯一翻译——验收期间发现过"每个厂商各写一份翻译"导致
+   工具标题/状态丢失的旧 bug，这里不重犯。`tool/call` 事件跳过（它是 assistant 消息里那条的重复）。
+2. **整段读出**（`c245f31b`）：`conversation(id)` 按会话**自己的头**找到文件（不解目录名编码），
+   逐帧解压到 4 MiB，`agents dsh <session>` 逐行打印：真实子代理会话 **12,388 行、1.4 s**。
+3. **界面**（`5b8d31be`）：清单页每行多了「读一下」，弹层显示 `谁 / 说了什么`；工具显示
+   `name {input}`，失败结果带 `failed:`。与 CLI 同一个 reader，所以两边不可能对不上话。
+
+**NOT_TESTED**：弹层像素（WebView2 里 CDP 重载不生效的老问题）；`/dsh_transcript` 的桥接运行时
+只做了 `command_tables` 与类型检查（上一次 `/dsh_sessions` 的 200 来自更早构建）。
