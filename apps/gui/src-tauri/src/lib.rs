@@ -4119,6 +4119,13 @@ fn dsh_sessions() -> Vec<khor_gui_core::agents::DshConversation> {
     khor_gui_core::agents::dsh_conversations()
 }
 
+/// The argv a terminal should run to continue a foreign conversation.
+/// Pure string work, no process: the face opens the terminal.
+#[tauri::command(rename_all = "snake_case")]
+fn native_resume_argv(agent: String, id: String) -> Result<String, String> {
+    khor_gui_core::agents::native_resume_argv(&agent, &id)
+}
+
 /// One DSH conversation, line by line (`khor agents dsh <session>`). This
 /// decompresses the whole file, so it waits off the main thread like every
 /// other read that can take seconds.
@@ -6048,6 +6055,7 @@ pub fn run() {
             agent_fleet,
             dsh_sessions,
             dsh_transcript,
+            native_resume_argv,
             agents_known_taken,
             register_known_agent,
             agent_seen,

@@ -5487,7 +5487,7 @@ fn agents(rest: &[String]) -> Result<(), String> {
             let [agent, id, text] = tail else {
                 return Err(usage_text().into());
             };
-            println!("{}", khor_node::native_queue::send(agent, id, text, None)?);
+            println!("{}", khor_node::agent_driver::send(agent, id, text, None)?);
             Ok(())
         }
         // **The conversations DSH already has here.** Not a registered

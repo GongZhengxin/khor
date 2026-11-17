@@ -317,6 +317,13 @@ pub fn resume_session(
         .0)
 }
 
+/// The argv a terminal should run to continue a foreign conversation
+/// (`khor`'s one answer to `open`). The face opens the terminal; the node
+/// says what to type, so Codex's and DSH's resume spellings live in one
+/// place instead of once per screen.
+pub fn native_resume_argv(agent: &str, native_id: &str) -> Result<String, String> {
+    khor_node::agent_driver::resume_argv(agent, native_id)
+}
 /// One DSH conversation on this machine, as a screen shows it.
 ///
 /// The node's [`khor_node::dsh_sessions::DshSession`] is the same facts;
@@ -397,7 +404,7 @@ pub fn native_send(
     text: &str,
     cwd: Option<&str>,
 ) -> Result<String, String> {
-    khor_node::native_queue::send(agent, native_id, text, cwd)
+    khor_node::agent_driver::send(agent, native_id, text, cwd)
 }
 
 /// One agent on this machine, as a screen shows it.

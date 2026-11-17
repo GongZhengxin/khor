@@ -13,7 +13,7 @@ import type { DelegatedChild } from "@/lib/delegated-sessions";
 import { BellMark } from "@/components/BellMark";
 import { StatusWord } from "@/components/StatusWord";
 import { SessionUnread } from "@/components/SessionUnread";
-import { openShell, nativeSend, sessionRecovery, takeover, takeoverTerm, type DeviceRow, type SessionRow } from "@/api";
+import { openShell, nativeResumeArgv, nativeSend, sessionRecovery, takeover, takeoverTerm, type DeviceRow, type SessionRow } from "@/api";
 import { MachineAvatar } from "@/components/Avatar";
 import { sessionKind } from "@/components/SessionFace";
 import { type RowAction } from "@/components/RowMenu";
@@ -231,7 +231,11 @@ export function SessionsList({
               const id = await openShell(
                 r.home,
                 r.place ?? "",
-                `${native.agent} resume ${native.id}`,
+                // **The vendor's own spelling, from the node.** `codex
+                // resume <id>` and DSH's `tui --resume` differ, and a screen
+                // that spelled either itself would be a second answer to
+                // "how is this reopened" (`agent_driver::resume_argv`).
+                await nativeResumeArgv(native.agent, native.id),
                 r.title,
                 crypto.randomUUID(),
               );

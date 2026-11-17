@@ -919,6 +919,11 @@ export type { DshConversation };
     Same reader the terminal prints from: `who` is `user`, `assistant`,
     `thought`, `tool` or `tool-result`, and `text` is what was said. */
 export const dshTranscript = (id: string) => call<DshLine[]>("dsh_transcript", { id });
+/** The argv a terminal should run to continue a foreign conversation —
+    `codex resume <id>`, `dsh tui --resume <id>`. One answer from the node,
+    so a screen does not spell the vendors' commands itself. */
+export const nativeResumeArgv = (agent: string, id: string) =>
+  call<string>("native_resume_argv", { agent, id });
 export type { DshLine };
 /** `[when it was taken, how many, how many khor can start]`. A table
     that ages has to say when it is from. */

@@ -118,12 +118,13 @@ const KNOWN: &[Known] = &[
         builtin: None,
         resume: Some("dsh tui --resume <session>"),
         send: Some("dsh --profile headless --session-id <session> \"<text>\""),
-        // A new conversation can be driven one turn at a time over NDJSON
-        // (`headless --json`). Its stored conversations cannot be listed
-        // or read yet — no adapter is built, and claiming otherwise here
-        // would be the silent lie this module exists to avoid.
-        list: false,
-        read: false,
+        // Its stored conversations are listed from their header frames and
+        // read frame by frame (`dsh_sessions`), and a subagent's label or a
+        // provider title is the name — both implemented, so both claimed.
+        // Round N had these `false` after the code existed; the driver's
+        // own test compares the two answers now.
+        list: true,
+        read: true,
     },
     Known {
         id: "gemini",

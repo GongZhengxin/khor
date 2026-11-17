@@ -18,6 +18,7 @@ mod acp_management;
 mod acp_mcp;
 pub(crate) mod acp_process;
 pub mod adaptor;
+pub mod agent_driver;
 pub mod agent_fleet;
 #[path = "khor_agent_process.rs"]
 pub(crate) mod agent_process;

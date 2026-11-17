@@ -1309,6 +1309,10 @@ pub fn answer(
         // One DSH conversation, line by line — the same reader the CLI's
         // `agents dsh <session>` prints from.
         "dsh_transcript" => to_json(&crate::agents::dsh_transcript(&arg("id")?)?),
+        "native_resume_argv" => to_json(&crate::agents::native_resume_argv(
+            &arg("agent")?,
+            &arg("id")?,
+        )?),
         "native_send" => to_json(&crate::agents::native_send(
             &arg("agent")?,
             &arg("id")?,
