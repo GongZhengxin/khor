@@ -5752,6 +5752,49 @@ pub fn run() {
                                 let _ = w.close();
                             }
                         }
+                        // **The process ends here, and it is said here on
+                        // purpose.** Closing the window used to leave
+                        // `khor-gui` running with no window on screen
+                        // (measured 2026-11-17: the main window logged as
+                        // closed while the process lived on, still holding
+                        // the loopback port 1432 — so the next launch
+                        // failed to bind it and looked like "the close
+                        // button does nothing"). Tauri ends an app when its
+                        // last window goes, but the auxiliary windows
+                        // above are `close`d rather than destroyed, and a
+                        // window that is still closing is still a window.
+                        // Waiting for that judgement is exactly the wait
+                        // that did not end.
+                        //
+                        // The face has had its say by now — the draft guard
+                        // is what permits the destroy in the first place
+                        // (`onQuitRequested`), and anything still unsaved
+                        // was reported before the window went. So this is
+                        // not a way round the guard; it is the other end of
+                        // it.
+                        //
+                        // **`app.exit` from inside `Destroyed` does not
+                        // stop this process** (measured: the handler ran —
+                        // its line is in the log — and the app kept running
+                        // with its ports held). Asking the event loop to
+                        // stop while the event loop is delivering the very
+                        // event that asks is the deadlock; so the decision
+                        // is handed to a thread that does not need the loop,
+                        // and the app's own cleanup path still runs first
+                        // when it can.
+                        let app = window.app_handle().clone();
+                        std::thread::spawn(move || {
+                            // One turn of grace for anything the app wanted
+                            // to flush on the way out, then leave
+                            // regardless: a window that is gone must not
+                            // leave a process behind.
+                            std::thread::sleep(std::time::Duration::from_millis(300));
+                            app.exit(0);
+                            std::thread::sleep(std::time::Duration::from_millis(1200));
+                            // Still here: the loop never took the request.
+                            // Leaving is the promise this button makes.
+                            std::process::exit(0);
+                        });
                     }
                     // **A menu belongs to the face it hangs under, and
                     // follows it out of the room.** The overlay floats at

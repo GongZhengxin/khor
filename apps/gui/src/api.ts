@@ -1967,12 +1967,39 @@ export function onQuitRequested(ask: () => boolean): () => void {
     .then(({ getCurrentWindow, CloseRequestedEvent }) => {
       if (gone) return;
       const win = getCurrentWindow();
-      drop = listenNativeEvent<null>("tauri://close-requested", async (_, event, isActive) => {
+      drop = listenNativeEvent<null>("tauri://close-requested", async (_, event) => {
         // Match Window.onCloseRequested: await the handler, then destroy
-        // only when it did not prevent the close and this owner still lives.
+        // only when it did not prevent the close.
         const requested = new CloseRequestedEvent(event);
-        await (() => { if (question?.()) requested.preventDefault(); })();
-        if (isActive() && !requested.isPreventDefault()) await win.destroy();
+        let kept = false;
+        try {
+          kept = !!question?.();
+        } catch (error) {
+          // **A guard that throws must not become a window that cannot
+          // close.** It counts as no objection, and the failure is said out
+          // loud.
+          console.error("khor: the quit guard failed", error);
+        }
+        if (kept) {
+          requested.preventDefault();
+          return;
+        }
+        // **Nobody objected, so this window goes — unconditionally.**
+        //
+        // The old shape also demanded `isActive()`, and that gate is what
+        // made the close button work one time in three (measured
+        // 2026-11-17: three launches, one exit, and the app log carried
+        // "the main window was closed" only in the round that worked). A
+        // listener that has been superseded — a re-mounted `App`, a
+        // re-subscribed effect — still receives the event, finds itself
+        // inactive, and returned without destroying. Tauri had already
+        // called `prevent_close` because *a* listener exists, so nothing
+        // was left to close the window.
+        //
+        // Whether a listener is stale has no bearing on whether somebody
+        // objected: if nobody did, the window closes (the `kept` branch is
+        // the only way to keep it open).
+        await win.destroy();
       }, { target: { kind: "Window", label: win.label } });
     })
     .catch((error: unknown) => console.error("khor: cannot hear the window closing", error));

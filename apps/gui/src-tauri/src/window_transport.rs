@@ -91,7 +91,34 @@ fn window_verb(cmd: &str) -> Option<Result<String, String>> {
         }),
         // `close`, not `destroy`: closing is a request, and the draft guard
         // hangs on it (`lib.rs`'s own note on `window_close`).
-        "window_close" => window().and_then(|w| w.close().map_err(|e| e.to_string())),
+        //
+        // **And then a watchdog, because a request that nobody completes is
+        // a window that cannot be closed.** The face answers
+        // `close-requested` by destroying the window when it has no
+        // objection, and `prevent_close` is in force the moment its listener
+        // exists — so if that listener is stale, or its promise never
+        // settles, the request is accepted and nothing happens. Measured
+        // 2026-11-17: three launches, one exit, and the log showed the
+        // destroy only in the round that worked. The guard is given four
+        // seconds (its own flush + settle budget is 600 ms); after that the
+        // window is destroyed and the process ends, because the person
+        // pressed a button that says 关闭.
+        "window_close" => window().and_then(|w| {
+            w.close().map_err(|e| e.to_string())?;
+            let app = w.app_handle().clone();
+            std::thread::spawn(move || {
+                std::thread::sleep(std::time::Duration::from_secs(4));
+                // Still here means the face never finished the close.
+                if let Some(win) = app.get_webview_window("main") {
+                    let _ = win.destroy();
+                }
+                std::thread::sleep(std::time::Duration::from_millis(400));
+                app.exit(0);
+                std::thread::sleep(std::time::Duration::from_millis(800));
+                std::process::exit(0);
+            });
+            Ok(())
+        }),
         // **Dragging.** Tauri's own `drag.js` calls
         // `invoke('plugin:window|start_dragging')` on a `data-tauri-drag-region`
         // mousedown, which is the same dead custom-protocol road as every other
