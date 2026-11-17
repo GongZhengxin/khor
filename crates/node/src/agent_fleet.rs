@@ -542,11 +542,21 @@ mod tests {
             let has_road =
                 known.builtin.is_some() || known.native_acp.is_some() || known.registry.is_some();
             if !has_road {
-                assert!(
-                    !known.list && !known.read,
-                    "{} claims to list or read with no road to the agent",
-                    known.id
-                );
+                // **A claim needs a way to deliver it**: either a road to
+                // the agent, or khor's own reader for that vendor's store
+                // (`agent_driver`). DSH has no road and still lists and
+                // reads, because both are done here from the files it
+                // writes — that is a different way to keep the promise, not
+                // an absence of one.
+                for (claimed, verb) in [(known.list, "list"), (known.read, "read")] {
+                    if claimed {
+                        assert!(
+                            crate::agent_driver::has(known.id, verb),
+                            "{} claims {verb} with no road and no reader",
+                            known.id
+                        );
+                    }
+                }
             }
             for shown in [known.resume, known.send].into_iter().flatten() {
                 assert!(

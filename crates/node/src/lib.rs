@@ -3161,7 +3161,11 @@ impl Node {
                     place: Some(session.cwd),
                     at_ms: session.created_at_ms,
                     category: Some("dsh".to_owned()),
-                    agent: Some("dsh".to_owned()),
+                    // **Not an agent.** This field is "the ACP agent whose
+                    // `session/list` produced the row" (`ListedCandidate`'s
+                    // home check depends on it); DSH is not registered with
+                    // ACP at all. The vendor is named by `category`.
+                    agent: None,
                     command: None,
                 });
             }
