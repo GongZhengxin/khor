@@ -105,6 +105,7 @@ import type { KnownAgent } from "./gen/bindings/KnownAgent";
 import type { AgentFleet } from "./gen/bindings/AgentFleet";
 import type { FleetAgent } from "./gen/bindings/FleetAgent";
 import type { DshConversation } from "./gen/bindings/DshConversation";
+import type { DshLine } from "./gen/bindings/DshLine";
 import type { AgentSaid } from "./gen/bindings/AgentSaid";
 import type { CandidateRow } from "./gen/bindings/CandidateRow";
 import type { FindHit } from "./gen/bindings/FindHit";
@@ -914,6 +915,11 @@ export type { AgentFleet, FleetAgent };
     list, not an error. */
 export const dshSessions = () => call<DshConversation[]>("dsh_sessions");
 export type { DshConversation };
+/** **One DSH conversation, line by line** (`khor agents dsh <session>`).
+    Same reader the terminal prints from: `who` is `user`, `assistant`,
+    `thought`, `tool` or `tool-result`, and `text` is what was said. */
+export const dshTranscript = (id: string) => call<DshLine[]>("dsh_transcript", { id });
+export type { DshLine };
 /** `[when it was taken, how many, how many khor can start]`. A table
     that ages has to say when it is from. */
 export const agentsKnownTaken = () => call<[string, number, number]>("agents_known_taken");

@@ -9,6 +9,7 @@ import {
   type FleetAgent,
 } from "@/api";
 import { askOpenSession } from "@/lib/composer-handoff";
+import { DshTranscriptDialog } from "@/components/DshTranscriptDialog";
 import { RegionState } from "@/components/RegionState";
 import { Button } from "@/components/ui/button";
 import { cli, gui } from "@/gen/catalog";
@@ -51,6 +52,8 @@ export function AgentFleetSection({ devices }: { devices: DeviceRow[] }) {
   const [dsh, setDsh] = useState<DshConversation[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [refused, setRefused] = useState<Map<string, string>>(new Map());
+  /** The conversation the reader is open on, copied when it opened. */
+  const [reading, setReading] = useState<DshConversation | null>(null);
   const alive = useRef(true);
   useEffect(() => {
     alive.current = true;
@@ -158,6 +161,13 @@ export function AgentFleetSection({ devices }: { devices: DeviceRow[] }) {
                 >
                   {gui.resume_native}
                 </Button>
+                <Button
+                  variant="ghost"
+                  data-dsh-read-it={conversation.id}
+                  onClick={() => setReading(conversation)}
+                >
+                  {gui.dsh_read}
+                </Button>
               </span>
               <span className="break-words font-mono text-caption text-muted-foreground">
                 {conversation.cwd}
@@ -169,6 +179,15 @@ export function AgentFleetSection({ devices }: { devices: DeviceRow[] }) {
           ))}
         </div>
       )}
+      {/* The reader for one conversation, driven by `reading`: the row it
+          was opened from may be gone by the time it closes (a refresh),
+          so the id it needs was copied when it opened. */}
+      <DshTranscriptDialog
+        open={reading !== null}
+        id={reading?.id ?? null}
+        title={reading ? (reading.title ?? project(reading.cwd)) : ""}
+        onClose={() => setReading(null)}
+      />
     </MoreSection>
   );
 }

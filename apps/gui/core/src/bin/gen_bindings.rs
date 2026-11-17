@@ -84,6 +84,7 @@ macro_rules! roots {
         $visit!(khor_gui_core::agents::KnownAgent);
         $visit!(khor_gui_core::agents::AgentFleet);
         $visit!(khor_gui_core::agents::DshConversation);
+        $visit!(khor_gui_core::agents::DshLine);
         $visit!(khor_gui_core::agents::AgentSaid);
         $visit!(khor_gui_core::agents::RecoveryToken);
         $visit!(khor_gui_core::agents::SessionRecovery);

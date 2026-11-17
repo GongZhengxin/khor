@@ -5591,6 +5591,12 @@ send-message = "发一条消息"
 send-message-title = "给这段对话发一条消息"
 send-message-hint = "由厂商排进队列——khor 不接管这段对话"
 dsh-conversations = "DeepSeek Harness 的对话"
+dsh-read = "读一下"
+dsh-read-speaker-user = "你"
+dsh-read-speaker-assistant = "DSH"
+dsh-read-speaker-thought = "思考"
+dsh-read-speaker-tool = "工具"
+dsh-read-speaker-tool-result = "结果"
 resume-native-missing = "这段对话没有记录原生 id，无法在它自己的工具里继续"
 
 # ── Claude 订阅余量(批⑩) ─────────────────────────────

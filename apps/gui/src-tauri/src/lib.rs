@@ -4119,6 +4119,14 @@ fn dsh_sessions() -> Vec<khor_gui_core::agents::DshConversation> {
     khor_gui_core::agents::dsh_conversations()
 }
 
+/// One DSH conversation, line by line (`khor agents dsh <session>`). This
+/// decompresses the whole file, so it waits off the main thread like every
+/// other read that can take seconds.
+#[tauri::command(rename_all = "snake_case")]
+async fn dsh_transcript(id: String) -> Result<Vec<khor_gui_core::agents::DshLine>, String> {
+    off_main(move || khor_gui_core::agents::dsh_transcript(&id)).await
+}
+
 #[tauri::command]
 fn agents_known_taken() -> (String, usize, usize) {
     khor_gui_core::agents::agents_known_taken()
@@ -6039,6 +6047,7 @@ pub fn run() {
             agents_known,
             agent_fleet,
             dsh_sessions,
+            dsh_transcript,
             agents_known_taken,
             register_known_agent,
             agent_seen,

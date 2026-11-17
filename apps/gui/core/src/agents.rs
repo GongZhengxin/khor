@@ -339,6 +339,32 @@ pub struct DshConversation {
     pub origin: Option<String>,
 }
 
+/// One line of a DSH conversation, as a reader shows it.
+///
+/// The node's [`khor_node::adaptor::dsh::Line`] is the same rows; this is
+/// the wire shape the face draws.
+#[derive(Debug, Clone, Serialize, TS)]
+#[ts(export)]
+pub struct DshLine {
+    /// `user`, `assistant`, `thought`, `tool` or `tool-result`.
+    pub who: String,
+    pub text: String,
+}
+
+/// Reads one DSH conversation, line by line (`khor agents dsh <session>`).
+///
+/// The same reader the CLI prints from: one parser, so a face and a
+/// terminal cannot disagree about what a conversation said.
+pub fn dsh_transcript(native_id: &str) -> Result<Vec<DshLine>, String> {
+    let text = khor_node::dsh_sessions::conversation(native_id)?;
+    Ok(khor_node::adaptor::dsh::lines_of(&text)
+        .into_iter()
+        .map(|line| DshLine {
+            who: line.who.to_owned(),
+            text: line.text,
+        })
+        .collect())
+}
 /// Every DSH conversation in this machine's DSH home, newest first.
 ///
 /// Reads the store DSH writes (`khor agents dsh` runs the same scan); a

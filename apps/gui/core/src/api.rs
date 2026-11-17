@@ -1306,6 +1306,9 @@ pub fn answer(
         // no host: Codex's daemon takes it, and its receipt or refusal is
         // the answer. `khor agents tell` runs the same function.
         "dsh_sessions" => to_json(&crate::agents::dsh_conversations()),
+        // One DSH conversation, line by line — the same reader the CLI's
+        // `agents dsh <session>` prints from.
+        "dsh_transcript" => to_json(&crate::agents::dsh_transcript(&arg("id")?)?),
         "native_send" => to_json(&crate::agents::native_send(
             &arg("agent")?,
             &arg("id")?,
