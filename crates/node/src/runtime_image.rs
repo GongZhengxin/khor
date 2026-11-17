@@ -323,6 +323,28 @@ pub(crate) fn agent(bundle: &[u8]) -> Result<Image, String> {
 pub fn host_at(source: &Path) -> Result<HostImage, String> {
     let expected = current()?.release;
     crate::startup_trace::mark("image-current");
+    // **The same file, already published.** Inspecting and publishing a
+    // source program costs ~600 ms here (a probe process, then a hash and a
+    // copy of 130 MB), and it repeats on every launch because
+    // `Store::image_for_program` only recognises a program that is already
+    // a managed image. `SourceCache` remembers which image came out of
+    // which file object — by the operating system's identity for that
+    // file, not by name — and a hit still has to match the running
+    // release's contract and version, so an upgrade is never skipped.
+    // Everything else (a changed file, a missing image, an unreadable
+    // cache) is a miss, and the full path below is the ordinary one.
+    let cache = khor_runtime::SourceCache::local().ok();
+    if let Some(cache) = &cache
+        && let Ok(Some(image)) = cache.lookup(source)
+        && image.contract() == &expected.contract
+        && image.version() == expected.version
+    {
+        crate::startup_trace::mark("image-reused");
+        return Ok(HostImage {
+            image,
+            source: source.into(),
+        });
+    }
     let info = inspect_supported(source)?;
     crate::startup_trace::mark("image-inspected");
     if expected.platform != info.release.platform
@@ -381,6 +403,12 @@ pub fn host_at(source: &Path) -> Result<HostImage, String> {
             },
         )
         .map_err(|error| error.to_string())?;
+    // Remember what this file published as, so the next launch in this
+    // release reuses it instead of hashing 130 MB again. A failure here is
+    // only a missed optimisation, never a reason this launch fails.
+    if let Some(cache) = &cache {
+        let _ = cache.remember(source, &image);
+    }
     Ok(HostImage {
         image,
         source: source.into(),
