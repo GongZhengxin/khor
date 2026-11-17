@@ -5495,6 +5495,16 @@ fn agents(rest: &[String]) -> Result<(), String> {
         // writes, one header line per session — the project each was
         // recorded in is what a person needs to find it again.
         Some((word, tail)) if word == "dsh" => {
+            // `agents dsh` is the list; `agents dsh <session>` reads one
+            // conversation, line by line — the same reader the GUI's row
+            // uses, so the two cannot disagree about what was said.
+            if let [native_id] = tail {
+                let text = khor_node::dsh_sessions::conversation(native_id)?;
+                for line in khor_node::adaptor::dsh::lines_of(&text) {
+                    println!("{}\t{}", line.who, line.text);
+                }
+                return Ok(());
+            }
             if !tail.is_empty() {
                 return Err(usage_text().into());
             }

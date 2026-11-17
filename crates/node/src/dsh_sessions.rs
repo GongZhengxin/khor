@@ -39,6 +39,10 @@ use std::path::{Path, PathBuf};
 /// How much decompressed text one session may contribute to the listing.
 const SCAN: usize = 512 * 1024;
 
+/// How much of a conversation is read at all. Four times the listing's
+/// budget: a transcript is meant to be read, a name is not.
+const WHOLE: usize = 4 * 1024 * 1024;
+
 /// One DSH session, as its own events state it.
 #[derive(Clone, Debug, serde::Serialize)]
 pub struct DshSession {
@@ -151,6 +155,43 @@ pub(crate) fn sessions_in(home: &Path) -> Result<Vec<DshSession>, String> {
     }
     out.sort_by(|a, b| b.created_at_ms.cmp(&a.created_at_ms));
     Ok(out)
+}
+
+/// The whole conversation behind one session id, decompressed.
+///
+/// Answers the text the transcript reader parses: every frame, up to
+/// [`WHOLE`] decompressed bytes — a session longer than that is truncated
+/// rather than refused, because half a conversation is still readable and
+/// the alternative is nothing. The id is matched against each session's
+/// own header, the same scan [`sessions`] uses; nothing is decoded from a
+/// directory name.
+pub fn conversation(native_id: &str) -> Result<String, String> {
+    let home = home().ok_or("this machine has no DSH home")?;
+    conversation_in(&home, native_id)
+}
+
+/// [`conversation`] against a stated home, so the lookup is testable.
+pub(crate) fn conversation_in(home: &Path, native_id: &str) -> Result<String, String> {
+    let root = home.join("sessions");
+    for project in dirs(&root) {
+        for session in dirs(&project) {
+            let Some(file) = file_in(&session) else {
+                continue;
+            };
+            let Ok(scan) = read_session(&file) else {
+                continue;
+            };
+            let Some(header) = scan.header else {
+                continue;
+            };
+            if header.id != native_id {
+                continue;
+            }
+            let bytes = decompress(&file, WHOLE)?;
+            return Ok(String::from_utf8_lossy(&bytes).into_owned());
+        }
+    }
+    Err(format!("this machine has no DSH session {native_id}"))
 }
 
 fn home() -> Option<PathBuf> {

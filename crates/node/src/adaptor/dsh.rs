@@ -158,6 +158,105 @@ fn tool_use(block: &serde_json::Value) -> serde_json::Value {
     })
 }
 
+/// One line of a conversation, as a reader shows it.
+///
+/// The wire shape is deliberately flat: the roster and the CLI only need
+/// to say who spoke and what was said. Rendering tool calls richly is the
+/// protocol's job (`cagent::said`), not this one.
+#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize)]
+pub struct Line {
+    /// `user`, `assistant`, `thought`, `tool` or `tool-result`.
+    pub who: &'static str,
+    pub text: String,
+}
+
+/// The longest single line this hands out. A tool result can be a whole
+/// file; a reader that wants all of it opens the conversation, not a row.
+const LINE: usize = 8 * 1024;
+
+/// The conversation as lines to show, out of the same utterances.
+pub fn lines_of(text: &str) -> Vec<Line> {
+    let mut out = Vec::new();
+    for utterance in utterances_of(text) {
+        let line = match utterance {
+            Utterance::User(text) => Line { who: "user", text },
+            Utterance::Agent(text) => Line {
+                who: "assistant",
+                text,
+            },
+            Utterance::Thought(text) => Line {
+                who: "thought",
+                text,
+            },
+            Utterance::Tool(block) => Line {
+                who: "tool",
+                text: tool_line(&block),
+            },
+            Utterance::ToolDone(block) => Line {
+                who: "tool-result",
+                text: result_line(&block),
+            },
+            // Only claude's rich `Content` blocks, which DSH never makes.
+            Utterance::Content { .. } => continue,
+        };
+        out.push(Line {
+            who: line.who,
+            text: clamped(line.text),
+        });
+    }
+    out
+}
+
+fn clamped(text: String) -> String {
+    if text.len() <= LINE {
+        return text;
+    }
+    let mut cut = LINE;
+    while cut > 0 && !text.is_char_boundary(cut) {
+        cut -= 1;
+    }
+    let mut out = text[..cut].to_owned();
+    out.push('…');
+    out
+}
+
+/// One tool call as `name {input}` — the name alone is the one thing every
+/// call of a kind has in common (`Utterance::Tool`'s own note).
+fn tool_line(block: &serde_json::Value) -> String {
+    let name = block.get("name").and_then(|n| n.as_str()).unwrap_or("tool");
+    let input = block
+        .get("input")
+        .map(|input| serde_json::to_string(input).unwrap_or_default())
+        .unwrap_or_default();
+    if input.is_empty() {
+        name.to_owned()
+    } else {
+        format!("{name} {input}")
+    }
+}
+
+/// A finished tool's text, as its result blocks carry it.
+fn result_line(block: &serde_json::Value) -> String {
+    let mut parts = Vec::new();
+    if let Some(blocks) = block.get("content").and_then(|c| c.as_array()) {
+        for part in blocks {
+            if let Some(text) = part.get("text").and_then(|t| t.as_str()) {
+                parts.push(text.to_owned());
+            }
+        }
+    }
+    let mut said = parts.join("\n");
+    if block
+        .get("is_error")
+        .and_then(|e| e.as_bool())
+        .unwrap_or(false)
+        && !said.is_empty()
+    {
+        said.insert_str(0, "failed: ");
+    }
+    said
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
