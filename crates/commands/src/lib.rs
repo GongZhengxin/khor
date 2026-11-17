@@ -4022,51 +4022,115 @@ fn find(rest: &[String]) -> Result<(), String> {
 /// numbers are this listing's, so they are asked again right before use
 /// — a number from a listing a minute old is not a promise.
 fn import(rest: &[String]) -> Result<(), String> {
+    use khor_node::session_import::{ImportIntent, SessionImportAction, SessionImportReply};
     let n = node()?;
-    let candidates = n.import_candidates()?;
-    if rest.is_empty() {
-        if candidates.is_empty() {
-            println!("{}", cli::import_none());
+    let mut machine = String::new();
+    let mut refresh = None;
+    let mut agent = None;
+    let mut which = None;
+    let mut fork = false;
+    let mut token = None;
+    let mut args = rest.iter();
+    while let Some(arg) = args.next() {
+        match arg.as_str(){
+            "--machine"=>machine=args.next().ok_or("--machine requires a source")?.clone(),
+            "--refresh"=>refresh=Some(args.next().ok_or("--refresh requires an agent")?.clone()),
+            "--agent"=>agent=Some(args.next().ok_or("--agent requires a name")?.clone()),
+            "--token"=>token=Some(args.next().ok_or("--token requires a value")?.clone()),
+            "--fork"=>fork=true,
+            value if !value.starts_with('-')&&which.is_none()=>which=Some(value.to_owned()),
+            _=>return Err("Use khor import [--machine SOURCE] [--refresh AGENT] [--agent AGENT] [--fork] [NUMBER|NATIVE_ID] [--token TOKEN]".into()),
         }
-        let names: std::collections::HashMap<String, String> = n
-            .devices()?
-            .into_iter()
-            .map(|d| (d.id.clone(), d.shown().to_owned()))
-            .collect();
-        let now = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map(|d| d.as_millis() as i64)
-            .unwrap_or(0);
-        for (i, c) in candidates.iter().enumerate() {
-            let age = if c.at_ms > 0 {
-                human_age(now.saturating_sub(c.at_ms).max(0) as u64)
-            } else {
-                String::new()
+    }
+    let home = if machine.is_empty() {
+        n.device_str().to_owned()
+    } else {
+        n.resolve_machine(&machine)?.1.hex()
+    };
+    let action = refresh
+        .map(|agent| SessionImportAction::Refresh { agent })
+        .unwrap_or(SessionImportAction::Read);
+    let SessionImportReply::Catalog { value } =
+        rt()?.block_on(n.session_import_on(&home, action))?
+    else {
+        return Err("Unexpected import catalog response".into());
+    };
+    let rows: Vec<_> = value
+        .rows
+        .iter()
+        .filter(|row| agent.as_ref().is_none_or(|agent| &row.agent == agent))
+        .collect();
+    let Some(which) = which else {
+        record_data(serde_json::to_value(&value).map_err(|error| error.to_string())?);
+        for source in &value.agents {
+            println!("{}\t{}", source.agent, source.status);
+        }
+        if rows.is_empty() {
+            println!("{}", khor_catalog::gui::import_empty());
+        }
+        for (index, row) in rows.iter().enumerate() {
+            let action = match row.intent {
+                Some(ImportIntent::Import) => "import",
+                Some(ImportIntent::Fork) => "fork",
+                None => row.reason.as_deref().unwrap_or("unavailable"),
             };
             println!(
-                "{}\t{}\t{}\t{}\t{}\t{}\t{}",
-                i + 1,
-                names
-                    .get(&c.home)
-                    .cloned()
-                    .unwrap_or_else(|| c.home.clone()),
-                c.form,
-                c.title,
-                c.place.as_deref().unwrap_or(""),
-                age,
-                c.id
+                "{}\t{}\t{}\t{}\t{}\t{}",
+                index + 1,
+                row.agent,
+                row.title,
+                row.cwd,
+                action,
+                row.native_id
             );
         }
         return Ok(());
+    };
+    let row = if let Ok(index) = which.parse::<usize>() {
+        rows.get(index.saturating_sub(1))
+            .filter(|_| index > 0)
+            .copied()
+    } else {
+        let mut matches = rows.iter().filter(|row| row.native_id == which);
+        let found = matches.next().copied();
+        if matches.next().is_some() {
+            return Err(
+                "This native ID occurs in multiple agents; select an agent or row number".into(),
+            );
+        }
+        found
     }
-    for which in rest {
-        let id = match which.parse::<usize>() {
-            Ok(k) if k >= 1 && k <= candidates.len() => candidates[k - 1].id.clone(),
-            _ => which.clone(),
-        };
-        println!("{}", n.import(&id)?.0);
+    .ok_or("The requested session is not in this source catalog")?;
+    let intent = if fork {
+        ImportIntent::Fork
+    } else {
+        ImportIntent::Import
+    };
+    if row.intent != Some(intent) {
+        return Err(format!(
+            "Requested import action is unavailable: {}",
+            row.reason
+                .as_deref()
+                .unwrap_or("use --fork to create an independent branch")
+        ));
     }
-    Ok(())
+    let token = token.unwrap_or(khor_node::link::fresh_hex()?);
+    let result = rt()?.block_on(n.session_import_on(
+        &home,
+        SessionImportAction::Apply {
+            agent: row.agent.clone(),
+            native_id: row.native_id.clone(),
+            intent,
+            token,
+        },
+    ))?;
+    record_data(serde_json::to_value(&result).map_err(|error| error.to_string())?);
+    if let SessionImportReply::Imported { id, .. } = result {
+        println!("{id}");
+        Ok(())
+    } else {
+        Err("Unexpected import action response".into())
+    }
 }
 
 fn sessions(rest: &[String]) -> Result<(), String> {

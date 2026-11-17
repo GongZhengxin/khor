@@ -967,6 +967,13 @@ export const windowsApp = inApp && /win/i.test(navigator.platform || navigator.u
     off the app and off macOS. */
 export const trafficRoom = () => call<number>("traffic_room");
 export const fetchImportCandidates = () => call<CandidateRow[]>("import_candidates");
+export type { ImportCatalog } from "./gen/bindings/ImportCatalog";
+export type { ImportRow } from "./gen/bindings/ImportRow";
+export type { ImportIntent } from "./gen/bindings/ImportIntent";
+import type { SessionImportAction } from "./gen/bindings/SessionImportAction";
+import type { SessionImportReply } from "./gen/bindings/SessionImportReply";
+export type { SessionImportReply } from "./gen/bindings/SessionImportReply";
+export const sessionImport = (home:string,action:SessionImportAction) => call<SessionImportReply>("session_import",{home,action});
 /** Brings these onto the list, in order; answers their session ids.
     Stops at the first refusal and says it. */
 export const importSessions = (ids: string[]) => call<string[]>("import_sessions", { ids });

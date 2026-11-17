@@ -4111,6 +4111,14 @@ fn find(word: String) -> Result<Vec<khor_gui_core::FindHit>, String> {
 
 /// 导入 (docs/SHELL.md 第八轮): what could be brought onto the list.
 #[tauri::command]
+async fn session_import(
+    home: String,
+    action: khor_gui_core::import::SessionImportAction,
+) -> Result<khor_gui_core::import::SessionImportReply, String> {
+    khor_gui_core::import::session_import(&Node::root_from_env(), &home, action).await
+}
+
+#[tauri::command]
 fn import_candidates() -> Result<Vec<khor_gui_core::import::CandidateRow>, String> {
     khor_gui_core::import::import_candidates(&Node::root_from_env())
 }
@@ -5921,6 +5929,7 @@ pub fn run() {
             window_maximize_toggle,
             window_close,
             import_candidates,
+            session_import,
             import_sessions,
             takeover,
             takeover_term,

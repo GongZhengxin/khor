@@ -93,6 +93,7 @@ pub mod satellite;
 pub mod secret;
 pub mod serves;
 pub mod session_content;
+pub mod session_import;
 pub mod shell_start;
 mod store_owner;
 pub mod subscriptions;

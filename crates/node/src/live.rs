@@ -744,7 +744,7 @@ impl LiveKind {
         })
     }
 
-    fn legacy_gui_source(
+    pub(crate) fn legacy_gui_source(
         &self,
         id: &SessionId,
     ) -> Result<Option<(Option<String>, crate::session_content::journal::Identity)>, String> {
@@ -1069,6 +1069,14 @@ impl LiveKind {
             .into_iter()
             .find(|f| f.id() == *id)
             .map(|f| (f.sighting.title, f.sighting.pids))
+    }
+
+    pub(crate) fn import_running_ids(&self) -> std::collections::HashSet<String> {
+        self.discover()
+            .rows
+            .into_iter()
+            .map(|found| found.sighting.vendor_session_id)
+            .collect()
     }
 
     /// Whether this row is **a terminal khor hosts** — a shell a person

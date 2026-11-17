@@ -3245,11 +3245,51 @@ mod tests {
             Observation::read(&root.0, &record.id).unwrap().unwrap().id,
             record.id
         );
-        let arguments =
-            Arguments::native_at(record.id.clone(), native, None, b"actual frozen launch").unwrap();
+        let arguments = Arguments::native_at(
+            record.id.clone(),
+            native.clone(),
+            None,
+            b"actual frozen launch",
+        )
+        .unwrap();
         assert_eq!(
             arguments.id, record.id,
             "logical SID does not become provider id_for at action admission"
+        );
+        node.register_agent(
+            &native.agent,
+            &[std::env::current_exe().unwrap().display().to_string()],
+        )
+        .unwrap();
+        let spec = node.agent(&native.agent).unwrap().unwrap();
+        let cache = root.0.join(".khor/import-catalog").join(format!(
+            "{}.json",
+            blake3::hash(native.agent.as_bytes()).to_hex()
+        ));
+        fs::create_dir_all(cache.parent().unwrap()).unwrap();
+        fs::write(&cache,serde_json::to_vec(&serde_json::json!({"spec":spec,"at_ms":crate::live::now_ms(),"catalog":{"capabilities":{"list":true,"load":true,"resume":true,"fork":false,"archive":true},"sessions":[{"sessionId":native.native_id,"cwd":root.0,"title":record.title,"updatedAt":null,"archived":false}]}})).unwrap()).unwrap();
+        let mut adopted = record.clone();
+        adopted.adopt_on_open = true;
+        adopted.import_spec = Some(spec);
+        adopted.save(&root.0).unwrap();
+        let offer = node
+            .session_recovery_here(home, &record.id, Some(&record.reference))
+            .unwrap();
+        assert_eq!(
+            offer.action,
+            RecoveryAction::Adopt,
+            "only an explicitly stored adoption changes first-entry behavior"
+        );
+        assert_eq!(offer.execution, RecoveryExecution::Ended);
+        assert_eq!(
+            node.import_execution(
+                &native.agent,
+                &native.native_id,
+                &std::collections::HashSet::from([native.native_id.clone()])
+            )
+            .unwrap(),
+            RecoveryExecution::Live,
+            "current positive running evidence overrides an older retired execution"
         );
     }
 

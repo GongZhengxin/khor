@@ -1,3 +1,4 @@
+import {sessionImportFixture} from './session-import-fixture';
 import labMedia from './data/media.generated.json';
 import {noticeFixture} from './notice-fixture';
 import {longHistoryFrames} from './long-history';
@@ -67,6 +68,9 @@ function sample(index: number): Frame[] {
 export function createLabFixture(terminal = true, options: {origin?: string; content?: boolean; items?:number; machines?:number; page?:boolean;pageSize?:number;settings?:boolean;notices?:boolean;noticeBurst?:boolean;longHistory?:boolean;khorSession?:string;dsh?:boolean} = {}) {
   const ids = defaultIds.map((id,index)=>index===4 ? options.khorSession??id : index===3&&options.dsh?'gui/dsh-review':id);
   const devices = labDevices(device,options.machines ?? 3);
+  const importFrames=new Map<string,Frame[]>();
+  const importReaders=new Map<string,ReturnType<typeof canonicalChatFixture>>();
+  const imports = sessionImportFixture(devices.map(device=>device.id));
   const pairing = pairingFixture(devices, labDevices(device, 6));
   const navigation = navigationFixture(devices, options.origin ?? 'http://127.0.0.1:23776', options.content ?? false, options.items ?? 3, options.page ?? false);
   const quota = labQuota(devices);
@@ -291,6 +295,23 @@ export function createLabFixture(terminal = true, options: {origin?: string; con
   return {
     dispose() { for(const url of resourcePreviews.values())URL.revokeObjectURL(url);resourcePreviews.clear();for (const timer of timers) clearTimeout(timer); timers.clear(); },
     request(path: string, body: Record<string, any> = {}): unknown {
+      if(path==='session_import'){
+        const reply=imports.request(String(body.home),body.action);
+        if(reply.kind==='imported'&&!importReaders.has(reply.id)){
+          const id=reply.id;
+          importFrames.set(id,[boot(),update('user_message_chunk',text('保留已有的项目上下文。')),update('agent_message_chunk',text(reply.intent==='fork'?'这是从原会话创建的独立分支。后续消息只写入此分支。':'这是导入的历史会话。尚未启动智能体。'))]);
+          importReaders.set(id,canonicalChatFixture({ids:[id],bindingPrefix:'import-fixture',takeFrames:()=>importFrames.get(id)?.splice(0)??[]}));
+        }
+        return reply;
+      }
+      if(importReaders.has(String(body.id))){
+        const id=String(body.id);
+        if(path==='session_content')return {kind:'available',binding:'import-fixture:'+id,following:false,capture:null};
+        if(path==='chat_say'){importFrames.get(id)?.push(update('user_message_chunk',text(String(body.text))),update('agent_message_chunk',text('此回复只属于新分支。')));return null;}
+        const projected=importReaders.get(id)!.answer(path,body);
+        if(projected){try{return structuredClone(projected.value);}finally{projected.finish?.();}}
+      }
+      if(path==='__ai_preview/import-calls')return imports.calls;
       if (path === '__ai_preview/reset') {
           settingsValues={...settingsProfile};try { localStorage.removeItem(settingsKey); } catch { /* Server fixture has no browser storage. */ }
           holdSettings=false;refuseSetting=false;pendingSettings.length=0;
@@ -418,6 +439,7 @@ export function createLabFixture(terminal = true, options: {origin?: string; con
               via: null, via_face: null, home: devices[i%Math.max(1,devices.length)]?.name??device.name, execution_home: devices[i%Math.max(1,devices.length)]?.id??device.id, place:labRoot(devices[i%Math.max(1,devices.length)])+'/project', doing: null, mux: false, ended: null}));
             if (terminal) rows.push({...rows[0], id: 'shell/layout-lab', kind: 'shell', title: '终端 · 布局试验',
               category: 'shell', activity:[], attachable: true, last: '隔离终端示例'});
+            for(const imported of imports.rows())rows.push({...rows[0],id:imported.id,title:imported.title,kind:imported.intent==='fork'?'gui':'observe',category:imported.agent,imported:imported.intent==='import',can_control:imported.intent==='fork',hosted:imported.intent==='fork',pinned:false,unread:0,last:'导入的历史会话',execution_home:imported.home});
             answer = notices.snapshot(devices.length ? rows : []);
             break;
           }

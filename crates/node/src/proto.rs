@@ -16,6 +16,10 @@ pub const SLICE: u64 = 256 * 1024;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Request {
+    SessionImport {
+        home: khor_core::DeviceId,
+        action: khor_core::session_import::SessionImportAction,
+    },
     SessionRecovery {
         home: khor_core::DeviceId,
         id: crate::SessionId,
@@ -988,6 +992,9 @@ pub enum DocumentInventory {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Response {
+    SessionImport {
+        value: khor_core::session_import::SessionImportReply,
+    },
     SessionRecovery {
         value: khor_core::recovery::SessionRecovery,
     },
@@ -1451,6 +1458,7 @@ impl Request {
                 | Request::Fetch { .. }
                 | Request::Sessions
                 | Request::SessionRecovery { .. }
+                | Request::SessionImport { action: khor_core::session_import::SessionImportAction::Read, .. }
                 | Request::Usage
                 | Request::Vitals
                 | Request::Ls { .. }
@@ -1572,6 +1580,11 @@ impl Request {
     pub fn budget(&self) -> std::time::Duration {
         use std::time::Duration;
         match self {
+            Request::SessionImport {
+                action: khor_core::session_import::SessionImportAction::Read,
+                ..
+            } => Duration::from_secs(15),
+            Request::SessionImport { .. } => Duration::from_secs(90),
             Request::Act { action, .. } if action == "take" => Duration::from_secs(3600),
             Request::FetchTree { .. } | Request::SatFetchTree { .. } => Duration::from_secs(60),
             Request::CodeServe { .. } => Duration::from_secs(280),

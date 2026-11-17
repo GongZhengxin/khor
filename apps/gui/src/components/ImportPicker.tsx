@@ -95,12 +95,13 @@ export function ImportSearch({ value, onChange, label, inputRef, onKeyDown }: {
   </div>;
 }
 
-export function ImportResult({ glyph, title, detail, detailTitle, command, active, busy, className, ...props }: Omit<ButtonHTMLAttributes<HTMLButtonElement>, "title"> & {
+export function ImportResult({ glyph, title, detail, detailTitle, command, note, active, busy, className, ...props }: Omit<ButtonHTMLAttributes<HTMLButtonElement>, "title"> & {
   glyph: ReactNode;
   title: ReactNode;
   detail: ReactNode;
   detailTitle?: string;
   command?: ReactNode;
+  note?: ReactNode;
   active?: boolean;
   busy?: boolean;
 }) {
@@ -120,6 +121,7 @@ export function ImportResult({ glyph, title, detail, detailTitle, command, activ
         {command && <span data-import-command className="min-w-[35%] flex-[1_1_0%] truncate text-right font-mono text-caption text-muted-foreground">{command}</span>}
       </span>
       <span data-import-where title={detailTitle} className="truncate text-callout text-muted-foreground">{detail}</span>
+      {note&&<span data-import-unavailable className="text-caption text-muted-foreground">{note}</span>}
     </span>
   </button>;
 }

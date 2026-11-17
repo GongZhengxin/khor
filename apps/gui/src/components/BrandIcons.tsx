@@ -181,8 +181,10 @@ export function sessionMark(kind: string, category: string | null): ComponentTyp
     case "deepseek-harness-acp":
       return IconDsh;
     case "claude":
+    case "claude-acp":
       return IconClaude;
     case "codex":
+    case "codex-acp":
       return IconCodex;
     case "cursor":
       return IconCursor;

@@ -61,12 +61,26 @@ pub struct Known {
 /// First-party launch defaults, independent of the dated registry snapshot.
 /// DSH is installed and configured on the execution computer. No package is
 /// downloaded, and no credential or machine-specific path travels in this data.
-pub const BUILTIN_ACP: &[Known] = &[Known {
-    id: "dsh",
-    name: "DeepSeek Harness",
-    about: "DeepSeek Harness through its official ACP profile",
-    argv: Some(&["dsh", "--profile", "acp"]),
-}];
+pub const BUILTIN_ACP: &[Known] = &[
+    Known {
+        id: "claude-acp",
+        name: "Claude",
+        about: "Claude through the ACP adapter",
+        argv: Some(&["npx", "-y", "@agentclientprotocol/claude-agent-acp@0.94.0"]),
+    },
+    Known {
+        id: "codex-acp",
+        name: "Codex",
+        about: "Codex through the ACP adapter",
+        argv: Some(&["npx", "-y", "@agentclientprotocol/codex-acp@2.2.2"]),
+    },
+    Known {
+        id: "dsh",
+        name: "DeepSeek Harness",
+        about: "DeepSeek Harness through its official ACP profile",
+        argv: Some(&["dsh", "--profile", "acp"]),
+    },
+];
 
 pub fn builtin(id: &str) -> Option<&'static Known> {
     BUILTIN_ACP.iter().find(|agent| agent.id == id)

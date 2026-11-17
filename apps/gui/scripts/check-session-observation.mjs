@@ -51,10 +51,10 @@ findBusyEffect(workspaceFile); assert(busyEffect, 'real workspace refresh effect
 const busySource = ts.transpile(`const effect = ${busyEffect.getText(workspaceFile)};`, {target: ts.ScriptTarget.ES2022});
 const importPath = new URL('../src/views/ImportDialog.tsx', import.meta.url);
 const importSource = ts.createSourceFile(importPath.pathname, readFileSync(importPath, 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
-const markDeclaration = importSource.statements.find(node => ts.isFunctionDeclaration(node) && node.name?.text === 'markOf');
+const markDeclaration = importSource.statements.find(node => ts.isFunctionDeclaration(node) && node.name?.text === 'importCatalogFrom');
 assert(markDeclaration);
-const markSource = ts.transpile(markDeclaration.getText(importSource), {target: ts.ScriptTarget.ES2022});
-const markOf = Function(markSource + '\nreturn markOf;')();
+const markSource = ts.transpile(markDeclaration.getText(importSource).replace(/^export /,''), {target: ts.ScriptTarget.ES2022});
+const catalogFrom = Function('gui',markSource + '\nreturn importCatalogFrom;')({import_source_changed:'source changed'});
 
 const deferred = () => {
   let resolve, reject;
@@ -113,17 +113,22 @@ function findButton(node) {
 const cases = [
   ['metadata owner changes preserve the actual parent observation mount', async () => {
     const keys = [];
+    let viewKeyExpression;
     function visit(node) {
+      if(ts.isVariableDeclaration(node)&&node.name.getText(file)==='viewKey')viewKeyExpression=node.initializer.getText(file);
       if ((ts.isJsxSelfClosingElement(node) || ts.isJsxOpeningElement(node)) && node.tagName.getText(file) === 'ObservedSession') {
         const attribute = node.attributes.properties.find(item => ts.isJsxAttribute(item) && item.name.getText(file) === 'key');
         assert(attribute?.initializer && ts.isJsxExpression(attribute.initializer) && attribute.initializer.expression);
         const expression = ts.transpile(`const key = ${attribute.initializer.expression.getText(file)};`, { target: ts.ScriptTarget.ES2022 });
-        keys.push(Function('row', expression + '\nreturn key;'));
+        keys.push(Function('row','viewKey', expression + '\nreturn key;'));
       }
       ts.forEachChild(node, visit);
     }
-    visit(file); assert.equal(keys.length, 2, 'both real parent observation branches are checked');
-    for (const key of keys) {
+    visit(file); assert(keys.length >= 2, 'every real parent observation branch is checked');
+    assert(viewKeyExpression);
+    const viewKey=Function('row','rejoined',ts.transpile(`const value=${viewKeyExpression};`,{target:ts.ScriptTarget.ES2022})+'\nreturn value;');
+    for (const readKey of keys) {
+      const key=row=>readKey(row,viewKey(row,{id:'',generation:0}));
       const row = {id:'observe/one',content_locator:'same-source',home:'content-home',observation_owner:'owner-a'};
       assert.equal(key(row), key({...row,observation_owner:'owner-b'}), 'metadata owner must not remount the reader');
       assert.notEqual(key(row), key({...row,id:'observe/two'}), 'different views keep separate component identities');
@@ -175,15 +180,11 @@ const cases = [
     assert.equal(isObserved({...outside, ended: {kind: 'exit', code: 0}}), false);
     assert.equal(isObserved({kind: 'observe', can_control: true}), true);
   }],
-  ['positive and negative agent-list answers only apply to their execution home', async () => {
-    assert.equal(markOf(undefined, 'A'), 'reading');
-    assert.equal(markOf({said: 'unasked'}, 'A'), 'unasked');
-    for (const said of ['cannot', 'sessions']) {
-      const answer = {said, rows: [], home: 'B'};
-      assert.equal(markOf(answer, 'A'), 'unasked');
-      assert.equal(markOf({...answer, home: null}, 'A'), 'unknown-home');
-      assert.equal(markOf({...answer, home: 'A'}, 'A'), said === 'cannot' ? 'cannot' : 'none');
-    }
+  ['source-owned ACP catalogs never apply to another execution home', async () => {
+    const value={home:'A',agents:[],rows:[]};
+    assert.equal(catalogFrom('A',{kind:'catalog',value}),value);
+    for(const home of ['B',null,undefined])assert.throws(()=>catalogFrom('A',{kind:'catalog',value:{...value,home}}),/source changed/);
+    assert.throws(()=>catalogFrom('A',{kind:'imported',home:'A',id:'one',intent:'import'}),/source changed/);
   }],
   ['foreign agent multiplexers cannot bypass read-only routing', async () => {
     assert.equal(isTerminal({kind: 'tui', mux: true, attachable: true, can_control: false}), false);

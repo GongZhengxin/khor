@@ -96,7 +96,7 @@ async fn login_before_a_session_answers_structured_input_without_a_model() {
 
 #[tokio::test]
 async fn session_context_survives_a_prompt_while_interactions_remain_answerable() {
-    let environment=khor_acp::Environment{mcp_servers:vec![serde_json::from_value(serde_json::json!({"name":"tools","type":"http","url":"https://example.test/mcp","headers":[]})).unwrap()],additional_directories:vec![std::env::temp_dir()]};
+    let environment=khor_acp::Environment{mcp_servers:vec![serde_json::from_value(serde_json::json!({"name":"tools","type":"http","url":"https://example.test/mcp","headers":[]})).unwrap()],additional_directories:vec![std::env::temp_dir()],..Default::default()};
     let (h, mut rx) = khor_acp::start_configured(
         &stub_with("KHOR_STUB_EXTENDED", "1"),
         std::env::temp_dir(),

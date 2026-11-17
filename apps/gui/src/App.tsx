@@ -2910,13 +2910,13 @@ export default function App() {
       <ImportDialog
         open={dialog === "import"}
         onOpenChange={(o) => setDialog(o ? "import" : null)}
-        // The first one imported is what the person came to see, the
-        // way a freshly opened session is (`NewSessionPage`).
-        onImported={(ids) => {
+        // Import registers history; an explicit independent fork also opens
+        // its ordinary conversation tab.
+        onImported={(ids, open) => {
           if (ids.length === 0) return;
           setLanding("sessions");
-          sessionTabs.open(ids[0]);
-          setScreen("detail");
+          if(open){sessionTabs.open(ids[0]);setScreen("detail");}
+          else setScreen("list");
         }}
       />
       {/* ⚠️ 墓碑 (UX-45): the 新建会话 dialog. Every road opens a new tab

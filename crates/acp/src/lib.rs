@@ -89,6 +89,8 @@ use std::sync::Arc;
 mod management;
 pub use interaction::validate_elicitation;
 pub use management::{manage, manage_on, Management};
+pub mod session_catalog;
+pub use session_catalog::{session_catalog, CatalogCapabilities, CatalogSession, SessionCatalog};
 
 /// What the handshake said about the agent on the other end.
 ///
@@ -311,6 +313,9 @@ impl Elicitation {
 pub struct Environment {
     pub mcp_servers: Vec<McpServer>,
     pub additional_directories: Vec<PathBuf>,
+    /// One-shot startup intent. Never retained as the fork's recovery context.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub fork_from: Option<String>,
 }
 
 /// A `session/request_permission`, waiting for exactly one answer.
@@ -1122,11 +1127,15 @@ async fn open_one(
     }
     let mut initialize = InitializeRequest::new(ProtocolVersion::V1);
     initialize.client_capabilities = client_capabilities();
-    let hello = connection
-        .send_request(initialize)
-        .block_task()
-        .await
-        .map_err(refusal)?;
+    let hello_value = session_catalog::raw_request(
+        connection,
+        "initialize",
+        serde_json::to_value(initialize).map_err(|error| Refusal::Wont(error.to_string()))?,
+    )
+    .await?;
+    let hello: agent_client_protocol::schema::v1::InitializeResponse =
+        serde_json::from_value(hello_value.clone())
+            .map_err(|error| Refusal::Wont(error.to_string()))?;
     // **Version is negotiated, not assumed.** The protocol has the
     // agent answer with the version it will actually speak, which need
     // not be the one asked for; an unchecked mismatch is a handshake
@@ -1135,7 +1144,7 @@ async fn open_one(
     if hello.protocol_version != ProtocolVersion::V1 {
         return Err(Refusal::Version(hello.protocol_version.to_string()));
     }
-    let protocol = serde_json::json!({"capabilities":hello.agent_capabilities,"authMethods":hello.auth_methods,"agentInfo":hello.agent_info});
+    let protocol = serde_json::json!({"capabilities":hello_value["agentCapabilities"],"authMethods":hello.auth_methods,"agentInfo":hello.agent_info});
     let caps = &hello.agent_capabilities;
     initialization.initialized(RecoveryCapabilities {
         load: caps.load_session,
@@ -1183,6 +1192,41 @@ async fn open_one(
         // with this is say why nothing opened, which needs one bit.
         needs_login,
     };
+    if let Some(source) = environment.fork_from.as_ref() {
+        if resume.is_some()
+            || !hello_value["agentCapabilities"]["sessionCapabilities"]["fork"].is_object()
+        {
+            return Err(Refusal::Wont(
+                "The agent does not support creating this session branch".into(),
+            ));
+        }
+        let fork = session_catalog::raw_request(
+            connection,
+            "session/fork",
+            serde_json::json!({
+                "sessionId":source,"cwd":cwd,"mcpServers":environment.mcp_servers,
+                "additionalDirectories":environment.additional_directories
+            }),
+        )
+        .await?;
+        let opened: agent_client_protocol::schema::v1::NewSessionResponse =
+            serde_json::from_value(fork).map_err(|error| Refusal::Wont(error.to_string()))?;
+        if opened.session_id.to_string() == *source || opened.session_id.0.is_empty() {
+            return Err(Refusal::Wont(
+                "The agent returned the original identity for a branch".into(),
+            ));
+        }
+        return Ok((
+            opened.session_id,
+            facts,
+            Settings {
+                model: model_in(opened.meta.as_ref()),
+                modes: opened.modes,
+                options: opened.config_options.unwrap_or_default(),
+            },
+            OpenedBy::New,
+        ));
+    }
     // **The settings ride on the same answer the session id does**, and
     // they used to be dropped with it — `session_id` was read and the
     // rest of the response discarded. Nothing broke, because an agent

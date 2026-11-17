@@ -33,4 +33,6 @@ test('a passive offer failure cannot claim an active shell is disconnected',()=>
 test('confirmed live execution survives a failed diagnostic refresh',()=>assert.deepEqual(project(facts({metadataFault:true})),{state:'quiet',action:null}));
 test('an ended row with unavailable recovery metadata still permits a safe refresh',()=>assert.deepEqual(project(facts({kind:'shell',offer:null,metadataFault:true,ended:true})),{state:'failed',action:'refresh'}));
 test('a failed user operation stays actionable on a live offer',()=>assert.deepEqual(project(facts({fault:true})),{state:'failed',action:'retry'}));
+for(const support of ['resume','load'])test(`an explicitly adopted history can resume on first entry with ${support}`,()=>assert.equal(auto(facts({kind:'observe',offer:offer({execution:'ended',action:'adopt',native:{agent:'any-acp',native_id:'full-id',support}})})),true));
+for(const execution of ['unknown','offline','live'])test(`adoption never starts an ${execution} source`,()=>assert.equal(auto(facts({kind:'observe',offer:offer({execution,action:'adopt',native:{agent:'any-acp',native_id:'full-id',support:'resume'}})})),false));
 console.log(`recovery relationship: ${passed} checks passed`);

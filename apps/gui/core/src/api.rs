@@ -1281,6 +1281,14 @@ pub fn answer(
         // onto the list. `ids` in the order the person picked them.
         // 全局搜索 (docs/SHELL.md 第十轮): one word, the node's own list.
         "find" => to_json(&crate::find(root, &arg("word")?)?),
+        "session_import" => to_json(
+            &rt.block_on(crate::import::session_import(
+                root,
+                &arg("home")?,
+                serde_json::from_value(args.get("action").ok_or("missing import action")?.clone())
+                    .map_err(|error| error.to_string())?,
+            ))?,
+        ),
         "import_candidates" => to_json(&crate::import::import_candidates(root)?),
         "import_sessions" => {
             let ids: Vec<String> = args

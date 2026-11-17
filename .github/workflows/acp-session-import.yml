@@ -1,0 +1,153 @@
+name: ACP session import
+on:
+  push:
+    branches: [feat/acp-session-import-20261117]
+  workflow_dispatch:
+    inputs:
+      scope:
+        type: choice
+        options: [core, full]
+        default: full
+permissions:
+  contents: read
+jobs:
+  core:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      CARGO_BUILD_JOBS: '2'
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: dtolnay/rust-toolchain@1.95.0
+        with:
+          components: rustfmt
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: acp-session-import
+      - name: Resolve the actual private-fixture interpreter
+        run: |
+          python3 - <<'PY'
+          import os, pathlib, sys
+          executable = pathlib.Path(sys.executable).resolve()
+          framework = executable.parent.parent / 'Resources/Python.app/Contents/MacOS/Python'
+          with open(os.environ['GITHUB_ENV'], 'a') as env:
+              env.write('KHOR_TEST_PYTHON=' + str(framework if framework.is_file() else executable) + '\n')
+          PY
+      - name: Format source and preserve exact repair
+        run: |
+          mkdir -p "$RUNNER_TEMP/import-report"
+          python3 scripts/check-rust-format.py --write
+          python3 scripts/check-rust-format.py --check
+          git diff --binary -- '*.rs' > "$RUNNER_TEMP/import-report/format.patch"
+      - name: Verify actual ACP catalog and fork messages
+        run: cargo test --locked -p khor-acp --test session_catalog
+      - name: Verify source-owned catalog and launch identities
+        timeout-minutes: 15
+        run: cargo test --locked -p khor-node --lib session_import -- --test-threads=1
+      - name: Regress existing physical execution and observation fences
+        timeout-minutes: 3
+        run: |
+          cargo test --locked -p khor-node --lib bounded_attempt_tokens_keep_arguments_results_and_unknown_owners_fenced -- --test-threads=1
+          cargo test --locked -p khor-node --lib old_observation_metadata -- --test-threads=1
+      - name: Regress agent registration defaults and overrides
+        run: |
+          cargo test --locked -p khor-gui-core --lib agents:: -- --test-threads=1
+          cargo test --locked -p khor-sync --lib agents:: -- --test-threads=1
+      - name: Check the CLI contract
+        run: cargo check --locked -p khor-commands
+      - name: Verify resident IPC and authenticated QUIC source ownership
+        timeout-minutes: 5
+        run: |
+          cargo build --locked -p khor-acp --bin acp-import-fixture
+          KHOR_TEST_IMPORT_STUB="$PWD/target/debug/acp-import-fixture" cargo test --locked -p khor-node --test session_import_wire -- --test-threads=1
+      - name: Regress all existing ACP behavior
+        # This fixture compares the full executable in macOS ps output. It is
+        # exercised below on Mac; Linux ps reports only the basename.
+        run: cargo test --locked -p khor-acp -- --skip startup_pressure_tests::startup_frame_pressure_is_bounded_and_cancellation_retires_the_actual_agent
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: acp-import-core
+          path: ${{ runner.temp }}/import-report
+  frontend:
+    if: github.event_name == 'push' || inputs.scope == 'full'
+    uses: ./.github/workflows/frontend.yml
+  lab:
+    needs: frontend
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: 22.19.0
+          cache: npm
+          cache-dependency-path: apps/gui/package-lock.json
+      - uses: ./.github/actions/restore-frontend
+      - run: npm ci
+        working-directory: apps/gui
+      - name: Build exact-source review Lab
+        working-directory: apps/gui
+        env:
+          LAB_BUNDLE: ${{ runner.temp }}/developer-lab
+        run: |
+          npx tsc --project dev/lab/tsconfig.json
+          npx vite build --config dev/lab/vite.config.ts --outDir "$LAB_BUNDLE"
+          npm run lab:workbench:build -- --output-dir "$LAB_BUNDLE/assets/workbench"
+          python3 - <<'PY'
+          import json, os, pathlib, subprocess, sys
+          def git(*args): return subprocess.check_output(['git', *args], text=True).strip()
+          source = pathlib.Path(os.environ['RUNNER_TEMP']) / 'lab-source.json'
+          source.write_text(json.dumps(dict(schema=1, base_commit=git('rev-parse', 'HEAD'), tree=git('rev-parse', 'HEAD^{tree}'), snapshot_commit=git('rev-parse', 'HEAD'), dirty=False)))
+          subprocess.run([sys.executable, '../../scripts/khor_lab/package.py', '../..', os.environ['LAB_BUNDLE'], str(source)], check=True)
+          PY
+      - name: Verify import and branch interactions
+        working-directory: apps/gui
+        env:
+          LAB_BUNDLE: ${{ runner.temp }}/developer-lab
+          LAB_REPORT: ${{ runner.temp }}/lab-report
+          LAB_CHECKS: session-import
+        run: |
+          mkdir -p "$LAB_REPORT"
+          npx playwright-core install --with-deps chromium webkit
+          node dev/lab/check-app.mjs
+      - name: Regress existing observation and recovery presentation
+        working-directory: apps/gui
+        if: success() || failure()
+        run: |
+          npm run session-observation
+          node scripts/check-recovery-relationship.mjs
+          npm run test:unit
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: acp-import-lab
+          path: |
+            ${{ runner.temp }}/developer-lab
+            ${{ runner.temp }}/lab-report
+          retention-days: 7
+  native:
+    needs: frontend
+    runs-on: macos-26
+    timeout-minutes: 35
+    env:
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_BUILD_JOBS: '2'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: dtolnay/rust-toolchain@1.95.0
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: acp-session-import-native
+      - uses: ./.github/actions/restore-frontend
+      - name: Check the real desktop command registration and async boundary
+        run: cargo check --locked -p khor-gui
+      - name: Regress the macOS subprocess pressure and cancellation boundary
+        run: |
+          export KHOR_TEST_PYTHON="$(python3 -c 'import pathlib,sys; p=pathlib.Path(sys.executable).resolve(); f=p.parent.parent/"Resources/Python.app/Contents/MacOS/Python"; print(f if f.is_file() else p)')"
+          cargo test --locked -p khor-acp --lib startup_frame_pressure_is_bounded_and_cancellation_retires_the_actual_agent

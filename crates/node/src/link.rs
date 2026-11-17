@@ -2427,6 +2427,12 @@ impl Node {
         response: Option<crate::session_content::remote::ResponsePermit>,
     ) -> ipc::Reply {
         match op {
+            ipc::Op::SessionImport { home, action } => {
+                match self.session_import_with(ep, home, action).await {
+                    Ok(value) => ipc::Reply::SessionImport { value },
+                    Err(why) => ipc::Reply::Refused { why },
+                }
+            }
             ipc::Op::ContentRead { action } => {
                 match self.content_read_with(ep, action, response).await {
                     Ok(reply) => ipc::Reply::ContentRead { reply },
@@ -5315,6 +5321,14 @@ impl Node {
                     truncated,
                 })
             }
+            Request::SessionImport { home, action } => {
+                if home != self.device() {
+                    return Err("Import request reached another source home".into());
+                }
+                Ok(Response::SessionImport {
+                    value: self.session_import_here(action).await?,
+                })
+            }
             Request::SessionRecovery {
                 home,
                 id,
@@ -6521,6 +6535,81 @@ impl Node {
             crate::session_content::Observation::validate_reference(id, home, reference)?;
         }
         Ok(reference)
+    }
+
+    /// One authenticated route for discovery and import; incoming requests are
+    /// executed here and never bounced to a second machine.
+    pub async fn session_import_on(
+        &self,
+        home_hex: &str,
+        action: khor_core::session_import::SessionImportAction,
+    ) -> Result<khor_core::session_import::SessionImportReply, String> {
+        let home = Self::recovery_home(home_hex)?;
+        if serde_json::to_vec(&action)
+            .map_err(|error| error.to_string())?
+            .len()
+            > 16 * 1024
+        {
+            return Err("Import request exceeds its metadata budget".into());
+        }
+        if let Some(reply) = self
+            .via_serve(ipc::Op::SessionImport {
+                home,
+                action: action.clone(),
+            })
+            .await
+        {
+            return match reply? {
+                ipc::Reply::SessionImport { value } => Self::import_reply(home, value),
+                ipc::Reply::Refused { why } => Err(why),
+                _ => Err("Unexpected session import response".into()),
+            };
+        }
+        if home == self.device() {
+            return self.session_import_here(action).await;
+        }
+        let ep = endpoint::bind_with(
+            self.secret_key().clone(),
+            self.relay_map(),
+            self.relays_n0(),
+        )
+        .await
+        .map_err(|error| error.to_string())?;
+        let result = self.session_import_with(&ep, home, action).await;
+        ep.close().await;
+        result
+    }
+    fn import_reply(
+        home: khor_core::DeviceId,
+        value: khor_core::session_import::SessionImportReply,
+    ) -> Result<khor_core::session_import::SessionImportReply, String> {
+        let actual = match &value {
+            khor_core::session_import::SessionImportReply::Catalog { value } => &value.home,
+            khor_core::session_import::SessionImportReply::Imported { home, .. } => home,
+        };
+        if *actual != home.hex() {
+            return Err("Import reply names another source home".into());
+        }
+        Ok(value)
+    }
+    async fn session_import_with(
+        &self,
+        ep: &iroh::Endpoint,
+        home: khor_core::DeviceId,
+        action: khor_core::session_import::SessionImportAction,
+    ) -> Result<khor_core::session_import::SessionImportReply, String> {
+        if home == self.device() {
+            return self.session_import_here(action).await;
+        }
+        let device = self.recovery_peer(home)?;
+        match self
+            .ask_on(ep, &device, &Request::SessionImport { home, action })
+            .await?
+        {
+            Response::SessionImport { value } => Self::import_reply(home, value),
+            Response::Refused { why } => Err(why),
+            _ => Err("Unexpected session import response".into()),
+        }
     }
 
     pub async fn session_recovery_on(

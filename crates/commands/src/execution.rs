@@ -412,7 +412,9 @@ fn grammar(word: &str) -> &'static str {
         "usage" => "usage [--days <number>]",
         "sessions" => "sessions [--by recent|category|device|state|place] [--all]",
         "find" => "find <word>",
-        "import" => "import [<number|id>...]",
+        "import" => {
+            "import [--machine SOURCE] [--refresh AGENT] [--agent AGENT] [--fork] [NUMBER|NATIVE_ID] [--token TOKEN]"
+        }
         "tell" => "tell <machine>|@<machine>[:<dir>]... <words>...",
         "send" => {
             "send <machine>|@<machine>[:<dir>]... <file>|<machine>:<path>|<words>... [--into <dir>]"

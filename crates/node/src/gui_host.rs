@@ -1109,7 +1109,10 @@ fn gui_host_main_with_timeouts(
         .map(|value| serde_json::from_str(&value).map_err(|e| e.to_string()))
         .transpose()?;
     let environment = gui_environment(&root, resume.as_deref())?;
-    let retained_environment = environment.clone();
+    let mut retained_environment = environment.clone();
+    // Fork is a one-shot creation request. Restoring this new session must
+    // resume its own native ID, never create another branch of its parent.
+    retained_environment.fork_from = None;
     let launch = serde_json::to_vec(&(&cwd, &title, &cmd, &retained_environment))
         .map_err(|error| error.to_string())?;
     // A known native conversation owns the journal's physical writer lock
