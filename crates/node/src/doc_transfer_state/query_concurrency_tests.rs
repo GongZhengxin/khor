@@ -1,4 +1,4 @@
-//! One cross-process diagnostic, not a synchronization policy or a retry loop.
+//! Owned cross-process query regressions; no production synchronization policy.
 //! Only the exact owned helper installs this root-scoped native-lock barrier.
 use crate::doc_transfer_state::{Context, State};
 use crate::proto::{DocChunk, DocTransferState};
@@ -166,10 +166,6 @@ pub(crate) fn publication_ready(
         .expect("Context.apply has released the real root fence");
     drop(root_gate);
     let needs_recovery = crate::doc_transfer_state::pairing::needs_recovery(&root, local).unwrap();
-    assert!(
-        needs_recovery,
-        "real next publication must exercise the conservative constructor branch"
-    );
     publish(
         &paths.marker,
         &PublicationProof {
@@ -262,6 +258,10 @@ struct Owned {
 }
 impl Owned {
     fn spawn(mut command: Command, fixture: &Fixture) -> Self {
+        command
+            .env("KHOR_RUNTIME_DIR", fixture.root.join("runtime"))
+            .env_remove("KHOR_RUNTIME_INSTALL_SOURCE")
+            .env_remove("KHOR_INSTALL_SOURCE");
         let child = command.spawn().unwrap();
         fixture.children_done.store(false, Ordering::SeqCst);
         eprintln!(
@@ -322,26 +322,64 @@ impl Drop for Release {
 }
 fn birth(pid: u32, fixture: &Fixture, label: &str, expected_exe: &Path) -> String {
     let path = fixture.root.join(format!("{label}.identity"));
-    let mut cmd = Command::new("/bin/ps");
-    cmd.args(["-ww", "-p", &pid.to_string(), "-o", "lstart=,comm="])
-        .stdin(Stdio::null())
-        .stdout(
-            OpenOptions::new()
-                .write(true)
-                .create_new(true)
-                .mode(0o600)
-                .open(&path)
-                .unwrap(),
-        )
-        .stderr(Stdio::null());
-    assert!(Owned::spawn(cmd, fixture).wait(BY).success());
-    let identity = output(&path).trim().to_owned();
-    assert!(!identity.is_empty() && identity.len() <= 4096);
-    assert!(
-        identity.ends_with(expected_exe.to_str().unwrap()),
-        "owned actual executable identity: {identity}"
-    );
-    identity
+    #[cfg(target_os = "linux")]
+    {
+        use std::os::unix::fs::MetadataExt;
+        let process = PathBuf::from(format!("/proc/{pid}"));
+        let started = || {
+            fs::read_to_string(process.join("stat"))
+                .unwrap()
+                .rsplit_once(") ")
+                .unwrap()
+                .1
+                .split_whitespace()
+                .nth(19)
+                .unwrap()
+                .parse::<u64>()
+                .unwrap()
+        };
+        let ticks = started();
+        let actual = fs::read_link(process.join("exe")).unwrap();
+        assert_eq!(actual, expected_exe.canonicalize().unwrap());
+        let actual_meta = fs::metadata(process.join("exe")).unwrap();
+        let expected_meta = fs::metadata(expected_exe).unwrap();
+        assert_eq!(
+            (actual_meta.dev(), actual_meta.ino()),
+            (expected_meta.dev(), expected_meta.ino())
+        );
+        assert_eq!(
+            ticks,
+            started(),
+            "owned process birth changed during observation"
+        );
+        let identity = serde_json::json!({"pid":pid,"start_ticks":ticks,"executable":actual,
+            "device":actual_meta.dev(),"inode":actual_meta.ino()});
+        publish(&path, &identity);
+        return output(&path);
+    }
+    #[cfg(not(target_os = "linux"))]
+    {
+        let mut cmd = Command::new("/bin/ps");
+        cmd.args(["-ww", "-p", &pid.to_string(), "-o", "lstart=,comm="])
+            .stdin(Stdio::null())
+            .stdout(
+                OpenOptions::new()
+                    .write(true)
+                    .create_new(true)
+                    .mode(0o600)
+                    .open(&path)
+                    .unwrap(),
+            )
+            .stderr(Stdio::null());
+        assert!(Owned::spawn(cmd, fixture).wait(BY).success());
+        let identity = output(&path).trim().to_owned();
+        assert!(!identity.is_empty() && identity.len() <= 4096);
+        assert!(
+            identity.ends_with(expected_exe.to_str().unwrap()),
+            "owned actual executable identity: {identity}"
+        );
+        identity
+    }
 }
 fn ids(node: &Node) -> Vec<String> {
     node.sessions_arranged(Arrange::Recent)
@@ -438,6 +476,9 @@ impl Query {
             );
             let out = fixture.root.join(format!("gate-fd-{index}.stdout"));
             let err = fixture.root.join(format!("gate-fd-{index}.stderr"));
+            #[cfg(target_os = "linux")]
+            let mut cmd = Command::new("/usr/bin/lsof");
+            #[cfg(not(target_os = "linux"))]
             let mut cmd = Command::new("/usr/sbin/lsof");
             cmd.args(["-nP", "-a", "-p", &pid.to_string(), "-Fn", "--"])
                 .arg(&gate)
@@ -744,7 +785,7 @@ fn metadata_publication_separates_recovery_gate_from_root_admission() {
     assert_eq!(proof.parent, std::process::id());
     assert_eq!(proof.root, control.root);
     assert_eq!(proof.phase, "journal-next-synced-before-rename");
-    assert!(proof.root_free && proof.metadata_held && proof.needs_recovery);
+    assert!(proof.root_free && proof.metadata_held && !proof.needs_recovery);
     assert_eq!(
         birth(
             worker.child.id(),
@@ -769,7 +810,7 @@ fn metadata_publication_separates_recovery_gate_from_root_admission() {
         .expect("parent independently acquires real root OS gate");
     drop(root_free);
     assert!(
-        crate::doc_transfer_state::pairing::needs_recovery(&target.root, target.local).unwrap()
+        !crate::doc_transfer_state::pairing::needs_recovery(&target.root, target.local).unwrap()
     );
     let metadata = State::open(&target)
         .err()
@@ -837,11 +878,12 @@ fn metadata_publication_separates_recovery_gate_from_root_admission() {
 }
 
 #[test]
-#[ignore = "one owned metadata-publication waiting positive; requires pinned current CLI"]
-fn ordinary_query_waits_for_metadata_publication_and_preserves_ids() {
-    let cli =
-        PathBuf::from(std::env::var_os("KHOR_QUERY_CLI").expect("pinned current CLI required"));
+#[ignore = "owned non-pairing publication regression; requires pinned same-source CLI"]
+fn ordinary_query_is_not_blocked_by_a_complete_non_pairing_publication() {
+    let cli = PathBuf::from(std::env::var_os("KHOR_QUERY_CLI").expect("pinned CLI required"));
     assert!(cli.is_absolute() && cli.is_file());
+    // This fixture only imports a real devices CRDT image. It never initiates
+    // Pair or a settlement, so its receipt publication cannot introduce Ready.
     let PreparedFixture {
         fixture,
         expected,
@@ -850,21 +892,21 @@ fn ordinary_query_waits_for_metadata_publication_and_preserves_ids() {
         source,
         packet,
     } = PreparedFixture::new();
-    let marker = fixture.root.join("publication-held.json");
-    let released = fixture.root.join("publication-release.json");
+    let marker = fixture.root.join("non-pairing-publication-held.json");
+    let released = fixture.root.join("non-pairing-publication-release.json");
     let control = Control {
         root: target.root.canonicalize().unwrap(),
         owner: std::process::id(),
         source: source.local,
         packet,
-        marker: fixture.root.join("root-reached.json"),
-        release: fixture.root.join("unused-root-release.json"),
+        marker: fixture.root.join("non-pairing-root-reached.json"),
+        release: fixture.root.join("unused-non-pairing-root-release.json"),
         publication: Some(Publication {
             marker: marker.clone(),
             release: released.clone(),
         }),
     };
-    let control_path = fixture.root.join("control.json");
+    let control_path = fixture.root.join("non-pairing-control.json");
     publish(&control_path, &control);
     let mut cmd = Command::new(std::env::current_exe().unwrap());
     cmd.args([
@@ -878,21 +920,12 @@ fn ordinary_query_waits_for_metadata_publication_and_preserves_ids() {
     .stdin(Stdio::null());
     let mut worker = Owned::spawn(cmd, &fixture);
     let release = Release(released);
-    let born = birth(
-        worker.child.id(),
-        &fixture,
-        "worker-before",
-        &std::env::current_exe().unwrap(),
-    );
     let until = Instant::now() + BY;
     while !marker.is_file() {
-        assert!(
-            worker.child.try_wait().unwrap().is_none(),
-            "devices worker ended before real next publication"
-        );
+        assert!(worker.child.try_wait().unwrap().is_none());
         assert!(
             Instant::now() < until,
-            "real Journal.next publication checkpoint deadline"
+            "real publication checkpoint deadline"
         );
         std::thread::sleep(Duration::from_millis(10));
     }
@@ -901,76 +934,57 @@ fn ordinary_query_waits_for_metadata_publication_and_preserves_ids() {
     assert_eq!(proof.parent, std::process::id());
     assert_eq!(proof.root, control.root);
     assert_eq!(proof.phase, "journal-next-synced-before-rename");
-    assert!(proof.root_free && proof.metadata_held && proof.needs_recovery);
-    assert_eq!(
-        birth(
-            worker.child.id(),
-            &fixture,
-            "worker-held",
-            &std::env::current_exe().unwrap()
-        ),
-        born
-    );
-    assert!(worker.child.try_wait().unwrap().is_none());
+    assert!(proof.root_free && proof.metadata_held);
     let next = target.root.join(".khor/doc-transfer-state/registry.next");
-    assert!(fs::metadata(&next).unwrap().len() <= MAX_FILE);
     let next_bytes = fs::read(&next).unwrap();
     assert_eq!(next_bytes.len(), proof.next_bytes);
     assert_eq!(
         blake3::hash(&next_bytes).to_hex().to_string(),
         proof.next_blake3
     );
-    let root_free = crate::doc_transfer_state::RootPermit::try_acquire(&target.root)
-        .unwrap()
-        .attach()
-        .expect("parent independently acquires real root OS gate");
-    drop(root_free);
-    assert!(
-        crate::doc_transfer_state::pairing::needs_recovery(&target.root, target.local).unwrap()
-    );
+    let anchor = target.root.join(".khor/root.pub");
+    let anchor_bytes = fs::read(&anchor).unwrap();
+    let identity = target.root.join(".khor/identity.key");
+    let identity_bytes = fs::read(&identity).unwrap();
     let metadata = State::open(&target)
         .err()
-        .expect("real metadata gate is held by publication worker");
+        .expect("writer still owns metadata");
     assert_eq!(metadata.kind, crate::proto::DocTransferFailure::Busy);
-    let mut waiting = Query::start(&cli, &fixture, &target.root, "publication");
-    let gate_descriptors = waiting.entered_file(
-        &cli,
-        &fixture,
-        &target.root.join(".khor/doc-transfer-state/gate"),
-    );
-    assert!(worker.child.try_wait().unwrap().is_none());
-    assert_eq!(fs::read(&next).unwrap(), next_bytes);
-    // The actual waiting CLI must have released its root fence before waiting
-    // for this metadata owner. This independent physical try proves handoff.
-    let root_free = crate::doc_transfer_state::RootPermit::try_acquire(&target.root)
-        .unwrap()
-        .attach()
-        .expect("waiting CLI released root before metadata wait");
-    drop(root_free);
-    drop(release);
-    let held = waiting.finish();
-    assert!(held.0.success(), "metadata waiting CLI: {}", held.2);
+    let query = Query::start(&cli, &fixture, &target.root, "non-pairing-publication").finish();
     assert!(
-        worker.wait(BY).success(),
-        "actual import finishes after publication release"
+        query.0.success(),
+        "ordinary query should use settled trust: {}",
+        query.2
     );
-    let after = Query::start(&cli, &fixture, &target.root, "released").finish();
-    assert!(after.0.success(), "released actual CLI: {}", after.2);
+    assert!(
+        worker.child.try_wait().unwrap().is_none(),
+        "writer must still be held"
+    );
+    assert_eq!(
+        fs::read(&next).unwrap(),
+        next_bytes,
+        "query must not publish or discard it"
+    );
+    assert_eq!(fs::read(&anchor).unwrap(), anchor_bytes);
+    assert_eq!(fs::read(&identity).unwrap(), identity_bytes);
     for id in &expected {
-        assert!(held.1.contains(id), "metadata waiting query lost {id}");
-        assert!(after.1.contains(id), "released query lost {id}");
+        assert!(query.1.contains(id), "query lost original session {id}");
     }
+    drop(release);
+    assert!(worker.wait(BY).success());
+    let after = Query::start(&cli, &fixture, &target.root, "non-pairing-released").finish();
+    assert!(after.0.success(), "released query: {}", after.2);
     let final_ids = ids(&Node::open_hosting(target.root.clone(), "receiver", false).unwrap());
     for id in &baseline {
         assert!(final_ids.contains(id), "original row disappeared: {id}");
     }
     fixture.children_done.store(true, Ordering::SeqCst);
     eprintln!(
-        "[N-METADATA-WAIT] {}",
+        "[N-NONPAIR-PUBLICATION] {}",
         serde_json::json!({
-            "phase_proof":proof,"worker_birth_executable":born,"held_exit":held.0.code(),"held_ms":held.3,"held_stdout":held.1,"held_stderr":held.2,
-            "metadata_failure_kind":metadata.kind,"released_exit":after.0.code(),"released_ms":after.3,"released_stdout":after.1,"released_stderr":after.2,
-            "original_ids":expected,"baseline_ids":baseline,"final_ids":final_ids,"constructor_recovery_branch":true,"query_metadata_descriptors":gate_descriptors,"current_cli_positive":true
+            "phase_proof": proof, "query_ms": query.3, "query_exit": query.0.code(),
+            "released_ms": after.3, "original_ids": expected, "final_ids": final_ids,
+            "unpublished_bytes_unchanged": true, "identity_and_anchor_unchanged": true
         })
     );
 }

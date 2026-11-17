@@ -388,22 +388,20 @@ pub(crate) fn publish_anchor(root: &Path, bytes: &[u8]) -> Result<(), String> {
     fs::rename(next, target).map_err(error)
 }
 
-pub(super) fn has_publication(root: &Path) -> Result<bool, String> {
-    match fs::symlink_metadata(root.join("registry.next")) {
-        Ok(_) => {
-            check_file(&root.join("registry.next"))?;
-            Ok(true)
-        }
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(false),
-        Err(e) => Err(error(e)),
-    }
+pub(super) enum BootstrapView {
+    Images(Vec<Vec<u8>>),
+    Recover,
 }
 
 /// Atomic registry reads do not acquire/mutate a transfer owner. Before any
 /// trust bootstrap, a critical intent must be recovered under both leases.
-pub(super) fn peek(root: &Path) -> Result<Option<Vec<u8>>, String> {
+/// The caller holds the root fence: Ready writers need that same fence, while
+/// ordinary receipt writers may still publish under their metadata lease.
+pub(super) fn bootstrap_view(root: &Path) -> Result<BootstrapView, String> {
     match fs::symlink_metadata(root) {
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+            return Ok(BootstrapView::Images(Vec::new()));
+        }
         Err(e) => return Err(error(e)),
         Ok(metadata) => {
             if !metadata.is_dir() || metadata.file_type().is_symlink() {
@@ -424,9 +422,31 @@ pub(super) fn peek(root: &Path) -> Result<Option<Vec<u8>>, String> {
         }
         check_file(&entry.path())?;
     }
-    read_optional(&root.join("registry"))?
-        .map(|bytes| decode(&bytes).map(|(_, body)| body.to_vec()))
-        .transpose()
+    // Read next first. Reading only the committed image could miss the first
+    // Ready intent left there by a dead writer. A rename between these reads
+    // is deliberately ambiguous and goes through the locked recovery path.
+    let next = read_optional(&root.join("registry.next"))?;
+    let current = read_optional(&root.join("registry"))?;
+    let mut images = Vec::new();
+    let generation = if let Some(bytes) = current {
+        let (generation, body) = decode(&bytes)?;
+        images.push(body.to_vec());
+        generation
+    } else {
+        0
+    };
+    if let Some(bytes) = next {
+        let Ok((next_generation, body)) = decode(&bytes) else {
+            // Partial/unknown/corrupt publications keep Journal::load's exact
+            // recovery and preservation rules; this view never removes them.
+            return Ok(BootstrapView::Recover);
+        };
+        if generation.checked_add(1) != Some(next_generation) {
+            return Ok(BootstrapView::Recover);
+        }
+        images.push(body.to_vec());
+    }
+    Ok(BootstrapView::Images(images))
 }
 
 pub(super) fn gate(root: &Path) -> Result<Gate, Error> {

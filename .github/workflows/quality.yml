@@ -317,7 +317,7 @@ jobs:
       - run: npm ci
         working-directory: apps/gui
       - uses: ./.github/actions/restore-frontend
-      - run: sudo apt-get update && sudo apt-get install -y tmux openssh-server
+      - run: sudo apt-get update && sudo apt-get install -y tmux openssh-server lsof
       - run: sudo mkdir -p /run/sshd
       - run: npm ci
         working-directory: apps/agent
@@ -347,6 +347,15 @@ jobs:
           KHOR_TEST_AGENT_BIN: ${{ runner.temp }}/khor-agent
       - run: cargo test --locked -p khor-node --lib --no-run --message-format=json > "${{ runner.temp }}/node-artifacts.json"
       - run: python3 scripts/native_provenance.py verify --prepared "${{ runner.temp }}/node-prepared.json" --artifacts "${{ runner.temp }}/node-artifacts.json" --output "${{ runner.temp }}/node-provenance.json"
+      - name: Verify query admission and pairing recovery during metadata publication
+        shell: bash
+        run: |
+          set -euo pipefail
+          export KHOR_RUNTIME_DIR="$RUNNER_TEMP/doc-query-runtime"
+          mkdir -m 700 "$KHOR_RUNTIME_DIR"
+          cargo test --locked -p khor-node --lib doc_transfer_state:: -- --test-threads=1 2>&1 | tee "$RUNNER_TEMP/doc-state-guards.log"
+          KHOR_QUERY_CLI="$CARGO_TARGET_DIR/debug/khor" cargo test --locked -p khor-node --lib link::documents::query_concurrency_tests::ordinary_query_ -- --ignored --nocapture --test-threads=1 2>&1 | tee "$RUNNER_TEMP/doc-query-admission.log"
+          cargo test --locked -p khor-node --lib link::pairing::tests::interrupted_pair_settlement_recovers_before_bootstrap_and_never_replays_after_leave -- --ignored --exact --nocapture --test-threads=1 2>&1 | tee "$RUNNER_TEMP/pair-settlement-recovery.log"
       - name: Run each agent close acceptance test in its own process
         run: python3 scripts/run-node-acceptance.py --suite runtime-close --artifacts "${{ runner.temp }}/node-artifacts.json" --provenance "${{ runner.temp }}/node-provenance.json" --worker-provenance "${{ runner.temp }}/cli-provenance.json" --output "${{ runner.temp }}/node-native-close"
       - name: Verify terminal connection failure and recovery boundaries
@@ -419,6 +428,9 @@ jobs:
             ${{ runner.temp }}/*-prepared.json
             ${{ runner.temp }}/*-provenance.json
             ${{ runner.temp }}/node-native-close
+            ${{ runner.temp }}/doc-state-guards.log
+            ${{ runner.temp }}/doc-query-admission.log
+            ${{ runner.temp }}/pair-settlement-recovery.log
           if-no-files-found: warn
 
   gui:
