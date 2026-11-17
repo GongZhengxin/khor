@@ -195,15 +195,15 @@ try{
     assert.equal(await panel().locator('[data-files-selected]').count(),0,'empty change entered a selection');
     assert(await panel().locator('[data-files-pick=device]').isVisible());assert(await panel().locator('[data-files-pick=folder]').isVisible());
     const row=panel().locator('[data-files-machine-row]'),more=row.locator('[data-files-machines]');
-    assert.equal(await row.getAttribute('data-files-source-count'),'2','All source machines remain available');
+    assert.equal(await row.getAttribute('data-files-source-count'),'1','The remote source remains available beside both native local pickers');
     const visible=await row.locator('[data-files-machine-chip]:visible').evaluateAll(nodes=>nodes.map(node=>node.dataset.filesMachineChip));
     const hidden=Number(await more.getAttribute('data-files-machine-count'));
-    assert.equal(visible.length+hidden,2,'Visible chips and overflowing choices account for every source');
+    assert.equal(visible.length+hidden,1,'Visible chips and overflowing choices account for every remote source');
     let overflow=[];
     if(hidden){await more.click();overflow=await page.locator('[data-files-machines-menu] [data-files-machine]').evaluateAll(nodes=>nodes.map(node=>node.dataset.filesMachine));assert.equal(overflow.length,hidden);await page.keyboard.press('Escape');}
     else assert.equal(await more.isVisible(),false,'More is hidden when every machine fits');
-    assert.deepEqual([...visible,...overflow].sort(),[device.name,'audit-remote'].sort(),'Both original source identities remain discoverable');
-    note('empty-system-change',{sources:2});
+    assert.deepEqual([...visible,...overflow],['audit-remote'],'The original remote source remains discoverable without duplicating this device');
+    note('empty-system-change',{sources:2,localPickers:true,remoteSources:1});
   });
   assert.deepEqual(pickerResizes,[],'Choosing sources, opening files and changing keyboard focus never resizes the real PTY');
   writeFileSync(join(out,'attachment-results.json'),JSON.stringify({results,errors,pickerResizes},null,2));assert.deepEqual(errors,[]);assert.deepEqual(failures,[]);console.log('attachment UI gate: clean');
