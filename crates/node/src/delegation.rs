@@ -687,6 +687,7 @@ fn connect_host(root: &Path, session: &SessionId) -> Result<TcpStream, String> {
     write_frame(
         &mut stream,
         &Hello {
+            control: false,
             cookie: host.cookie,
             cols: 0,
             rows: 0,

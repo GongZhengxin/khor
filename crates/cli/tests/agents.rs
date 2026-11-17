@@ -411,6 +411,7 @@ fn a_real_third_party_agent_goes_through_the_whole_gate() {
     write_frame(
         &mut conn,
         &Hello {
+            control: false,
             cookie: hf.cookie,
             cols: 0,
             rows: 0,

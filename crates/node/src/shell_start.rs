@@ -1,7 +1,8 @@
 //! A command typed into a freshly-created shell. The target chooses its own
 //! shell and home; the host holds the command until a terminal can answer it.
 use serde::{Deserialize, Serialize};
-use std::io::{self, Write};
+use std::collections::VecDeque;
+use std::io::{self, Read, Write};
 use std::path::PathBuf;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -12,6 +13,12 @@ pub struct ShellStart {
     pub command: String,
     pub cols: u16,
     pub rows: u16,
+    /// The host supplies terminal replies while no human viewer is attached.
+    #[serde(default)]
+    pub headless: bool,
+    /// Structured CLI arguments are quoted only on the machine owning this shell.
+    #[serde(default)]
+    pub argv: Option<Vec<String>>,
 }
 
 impl ShellStart {
@@ -19,21 +26,210 @@ impl ShellStart {
         if !crate::once::valid(&self.token) {
             return Err(khor_catalog::msg::create_token_bad().into());
         }
-        if self.command.len() > 32 * 1024 || self.command.contains('\0') {
+        if self.command.len() > 32 * 1024
+            || self.command.contains('\0')
+            || self.argv.as_ref().is_some_and(|argv| {
+                argv.is_empty()
+                    || !self.command.trim().is_empty()
+                    || argv
+                        .iter()
+                        .map(|arg| arg.len().saturating_add(1))
+                        .sum::<usize>()
+                        > 32 * 1024
+                    || argv.iter().any(|arg| arg.contains('\0'))
+            })
+        {
             return Err(khor_catalog::msg::launch_command_invalid().into());
         }
         Ok(())
     }
 }
 
+/// The target user's shell. An explicit Khor selection is authoritative;
+/// an inherited, stale SHELL is only a candidate, followed by the account.
 pub fn default_shell() -> String {
+    if let Some(shell) = std::env::var("KHOR_SHELL")
+        .ok()
+        .filter(|s| !s.trim().is_empty())
+    {
+        return shell;
+    }
+    let path = std::env::var("PATH").unwrap_or_default();
+    let available = |shell: &str| crate::find_program(shell, &path);
+    #[cfg(unix)]
+    {
+        if let Some(shell) = std::env::var("SHELL").ok().and_then(|s| available(&s)) {
+            return shell;
+        }
+        if let Some(shell) = account_shell().and_then(|s| available(&s)) {
+            return shell;
+        }
+        #[cfg(target_os = "macos")]
+        if let Some(shell) = available("/bin/zsh") {
+            return shell;
+        }
+        "/bin/sh".into()
+    }
     #[cfg(windows)]
     {
-        std::env::var("COMSPEC").unwrap_or_else(|_| "cmd.exe".into())
+        if let Some(shell) = available("pwsh.exe") {
+            return shell;
+        }
+        if let Some(root) = std::env::var_os("SystemRoot") {
+            let shell = PathBuf::from(root).join("System32/WindowsPowerShell/v1.0/powershell.exe");
+            if shell.is_file() {
+                return shell.to_string_lossy().into_owned();
+            }
+        }
+        std::env::var("COMSPEC")
+            .ok()
+            .and_then(|s| available(&s))
+            .unwrap_or_else(|| "cmd.exe".into())
     }
-    #[cfg(not(windows))]
+    #[cfg(not(any(unix, windows)))]
     {
-        std::env::var("SHELL").unwrap_or_else(|_| "/bin/sh".into())
+        "/bin/sh".into()
+    }
+}
+
+#[cfg(unix)]
+fn account_shell() -> Option<String> {
+    let mut size = 16 * 1024;
+    loop {
+        let mut buffer = vec![0u8; size];
+        // getpwuid_r writes pointers into buffer, which stays alive until the
+        // shell has been copied. Unlike getpwuid it has no shared static data.
+        let mut entry: libc::passwd = unsafe { std::mem::zeroed() };
+        let mut found = std::ptr::null_mut();
+        let result = unsafe {
+            libc::getpwuid_r(
+                libc::geteuid(),
+                &mut entry,
+                buffer.as_mut_ptr().cast(),
+                buffer.len(),
+                &mut found,
+            )
+        };
+        if result == libc::ERANGE && size < 256 * 1024 {
+            size *= 2;
+            continue;
+        }
+        if result != 0 || found.is_null() || entry.pw_shell.is_null() {
+            return None;
+        }
+        return unsafe { std::ffi::CStr::from_ptr(entry.pw_shell) }
+            .to_str()
+            .ok()
+            .filter(|s| !s.is_empty())
+            .map(str::to_owned);
+    }
+}
+
+#[derive(Clone, Copy)]
+enum Platform {
+    Mac,
+    Unix,
+    Windows,
+}
+
+/// A new interactive terminal, not a command string to be shell-expanded.
+/// Login startup is the macOS convention; Linux normally inherits its login
+/// session and reads interactive rc files. Native Windows shells own Profiles.
+pub fn command(shell: &str) -> Vec<String> {
+    let platform = if cfg!(windows) {
+        Platform::Windows
+    } else if cfg!(target_os = "macos") {
+        Platform::Mac
+    } else {
+        Platform::Unix
+    };
+    command_for(
+        shell,
+        platform,
+        std::env::var("KHOR_SHELL_LOGIN").ok().as_deref(),
+    )
+}
+
+fn command_for(shell: &str, platform: Platform, policy: Option<&str>) -> Vec<String> {
+    let name = PathBuf::from(shell)
+        .file_name()
+        .unwrap_or_default()
+        .to_string_lossy()
+        .trim_start_matches('-')
+        .to_ascii_lowercase();
+    let mut cmd = vec![shell.to_owned()];
+    if matches!(platform, Platform::Windows) {
+        return cmd;
+    }
+    let login = match policy {
+        Some("always") => true,
+        Some("never") => false,
+        _ => matches!(platform, Platform::Mac),
+    };
+    // Other programs and custom shells retain their own argument conventions.
+    if matches!(
+        name.as_str(),
+        "zsh" | "bash" | "fish" | "sh" | "dash" | "ksh"
+    ) {
+        if login {
+            cmd.push("-l".into());
+        }
+        cmd.push("-i".into());
+    }
+    cmd
+}
+
+/// Literal startup text is unchanged. Structured argv comes from a CLI, so its
+/// target shell must quote it before it is typed into the persistent terminal.
+pub fn startup_command(
+    shell: &str,
+    command: &str,
+    argv: Option<&[String]>,
+) -> Result<String, String> {
+    let Some(argv) = argv else {
+        return Ok(command.to_owned());
+    };
+    if argv.is_empty() || !command.trim().is_empty() || argv.iter().any(|arg| arg.contains('\0')) {
+        return Err("Invalid structured terminal startup command".into());
+    }
+    let name = PathBuf::from(shell)
+        .file_name()
+        .unwrap_or_default()
+        .to_string_lossy()
+        .trim_start_matches('-')
+        .to_ascii_lowercase();
+    let name = name.trim_end_matches(".exe");
+    let posix = |arg: &str| format!("'{}'", arg.replace('\'', "'\\''"));
+    let quote = |arg: &str| format!("'{}'", arg.replace('\'', "''"));
+    let rendered = match name {
+        "pwsh" | "powershell" => format!("& {}", argv.iter().map(|s| quote(s)).collect::<Vec<_>>().join(" ")),
+        "cmd" => {
+            if argv.iter().any(|arg| arg.chars().any(|c| "%!^&|<>\r\n\"".contains(c))) {
+                return Err("cmd structured startup cannot contain expansion or control characters; provide an explicit shell command instead".into());
+            }
+            let quoted = argv.iter().enumerate().map(|(at, arg)| {
+                if at == 0 && !arg.is_empty() && !arg.chars().any(char::is_whitespace) { return arg.clone(); }
+                // With quotes inside arguments rejected above, only trailing
+                // backslashes need doubling for Windows executable argv.
+                let trailing = arg.chars().rev().take_while(|c| *c == '\\').count();
+                format!("\"{}{}\"", arg, "\\".repeat(trailing))
+            }).collect::<Vec<_>>();
+            quoted.join(" ")
+        }
+        "zsh" | "bash" | "sh" | "dash" | "ksh" | "fish" => argv.iter().map(|s| posix(s)).collect::<Vec<_>>().join(" "),
+        _ => return Err("The selected shell has no structured startup argument adapter; provide a literal shell command".into()),
+    };
+    if rendered.len() > 32 * 1024 {
+        return Err("Quoted terminal startup command exceeds its input budget".into());
+    }
+    Ok(rendered)
+}
+
+pub(crate) fn hosted_command(cmd: &[String]) -> Vec<String> {
+    if cmd.len() == 1 {
+        command(&cmd[0])
+    } else {
+        cmd.to_vec()
     }
 }
 
@@ -71,44 +267,226 @@ pub fn input(command: &str) -> Vec<u8> {
 pub(crate) struct StartupInput<W> {
     writer: W,
     pending: Option<Vec<u8>>,
+    shell_ready: bool,
+    terminal_ready: bool,
+    revision: u64,
+    user_line: bool,
+    accepted: VecDeque<(String, [u8; 32], Result<u64, String>)>,
+    receipt_dir: Option<PathBuf>,
 }
 
 impl<W: Write> StartupInput<W> {
     pub(crate) fn new(writer: W, startup: Option<&str>) -> Self {
+        Self::with_shell_readiness(writer, startup, false)
+    }
+
+    pub(crate) fn with_shell_readiness(writer: W, startup: Option<&str>, wait_shell: bool) -> Self {
         Self {
             writer,
             pending: startup.map(input).filter(|bytes| !bytes.is_empty()),
+            shell_ready: !wait_shell,
+            terminal_ready: false,
+            revision: 0,
+            user_line: false,
+            accepted: VecDeque::new(),
+            receipt_dir: None,
         }
     }
 
+    pub(crate) fn with_receipts(mut self, dir: PathBuf) -> Self {
+        self.receipt_dir = Some(dir);
+        self
+    }
+
     pub(crate) fn ready(&mut self) -> io::Result<()> {
-        if let Some(bytes) = self.pending.take() {
-            self.writer.write_all(&bytes)?;
-            self.writer.flush()?;
+        self.terminal_ready = true;
+        self.release()
+    }
+
+    pub(crate) fn shell_ready(&mut self) -> io::Result<()> {
+        self.shell_ready = true;
+        self.release()
+    }
+
+    fn release(&mut self) -> io::Result<()> {
+        if self.shell_ready && self.terminal_ready {
+            if let Some(bytes) = self.pending.take() {
+                self.writer.write_all(&bytes)?;
+                self.writer.flush()?;
+            }
         }
         Ok(())
     }
 
-    /// A shell can already have queried its terminal during startup.
-    /// Its answers must not be queued behind a command it has not read.
+    pub(crate) fn readiness(&self) -> (bool, bool) {
+        (self.shell_ready, self.pending.is_none())
+    }
+
+    pub(crate) fn revision(&self) -> u64 {
+        self.revision
+    }
+
+    /// A bounded, idempotent automation input transaction. The observed input
+    /// revision and an unfinished human line are checked under the PTY lock.
+    #[cfg(test)]
+    fn automated_input(&mut self, token: &str, expected: u64, bytes: &[u8]) -> Result<u64, String> {
+        self.automated_input_in_generation("test-host", token, expected, bytes)
+    }
+
+    pub(crate) fn automated_input_in_generation(
+        &mut self,
+        generation: &str,
+        token: &str,
+        expected: u64,
+        bytes: &[u8],
+    ) -> Result<u64, String> {
+        if !crate::once::valid(token) || bytes.len() > 32 * 1024 {
+            return Err("Invalid terminal input request".into());
+        }
+        let mut fingerprint = blake3::Hasher::new();
+        fingerprint.update(&(generation.len() as u64).to_be_bytes());
+        fingerprint.update(generation.as_bytes());
+        fingerprint.update(&expected.to_be_bytes());
+        fingerprint.update(bytes);
+        let fingerprint = *fingerprint.finalize().as_bytes();
+        if let Some((_, prior, result)) = self.accepted.iter().find(|(key, _, _)| key == token) {
+            return if prior == &fingerprint {
+                result.clone()
+            } else {
+                Err("Terminal input token was already used for different input".into())
+            };
+        }
+        let receipt = self
+            .receipt_dir
+            .as_ref()
+            .map(|dir| dir.join(format!("{}.json", blake3::hash(token.as_bytes()).to_hex())));
+        if let Some(path) = &receipt {
+            let stored = std::fs::File::open(path).and_then(|file| {
+                let mut bytes = Vec::new();
+                file.take(4097).read_to_end(&mut bytes)?;
+                Ok(bytes)
+            });
+            match stored {
+                Ok(bytes) if bytes.len() <= 4096 => {
+                    let (prior, result): ([u8; 32], Result<u64, String>) =
+                        serde_json::from_slice(&bytes).map_err(|_| {
+                            "Terminal input receipt is unreadable; its token will not be replayed"
+                                .to_owned()
+                        })?;
+                    return if prior == fingerprint {
+                        result
+                    } else {
+                        Err("Terminal input token was already used for different input".into())
+                    };
+                }
+                Ok(_) => return Err("Terminal input receipt exceeds its budget".into()),
+                Err(error) if error.kind() == io::ErrorKind::NotFound => {}
+                Err(error) => return Err(error.to_string()),
+            }
+        }
+        if !self.shell_ready || !self.terminal_ready || self.pending.is_some() {
+            return Err("Terminal startup is not ready for input".into());
+        }
+        if expected != self.revision {
+            return Err(
+                "Terminal input changed; read its current state before sending input".into(),
+            );
+        }
+        if self.user_line {
+            return Err("The user is editing a terminal line".into());
+        }
+        let revision = self.revision.wrapping_add(1);
+        if let Some(path) = &receipt {
+            std::fs::create_dir_all(path.parent().unwrap()).map_err(|e| e.to_string())?;
+            let reserved: Result<u64, String> =
+                Err("Terminal input outcome is uncertain; its token will not be replayed".into());
+            crate::link::write_private(
+                path,
+                &serde_json::to_vec(&(fingerprint, reserved)).map_err(|e| e.to_string())?,
+            )?;
+        }
+        self.revision = revision;
+        // A write may partially succeed. Reserve its token before the write so
+        // retrying an uncertain outcome can never execute the bytes twice.
+        self.accepted.push_back((
+            token.into(),
+            fingerprint,
+            Err("Terminal input write did not complete".into()),
+        ));
+        if self.accepted.len() > 128 {
+            self.accepted.pop_front();
+        }
+        let result = self
+            .writer
+            .write_all(bytes)
+            .and_then(|()| self.writer.flush())
+            .map(|()| revision)
+            .map_err(|e| e.to_string());
+        self.accepted.back_mut().unwrap().2 = result.clone();
+        if let Some(path) = &receipt {
+            // The durable reservation remains a non-replayable unknown if
+            // writing its final outcome fails after the PTY write.
+            crate::link::write_private(
+                path,
+                &serde_json::to_vec(&(fingerprint, &result)).map_err(|e| e.to_string())?,
+            )?;
+        }
+        result
+    }
+
+    pub(crate) fn write_classified(
+        &mut self,
+        bytes: &[u8],
+        keys: &[u8],
+        replies: &[u8],
+    ) -> io::Result<()> {
+        if self.pending.is_some() {
+            self.reply(replies)?;
+            self.write_all(keys)?;
+            self.flush()
+        } else {
+            self.writer.write_all(bytes)?;
+            self.writer.flush()?;
+            self.user_input(keys);
+            Ok(())
+        }
+    }
+
+    /// Replies to startup terminal queries bypass commands waiting for readiness.
     pub(crate) fn reply(&mut self, bytes: &[u8]) -> io::Result<()> {
         self.writer.write_all(bytes)?;
         self.writer.flush()
+    }
+
+    fn user_input(&mut self, bytes: &[u8]) {
+        if !bytes.is_empty() {
+            self.revision = self.revision.wrapping_add(1);
+        }
+        for byte in bytes {
+            match byte {
+                b'\r' | b'\n' | 3 => self.user_line = false,
+                // Completion, history search, cursor motion and editing may
+                // change text without a printable byte. Replies were separated
+                // by the answer ledger before reaching this method.
+                _ => self.user_line = true,
+            }
+        }
     }
 }
 
 impl<W: Write> Write for StartupInput<W> {
     fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
-        if let Some(pending) = &mut self.pending {
-            // The host frame budget also bounds keys pasted while opening.
+        let written = if let Some(pending) = &mut self.pending {
             if pending.len().saturating_add(bytes.len()) > 1 << 20 {
                 return Err(io::Error::other("terminal startup input exceeds 1 MiB"));
             }
             pending.extend_from_slice(bytes);
-            Ok(bytes.len())
+            bytes.len()
         } else {
-            self.writer.write(bytes)
-        }
+            self.writer.write(bytes)?
+        };
+        self.user_input(&bytes[..written]);
+        Ok(written)
     }
 
     fn flush(&mut self) -> io::Result<()> {
@@ -120,9 +498,238 @@ impl<W: Write> Write for StartupInput<W> {
     }
 }
 
+/// Prompt marks are parsed across PTY read boundaries. B follows the prompt
+/// after the shell's native startup files and hooks have finished.
+#[derive(Default)]
+pub(crate) struct PromptReady {
+    state: u8,
+    body: Vec<u8>,
+    ready: bool,
+}
+
+impl PromptReady {
+    pub(crate) fn feed(&mut self, bytes: &[u8]) -> bool {
+        for &byte in bytes {
+            match (self.state, byte) {
+                (0, 0x1b) => self.state = 1,
+                (1, b']') => {
+                    self.state = 2;
+                    self.body.clear();
+                }
+                (1, 0x1b) => {}
+                (1, _) => self.state = 0,
+                (2, 7) | (3, b'\\') => {
+                    self.ready |= self.body.starts_with(b"133;B")
+                        && matches!(self.body.get(5), None | Some(&b';'));
+                    self.state = 0;
+                }
+                (2, 0x1b) => self.state = 3,
+                (2 | 3, _) if self.body.len() < 512 => {
+                    self.body.push(byte);
+                    self.state = 2;
+                }
+                (2 | 3, _) => self.state = 0,
+                _ => {}
+            }
+        }
+        self.ready
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn platform_shell_arguments_do_not_cross_native_boundaries() {
+        assert_eq!(
+            command_for("/bin/zsh", Platform::Mac, None),
+            ["/bin/zsh", "-l", "-i"]
+        );
+        assert_eq!(
+            command_for("/bin/bash", Platform::Unix, None),
+            ["/bin/bash", "-i"]
+        );
+        assert_eq!(
+            command_for("/bin/bash", Platform::Unix, Some("always")),
+            ["/bin/bash", "-l", "-i"]
+        );
+        assert_eq!(
+            command_for("/bin/zsh", Platform::Mac, Some("never")),
+            ["/bin/zsh", "-i"]
+        );
+        assert_eq!(
+            command_for("pwsh.exe", Platform::Windows, Some("always")),
+            ["pwsh.exe"]
+        );
+        assert_eq!(
+            command_for("/custom/shell", Platform::Mac, None),
+            ["/custom/shell"]
+        );
+        assert_eq!(
+            hosted_command(&["/bin/zsh".into(), "-f".into()]),
+            ["/bin/zsh", "-f"]
+        );
+    }
+
+    #[test]
+    fn structured_startup_uses_the_target_shells_quoting() {
+        let argv = vec!["tool".into(), "a b".into(), "x'y".into(), "".into()];
+        assert_eq!(
+            startup_command("/bin/zsh", "", Some(&argv)).unwrap(),
+            "'tool' 'a b' 'x'\\''y' ''"
+        );
+        assert_eq!(
+            startup_command("pwsh.exe", "", Some(&argv)).unwrap(),
+            "& 'tool' 'a b' 'x''y' ''"
+        );
+        assert_eq!(
+            startup_command("cmd.exe", "", Some(&["tool".into(), "a b".into()])).unwrap(),
+            "tool \"a b\""
+        );
+        assert!(startup_command("cmd.exe", "", Some(&["echo".into(), "%PATH%".into()])).is_err());
+        assert!(startup_command("unknown-shell", "", Some(&argv)).is_err());
+        assert_eq!(
+            startup_command("unknown-shell", "literal | command", None).unwrap(),
+            "literal | command"
+        );
+    }
+
+    #[test]
+    fn input_tokens_outlive_the_memory_cache_and_cannot_be_rebound() {
+        let dir = crate::testdir::TempTree::fresh("terminal-input-receipts");
+        let mut input = StartupInput::new(Vec::new(), None).with_receipts(dir.path());
+        input.ready().unwrap();
+        for n in 0..140 {
+            let key = format!("input-request-{n:06}");
+            assert_eq!(input.automated_input(&key, n, b"echo test\r"), Ok(n + 1));
+        }
+        let before = input.writer.len();
+        assert_eq!(
+            input.automated_input("input-request-000000", 0, b"echo test\r"),
+            Ok(1)
+        );
+        assert!(
+            input
+                .automated_input("input-request-000000", 140, b"echo changed\r")
+                .is_err()
+        );
+        assert_eq!(input.writer.len(), before);
+    }
+
+    #[test]
+    fn durable_input_receipts_cannot_acknowledge_another_host_generation() {
+        let dir = crate::testdir::TempTree::fresh("terminal-generation-receipts");
+        let mut old = StartupInput::new(Vec::new(), None).with_receipts(dir.path());
+        old.ready().unwrap();
+        assert_eq!(
+            old.automated_input_in_generation("old-host", "input-generation-01", 0, b"echo old\r"),
+            Ok(1)
+        );
+        let mut replacement = StartupInput::new(Vec::new(), None).with_receipts(dir.path());
+        replacement.ready().unwrap();
+        assert!(
+            replacement
+                .automated_input_in_generation("new-host", "input-generation-01", 0, b"echo old\r")
+                .is_err()
+        );
+        assert!(replacement.writer.is_empty());
+        assert_eq!(replacement.revision(), 0);
+    }
+
+    #[test]
+    fn shell_and_terminal_readiness_are_both_required_in_either_order() {
+        for shell_first in [true, false] {
+            let mut input = StartupInput::with_shell_readiness(Vec::new(), Some("run"), true);
+            if shell_first {
+                input.shell_ready().unwrap();
+            } else {
+                input.ready().unwrap();
+            }
+            assert!(input.writer.is_empty());
+            if shell_first {
+                input.ready().unwrap();
+            } else {
+                input.shell_ready().unwrap();
+            }
+            assert_eq!(input.writer, b"run\r");
+            input.ready().unwrap();
+            input.shell_ready().unwrap();
+            assert_eq!(input.writer, b"run\r");
+        }
+    }
+
+    #[test]
+    fn prompt_readiness_survives_every_read_boundary() {
+        for mark in [
+            b"\x1b]133;B\x07".as_slice(),
+            b"\x1b]133;B;click_events=1\x1b\\",
+        ] {
+            let mut prompt = PromptReady::default();
+            for byte in &mark[..mark.len() - 1] {
+                assert!(!prompt.feed(&[*byte]));
+            }
+            assert!(prompt.feed(&mark[mark.len() - 1..]));
+        }
+        assert!(!PromptReady::default().feed(b"\x1b]133;BLAH\x07"));
+    }
+
+    #[test]
+    fn automated_input_is_atomic_idempotent_and_respects_user_editing() {
+        let mut input = StartupInput::new(Vec::new(), None);
+        input.ready().unwrap();
+        assert_eq!(
+            input.automated_input("input-first-0001", 0, b"echo one\r"),
+            Ok(1)
+        );
+        assert_eq!(
+            input.automated_input("input-first-0001", 0, b"echo one\r"),
+            Ok(1)
+        );
+        assert_eq!(input.writer, b"echo one\r");
+        assert!(
+            input
+                .automated_input("input-first-0001", 0, b"echo other\r")
+                .is_err()
+        );
+        input.write_all(b"user-prefix").unwrap();
+        assert!(
+            input
+                .automated_input("input-stale-0001", 1, b"echo two\r")
+                .is_err()
+        );
+        assert!(
+            input
+                .automated_input("input-editing-01", input.revision(), b"echo two\r")
+                .is_err()
+        );
+        input.write_all(b"\x03").unwrap();
+        let revision = input.revision();
+        assert_eq!(
+            input.automated_input("input-next-00001", revision, b"echo two\r"),
+            Ok(revision + 1)
+        );
+    }
+
+    #[test]
+    fn completion_and_history_keys_protect_the_humans_unfinished_line() {
+        for key in [9, 18, 16, 21, 27, 127, 4] {
+            let mut input = StartupInput::new(Vec::new(), None);
+            input.ready().unwrap();
+            input.write_all(&[key]).unwrap();
+            assert!(
+                input
+                    .automated_input("input-editing-001", input.revision(), b"echo robot\r")
+                    .is_err()
+            );
+            input.write_all(&[3]).unwrap();
+            let revision = input.revision();
+            assert_eq!(
+                input.automated_input("input-after-clear", revision, b"echo robot\r"),
+                Ok(revision + 1)
+            );
+        }
+    }
+
     #[test]
     fn startup_is_literal_terminal_input_not_an_argv_rewrite() {
         assert_eq!(

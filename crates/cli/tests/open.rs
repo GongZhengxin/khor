@@ -20,6 +20,11 @@ fn khor(home: &Path) -> Command {
     let mut c = Command::new(env!("CARGO_BIN_EXE_khor"));
     c.env("KHOR_HOME", home)
         .env("KHOR_NAME", "box")
+        .env("HOME", home)
+        .env("KHOR_SHELL", "/bin/sh")
+        .env_remove("KHOR_SHELL_LOGIN")
+        .env_remove("ENV")
+        .env_remove("ZDOTDIR")
         .env_remove("KHOR_SESSION");
     c
 }
@@ -205,7 +210,7 @@ fn a_hosted_session_outlives_its_opener_and_walks_the_shell_face() {
     let _ = std::fs::remove_dir_all(&home);
     std::fs::create_dir_all(&home).unwrap();
 
-    let (sid, dir) = open_detached(&home, &["--title", "work", "--", "sh"]);
+    let (sid, dir) = open_detached(&home, &["--title", "work"]);
     assert!(sid.starts_with("shell/"), "{sid}");
 
     // Truly detached: the opener is gone (its command returned), and the
@@ -257,6 +262,7 @@ fn a_hosted_session_outlives_its_opener_and_walks_the_shell_face() {
     host::write_frame(
         &mut bad,
         &host::Hello {
+            control: false,
             cookie: "not-the-cookie".into(),
             cols: 80,
             rows: 24,
@@ -295,6 +301,74 @@ fn a_hosted_session_outlives_its_opener_and_walks_the_shell_face() {
     let _ = std::fs::remove_dir_all(&home);
 }
 
+/// A failed startup program is a command result, not the terminal's lifetime.
+#[cfg(unix)]
+#[test]
+fn a_nonzero_startup_command_returns_to_the_same_interactive_shell() {
+    let home = std::env::temp_dir().join(format!("khor-startup-stays-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&home);
+    std::fs::create_dir_all(&home).unwrap();
+    let out = khor(&home)
+        .env("KHOR_SHELL", "/bin/bash")
+        .args([
+            "open",
+            "-d",
+            "--title",
+            "persistent-after-failure",
+            "--",
+            "sh",
+            "-c",
+            "printf 'STARTUP-%s-END\\n' COMMAND; exit 9",
+        ])
+        .output()
+        .unwrap();
+    assert!(
+        out.status.success(),
+        "{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    let sid = String::from_utf8(out.stdout).unwrap().trim().to_owned();
+    let dir = home.join(".khor/sessions").join(sid.replace('/', "-"));
+    let hf = host::read_host_file(&dir).unwrap();
+    let _reap_host = Reaper(hf.host_pid);
+    let _reap_shell = Reaper(hf.child_pid);
+    let mut terminal = host::connect(&dir, 80, 24).unwrap();
+    read_until(&mut terminal, "STARTUP-COMMAND-END", 10);
+    wait_until(
+        "nonzero startup to finish inside a living shell",
+        10,
+        || {
+            let saved = khor_node::commands::read_saved(&dir);
+            saved.is_some_and(|saved| saved.recent.iter().any(|c| c.exit == Some(9)))
+        },
+    );
+    let node = khor_node::Node::open(home.clone()).unwrap();
+    let row = node
+        .every_session()
+        .unwrap()
+        .into_iter()
+        .find(|r| r.session.id.0 == sid)
+        .unwrap();
+    assert!(
+        !row.session.dead && pid_alive(hf.child_pid),
+        "the interactive shell must survive its command"
+    );
+    host::write_frame(
+        &mut terminal,
+        &ClientOp::Input(b"printf 'FOLLOWUP-%s-END\\n' COMMAND\r".to_vec()),
+    )
+    .unwrap();
+    read_until(&mut terminal, "FOLLOWUP-COMMAND-END", 10);
+    assert!(
+        khor(&home)
+            .args(["close", &sid])
+            .status()
+            .unwrap()
+            .success()
+    );
+    let _ = std::fs::remove_dir_all(home);
+}
+
 /// **A host that dies while its child lives must not read as 失败.**
 ///
 /// The registry records the host's pid, and the missing-ending rule
@@ -318,7 +392,12 @@ fn a_host_that_dies_while_its_child_lives_is_not_a_failure() {
     let _ = std::fs::remove_dir_all(&home);
     std::fs::create_dir_all(&home).unwrap();
 
-    let (sid, dir) = open_detached(&home, &["--", "sh", "-c", r#"trap "" HUP; sleep 300"#]);
+    let work_pid = home.join("work.pid");
+    let startup = format!(
+        r#"trap "" HUP; sleep 300 & work=$!; printf '%s' "$work" > '{}'; printf 'KHOR-%s-ARMED\n' ORPHAN; wait "$work""#,
+        work_pid.display().to_string().replace('\'', "'\\''")
+    );
+    let (sid, dir) = open_detached(&home, &["--command", &startup]);
     let hf: HostFile =
         serde_json::from_str(&std::fs::read_to_string(dir.join("host.json")).unwrap()).unwrap();
     // Whatever happens below, this child does not outlive the test: it
@@ -328,6 +407,20 @@ fn a_host_that_dies_while_its_child_lives_is_not_a_failure() {
         pid_alive(hf.host_pid) && pid_alive(hf.child_pid),
         "control: both are up"
     );
+
+    // The startup is terminal input now; wait until the recorded outer
+    // shell has installed its HUP handler before killing its host.
+    wait_until("the HUP-ignoring work process to be recorded", 10, || {
+        std::fs::read_to_string(&work_pid)
+            .ok()
+            .and_then(|pid| pid.parse::<u32>().ok())
+            .is_some()
+    });
+    let work = std::fs::read_to_string(&work_pid).unwrap().parse().unwrap();
+    let _reap_work = Reaper(work);
+    let mut armed = host::connect(&dir, 80, 24).unwrap();
+    read_until(&mut armed, "KHOR-ORPHAN-ARMED", 10);
+    drop(armed);
 
     // The host alone.
     Command::new("kill")
@@ -380,7 +473,7 @@ fn closing_a_live_hosted_session_leaves_no_process_behind() {
     let _ = std::fs::remove_dir_all(&home);
     std::fs::create_dir_all(&home).unwrap();
 
-    let (sid, dir) = open_detached(&home, &["--", "sh"]);
+    let (sid, dir) = open_detached(&home, &[]);
     let hf: HostFile =
         serde_json::from_str(&std::fs::read_to_string(dir.join("host.json")).unwrap()).unwrap();
     assert!(pid_alive(hf.host_pid) && pid_alive(hf.child_pid));
@@ -430,7 +523,14 @@ fn a_host_that_cannot_find_its_program_says_so_instead_of_timing_out() {
     let out = khor(&home)
         .env("PATH", bare)
         .env("KHOR_PATH", bare)
-        .args(["open", "-d", "--", "khor-no-such-program", "--hello"])
+        .args([
+            "open",
+            "-d",
+            "--tui",
+            "--",
+            "khor-no-such-program",
+            "--hello",
+        ])
         .output()
         .unwrap();
     let said = format!(
@@ -479,7 +579,7 @@ fn the_same_command_starts_once_khor_is_told_where_to_look() {
     let blind = khor(&home)
         .env("PATH", bare)
         .env("KHOR_PATH", bare)
-        .args(["open", "-d", "--", "khor-test-only-here"])
+        .args(["open", "-d", "--tui", "--", "khor-test-only-here"])
         .output()
         .unwrap();
     assert!(
@@ -490,7 +590,7 @@ fn the_same_command_starts_once_khor_is_told_where_to_look() {
     let told = khor(&home)
         .env("PATH", bare)
         .env("KHOR_PATH", format!("{}:{bare}", bin.display()))
-        .args(["open", "-d", "--", "khor-test-only-here"])
+        .args(["open", "-d", "--tui", "--", "khor-test-only-here"])
         .output()
         .unwrap();
     let said = format!(

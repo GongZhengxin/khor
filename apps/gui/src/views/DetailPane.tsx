@@ -270,8 +270,8 @@ export function closeWarning(
 // address and the kind is the behaviour.
 /** Whether a row is shown as a terminal here — and so whether the deck's
     pill opens its directory (UX-17, `SessionPlaceSheet`). */
-export const isTerminal = (r: SessionRow) => r.can_control && r.kind !== "observe" && r.kind !== "broadcast" && r.kind !== "gui" && (r.mux || r.attachable);
-export const isObserved = (r: SessionRow) => r.kind === "observe" || (!r.can_control && (r.kind === "tui" || r.kind === "gui" || (r.kind === "shell" && !r.ended)));
+export const isTerminal = (r: SessionRow) => !r.dead && r.can_control && r.kind !== "observe" && r.kind !== "broadcast" && r.kind !== "gui" && (r.mux || r.attachable);
+export const isObserved = (r: SessionRow) => r.kind === "observe" || (!r.can_control && (r.kind === "tui" || r.kind === "gui" || (r.kind === "shell" && !r.dead)));
 
 type KeptTerminal = {
   id: string; machine: string | null; mux: boolean;
@@ -381,10 +381,10 @@ export function DetailPane({
   }, [openIds]);
   const keptHere = (openIds ? kept : kept.filter((t) => t.id === row?.id)).filter(tab => {
     const current = row?.id === tab.id ? row : sessions?.find(item => item.id === tab.id);
-    return !current || isTerminal(current) || !!current.ended || (tab.recovery !== null && !tab.recovery.idle());
+    return !current || isTerminal(current) || (current.dead && !tab.retired && tab.home === current.execution_home) || (tab.recovery !== null && !tab.recovery.idle());
   });
   const waitingForSeat = row !== null && isTerminal(row) && keptHere.some(t => t.id === row.id && (t.retired || t.home !== row.execution_home));
-  const terminalShown = row !== null && !waitingForSeat && (isTerminal(row) || (!!row.ended && keptHere.some((t) => t.id === row.id && !t.retired && t.home === row.execution_home)));
+  const terminalShown = row !== null && !waitingForSeat && (isTerminal(row) || (row.dead && keptHere.some((t) => t.id === row.id && !t.retired && t.home === row.execution_home)));
   useEffect(() => {
     if (!terminalRejoin) return;
     if (!active || row?.id !== terminalRejoin.id || row.execution_home !== terminalRejoin.home || !terminalShown) { setTerminalRejoin(null); return; }
@@ -653,10 +653,8 @@ export function DetailPane({
           // to, and the conversation opens as ended (UX-4).
           ended={row.word === "failed"}
         />
-      ) : row && row.kind === "shell" && row.ended && !row.attachable ? (
-        // **A shell that died keeps its last screen** (P5-SHELL): read
-        // only, under how it ended; with no screen left, the commands it
-        // ran. Only a dead row of this machine's carries `ended`.
+      ) : row && row.kind === "shell" && row.dead && !row.attachable ? (
+        // The ended reader resolves output on the session's execution home.
         <Suspense fallback={null}>
           <EndedPane key={row.id} id={row.id} at={row.at_ms} />
         </Suspense>

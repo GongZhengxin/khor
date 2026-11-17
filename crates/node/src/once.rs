@@ -125,3 +125,56 @@ mod tests {
         let _ = std::fs::remove_dir_all(&root);
     }
 }
+
+/// Bind a terminal create token to its arguments and identity across processes.
+/// The file lock covers registration and spawn; retries never mint a second ID.
+pub(crate) fn claim_shell(
+    root: &Path,
+    token: &str,
+    fingerprint: &str,
+) -> Result<(std::fs::File, String), String> {
+    if !valid(token) {
+        return Err("Invalid shell creation token".into());
+    }
+    let directory = root.join(".khor").join("shell-opened");
+    std::fs::create_dir_all(&directory).map_err(|e| e.to_string())?;
+    let held = crate::remote_cancel::gate(&directory.join(format!("{token}.lock")))?;
+    let file = directory.join(format!("{token}.json"));
+    let id = if file.exists() {
+        let value: serde_json::Value =
+            serde_json::from_slice(&std::fs::read(&file).map_err(|e| e.to_string())?)
+                .map_err(|e| e.to_string())?;
+        if value["fingerprint"].as_str() != Some(fingerprint) {
+            return Err("Shell creation token already names different arguments".into());
+        }
+        value["session"]
+            .as_str()
+            .ok_or("Invalid shell creation receipt")?
+            .to_owned()
+    } else {
+        let id = format!("shell/{}", crate::link::fresh_leaf()?);
+        let bytes =
+            serde_json::to_vec(&serde_json::json!({"fingerprint":fingerprint,"session":id}))
+                .map_err(|e| e.to_string())?;
+        crate::live::write_whole(&file, &bytes)?;
+        id
+    };
+    Ok((held, id))
+}
+
+#[cfg(test)]
+mod shell_claim_tests {
+    #[test]
+    fn shell_identity_is_argument_bound_and_survives_another_claimant() {
+        let root = crate::testdir::TempTree::fresh("shell-claim");
+        let (held, id) = super::claim_shell(&root, "shell-create-token-12345", "original").unwrap();
+        assert!(super::claim_shell(&root, "shell-create-token-12345", "original").is_err());
+        drop(held);
+        let (held, retry) =
+            super::claim_shell(&root, "shell-create-token-12345", "original").unwrap();
+        assert_eq!(id, retry);
+        drop(held);
+        assert!(super::claim_shell(&root, "shell-create-token-12345", "different").is_err());
+        drop(root);
+    }
+}

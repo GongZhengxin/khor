@@ -26,6 +26,8 @@ mod tree;
 use crate::doc_transfer_state::registry::{ROUND_DOCS, with_doc};
 #[path = "link_doc_transfer.rs"]
 pub(crate) mod documents;
+#[path = "link_execution.rs"]
+mod execution;
 #[path = "link_pairing.rs"]
 pub(crate) mod pairing;
 
@@ -2643,6 +2645,12 @@ impl Node {
                 Ok(value) => ipc::Reply::NewShellRun { value },
                 Err(why) => ipc::Reply::Refused { why },
             },
+            ipc::Op::ExecutionOn { machine, action } => {
+                match self.execution_with(ep, &machine, action).await {
+                    Ok(value) => ipc::Reply::Execution { value },
+                    Err(why) => ipc::Reply::Refused { why },
+                }
+            }
             ipc::Op::OpenShellOn { machine, start } => {
                 match self.open_shell_on_with(ep, &machine, start).await {
                     Ok(id) => ipc::Reply::OpenedOn { session: id.0 },
@@ -3108,7 +3116,7 @@ impl Node {
             d => std::path::PathBuf::from(d),
         };
         let cmd = if cmd.is_empty() {
-            vec![std::env::var("SHELL").unwrap_or_else(|_| "/bin/sh".into())]
+            crate::shell_start::command(&crate::shell_start::default_shell())
         } else {
             cmd
         };
@@ -3316,7 +3324,7 @@ impl Node {
                 std::path::PathBuf::from(cwd)
             };
             let cmd = if cmd.is_empty() {
-                vec![std::env::var("SHELL").unwrap_or_else(|_| "/bin/sh".into())]
+                crate::shell_start::command(&crate::shell_start::default_shell())
             } else {
                 cmd.to_vec()
             };
@@ -5364,6 +5372,9 @@ impl Node {
                     .new_shell_run_here(home, &id, expected_run.as_deref(), token, cwd.as_deref())
                     .await?,
             }),
+            Request::Execution { action } => Ok(Response::Execution {
+                value: self.execution_here(action).await?,
+            }),
             Request::OpenShellOnce { start } => {
                 let id = self.open_shell_here(start).await?;
                 Ok(Response::Opened { session: id.0 })
@@ -6918,6 +6929,31 @@ impl Node {
         start: crate::shell_start::ShellStart,
     ) -> Result<crate::SessionId, String> {
         let (channel, home) = self.resolve(machine)?;
+        if self
+            .devices_loaded()?
+            .doc
+            .by_name(&channel)
+            .is_some_and(|device| device.sponsor.is_some())
+        {
+            if !start.command.trim().is_empty()
+                || start.argv.as_ref().is_some_and(|args| !args.is_empty())
+            {
+                return Err(msg::terminal_ssh_startup().into());
+            }
+            return self
+                .open_on_with(
+                    ep,
+                    machine,
+                    crate::kind::SHELL,
+                    &start.title,
+                    &start.cwd,
+                    &[],
+                    (start.cols, start.rows),
+                    Some(&start.token),
+                )
+                .await;
+        }
+
         if home == self.device() {
             return self.open_shell_here(start).await;
         }
@@ -6940,14 +6976,21 @@ impl Node {
         start.validate()?;
         let _held = crate::once::lock(&start.token).await;
         let cwd = crate::shell_start::directory(&start.cwd)?;
-        let id = match crate::once::made(self.root(), &start.token) {
-            Some(id) => crate::SessionId(id),
-            None => {
-                let id = crate::SessionId(format!("shell/{}", fresh_leaf()?));
-                crate::once::note(self.root(), &start.token, &id.0)?;
-                id
-            }
-        };
+        let fingerprint = blake3::hash(
+            &serde_json::to_vec(&(
+                &start.title,
+                &start.cwd,
+                &start.command,
+                &start.argv,
+                start.headless,
+                &selected_shell,
+            ))
+            .map_err(|e| e.to_string())?,
+        )
+        .to_hex()
+        .to_string();
+        let (_durable, id) = crate::once::claim_shell(self.root(), &start.token, &fingerprint)?;
+        let id = crate::SessionId(id);
         if self
             .live
             .dir_of(&id)
@@ -6956,8 +6999,23 @@ impl Node {
             return Ok(id);
         }
         let live = self.live.clone();
+        let shell_scripts = crate::integration::dir(&self.root().join(".khor"));
         let id = tokio::task::spawn_blocking(move || {
             let shell = selected_shell.unwrap_or_else(crate::shell_start::default_shell);
+            let startup =
+                crate::shell_start::startup_command(&shell, &start.command, start.argv.as_deref())?;
+            let argv = crate::shell_start::command(&shell);
+            if crate::find_program(&shell, Node::user_path()).is_none() {
+                return Err(msg::command_not_found(&shell, Node::user_path()));
+            }
+            if !startup.trim().is_empty()
+                && crate::integration::plan(&shell_scripts, &argv, |key| std::env::var(key).ok())
+                    .is_none()
+            {
+                return Err(
+                    "Automatic terminal startup requires a supported shell integration".into(),
+                );
+            }
             let title = if start.title.trim().is_empty() {
                 std::path::Path::new(&shell)
                     .file_name()
@@ -6981,13 +7039,14 @@ impl Node {
             let dir = live
                 .dir_of(&id)
                 .ok_or_else(|| msg::not_a_session_id(&id.0))?;
-            crate::host::spawn_shell_at(
+            crate::host::spawn_shell_with_readiness_at(
                 &cwd,
                 &dir,
                 &id,
-                &[shell],
+                &argv,
                 (start.cols.clamp(20, 500), start.rows.clamp(5, 200)),
-                &start.command,
+                &startup,
+                start.headless,
             )?;
             Ok::<_, String>(id)
         })

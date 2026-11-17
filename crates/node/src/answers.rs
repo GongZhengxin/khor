@@ -306,6 +306,22 @@ fn report(bytes: &[u8], s: &Seq<'_>, n: usize) -> Option<(bool, usize)> {
 const TAIL_MAX: usize = 256;
 
 impl Ledger {
+    /// A declared dark terminal baseline for unattended sessions. A viewer's
+    /// later live color replies still replace these defaults normally.
+    pub(crate) fn headless() -> Self {
+        let mut ledger = Self::default();
+        for (ps, rgb) in [
+            (10, "ffff/ffff/ffff"),
+            (11, "0000/0000/0000"),
+            (12, "ffff/ffff/ffff"),
+        ] {
+            ledger
+                .colours
+                .insert(ps, format!("\x1b]{ps};rgb:{rgb}\x1b\\").into_bytes());
+        }
+        ledger
+    }
+
     /// Records the questions in a read of the program's output.
     pub fn saw_output(&mut self, bytes: &[u8], now: Instant) {
         self.modes.feed(bytes);
@@ -337,8 +353,20 @@ impl Ledger {
     /// What of a face's input reaches the pty: keys whole, an answer only
     /// while its question is pending.
     pub fn take_input(&mut self, bytes: &[u8], now: Instant) -> Vec<u8> {
+        self.classify_input(bytes, now).0
+    }
+
+    /// Keep replies separate from user keys, so terminal queries never claim
+    /// an input revision or make an automation caller think a user is editing.
+    pub(crate) fn classify_input(
+        &mut self,
+        bytes: &[u8],
+        now: Instant,
+    ) -> (Vec<u8>, Vec<u8>, Vec<u8>) {
         self.expire(now);
         let mut out = Vec::with_capacity(bytes.len());
+        let mut keys = Vec::new();
+        let mut replies = Vec::new();
         let mut i = 0;
         while i < bytes.len() {
             if bytes[i] == 0x1b
@@ -352,6 +380,7 @@ impl Ledger {
                 };
                 if wanted {
                     out.extend_from_slice(&bytes[i..i + len]);
+                    replies.extend_from_slice(&bytes[i..i + len]);
                 } else if mouse {
                     self.dropped_mouse += 1;
                 } else {
@@ -370,14 +399,16 @@ impl Ledger {
                         self.colours.insert(ps, bytes[i..i + n].to_vec());
                     }
                     out.extend_from_slice(&bytes[i..i + n]);
+                    replies.extend_from_slice(&bytes[i..i + n]);
                 }
                 i += n;
                 continue;
             }
             out.push(bytes[i]);
+            keys.push(bytes[i]);
             i += 1;
         }
-        out
+        (out, keys, replies)
     }
 
     /// Whether a mouse tracking mode is on.
@@ -601,6 +632,29 @@ mod tests {
         assert_eq!(
             l.fallback(now + FALLBACK_AFTER),
             b"\x1b]11;rgb:f4f4/f4f4/efef\x1b\\"
+        );
+    }
+
+    #[test]
+    fn unattended_colors_have_a_baseline_and_live_replies_can_replace_it() {
+        let now = t0();
+        let mut ledger = Ledger::headless();
+        ledger.saw_output(b"\x1b]11;?\x07", now);
+        assert_eq!(
+            ledger.fallback(now + FALLBACK_AFTER),
+            b"\x1b]11;rgb:0000/0000/0000\x1b\\"
+        );
+        ledger.saw_output(b"\x1b]11;?\x07", now + FALLBACK_AFTER);
+        let (_, keys, replies) = ledger.classify_input(
+            b"\x1b]11;rgb:ffff/ffff/ffff\x1b\\hello",
+            now + FALLBACK_AFTER,
+        );
+        assert_eq!(keys, b"hello");
+        assert_eq!(replies, b"\x1b]11;rgb:ffff/ffff/ffff\x1b\\");
+        ledger.saw_output(b"\x1b]11;?\x07", now + FALLBACK_AFTER);
+        assert_eq!(
+            ledger.fallback(now + FALLBACK_AFTER * 2),
+            b"\x1b]11;rgb:ffff/ffff/ffff\x1b\\"
         );
     }
 

@@ -17,8 +17,8 @@
 //! - **fish**: khor's directory first in `XDG_DATA_DIRS`, so fish reads
 //!   `fish/vendor_conf.d/khor.fish`, which restores the variable (Kitty's
 //!   way).
-//! - PowerShell (`khor.ps1`) and cmd (`khor.cmd`) are written but nothing
-//!   starts them yet: khor does not host on Windows (docs/SHELL-INTEGRATION.md).
+//! - PowerShell loads its native Profiles before `-NoExit -Command` loads
+//!   `khor.ps1`; cmd keeps its native AutoRun and uses `/k khor.cmd`.
 //!
 //! `KHOR_SHELL_INTEGRATION=0` in the environment khor runs in turns it off.
 
@@ -28,6 +28,8 @@ const FILES: &[(&str, &str)] = &[
     ("zsh/.zshenv", include_str!("../shell/zsh/.zshenv")),
     ("khor.zsh", include_str!("../shell/khor.zsh")),
     ("khor.bash", include_str!("../shell/khor.bash")),
+    ("khor.bash-login", include_str!("../shell/khor.bash-login")),
+    ("khor.sh", include_str!("../shell/khor.sh")),
     (
         "fish-data/fish/vendor_conf.d/khor.fish",
         include_str!("../shell/khor.fish"),
@@ -77,7 +79,11 @@ pub fn plan(dir: &Path, cmd: &[String], getenv: impl Fn(&str) -> Option<String>)
     if getenv("KHOR_SHELL_INTEGRATION").as_deref() == Some("0") {
         return None;
     }
-    let program = Path::new(cmd.first()?).file_name()?.to_str()?;
+    let program = Path::new(cmd.first()?)
+        .file_name()?
+        .to_str()?
+        .to_ascii_lowercase();
+    let program = program.strip_suffix(".exe").unwrap_or(&program);
     let args = &cmd[1..];
     let d = dir.display().to_string();
     match program {
@@ -92,8 +98,42 @@ pub fn plan(dir: &Path, cmd: &[String], getenv: impl Fn(&str) -> Option<String>)
                 ("KHOR_SHELL_DIR".into(), d),
             ],
         }),
+        "bash" | "-bash"
+            if args
+                .iter()
+                .all(|a| matches!(a.as_str(), "-i" | "-l" | "--login"))
+                && args.iter().any(|a| a == "-l" || a == "--login") =>
+        {
+            let boot = dir
+                .join("khor.bash-login")
+                .display()
+                .to_string()
+                .replace('\'', "'\\''");
+            let mut env = vec![
+                ("PROMPT_COMMAND".into(), format!("builtin source '{boot}'")),
+                (
+                    "KHOR_BASH_INTEGRATION".into(),
+                    dir.join("khor.bash").display().to_string(),
+                ),
+            ];
+            if let Some(original) = getenv("PROMPT_COMMAND") {
+                env.push(("KHOR_ORIG_PROMPT_COMMAND".into(), original));
+            }
+            Some(Plan {
+                args: vec![
+                    "--login".into(),
+                    "--noprofile".into(),
+                    "--norc".into(),
+                    "-i".into(),
+                ],
+                env,
+            })
+        }
         "bash" | "-bash" if args.iter().all(|a| a == "-i") => Some(Plan {
-            args: vec!["--init-file".into(), format!("{d}/khor.bash")],
+            args: std::iter::once("--init-file".into())
+                .chain(std::iter::once(format!("{d}/khor.bash")))
+                .chain(args.iter().cloned())
+                .collect(),
             env: Vec::new(),
         }),
         "fish" | "-fish" => {
@@ -109,8 +149,57 @@ pub fn plan(dir: &Path, cmd: &[String], getenv: impl Fn(&str) -> Option<String>)
                 ],
             })
         }
+        "sh" | "dash" | "ksh" if args.iter().all(|a| matches!(a.as_str(), "-i" | "-l")) => {
+            let mut env = vec![("ENV".into(), dir.join("khor.sh").display().to_string())];
+            if let Some(original) = getenv("ENV") {
+                env.push(("KHOR_ORIG_ENV".into(), original));
+            }
+            Some(Plan {
+                args: args.to_vec(),
+                env,
+            })
+        }
+        "pwsh" | "powershell" if args.is_empty() => Some(Plan {
+            args: vec![
+                "-NoLogo".into(),
+                "-NoExit".into(),
+                "-Command".into(),
+                format!(
+                    "try {{ . '{}' }} finally {{ [Console]::Write([string][char]27 + ']133;B' + [char]7) }}",
+                    dir.join("khor.ps1")
+                        .display()
+                        .to_string()
+                        .replace('\'', "''")
+                ),
+            ],
+            env: Vec::new(),
+        }),
+        "cmd" if args.is_empty() => Some(Plan {
+            args: vec![
+                "/k".into(),
+                format!("\"{}\"", dir.join("khor.cmd").display()),
+            ],
+            env: vec![("KHOR_CMD_INTEGRATED".into(), String::new())],
+        }),
         _ => None,
     }
+}
+
+/// Known integrations finish their first prompt with OSC 133;B. The native
+/// login Bash bootstrap sources its login files exactly once in that shell.
+pub(crate) fn marks_prompt(cmd: &[String]) -> bool {
+    let Some(program) = cmd
+        .first()
+        .and_then(|s| Path::new(s).file_name())
+        .and_then(|s| s.to_str())
+    else {
+        return false;
+    };
+    let program = program.to_ascii_lowercase();
+    matches!(
+        program.trim_start_matches('-').trim_end_matches(".exe"),
+        "zsh" | "bash" | "fish" | "sh" | "dash" | "ksh" | "pwsh" | "powershell" | "cmd"
+    )
 }
 
 #[cfg(test)]
@@ -154,6 +243,134 @@ mod tests {
             ),
             None
         );
+    }
+
+    #[test]
+    fn native_profiles_and_explicit_arguments_survive_integration() {
+        let d = Path::new("/k/shell's dir");
+        let ps = plan(d, &["pwsh.exe".into()], env(&[])).unwrap();
+        assert_eq!(&ps.args[..3], ["-NoLogo", "-NoExit", "-Command"]);
+        assert!(ps.args[3].contains("shell''s dir"));
+        assert!(ps.args[3].contains("finally"));
+        assert!(!ps.args.iter().any(|a| a == "-NoProfile"));
+        let cmd = plan(d, &["cmd.exe".into()], env(&[])).unwrap();
+        assert_eq!(cmd.args[0], "/k");
+        assert!(cmd.args[1].starts_with('"') && cmd.args[1].ends_with('"'));
+        let bash = plan(d, &["/bin/bash".into(), "-l".into(), "-i".into()], env(&[])).unwrap();
+        assert_eq!(bash.args, ["--login", "--noprofile", "--norc", "-i"]);
+        assert!(
+            bash.env
+                .iter()
+                .any(|(k, v)| k == "PROMPT_COMMAND" && v.contains("khor.bash-login"))
+        );
+        assert_eq!(
+            plan(
+                d,
+                &["pwsh.exe".into(), "-File".into(), "script.ps1".into()],
+                env(&[])
+            ),
+            None
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn login_shell_loads_profile_and_rc_before_startup_input() {
+        use portable_pty::{CommandBuilder, PtySize, native_pty_system};
+        use std::io::{Read, Write};
+        use std::time::{Duration, Instant};
+        for shell in ["/bin/zsh", "/bin/bash"] {
+            if !Path::new(shell).exists() {
+                continue;
+            }
+            let root = crate::testdir::TempTree::fresh("shell-login-profile");
+            let home = root.join("home");
+            let scripts = root.join("integration");
+            std::fs::create_dir_all(&home).unwrap();
+            std::fs::write(
+                home.join(".zprofile"),
+                "export KHOR_PROFILE_TEST=profile-loaded\n",
+            )
+            .unwrap();
+            std::fs::write(home.join(".zshrc"), "export KHOR_RC_TEST=rc-loaded\n").unwrap();
+            std::fs::write(home.join(".bash_profile"), "shopt -q login_shell || exit 9\nexport KHOR_PROFILE_TEST=profile-loaded\n. \"$HOME/.bashrc\"\n").unwrap();
+            std::fs::write(home.join(".bashrc"), "export KHOR_RC_TEST=rc-loaded\n").unwrap();
+            write_scripts(&scripts).unwrap();
+            let cmd = vec![shell.into(), "-l".into(), "-i".into()];
+            let plan = plan(&scripts, &cmd, env(&[])).unwrap();
+            let pair = native_pty_system()
+                .openpty(PtySize {
+                    rows: 24,
+                    cols: 80,
+                    pixel_width: 0,
+                    pixel_height: 0,
+                })
+                .unwrap();
+            let mut builder = CommandBuilder::new(shell);
+            builder.args(plan.args);
+            builder.env("HOME", home.as_os_str());
+            builder.env("PATH", "/usr/bin:/bin");
+            builder.env_remove("ZDOTDIR");
+            for (key, value) in plan.env {
+                builder.env(key, value);
+            }
+            let mut child = pair.slave.spawn_command(builder).unwrap();
+            drop(pair.slave);
+            let mut reader = pair.master.try_clone_reader().unwrap();
+            let mut writer = pair.master.take_writer().unwrap();
+            let (tx, rx) = std::sync::mpsc::channel();
+            let reading = std::thread::spawn(move || {
+                let mut buffer = [0; 4096];
+                while let Ok(size) = reader.read(&mut buffer) {
+                    if size == 0 || tx.send(buffer[..size].to_vec()).is_err() {
+                        break;
+                    }
+                }
+            });
+            let result = (|| {
+                let deadline = Instant::now() + Duration::from_secs(5);
+                let mut prompt = crate::shell_start::PromptReady::default();
+                while Instant::now() < deadline {
+                    let bytes = rx
+                        .recv_timeout(deadline.saturating_duration_since(Instant::now()))
+                        .map_err(|e| e.to_string())?;
+                    if prompt.feed(&bytes) {
+                        break;
+                    }
+                }
+                if !prompt.feed(&[]) {
+                    return Err("shell never reported prompt readiness".to_owned());
+                }
+                writer
+                .write_all(
+                    b"printf 'PROFILE-RESULT:%s:%s\\n' \"$KHOR_PROFILE_TEST\" \"$KHOR_RC_TEST\"\r",
+                )
+                .map_err(|e| e.to_string())?;
+                writer.flush().map_err(|e| e.to_string())?;
+                let mut output = Vec::new();
+                while Instant::now() < deadline {
+                    let bytes = rx
+                        .recv_timeout(deadline.saturating_duration_since(Instant::now()))
+                        .map_err(|e| e.to_string())?;
+                    output.extend_from_slice(&bytes);
+                    if output
+                        .windows(b"PROFILE-RESULT:profile-loaded:rc-loaded".len())
+                        .any(|w| w == b"PROFILE-RESULT:profile-loaded:rc-loaded")
+                    {
+                        return Ok(());
+                    }
+                }
+                Err("startup input did not see login and interactive configuration".into())
+            })();
+            let _ = child.kill();
+            let _ = child.wait();
+            drop(writer);
+            drop(pair.master);
+            drop(rx);
+            let _ = reading.join();
+            drop(root);
+            assert!(result.is_ok(), "{result:?}");
+        }
     }
 
     #[test]

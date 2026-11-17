@@ -144,6 +144,7 @@ impl Drop for Hosts {
                                     let _ = write_frame(
                                         &mut socket,
                                         &Hello {
+                                            control: false,
                                             cookie: hf.cookie,
                                             cols: 0,
                                             rows: 0,

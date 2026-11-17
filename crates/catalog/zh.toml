@@ -323,10 +323,17 @@ usage = """
                         --into 指定的目录；不是就当一句话；话恰好和文件同名时用 tell
   retry <传输号>         重新传一个失败或取消的文件（哪台机器上跑都行）
   log [<机器>]          看广播的消息；带机器只看推给它的
+  exec --on <机器> --request <token> --command <命令文本> [--cwd <路径>] [--timeout-ms N]
+                        启动一次性命令任务，返回任务号与回执，不创建会话行。
+  execution status|read|cancel|forget --on <机器> <任务> [--stdout-cursor N --stderr-cursor N --limit N --wait-ms N]
+                        查状态、等待增量输出、取消，或清理已结束任务的输出。
+  terminal read|input|ended <session> [--on <机器>] [--cursor N --limit N --wait-ms N]
+                        观察终端；input 另需 --request TOKEN --generation GENERATION --revision N --text TEXT [--enter]。
   run [--tui] [--title 名] -- <命令...>
-                        临时 session：跟着这个终端活，全程网里可见
-  open [-d] [--tui|--gui] [--agent 名字 [--resume id]] [--on 机器] [--title 名] [-- 命令]
-                        持久 session：终端关了还在，能重连（默认接上；-d 只开；
+                        一次性执行并返回退出码，不进入 session 列表；--tui 才创建临时终端。
+  open [-d] [--tui|--gui] [--agent 名字 [--resume id]] [--on 机器] [--title 名] [--command 启动文本 | -- 命令参数]
+                        常驻交互终端：先启动用户 shell，再输入启动命令；命令结束后仍可用。
+                        终端关了还在，能重连（默认接上；-d 只开；
                         --gui 走 ACP 协议，khor 画对话，给会说这个协议的 agent；
                         --agent 用登记过的那个 agent（见 agents），自带 --gui；
                         --resume 续上它自己列出来的某段对话（见 agents sessions）；
@@ -2582,10 +2589,21 @@ mcp-sessions = "网里所有 session：id、状态词、标题、在哪台机器
 mcp-ls = "列出某台机器上的一个目录。不给 path 就是那台机器的主目录。只看，不动任何东西。"
 mcp-ls-machine = "机器名（devices 里列出的那个）"
 mcp-ls-path = "绝对路径；省略则为主目录"
-mcp-open = "在某台机器上开一个持久 session 运行一条命令。**这会在那台机器上启动一个进程。**"
+command-output-retired = "部分较早的命令输出超过保留上限；任务回执已标明截断。"
+terminal-ssh-startup = "自动启动输入需要目标机器运行 Khor。可先打开不带启动命令的 SSH 终端，或在目标机器安装 Khor。"
+mcp-execute-owned = "当前 Khor 轮次需要拥有其命令任务。一次性执行使用 run_command 留下回执；常驻交互终端使用 open。"
+mcp-execute = "在目标机器执行一次性命令任务，不加入会话列表。用于有限工作；需用户查看、交互或长期运行时选择 open。应答不确定时用相同 request 和相同参数重试。"
+mcp-execution-status = "读取命令任务的阶段、退出状态和进程清理结果，向实际执行机器查询。"
+mcp-execution-output = "增量读取有上限的 stdout 和 stderr，可等待新输出。游标按原始字节计数；bytes 为精确 base64，truncated 表示较早输出已被回收。"
+mcp-execution-cancel = "取消一个命令任务并等待其拥有的进程完成清理，不关闭常驻终端。"
+mcp-execution-forget = "清理已结束且确认进程已回收的命令任务输出，保留重试 token，避免意外再次执行。"
+mcp-terminal-read = "只读观察常驻终端，不改变尺寸或发送输入。返回增量输出、输入版本、就绪状态、shell 和前台命令事实，可等待输出变化。"
+mcp-terminal-input = "给常驻终端发送原样输入，可选回车。先读取 input_revision，再用该版本和唯一稳定 request；版本过期或用户正在编辑一行时拒绝。应答不确定时使用完全相同的参数重试。"
+mcp-terminal-ended = "从终端实际所在机器读取已结束会话的最后屏幕、命令记录和启动错误。"
+mcp-open = "在目标机器创建常驻交互终端，加载用户环境后输入可选启动命令一次；命令执行完 shell 继续存在。一次性任务使用 execute。稳定 request token 保证创建重试不会重复。"
 mcp-run-command = "在当前 Khor 会话的执行机器上运行命令，结果保存在此会话的命令任务中。"
 mcp-open-machine = "在哪台机器上开"
-mcp-open-command = "要运行的命令（交给那台机器的 shell）"
+mcp-open-command = "可选的原样启动输入，在就绪后交给目标用户的 shell 解析。"
 mcp-open-title = "这一行的名字；省略则取命令本身"
 mcp-open-cwd = "在哪个目录里运行；省略则为那台机器的主目录"
 mcp-close = "关闭一个 session。**这会结束那台机器上的进程。**"
@@ -3324,6 +3342,7 @@ row-ended-host = "宿主被结束"
 # shell ran, and the line for a shell that marked none.
 ended-commands = "最近的命令"
 ended-commands-none = "没有记录到命令"
+ended-content-unavailable = "这个会话没有可读取的终端记录"
 day-unreachable = "无法获取"
 reading-unreachable = "不通 · 上次 {0}"
 machine-cant-reach = "无法连接 {0}"

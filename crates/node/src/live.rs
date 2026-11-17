@@ -16,6 +16,7 @@
 //! reported; it is derived from the exit code (or from an ending nobody
 //! recorded), so no hook can paint a live process as failed.
 
+use serde::{Deserialize, Serialize};
 use std::fs;
 use std::io::Read;
 use std::path::{Path, PathBuf};
@@ -1011,6 +1012,37 @@ impl LiveKind {
             return Err(msg::session_over(&id.0));
         }
         gate.write_state(word, None, source, None)
+    }
+
+    /// Records a known startup failure only while this launch still owns the
+    /// row. A missing PID is the pre-spawn claim; publishing a host PID retires
+    /// that claim. An uncertain spawn outcome must not use this operation.
+    pub fn record_startup_failure(
+        &self,
+        id: &SessionId,
+        expected_pid: Option<u32>,
+        why: &str,
+    ) -> Result<bool, String> {
+        let dir = self.existing_dir(id)?;
+        let gate = RowGate::acquire(&dir)?;
+        let (meta, state) = gate.read_pair()?;
+        if meta.gui_run.is_some() {
+            return Err("GUI execution requires its current run key".into());
+        }
+        if meta.pid != expected_pid || state.exit.is_some() {
+            return Ok(false);
+        }
+        // The diagnostic must exist before publishing an ending. The same
+        // row gate prevents a stale failed spawn from overwriting its heir's
+        // diagnostic between its ownership check and either write.
+        crate::link::write_private(&crate::host::host_error_path(&dir), why.as_bytes())?;
+        gate.write_state(
+            state.word,
+            Some(1),
+            state.source.unwrap_or(Source::Reported),
+            None,
+        )?;
+        Ok(true)
     }
 
     /// The ending, recorded by whoever waited (the wrapper) or by an end
@@ -3108,6 +3140,9 @@ impl LiveKind {
         let dir = self.existing_dir(id).ok()?;
         Some(Ended {
             ending,
+            startup_error: fs::read_to_string(crate::host::host_error_path(&dir))
+                .ok()
+                .map(|text| text.chars().take(4096).collect()),
             screen: crate::host::read_ring_file(&dir),
             recent: crate::commands::read_saved(&dir)
                 .map(|s| s.recent)
@@ -3432,7 +3467,7 @@ fn face(dir: &Path, meta: &Meta, state: &LiveState) -> (State, i64, bool, bool) 
 /// it」 both read 失败 by the rule above, and the row's second line says
 /// which. Derived from the same two facts [`face`] reads — the recorded
 /// exit first, then the backing — so the two cannot disagree.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Ending {
     /// The host recorded how its child ended.
     Exit(i32),
@@ -3454,9 +3489,10 @@ fn ending_of(dir: &Path, meta: &Meta, state: &LiveState) -> Option<Ending> {
 /// how it ended, its last screen when the host left one (`ring.bin`), and
 /// the last commands its shell marked (`commands.json`, newest last) —
 /// the page draws the screen, else the commands.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Ended {
     pub ending: Ending,
+    pub startup_error: Option<String>,
     pub screen: Option<crate::host::RingFile>,
     pub recent: Vec<crate::commands::Command>,
 }
@@ -4411,6 +4447,120 @@ mod tests {
             agent: "fixture".into(),
             native_id: native_id.into(),
         }
+    }
+
+    #[test]
+    fn startup_failure_retains_its_diagnostic_and_existing_provenance() {
+        let root = tmp("startup-failure");
+        let live = kind_at(&root);
+        let id = sid("shell/startup-failed");
+        live.register(&id, "shell", "requested terminal", None, Some("shell"))
+            .unwrap();
+        live.report(&id, State::Idle, Source::Screen).unwrap();
+        let directory = live.dir_of(&id).unwrap();
+        let original = read_meta(&directory).unwrap();
+        assert!(
+            live.record_startup_failure(&id, None, "Shell executable could not be started")
+                .unwrap()
+        );
+        let (meta, state) = read_pair(&directory).unwrap();
+        assert_eq!(meta.title, original.title);
+        assert_eq!(meta.started_ms, original.started_ms);
+        assert_eq!(meta.pid, None);
+        assert_eq!(state.word, State::Idle);
+        assert_eq!(state.source, Some(Source::Screen));
+        assert_eq!(state.exit, Some(1));
+        let ended = live.ended(&id).unwrap();
+        assert!(matches!(ended.ending, Ending::Exit(1)));
+        assert_eq!(
+            ended.startup_error.as_deref(),
+            Some("Shell executable could not be started")
+        );
+        assert!(live.registry_rows(&|_| 0)[0].row.dead);
+        assert!(
+            !live
+                .record_startup_failure(&id, None, "Late failure must not replace the first")
+                .unwrap()
+        );
+        assert_eq!(live.ended(&id).unwrap().startup_error, ended.startup_error);
+    }
+
+    #[test]
+    fn startup_failure_cannot_terminalize_or_rewrite_a_replacement_host() {
+        let root = tmp("startup-failure-replaced");
+        let live = kind_at(&root);
+        let id = sid("shell/startup-replacement");
+        live.register(&id, "shell", "replacement terminal", None, None)
+            .unwrap();
+        let previous = std::process::id().wrapping_add(1);
+        live.set_pid(&id, previous).unwrap();
+        live.set_pid(&id, std::process::id()).unwrap();
+        let directory = live.dir_of(&id).unwrap();
+        let diagnostic = crate::host::host_error_path(&directory);
+        fs::write(&diagnostic, "replacement diagnostic").unwrap();
+        let before =
+            ["meta.json", "state.json"].map(|name| fs::read(directory.join(name)).unwrap());
+        for stale in [None, Some(previous)] {
+            assert!(
+                !live
+                    .record_startup_failure(&id, stale, "superseded failure")
+                    .unwrap()
+            );
+        }
+        assert_eq!(
+            ["meta.json", "state.json"].map(|name| fs::read(directory.join(name)).unwrap()),
+            before
+        );
+        assert_eq!(
+            fs::read_to_string(&diagnostic).unwrap(),
+            "replacement diagnostic"
+        );
+        assert!(live.ended(&id).is_none());
+        assert!(
+            live.record_startup_failure(&id, Some(std::process::id()), "current host failed")
+                .unwrap()
+        );
+        assert_eq!(
+            live.ended(&id).unwrap().startup_error.as_deref(),
+            Some("current host failed")
+        );
+    }
+
+    #[test]
+    fn startup_failure_cannot_bypass_a_gui_execution_key() {
+        let root = tmp("startup-failure-gui");
+        let live = kind_at(&root);
+        let native = gui_source("startup-failure-gui");
+        let id = crate::adaptor::id_for(&native.native_id);
+        let key = live
+            .begin_gui_run(&id, "GUI owner", std::process::id(), &native, None, false)
+            .unwrap();
+        let before =
+            ["meta.json", "state.json"].map(|name| fs::read(key.directory.join(name)).unwrap());
+        assert!(
+            live.record_startup_failure(&id, Some(std::process::id()), "wrong execution API")
+                .is_err()
+        );
+        assert_eq!(
+            ["meta.json", "state.json"].map(|name| fs::read(key.directory.join(name)).unwrap()),
+            before
+        );
+        assert!(!crate::host::host_error_path(&key.directory).exists());
+    }
+
+    #[test]
+    fn startup_failure_does_not_publish_an_ending_if_its_diagnostic_cannot_be_written() {
+        let root = tmp("startup-failure-no-diagnostic");
+        let live = kind_at(&root);
+        let id = sid("shell/startup-no-diagnostic");
+        live.register(&id, "shell", "terminal", None, None).unwrap();
+        let directory = live.dir_of(&id).unwrap();
+        fs::create_dir(crate::host::host_error_path(&directory)).unwrap();
+        assert!(
+            live.record_startup_failure(&id, None, "unwritable diagnostic")
+                .is_err()
+        );
+        assert_eq!(read_pair(&directory).unwrap().1.exit, None);
     }
 
     #[test]

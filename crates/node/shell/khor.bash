@@ -14,10 +14,11 @@
 #
 # Opt out: KHOR_SHELL_INTEGRATION=0 in the environment khor runs in.
 
-if [ -r "$HOME/.bashrc" ]; then
+if [ -z "$KHOR_BASH_SKIP_RC" ] && [ -r "$HOME/.bashrc" ]; then
   . "$HOME/.bashrc"
 fi
 
+unset KHOR_BASH_SKIP_RC
 
 if [ -z "$_khor_loaded" ] && [ -n "$BASH_VERSION" ]; then
 _khor_loaded=1

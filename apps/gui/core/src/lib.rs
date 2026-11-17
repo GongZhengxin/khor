@@ -120,6 +120,8 @@ pub struct SessionRow {
     /// detail routes its terminal faces on — `hosted` alone would leave
     /// every one of those on the facts pane.
     pub attachable: bool,
+    /// The execution has ended on its authoritative home, including remote rows.
+    pub dead: bool,
     /// The row's preview line (`khor_core::Session::last`): the newest
     /// message, transcript utterance or terminal line — the kind judged
     /// it, this only paints it.
@@ -166,11 +168,8 @@ pub struct SessionRow {
     /// that the person has also resumed in their own tmux is one `gui`
     /// row, and the terminal is where they are.
     pub mux: bool,
-    /// **How a dead row ended** (`khor_node::live::Ending`, P5-SHELL item
-    /// 3): the second line of a 失败 row names it — 「退出码 1」 or
-    /// 「宿主被结束」. Read where the session lives, so only this
-    /// machine's rows carry it; a reported row's is `None` and its line
-    /// stays as it was.
+    /// Cached local ending details. Remote rows use `dead` to open the reader,
+    /// which asks their execution home for the authoritative ending and output.
     pub ended: Option<RowEnding>,
     /// Stable authoritative execution device hex. Missing authority remains
     /// read-only; the human-facing home label is never an action route.
@@ -1102,7 +1101,7 @@ pub fn list_sessions(root: &Path, by: &str) -> Result<Vec<SessionRow>, String> {
             // could not travel. It outlived the reason for it, and what
             // it produced was a row that opened onto the bare facts pane
             // — which reads, correctly, as "clicking this does nothing".
-            let attachable = hosted || v.session.term;
+            let attachable = !v.session.dead && (hosted || v.session.term);
             // Only a dead row of this machine's is asked: its registry
             // dir is here.
             let ended = (v.session.dead && v.source.is_none())
@@ -1110,6 +1109,7 @@ pub fn list_sessions(root: &Path, by: &str) -> Result<Vec<SessionRow>, String> {
                 .flatten()
                 .map(RowEnding::from);
             SessionRow {
+                dead: v.session.dead,
                 execution_home: Some(v.session.home.hex()),
                 content_locator: khor_node::session_content::ContentLocator::of(&v.session)
                     .and_then(|locator| locator.encode())
@@ -2939,12 +2939,14 @@ pub async fn open_shell(
 ) -> Result<String, String> {
     let size = size.unwrap_or((80, 24));
     let start = khor_node::shell_start::ShellStart {
+        argv: None,
         token: token.into(),
         title: title.into(),
         cwd: cwd.into(),
         command: command.into(),
         cols: size.0,
         rows: size.1,
+        headless: false,
     };
     Ok(open_async(root)
         .await?

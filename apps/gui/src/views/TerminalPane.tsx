@@ -3731,36 +3731,70 @@ function KeyRowSeats({
   );
 }
 
-/**
- * **A dead terminal row's page** (P5-SHELL items 1 and 2, the owner
- * 2026-10-12): a shell whose host is gone opened to nothing — its screen
- * lived in the host's memory. Its host now leaves `ring.bin`, and the
- * page draws that last screen, read-only, on the muted ground, under the
- * one sentence that says how it ended (`session-over`, the row's own
- * cause). A host from before the file, or one killed before its first
- * write, left only `commands.json`: the page lists those commands —
- * command, directory, exit code, when — under the same sentence. A live
- * shell never comes here; its host serves the ring as ever.
- */
+const ENDED_PAGE_CACHE = 8;
+const endedPages = new Map<string, EndedPage>();
+
+function rememberEnded(id: string, page: EndedPage | null) {
+  endedPages.delete(id);
+  if (page) endedPages.set(id, page);
+  while (endedPages.size > ENDED_PAGE_CACHE) {
+    const oldest = endedPages.keys().next().value;
+    if (oldest === undefined) break;
+    endedPages.delete(oldest);
+  }
+}
+
+/** A read-only final screen or command ledger, resolved on its execution home. */
 export function EndedPane({ id, at }: { id: string; at: number }) {
-  // `undefined` while asked; `null` when nothing is dead here to show.
-  const [page, setPage] = useState<EndedPage | null | undefined>(undefined);
+  const [attempt, setAttempt] = useState(0);
+  const [read, setRead] = useState(() => ({
+    id,
+    page: endedPages.get(id) ?? null,
+    loading: true,
+    error: null as string | null,
+  }));
+  const retry = () => setAttempt((value) => value + 1);
   useEffect(() => {
     let gone = false;
+    setRead({ id, page: endedPages.get(id) ?? null, loading: true, error: null });
     termEnded(id).then(
-      (p) => !gone && setPage(p),
-      () => !gone && setPage(null),
+      (page) => {
+        if (gone) return;
+        rememberEnded(id, page);
+        setRead({ id, page, loading: false, error: null });
+      },
+      (error) => {
+        if (gone) return;
+        setRead({ id, page: endedPages.get(id) ?? null, loading: false, error: said(error) });
+      },
     );
     return () => {
       gone = true;
     };
-  }, [id, at]);
-  if (!page) return <div data-term-ended-wait className="min-h-0 flex-1 bg-card" />;
+  }, [id, at, attempt]);
+  const current = read.id === id ? read : { id, page: endedPages.get(id) ?? null, loading: true, error: null };
+  const page = current.page;
+  if (!page) {
+    return (
+      <div data-term-ended-wait className="flex min-h-0 flex-1 flex-col bg-card">
+        <RegionState
+          state={current.loading ? "loading-never" : current.error ? "error" : "empty"}
+          message={current.error ?? gui.ended_content_unavailable}
+          onRetry={retry}
+        />
+      </div>
+    );
+  }
   return (
-    <div data-term-ended={page.screen ? "screen" : "ledger"} className="flex min-h-0 flex-1 flex-col bg-card font-sans">
-      <p data-term-ended-why className="flex-none border-b border-border px-3 py-2 text-callout text-muted-foreground">
-        {msg.session_over(endedWord(page.ended))}
-      </p>
+    <div data-term-ended={page.screen ? "screen" : "ledger"} aria-busy={current.loading || undefined} className="flex min-h-0 flex-1 flex-col bg-card font-sans">
+      <div data-term-ended-why className="flex flex-none items-center gap-row border-b border-border px-3 py-2 text-callout text-muted-foreground">
+        <span className="min-w-0 flex-1">{msg.session_over(endedWord(page.ended))}</span>
+        {current.error && <>
+          <span role="status" data-term-ended-refresh-error className="min-w-0 flex-1">{current.error}</span>
+          <Button variant="ghost" onClick={retry}>{gui.region_retry}</Button>
+        </>}
+      </div>
+      {page.startup_error && <p data-term-ended-startup-error className="flex-none whitespace-pre-wrap p-row text-callout text-muted-foreground">{page.startup_error}</p>}
       {page.screen ? <EndedScreenView screen={page.screen} /> : <EndedLedger recent={page.recent} />}
     </div>
   );

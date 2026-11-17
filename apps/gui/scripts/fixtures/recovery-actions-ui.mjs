@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 
 // Fixed UI facts and controlled external IO. No Node execution qualification,
 // idempotency/reservation algorithm, canonical parser or replacement IDB owner.
-export const recoveryActionCases = ['offer-and-same-sid-rebind', 'idb-retries-and-shared-pages', 'directory-required-shell', 'terminal-owner-transfer', 'automatic-entry-and-later-exit', 'initial-terminal-connect-recovers', 'initial-terminal-connect-cancelled', 'initial-terminal-refused', 'foreground-metadata-failure'];
+export const recoveryActionCases = ['offer-and-same-sid-rebind', 'idb-retries-and-shared-pages', 'directory-required-shell', 'terminal-owner-transfer', 'automatic-entry-and-later-exit', 'initial-terminal-connect-recovers', 'initial-terminal-connect-cancelled', 'initial-terminal-refused', 'foreground-metadata-failure', 'retained-remote-ended-shell'];
 export const usesRecoveryClock = scenario => scenario !== 'directory-required-shell';
 
 export async function advanceRecoveryClock(page, milliseconds) {
@@ -45,7 +45,7 @@ export function installRecoveryActionsTransport() {
     at_ms:1, unread:0, source:null, pinned:false, imported:false, stale:false, quiet:false,
     category:'claude', group:'', face:null, hosted:true, attachable:false, last:null,
     doing:null, via:null, via_face:null, home:'fixture-A', place:'/fixture/old', mux:false,
-    ended:null, execution_home:A, ...patch});
+    ended:null, dead:false, execution_home:A, ...patch});
   const offer = (id, home = A, patch = {}) => ({id, home, current_run:`fixture-run-${id}`,
     next_attempt_epoch:'1', execution:'live', action:'join',
     native:{agent:'claude',native_id:`fixed-native-${id}`,support:'resume'}, previous:null, reason:null,...patch});
@@ -90,7 +90,7 @@ export function installRecoveryActionsTransport() {
     // The selected attachment card reads metadata before explicit Send. Keep
     // that external read scoped to this scenario's controlled dropped file.
     if(cmd==='stat_text'&&scenario==='terminal-owner-transfer'&&args.machine===''&&args.path==='/fixture/controlled-file')return {total:8,at_ms:1,digest:'controlled-file'};
-    if(cmd==='term_ended')return {ended:{exit:0},recent:[],screen:null};
+    if(cmd==='term_ended'){if(wire.failEnded)throw new Error('Remote terminal history offline fixture');return {ended:{exit:0},recent:[],screen:null,startup_error:null};}
     if(cmd==='term_drop_forget')return null;
     if(cmd.startsWith('term_')) {
       const admission=window.__attachmentLeases(cmd,args);if(admission.handled)return admission.value;
@@ -175,6 +175,46 @@ export async function exerciseRecoveryActions(scenario,page,helpers) {
   const A='a'.repeat(64),B='b'.repeat(64);
   const publicCalls=cmd=>calls(page,cmd);
   const heldAction=async(label)=>{const index=await page.evaluate(()=>window.__recoveryWire.actions.length);await page.evaluate(()=>{window.__recoveryWire.holdAction=true;});const w=await words(page);await action(page,label??w.join);await until(()=>page.evaluate(index=>window.__recoveryWire.actions.length===index+1,index),'explicit action reached controlled IO');return index;};
+  if(scenario==='retained-remote-ended-shell') {
+    await page.evaluate(B=>{
+      window.__recoveryWire.termHome=B;
+      window.__recoveryProbe.patch({source:'Remote machine',home:'fixture-B',execution_home:B,hosted:false,dead:false});
+    },B);
+    await newTerminal(page);
+    await advanceUntil(page,()=>page.evaluate(()=>window.__recoveryWire.waits.some(wait=>!wait.done)),'remote terminal started its real output wait');
+    await page.evaluate(()=>{
+      const box=document.querySelector('[data-terminal]');
+      window.__retainedRemoteTerminal={box,term:box.__xterm};
+      const wire=window.__recoveryWire;
+      wire.failEnded=true;
+      window.__recoveryProbe.patch({dead:true,word:'failed',attachable:false,hosted:false,mux:false,ended:null,at_ms:2});
+      for(const wait of wire.waits)if(!wait.done){wait.done=true;wait.resolve({bytes:btoa('FINAL REMOTE OUTPUT\r\n'),seq:wait.seq+1,gone:true,reset:false,stall:null});}
+    });
+    await advanceUntil(page,()=>page.evaluate(()=>{
+      const box=document.querySelector('[data-terminal]');
+      if(!box?.__xterm)return false;
+      const buffer=box.__xterm.buffer.active;
+      return Array.from({length:buffer.length},(_,i)=>buffer.getLine(i)?.translateToString(true)).join('\n').includes('FINAL REMOTE OUTPUT');
+    }),'ended remote terminal painted its actual last output');
+    const retained=await page.evaluate(()=>{
+      const saved=window.__retainedRemoteTerminal,box=document.querySelector('[data-terminal]');
+      return {sameNode:box===saved.box,sameTerminal:box?.__xterm===saved.term,active:box?.closest('[data-kept-terminal]')?.hasAttribute('data-active')};
+    });
+    assert.deepEqual(retained,{sameNode:true,sameTerminal:true,active:true},'remote death with no local ended metadata retains the same displayed terminal');
+    assert.equal(await page.locator('[data-kept-terminal=alpha][data-active] [data-terminal]').isVisible(),true);
+    assert.equal((await publicCalls('term_ended')).length,0,'an offline history fetch cannot displace an already retained terminal');
+    assert.equal((await publicCalls('term_open')).length,1,'retention does not attach again after the host ended');
+    // A cold dead mux row has no retained terminal. It must use the ended
+    // reader and show its offline error, rather than attaching merely for mux.
+    await page.evaluate(B=>{
+      window.__recoveryProbe.patch({kind:'shell',category:'shell',can_control:true,source:'Remote machine',home:'fixture-B',execution_home:B,dead:true,word:'failed',attachable:false,hosted:false,mux:true,ended:null},'beta');
+      window.__recoveryProbe.select('beta');
+    },B);
+    await page.clock.runFor(500);
+    await page.locator('[data-region-state=error]').filter({hasText:'Remote terminal history offline fixture'}).waitFor();
+    assert.equal((await publicCalls('term_open')).filter(call=>call.args.id==='beta').length,0,'a dead remote mux cannot bypass terminal admission');
+    return;
+  }
   if(scenario==='foreground-metadata-failure') {
     await newTerminal(page);
     const before=(await publicCalls('session_recovery')).length;

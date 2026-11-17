@@ -2091,7 +2091,8 @@ export const termAttach = (id: string, lease: string) => call<TermStart>("term_a
 export const termReady = (id: string, lease: string) => call<null>("term_ready", { id, lease });
 /** **A dead terminal row's page** (P5-SHELL): how it ended, its last
     screen when its host left one (`ring.bin`), else the commands it ran,
-    newest first. `null` while the session is not dead on this machine. */
+    newest first, fetched from its execution home. `null` when that home has no
+    ended content for this identity; transport failures reject the request. */
 export const termEnded = (id: string) => call<EndedPage | null>("term_ended", { id });
 export const termStream = (id: string, lease: string, since: number) =>
   call<TermChunk>("term_stream", { id, lease, since });

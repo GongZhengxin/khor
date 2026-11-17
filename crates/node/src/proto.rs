@@ -16,6 +16,9 @@ pub const SLICE: u64 = 256 * 1024;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Request {
+    Execution {
+        action: crate::execution::Action,
+    },
     SessionImport {
         home: khor_core::DeviceId,
         action: khor_core::session_import::SessionImportAction,
@@ -45,14 +48,21 @@ pub enum Request {
         action: crate::session_content::remote::Action,
     },
     /// Recoverable authenticated pairing. Every body is a canonical blob chunk.
-    Pair { action: PairAction },
+    Pair {
+        action: PairAction,
+    },
     /// The only current document transport. Mutating operations wait for
     /// authenticated handshake completion and carry exact bounded manifests.
-    DocTransfer { action: DocTransferAction },
+    DocTransfer {
+        action: DocTransferAction,
+    },
     /// One slice of an offered payload, content-addressed. The offerer
     /// serves bytes only after the far user approved the pull — the
     /// approval IS this request arriving (docs/SESSION.md 传输).
-    Fetch { digest: String, offset: u64 },
+    Fetch {
+        digest: String,
+        offset: u64,
+    },
     /// The rows only the asked device can derive (its transfer faces;
     /// live kinds later). Chat rows are excluded — every device derives
     /// those from the CRDT itself, and duplicates would collide.
@@ -60,7 +70,10 @@ pub enum Request {
     /// Run an action on a session this device executes for. Handlers
     /// never re-route an incoming Act — what is not theirs to run is
     /// refused, or two serves could bounce one forever.
-    Act { session: String, action: String },
+    Act {
+        session: String,
+        action: String,
+    },
     /// What that machine has spent, by day and by vendor
     /// (`khor_core::Usage`).
     ///
@@ -91,14 +104,19 @@ pub enum Request {
     /// guards is a payload's bytes, never the looking (docs/NET.md
     /// 入网即全信). A khor that predates it answers
     /// [`Response::Refused`], read as "that machine cannot list".
-    Ls { path: String },
+    Ls {
+        path: String,
+    },
     /// One slice of a file named by absolute path — the browse-then-
     /// take pull, which has no offer to be content-addressed by
     /// ([`Request::Fetch`]'s path). No permission step here either,
     /// and it is not an exception to 待批全量: that gate guards the
     /// **receiving** side of an offer someone else pushed at it, and
     /// a pull is the puller spending its own disk on its own ask.
-    FetchPath { path: String, offset: u64 },
+    FetchPath {
+        path: String,
+        offset: u64,
+    },
     /// Open a session **on the asked machine** (docs/KHOR.md 发起:
     /// 在任意设备开 session). The row is that machine's from birth —
     /// it runs the process, it owns the registry entry, and the asker
@@ -129,7 +147,9 @@ pub enum Request {
     /// lets [`Request::Ls`] list a home directory without an approval
     /// step. The cookie is what keeps *unpaired* processes on that
     /// machine out of the socket, and it never leaves the pair.
-    Reach { session: String },
+    Reach {
+        session: String,
+    },
     /// A satellite's last reading, asked of its **sponsor** — the one
     /// machine that samples it over ssh (附属机器批; docs/NET.md 卫星).
     /// A cached answer with its age, never a fresh sample: the asker
@@ -141,10 +161,15 @@ pub enum Request {
     /// bytes under every older peer. A khor that predates satellites
     /// answers [`Response::Refused`], read as "no reading" — the same
     /// fallback every tail-appended op leans on.
-    SatVitals { sat: String },
+    SatVitals {
+        sat: String,
+    },
     /// List a satellite directory over SSH through its sponsor.
     /// Answers with the ordinary directory response.
-    SatLs { sat: String, path: String },
+    SatLs {
+        sat: String,
+        path: String,
+    },
     /// Read watched directories and their volumes from the machine watching
     /// them. The watched list itself is replicated on the device document.
     Watched,
@@ -162,12 +187,18 @@ pub enum Request {
     /// off that machine's disk over ssh (`crate::satellite::remove`).
     ///
     /// A new variant for [`Request::SatLs`]'s reason.
-    SatRemove { sat: String, path: String },
+    SatRemove {
+        sat: String,
+        path: String,
+    },
     /// [`Request::Mkdir`], on a satellite: the sponsor makes the
     /// directory over ssh (`crate::satellite::mkdir`).
     ///
     /// A new variant for [`Request::SatLs`]'s reason.
-    SatMkdir { sat: String, path: String },
+    SatMkdir {
+        sat: String,
+        path: String,
+    },
     /// A new empty file on a satellite (`crate::satellite::touch`).
     ///
     /// **Its own variant rather than [`Request::SatWrite`] with no
@@ -177,7 +208,10 @@ pub enum Request {
     /// a save and exactly wrong for a new name. It also needs
     /// `sha256sum` on the far machine, which a new name has nothing to
     /// feed.
-    SatTouch { sat: String, path: String },
+    SatTouch {
+        sat: String,
+        path: String,
+    },
     /// [`Request::RenamePath`], on a satellite: the sponsor moves the
     /// name over ssh (`crate::satellite::rename_path`).
     ///
@@ -195,7 +229,10 @@ pub enum Request {
     /// fails for want of a display — that refusal is the satellite's
     /// own sentence and travels back as it came, because 「it has no
     /// screen」 is a fact about that machine and not about khor.
-    SatLaunch { sat: String, target: String },
+    SatLaunch {
+        sat: String,
+        target: String,
+    },
     /// [`Request::Touched`], off a satellite: the sponsor walks that
     /// machine's directory over ssh and answers the ordinary
     /// [`Response::Touched`] (`crate::satellite::touched`).
@@ -209,16 +246,25 @@ pub enum Request {
     /// **Walked over there.** The mtimes are on the satellite's disk;
     /// a sponsor that answered from its own would date somebody else's
     /// files.
-    SatTouched { sat: String, path: String },
+    SatTouched {
+        sat: String,
+        path: String,
+    },
     /// [`Request::GitStatus`], off a satellite: the sponsor runs that
     /// machine's own `git` over ssh and answers the ordinary
     /// [`Response::GitStatus`] (`crate::satellite::git_status`).
     ///
     /// A new variant for [`Request::SatLs`]'s reason.
-    SatGitStatus { sat: String, root: String },
+    SatGitStatus {
+        sat: String,
+        root: String,
+    },
     /// [`Request::GitDiff`], off a satellite (`crate::satellite::
     /// git_diff`). A new variant for [`Request::SatLs`]'s reason.
-    SatGitDiff { sat: String, path: String },
+    SatGitDiff {
+        sat: String,
+        path: String,
+    },
     /// [`Request::WritePath`], off a satellite (工作区批7).
     ///
     /// `was` is the same blake3 digest every other save is pinned to,
@@ -315,7 +361,9 @@ pub enum Request {
     /// Answered as [`Response::Removed`]; a khor that predates it
     /// answers [`Response::Refused`], which the asker shows as it came
     /// — the same road every refusal on this screen takes.
-    Remove { path: String },
+    Remove {
+        path: String,
+    },
     /// Makes one directory on that machine (`crate::files::mkdir`).
     /// `path` is absolute over there.
     ///
@@ -330,7 +378,9 @@ pub enum Request {
     ///
     /// Answered as [`Response::Made`]; a khor that predates it answers
     /// [`Response::Refused`], shown as it came.
-    Mkdir { path: String },
+    Mkdir {
+        path: String,
+    },
     /// Moves a name on that machine (`crate::files::rename_path`).
     /// Both paths are absolute over there; crossing directories is the
     /// same verb, which is why this is spelled `mv` and not `rename`.
@@ -343,7 +393,10 @@ pub enum Request {
     /// (`crate::files::remove`).
     ///
     /// Answered as [`Response::Renamed`].
-    RenamePath { from: String, to: String },
+    RenamePath {
+        from: String,
+        to: String,
+    },
     /// Opens a path or a page **on that machine**, with that machine's
     /// own opener (`crate::files::launch`).
     ///
@@ -360,7 +413,9 @@ pub enum Request {
     ///
     /// Answered as [`Response::Launched`]; a machine with no opener
     /// refuses by name rather than reporting a window nobody saw.
-    Launch { target: String },
+    Launch {
+        target: String,
+    },
     /// When a directory on that machine was last changed: the newest
     /// file mtime under `path` (`crate::workspace::touched`). `path` is
     /// absolute over there.
@@ -374,7 +429,9 @@ pub enum Request {
     /// **That is the consumer's error branch and it is deliberate**:
     /// unlike git marks, a missing date paints nothing rather than
     /// something false, and the row is still there to open.
-    Touched { path: String },
+    Touched {
+        path: String,
+    },
     /// What differs from HEAD across one checkout (`crate::git::status`)
     /// — the marks the file tree wears and the branch its head says.
     /// `root` is the checkout itself, absolute on the answering machine.
@@ -392,7 +449,9 @@ pub enum Request {
     /// where the branch would have been. **Never painted as「clean」**:
     /// a tree with no marks and a tree khor could not read look the
     /// same, and only one of them is safe to edit.
-    GitStatus { root: String },
+    GitStatus {
+        root: String,
+    },
     /// Where one file differs from HEAD (`crate::git::diff`), in the
     /// coordinates of the file as it is now. `path` is absolute on the
     /// answering machine; **which checkout it belongs to is worked out
@@ -405,7 +464,9 @@ pub enum Request {
     /// way and with the same sentence as [`Request::GitStatus`], which
     /// is one key rather than two because the two ops shipped together
     /// and no khor has one without the other.
-    GitDiff { path: String },
+    GitDiff {
+        path: String,
+    },
     /// Writes a whole file on the answering machine
     /// (`crate::files::write_whole`) — what saving an edit is.
     ///
@@ -456,12 +517,16 @@ pub enum Request {
     /// bytes to it is [`Request::Reach`]'s job done over again for a
     /// thing that is not a session, which is why the asker builds its
     /// own pipe rather than this op returning an address.
-    CodeServe { root: String },
+    CodeServe {
+        root: String,
+    },
     /// Stops the web face on `root` over there, if one is running.
     /// **Answers the same whether there was one or not** — the caller
     /// wanted it gone, and a refusal would only name a race they cannot
     /// act on.
-    CodeStop { root: String },
+    CodeStop {
+        root: String,
+    },
     /// Everything under `dir` on that machine that holds `query` — in a
     /// name or in a line (`crate::files::search`, 工作区第六轮 第 47 条).
     /// `dir` is absolute over there.
@@ -474,7 +539,10 @@ pub enum Request {
     ///
     /// Answered as [`Response::Found`]; a khor that predates it answers
     /// [`Response::Refused`], which the face shows as it came.
-    Search { dir: String, query: String },
+    Search {
+        dir: String,
+        query: String,
+    },
     /// [`Request::Search`], on a satellite: the sponsor greps over ssh
     /// (`crate::satellite::search`).
     ///
@@ -497,12 +565,17 @@ pub enum Request {
     /// Answered as [`Response::Checkout`]; a khor that predates it
     /// answers [`Response::Refused`], and the asker falls back to what
     /// the status answer says.
-    Checkout { path: String },
+    Checkout {
+        path: String,
+    },
     /// [`Request::Checkout`], on a satellite: the sponsor looks over
     /// ssh (`crate::satellite::is_checkout`).
     ///
     /// A new variant for [`Request::SatLs`]'s reason.
-    SatCheckout { sat: String, path: String },
+    SatCheckout {
+        sat: String,
+        path: String,
+    },
     /// Compare document version digests and cached readings.
     /// The response contains changed document versions and readings.
     /// An inventory admission failure permits one signed roster repair;
@@ -531,23 +604,31 @@ pub enum Request {
     /// re-reads it only when the answer differs from what it holds
     /// (round NET-4). Answered as [`Response::Stat`]; a khor that
     /// predates it refuses, and the face reads the file as before.
-    Stat { path: String },
+    Stat {
+        path: String,
+    },
     /// A stream-owned observation (`crate::watch`). The admitted peer holds
     /// a bounded lease until this stream closes; frames carry coverage
     /// fences and subsequent invalidations, never file contents.
-    Watch { scope: crate::watch::Scope },
+    Watch {
+        scope: crate::watch::Scope,
+    },
     /// The commands run on that machine, searched (roadmap 2.6,
     /// `crate::commands::search_history`). Answered as
     /// [`Response::History`]. **A new variant, the request changing
     /// words**: a khor that predates it refuses the frame, which the asker
     /// reads as "that machine keeps no history".
-    History { ask: crate::commands::HistoryAsk },
+    History {
+        ask: crate::commands::HistoryAsk,
+    },
     /// One file's history (round UX-4, the file page's git 历史): its
     /// log, its blame, or a revision of it (`crate::git::GitAsk`).
     /// Answered as [`Response::Git`]. **One new word for the three
     /// questions**, so an older khor refuses it once, which the asker
     /// says as `msg::git_predates()`.
-    Git { ask: crate::git::GitAsk },
+    Git {
+        ask: crate::git::GitAsk,
+    },
     /// Open a session at most once per token.
     /// A retry returns the session created by the first request.
     OpenOnce {
@@ -596,7 +677,9 @@ pub enum Request {
     /// Sent only after the answerer refused a round's opening. **A new
     /// variant**: a khor that predates it refuses the frame, and the
     /// asker's round fails as it did before, with the refusal's words.
-    Vouch { action: VouchAction },
+    Vouch {
+        action: VouchAction,
+    },
     /// **Pull this file into your drop directory** (item 60,
     /// `crate::drops`): `from` is the id of the machine that has it,
     /// `path` absolute there. The answering machine pulls it directly
@@ -636,7 +719,9 @@ pub enum Request {
     /// **A new variant**: a khor that predates it refuses the frame by
     /// this name. The asker has stopped waiting by then and pastes
     /// nothing; that machine's pull lands quietly in its drop directory.
-    DropStop { token: String },
+    DropStop {
+        token: String,
+    },
     /// **Try `host:port` from your network** (round ROAD-1, `khor
     /// reach`): resolve the name with your own resolver, connect once
     /// with a short timeout, read the server's first line, and look the
@@ -646,7 +731,10 @@ pub enum Request {
     /// **A new variant**: a khor that predates it refuses the frame by
     /// this name, and the asker's row for it reads `predates` — a word
     /// the screen says, never a machine drawn as unable to reach.
-    Probe { host: String, port: u16 },
+    Probe {
+        host: String,
+        port: u16,
+    },
     /// **Add a machine over ssh from here** (添加机器 通过 khor 主机,
     /// 2026-10-08 owner ruling b): the answering machine runs
     /// [`crate::join`]'s add as the sponsor, over its own ssh road, and
@@ -672,7 +760,10 @@ pub enum Request {
     /// machine's own, or of every file when `peer` is `None`, so the
     /// asker can read both ends of a reconnect. Read off disk, nothing
     /// secret in it (`journal::scrub` ran when each line was written).
-    Journal { peer: Option<String>, since: u64 },
+    Journal {
+        peer: Option<String>,
+        since: u64,
+    },
     /// **Offer a file of yours** (STORE-BRIEF phase 5): a message composed
     /// on another machine names a file on this one (`hinton:/data/x.bin`);
     /// this machine digests it and keeps the offer record that serves its
@@ -680,13 +771,22 @@ pub enum Request {
     /// a file that is not there refuses the message before it is written.
     /// Tail-appended: an older khor cannot decode it and refuses the
     /// frame, which the composer says as that machine refusing.
-    Offer { path: String },
+    Offer {
+        path: String,
+    },
     /// Per-machine agent configuration; mutations never ride early data.
-    Recognition { action: crate::recognition::Action },
+    Recognition {
+        action: crate::recognition::Action,
+    },
     /// Bounded directory snapshot; a regular file answers `None`.
-    FetchTree { path: String },
+    FetchTree {
+        path: String,
+    },
     /// The same snapshot on an SSH satellite through its sponsor.
-    SatFetchTree { sat: String, path: String },
+    SatFetchTree {
+        sat: String,
+        path: String,
+    },
     /// Atomic shell creation plus initial input; old peers refuse this word.
     OpenShellOnce {
         start: crate::shell_start::ShellStart,
@@ -696,7 +796,9 @@ pub enum Request {
         action: crate::subscriptions::Action,
     },
     /// Authenticated agent control; never executed as replayable early data.
-    KhorAgent { action: crate::khor_agent::Action },
+    KhorAgent {
+        action: crate::khor_agent::Action,
+    },
     /// Canonical A2A data over khor's authenticated binding. Old peers refuse
     /// this new word; callers display that refusal and do not replay a send.
     Delegation {
@@ -992,6 +1094,9 @@ pub enum DocumentInventory {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Response {
+    Execution {
+        value: crate::execution::Reply,
+    },
     SessionImport {
         value: khor_core::session_import::SessionImportReply,
     },
@@ -1451,6 +1556,9 @@ impl Request {
     /// the first attempt probably never arrived — "probably" is not
     /// good enough for a second shell or a second rename.
     pub fn is_reading(&self) -> bool {
+        if let Self::Execution { action } = self {
+            return action.is_reading();
+        }
         matches!(
             self,
             Request::ContentRead { action: crate::session_content::remote::Action::Cancel { .. } }
@@ -1627,6 +1735,7 @@ impl Request {
             | Request::OpenOnce { .. }
             | Request::OpenAgentOnce { .. }
             | Request::OpenShellOnce { .. } => Duration::from_secs(25),
+            Request::Execution { .. } => Duration::from_secs(35),
             _ => Duration::from_secs(15),
         }
     }
@@ -1638,6 +1747,7 @@ pub fn encode<T: Serialize>(t: &T) -> Result<Vec<u8>, String> {
 
 pub fn encode_request(request: &Request) -> Result<Vec<u8>, String> {
     match request {
+        Request::Execution { action } => action.validate()?,
         Request::ContentRead { action } => action.validate()?,
         Request::DocTransfer { action } => crate::link::documents::validate_action(action)?,
         Request::Pair { action } => crate::link::pairing::validate_pair_action(action)?,
@@ -1704,6 +1814,7 @@ pub fn question(bytes: &[u8]) -> Result<Request, String> {
         return Err("document transfer request exceeds 1 MiB".into());
     }
     match &request {
+        Request::Execution { action } => action.validate()?,
         Request::Pair { action } => crate::link::pairing::validate_pair_action(action)?,
         Request::Vouch { action } => crate::link::pairing::validate_vouch_action(action)?,
         _ => (),

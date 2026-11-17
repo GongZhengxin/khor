@@ -90,6 +90,7 @@ fn the_real_host_rejects_missing_empty_old_future_and_wrong_first_ops() {
         host::write_frame(
             &mut stream,
             &host::Hello {
+                control: false,
                 cookie: hf.cookie.clone(),
                 cols: 40,
                 rows: 10,

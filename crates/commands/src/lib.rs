@@ -56,6 +56,7 @@ use khor_node::{
 };
 
 mod execution;
+mod task_commands;
 use execution::{
     CLI_EXIT, START_WEB, command_root, emit_output, err, in_request, input_all, input_line,
     json_output, navigate, record_data,
@@ -85,6 +86,9 @@ pub fn console_main_if_requested(start_web: fn(&std::path::Path)) -> Option<i32>
         return Some(0);
     }
     khor_node::runtime_image::process_entry();
+    if let Some(code) = khor_node::command_task::main_if_requested(&Node::root_from_env()) {
+        return Some(code);
+    }
     if let Some(code) = khor_node::mcp_worker::main_if_requested() {
         return Some(code);
     }
@@ -460,6 +464,21 @@ const VERBS: &[Verb] = &[
         word: "usage",
         run: usage,
         reach: Reach::Read,
+    },
+    Verb {
+        word: "exec",
+        run: task_commands::exec,
+        reach: Reach::Act,
+    },
+    Verb {
+        word: "execution",
+        run: task_commands::execution,
+        reach: Reach::Act,
+    },
+    Verb {
+        word: "terminal",
+        run: task_commands::terminal,
+        reach: Reach::Act,
     },
     Verb {
         word: "sessions",
@@ -4514,6 +4533,9 @@ fn run(rest: &[String]) -> Result<(), String> {
         return Err(usage_text().into());
     }
     let n = node()?;
+    if !tui {
+        return task_commands::run_once(&n, &cmd);
+    }
     let kind = if tui {
         khor_node::kind::TUI
     } else {
@@ -4546,6 +4568,7 @@ fn open(rest: &[String]) -> Result<(), String> {
     let mut detached = in_request();
     let mut title: Option<String> = None;
     let mut cmd: Vec<String> = Vec::new();
+    let mut startup: Option<String> = None;
     let mut on: Option<String> = None;
     let mut agent: Option<String> = None;
     let mut resume: Option<String> = None;
@@ -4576,11 +4599,57 @@ fn open(rest: &[String]) -> Result<(), String> {
             "--title" if cmd.is_empty() => {
                 title = Some(it.next().ok_or_else(|| usage_text().to_string())?.clone());
             }
+            "--command" if cmd.is_empty() => {
+                startup = Some(it.next().ok_or_else(|| usage_text().to_owned())?.clone());
+            }
             "--" if cmd.is_empty() => {}
             _ => cmd.push(a.clone()),
         }
     }
     let n = node()?;
+    if !gui && !tui && agent.is_none() {
+        if resume.is_some() {
+            return Err(cli::resume_needs_agent().into());
+        }
+        let argv = if startup.is_none() && !cmd.is_empty() {
+            Some(cmd)
+        } else {
+            None
+        };
+        let command = startup.unwrap_or_default();
+        let (cols, rows) = tty_size().unwrap_or((80, 24));
+        let cwd = if on.is_some() {
+            String::new()
+        } else {
+            std::env::current_dir()
+                .map_err(|e| e.to_string())?
+                .display()
+                .to_string()
+        };
+        let id = rt()?.block_on(n.open_shell_on(
+            on.as_deref().unwrap_or(""),
+            khor_node::shell_start::ShellStart {
+                argv,
+                token: khor_node::link::fresh_hex()?,
+                title: title.unwrap_or_default(),
+                cwd,
+                command,
+                cols,
+                rows,
+                headless: detached || on.is_some(),
+            },
+        ))?;
+        navigate(&id.0);
+        if detached || on.is_some() {
+            println!("{}", id.0);
+            return Ok(());
+        }
+        return attach_to(&n, &id);
+    }
+    if startup.is_some() {
+        return Err(usage_text().into());
+    }
+
     // Whether the person named a command at all, read before the agent
     // resolution below fills `cmd` in: the far-agent road takes a name
     // and never a command.

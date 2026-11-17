@@ -28,6 +28,8 @@ Rust 宿主管理账户、任务标识、审批、记录和网络路由。独立
 
 Pi 官方 MCP client 通过私有 JSONL 管道与 Rust MCP 分发器通信。当前开放设备和 session 列表、目录、文本读取、搜索、创建/关闭 session、发送留言；这些是 khor 网络工具，不从全部公开 CLI 自动生成。另有 agents、agent_connect、agent_disconnect、delegate、task_status、task_wait、task_answer、task_cancel、task_list 九个协作工具，负责连接、召唤、跟踪和停止本机或远程智能体。原生 A2A 服务通过 HTTP 直接连接，对方无需 Khor；本地程序和配对设备上的智能体沿用 ACP。外部 `khor mcp` 与内部 agent 使用同一份工具目录、参数校验和 Node 业务实现。
 
+外部 MCP 用 `execute` 创建独立的一次性命令任务，用 `open` 创建常驻交互终端；后者在用户 shell 就绪后输入可选启动命令，并在命令完成后继续存在。内部 Khor agent 的一次性命令使用归属当前轮次的 `run_command`，使停止和超时能够回收该轮次的工作；不暴露可绕过父任务的独立 `execute`。两类客户端均可读取、取消及清理显式命令任务，并通过 `terminal_read` / `terminal_input` / `terminal_ended` 监控和操作同一常驻会话。输入须绑定观察到的宿主代次和版本；用户正在编辑时拒绝自动写入。
+
 只读工具直接执行。写操作先在 Rust 落盘待批记录，再等用户批准；批准绑定本次任务、工具与实际参数，只生效一次。模型输出、工具描述和 MCP 的 readOnlyHint 都不能自行授权。等待期间用 MCP 进度通知维持请求；客户端取消、断开或停止会撤销待批，失效批准不能再触发写操作。
 
 ## 状态与恢复

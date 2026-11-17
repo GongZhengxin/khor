@@ -54,6 +54,10 @@ pub(crate) fn validate_reply(reply: &Reply, bytes: usize) -> Result<(), String> 
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum Op {
+    ExecutionOn {
+        machine: String,
+        action: crate::execution::Action,
+    },
     SessionImport {
         home: khor_core::DeviceId,
         action: khor_core::session_import::SessionImportAction,
@@ -604,6 +608,7 @@ impl Op {
     /// the bug this table exists to end.
     fn table(&self) -> (&'static str, std::time::Duration) {
         match self {
+            Op::ExecutionOn { .. } => ("ExecutionOn", DEADLINE_SLOW),
             Op::SessionImport { .. } => ("SessionImport", DEADLINE_SLOW),
             Op::ContentRead { .. } => ("ContentRead", DEADLINE_FAR),
             Op::SessionRecovery { .. } => ("SessionRecovery", DEADLINE_FAR),
@@ -684,6 +689,9 @@ impl Op {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum Reply {
+    Execution {
+        value: crate::execution::Reply,
+    },
     SessionImport {
         value: khor_core::session_import::SessionImportReply,
     },

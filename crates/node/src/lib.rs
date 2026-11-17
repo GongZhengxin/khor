@@ -33,6 +33,7 @@ pub mod code;
 mod codex_process;
 pub mod codex_terminal;
 pub mod codexagent;
+pub mod command_task;
 pub mod commands;
 pub mod config;
 pub mod cwd;
@@ -43,6 +44,7 @@ mod doc_transfer_state;
 pub mod doctor;
 pub mod drops;
 pub(crate) mod egress;
+pub mod execution;
 pub mod face;
 pub mod favicon;
 pub mod file_resource;
@@ -98,6 +100,7 @@ pub mod shell_start;
 mod store_owner;
 pub mod subscriptions;
 pub mod tabs;
+pub mod terminal_control;
 #[cfg(test)]
 pub(crate) mod testdir;
 pub mod top;
@@ -108,6 +111,7 @@ pub mod tunnel;
 mod update_wire;
 pub mod updates;
 pub mod usage;
+mod user_environment;
 pub mod vitals;
 pub mod watch;
 pub mod wide;
@@ -6193,16 +6197,19 @@ pub(crate) fn device_id_from_hex(s: &str) -> Result<DeviceId, String> {
 /// the other way, and it would be the harder one to see. An empty
 /// answer (no shell, a shell that failed) leaves what was there.
 pub(crate) fn merge_paths(asked: &str, here: &str) -> String {
-    if asked.trim().is_empty() {
+    if asked.is_empty() {
         return here.to_owned();
     }
-    let mut seen: Vec<&str> = Vec::new();
-    for dir in asked.split(':').chain(here.split(':')) {
-        if !dir.is_empty() && !seen.contains(&dir) {
-            seen.push(dir);
+    let mut seen = Vec::new();
+    for directory in std::env::split_paths(asked).chain(std::env::split_paths(here)) {
+        if !directory.as_os_str().is_empty() && !seen.contains(&directory) {
+            seen.push(directory);
         }
     }
-    seen.join(":")
+    std::env::join_paths(seen)
+        .ok()
+        .and_then(|value| value.into_string().ok())
+        .unwrap_or_else(|| here.to_owned())
 }
 
 /// Told to khor by hand: "here is where the programs are." Read by
@@ -6242,15 +6249,16 @@ pub(crate) struct Asked {
 pub(crate) fn asked_shell() -> &'static Asked {
     static ASKED: std::sync::OnceLock<Asked> = std::sync::OnceLock::new();
     ASKED.get_or_init(|| {
-        let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/sh".into());
-        let out = std::process::Command::new(&shell)
-            .args(["-lic", &probe_script()])
-            .stdin(std::process::Stdio::null())
-            .output();
-        let said = match out {
-            Ok(o) if o.status.success() => String::from_utf8_lossy(&o.stdout).into_owned(),
-            _ => String::new(),
+        let shell = crate::shell_start::default_shell();
+        let marker = format!("KHOR_ENV_{}", crate::link::fresh_hex().unwrap_or_else(|_| std::process::id().to_string()));
+        let script = if std::path::Path::new(&shell).file_name().is_some_and(|name| name == "fish") {
+            format!("printf '%s\\0' '{marker}' (string join : $PATH) \"$LC_ALL\" \"$LC_CTYPE\" \"$LANG\"")
+        } else {
+            format!("printf '%s\\0' '{marker}'; {}", probe_script())
         };
+        let said = crate::user_environment::probe(&shell, &script)
+            .and_then(|said| said.split_once(&(marker + "\0")).map(|(_, answer)| answer.to_owned()))
+            .unwrap_or_default();
         read_shell_answer(&said)
     })
 }
@@ -6318,6 +6326,11 @@ pub(crate) fn read_shell_answer(said: &str) -> Asked {
 /// a child an exec error nobody will ever read.
 pub(crate) fn spawn_path(command: &str) -> String {
     let here = std::env::var("PATH").unwrap_or_default();
+    if let Ok(told) = std::env::var(PATH_ENV)
+        && !told.trim().is_empty()
+    {
+        return told;
+    }
     if repair_needed(command, &here) {
         return Node::user_path().to_owned();
     }
@@ -6340,24 +6353,47 @@ pub(crate) fn repair_needed(command: &str, here: &str) -> bool {
 /// that answered "found" for one would move the failure back to where
 /// it was, a child that dies with nothing to say.
 pub(crate) fn find_program(command: &str, path: &str) -> Option<String> {
-    let runnable = |p: &std::path::Path| -> bool {
+    let runnable = |candidate: &std::path::Path| -> bool {
         #[cfg(unix)]
         {
             use std::os::unix::fs::PermissionsExt;
-            std::fs::metadata(p).is_ok_and(|m| m.is_file() && m.permissions().mode() & 0o111 != 0)
+            std::fs::metadata(candidate)
+                .is_ok_and(|m| m.is_file() && m.permissions().mode() & 0o111 != 0)
         }
         #[cfg(not(unix))]
         {
-            p.is_file()
+            candidate.is_file()
         }
     };
-    if command.contains('/') {
-        let p = std::path::Path::new(command);
-        return runnable(p).then(|| command.to_owned());
+    let candidate = std::path::Path::new(command);
+    let names = vec![candidate.to_path_buf()];
+    #[cfg(windows)]
+    let names = {
+        let mut values = names;
+        #[cfg(windows)]
+        if candidate.extension().is_none() {
+            let extensions =
+                std::env::var("PATHEXT").unwrap_or_else(|_| ".COM;.EXE;.BAT;.CMD".into());
+            for extension in extensions
+                .split(';')
+                .filter(|s| s.starts_with('.') && s.len() > 1)
+            {
+                let mut name = candidate.as_os_str().to_os_string();
+                name.push(extension);
+                values.push(std::path::PathBuf::from(name));
+            }
+        }
+        values
+    };
+    if candidate.is_absolute() || candidate.components().count() > 1 {
+        return names
+            .into_iter()
+            .find(|p| runnable(p))
+            .map(|p| p.display().to_string());
     }
-    path.split(':')
-        .filter(|d| !d.is_empty())
-        .map(|d| std::path::Path::new(d).join(command))
+    std::env::split_paths(path)
+        .filter(|d| !d.as_os_str().is_empty())
+        .flat_map(|dir| names.iter().map(move |name| dir.join(name)))
         .find(|p| runnable(p))
         .map(|p| p.display().to_string())
 }
@@ -6397,5 +6433,55 @@ impl Picked {
             Picked::Codex => mine("_codexagent", adaptor::codex::VENDOR),
             Picked::Registered(name, spec) => Ok((Node::agent_launch(spec)?, name.clone())),
         }
+    }
+}
+
+#[cfg(test)]
+mod platform_path_tests {
+    #[test]
+    fn native_program_search_preserves_paths_with_spaces_and_unicode() {
+        let tree = crate::testdir::TempTree::fresh("native-path-space-路径");
+        let programs = tree.join("program files");
+        std::fs::create_dir_all(&programs).unwrap();
+        #[cfg(windows)]
+        let (name, file) = ("khor-path-probe", "khor-path-probe.exe");
+        #[cfg(not(windows))]
+        let (name, file) = ("khor-path-probe", "khor-path-probe");
+        let program = programs.join(file);
+        std::fs::write(&program, b"#!/bin/sh\nexit 0\n").unwrap();
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            std::fs::set_permissions(&program, std::fs::Permissions::from_mode(0o755)).unwrap();
+        }
+        let path = std::env::join_paths([
+            tree.join("missing first"),
+            programs.clone(),
+            tree.join("missing last"),
+        ])
+        .unwrap()
+        .into_string()
+        .unwrap();
+        assert_eq!(
+            super::find_program(name, &path),
+            Some(program.display().to_string())
+        );
+        assert_eq!(
+            super::find_program(&program.display().to_string(), ""),
+            Some(program.display().to_string())
+        );
+        let inherited = std::env::join_paths([programs.clone(), tree.join("tail")])
+            .unwrap()
+            .into_string()
+            .unwrap();
+        let asked = std::env::join_paths([tree.join("prefix"), programs.clone()])
+            .unwrap()
+            .into_string()
+            .unwrap();
+        let joined = super::merge_paths(&asked, &inherited);
+        assert_eq!(
+            std::env::split_paths(&joined).collect::<Vec<_>>(),
+            [tree.join("prefix"), programs, tree.join("tail")]
+        );
     }
 }

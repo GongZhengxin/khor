@@ -1174,6 +1174,8 @@ impl crate::Node {
         let opened = self
             .open_shell_here_from(
                 crate::shell_start::ShellStart {
+                    argv: None,
+                    headless: false,
                     token: once,
                     title: meta.title,
                     cwd: cwd.display().to_string(),

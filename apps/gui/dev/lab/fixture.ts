@@ -435,7 +435,7 @@ export function createLabFixture(terminal = true, options: {origin?: string; con
               activity: [], observation_owner: options.notices||options.noticeBurst?null:device.id, content_locator: null, imported: false, quiet: false,
               word: streaming.has(i)||i===2 ? 'busy' : i===1 ? 'blocked' : 'idle', at_ms: previewAt-i*45_000, unread:i===1 ? 3 : 0, source: null, pinned:i===0,
               stale: false, category: i === 4 ? 'khor' : i === 3 ? options.dsh?'dsh':'codex' : 'claude', group: '', face: devices[i%Math.max(1,devices.length)]?.face??null,
-              hosted: true, can_control: true, attachable: false, last: '隔离示例 · 不连接真实智能体',
+              hosted: true, can_control: true, attachable: false, dead: false, last: '隔离示例 · 不连接真实智能体',
               via: null, via_face: null, home: devices[i%Math.max(1,devices.length)]?.name??device.name, execution_home: devices[i%Math.max(1,devices.length)]?.id??device.id, place:labRoot(devices[i%Math.max(1,devices.length)])+'/project', doing: null, mux: false, ended: null}));
             if (terminal) rows.push({...rows[0], id: 'shell/layout-lab', kind: 'shell', title: '终端 · 布局试验',
               category: 'shell', activity:[], attachable: true, last: '隔离终端示例'});

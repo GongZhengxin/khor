@@ -951,3 +951,6 @@ macOS job 编译 macOS / iOS catalog、保留资源清单，并导出 Default / 
 ### 透明窗口中的浅色选中玻璃（2026-11-13）
 
 完整 App Lab 的 `glass-selection-checks.mjs` 随既有 `dev/lab/check-app.mjs` 运行；`LAB_CHECKS=glass-selection` 可单独检查两引擎的导航和标签底色、前景 opacity、明暗背景实际像素响应，以及实色／深色控制组。透明浅深选中态均要求填充 alpha0（含非实色窗口100%），实色为1；明暗背景的实际像素响应超过40级，不能接受80%白色板的微弱响应。默认完整 Quality 同样包含它。需要既有 LAB_BUNDLE/LAB_REPORT，远端流程准备依赖与精确源码构建；不在 source-only 本机编译。SB 初始主题在 App 设置读取之前种入隔离夹具，重载中的浅深切换也纳入控制组。
+
+
+`npm run ended-terminal`：正式 EndedPane 的真实浏览器验收，覆盖初次读取骨架、读取失败与重试、无保存内容、命令账本、终端快照、启动错误、刷新保留内容和迟到应答隔离。加入 test:interaction。`npm run chat-recovery` 的 `retained-remote-ended-shell` 场景另查远端 shell 从存活变为结束且本机没有结束元数据时仍保留原终端和最终输出，以及冷开的已结束 mux 不会重新附着。传输夹具不代替真实远端节点和原生 App 的运行验证。

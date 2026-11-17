@@ -311,6 +311,7 @@ fn attach_host(
     write_frame(
         &mut conn,
         &crate::host::Hello {
+            control: false,
             cookie: file.cookie,
             cols: 0,
             rows: 0,
@@ -834,6 +835,7 @@ fn extra_face(root: &std::path::Path, scratch: &std::path::Path, mode: &str) -> 
     write_frame(
         &mut conn,
         &Hello {
+            control: false,
             cookie: file.cookie,
             cols: 0,
             rows: 0,
@@ -1331,6 +1333,7 @@ fn managed_host_case_worker() {
                     write_frame(
                         &mut conn,
                         &Hello {
+                            control: false,
                             cookie: host.cookie,
                             cols: 0,
                             rows: 0,

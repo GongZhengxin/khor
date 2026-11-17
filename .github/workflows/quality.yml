@@ -37,6 +37,9 @@ env:
   CARGO_BUILD_JOBS: '2'
 
 jobs:
+  session-execution:
+    if: ${{ inputs.suite == 'all' || inputs.suite == 'node' || inputs.suite == '' }}
+    uses: ./.github/workflows/session-execution.yml
   dsh-integration:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.suite == 'agent' }}
     permissions:
