@@ -502,12 +502,11 @@ fn host_args(root: &Path, rest: &[String]) -> Result<(), String> {
         rows.parse::<u16>()
             .map_err(|_| msg::host_bad_convention().to_string())?,
     );
-    host_main_with_startup(
+    host_main_from_env(
         root.to_path_buf(),
         SessionId(sid.clone()),
         size,
         cmd.to_vec(),
-        std::env::var(STARTUP_ENV).ok(),
     )
 }
 
@@ -1811,7 +1810,7 @@ fn state_of(word: khor_detect::Word) -> State {
     }
 }
 
-/// The body of `khor _host` — blocks until the child ends.
+/// The body of a programmatically-created host — blocks until the child ends.
 pub fn host_main(
     root: PathBuf,
     id: SessionId,
@@ -1819,6 +1818,17 @@ pub fn host_main(
     cmd: Vec<String>,
 ) -> Result<(), String> {
     host_main_with_startup(root, id, size, cmd, None)
+}
+
+/// Shared native `_host` entry. The GUI and CLI read the opener's private
+/// startup input here; programmatic hosts keep their explicit arguments.
+pub fn host_main_from_env(
+    root: PathBuf,
+    id: SessionId,
+    size: (u16, u16),
+    cmd: Vec<String>,
+) -> Result<(), String> {
+    host_main_with_startup(root, id, size, cmd, std::env::var(STARTUP_ENV).ok())
 }
 
 /// Explicit startup input belongs to a newly created host, never a connection.

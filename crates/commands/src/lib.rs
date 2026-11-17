@@ -4857,7 +4857,7 @@ fn host(rest: &[String]) -> Result<(), String> {
         cols.parse::<u16>().map_err(|_| usage_text().to_string())?,
         rows.parse::<u16>().map_err(|_| usage_text().to_string())?,
     );
-    khor_node::host::host_main(command_root(), SessionId(sid.clone()), size, cmd.to_vec())
+    khor_node::host::host_main_from_env(command_root(), SessionId(sid.clone()), size, cmd.to_vec())
 }
 
 /// 接管 (批C): typing the verb is the confirmation — the CLI's precedent
