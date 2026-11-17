@@ -32,6 +32,10 @@ const creationTarget = (devices: DeviceRow[], machine: string) => devices.find(d
     this and nothing else, so the choice is testable without a machine. */
 const readyAgents = (fleet: AgentFleet | null): {id: string; road: string | null}[] =>
   (fleet?.agents ?? []).filter(agent => agent.program).map(agent => ({id: agent.id, road: agent.road}));
+
+/** Roads that answer over ACP — the same set `new-session-choices` uses to
+    decide whether an agent can back a *conversation*. */
+const SPEAKS_ACP = ['builtin', 'native-acp', 'registry-acp'];
 const kindIcon = (kind: string, agent: string | null) => sessionKind(kind, agent).glyph('size-kind-mark');
 function returnedSession(value: unknown): string {
   const session = (value as {session?: unknown} | null)?.session;
@@ -67,6 +71,9 @@ export function NewSessionPage({
     [paths, setPaths] = useState<Record<string, string>>({});
   const [known, setKnown] = useState<AgentRow[]>([]),
     [presets, setPresets] = useState<LaunchPreset[]>([]);
+  /** Installed agents from the roster — the ACP registry does not list all
+      of them (DeepSeek Harness has never been a registry entry). */
+  const [installed, setInstalled] = useState<{id: string; name: string; road: string | null}[]>([]);
   const [launchesLoaded, setLaunchesLoaded] = useState(false);
   const [launch, setLaunch] = useState<Launch>(() => preferredLaunch(wantsTerm, []));
   const [name, setName] = useState('');
@@ -132,6 +139,16 @@ export function NewSessionPage({
       // A remote target keeps the shipped default until the node can
       // answer for that machine.
       roster.current = target?.me ? readyAgents(fleet) : [];
+      // **Installed, but not necessarily ACP.** The wizard's agent list
+      // comes from the ACP registry, and this machine has DeepSeek Harness
+      // installed while it has never been a registry entry — so DSH was
+      // absent from the one place a person picks what to start. These rows
+      // are the fleet's own answer and become terminal choices below.
+      setInstalled(
+        (fleet?.agents ?? [])
+          .filter(agent => agent.program)
+          .map(agent => ({id: agent.id, name: agent.name, road: agent.road})),
+      );
       setLaunch(target && restored.machines[target.id]?.launch || preferredLaunch(wantsTerm, roster.current));
     }, e => {
       if (live) why(e);
@@ -195,7 +212,24 @@ export function NewSessionPage({
       kind: 'agent' as const,
       agent: name
     }
-  })), ...presets.map(p => ({
+  })), ...installed
+    // **Installed tools the ACP registry does not list.** DeepSeek Harness
+    // is on this machine and has never been a registry entry, so it was
+    // missing from the one place a person picks what to start. Its own
+    // road is the terminal floor (a TUI), so that is the form offered —
+    // the honest one, not a 对话 that nothing would answer.
+    .filter(a => !(a.road !== null && SPEAKS_ACP.includes(a.road)) && !agents.includes(a.id))
+    .map(a => ({
+      id: 'term:' + a.id,
+      label: a.name + ' · ' + gui.view_terminal,
+      terms: a.id,
+      aside: a.name,
+      icon: kindIcon('tui', a.id),
+      launch: {
+        kind: 'shell' as const,
+        command: a.id
+      }
+    })), ...presets.map(p => ({
     id: 'custom:' + p.id,
     label: p.name,
     terms: p.command,

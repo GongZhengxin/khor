@@ -57,8 +57,8 @@ assert.deepEqual(
 );
 assert.deepEqual(
   preferredLaunch(false, [{id: 'aider', road: 'terminal'}]),
-  {kind: 'agent', agent: DEFAULT_AGENT},
-  'with nothing able to answer, the shipped default at least names something to install',
+  {kind: 'shell', command: 'aider'},
+  'with nothing able to answer, a terminal is the only form that starts — naming an absent agent is a dead 创建 button',
 );
 assert.deepEqual(
   preferredLaunch(true, [{id: 'pi', road: 'registry-acp'}, {id: 'codex', road: 'builtin'}]),
@@ -66,4 +66,4 @@ assert.deepEqual(
   'the terminal form still gets the first installed program',
 );
 assert.equal(KHOR_OWN_AGENT, 'pi');
-console.log('Preferred launch: Pi when it can answer, builtin next, shipped default last, terminal form unchanged — passed');
+console.log('Preferred launch: Pi when it can answer, builtin next, a terminal when nothing can, terminal form unchanged — passed');

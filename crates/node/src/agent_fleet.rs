@@ -57,6 +57,11 @@ struct Known {
     /// Directories the program may sit in, relative to home. Installers
     /// that do not put their binary on `PATH` live here.
     program_dirs: &'static [&'static str],
+    /// Directories whose **children** are version directories holding the
+    /// program (`<dir>/<hash>/<command>.exe`). An installer that keeps its
+    /// binary one level down is invisible to a lookup that only asks for
+    /// `dir/command`.
+    versioned_dirs: &'static [&'static str],
     /// Directories this agent keeps configuration/state in, relative to
     /// home. Presence is evidence the tool has been used on this machine.
     config_dirs: &'static [&'static str],
@@ -78,12 +83,28 @@ struct Known {
 }
 
 /// `argv` shown to people (a placeholder in `<angle>` marks the input).
+/// Directories whose **children** are version directories holding the
+/// program (`<dir>/<hash>/codex.exe`).
+///
+/// A separate list from `program_dirs` because the depth is different: an
+/// installer that keeps its binary one level down was invisible to a
+/// lookup that only asked `dir/command`. That is not hypothetical — on
+/// 2026-11-17 this machine had Codex installed at
+/// `%LOCALAPPDATA%\OpenAI\Codex\bin\9e1da794...\codex.exe` and the roster
+/// reported "not installed", so the new-session wizard fell back to naming
+/// an agent that was not there at all.
+#[cfg(windows)]
+const CODEX_VERSIONED: &[&str] = &["AppData/Local/OpenAI/Codex/bin"];
+#[cfg(not(windows))]
+const CODEX_VERSIONED: &[&str] = &[];
+
 const KNOWN: &[Known] = &[
     Known {
         id: "codex",
         name: "Codex",
         command: "codex",
         program_dirs: &[],
+        versioned_dirs: CODEX_VERSIONED,
         config_dirs: &[".codex"],
         native_acp: None,
         registry: Some("codex-acp"),
@@ -98,6 +119,7 @@ const KNOWN: &[Known] = &[
         name: "Claude Code",
         command: "claude",
         program_dirs: &[],
+        versioned_dirs: &[],
         config_dirs: &[".claude"],
         native_acp: None,
         registry: Some("claude-acp"),
@@ -112,6 +134,7 @@ const KNOWN: &[Known] = &[
         name: "DeepSeek Harness",
         command: "dsh",
         program_dirs: &[],
+        versioned_dirs: &[],
         config_dirs: &[".dsh"],
         native_acp: None,
         registry: None,
@@ -131,6 +154,7 @@ const KNOWN: &[Known] = &[
         name: "Gemini CLI",
         command: "gemini",
         program_dirs: &[],
+        versioned_dirs: &[],
         config_dirs: &[".gemini"],
         native_acp: Some(&["--acp"]),
         registry: Some("gemini"),
@@ -145,6 +169,7 @@ const KNOWN: &[Known] = &[
         name: "OpenCode",
         command: "opencode",
         program_dirs: &[],
+        versioned_dirs: &[],
         config_dirs: &[".config/opencode", ".opencode"],
         native_acp: Some(&["acp"]),
         registry: None,
@@ -159,6 +184,7 @@ const KNOWN: &[Known] = &[
         name: "Qwen Code",
         command: "qwen",
         program_dirs: &[],
+        versioned_dirs: &[],
         config_dirs: &[".qwen"],
         native_acp: None,
         registry: Some("qwen-code"),
@@ -173,6 +199,7 @@ const KNOWN: &[Known] = &[
         name: "GitHub Copilot CLI",
         command: "copilot",
         program_dirs: &[],
+        versioned_dirs: &[],
         config_dirs: &[".copilot"],
         native_acp: Some(&["--acp"]),
         registry: Some("github-copilot-cli"),
@@ -187,6 +214,7 @@ const KNOWN: &[Known] = &[
         name: "Pi",
         command: "pi",
         program_dirs: &[],
+        versioned_dirs: &[],
         config_dirs: &[".pi"],
         native_acp: None,
         registry: Some("pi-acp"),
@@ -201,6 +229,7 @@ const KNOWN: &[Known] = &[
         name: "Aider",
         command: "aider",
         program_dirs: &[],
+        versioned_dirs: &[],
         config_dirs: &[".aider"],
         native_acp: None,
         registry: None,
@@ -343,19 +372,60 @@ fn row_of(
     }
 }
 
+/// `home` plus a `/`-separated relative path, segment by segment.
+///
+/// The table spells directories with `/` on every platform, and
+/// `Path::join("a/b")` would keep those slashes on Windows — producing a
+/// path that a person never sees and that compares unequal to the real
+/// one. Joining each segment gives the platform's own separators.
+fn join_rel(home: &Path, rel: &str) -> std::path::PathBuf {
+    let mut path = home.to_path_buf();
+    for part in rel.split('/').filter(|part| !part.is_empty()) {
+        path = path.join(part);
+    }
+    path
+}
+
 fn locate_program(known: &Known, home: Option<&Path>, path: &str) -> Option<String> {
     if let Some(found) = crate::find_program(known.command, path) {
         return Some(found);
     }
     let home = home?;
     for dir in known.program_dirs {
-        let base = home.join(dir).join(known.command);
+        let base = join_rel(home, dir).join(known.command);
         // `find_program` gets the platform's own extensions from
         // `PATHEXT`; a hand-built path has to spell it out, and an
         // installer on Windows writes `aider.exe`, never `aider`.
         for candidate in [base.clone(), base.with_extension(exe_extension())] {
             if candidate.is_file() {
                 return Some(candidate.display().to_string());
+            }
+        }
+    }
+    // **One version directory down.** Codex installs
+    // `OpenAI/Codex/bin/<hash>/codex.exe`: the binary is not on `PATH`,
+    // and it is not at a fixed path either — the folder name changes with
+    // the build. Looking at the children is what makes "installed" true.
+    for dir in known.versioned_dirs {
+        let parent = join_rel(home, dir);
+        let Ok(entries) = std::fs::read_dir(&parent) else {
+            continue;
+        };
+        let mut candidates: Vec<std::path::PathBuf> = entries
+            .filter_map(|entry| entry.ok())
+            .map(|entry| entry.path().join(known.command))
+            .collect();
+        // The newest build wins when an installer leaves several behind
+        // (this machine had two). Sorting by name is enough: the names are
+        // hashes of the build, and any of them starts the same CLI — the
+        // point is to pick one deterministically rather than by readdir
+        // order.
+        candidates.sort_by(|a, b| b.cmp(a));
+        for base in candidates {
+            for candidate in [base.clone(), base.with_extension(exe_extension())] {
+                if candidate.is_file() {
+                    return Some(candidate.display().to_string());
+                }
             }
         }
     }
@@ -406,7 +476,13 @@ mod tests {
             Scratch(dir)
         }
         fn dir(&self, rel: &str) -> std::path::PathBuf {
-            let path = self.0.join(rel);
+            // Built segment by segment: `join("bin/hashes/x")` keeps the
+            // forward slashes on Windows, and then a path compared against
+            // a real one differs only in its separators.
+            let mut path = self.0.clone();
+            for part in rel.split('/') {
+                path = path.join(part);
+            }
             std::fs::create_dir_all(&path).unwrap();
             path
         }
@@ -485,6 +561,7 @@ mod tests {
             name: "Aider",
             command: "aider",
             program_dirs: &["apps"],
+            versioned_dirs: &[],
             config_dirs: &[".aider"],
             native_acp: None,
             registry: None,
@@ -498,6 +575,49 @@ mod tests {
         assert_eq!(
             row.program.as_deref(),
             Some(exe.display().to_string().as_str())
+        );
+    }
+
+    /// **One version directory down.**
+    ///
+    /// Codex installs `OpenAI/Codex/bin/<hash>/codex.exe`: not on `PATH`,
+    /// and not at a fixed path — the folder name changes with the build.
+    /// On 2026-11-17 this machine had it there and the roster said "not
+    /// installed", so the new-session wizard fell back to naming Claude,
+    /// which was not installed either. A lookup that only asks
+    /// `dir/command` cannot see it.
+    #[test]
+    fn a_program_in_a_version_directory_is_found() {
+        let scratch = Scratch::new("versioned");
+        let bin = scratch.dir("bin");
+        let newest = scratch.dir("bin/hashes/9e1da794");
+        let older = scratch.dir("bin/hashes/0aaa0000");
+        let suffix = std::env::consts::EXE_SUFFIX;
+        let newest_exe = newest.join(format!("codex{suffix}"));
+        let older_exe = older.join(format!("codex{suffix}"));
+        write_program(&older_exe);
+        write_program(&newest_exe);
+        let known = Known {
+            id: "codex",
+            name: "Codex",
+            command: "codex",
+            program_dirs: &[],
+            versioned_dirs: &["bin/hashes"],
+            config_dirs: &[".codex"],
+            native_acp: None,
+            registry: None,
+            builtin: None,
+            resume: None,
+            send: None,
+            list: false,
+            read: false,
+        };
+        let row = row_of(&known, Some(&scratch.0), &bin.display().to_string(), None);
+        // Deterministic when several builds are left behind, and it is the
+        // one whose directory sorts last — readdir order is not an answer.
+        assert_eq!(
+            row.program.as_deref(),
+            Some(newest_exe.display().to_string().as_str())
         );
     }
 

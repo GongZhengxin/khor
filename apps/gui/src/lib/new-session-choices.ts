@@ -35,7 +35,17 @@ const SPEAKS_ACP = ['builtin', 'native-acp', 'registry-acp'];
  *    independent review caught elsewhere;
  * 2. **a builtin road** — khor's own shims need no npm and no
  *    registration;
- * 3. the shipped default, which at least names something to install.
+ * 3. **the first program this machine actually has**, as a terminal.
+ *
+ * **Step 3 is the one that matters on Windows, and it used to be the
+ * shipped default instead.** The roster could not see Codex at all when
+ * its installer kept the binary in a versioned folder
+ * (`OpenAI/Codex/bin/<hash>/codex.exe`, not on `PATH`), so the roster came
+ * back empty and the wizard opened on Claude — an agent that was not
+ * installed either. Naming an absent agent is not a "default worth
+ * installing"; it is a form whose 创建 button cannot work. When nothing can
+ * answer over ACP, the honest default is a terminal, which every machine
+ * has.
  *
  * Only for the agent form: a terminal can run any command, so it gets
  * the first installed program.
@@ -47,11 +57,16 @@ export function preferredLaunch(
   terminal: boolean,
   agents: readonly {id: string; road: string | null}[],
 ): SessionLaunch {
-  if (terminal) return {kind: 'shell', command: agents[0]?.id ?? DEFAULT_AGENT};
+  if (terminal) return {kind: 'shell', command: agents[0]?.id ?? ''};
   const speaks = agents.filter(a => a.road !== null && SPEAKS_ACP.includes(a.road));
   const own = speaks.find(a => a.id === KHOR_OWN_AGENT)?.id;
   const builtin = speaks.find(a => a.road === 'builtin')?.id;
-  return {kind: 'agent', agent: own ?? builtin ?? DEFAULT_AGENT};
+  const agent = own ?? builtin;
+  if (agent) return {kind: 'agent', agent};
+  // Nothing on this machine answers over ACP. A terminal is the one form
+  // that is guaranteed to start, and naming an agent that is not installed
+  // is how the wizard came to open on a dead choice (see above).
+  return {kind: 'shell', command: agents[0]?.id ?? ''};
 }
 type MachineChoices = {dir?: string; launch?: SessionLaunch; recent: string[]};
 export type NewSessionChoices = {machine: string; machines: Record<string, MachineChoices>};
