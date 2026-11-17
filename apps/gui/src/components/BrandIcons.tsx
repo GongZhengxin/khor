@@ -2,6 +2,7 @@ import type { ComponentType } from "react";
 
 import type { SystemKind } from "@/gen/bindings/SystemKind";
 import khorMarkSource from "../../src-tauri/icons/src/mandala-glyph.svg?raw";
+import dshMarkSource from "@/assets/brands/deepseek-harness.svg?raw";
 import { IconDevices, IconFile, IconFinder, IconLink, IconNetwork, IconTerminal } from "./icons";
 
 /**
@@ -51,6 +52,12 @@ const brand =
 const khorMark = /<svg\b[^>]*\bviewBox="([^"]+)"[^>]*>([\s\S]*)<\/svg>\s*$/.exec(khorMarkSource);
 if (!khorMark) throw new Error("Invalid khor brand mark SVG");
 export const IconKhor = brand(khorMark[2], khorMark[1], "khor");
+
+// Official Harness whale, preserved from its Web app artwork. Brand marks
+// follow the face's ink, including dark themes and marks drawn on avatars.
+const dshMark = /<svg\b[^>]*\bviewBox="([^"]+)"[^>]*>([\s\S]*)<\/svg>\s*$/.exec(dshMarkSource);
+if (!dshMark) throw new Error("Invalid DeepSeek Harness brand mark SVG");
+export const IconDsh = brand(dshMark[2], dshMark[1], "dsh");
 
 /** Claude Code. */
 export const IconClaude = brand(
@@ -169,6 +176,10 @@ export function sessionMark(kind: string, category: string | null): ComponentTyp
   switch (category) {
     case "khor":
       return IconKhor;
+    case "dsh":
+    case "deepseek-harness":
+    case "deepseek-harness-acp":
+      return IconDsh;
     case "claude":
       return IconClaude;
     case "codex":

@@ -34,6 +34,7 @@
 - `TaskOverlay` 负责标题与操作的固定布局；正文只有一个公共滚动区。`DialogBody` 在任务内只是内容分组；预览器自身的文档滚动仍由预览器负责。
 - 同一组按钮跨断点移动位置，输入控件不重挂载。不要通过改 App 窗口大小获得空间。
 - 一个任务一个主按钮；导出、复制、删除自定义配色等放 `tools`，不与提交混成一排同等强调操作。
+- 手机顶部主操作共用 `Button compactTouch`：32 的可见胶囊、至少 44 的点击区域；桌面尺寸不变。附件选择面板采用同一呈现。
 - `dirty` 只表示未提交草稿。Escape／遮罩／下拉关闭统一请求退出：有草稿先询问保留编辑或丢弃；显式取消／返回是明确放弃当前草稿。`busy` 表示不可取消的写入，操作期间不退出、不重复提交；可取消认证用关闭主动中止等待。
 - 没有操作槽位的只读／选择任务提供标准关闭。非任务内容需要明确 `layout="content"`，目前仅会话标签总览、文件／提交历史甲板、网络图机器卡；它们已有完整导航。
 - 长编辑用 `initialHeight="large" maxHeight="large"`；选择默认中档到大档；短编辑适配内容。只有能拖动／改变高度的任务才显示抓手。
@@ -54,3 +55,17 @@
 `npm run dialogs` 验证真实公共组件与表单的视口、操作位置、草稿退出、长列表、焦点和手势归属；`npm run dialogs -- --serve` 提供一次性数据的检查入口。真实 App Lab 同时覆盖键行、配色和设置，发布前另做 iOS 键盘／惯性／安全区与桌面窗口验收。合成 touch 探针不冒充 WKWebView 原生实测。
 
 官方依据：[Sheets](https://developer.apple.com/design/human-interface-guidelines/sheets)、[Modality](https://developer.apple.com/design/human-interface-guidelines/modality)、[Popovers](https://developer.apple.com/design/human-interface-guidelines/popovers)、[Toolbars](https://developer.apple.com/design/human-interface-guidelines/toolbars)、[Alerts](https://developer.apple.com/design/human-interface-guidelines/alerts)。
+
+### 附件的选择区与已选区（2026-11-17）
+
+键盘位置的附件面板使用不透明的 `canvas-solid`，不随原生窗口透明度穿透；机器目录与文件预览的 `ContentOverlay` 同样持有不透明背景。顶部只保留取消、发送。正文按“选择文件 → 已选文件 → 发送到”排列，三个区块同级标题与边界对齐，组间、标题与控件之间使用现有间距。
+
+附件多选圆圈的选中态使用与设置开关一致的 `brand-strong`，勾用 `on-brand` 保证浅深主题对比；未选中为空心圆。文件行背景仍遵循中性 `fill-strong`，不用绿色铺整行。已选列表与机器目录选择行共用 `FileChoiceRow`。
+
+选择文件分两行：本机的文件／目录动作；其他机器的头像＋机器名。完整机器条目放不下时收进“…”选择菜单，不让半截条目冒充可点击项。本机不重复进入其他机器行。空选择隐藏整块已选文件；发送目录紧随已选区。短键盘内正文可滚动，控件保持正常单行与触摸尺寸；已选长列表仍独立滚动。
+
+已选区复用 `AttachmentList` 与 `FileChoiceRow`，文件大小采用工作区同一格式并独立于可截断的来源说明。原生路径缺少大小时只从来源机读取事实，不提前传输；已知大小不重复读取，未知目录不伪造总大小。实际 App Lab 验证背景、分区、响应式机器菜单、来源机大小、空选择、取消／发送与终端网格保持。
+
+桌面终端不提供顶部回形针按钮，直接拖放进入待发送草稿；手机仍由键行附件按钮进入。拖放不自动发送。
+
+GUI 与 Khor 对话输入框的「＋」直接打开同一个附件选择面板，不再先弹添加菜单，也不保留查找／导出对话的菜单项。桌面直接拖入文件也进入该待发送面板，不提前传输；附件发送继续使用各自会话的发送逻辑。GUI 的文件限制由协议能力决定，不复制终端的传输实现。

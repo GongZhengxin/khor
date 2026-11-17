@@ -161,7 +161,16 @@ impl Drop for Hosts {
         }
     }
 }
-struct Serving(tokio::task::JoinHandle<Result<(), String>>);
+struct Serving(tokio::task::JoinHandle<Result<(), String>>, PathBuf);
+impl Serving {
+    async fn stop(mut self) {
+        assert_eq!(
+            khor_node::link::stop_serving(&self.1).await.unwrap(),
+            khor_node::khor_agent::RuntimeClose::Closed
+        );
+        (&mut self.0).await.unwrap().unwrap();
+    }
+}
 impl Drop for Serving {
     fn drop(&mut self) {
         self.0.abort();
@@ -177,10 +186,21 @@ fn root(tag: &str) -> Scratch {
     Scratch(dir)
 }
 async fn serve(root: &Path, name: &str) -> Serving {
+    let endpoint = root.join(".khor/endpoint.json");
+    let previous = std::fs::read(&endpoint).ok();
     let node = Node::open_as(root.to_path_buf(), name).unwrap();
-    let serving = Serving(tokio::spawn(async move { node.serve().await }));
+    let mut serving = Serving(tokio::spawn(async move { node.serve().await }), root.into());
     tokio::time::timeout(Duration::from_secs(60), async {
-        while !root.join(".khor/endpoint.json").exists() {
+        loop {
+            if serving.0.is_finished() {
+                let result = (&mut serving.0).await;
+                panic!("fixture resident {name} ended before readiness: {result:?}");
+            }
+            // A stopped resident's file survives while this test process is
+            // alive. Only a newly published endpoint is the new resident.
+            if std::fs::read(&endpoint).is_ok_and(|bytes| Some(bytes) != previous) {
+                break;
+            }
             tokio::time::sleep(Duration::from_millis(20)).await;
         }
     })
@@ -260,6 +280,10 @@ async fn run() {
         )
         .unwrap();
     let _hosts = Hosts(alpha_root.0.clone());
+    // A detached host reports through its execution home's resident. Stand it
+    // up before the first local task, just as the App/bridge does; this custom
+    // harness is a GUI host executable, not a CLI that implements `_serve`.
+    let _alpha = serve(&alpha_root.0, "alpha").await;
     let local_input = message("local-first", None);
     let local = task(
         alpha
@@ -383,7 +407,6 @@ async fn run() {
 
     pi::run(&alpha).await;
 
-    let _alpha = serve(&alpha_root.0, "alpha").await;
     let beta = Node::open_as(beta_root.0.clone(), "beta").unwrap();
     tokio::time::timeout(Duration::from_secs(45), beta.pair(&alpha.invite().unwrap()))
         .await
@@ -430,7 +453,7 @@ async fn run() {
     assert_eq!(remote.target.home, alpha.device());
     let remote = wait(&beta, alpha.device_str(), &remote.task.id, false).await;
     let after_restart = {
-        drop(_beta);
+        _beta.stop().await;
         let beta_again = serve(&beta_root.0, "beta").await;
         let row = read(&beta, alpha.device_str(), &remote.task.id).await;
         assert_eq!(row.task.id, remote.task.id);

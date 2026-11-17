@@ -10,9 +10,13 @@ export async function checkKhorAttachments(browser,{port,report,engine,width=390
   await page.locator('[data-machine-chat-scroll]:visible').waitFor();
   // The shared mobile BarSeat portals the composer outside the body.
   const composer=page.locator('[data-chat-composer]:visible');await composer.waitFor();
-  await page.locator('[data-lab-add]:visible').click();await page.locator('[data-lab-attach-device]').click();
+  await page.locator('[data-lab-add]:visible').click();await page.locator('[data-attachment-picker]:visible').waitFor();assert.equal(await page.locator('[data-lab-attachments]').count(),0,'Khor plus opens the shared picker directly');
   const input=page.locator('[data-attachment-picker] [data-files-input],[data-machine-chat] [data-file-input]');
-  await input.setInputFiles({name:'khor-note.txt',mimeType:'text/plain',buffer:Buffer.from('Retained Khor attachment')});
+  if(!mobile){
+   await page.locator('[data-attachment-picker] [data-files-cancel]').click();await page.locator('[data-attachment-picker]').waitFor({state:'hidden'});
+   await page.locator('[data-machine-chat]:visible').evaluate(node=>{const data=new DataTransfer();data.items.add(new File(['Retained Khor attachment'],'khor-note.txt',{type:'text/plain'}));node.dispatchEvent(new DragEvent('drop',{bubbles:true,cancelable:true,dataTransfer:data}));});
+   await page.locator('[data-attachment-picker]:visible').waitFor();
+  }else await input.setInputFiles({name:'khor-note.txt',mimeType:'text/plain',buffer:Buffer.from('Retained Khor attachment')});
   await page.locator('[data-chat-pending-file="khor-note.txt"],[data-files-selected="khor-note.txt"]').first().waitFor();await page.waitForTimeout(250);
   const picker=page.locator('[data-attachment-picker]:visible'),events=await api('__ai_preview/attachment-events');
   observed={sharedPicker:await picker.count(),beforeSend:events};

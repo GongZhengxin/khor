@@ -2060,14 +2060,24 @@ impl Node {
         load_pile(&titles_dir(&self.root), self.peer)
     }
 
-    /// Every ACP agent this person has named, by name (`khor_sync::agents`).
+    /// ACP launch defaults and this person's registrations. An explicit
+    /// registration overrides a default, without writing that default to sync.
     pub fn agents(&self) -> Result<Vec<(String, AgentSpec)>, String> {
-        Ok(self.agents_loaded()?.doc.all())
+        let mut agents: std::collections::BTreeMap<_, _> = agent_registry::BUILTIN_ACP
+            .iter()
+            .filter_map(|agent| agent.spec().map(|spec| (agent.id.to_owned(), spec)))
+            .collect();
+        agents.extend(self.agents_loaded()?.doc.all());
+        Ok(agents.into_iter().collect())
     }
 
-    /// One of them, or `None` for a name nobody registered.
+    /// A registration takes precedence over the shipped launch default.
     pub fn agent(&self, name: &str) -> Result<Option<AgentSpec>, String> {
-        Ok(self.agents_loaded()?.doc.get(name))
+        Ok(self
+            .agents_loaded()?
+            .doc
+            .get(name)
+            .or_else(|| agent_registry::builtin(name).and_then(|agent| agent.spec())))
     }
 
     /// What sessions a registered agent says it has (`session/list`).
@@ -2123,11 +2133,10 @@ impl Node {
     /// steps, and 「登记过的有: 」 trailing into nothing is not a
     /// sentence.
     pub fn agent_or_refuse(&self, name: &str) -> Result<AgentSpec, String> {
-        let loaded = self.agents_loaded()?;
-        if let Some(spec) = loaded.doc.get(name) {
+        if let Some(spec) = self.agent(name)? {
             return Ok(spec);
         }
-        let known = loaded.doc.all();
+        let known = self.agents()?;
         if known.is_empty() {
             return Err(msg::no_agents_registered().into());
         }

@@ -6,6 +6,46 @@ use khor_catalog::msg;
 use khor_core::recovery::{RecoveryResult, RecoveryToken};
 use std::fs;
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn dsh_readonly_recovery_uses_the_same_default_and_override() {
+        let root = tempfile::tempdir().unwrap();
+        let node = crate::Node::open(root.path().to_path_buf()).unwrap();
+        let native = Identity {
+            home: node.device(),
+            agent: "dsh".into(),
+            native_id: "dsh-readonly-recovery-test".into(),
+        };
+        let launch = |readonly| {
+            node.recovery_launch(
+                "DSH recovery",
+                root.path().to_str(),
+                native.clone(),
+                readonly,
+            )
+            .map(|launch| launch.encoded)
+        };
+        // Resolution may refuse an absent optional executable. Both entry
+        // points must name that same launch, including on a machine with DSH.
+        let default = launch(false);
+        assert_eq!(launch(true), default, "The offer must resolve the default");
+        assert!(node.agents_loaded().unwrap().doc.all().is_empty());
+        node.register_agent(
+            "dsh",
+            &[
+                std::env::current_exe().unwrap().display().to_string(),
+                "--custom-acp".into(),
+            ],
+        )
+        .unwrap();
+        let registered = launch(false).unwrap();
+        assert_eq!(launch(true).unwrap(), registered, "An override still wins");
+    }
+}
+
 /// Internal work or an already-determined reply. A replayed token is never
 /// converted into a new spawn claim by the legacy convenience wrapper.
 enum NativePreparation {
@@ -348,6 +388,7 @@ impl crate::Node {
                 self.peer,
             )?
             .get(name)
+            .or_else(|| khor_sync::agents::registry::builtin(name).and_then(|agent| agent.spec()))
             .ok_or("native agent is not registered")?,
             name => self.agent_or_refuse(name)?,
         };

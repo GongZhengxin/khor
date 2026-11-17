@@ -26,7 +26,7 @@ import { EmptyState } from "@/components/RegionState";
 import { fetchLs, renamePath, type DirListing } from "@/api";
 import { RemoveDialog } from "@/components/RemoveDialog";
 import { FileKindIcon } from "@/components/FileKindIcon";
-import { IconBack, IconFiles, IconCheck, IconOpen } from "@/components/icons";
+import { IconBack, IconFiles, IconCheck, IconPreview } from "@/components/icons";
 import { RowMenu } from "@/components/RowMenu";
 import { Button } from "@/components/ui/button";
 import { cli, gui } from "@/gen/catalog";
@@ -557,9 +557,9 @@ export function FileChoiceRow({name,dir,size,detail,selected,disabled,onChoose,o
  return <div data-files-entry={dir?"dir":"file"} data-files-name={name} className={cn("flex min-h-touch min-w-0 items-center gap-in border-b px-row text-callout",selected&&"bg-fill-strong")}>
   <button type="button" disabled={disabled&&!dir} onClick={onEnter} className="flex min-h-touch min-w-0 flex-1 items-center gap-in text-left">
    <span data-files-kind className="grid size-5 flex-none place-items-center [&>svg]:size-5">{dir?<IconFiles className="size-5"/>:<FileKindIcon name={name} className="size-5"/>}</span>
-   <span className="min-w-0 flex-1"><span className="block truncate text-body">{name}</span>{(detail||size!==null)&&<span className="block truncate text-caption text-muted-foreground">{[size===null?null:sizeWord(size),detail].filter(Boolean).join(" · ")}</span>}</span>
+   <span className="min-w-0 flex-1"><span className="block truncate text-body">{name}</span>{(detail||size!==null)&&<span className="flex min-w-0 items-center gap-xxs text-caption text-muted-foreground">{size!==null&&<span data-files-size className="flex-none tabular-nums">{sizeWord(size)}</span>}{size!==null&&detail&&<span aria-hidden="true">·</span>}{detail&&<span className="min-w-0 truncate">{detail}</span>}</span>}</span>
   </button>
-  {onOpen&&<button type="button" data-files-open aria-label={`打开 ${name}`} onClick={onOpen} className="grid min-h-touch min-w-touch flex-none place-items-center"><IconOpen className="size-affordance"/></button>}
-  <button type="button" data-files-select={name} aria-label={`${selected?gui.files_deselect:gui.files_select} ${name}`} aria-pressed={selected} disabled={disabled} onClick={onChoose} className="grid min-h-touch min-w-touch flex-none place-items-center disabled:opacity-40"><span className="grid size-5 place-items-center rounded-full border">{selected&&<IconCheck className="size-3.5"/>}</span></button>
+  {onOpen&&<button type="button" data-files-open aria-label={`预览 ${name}`} title="预览" onClick={onOpen} className="grid min-h-touch min-w-touch flex-none place-items-center"><IconPreview className="size-6"/></button>}
+  <button type="button" data-files-select={name} aria-label={`${selected?gui.files_deselect:gui.files_select} ${name}`} aria-pressed={selected} disabled={disabled} onClick={onChoose} className="grid min-h-touch min-w-touch flex-none place-items-center disabled:opacity-40"><span className={cn("grid size-5 place-items-center rounded-full border",selected&&"border-brand-strong bg-brand-strong text-on-brand")}>{selected&&<IconCheck className="size-3.5"/>}</span></button>
  </div>;
 }

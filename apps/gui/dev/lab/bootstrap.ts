@@ -49,13 +49,13 @@ if (runtime.mode === 'frontend') {
     localStorage.setItem('khor.lab.identity', identity);
     localStorage.setItem('khor.lang', 'zh');
     const active = scene.session ?? sessionIds[0];
-    const available = sessionIds.map(id=>id==='wide/all'&&khorSession?khorSession:id);
+    const available = sessionIds.map(id=>id==='wide/all'&&khorSession?khorSession:runtime.scene==='dsh'&&id==='gui/codex-review'?'gui/dsh-review':id);
     const tabs = [active,...available.filter(id => id !== active)].slice(0,items);
     localStorage.setItem('khor.sessions.tabs', JSON.stringify({tabs,active}));
     const landing = ['workspace','workspaces'].includes(runtime.scene) ? 'workspaces' : runtime.scene === 'devices' ? 'devices' : runtime.scene === 'browser' ? 'browser' : runtime.scene === 'quota' ? 'quota' : 'sessions';
     localStorage.setItem('khor.place', JSON.stringify({landing, screen: 'list'}));
   }
-  const fixture = createLabFixture(true, {settings:true,origin: location.origin, content: ['content', 'page'].includes(runtime.scene), items, machines,pageSize, longHistory:query.get('history')==='long', notices:query.get('notices')==='1',noticeBurst:query.get('notices')==='burst', page:runtime.scene==='page',khorSession});
+  const fixture = createLabFixture(true, {settings:true,origin: location.origin, content: ['content', 'page'].includes(runtime.scene), items, machines,pageSize, longHistory:query.get('history')==='long', notices:query.get('notices')==='1',noticeBurst:query.get('notices')==='burst', page:runtime.scene==='page',khorSession,dsh:runtime.scene==='dsh'});
   // Seed the data boundary before App's first settings read. A later
   // theme write can otherwise lose to the previous page's saved answer.
   if(preview)fixture.request('set_config',{name:'theme',value:preview.theme});

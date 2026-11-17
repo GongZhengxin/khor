@@ -58,6 +58,20 @@ pub struct Known {
     pub argv: Option<&'static [&'static str]>,
 }
 
+/// First-party launch defaults, independent of the dated registry snapshot.
+/// DSH is installed and configured on the execution computer. No package is
+/// downloaded, and no credential or machine-specific path travels in this data.
+pub const BUILTIN_ACP: &[Known] = &[Known {
+    id: "dsh",
+    name: "DeepSeek Harness",
+    about: "DeepSeek Harness through its official ACP profile",
+    argv: Some(&["dsh", "--profile", "acp"]),
+}];
+
+pub fn builtin(id: &str) -> Option<&'static Known> {
+    BUILTIN_ACP.iter().find(|agent| agent.id == id)
+}
+
 /// Every agent in the snapshot, `npx`-startable ones first, each group
 /// by id. Sorted so the list a person reads never reorders itself
 /// between builds.
