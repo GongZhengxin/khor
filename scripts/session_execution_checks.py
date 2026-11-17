@@ -10,6 +10,10 @@ import time
 
 
 def main():
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is not None:
+            reconfigure(encoding="utf-8", errors="replace")
     output = Path(os.environ.get("SESSION_EXECUTION_EVIDENCE", "session-execution-evidence"))
     output.mkdir(parents=True, exist_ok=True)
     source = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()

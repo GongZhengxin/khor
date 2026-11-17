@@ -6462,9 +6462,10 @@ mod platform_path_tests {
         .unwrap()
         .into_string()
         .unwrap();
+        let found = super::find_program(name, &path).expect("native program is found");
         assert_eq!(
-            super::find_program(name, &path),
-            Some(program.display().to_string())
+            std::fs::canonicalize(found).unwrap(),
+            std::fs::canonicalize(&program).unwrap()
         );
         assert_eq!(
             super::find_program(&program.display().to_string(), ""),

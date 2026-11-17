@@ -352,7 +352,7 @@ precmd_functions+=(khor_test_theme_precmd)
                     }
                 }
             });
-            let result = (|| {
+            let result: Result<(), String> = (|| {
                 let deadline = Instant::now() + Duration::from_secs(5);
                 let mut prompt = crate::shell_start::PromptReady::default();
                 let mut output = Vec::new();

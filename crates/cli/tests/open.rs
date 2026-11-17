@@ -374,7 +374,7 @@ fn a_nonzero_startup_command_returns_to_the_same_interactive_shell() {
     );
     let node = khor_node::Node::open(home.clone()).unwrap();
     let row = node
-        .every_session()
+        .sessions()
         .unwrap()
         .into_iter()
         .find(|r| r.session.id.0 == sid)
@@ -869,7 +869,7 @@ mod windows {
         });
         let node = khor_node::Node::open(fixture.0.clone()).unwrap();
         assert!(
-            node.every_session()
+            node.sessions()
                 .unwrap()
                 .iter()
                 .any(|row| row.session.id.0 == id && !row.session.dead)
