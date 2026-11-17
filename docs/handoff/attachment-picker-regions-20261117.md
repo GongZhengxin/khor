@@ -100,3 +100,18 @@ verified against exactsource/tree0dc9c7ad2cd5783c4b9a9e65d8f2038312a7d001.
 Current GUI: http://127.0.0.1:23961/snapshots/f4aa291d46192582/app/?scene=gui&machines=3
 Four current entry assets byte-verified and41 snapshots retained. Only the owned
 previous static Lab process replaced. No main merge, release or user App restart.
+
+## Main integration — 2026-11-17
+
+User approved the Lab and explicitly authorized committing to main. Merge
+7fef92d732a5123fc1587a1e73565ce44d3fef23 integrates approved branch99b998e8
+onto main1b20eee9, preserving the newer network and loopback-listener fixes.
+There were no overlapping changed files or conflicts. All20 approved files were
+byte-identical to the feature branch at the merge; all other main files stayed
+unchanged. This closeout only records that integration.
+
+The GUI verification remains43946813584:14 scenarios, hot updates, shared dialogs
+and frontend gates. Main Quality is triggered by the push to verify the combined
+tree. Existing Lab sourcef4aa291d and historical snapshots stay available. Native
+OS drop behavior still requires installed-package device QA. This authorization
+covers main integration; no release tag or installation is part of it.
