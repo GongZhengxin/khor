@@ -68,3 +68,10 @@ source-identity tests, `node/tests/session_import_wire.rs`, existing recovery
 fence regressions, and the real App Lab's `session-import` interaction checks.
 The Lab includes unavailable DSH/unknown-owner examples rather than inventing
 optional capabilities for those agents.
+
+Permanent regression checks run in the main Quality workflow: `node-native`
+checks ACP catalog/fork, source identity, lifecycle fences and resident IPC/QUIC;
+`mac-updates` checks the actual macOS subprocess identity/cancellation boundary;
+`developer-lab` exercises the real import UI in Chromium and WebKit; `gui`
+retains shared dialog geometry, gestures, focus and observation regressions.
+The feature-branch workflow was retired after these checks moved into Quality.

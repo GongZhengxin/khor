@@ -99,12 +99,9 @@ jobs:
           npm run session-follow
           sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' /etc/apt/apt-mirrors.txt
           sudo apt-get -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 -o Acquire::Retries=2 install --no-install-recommends -y fonts-noto-cjk
-          if [ "$KHOR_INTERACTION_SCOPE" = dsh ]; then
-            npx playwright-core install --with-deps chromium webkit
-          else
-            npx playwright-core install chromium
-          fi
+          npx playwright-core install --with-deps chromium webkit
           node dev/lab/check-app.mjs
+          LAB_CHECKS=session-import LAB_REPORT="$LAB_REPORT/session-import" node dev/lab/check-app.mjs
           node dev/lab/check-hot.mjs
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         if: always()
@@ -112,8 +109,7 @@ jobs:
           name: developer-lab-review
           path: |
             ${{ runner.temp }}/developer-lab
-            ${{ runner.temp }}/lab-report/*.json
-            ${{ runner.temp }}/lab-report/*.png
+            ${{ runner.temp }}/lab-report
           if-no-files-found: warn
           retention-days: 7
   scripts:
@@ -187,6 +183,11 @@ jobs:
           grep -Eq '^test result: ok\. [1-9][0-9]* passed;' "$RUNNER_TEMP/native-notification-protocol.log"
           cargo test --locked -p khor-gui --lib app_companions -- --test-threads=1 2>&1 | tee "$RUNNER_TEMP/app-components.log"
           grep -Eq '^test result: ok\. [1-9][0-9]* passed;' "$RUNNER_TEMP/app-components.log"
+      - name: Verify actual ACP subprocess pressure and cancellation on macOS
+        run: |
+          KHOR_TEST_PYTHON="$(python3 -c 'import pathlib,sys; p=pathlib.Path(sys.executable).resolve(); f=p.parent.parent/"Resources/Python.app/Contents/MacOS/Python"; print(f if f.is_file() else p)')"
+          export KHOR_TEST_PYTHON
+          cargo test --locked -p khor-acp --lib startup_frame_pressure_is_bounded_and_cancellation_retires_the_actual_agent
       - name: Verify closed WebKit documents stop media
         run: python3 apps/gui/scripts/page-retirement-probe/run.py --out "$RUNNER_TEMP/page-retirement"
       - name: Verify borrowed loopback in actual native WebKit
@@ -349,6 +350,19 @@ jobs:
       - run: python3 scripts/native_provenance.py verify --prepared "${{ runner.temp }}/node-prepared.json" --artifacts "${{ runner.temp }}/node-artifacts.json" --output "${{ runner.temp }}/node-provenance.json"
       - name: Run each agent close acceptance test in its own process
         run: python3 scripts/run-node-acceptance.py --suite runtime-close --artifacts "${{ runner.temp }}/node-artifacts.json" --provenance "${{ runner.temp }}/node-provenance.json" --worker-provenance "${{ runner.temp }}/cli-provenance.json" --output "${{ runner.temp }}/node-native-close"
+      - name: Verify ACP import ownership, lifecycle and real transport
+        run: |
+          cargo test --locked -p khor-node --lib session_import -- --test-threads=1
+          cargo test --locked -p khor-node --lib bounded_attempt_tokens_keep_arguments_results_and_unknown_owners_fenced -- --test-threads=1
+          cargo test --locked -p khor-node --lib old_observation_metadata -- --test-threads=1
+          cargo test --locked -p khor-gui-core --lib agents:: -- --test-threads=1
+          cargo test --locked -p khor-sync --lib agents:: -- --test-threads=1
+          cargo build --locked -p khor-acp --bin acp-import-fixture
+          KHOR_TEST_IMPORT_STUB="$CARGO_TARGET_DIR/debug/acp-import-fixture" cargo test --locked -p khor-node --test session_import_wire -- --test-threads=1
+      - name: Verify ACP catalog, fork and existing protocol behavior
+        # The full-executable identity fixture runs above on macOS; Linux ps
+        # reports a basename and cannot establish the same identity evidence.
+        run: cargo test --locked -p khor-acp -- --skip startup_pressure_tests::startup_frame_pressure_is_bounded_and_cancellation_retires_the_actual_agent
       - name: Verify terminal connection failure and recovery boundaries
         run: |
           cargo test --locked -p khor-node --lib acp_management::tests -- --test-threads=1
@@ -444,7 +458,7 @@ jobs:
           cache-dependency-path: apps/gui/package-lock.json
       - run: npm ci
       - uses: ./.github/actions/restore-frontend
-      - run: npm run test:unit && npm run attachments && npm run test:types
+      - run: npm run test:unit && npm run session-observation && npm run attachments && npm run test:types
       - run: npm run gates && npm run mobile:static
       - name: Prepare the browsers required by this interaction scope
         id: interaction-browser
