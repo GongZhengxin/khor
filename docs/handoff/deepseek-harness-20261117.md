@@ -17,7 +17,10 @@ verified. Branch: `feat/deepseek-harness-20261117`.
 - Shared ChatView edits auto-merged; both the DSH and attachment patches are
   preserved exactly when projected from the other branch. The icon guide
   retains both additions. Other changed source blobs remain byte-identical
-  to their owning branch. A combined DSH UI check validates the integrated UI.
+  to their owning branch. Combined Quality run `44012234369`, source
+  `c97b7b3ddf22f2d428710a0ae9212bbae1c2c7e3`, passed frontend, GUI interaction,
+  all 20 DSH complete-App scenarios and hot-update checks. This documentation
+  follow-up does not change the verified application or CI sources.
 - The existing `lab-preview/` and `output/` untracked directories are preserved.
   This integration does not release or replace the installed Khor app.
 
