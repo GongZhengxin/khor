@@ -275,7 +275,7 @@ mod tests {
 
     #[cfg(unix)]
     #[test]
-    fn login_shell_loads_profile_and_rc_before_startup_input() {
+    fn login_shell_loads_profile_rc_and_theme_widgets_before_startup_input() {
         use portable_pty::{CommandBuilder, PtySize, native_pty_system};
         use std::io::{Read, Write};
         use std::time::{Duration, Instant};
@@ -292,7 +292,23 @@ mod tests {
                 "export KHOR_PROFILE_TEST=profile-loaded\n",
             )
             .unwrap();
-            std::fs::write(home.join(".zshrc"), "export KHOR_RC_TEST=rc-loaded\n").unwrap();
+            std::fs::write(
+                home.join(".zshrc"),
+                r#"
+export KHOR_RC_TEST=rc-loaded
+function zle-line-init() { builtin printf 'USER-ZLE-INIT'; }
+zle -N zle-line-init
+function khor_test_theme_line_init() { builtin printf 'THEME-ZLE-INIT'; }
+function khor_test_theme_precmd() {
+  PS1='profile-theme> '
+  precmd_functions=(${precmd_functions:#khor_test_theme_precmd} khor_test_theme_precmd)
+  builtin autoload -Uz add-zle-hook-widget
+  add-zle-hook-widget line-init khor_test_theme_line_init
+}
+precmd_functions+=(khor_test_theme_precmd)
+"#,
+            )
+            .unwrap();
             std::fs::write(home.join(".bash_profile"), "shopt -q login_shell || exit 9\nexport KHOR_PROFILE_TEST=profile-loaded\n. \"$HOME/.bashrc\"\n").unwrap();
             std::fs::write(home.join(".bashrc"), "export KHOR_RC_TEST=rc-loaded\n").unwrap();
             write_scripts(&scripts).unwrap();
@@ -310,6 +326,7 @@ mod tests {
             builder.args(plan.args);
             builder.env("HOME", home.as_os_str());
             builder.env("PATH", "/usr/bin:/bin");
+            builder.env("TERM", "xterm-256color");
             builder.env_remove("ZDOTDIR");
             for (key, value) in plan.env {
                 builder.env(key, value);
@@ -330,16 +347,25 @@ mod tests {
             let result = (|| {
                 let deadline = Instant::now() + Duration::from_secs(5);
                 let mut prompt = crate::shell_start::PromptReady::default();
+                let mut initial = Vec::new();
                 while Instant::now() < deadline {
                     let bytes = rx
                         .recv_timeout(deadline.saturating_duration_since(Instant::now()))
                         .map_err(|e| e.to_string())?;
+                    initial.extend_from_slice(&bytes);
                     if prompt.feed(&bytes) {
                         break;
                     }
                 }
                 if !prompt.feed(&[]) {
                     return Err("shell never reported prompt readiness".to_owned());
+                }
+                if shell.ends_with("zsh")
+                    && !initial
+                        .windows(b"USER-ZLE-INIT".len())
+                        .any(|w| w == b"USER-ZLE-INIT")
+                {
+                    return Err("readiness replaced the person's line-init widget".to_owned());
                 }
                 writer
                 .write_all(
@@ -357,6 +383,17 @@ mod tests {
                         .windows(b"PROFILE-RESULT:profile-loaded:rc-loaded".len())
                         .any(|w| w == b"PROFILE-RESULT:profile-loaded:rc-loaded")
                     {
+                        if shell.ends_with("zsh") {
+                            initial.extend_from_slice(&output);
+                            if !initial
+                                .windows(b"THEME-ZLE-INIT".len())
+                                .any(|w| w == b"THEME-ZLE-INIT")
+                            {
+                                return Err(
+                                    "the theme's later line-init widget was lost".to_owned()
+                                );
+                            }
+                        }
                         return Ok(());
                     }
                 }
