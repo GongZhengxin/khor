@@ -66,6 +66,7 @@ pulldown-cmark = { version = "0.13.4", default-features = false, features = ["ht
 office_oxide = "0.1.11"
 pdfboss-output = "2.4.0"
 pdfboss-core = "2.4.0"
+ruzstd = "0.9.1"
 
 [target.'cfg(unix)'.dependencies]
 libc.workspace = true

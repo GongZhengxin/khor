@@ -5490,6 +5490,25 @@ fn agents(rest: &[String]) -> Result<(), String> {
             println!("{}", khor_node::native_queue::send(agent, id, text, None)?);
             Ok(())
         }
+        // **The conversations DSH already has here.** Not a registered
+        // agent, so nothing asks it anything: this reads the store it
+        // writes, one header line per session — the project each was
+        // recorded in is what a person needs to find it again.
+        Some((word, tail)) if word == "dsh" => {
+            if !tail.is_empty() {
+                return Err(usage_text().into());
+            }
+            for session in khor_node::dsh_sessions::sessions()? {
+                match session.parent {
+                    // A subagent's session names the one it came from; printed
+                    // after the row rather than indented, because the parent may
+                    // be an older session the reader never sees.
+                    Some(parent) => println!("{}\t{}\t↳ {parent}", session.id, session.cwd),
+                    None => println!("{}\t{}", session.id, session.cwd),
+                }
+            }
+            Ok(())
+        }
         // **What this machine has, not what khor knows about.** The two
         // were one table for as long as it took to notice that DSH is
         // installed here and absent from the registry, while a dozen

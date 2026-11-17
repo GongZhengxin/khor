@@ -365,6 +365,9 @@ usage: khor <verb>
                         a conversation the vendor already owns (Codex
                         today), without taking it over: the write goes
                         through the vendor's own daemon.
+                        dsh lists the conversations DeepSeek Harness
+                        already has on this machine, by the directory
+                        each was recorded in.
                         sessions shows its conversations (reads what's
                         recorded; --ask actually asks, which starts a
                         process); once asked, the answer syncs across

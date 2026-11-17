@@ -43,6 +43,7 @@ pub mod delegation;
 mod doc_transfer_state;
 pub mod doctor;
 pub mod drops;
+pub mod dsh_sessions;
 mod durable;
 pub(crate) mod egress;
 pub mod face;
