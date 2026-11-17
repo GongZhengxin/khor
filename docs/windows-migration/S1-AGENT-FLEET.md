@@ -289,3 +289,20 @@ DSH 不是 ACP 注册表里的 agent，所以它没有 `session/list` 可问。K
 
 **NOT_TESTED**：弹层像素（WebView2 里 CDP 重载不生效的老问题）；`/dsh_transcript` 的桥接运行时
 只做了 `command_tables` 与类型检查（上一次 `/dsh_sessions` 的 200 来自更早构建）。
+
+### 2.10 统一驱动接口：六个动词有了一个归属（提交 `51a1c6f1`）
+
+计划里的 `detect/list/open/send/read/launch` 之前是散件：名册负责 detect、`native_queue` 负责 send、
+`dsh_sessions` 负责 list/read、表格里一格写 launch 路线，各面各取一件。更糟的是**能力徽标是手写的**
+（`list: true` / `read: false`），所以"实现了但徽标还说没有"真的发生了：DSH 的 list/read 都是先把代码写完、
+表格仍是 `false`。
+
+现在 `agent_driver` 是唯一答案：own 对话类动词（`list/read/send/open`），逐条路由到真实实现，
+没有路的 agent **按名字拒绝**；`open` 返回"终端该敲的 argv"（`codex resume …` / `dsh tui --resume …`），
+detect 与 launch 留在 `agent_fleet`（它们是查找与 argv，不是对话）。
+
+两个面都改走它：`agents tell` 与行菜单发消息走 `agent_driver::send`；列表的续接动作改问节点要 argv
+（新命令 `native_resume_argv`），TypeScript 不再自己拼 `${agent} resume ${id}`。DSH 行现在如实显示 list/read。
+
+**两条测试守住矩阵，双向**：行上每个徽标都必须是本模块实现了的动词；本模块实现的每个动词都必须在行上显示。
+第二条正是能抓住那次 `false` 的测试。
