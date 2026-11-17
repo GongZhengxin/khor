@@ -177,8 +177,8 @@ CC Switch（MIT，桌面三平台）管 **13 个工具**，方式是**写各 CLI
   新建向导默认跟随清单选已装 agent、观察到的 Codex 会话可「在终端里继续」（`codex resume <id>`）
   与「发一条消息」（`codex queue --thread <id> --message`，走 Codex 自己的守护进程，
   不是接管——所以已装载的 thread 也能说上一句话）。
-  **还差**：DSH 适配器（读 `session.v4.jsonl.zstd` + headless 驱动）。协议已验证（§2.6），
-  但 zstd 依赖与 JSONL 模式映射都未落地，属下一轮。
+  **DSH 已接入三样**（§2.8）：headless 驱动（`agents tell dsh`）、会话清单（`agents dsh`）、
+  界面按项目列出并可「在终端里继续」。**还差**：读消息事件（transcript）——只解了头，标题与正文未读。
 - **D 两机互联**：**已打通**，见 §8。
 - **E 启动性能**：**达标**。本机 `ls` 不再建 iroh 端点（**1168 → 80 ms**，`3ce5c5e3`）；
   Windows 不再为 PATH 启动登录 shell（`5df68991`）；按独立验收排第一的项去掉 Windows 上
@@ -246,3 +246,26 @@ Linux 原始计时、macOS 动回归、Win10、双机、DSH 真实凭据——�
 - 文本作为**一个 argv 元素**传给 `Command`，从不经过 shell；只支持 Codex（按名字拒绝其它厂商，
   不猜命令行）。新增的四条文案走 `[msg]` 段（`native-send-*`），`wont-start` 复用既有键
   ——catalog 自己的重复校验在发布前抓到了重复文案。
+
+### 2.8 DSH：说话、清单、按项目列出（提交 `857c0b97`、`a8913afb`、`5abbc8a3`）
+
+DSH 不是 ACP 注册表里的 agent，所以它没有 `session/list` 可问。Khor 走厂商自己的三样东西：
+
+1. **headless 驱动**（`857c0b97`）：`dsh --profile headless --json --session-id <id> <一句话>`
+   ——一段对话的"再问一轮"。`--json` 的帧里 `final.text` 是回答、`reason.error.message` 是拒绝
+   （DSH 在模型调用失败时仍退出 0）。两个平台事实由实跑发现：`dsh` 是 `.cmd`，
+   Windows 上要用显式 `cmd.exe /c`（不经 shell）；**DSH 拒绝从别的目录恢复会话**
+   （`session "…" was recorded in "…", not "…"`），所以通道带 `cwd`，GUI 传行的 `place`。
+   验证：隔离 `DSH_HOME`、在会话自己的目录里跑，退出码 1，拿到厂商原话
+   `llm-deepseek: no API key for provider route "deepseek-official"…`。
+   **带真实凭据的一轮没跑**（会花你的额度、写你的会话），留给你。
+2. **清单**（`a8913afb`）：`khor agents dsh`。DSH 的会话文件首行就是头
+   `{type:"session", id, createdAt, cwd, parentSession?, origin?}`，所以只需要解压**第一帧**，
+   不用解全文件、也不用反解目录名编码。本机实测 **16 段**（子代理会话带 `↳ parent`）。
+   依赖只有 `ruzstd`（纯 Rust 解压，不引入 C 工具链）。
+3. **界面**（`5abbc8a3`）：设置 → 诊断 → 会话关联 → 「DeepSeek Harness 的对话」，
+   按记录目录列出，每行可「在终端里继续」（`dsh tui --resume <id>`，在该会话自己的目录里跑）。
+   行上没有标题——头里没有，标题在消息事件里，读它不在本轮。
+
+**桥接层运行时证据**：`/dsh_sessions` → 200、16 行；`/agent_fleet` → 200、9 个 agent。
+**NOT_TESTED**：这一节的像素呈现（WebView2 里 CDP 重载没生效），以及带凭据的真实一轮。
