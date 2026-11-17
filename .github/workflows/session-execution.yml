@@ -1,12 +1,7 @@
 name: Session execution
 
 on:
-  workflow_dispatch:
   workflow_call:
-    inputs:
-      reuse_frontend:
-        type: boolean
-        default: false
 
 permissions:
   contents: read
@@ -18,12 +13,7 @@ env:
   CARGO_BUILD_JOBS: '2'
 
 jobs:
-  frontend:
-    if: ${{ !inputs.reuse_frontend }}
-    uses: ./.github/workflows/frontend.yml
   native-contracts:
-    needs: frontend
-    if: ${{ !cancelled() && (needs.frontend.result == 'success' || inputs.reuse_frontend) }}
     strategy:
       fail-fast: false
       matrix:
