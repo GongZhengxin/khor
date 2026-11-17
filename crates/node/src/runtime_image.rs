@@ -53,12 +53,13 @@ fn current() -> Result<Info, String> {
     embedded.insert("pi".into(), env!("KHOR_AGENT_BUNDLE_BLAKE3").to_owned());
     let wire = include_str!("proto.rs").replace("\r\n", "\n");
     let fingerprint = format!("{:x}", Sha256::digest(wire.as_bytes()));
-    // This exact audited revision only appends FileResource to Request and
-    // Response. Existing postcard discriminants/fields are unchanged, so live
-    // terminals and published residents retain their compatibility contract.
+    // These exact audited revisions add FileResource, then SessionImport.
+    // MessagePack uses variant names; existing message names and positional
+    // fields are unchanged. Live terminals retain their compatibility contract.
     // Every other source revision keeps its own fingerprint and fails closed.
     let compatible_fingerprint = match fingerprint.as_str() {
-        "f317c5ec5fa618a54ef5848016cc23219c37cbc39d6abd52cd4b361526d21f29" => {
+        "f317c5ec5fa618a54ef5848016cc23219c37cbc39d6abd52cd4b361526d21f29"
+        | "f0c20d8ece8dda5bab4025bf550149bba8be5a4b399459f656a9449a566f4f4f" => {
             "7bdf9a8cedcc26b783f3a6714899df875cbcb429e2f1ee64aa5a7d065e75fcda"
         }
         other => other,
