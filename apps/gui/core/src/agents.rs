@@ -317,6 +317,41 @@ pub fn resume_session(
         .0)
 }
 
+/// One DSH conversation on this machine, as a screen shows it.
+///
+/// The node's [`khor_node::dsh_sessions::DshSession`] is the same facts;
+/// this is the wire shape. **There is no title**: DSH's header carries the
+/// directory and the start time, and the title lives in message events
+/// this does not read yet — inventing one would be a name the vendor never
+/// gave it.
+#[derive(Debug, Clone, Serialize, TS)]
+#[ts(export)]
+pub struct DshConversation {
+    pub id: String,
+    pub cwd: String,
+    pub created_at_ms: i64,
+    /// A subagent's session names the session it was delegated from.
+    pub parent: Option<String>,
+    pub origin: Option<String>,
+}
+
+/// Every DSH conversation in this machine's DSH home, newest first.
+///
+/// Reads the store DSH writes (`khor agents dsh` runs the same scan); a
+/// machine without DSH is an empty list, not an error.
+pub fn dsh_conversations() -> Vec<DshConversation> {
+    khor_node::dsh_sessions::sessions()
+        .unwrap_or_default()
+        .into_iter()
+        .map(|session| DshConversation {
+            id: session.id,
+            cwd: session.cwd,
+            created_at_ms: session.created_at_ms,
+            parent: session.parent,
+            origin: session.origin,
+        })
+        .collect()
+}
 /// Puts one message into a conversation the vendor keeps (`khor agents
 /// tell`). The answer is the vendor's own receipt, and a refusal is its
 /// stderr: the write goes through Codex's daemon, so Codex is the one that

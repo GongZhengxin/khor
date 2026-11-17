@@ -104,6 +104,7 @@ import type { AgentRow } from "./gen/bindings/AgentRow";
 import type { KnownAgent } from "./gen/bindings/KnownAgent";
 import type { AgentFleet } from "./gen/bindings/AgentFleet";
 import type { FleetAgent } from "./gen/bindings/FleetAgent";
+import type { DshConversation } from "./gen/bindings/DshConversation";
 import type { AgentSaid } from "./gen/bindings/AgentSaid";
 import type { CandidateRow } from "./gen/bindings/CandidateRow";
 import type { FindHit } from "./gen/bindings/FindHit";
@@ -905,6 +906,14 @@ export const agentsKnown = () => call<KnownAgent[]>("agents_known");
     machine whose store refuses. */
 export const agentFleet = () => call<AgentFleet>("agent_fleet");
 export type { AgentFleet, FleetAgent };
+/** **The conversations DSH already has on this machine**, newest first
+    (`khor agents dsh`). Header lines only: id, the directory each was
+    recorded in, when it started. There is no title — DSH keeps it in
+    message events this does not read, and inventing one would be a name
+    the vendor never gave it. A machine without DSH answers an empty
+    list, not an error. */
+export const dshSessions = () => call<DshConversation[]>("dsh_sessions");
+export type { DshConversation };
 /** `[when it was taken, how many, how many khor can start]`. A table
     that ages has to say when it is from. */
 export const agentsKnownTaken = () => call<[string, number, number]>("agents_known_taken");

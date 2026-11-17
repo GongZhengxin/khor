@@ -4111,6 +4111,14 @@ fn agent_fleet() -> khor_gui_core::agents::AgentFleet {
     khor_gui_core::agents::agent_fleet()
 }
 
+/// **The conversations DSH already has here** (`khor agents dsh`). Reads
+/// the store DSH writes — headers only, one small decompression per
+/// session — and answers an empty list on a machine without DSH.
+#[tauri::command]
+fn dsh_sessions() -> Vec<khor_gui_core::agents::DshConversation> {
+    khor_gui_core::agents::dsh_conversations()
+}
+
 #[tauri::command]
 fn agents_known_taken() -> (String, usize, usize) {
     khor_gui_core::agents::agents_known_taken()
@@ -6030,6 +6038,7 @@ pub fn run() {
             agents,
             agents_known,
             agent_fleet,
+            dsh_sessions,
             agents_known_taken,
             register_known_agent,
             agent_seen,

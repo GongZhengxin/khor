@@ -3220,6 +3220,7 @@ resume-native = "Continue in a terminal"
 send-message = "Send a message"
 send-message-title = "Send into this conversation"
 send-message-hint = "The vendor queues it — khor does not take the conversation over."
+dsh-conversations = "DeepSeek Harness conversations"
 resume-native-missing = "This conversation has no recorded native id, so its own tool cannot be asked to resume it"
 
 quota-five-hour = "5H"

@@ -5590,6 +5590,7 @@ resume-native = "在终端里继续"
 send-message = "发一条消息"
 send-message-title = "给这段对话发一条消息"
 send-message-hint = "由厂商排进队列——khor 不接管这段对话"
+dsh-conversations = "DeepSeek Harness 的对话"
 resume-native-missing = "这段对话没有记录原生 id，无法在它自己的工具里继续"
 
 # ── Claude 订阅余量(批⑩) ─────────────────────────────

@@ -282,7 +282,7 @@ export function DoctorPage({
       <NetStatusSections devices={devices} />
       <MoreFold name="session-integration" label={gui.session_association}>
         <SessionAssociation devices={devices} machine={associationMachine} onMachine={setAssociationMachine}/>
-        <AgentFleetSection/>
+        <AgentFleetSection devices={devices} />
         {!coarse&&<MoreSection name="shell-marks" label={gui.term_tmux_marks}>
           <ActionRow name="term-tmux-marks" label={gui.term_tmux_marks}
             hint={<>{gui.term_tmux_marks_note}<code data-term-tmux-line className="mt-xxs block select-all break-words font-mono text-caption">{TMUX_ZSHRC}</code></>}
