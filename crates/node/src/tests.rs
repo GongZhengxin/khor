@@ -357,6 +357,67 @@ fn dsh_is_available_without_registration_and_explicit_launches_still_win() {
 }
 
 #[test]
+fn session_import_addition_preserves_existing_wire_messages() {
+    use crate::proto::{self, Request, Response};
+
+    for (request, bytes) in [
+        (Request::Sessions, b"\xa8Sessions".as_slice()),
+        (
+            Request::Ls {
+                path: "/tmp".into(),
+            },
+            b"\x81\xa2Ls\x91\xa4/tmp".as_slice(),
+        ),
+        (
+            Request::FileResource {
+                sat: None,
+                anchor: "/tmp".into(),
+                resource: "x".into(),
+                offset: Some(4),
+                limit: 8,
+            },
+            b"\x81\xacFileResource\x95\xc0\xa4/tmp\xa1x\x04\x08".as_slice(),
+        ),
+    ] {
+        assert_eq!(proto::encode_request(&request).unwrap(), bytes);
+        assert_eq!(
+            serde_json::to_value(proto::question(bytes).unwrap()).unwrap(),
+            serde_json::to_value(request).unwrap()
+        );
+    }
+    assert_eq!(
+        proto::encode_response(&Response::Renamed).unwrap(),
+        b"\xa7Renamed"
+    );
+    assert!(matches!(
+        proto::answer(b"\xa7Renamed").unwrap(),
+        Response::Renamed
+    ));
+
+    #[derive(serde::Deserialize)]
+    enum ExistingReader {
+        Sessions,
+        Ls { _path: String },
+    }
+    assert!(matches!(
+        proto::decode::<ExistingReader>(b"\xa8Sessions").unwrap(),
+        ExistingReader::Sessions
+    ));
+    assert!(matches!(
+        proto::decode::<ExistingReader>(b"\x81\xa2Ls\x91\xa4/tmp").unwrap(),
+        ExistingReader::Ls { _path } if _path == "/tmp"
+    ));
+    let request = Request::SessionImport {
+        home: khor_core::DeviceId([1; 32]),
+        action: khor_core::session_import::SessionImportAction::Read,
+    };
+    assert!(
+        proto::decode::<ExistingReader>(&proto::encode_request(&request).unwrap()).is_err(),
+        "a reader without the optional RPC refuses it instead of decoding another operation"
+    );
+}
+
+#[test]
 fn a_native_status_file_identifies_the_vendor() {
     let r = root("category-hook");
     let n = Node::open(r.to_path_buf()).unwrap();
