@@ -87,7 +87,12 @@ try{
   const directory=()=>page.locator('[data-attachment-directory]:visible');
   const preview=()=>page.locator('[data-attachment-file]:visible');
   const closePreview=async()=>{await preview().locator('[data-file-back]').click();await preview().waitFor({state:'hidden'});};
-  const openMachine=async()=>{await panel().locator('[data-files-machines]').click();await page.locator('[data-files-machine="audit-remote"]').click();await directory().locator('[data-files-select="notes.md"]').waitFor();};
+  const openMachine=async()=>{
+    const chip=panel().locator('[data-files-machine-chip="audit-remote"]:visible');
+    if(await chip.count())await chip.click();
+    else{await panel().locator('[data-files-machines]:visible').click();await page.locator('[data-files-machines-menu] [data-files-machine="audit-remote"]').click();}
+    await directory().locator('[data-files-select="notes.md"]').waitFor();
+  };
   const previewReady=async()=>{
     await preview().locator('[data-file-view]').waitFor();
     assert.equal(await preview().locator('[data-file-more]').count(),0,'Attachment opens the workspace file page without More');
@@ -189,7 +194,15 @@ try{
     await panel().locator('input[type=file]:not([webkitdirectory])').setInputFiles([]);
     assert.equal(await panel().locator('[data-files-selected]').count(),0,'empty change entered a selection');
     assert(await panel().locator('[data-files-pick=device]').isVisible());assert(await panel().locator('[data-files-pick=folder]').isVisible());
-    assert.equal(await panel().locator('[data-files-machines]').getAttribute('data-files-machine-count'),'2','All source machines remain discoverable');
+    const row=panel().locator('[data-files-machine-row]'),more=row.locator('[data-files-machines]');
+    assert.equal(await row.getAttribute('data-files-source-count'),'2','All source machines remain available');
+    const visible=await row.locator('[data-files-machine-chip]:visible').evaluateAll(nodes=>nodes.map(node=>node.dataset.filesMachineChip));
+    const hidden=Number(await more.getAttribute('data-files-machine-count'));
+    assert.equal(visible.length+hidden,2,'Visible chips and overflowing choices account for every source');
+    let overflow=[];
+    if(hidden){await more.click();overflow=await page.locator('[data-files-machines-menu] [data-files-machine]').evaluateAll(nodes=>nodes.map(node=>node.dataset.filesMachine));assert.equal(overflow.length,hidden);await page.keyboard.press('Escape');}
+    else assert.equal(await more.isVisible(),false,'More is hidden when every machine fits');
+    assert.deepEqual([...visible,...overflow].sort(),[device.name,'audit-remote'].sort(),'Both original source identities remain discoverable');
     note('empty-system-change',{sources:2});
   });
   assert.deepEqual(pickerResizes,[],'Choosing sources, opening files and changing keyboard focus never resizes the real PTY');

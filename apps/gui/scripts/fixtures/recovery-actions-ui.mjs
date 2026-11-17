@@ -87,6 +87,9 @@ export function installRecoveryActionsTransport() {
       return [device(A,'fixture-A','Fixture A',true),device(B,'fixture-B','Fixture B',false)];
     }
     if(cmd==='ls')return {path:'/fixture/',entries:[],truncated:false};
+    // The selected attachment card reads metadata before explicit Send. Keep
+    // that external read scoped to this scenario's controlled dropped file.
+    if(cmd==='stat_text'&&scenario==='terminal-owner-transfer'&&args.machine===''&&args.path==='/fixture/controlled-file')return {total:8,at_ms:1,digest:'controlled-file'};
     if(cmd==='term_ended')return {ended:{exit:0},recent:[],screen:null};
     if(cmd==='term_drop_forget')return null;
     if(cmd.startsWith('term_')) {
