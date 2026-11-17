@@ -5741,58 +5741,90 @@ pub fn run() {
                     tauri::WindowEvent::Destroyed => {
                         let stamp = jiff::Zoned::now().strftime("%Y-%m-%d %H:%M:%S").to_string();
                         eprintln!("[{stamp}] khor app: the main window was closed");
-                        menu_overlay::desktop::close(window.app_handle());
-                        // **And so does every editor window** (工作区第
-                        // 六轮 第 46 条). They are windows of khor's own
-                        // with no parent, exactly as the overlay is, so
-                        // closing khor with one open would leave the
-                        // process alive behind somebody else's editor.
+                        // **Destroy the rest, do not ask them to close.**
+                        //
+                        // Tauri ends an app when its last window goes, and
+                        // this app's exit handler then flushes the agent
+                        // runtime (`RunEvent::Exit`, up to the resident's
+                        // 15-second retirement wait). The window that used
+                        // to keep the process alive was an auxiliary whose
+                        // own `close()` is a *request* — the same request
+                        // the draft guard can veto — so a settings window,
+                        // an editor or the menu overlay could sit there
+                        // refusing to go, and with it the whole process.
+                        // `destroy` is immediate and is what this moment
+                        // asks: the main window has already gone through the
+                        // guard, so the session is over.
                         for (label, w) in window.app_handle().webview_windows() {
-                            if label.starts_with("code:") || label == SETTINGS {
-                                let _ = w.close();
+                            if label != "main" {
+                                let _ = w.destroy();
                             }
                         }
-                        // **The process ends here, and it is said here on
-                        // purpose.** Closing the window used to leave
-                        // `khor-gui` running with no window on screen
-                        // (measured 2026-11-17: the main window logged as
-                        // closed while the process lived on, still holding
-                        // the loopback port 1432 — so the next launch
-                        // failed to bind it and looked like "the close
-                        // button does nothing"). Tauri ends an app when its
-                        // last window goes, but the auxiliary windows
-                        // above are `close`d rather than destroyed, and a
-                        // window that is still closing is still a window.
-                        // Waiting for that judgement is exactly the wait
-                        // that did not end.
-                        //
-                        // The face has had its say by now — the draft guard
-                        // is what permits the destroy in the first place
-                        // (`onQuitRequested`), and anything still unsaved
-                        // was reported before the window went. So this is
-                        // not a way round the guard; it is the other end of
-                        // it.
-                        //
-                        // **`app.exit` from inside `Destroyed` does not
-                        // stop this process** (measured: the handler ran —
-                        // its line is in the log — and the app kept running
-                        // with its ports held). Asking the event loop to
-                        // stop while the event loop is delivering the very
-                        // event that asks is the deadlock; so the decision
-                        // is handed to a thread that does not need the loop,
-                        // and the app's own cleanup path still runs first
-                        // when it can.
+                        // **Then end the app, off the event loop.** Asking
+                        // `app.exit` from inside the event that is being
+                        // delivered was tried first and did not stop the
+                        // process; a thread that asks one turn later does,
+                        // and it runs the ordinary exit path — including
+                        // the agent runtime's own close, whose resident
+                        // retirement may take up to 15 s. So the last
+                        // resort below waits longer than that budget:
+                        // **it is not a way to cut cleanup short**, it is
+                        // what stops a broken cleanup from leaving a
+                        // windowless process holding port 1432 (which is
+                        // exactly what the owner met: the next launch could
+                        // not bind it, and the close "did nothing").
                         let app = window.app_handle().clone();
                         std::thread::spawn(move || {
-                            // One turn of grace for anything the app wanted
-                            // to flush on the way out, then leave
-                            // regardless: a window that is gone must not
-                            // leave a process behind.
                             std::thread::sleep(std::time::Duration::from_millis(300));
                             app.exit(0);
-                            std::thread::sleep(std::time::Duration::from_millis(1200));
-                            // Still here: the loop never took the request.
-                            // Leaving is the promise this button makes.
+                            // **The loop does not deliver `RunEvent::Exit`
+                            // here.** Measured 2026-11-18: the window is
+                            // destroyed (the line above is in the log), the
+                            // exit request is made, and no "exiting" line
+                            // ever follows — the process sits holding port
+                            // 1432, so the next launch cannot bind it. So
+                            // the one piece of work that handler performs is
+                            // done here instead, **bounded**, and then the
+                            // process leaves.
+                            //
+                            // It is the same call the exit handler makes
+                            // (`link::shutdown`, whose resident retirement
+                            // may take up to 15 s by its own budget) and it
+                            // gets a few seconds to answer. This is not a
+                            // way to cut cleanup short: the window is
+                            // already gone, no edit is at stake, and the
+                            // alternative that was measured is a process
+                            // that never leaves at all.
+                            let root = Node::root_from_env();
+                            let (said, heard) = std::sync::mpsc::channel();
+                            std::thread::spawn(move || {
+                                let closed = tauri::async_runtime::block_on(
+                                    khor_node::link::shutdown(&root),
+                                );
+                                let _ = said.send(closed);
+                            });
+                            match heard.recv_timeout(std::time::Duration::from_secs(3)) {
+                                Ok(Ok(khor_node::khor_agent::RuntimeClose::Closed)) => {
+                                    eprintln!("[khor] the agent runtime closed with the window");
+                                }
+                                Ok(Ok(khor_node::khor_agent::RuntimeClose::Busy)) => {
+                                    eprintln!(
+                                        "[khor] the agent runtime is busy; pending work retained"
+                                    );
+                                }
+                                Ok(Err(error)) => {
+                                    eprintln!("[khor] agent runtime close failed: {error}");
+                                }
+                                Err(_) => {
+                                    eprintln!(
+                                        "[khor] the agent runtime did not answer in 3 s; leaving"
+                                    );
+                                }
+                            }
+                            let stamp = jiff::Zoned::now()
+                                .strftime("%Y-%m-%d %H:%M:%S")
+                                .to_string();
+                            eprintln!("[{stamp}] khor app: exiting (the window was closed)");
                             std::process::exit(0);
                         });
                     }
@@ -6180,15 +6212,37 @@ pub fn run() {
             }
             if let tauri::RunEvent::Exit = event {
                 let stamp = jiff::Zoned::now().strftime("%Y-%m-%d %H:%M:%S").to_string();
-                match tauri::async_runtime::block_on(khor_node::link::shutdown(&agent_runtime_root)) {
-                    Ok(khor_node::khor_agent::RuntimeClose::Closed) => {
+                // **Bounded, because this ran the process into the ground.**
+                // `link::shutdown` asks the resident to retire, and that wait
+                // is 15 s by its own budget — but measured on 2026-11-17 it
+                // did not return at all: the window went, the log said so,
+                // and `khor-gui` sat there holding the loopback port, which
+                // made the next launch fail to bind it. Waiting forever for a
+                // clean goodbye is not clean; the close button says the
+                // person is done.
+                //
+                // The work still gets its chance — in a thread of its own,
+                // with a few seconds to answer — and the app leaves either
+                // way. Nothing here runs before the window is gone, so no
+                // unsaved edit is affected.
+                let root = agent_runtime_root.clone();
+                let (said, heard) = std::sync::mpsc::channel();
+                std::thread::spawn(move || {
+                    let closed = tauri::async_runtime::block_on(khor_node::link::shutdown(&root));
+                    let _ = said.send(closed);
+                });
+                match heard.recv_timeout(std::time::Duration::from_secs(3)) {
+                    Ok(Ok(khor_node::khor_agent::RuntimeClose::Closed)) => {
                         eprintln!("[{stamp}] khor app: agent runtime closed");
                     }
-                    Ok(khor_node::khor_agent::RuntimeClose::Busy) => {
+                    Ok(Ok(khor_node::khor_agent::RuntimeClose::Busy)) => {
                         eprintln!("[{stamp}] khor app: agent runtime is busy; pending work retained");
                     }
-                    Err(error) => {
+                    Ok(Err(error)) => {
                         eprintln!("[{stamp}] khor app: agent runtime close failed: {error}");
+                    }
+                    Err(_) => {
+                        eprintln!("[{stamp}] khor app: agent runtime close did not answer in 3 s; leaving");
                     }
                 }
                 eprintln!("[{stamp}] khor app: exiting");

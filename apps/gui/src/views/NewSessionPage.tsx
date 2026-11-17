@@ -100,6 +100,9 @@ export function NewSessionPage({
     startedAgent = useRef(false),
     generation = useRef(0),
     roster = useRef<{id: string; road: string | null}[]>([]),
+    /** The installed rows as the roster answered **for this machine**, kept
+        apart from `installed` so a target change can drop them (below). */
+    localInstalled = useRef<{id: string; name: string; road: string | null}[]>([]),
     creation = useRef<{key: string; token: string} | null>(null);
   const why = (e: unknown) => setError(String(e instanceof Error ? e.message : e));
   useEffect(() => {
@@ -144,11 +147,15 @@ export function NewSessionPage({
       // installed while it has never been a registry entry — so DSH was
       // absent from the one place a person picks what to start. These rows
       // are the fleet's own answer and become terminal choices below.
-      setInstalled(
-        (fleet?.agents ?? [])
-          .filter(agent => agent.program)
-          .map(agent => ({id: agent.id, name: agent.name, road: agent.road})),
-      );
+      //
+      // **Only for this machine** (`target?.me`), the same rule
+      // `roster.current` follows: `agent_fleet` reads the filesystem it runs
+      // on, and offering this computer's DeepSeek Harness for a *remote*
+      // target would send `dsh` to a machine that may not have it.
+      localInstalled.current = (fleet?.agents ?? [])
+        .filter(agent => agent.program)
+        .map(agent => ({id: agent.id, name: agent.name, road: agent.road}));
+      setInstalled(target?.me ? localInstalled.current : []);
       setLaunch(target && restored.machines[target.id]?.launch || preferredLaunch(wantsTerm, roster.current));
     }, e => {
       if (live) why(e);
@@ -258,6 +265,7 @@ export function NewSessionPage({
     setMachine(target.id);
     // Same rule as the first load: this machine's roster answers for this
     // machine only.
+    setInstalled(target.me ? localInstalled.current : []);
     setLaunch(next.machines[target.id]?.launch ?? preferredLaunch(wantsTerm, target.me ? roster.current : []));
     setEnvironment(EMPTY_ENVIRONMENT); setContextValid(true);
   };

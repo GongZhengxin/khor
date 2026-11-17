@@ -6405,6 +6405,25 @@ pub(crate) fn spawn_path(command: &str) -> String {
     here
 }
 
+/// Where a vendor's program is, for the spawns.
+///
+/// **`PATH` first, then the roster.** An installer that keeps its binary in
+/// a versioned folder (Codex: `<local app data>/OpenAI/Codex/bin/<hash>/
+/// codex.exe`) never touches `PATH`, and the roster knows that layout while
+/// a bare `find_program` does not. Before this, the picker could offer
+/// 「Codex · 对话」 — because the roster found it — and the agent's own
+/// spawn still failed on a bare `codex`, which is the worst of both.
+///
+/// `roster_id` is `None` when the environment names the program explicitly
+/// (`KHOR_CODEX`, `KHOR_CLAUDE`): a person's override is not something to
+/// second-guess with a guess from the table.
+pub(crate) fn vendor_bin(named: &str, path: &str, roster_id: Option<&str>) -> Option<String> {
+    if let Some(found) = find_program(named, path) {
+        return Some(found);
+    }
+    roster_id.and_then(crate::agent_fleet::program)
+}
+
 /// [`spawn_path`]'s judgment, split out so it is testable without a
 /// login shell in the loop: whether this process's own `PATH` has to
 /// be gone beyond for `command`.

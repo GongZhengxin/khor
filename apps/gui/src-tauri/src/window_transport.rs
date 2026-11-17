@@ -92,33 +92,25 @@ fn window_verb(cmd: &str) -> Option<Result<String, String>> {
         // `close`, not `destroy`: closing is a request, and the draft guard
         // hangs on it (`lib.rs`'s own note on `window_close`).
         //
-        // **And then a watchdog, because a request that nobody completes is
-        // a window that cannot be closed.** The face answers
-        // `close-requested` by destroying the window when it has no
-        // objection, and `prevent_close` is in force the moment its listener
-        // exists — so if that listener is stale, or its promise never
-        // settles, the request is accepted and nothing happens. Measured
-        // 2026-11-17: three launches, one exit, and the log showed the
-        // destroy only in the round that worked. The guard is given four
-        // seconds (its own flush + settle budget is 600 ms); after that the
-        // window is destroyed and the process ends, because the person
-        // pressed a button that says 关闭.
-        "window_close" => window().and_then(|w| {
-            w.close().map_err(|e| e.to_string())?;
-            let app = w.app_handle().clone();
-            std::thread::spawn(move || {
-                std::thread::sleep(std::time::Duration::from_secs(4));
-                // Still here means the face never finished the close.
-                if let Some(win) = app.get_webview_window("main") {
-                    let _ = win.destroy();
-                }
-                std::thread::sleep(std::time::Duration::from_millis(400));
-                app.exit(0);
-                std::thread::sleep(std::time::Duration::from_millis(800));
-                std::process::exit(0);
-            });
-            Ok(())
-        }),
+        // **No watchdog here.** An earlier version destroyed the window
+        // after four seconds "in case the face never answers", and an
+        // independent review was right to flag it: the guard's answer is
+        // not on a deadline — `flushAll` has no timeout, and a save that
+        // fails opens the unsaved-drafts dialog, where a person may choose
+        // to keep working. Force-destroying through that choice trades a
+        // stuck window for lost work. The stuck window is fixed where it
+        // belongs: the main window's own `Destroyed` handler destroys the
+        // auxiliaries, which is what used to keep the process alive.
+        "window_close" => window().and_then(|w| w.close().map_err(|e| e.to_string())),
+        // **Closing past the guard**, for the case where the face has
+        // already asked itself. The close button is the page's own, and the
+        // page knows whether there is a draft to protect
+        // (`lib/drafts`'s count) — so it decides: no draft, destroy now;
+        // draft, show the dialog and come back through `window_close`.
+        // Going round the close-requested event for the simple case is not
+        // a way past the guard; it is the same decision taken where the
+        // answer is known, and it is what makes the button reliable.
+        "window_destroy" => window().and_then(|w| w.destroy().map_err(|e| e.to_string())),
         // **Dragging.** Tauri's own `drag.js` calls
         // `invoke('plugin:window|start_dragging')` on a `data-tauri-drag-region`
         // mousedown, which is the same dead custom-protocol road as every other

@@ -286,6 +286,23 @@ pub fn fleet() -> Fleet {
     fleet_at(home.as_deref(), path)
 }
 
+/// Where this machine's program for `id` is, by the roster's own rules.
+///
+/// **The launch path and the roster must agree about what "installed"
+/// means.** Finding Codex in a versioned folder made the wizard offer
+/// 「Codex · 对话」 while the agent's own spawn still resolved a bare
+/// `codex` through `PATH` — a picker that shows it and a launcher that
+/// cannot find it. [`crate::vendor_bin`] is the one resolution the spawns
+/// use, and this is the roster's half of it.
+pub fn program(id: &str) -> Option<String> {
+    let home = real_home();
+    let path = crate::Node::user_path();
+    KNOWN
+        .iter()
+        .find(|known| known.id == id)
+        .and_then(|known| locate_program(known, home.as_deref(), path))
+}
+
 /// [`fleet`] against a stated home and `PATH`, so it is testable without
 /// this machine's own installations deciding the answer.
 pub(crate) fn fleet_at(home: Option<&Path>, path: &str) -> Fleet {

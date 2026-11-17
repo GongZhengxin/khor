@@ -1,5 +1,6 @@
 import type { ContentView } from '@/lib/content';
 import { hasAppUpdates, hasNativeBackend } from '@/lib/backend-context';
+import { draftCount } from '@/lib/drafts';
 import type { AttachmentKind } from "./gen/bindings/AttachmentKind";
 import { attachmentView } from "./lib/attachment-view";
 import type { SessionContent } from "./gen/bindings/SessionContent";
@@ -1000,7 +1001,18 @@ export const find = (word: string) => call<FindHit[]>("find", { word });
     keeps its decorations. A no-op outside the app. */
 export const windowMinimize = () => call<null>("window_minimize");
 export const windowMaximizeToggle = () => call<null>("window_maximize_toggle");
-export const windowClose = () => call<null>("window_close");
+/**
+ * Close the window, asking the draft guard only when it has something to
+ * protect.
+ *
+ * **The page already knows the answer** (`lib/drafts`'s count), so going
+ * round the `close-requested` event for the simple case is not a way past
+ * the guard — it is the same decision taken where it is known. That event
+ * is how a title-bar click and Alt+F4 arrive, and it is the path that
+ * turned out not to finish reliably; the button is the path a person
+ * presses, and it must work every time.
+ */
+export const windowClose = () => (draftCount() === 0 ? call<null>("window_destroy") : call<null>("window_close"));
 /**
  * Whether this is the app on Windows — the one face that draws the
  * window's three buttons itself.
