@@ -40,6 +40,14 @@ def require_ios_producer(run, jobs, source, tag):
     if (len(ios) != 1 or ios[0]["head_sha"] != source
             or ios[0]["status"] != "completed" or ios[0]["conclusion"] != "success"):
         raise ValueError("The original signed iOS archive job must succeed")
+    required = {"quality / " + n for n in QUALITY_JOBS if n != "frontend / build"}
+    shared = [j for j in jobs if j["name"] in required]
+    frontend = [j for j in jobs if j["name"] == "frontend / build"]
+    if (len(shared) != len(required) or {j["name"] for j in shared} != required
+            or len(frontend) != 1
+            or any(j["head_sha"] != source or j["status"] != "completed"
+                   or j["conclusion"] != "success" for j in shared + frontend)):
+        raise ValueError("The producer's shared quality gates and frontend must also succeed")
 
 
 def check_archive(root, source, run_id, version, build):

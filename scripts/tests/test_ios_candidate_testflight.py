@@ -41,8 +41,21 @@ class IOSCandidateTests(unittest.TestCase):
         run = dict(head_sha=SOURCE, head_branch="v0.2.0-rc.19", path=".github/workflows/release.yml")
         jobs = [dict(name="ios", head_sha=SOURCE, status="completed", conclusion="success"),
                 dict(name="desktop", status="in_progress", conclusion=None)]
+        _, quality = self.quality()
+        jobs += [{**j, "name": "quality / " + j["name"]} for j in quality if j["name"] != "frontend / build"]
+        jobs += [j for j in quality if j["name"] == "frontend / build"]
         ios.require_ios_producer(run, jobs, SOURCE, "v0.2.0-rc.19")
         jobs[0]["conclusion"] = "failure"
+        with self.assertRaises(ValueError):
+            ios.require_ios_producer(run, jobs, SOURCE, "v0.2.0-rc.19")
+
+    def test_an_old_main_quality_pass_does_not_override_a_failed_producer_gate(self):
+        run = dict(head_sha=SOURCE, head_branch="v0.2.0-rc.19", path=".github/workflows/release.yml")
+        _, quality = self.quality()
+        jobs = [{**j, "name": "quality / " + j["name"]} for j in quality if j["name"] != "frontend / build"]
+        jobs += [j for j in quality if j["name"] == "frontend / build"]
+        jobs += [dict(name="ios", head_sha=SOURCE, status="completed", conclusion="success")]
+        next(j for j in jobs if j["name"] == "quality / mac-updates")["conclusion"] = "failure"
         with self.assertRaises(ValueError):
             ios.require_ios_producer(run, jobs, SOURCE, "v0.2.0-rc.19")
 
