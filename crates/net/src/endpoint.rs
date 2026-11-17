@@ -1057,6 +1057,10 @@ impl Ticket {
 }
 
 #[cfg(test)]
+#[path = "endpoint/source_addr_tests.rs"]
+mod source_addr_tests;
+
+#[cfg(test)]
 mod tests {
     use super::*;
 
