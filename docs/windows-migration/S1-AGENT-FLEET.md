@@ -265,7 +265,9 @@ DSH 不是 ACP 注册表里的 agent，所以它没有 `session/list` 可问。K
    依赖只有 `ruzstd`（纯 Rust 解压，不引入 C 工具链）。
 3. **界面**（`5abbc8a3`）：设置 → 诊断 → 会话关联 → 「DeepSeek Harness 的对话」，
    按记录目录列出，每行可「在终端里继续」（`dsh tui --resume <id>`，在该会话自己的目录里跑）。
-   行上没有标题——头里没有，标题在消息事件里，读它不在本轮。
+   行上有**标题**（`3b8b869a`）：DSH 的文件是**多帧 zstd**，标题是 `session/title` 事件里的
+   `data.title`；扫到"provider"来源的标题就停，子代理用 `descriptor.label` 顶替，
+   从没起名的会话诚实显示目录。本机 16 段全量扫描 **1.3 s**。消息事件（正文）仍未读。
 
 **桥接层运行时证据**：`/dsh_sessions` → 200、16 行；`/agent_fleet` → 200、9 个 agent。
 **NOT_TESTED**：这一节的像素呈现（WebView2 里 CDP 重载没生效），以及带凭据的真实一轮。
