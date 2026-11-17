@@ -7,16 +7,35 @@ export type SessionLaunch = {kind: 'shell'; command: string; preset?: string} | 
     cannot start would not be. */
 export const DEFAULT_AGENT = 'claude';
 
+/** **Khor's own agent.** The stage plan's rule is that a Khor-owned
+    conversation should default to Pi — the road DeepSeek runs through,
+    since the ACP registry has no DeepSeek adapter. It is preferred only
+    when the roster says it can actually back a conversation: its road is
+    an ACP one (`registry-acp` needs the package runner), never the
+    terminal floor. */
+export const KHOR_OWN_AGENT = 'pi';
+
+/** Roads that can back a Khor-owned conversation: the agent answers over
+    ACP. `terminal` is the floor — it can be typed into, not spoken to. */
+const SPEAKS_ACP = ['builtin', 'native-acp', 'registry-acp'];
+
 /**
  * The launch a wizard should open on, given what this machine has.
  *
  * The shipped default is `claude`. That is right on a machine where
- * Claude Code is installed and wrong on this one: it opens a
- * conversation whose agent cannot start, which reads as "khor is
- * broken" rather than "that agent is not installed". So the default
- * follows the roster (`agent_fleet`): an agent with a **builtin** road
- * first — khor's own shims need no npm and no registration — and only
- * then the shipped default.
+ * Claude Code is installed and wrong on one where it is not: it opens a
+ * conversation whose agent cannot start, which reads as "khor is broken"
+ * rather than "that agent is not installed". So the default follows the
+ * roster (`agent_fleet`), in this order:
+ *
+ * 1. **Khor's own agent (Pi)**, when its ACP road is open — the plan's
+ *    rule, and the reason it is not unconditional: on a machine without
+ *    the package runner its road is the terminal floor, and defaulting a
+ *    *conversation* to an agent that cannot answer is the failure the
+ *    independent review caught elsewhere;
+ * 2. **a builtin road** — khor's own shims need no npm and no
+ *    registration;
+ * 3. the shipped default, which at least names something to install.
  *
  * Only for the agent form: a terminal can run any command, so it gets
  * the first installed program.
@@ -28,9 +47,11 @@ export function preferredLaunch(
   terminal: boolean,
   agents: readonly {id: string; road: string | null}[],
 ): SessionLaunch {
-  const builtin = agents.find(a => a.road === 'builtin')?.id;
   if (terminal) return {kind: 'shell', command: agents[0]?.id ?? DEFAULT_AGENT};
-  return {kind: 'agent', agent: builtin ?? DEFAULT_AGENT};
+  const speaks = agents.filter(a => a.road !== null && SPEAKS_ACP.includes(a.road));
+  const own = speaks.find(a => a.id === KHOR_OWN_AGENT)?.id;
+  const builtin = speaks.find(a => a.road === 'builtin')?.id;
+  return {kind: 'agent', agent: own ?? builtin ?? DEFAULT_AGENT};
 }
 type MachineChoices = {dir?: string; launch?: SessionLaunch; recent: string[]};
 export type NewSessionChoices = {machine: string; machines: Record<string, MachineChoices>};

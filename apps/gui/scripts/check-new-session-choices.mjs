@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {readNewSessionChoices, rememberNewSessionChoice, recentLaunchChoices, launchId} from '../src/lib/new-session-choices.ts';
+import {readNewSessionChoices, rememberNewSessionChoice, recentLaunchChoices, launchId, preferredLaunch, DEFAULT_AGENT, KHOR_OWN_AGENT} from '../src/lib/new-session-choices.ts';
 
 const values = new Map();
 const storage = {getItem: key => values.get(key) ?? null, setItem: (key, value) => values.set(key, value)};
@@ -35,3 +35,35 @@ const unsafe = readNewSessionChoices({getItem: () => JSON.stringify({machine: 'm
 assert.equal(unsafe.machines['machine-a'].launch, undefined);
 assert.deepEqual(unsafe.machines['machine-a'].recent, ['khor']);
 console.log('New session choices: per-machine persistence, stable launch IDs, MRU, typing, storage failure and corrupt data passed');
+
+// ── The default a wizard opens on, from what this machine has ───────────
+// Pi is Khor's own agent and the plan's default, but only when its ACP
+// road is open: with no package runner its road is the terminal floor,
+// and a *conversation* must not default to an agent that cannot answer.
+assert.deepEqual(
+  preferredLaunch(false, [{id: 'pi', road: 'registry-acp'}, {id: 'codex', road: 'builtin'}]),
+  {kind: 'agent', agent: 'pi'},
+  'khor own agent wins when it can back a conversation',
+);
+assert.deepEqual(
+  preferredLaunch(false, [{id: 'pi', road: 'terminal'}, {id: 'codex', road: 'builtin'}]),
+  {kind: 'agent', agent: 'codex'},
+  'a terminal-only Pi is not a conversation default; the builtin road is',
+);
+assert.deepEqual(
+  preferredLaunch(false, [{id: 'codex', road: 'builtin'}, {id: 'claude', road: 'terminal'}]),
+  {kind: 'agent', agent: 'codex'},
+  'builtin roads need no npm, so they come before the shipped default',
+);
+assert.deepEqual(
+  preferredLaunch(false, [{id: 'aider', road: 'terminal'}]),
+  {kind: 'agent', agent: DEFAULT_AGENT},
+  'with nothing able to answer, the shipped default at least names something to install',
+);
+assert.deepEqual(
+  preferredLaunch(true, [{id: 'pi', road: 'registry-acp'}, {id: 'codex', road: 'builtin'}]),
+  {kind: 'shell', command: 'pi'},
+  'the terminal form still gets the first installed program',
+);
+assert.equal(KHOR_OWN_AGENT, 'pi');
+console.log('Preferred launch: Pi when it can answer, builtin next, shipped default last, terminal form unchanged — passed');
