@@ -22,6 +22,7 @@ receipts.confirmed(next);
 assert.equal(receipts.pending().length, 0);
 assert.equal(receipts.project([row()])[0].unread, 0, 'keep local coverage after backend acknowledgement');
 assert.equal(receipts.read(row('wide/all')), null, 'broadcast uses rendered message identities, never broad watermarks');
+assert.equal(receipts.read(row('wide/agent-test')), null, 'independent Khor chats acknowledge only the rendered snapshot');
 assert.equal(receipts.read(row('shell/a',NaN)), null);
 
 let rendering;

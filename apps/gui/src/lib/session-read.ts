@@ -32,7 +32,7 @@ export class SessionReads {
   read(row: ReadRow): ReadReceipt | null {
     // The shared conversation acknowledges individual rendered message versions,
     // not a session watermark (including messages that were never on screen).
-    if (row.id === "wide/all" || row.unread === 0 || !Number.isSafeInteger(row.at_ms) || row.at_ms < 0) return null;
+    if (row.id.startsWith("wide/") || row.unread === 0 || !Number.isSafeInteger(row.at_ms) || row.at_ms < 0) return null;
     const at = this.seen.get(row.id);
     if (at !== undefined && at >= row.at_ms) return null;
     const receipt = { id: row.id, at_ms: row.at_ms };

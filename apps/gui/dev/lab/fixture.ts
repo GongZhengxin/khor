@@ -321,6 +321,16 @@ export function createLabFixture(terminal = true, options: {origin?: string; con
       }
       if(path==='__ai_preview/import-calls')return imports.calls;
       if (path === '__ai_preview/reset') {
+          // Server-backed Lab uses one fixture across isolated browser contexts.
+          // Reset the synthetic backend as well as the client-facing settings.
+          editorRevisions.clear();
+          editorReceipts.clear();
+          readVersions.clear();
+          sessionOverrides.clear();
+          try {
+            localStorage.removeItem(editorDiskKey);
+            localStorage.removeItem('khor.lab.read-server');
+          } catch { /* Server fixture has no browser storage. */ }
           settingsValues={...settingsProfile};try { localStorage.removeItem(settingsKey); } catch { /* Server fixture has no browser storage. */ }
           holdSettings=false;refuseSetting=false;pendingSettings.length=0;
           failAcpSetup=false;acpSetupCalls.length=0;

@@ -340,6 +340,7 @@ async function chatCase(page, kind, evidence, phase = 'tail') {
   evidence.before = await samples(page, selector, null, 200);
   assertTail(evidence.before, 'Initial live tail');
   const input = page.locator('[data-composer-text]');
+  assert.equal(await input.inputValue(), '', 'Each scroll case starts without another case’s saved composer');
   await input.click();
   if (phase === 'input-tail') return inputDuringResize(page, selector, evidence);
   if (phase.startsWith('blur-restore')) {

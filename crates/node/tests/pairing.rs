@@ -217,7 +217,23 @@ async fn pairing_joins_both_tables_and_chat_flows_both_ways() {
 
     // Seen is a decision that travels: beta looks, and alpha's badge
     // clears without anyone touching alpha.
-    b.seen(&row_b.session.id).unwrap();
+    let outside = b
+        .log(BROADCAST)
+        .unwrap()
+        .messages
+        .into_iter()
+        .find(|message| {
+            matches!(&message.body, khor_sync::chat::MsgBody::Text(text) if text == "an outside line")
+        })
+        .unwrap();
+    b.seen_snapshot(
+        &row_b.session.id,
+        &[khor_node::SeenMessage {
+            id: outside.id,
+            at_ms: outside.at,
+        }],
+    )
+    .unwrap();
     timeout(Duration::from_secs(60), b.sync_now())
         .await
         .expect("sync must not hang")

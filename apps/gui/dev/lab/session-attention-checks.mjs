@@ -62,6 +62,6 @@ export async function checkSessionAttention(browser, { port, report, engine, wid
     assert.equal(await input.inputValue(),'draft typed while uploading','A commit receipt preserves the newer editor revision');
     await page.screenshot({path:path.join(report,`attention-upload-${engine}-${width}.png`)});
     assert.deepEqual(errors,[]);
-    return {name:`${engine} ${width}: draft preview, shared attention, held-pointer stability and upload/commit race`,passed:true};
+    return {name:`${engine} ${width}: draft preview, shared attention, held-pointer stability and upload/commit race`,passed:true,errors};
   } finally { await context.close(); }
 }
