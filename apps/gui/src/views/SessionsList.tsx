@@ -50,6 +50,20 @@ import { agoOf, count, groupLabel, lasting, placeLabels, quietFor } from "@/word
  */
 export { visibleSessions } from "@/lib/session-filter";
 
+/**
+ * Vendors whose recorded conversation khor knows how to continue **in that
+ * vendor's own tool**.
+ *
+ * The list is the GUI's copy of `khor_node::agent_driver::resume_argv`,
+ * which answers `codex resume <id>` and `dsh tui --resume <id>` and refuses
+ * every other name with a catalog sentence. It lives here so the menu can be
+ * built before any machine is asked; a vendor not on it still meets the
+ * node's refusal if something else offers the action.
+ */
+const RESUMABLE_VENDORS = ["codex", "dsh"] as const;
+const isResumableVendor = (category: string | null): boolean =>
+  category !== null && (RESUMABLE_VENDORS as readonly string[]).includes(category);
+
 // Order and words come from the node untouched: the list never
 // re-derives a judgment the backend already made (docs/UX.md). That
 // includes the order pinned rows arrive in — `Node::sessions` floats
@@ -190,12 +204,21 @@ export function SessionsList({
     // **Somebody else's record, resumed in its own tool.** An observed
     // conversation has no process for khor to take over — khor never
     // owned it — but it does have a native id its vendor can resume, so
-    // the action starts that vendor in a terminal khor hosts. Codex only:
-    // `codex resume <id>` is the argv this tree has actually verified, and
-    // offering another vendor's guess is the failure this project keeps
-    // writing comments about. The conversation stays the vendor's; khor
-    // supplies the window.
-    if (r.kind === "observe" && !r.source && r.category === "codex") {
+    // the action starts that vendor in a terminal khor hosts.
+    //
+    // **Which vendors?** Those whose resume line this tree actually has:
+    // `agent_driver::resume_argv` knows `codex resume <id>` and
+    // `dsh tui --resume <id>`, and it refuses any other name with a
+    // catalog sentence. This gate used to name codex alone, so the owner's
+    // own DSH record offered nothing and read as "only a read-only
+    // conversation" (their report, 2026-11-18) — even though the roster's
+    // page could already continue DSH in a terminal.
+    //
+    // The two names are spelled here rather than asked of the node: the
+    // menu is built before a machine is asked anything, and a vendor this
+    // gate does not know still gets the node's own refusal the moment the
+    // action is chosen (never a guessed command line).
+    if (r.kind === "observe" && !r.source && isResumableVendor(r.category)) {
       /** The vendor's own id for this row, or the sentence saying why it
           cannot be had: both actions below need it, and neither may invent
           one. */
