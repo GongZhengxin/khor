@@ -685,7 +685,10 @@ fn said_in(bytes: &[u8], parse: fn(&str) -> Vec<Utterance>) -> Option<String> {
             // marks only exist at the head of a line, and `preview` is what
             // takes the lines away.
             Utterance::User(t) | Utterance::Agent(t) => {
-                Some(khor_core::preview(&khor_core::plain(&t)))
+                // A blank assistant item can land before a tool call. Keep
+                // the previous preview until the agent actually says something.
+                let preview = khor_core::preview(&khor_core::plain(&t));
+                khor_core::says_something(&preview).then_some(preview)
             }
             // A thought or a tool name is the machine's bookkeeping — a
             // preview line should say what was *said*, and skipping back to
