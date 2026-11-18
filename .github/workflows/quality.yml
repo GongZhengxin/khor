@@ -101,7 +101,14 @@ jobs:
           npm run deck-scrub
           npm run session-navigation
           npm run session-follow
-          sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' /etc/apt/apt-mirrors.txt
+          # Hosted runners also use regional EC2 mirrors in deb822 sources.
+          # Keep Playwright's apt child on the same bounded official source.
+          for sources in /etc/apt/apt-mirrors.txt /etc/apt/sources.list /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; do
+            [ -f "$sources" ] || continue
+            sudo sed -i -E 's|https?://([[:alnum:]-]+\.)*archive\.ubuntu\.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' "$sources"
+          done
+          printf '%s\n' 'Acquire::http::Timeout "30";' 'Acquire::https::Timeout "30";' 'Acquire::Retries "2";' | sudo tee /etc/apt/apt.conf.d/80-khor-ci-network > /dev/null
+          sudo apt-get update
           sudo apt-get -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 -o Acquire::Retries=2 install --no-install-recommends -y fonts-noto-cjk
           npx playwright-core install --with-deps chromium webkit
           node dev/lab/check-app.mjs
