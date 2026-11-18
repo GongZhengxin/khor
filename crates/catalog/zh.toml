@@ -2888,6 +2888,11 @@ git-history-older = "更早"
 agent_list_unknown_home = "来源机器未知，需重新查询"
 session_state_unknown = "未提供运行状态"
 session_observation = "只读记录"
+# **What can be done with an imported record, said once.** The row already
+# shows 只读记录; this line says who holds it and where the way forward is,
+# because "read-only" alone reads like khor is refusing (the owner,
+# 2026-11-18: 「当前只有只读对话，为什么？」).
+session_observation_note = "这段记录由厂商自己的工具持有，khor 只读。要在它自己的工具里接着做，用这一行的菜单。"
 content_ambiguous_source = "有多个会话记录匹配此身份，无法确定内容来源"
 content_loading = "正在读取会话内容来源"
 content_no_source = "没有可读取的会话记录"
@@ -4583,8 +4588,13 @@ mesh-map = "网里的机器"
 # avatar is that machine's face, so the name said it twice (the owner,
 # on a phone). The second line is the preview alone.
 pick-a-session = "选择一个会话"
-empty-sessions = "还没有会话"
-empty-sessions-how = "点击上方的 ＋，开一个会话"
+# **派发, not 会话.** The list exists to dispatch work (the owner,
+# 2026-11-18: 用户派发任务不应该从会话入口进入吗), and "还没有会话" says
+# nothing about what to do or what a session is for. The row an import
+# creates is a session too — this empty state only speaks when the check
+# found nothing at all.
+empty-sessions = "还没有派发过任务"
+empty-sessions-how = "点击上方的 ＋，派发第一件事"
 # The big canvas behind no selection: the network's now — **two**
 # headings and what stands under each. 等你的事 is the blocked rows —
 # the word's own definition (docs/SESSION.md 待批: an approval this
