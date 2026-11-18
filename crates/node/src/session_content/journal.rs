@@ -859,7 +859,10 @@ fn spoken_in(window: &crate::adaptor::transcript_window::TranscriptWindow) -> Op
                 starts_message,
             } = event
             else {
-                if matches!(event, ContentEvent::Turn { .. } | ContentEvent::CaptureGap { .. }) {
+                if matches!(
+                    event,
+                    ContentEvent::Turn { .. } | ContentEvent::CaptureGap { .. }
+                ) {
                     spoke = None;
                 }
                 continue;
@@ -875,7 +878,9 @@ fn spoken_in(window: &crate::adaptor::transcript_window::TranscriptWindow) -> Op
                 _ => continue,
             };
             let content = &update["content"];
-            let Some(text) = content["text"].as_str().filter(|_| content["type"] == "text")
+            let Some(text) = content["text"]
+                .as_str()
+                .filter(|_| content["type"] == "text")
             else {
                 spoke = None;
                 continue;

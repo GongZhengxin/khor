@@ -3137,7 +3137,10 @@ impl LiveKind {
             let journal = (meta.kind == khor_core::kind::GUI)
                 .then(|| {
                     crate::session_content::journal::Source::registered(
-                        &self.root, self.device, &id, Some(&e.path()),
+                        &self.root,
+                        self.device,
+                        &id,
+                        Some(&e.path()),
                     )
                     .ok()
                     .flatten()
@@ -6149,11 +6152,20 @@ mod tests {
         live.register(&id, khor_core::kind::GUI, "DeepSeek", None, Some("dsh"))
             .unwrap();
         let dir = live.dir_of(&id).unwrap();
-        fs::write(dir.join("journal.json"), serde_json::to_vec(&identity).unwrap()).unwrap();
+        fs::write(
+            dir.join("journal.json"),
+            serde_json::to_vec(&identity).unwrap(),
+        )
+        .unwrap();
         let mut journal = Journal::open(&root, identity.clone(), Opening::New).unwrap();
         journal.commit_base().unwrap();
-        let preview = || live.rows(|_| 0).into_iter()
-            .find(|row| row.id == id).unwrap().last;
+        let preview = || {
+            live.rows(|_| 0)
+                .into_iter()
+                .find(|row| row.id == id)
+                .unwrap()
+                .last
+        };
         let note = |kind: &str, text: &str| {
             serde_json::json!({
                 "sessionId": identity.native_id,
@@ -6161,15 +6173,25 @@ mod tests {
             })
         };
 
-        journal.accept("turn-1", "A question", &[], &[], None).unwrap();
+        journal
+            .accept("turn-1", "A question", &[], &[], None)
+            .unwrap();
         assert_eq!(preview().as_deref(), Some("A question"));
-        journal.note(&note("agent_message_chunk", "**Recent")).unwrap();
+        journal
+            .note(&note("agent_message_chunk", "**Recent"))
+            .unwrap();
         let _ = preview();
-        journal.note(&note("agent_message_chunk", " reply**")).unwrap();
-        journal.note(&note("agent_thought_chunk", "Hidden thought")).unwrap();
+        journal
+            .note(&note("agent_message_chunk", " reply**"))
+            .unwrap();
+        journal
+            .note(&note("agent_thought_chunk", "Hidden thought"))
+            .unwrap();
         journal.finish("turn-1", Outcome::Ended, None).unwrap();
         assert_eq!(preview().as_deref(), Some("Recent reply"));
-        journal.accept("turn-2", "Follow-up", &[], &[], None).unwrap();
+        journal
+            .accept("turn-2", "Follow-up", &[], &[], None)
+            .unwrap();
         assert_eq!(preview().as_deref(), Some("Follow-up"));
     }
 

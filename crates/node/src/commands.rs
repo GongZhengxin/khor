@@ -590,7 +590,8 @@ impl Ledger {
                                 self.editor = Some(editor);
                                 self.changed = true;
                             }
-                        } else if let Some(checkpoint) = property.strip_prefix("KhorEditorCheckpoint=")
+                        } else if let Some(checkpoint) =
+                            property.strip_prefix("KhorEditorCheckpoint=")
                             && let Some((cursor, line)) = checkpoint.split_once(';')
                             && let Ok(cursor) = cursor.parse()
                             && self.prompt_open
@@ -1529,10 +1530,7 @@ mod tests {
         let mut ledger = fed(b"\x1b]133;B\x07");
         ledger.observe_keys(b"foo\x1b[A", DraftInput::MarkedPrompt);
         assert_eq!(ledger.doing().editor, None);
-        ledger.feed(
-            "\x1b]633;P;KhorEditorCheckpoint=3;🙂;x\x07".as_bytes(),
-            2,
-        );
+        ledger.feed("\x1b]633;P;KhorEditorCheckpoint=3;🙂;x\x07".as_bytes(), 2);
         ledger.observe_keys(b"e", DraftInput::MarkedPrompt);
         assert_eq!(ledger.doing().editor.as_deref(), Some("🙂;ex"));
 

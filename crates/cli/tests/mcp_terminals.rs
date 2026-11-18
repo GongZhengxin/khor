@@ -528,9 +528,15 @@ fn hosted_shell_projects_edited_drafts_and_clears_them_on_submission() {
     let mut fixture = Fixture::new_with_shell(Some(Path::new("/bin/bash")));
     #[cfg(windows)]
     let mut fixture = Fixture::new();
-    let (id, _) = fixture.open("mcp-shell-draft-test-1234", &marker_command("DRAFT", "READY"));
+    let (id, _) = fixture.open(
+        "mcp-shell-draft-test-1234",
+        &marker_command("DRAFT", "READY"),
+    );
     fixture.read_until(&id, "DRAFT-READY");
-    let directory = fixture.home.join(".khor/sessions").join(id.replace('/', "-"));
+    let directory = fixture
+        .home
+        .join(".khor/sessions")
+        .join(id.replace('/', "-"));
     let mut viewer = fixture.viewer(&id);
     let mut send = |keys: &[u8]| {
         host::write_frame(&mut viewer, &ClientOp::Input(keys.to_vec())).unwrap();
