@@ -56,6 +56,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: ./.github/actions/ubuntu-apt
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version: 22.19.0
@@ -97,7 +98,6 @@ jobs:
           npm run deck-scrub
           npm run session-navigation
           npm run session-follow
-          sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' /etc/apt/apt-mirrors.txt
           sudo apt-get -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 -o Acquire::Retries=2 install --no-install-recommends -y fonts-noto-cjk
           npx playwright-core install --with-deps chromium webkit
           node dev/lab/check-app.mjs
@@ -301,6 +301,7 @@ jobs:
       CARGO_INCREMENTAL: '0'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/ubuntu-apt
       - name: Set the private native build directory
         run: |
           {
@@ -463,6 +464,7 @@ jobs:
         working-directory: apps/gui
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/ubuntu-apt
       - uses: dtolnay/rust-toolchain@1.95.0
       - uses: Swatinem/rust-cache@v2
         with:
@@ -487,9 +489,6 @@ jobs:
             google-chrome --version
             echo 'channel=chrome' >> "$GITHUB_OUTPUT"
           else
-            # Use the same HTTPS Ubuntu mirror as the Lab job. The hosted
-            # Azure HTTP mirror can spend minutes retrying individual packages.
-            sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' /etc/apt/apt-mirrors.txt
             if [ "$KHOR_INTERACTION_SCOPE" = settings ]; then
               node node_modules/playwright-core/cli.js install --with-deps chromium
             else
