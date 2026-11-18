@@ -277,6 +277,12 @@ DSH 扩展、观测线程接管、厂商铺开**全部延后**。
 - 所以远程控制的载体改为：**Android 手机浏览器（或任一台电脑的浏览器）打开网页面**。
   Stage 1 的验收对象相应改为「浏览器 ↔ Windows 节点」，不再依赖不存在的 Android 应用。
 
+**入口已经现成**（`khor web`，`crates/commands/src/lib.rs`）：打印一条带 key 的局域网地址，
+并渲染**终端二维码**（`web_qr`：每个模块自带黑白，深浅背景都能扫；两行一个字符格避免拉伸）；
+关键的是它会**先探测即将打印的那个地址**（不是 loopback）——loopback 不受防火墙管，探 loopback
+会给出一个手机打不开的链接。所以 Android 的路径就是三步：Windows 上跑 `khor web` → 手机扫码 →
+网页面。`khor web --new` 可轮换 key。
+
 **待验证**（决定 Stage 1 是否可行）：
 
 1. 网页面的登录/凭据（`node lock` 与记住的 cookie）在 Windows 构建上是否可用；
@@ -342,7 +348,16 @@ DSH 扩展、观测线程接管、厂商铺开**全部延后**。
 
 - ✅ 查清"本地 agent 消失"的根因（构建缺 `KHOR_AGENT_BUNDLE`）；
 - ✅ 取到 Bun 1.3.14 并构建 `apps/agent/dist/khor-agent`（105.5 MB）；
-- ⏳ 带 bundle 重建 GUI，验证 khor 对话能创建、能报出"未登录"而不是无声失败；
-- ⏳ 网页面实测：能否作为 Android/电脑的遥控入口（§10.2 的三个待验证点）；
-- ⏳ 把"产物必须带 agent 运行时"写进发布检查。
+- ✅ 带 bundle 重建 GUI（**241 MB**，此前 135.5 MB），实测创建 khor 对话返回
+  `Choose an account and model for khor first` —— **agent 运行时已就位**，只差选账户与模型；
+  在此之前这一步是无声失败，这就是"本地 agent 被取消"的观感来源。
+- ⏳ 未做：为 khor agent 选择一个模型账户（Pi 供应商登录），之后才能真的对话；
+- ✅ 网页面实测：带 key 的地址返回 200、标题 `Khor`、资源 `index-*.js`（同一套前端）；
+  `khor web` 打印带 key 的**局域网地址 + 终端二维码**，并先探测该地址是否真的应答；
+- ⚠️ **发现一个真 bug**：`best_address` 把 `172.24/12` 的 WSL 虚拟网卡与真实 LAN
+  （本机 `192.168.3.7`）**同权重按顺序取先者**，于是 `khor web` 给出
+  `http://172.24.80.1:5467/?k=…` —— 手机连不上。修法：优先取"默认路由所在网卡"的地址
+  （UDP connect 到公网地址再读 `local_addr`），`best_address` 退为兜底。
+- ⏳ 未做：网页面能否**发送/批准/中断**（需在真实浏览器里用带 key 的地址操作一次）。
+
 
