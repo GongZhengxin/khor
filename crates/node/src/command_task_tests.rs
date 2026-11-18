@@ -323,3 +323,29 @@ fn large_stdout_and_stderr_are_drained_without_blocking_and_keep_their_tails() {
     assert_eq!(tail.stderr.text, "ERR-END");
     assert!(!tail.stdout.truncated && !tail.stderr.truncated);
 }
+
+#[cfg(windows)]
+#[test]
+fn a_canonical_local_directory_remains_the_cmd_workers_directory() {
+    let root = crate::testdir::TempTree::fresh("command-task-native-cwd");
+    let cwd = root.join("中文 工作目录");
+    fs::create_dir(&cwd).unwrap();
+    fs::write(cwd.join("relative.txt"), b"correct-working-directory").unwrap();
+    let canonical = fs::canonicalize(&cwd).unwrap();
+    let canonical = canonical.to_str().unwrap();
+    let id = seed(&root, "task-cmd-native-cwd-1234", "type relative.txt", None);
+    let dir = task_dir(&root, &id).unwrap();
+    let mut current = record(&dir).unwrap();
+    current.status.cwd = canonical.into();
+    save(&dir, &current).unwrap();
+    worker(&root, &id).unwrap();
+    let answer = read(&root, &id);
+    assert_eq!(answer.task.phase, Phase::Completed);
+    assert_eq!(answer.task.exit, Some(0));
+    assert_eq!(answer.stdout.text, "correct-working-directory");
+    assert!(answer.stderr.text.is_empty(), "{}", answer.stderr.text);
+    assert_eq!(
+        answer.task.cwd, canonical,
+        "retain the durable canonical identity"
+    );
+}

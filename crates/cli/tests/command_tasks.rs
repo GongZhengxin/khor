@@ -1,10 +1,71 @@
 //! Real CLI -> target node -> detached worker, without terminal/session rows.
 use serde_json::Value;
 use std::{
-    path::PathBuf,
-    process::{Command, Output},
+    fs::{self, File},
+    io,
+    path::{Path, PathBuf},
+    process::{Child, Command, ExitStatus, Output, Stdio},
+    sync::atomic::{AtomicU64, Ordering},
+    thread,
     time::{Duration, Instant},
 };
+
+fn wait_for_exit(child: &mut Child, timeout: Duration) -> io::Result<ExitStatus> {
+    let deadline = Instant::now() + timeout;
+    loop {
+        if let Some(status) = child.try_wait()? {
+            return Ok(status);
+        }
+        if Instant::now() >= deadline {
+            return Err(io::Error::new(io::ErrorKind::TimedOut, "CLI exit deadline"));
+        }
+        thread::sleep(Duration::from_millis(25));
+    }
+}
+
+fn bounded_output(home: &Path, command: &mut Command) -> io::Result<Output> {
+    static NEXT: AtomicU64 = AtomicU64::new(0);
+    let serial = NEXT.fetch_add(1, Ordering::Relaxed);
+    let stdout = home.join(format!("cli-{serial}.stdout.log"));
+    let stderr = home.join(format!("cli-{serial}.stderr.log"));
+    let mut child = command
+        .stdin(Stdio::null())
+        .stdout(File::create_new(&stdout)?)
+        .stderr(File::create_new(&stderr)?)
+        .spawn()?;
+    let status = match wait_for_exit(&mut child, Duration::from_secs(25)) {
+        Ok(status) => status,
+        Err(error) => {
+            let killed = child.kill();
+            let reaped = wait_for_exit(&mut child, Duration::from_secs(5));
+            return Err(io::Error::new(
+                error.kind(),
+                format!(
+                    "{error}; kill={killed:?}, reap={reaped:?}; output: {stdout:?}, {stderr:?}"
+                ),
+            ));
+        }
+    };
+    Ok(Output {
+        status,
+        stdout: fs::read(stdout)?,
+        stderr: fs::read(stderr)?,
+    })
+}
+
+fn remove_fixture_home(home: &Path) -> io::Result<()> {
+    let deadline = Instant::now() + Duration::from_secs(5);
+    loop {
+        match fs::remove_dir_all(home) {
+            Ok(()) => return Ok(()),
+            Err(error) if error.kind() == io::ErrorKind::NotFound && !home.exists() => {
+                return Ok(());
+            }
+            Err(error) if Instant::now() >= deadline => return Err(error),
+            Err(_) => thread::sleep(Duration::from_millis(50)),
+        }
+    }
+}
 
 struct Fixture {
     home: PathBuf,
@@ -40,8 +101,12 @@ impl Fixture {
             .env_remove("KHOR_PATH");
         command
     }
+    fn try_run(&self, args: &[&str]) -> io::Result<Output> {
+        bounded_output(&self.home, self.command().args(args))
+    }
     fn run(&self, args: &[&str]) -> Output {
-        self.command().args(args).output().unwrap()
+        self.try_run(args)
+            .unwrap_or_else(|error| panic!("CLI {args:?} did not finish: {error}"))
     }
     fn json(&self, args: &[&str]) -> Value {
         let output = self.run(args);
@@ -102,29 +167,60 @@ impl Fixture {
 
 impl Drop for Fixture {
     fn drop(&mut self) {
-        let mut stopped = true;
-        for id in &self.tasks {
-            let output = self.run(&["execution", "cancel", "--on", "command-test", id]);
-            let confirmed = output.status.success()
-                && serde_json::from_slice::<Value>(&output.stdout)
+        // A timed-out Start can admit work before its CLI reply arrives.
+        if let Ok(entries) = fs::read_dir(self.home.join(".khor/command-tasks")) {
+            for entry in entries.flatten() {
+                let id = fs::read(entry.path().join("task.json"))
                     .ok()
-                    .is_some_and(|reply| {
-                        matches!(
-                            reply["task"]["phase"].as_str(),
-                            Some("completed" | "failed" | "cancelled" | "timed_out")
-                        )
-                    });
-            if !confirmed {
-                stopped = false;
-                eprintln!(
-                    "Command fixture cancellation failed; preserving {:?}: {}",
-                    self.home,
-                    String::from_utf8_lossy(&output.stderr)
-                );
+                    .and_then(|bytes| serde_json::from_slice::<Value>(&bytes).ok())
+                    .and_then(|record| record["status"]["id"].as_str().map(str::to_owned));
+                if let Some(id) = id {
+                    if !self.tasks.contains(&id) {
+                        self.tasks.push(id);
+                    }
+                }
             }
         }
-        if stopped {
-            let _ = std::fs::remove_dir_all(&self.home);
+        let mut failures = Vec::new();
+        for id in &self.tasks {
+            match self.try_run(&["execution", "cancel", "--on", "command-test", id]) {
+                Ok(output)
+                    if output.status.success()
+                        && serde_json::from_slice::<Value>(&output.stdout)
+                            .ok()
+                            .is_some_and(|reply| {
+                                matches!(
+                                    reply["task"]["phase"].as_str(),
+                                    Some("completed" | "failed" | "cancelled" | "timed_out")
+                                )
+                            }) => {}
+                Ok(output) => failures.push(format!(
+                    "cancel {id}: {} {}",
+                    String::from_utf8_lossy(&output.stdout),
+                    String::from_utf8_lossy(&output.stderr)
+                )),
+                Err(error) => failures.push(format!("cancel {id}: {error}")),
+            }
+        }
+        if failures.is_empty() && !thread::panicking() {
+            // The worker may still be releasing its runtime executable on
+            // Windows after publishing the final task receipt.
+            if let Err(error) = remove_fixture_home(&self.home) {
+                failures.push(format!("fixture directory cleanup: {error}"));
+            }
+        } else if failures.is_empty() {
+            eprintln!("Preserving failed command fixture at {:?}", self.home);
+        }
+        if !failures.is_empty() {
+            let message = format!(
+                "Command cleanup was not confirmed; preserving {:?}: {}",
+                self.home,
+                failures.join("; ")
+            );
+            eprintln!("{message}");
+            if !thread::panicking() {
+                panic!("{message}");
+            }
         }
     }
 }
@@ -289,7 +385,7 @@ fn actual_worker_keeps_receipts_not_sessions_and_supports_retry_cancel_and_forge
             .args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-File"])
             .arg(script);
     }
-    let output = command.args(literals).output().unwrap();
+    let output = bounded_output(&fixture.home, command.args(literals)).unwrap();
     assert!(
         output.status.success(),
         "{}",

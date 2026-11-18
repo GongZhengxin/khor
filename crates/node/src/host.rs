@@ -608,6 +608,36 @@ const VIEWER_ENV: &str = "KHOR_HOST_VIEWER";
 const STARTUP_ENV: &str = "KHOR_HOST_STARTUP";
 const HEADLESS_ENV: &str = "KHOR_HOST_HEADLESS";
 
+/// portable-pty creates ConPTY with INHERIT_CURSOR. An unattended new screen
+/// starts at its origin; consume this one bootstrap query before replay so a
+/// later viewer cannot answer it again. Subsequent child queries stay intact.
+#[cfg(any(windows, test))]
+#[derive(Default)]
+struct InitialCursor {
+    pending: Vec<u8>,
+    done: bool,
+}
+
+#[cfg(any(windows, test))]
+impl InitialCursor {
+    fn feed(&mut self, bytes: &[u8]) -> (Vec<u8>, bool) {
+        const REQUEST: &[u8] = b"\x1b[6n";
+        if self.done {
+            return (bytes.to_vec(), false);
+        }
+        self.pending.extend_from_slice(bytes);
+        if self.pending.starts_with(REQUEST) {
+            self.done = true;
+            (self.pending.split_off(REQUEST.len()), true)
+        } else if REQUEST.starts_with(&self.pending) {
+            (Vec::new(), false)
+        } else {
+            self.done = true;
+            (std::mem::take(&mut self.pending), false)
+        }
+    }
+}
+
 fn host_store_root(dir: &Path) -> Result<PathBuf, String> {
     let root = dir
         .ancestors()
@@ -2275,11 +2305,32 @@ fn host_serving(
             let mut prompt = crate::shell_start::PromptReady::default();
             let mut shell_announced = false;
             let mut startup_released = false;
+            #[cfg(windows)]
+            let mut initial_cursor = headless.then(InitialCursor::default);
             loop {
                 let n = match reader.read(&mut buf) {
                     Ok(0) | Err(_) => break,
                     Ok(n) => n,
                 };
+                #[cfg(windows)]
+                let initial_output = initial_cursor.as_mut().map(|cursor| cursor.feed(&buf[..n]));
+                #[cfg(windows)]
+                if initial_output.as_ref().is_some_and(|(_, reply)| *reply) {
+                    let _ = writer.lock().unwrap().reply(b"\x1b[1;1R");
+                }
+                #[cfg(windows)]
+                if initial_cursor.as_ref().is_some_and(|cursor| cursor.done) {
+                    initial_cursor = None;
+                }
+                #[cfg(windows)]
+                let buf = initial_output
+                    .as_ref()
+                    .map_or(&buf[..n], |(bytes, _)| bytes.as_slice());
+                #[cfg(windows)]
+                let n = buf.len();
+                if n == 0 {
+                    continue;
+                }
                 // Before anyone can see it: a question is pending before
                 // a face can answer it.
                 ledger
@@ -3768,6 +3819,53 @@ mod last_line_tests {
 mod handshake_tests {
     use super::*;
     use std::time::Instant;
+
+    #[test]
+    fn conpty_initial_cursor_query_is_consumed_once_across_reads() {
+        let request = b"\x1b[6n";
+        for split in 0..=request.len() {
+            let mut cursor = InitialCursor::default();
+            let (mut output, first) = cursor.feed(&request[..split]);
+            let mut rest = request[split..].to_vec();
+            rest.extend_from_slice(b"prompt\x1b[6n");
+            let (tail, second) = cursor.feed(&rest);
+            output.extend(tail);
+            assert_eq!(usize::from(first) + usize::from(second), 1);
+            assert_eq!(output, b"prompt\x1b[6n");
+            assert_eq!(cursor.feed(request), (request.to_vec(), false));
+        }
+    }
+
+    #[test]
+    fn cursor_bootstrap_preserves_output_that_is_not_the_initial_query() {
+        for output in [b"hello".as_slice(), b"\x1b[5n", b"\x1b]133;B\x07"] {
+            let mut cursor = InitialCursor::default();
+            let mut seen = Vec::new();
+            for byte in output {
+                let (bytes, reply) = cursor.feed(&[*byte]);
+                assert!(!reply);
+                seen.extend(bytes);
+            }
+            assert_eq!(seen, output);
+            assert_eq!(cursor.feed(b"\x1b[6n"), (b"\x1b[6n".to_vec(), false));
+        }
+    }
+
+    #[test]
+    fn cursor_bootstrap_reply_does_not_claim_input_or_release_pending_startup() {
+        let mut input = crate::shell_start::StartupInput::with_shell_readiness(
+            Vec::new(),
+            Some("echo startup"),
+            true,
+        );
+        input.ready().unwrap();
+        input.reply(b"\x1b[1;1R").unwrap();
+        assert_eq!(input.revision(), 0);
+        assert_eq!(input.readiness(), (false, false));
+        input.shell_ready().unwrap();
+        assert_eq!(input.readiness(), (true, true));
+        assert_eq!(input.revision(), 0);
+    }
 
     #[test]
     fn a_current_viewer_sends_the_legacy_three_field_hello_and_v5_before_input() {

@@ -3,14 +3,76 @@ use khor_node::host::{self, ClientOp, Hello, Welcome};
 use serde_json::{Value, json};
 use std::{
     fs::{self, File},
-    io::{BufRead, BufReader, Write},
+    io::{self, BufRead, BufReader, Write},
     net::TcpStream,
     path::{Path, PathBuf},
-    process::{Child, ChildStdin, Command, Output, Stdio},
-    sync::mpsc,
+    process::{Child, ChildStdin, Command, ExitStatus, Output, Stdio},
+    sync::{
+        atomic::{AtomicU64, Ordering},
+        mpsc,
+    },
     thread,
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
+
+fn wait_for_exit(child: &mut Child, timeout: Duration) -> io::Result<ExitStatus> {
+    let deadline = Instant::now() + timeout;
+    loop {
+        if let Some(status) = child.try_wait()? {
+            return Ok(status);
+        }
+        if Instant::now() >= deadline {
+            return Err(io::Error::new(io::ErrorKind::TimedOut, "CLI exit deadline"));
+        }
+        thread::sleep(Duration::from_millis(25));
+    }
+}
+
+fn bounded_output(home: &Path, command: &mut Command) -> io::Result<Output> {
+    static NEXT: AtomicU64 = AtomicU64::new(0);
+    let serial = NEXT.fetch_add(1, Ordering::Relaxed);
+    let stdout = home.join(format!("cleanup-{serial}.stdout.log"));
+    let stderr = home.join(format!("cleanup-{serial}.stderr.log"));
+    let mut child = command
+        .stdin(Stdio::null())
+        .stdout(File::create_new(&stdout)?)
+        .stderr(File::create_new(&stderr)?)
+        .spawn()?;
+    let status = match wait_for_exit(&mut child, Duration::from_secs(25)) {
+        Ok(status) => status,
+        Err(error) => {
+            let killed = child.kill();
+            let reaped = wait_for_exit(&mut child, Duration::from_secs(5));
+            return Err(io::Error::new(
+                error.kind(),
+                format!(
+                    "{error}; kill={killed:?}, reap={reaped:?}; output: {stdout:?}, {stderr:?}"
+                ),
+            ));
+        }
+    };
+    // A descendant can retain an inherited file handle. Reading a regular
+    // file does not wait for every writer to close it, unlike pipe EOF.
+    Ok(Output {
+        status,
+        stdout: fs::read(stdout)?,
+        stderr: fs::read(stderr)?,
+    })
+}
+
+fn remove_fixture_home(home: &Path) -> io::Result<()> {
+    let deadline = Instant::now() + Duration::from_secs(5);
+    loop {
+        match fs::remove_dir_all(home) {
+            Ok(()) => return Ok(()),
+            Err(error) if error.kind() == io::ErrorKind::NotFound && !home.exists() => {
+                return Ok(());
+            }
+            Err(error) if Instant::now() >= deadline => return Err(error),
+            Err(_) => thread::sleep(Duration::from_millis(50)),
+        }
+    }
+}
 
 struct Fixture {
     home: PathBuf,
@@ -247,25 +309,8 @@ impl Fixture {
         stream
     }
 
-    fn cli(&self, args: &[&str]) -> Option<Output> {
-        let mut child = Self::command_at(&self.home)
-            .args(args)
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .spawn()
-            .ok()?;
-        let deadline = Instant::now() + Duration::from_secs(25);
-        loop {
-            if child.try_wait().ok()?.is_some() {
-                return child.wait_with_output().ok();
-            }
-            if Instant::now() >= deadline {
-                let _ = child.kill();
-                let _ = child.wait();
-                return None;
-            }
-            thread::sleep(Duration::from_millis(25));
-        }
+    fn cli(&self, args: &[&str]) -> io::Result<Output> {
+        bounded_output(&self.home, Self::command_at(&self.home).args(args))
     }
 }
 
@@ -274,16 +319,12 @@ impl Drop for Fixture {
         // Stop admission before discovering cleanup identities: a timed-out
         // open may have created its host without delivering the response.
         self.input.take();
-        let deadline = Instant::now() + Duration::from_secs(5);
-        while matches!(self.server.try_wait(), Ok(None)) && Instant::now() < deadline {
-            thread::sleep(Duration::from_millis(25));
-        }
-        if matches!(self.server.try_wait(), Ok(None)) {
+        let mut failures = Vec::new();
+        if wait_for_exit(&mut self.server, Duration::from_secs(5)).is_err() {
             let _ = self.server.kill();
-        }
-        let _ = self.server.wait();
-        if let Some(reader) = self.reader.take() {
-            let _ = reader.join();
+            if let Err(error) = wait_for_exit(&mut self.server, Duration::from_secs(5)) {
+                failures.push(format!("MCP server did not stop: {error}"));
+            }
         }
         for (directory, file, pointer, identities) in [
             ("sessions", "meta.json", "/id", &mut self.sessions),
@@ -306,17 +347,20 @@ impl Drop for Fixture {
                 }
             }
         }
-        let mut stopped = true;
         for session in &self.sessions {
-            stopped &= self
-                .cli(&["close", session])
-                .is_some_and(|output| output.status.success());
+            match self.cli(&["close", session]) {
+                Ok(output) if output.status.success() => {}
+                Ok(output) => failures.push(format!(
+                    "close {session}: {}",
+                    String::from_utf8_lossy(&output.stderr)
+                )),
+                Err(error) => failures.push(format!("close {session}: {error}")),
+            }
         }
         for task in &self.tasks {
-            stopped &= self
-                .cli(&["execution", "cancel", task])
-                .is_some_and(|output| {
-                    output.status.success()
+            match self.cli(&["execution", "cancel", task]) {
+                Ok(output)
+                    if output.status.success()
                         && serde_json::from_slice::<Value>(&output.stdout)
                             .ok()
                             .is_some_and(|reply| {
@@ -324,13 +368,47 @@ impl Drop for Fixture {
                                     reply["task"]["phase"].as_str(),
                                     Some("completed" | "failed" | "cancelled" | "timed_out")
                                 )
-                            })
-                });
+                            }) => {}
+                Ok(output) => failures.push(format!(
+                    "cancel {task}: {} {}",
+                    String::from_utf8_lossy(&output.stdout),
+                    String::from_utf8_lossy(&output.stderr)
+                )),
+                Err(error) => failures.push(format!("cancel {task}: {error}")),
+            }
         }
-        if stopped {
-            let _ = fs::remove_dir_all(&self.home);
-        } else {
-            eprintln!("MCP cleanup was not confirmed; preserving {:?}", self.home);
+        // Close all owned resources before awaiting RPC pipe EOF: their
+        // descendants may still hold the server's inherited stdout handle.
+        if let Some(reader) = self.reader.take() {
+            let deadline = Instant::now() + Duration::from_secs(5);
+            while !reader.is_finished() && Instant::now() < deadline {
+                thread::sleep(Duration::from_millis(25));
+            }
+            if !reader.is_finished() {
+                failures.push("MCP reply reader did not finish after cleanup".into());
+            } else if reader.join().is_err() {
+                failures.push("MCP reply reader panicked".into());
+            }
+        }
+        if failures.is_empty() && !thread::panicking() {
+            // Windows may retain the executable handle briefly after the
+            // final task receipt, until its worker has actually exited.
+            if let Err(error) = remove_fixture_home(&self.home) {
+                failures.push(format!("fixture directory cleanup: {error}"));
+            }
+        } else if failures.is_empty() {
+            eprintln!("Preserving failed MCP fixture at {:?}", self.home);
+        }
+        if !failures.is_empty() {
+            let message = format!(
+                "MCP cleanup was not confirmed; preserving {:?}: {}",
+                self.home,
+                failures.join("; ")
+            );
+            eprintln!("{message}");
+            if !thread::panicking() {
+                panic!("{message}");
+            }
         }
     }
 }

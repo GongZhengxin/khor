@@ -695,13 +695,43 @@ fn command(record: &Record) -> Command {
         };
         command
     };
+    let cwd = Path::new(&record.status.cwd);
+    #[cfg(windows)]
+    let cwd = {
+        use std::path::{Component, Prefix};
+        let cmd = Path::new(command.get_program())
+            .file_name()
+            .and_then(|name| name.to_str())
+            .is_some_and(|name| {
+                name.eq_ignore_ascii_case("cmd.exe") || name.eq_ignore_ascii_case("cmd")
+            });
+        // canonicalize retains a verbatim disk prefix for durable identity,
+        // but cmd.exe mistakes that local directory for an unsupported UNC
+        // path and silently switches to Windows' directory. Translate only
+        // CMD's local disk cwd, keeping native programs, task identity,
+        // arguments, real UNC paths, and other device namespaces intact.
+        match cwd.components().next() {
+            Some(Component::Prefix(prefix))
+                if cmd && matches!(prefix.kind(), Prefix::VerbatimDisk(_)) =>
+            {
+                Path::new(
+                    record
+                        .status
+                        .cwd
+                        .strip_prefix(r"\\?\")
+                        .unwrap_or(&record.status.cwd),
+                )
+            }
+            _ => cwd,
+        }
+    };
     // The Windows process adapter intentionally only accepts explicit environment
     // entries. Unix uses the identical target-side environment contract.
     command
         .env_clear()
         .envs(std::env::vars_os())
         .env("PATH", crate::Node::user_path())
-        .current_dir(&record.status.cwd);
+        .current_dir(cwd);
     command
 }
 
