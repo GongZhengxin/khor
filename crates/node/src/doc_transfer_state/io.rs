@@ -256,6 +256,17 @@ impl RootPermit {
         }
         Ok(())
     }
+    fn limit_wait_until(&mut self, until: Instant) -> Result<(), Error> {
+        // Re-observing a publication is part of this metadata wait, not a
+        // fresh constructor allowance. Include that work in the same budget.
+        let left = self.wait_remaining.ok_or_else(Error::busy)?;
+        let left = left.min(until.saturating_duration_since(Instant::now()));
+        self.wait_remaining = Some(left);
+        if left.is_zero() {
+            return Err(Error::busy());
+        }
+        Ok(())
+    }
     pub(crate) fn attach(self) -> Result<RootGate, Error> {
         let mut owned = RootGate {
             permit: self,
@@ -311,7 +322,11 @@ impl RootGate {
             }
         }
     }
-    pub(super) fn bootstrap_metadata(&mut self, root: &Path) -> Result<Gate, Error> {
+    pub(super) fn bootstrap_metadata(
+        &mut self,
+        root: &Path,
+        mut needs_recovery: impl FnMut() -> Result<bool, Error>,
+    ) -> Result<Option<Gate>, Error> {
         if self.permit.root != root || self.file.is_none() {
             return Err("bootstrap metadata needs its held root fence".into());
         }
@@ -320,24 +335,47 @@ impl RootGate {
         }
         // The same owner keeps local admission and the cumulative allowance.
         // Never sleep for metadata while holding the physical root fence.
+        let until = self.permit.wait_remaining.map(|left| Instant::now() + left);
+        let mut waiting = false;
         self.file.take();
         let directory = root.join(".khor/doc-transfer-state");
         loop {
-            let metadata = gate_with_wait(&directory, Some(&mut self.permit))?;
-            // Workers use metadata -> root try0 too. Only the two leases
-            // together admit journal loading or any recovery side effects.
-            match self.acquire_file(false) {
-                Ok(()) => return Ok(metadata),
-                Err(why) if why.kind == crate::proto::DocTransferFailure::Busy => {
-                    drop(metadata);
-                    // Charge this contention even if the next root try finds
-                    // it free, so alternating owners cannot spin for free.
-                    self.permit.wait_for_lock()?;
-                    self.acquire_file(true)?;
-                    self.file.take();
-                }
-                Err(why) => return Err(why),
+            if waiting {
+                self.permit
+                    .limit_wait_until(until.ok_or_else(Error::busy)?)?;
             }
+            if let Some(metadata) = try_gate(&directory)? {
+                // Workers use metadata -> root try0 too. Only the two leases
+                // together admit journal loading or any recovery side effects.
+                match self.acquire_file(false) {
+                    Ok(()) => {
+                        if waiting {
+                            self.permit
+                                .limit_wait_until(until.ok_or_else(Error::busy)?)?;
+                        }
+                        return Ok(Some(metadata));
+                    }
+                    Err(why) if why.kind == crate::proto::DocTransferFailure::Busy => {
+                        drop(metadata);
+                    }
+                    Err(why) => return Err(why),
+                }
+            }
+            let until = until.ok_or_else(Error::busy)?;
+            waiting = true;
+            self.permit.limit_wait_until(until)?;
+            self.permit.wait_for_lock()?;
+            self.acquire_file(true)?;
+            self.permit.limit_wait_until(until)?;
+            // A partial/renamed ordinary image can have settled while its
+            // original metadata owner continues other work. Reuse the existing
+            // conservative classifier, and only inspect it under the root fence.
+            let pending = needs_recovery()?;
+            self.permit.limit_wait_until(until)?;
+            if !pending {
+                return Ok(None);
+            }
+            self.file.take();
         }
     }
 }
@@ -440,6 +478,8 @@ pub(super) fn bootstrap_view(root: &Path) -> Result<BootstrapView, String> {
     // Ready intent left there by a dead writer. A rename between these reads
     // is deliberately ambiguous and goes through the locked recovery path.
     let next = read_snapshot(&root.join("registry.next"))?;
+    #[cfg(test)]
+    tests::publication_snapshot_read(root, next.as_deref());
     let current = read_snapshot(&root.join("registry"))?;
     let mut images = Vec::new();
     let generation = if let Some(bytes) = current {
@@ -464,39 +504,29 @@ pub(super) fn bootstrap_view(root: &Path) -> Result<BootstrapView, String> {
 }
 
 pub(super) fn gate(root: &Path) -> Result<Gate, Error> {
-    gate_with_wait(root, None)
+    try_gate(root)?.ok_or_else(Error::busy)
 }
-fn gate_with_wait(root: &Path, mut permit: Option<&mut RootPermit>) -> Result<Gate, Error> {
-    let local = loop {
-        match LOCAL.try_lock() {
-            Ok(guard) => break guard,
-            Err(TryLockError::Poisoned(error)) => break error.into_inner(),
-            Err(TryLockError::WouldBlock) => permit
-                .as_deref_mut()
-                .ok_or_else(Error::busy)?
-                .wait_for_lock()?,
-        }
+fn try_gate(root: &Path) -> Result<Option<Gate>, Error> {
+    let local = match LOCAL.try_lock() {
+        Ok(guard) => guard,
+        Err(TryLockError::Poisoned(error)) => error.into_inner(),
+        Err(TryLockError::WouldBlock) => return Ok(None),
     };
     private_dir(root)?;
     let file = open(root.join("gate").as_path(), true)?;
     if file.metadata().map_err(error)?.len() != 0 {
         return Err("unexpected transfer metadata gate bytes".to_owned().into());
     }
-    loop {
-        match file.try_lock() {
-            Ok(()) => break,
-            Err(fs::TryLockError::WouldBlock) => permit
-                .as_deref_mut()
-                .ok_or_else(Error::busy)?
-                .wait_for_lock()?,
-            Err(fs::TryLockError::Error(why)) => return Err(error(why).into()),
-        }
+    match file.try_lock() {
+        Ok(()) => (),
+        Err(fs::TryLockError::WouldBlock) => return Ok(None),
+        Err(fs::TryLockError::Error(why)) => return Err(error(why).into()),
     }
     METADATA_HELD.set(true);
-    Ok(Gate {
+    Ok(Some(Gate {
         _local: local,
         _file: file,
-    })
+    }))
 }
 
 pub(super) struct Journal {
@@ -608,6 +638,8 @@ impl Journal {
         checksum.update(body);
         header.extend_from_slice(checksum.finalize().as_bytes());
         file.write_all(&header).map_err(error)?;
+        #[cfg(test)]
+        tests::publication_header_written(&self.root);
         file.write_all(body).map_err(error)?;
         file.sync_all().map_err(error)?;
         drop(file);
@@ -619,6 +651,8 @@ impl Journal {
             OPEN_WAIT,
             (&header, body),
         );
+        #[cfg(test)]
+        tests::publication_before_rename(&self.root);
         fs::rename(&next, self.root.join("registry")).map_err(error)?;
         self.generation = generation;
         Ok(())
@@ -830,6 +864,287 @@ mod tests {
             .unwrap();
         f.write_all(bytes).unwrap();
         f.sync_all().unwrap();
+    }
+
+    #[derive(Clone)]
+    struct PublicationWindow {
+        directory: PathBuf,
+        partial: bool,
+        finishes: bool,
+        prepared: PathBuf,
+        observed: PathBuf,
+        committed: PathBuf,
+        release: PathBuf,
+    }
+    static PUBLICATION_WINDOW: Mutex<Option<PublicationWindow>> = Mutex::new(None);
+
+    fn signal(path: &Path) {
+        match options().create_new(true).open(path) {
+            Ok(_) => (),
+            Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => (),
+            Err(error) => panic!("owned publication signal: {error}"),
+        }
+    }
+
+    fn await_signal(path: &Path) {
+        let until = Instant::now() + Duration::from_secs(3);
+        while !path.is_file() {
+            assert!(
+                Instant::now() < until,
+                "owned publication checkpoint: {}",
+                path.display()
+            );
+            std::thread::sleep(Duration::from_millis(5));
+        }
+    }
+
+    fn pause_publication(directory: &Path, partial: bool) {
+        let window = PUBLICATION_WINDOW
+            .lock()
+            .unwrap()
+            .as_ref()
+            .filter(|window| window.directory == directory && window.partial == partial)
+            .cloned();
+        if let Some(window) = window {
+            signal(&window.prepared);
+            await_signal(&window.observed);
+        }
+    }
+
+    pub(super) fn publication_header_written(directory: &Path) {
+        pause_publication(directory, true);
+    }
+
+    pub(super) fn publication_before_rename(directory: &Path) {
+        pause_publication(directory, false);
+    }
+
+    pub(super) fn publication_snapshot_read(directory: &Path, bytes: Option<&[u8]>) {
+        let window = {
+            let mut slot = PUBLICATION_WINDOW.lock().unwrap();
+            if !slot
+                .as_ref()
+                .is_some_and(|window| window.directory == directory)
+            {
+                return;
+            }
+            slot.take().unwrap()
+        };
+        let bytes = bytes.expect("reader must observe the actual pending publication");
+        if window.partial {
+            assert_eq!(
+                bytes.len(),
+                HEADER,
+                "actual writer is between header and body writes"
+            );
+            assert!(u64::from_be_bytes(bytes[16..24].try_into().unwrap()) > 0);
+        } else {
+            decode(bytes).expect("reader captures a complete, checksum-valid next image");
+        }
+        if !window.finishes {
+            return;
+        }
+        signal(&window.observed);
+        await_signal(&window.committed);
+    }
+
+    struct HeldPublication {
+        window: PublicationWindow,
+        worker: Option<std::thread::JoinHandle<()>>,
+    }
+    impl Drop for HeldPublication {
+        fn drop(&mut self) {
+            PUBLICATION_WINDOW
+                .lock()
+                .unwrap_or_else(|error| error.into_inner())
+                .take();
+            signal(&self.window.observed);
+            signal(&self.window.release);
+            if let Some(worker) = self.worker.take() {
+                let result = worker.join();
+                assert!(
+                    result.is_ok() || std::thread::panicking(),
+                    "publication owner panicked"
+                );
+            }
+        }
+    }
+
+    fn query_rechecks_a_finished_publication(partial: bool) {
+        query_during_publication(partial, true);
+    }
+
+    fn query_during_publication(partial: bool, finishes: bool) {
+        let _serial = TEST_SERIAL
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
+        let fixture = Fixture::new();
+        let node =
+            crate::Node::open_hosting(fixture.0.clone(), "publication-query", false).unwrap();
+        let own_id = node.device_str().to_owned();
+        let context = crate::doc_transfer_state::Context {
+            root: fixture.0.clone(),
+            // This fixture publishes empty, canonical transfer records only;
+            // it never opens or changes a writer's CRDT document.
+            writer: 90001,
+            local: std::array::from_fn(|index| {
+                u8::from_str_radix(&own_id[index * 2..index * 2 + 2], 16).unwrap()
+            }),
+        };
+        let mut initial = crate::doc_transfer_state::State::open(&context).unwrap();
+        initial.save().unwrap();
+        drop(initial);
+        let local = context.local;
+        let anchor = fs::read(fixture.0.join(".khor/root.pub")).unwrap();
+        let identity = fs::read(fixture.0.join(".khor/identity.key")).unwrap();
+        drop(node);
+
+        let directory = fixture.0.join(".khor/doc-transfer-state");
+        let window = PublicationWindow {
+            directory: directory.clone(),
+            partial,
+            finishes,
+            prepared: fixture.0.join("writer-prepared"),
+            observed: fixture.0.join("reader-observed"),
+            committed: fixture.0.join("writer-committed"),
+            release: fixture.0.join("release-writer"),
+        };
+        *PUBLICATION_WINDOW.lock().unwrap() = Some(window.clone());
+        let worker_window = window.clone();
+        let worker = std::thread::spawn(move || {
+            // Separate file descriptions exercise the actual OS metadata lock,
+            // as with a different process; no LOCAL mutex is held by this owner.
+            let held = open(&worker_window.directory.join("gate"), false).unwrap();
+            held.try_lock().unwrap();
+            let (mut journal, body) = Journal::load(&worker_window.directory, |bytes| {
+                crate::doc_transfer_state::validate_records(bytes, local).map_err(String::from)
+            })
+            .unwrap();
+            journal.save(&body.unwrap()).unwrap();
+            signal(&worker_window.committed);
+            await_signal(&worker_window.release);
+            drop(held);
+        });
+        let held = HeldPublication {
+            window,
+            worker: Some(worker),
+        };
+        await_signal(&held.window.prepared);
+        let started = Instant::now();
+        let query = crate::Node::open_hosting(fixture.0.clone(), "publication-query", false);
+        let elapsed = started.elapsed();
+        let still_owned = open(&directory.join("gate"), false).unwrap();
+        let writer_still_holds_metadata =
+            matches!(still_owned.try_lock(), Err(fs::TryLockError::WouldBlock));
+        drop(still_owned);
+        let pending_before_release = if finishes {
+            None
+        } else {
+            Some(fs::read(directory.join("registry.next")).unwrap())
+        };
+        // Reap the real owner before any result assertion can unwind.
+        drop(held);
+        assert!(
+            writer_still_holds_metadata,
+            "query must finish before the original metadata owner exits"
+        );
+        if finishes {
+            let query =
+                query.expect("finished ordinary publication must not force metadata recovery");
+            assert!(
+                elapsed < OPEN_WAIT,
+                "query spent the lock budget after publication finished"
+            );
+            assert_eq!(query.device_str(), own_id);
+        } else {
+            let error = query
+                .err()
+                .expect("an unpublished image still requires recovery");
+            assert!(error.contains("document transfer state busy"));
+            assert!(elapsed >= OPEN_WAIT && elapsed < OPEN_WAIT + Duration::from_millis(500));
+            assert_eq!(
+                pending_before_release.unwrap().len(),
+                HEADER,
+                "query must not discard or publish the held partial image"
+            );
+        }
+        assert_eq!(fs::read(fixture.0.join(".khor/root.pub")).unwrap(), anchor);
+        assert_eq!(
+            fs::read(fixture.0.join(".khor/identity.key")).unwrap(),
+            identity
+        );
+        assert!(!directory.join("registry.next").exists());
+        eprintln!(
+            "[N-PUBLICATION-RECHECK] partial={partial} finishes={finishes} elapsed_ms={} writer_still_owned=true identity_and_anchor_unchanged=true",
+            elapsed.as_millis()
+        );
+    }
+
+    #[test]
+    fn query_rechecks_a_next_image_renamed_between_snapshot_reads() {
+        query_rechecks_a_finished_publication(false);
+    }
+
+    #[test]
+    fn query_rechecks_a_partial_publication_that_finishes_while_metadata_is_owned() {
+        query_rechecks_a_finished_publication(true);
+    }
+
+    #[test]
+    fn query_still_refuses_an_unfinished_publication_within_the_original_budget() {
+        query_during_publication(true, false);
+    }
+
+    #[test]
+    fn metadata_rechecks_charge_the_remaining_budget_and_never_delay_control() {
+        let _serial = TEST_SERIAL
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
+        let fixture = Fixture::new();
+        private_trust_root(&fixture.0);
+        let directory = fixture.0.join(".khor/doc-transfer-state");
+        private_dir(&directory).unwrap();
+        let held = open(&directory.join("gate"), true).unwrap();
+        held.try_lock().unwrap();
+        let mut root = RootPermit::acquire(&fixture.0).unwrap().attach().unwrap();
+        let allowance = Duration::from_millis(80);
+        root.permit.wait_remaining = Some(allowance);
+        let mut observations = 0;
+        let started = Instant::now();
+        let result = root.bootstrap_metadata(&fixture.0, || {
+            assert!(!METADATA_HELD.get());
+            let fence = open(&fixture.0.join(".khor/trust-mutation/gate"), false).unwrap();
+            assert!(
+                matches!(fence.try_lock(), Err(fs::TryLockError::WouldBlock)),
+                "every recheck requires its real root fence"
+            );
+            observations += 1;
+            // A slow observation is waiting work, not a replenished allowance.
+            std::thread::sleep(Duration::from_millis(30));
+            Ok(true)
+        });
+        assert_eq!(
+            result.err().unwrap().kind,
+            crate::proto::DocTransferFailure::Busy
+        );
+        assert!(observations > 0);
+        assert!(started.elapsed() < allowance + Duration::from_millis(100));
+        drop(root);
+        let mut control = root_gate(&fixture.0).unwrap();
+        let mut called = false;
+        let started = Instant::now();
+        let result = control.bootstrap_metadata(&fixture.0, || {
+            called = true;
+            Ok(false)
+        });
+        assert_eq!(
+            result.err().unwrap().kind,
+            crate::proto::DocTransferFailure::Busy
+        );
+        assert!(!called, "try0 control must not become a snapshot waiter");
+        assert!(started.elapsed() < allowance);
+        drop(control);
+        drop(held);
     }
     #[test]
     fn a_complete_unpublished_image_recovers_and_every_partial_prefix_keeps_the_committed_image() {
@@ -1291,9 +1606,12 @@ mod tests {
 
         let mut joint = root_gate(&fixture.0).unwrap();
         let other = fixture.0.join("different-root");
-        assert!(joint.bootstrap_metadata(&other).is_err());
+        assert!(joint.bootstrap_metadata(&other, || Ok(true)).is_err());
         assert!(!other.exists(), "mismatched root created metadata");
-        let metadata = joint.bootstrap_metadata(&fixture.0).unwrap();
+        let metadata = joint
+            .bootstrap_metadata(&fixture.0, || Ok(true))
+            .unwrap()
+            .unwrap();
         assert!(METADATA_HELD.get());
         let same_file = open(&fixture.0.join(".khor/trust-mutation/gate"), false).unwrap();
         assert!(matches!(
