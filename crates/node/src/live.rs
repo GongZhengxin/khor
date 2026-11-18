@@ -2680,9 +2680,8 @@ impl LiveKind {
                 }
             }
         }
-        // The preview post-pass, one place for every claude-backed row —
-        // discovered, hooked, hosted or GUI alike: whatever the vendor's
-        // transcript last said. **The transcript outranks the hosted
+        // ACP rows already read their journal below in registry_rows.
+        // Native rows fall back to whatever their transcript last said. **The transcript outranks the hosted
         // screen line**, not the other way around: an agent TUI's last
         // non-empty screen line is its chrome ("⏵⏵ bypass permissions
         // on…"), which is true of the screen and useless as a preview,
@@ -2699,7 +2698,8 @@ impl LiveKind {
         vendor_leaves.extend(learned);
         let claude = crate::adaptor::claude::Claude::at(crate::adaptor::claude_home(&self.root));
         let codex = crate::adaptor::codex::Codex::at(crate::adaptor::codex_home(&self.root));
-        for r in out.iter_mut() {
+        for (index, r) in out.iter_mut().enumerate() {
+            let has_journal = registered.get(index).is_some_and(|row| row.has_journal);
             // **An agent row never says its screen's bottom line**
             // (SESS-BRIEF 1d): that line is the program's chrome, not
             // what was said. Until a transcript answers below — a
@@ -2729,7 +2729,9 @@ impl LiveKind {
             // codex's rows read codex's rollout the same way: its newest
             // sentence, past the token counts (SESS-BRIEF 1c).
             if filed == Some(crate::adaptor::codex::VENDOR) {
-                if let Some(l) = leaf {
+                if let Some(l) = leaf
+                    && !has_journal
+                {
                     r.last = codex.last_said(&l);
                 }
                 continue;
@@ -2761,7 +2763,7 @@ impl LiveKind {
                 if filed.is_none() {
                     continue;
                 }
-                if let Some(said) = claude.last_said(&l) {
+                if !has_journal && let Some(said) = claude.last_said(&l) {
                     r.last = Some(said);
                 }
                 // Conversation-generated names belong to the vendor UI.
@@ -3132,7 +3134,19 @@ impl LiveKind {
             // `OSC 7`'s directory, else the title, else the shell's own
             // working directory as the OS reports it — and never the
             // screen's last line.
+            let journal = (meta.kind == khor_core::kind::GUI)
+                .then(|| {
+                    crate::session_content::journal::Source::registered(
+                        &self.root, self.device, &id, Some(&e.path()),
+                    )
+                    .ok()
+                    .flatten()
+                })
+                .flatten();
             let last = match &host {
+                _ if meta.kind == khor_core::kind::GUI => {
+                    journal.as_ref().and_then(|source| source.last_said())
+                }
                 Some(hf)
                     if meta.kind == khor_core::kind::SHELL
                         && doing.as_ref().is_none_or(|d| d.command.is_none()) =>
@@ -3155,6 +3169,7 @@ impl LiveKind {
                     Some(cwd.to_string_lossy().into_owned());
             }
             out.push(RegistryRow {
+                has_journal: journal.is_some(),
                 managed_child: meta.child_owner.is_some(),
                 word_outranks_disk: state.word_outranks_disk(),
                 vendor_leaf: meta.vendor_leaf.clone(),
@@ -3179,11 +3194,8 @@ impl LiveKind {
                     dead,
                     unbacked,
                     category: meta.category.clone(),
-                    // The host keeps the terminal's last non-empty line
-                    // beside its state; a row with no host keeps `None`
-                    // here and may still earn a preview from a
-                    // transcript (`rows`'s post-pass — which also
-                    // outranks this line for agent rows).
+                    // The shared list reads ACP text from the journal.
+                    // Terminal output and native transcripts have their own sources.
                     last,
                     via: None,
                     // A host here is a terminal to be had here — a
@@ -3332,6 +3344,7 @@ enum Form {
 /// [`Session`] does not carry: who is running it, and how good its word
 /// is.
 struct RegistryRow {
+    has_journal: bool,
     managed_child: bool,
     row: Session,
     pid: Option<u32>,
@@ -6122,6 +6135,42 @@ mod tests {
             rows[0].id.0, "shell/1786245338-7",
             "and the original session is the row"
         );
+    }
+
+    #[test]
+    fn dsh_list_uses_the_latest_spoken_message_from_the_published_journal() {
+        use crate::session_content::journal::{Journal, Opening, Outcome};
+
+        let root = tmp("dsh-list-preview");
+        let live = kind_at(&root);
+        let mut identity = gui_source("dsh/actual-list-preview");
+        identity.agent = "dsh".into();
+        let id = crate::adaptor::id_for(&identity.native_id);
+        live.register(&id, khor_core::kind::GUI, "DeepSeek", None, Some("dsh"))
+            .unwrap();
+        let dir = live.dir_of(&id).unwrap();
+        fs::write(dir.join("journal.json"), serde_json::to_vec(&identity).unwrap()).unwrap();
+        let mut journal = Journal::open(&root, identity.clone(), Opening::New).unwrap();
+        journal.commit_base().unwrap();
+        let preview = || live.rows(|_| 0).into_iter()
+            .find(|row| row.id == id).unwrap().last;
+        let note = |kind: &str, text: &str| {
+            serde_json::json!({
+                "sessionId": identity.native_id,
+                "update": {"sessionUpdate":kind,"content":{"type":"text","text":text}}
+            })
+        };
+
+        journal.accept("turn-1", "A question", &[], &[], None).unwrap();
+        assert_eq!(preview().as_deref(), Some("A question"));
+        journal.note(&note("agent_message_chunk", "**Recent")).unwrap();
+        let _ = preview();
+        journal.note(&note("agent_message_chunk", " reply**")).unwrap();
+        journal.note(&note("agent_thought_chunk", "Hidden thought")).unwrap();
+        journal.finish("turn-1", Outcome::Ended, None).unwrap();
+        assert_eq!(preview().as_deref(), Some("Recent reply"));
+        journal.accept("turn-2", "Follow-up", &[], &[], None).unwrap();
+        assert_eq!(preview().as_deref(), Some("Follow-up"));
     }
 
     /// The transcript outranks the hosted screen line for an agent row

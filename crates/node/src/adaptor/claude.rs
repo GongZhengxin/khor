@@ -553,19 +553,29 @@ pub(crate) fn heard_last(
     mtime: std::time::SystemTime,
     parse: fn(&str) -> Vec<Utterance>,
 ) -> Option<String> {
+    cached_heard(path, (mtime, None), |path, before| {
+        newest_said(path, before, parse)
+    })
+}
+
+pub(crate) fn cached_heard(
+    path: PathBuf,
+    version: (std::time::SystemTime, Option<u64>),
+    read: impl FnOnce(&Path, Option<&Heard>) -> Option<Heard>,
+) -> Option<String> {
     use std::collections::HashMap;
     use std::sync::{Mutex, OnceLock};
-    static CACHE: OnceLock<Mutex<HashMap<PathBuf, (std::time::SystemTime, Heard)>>> =
-        OnceLock::new();
+    type Fingerprint = (std::time::SystemTime, Option<u64>);
+    static CACHE: OnceLock<Mutex<HashMap<PathBuf, (Fingerprint, Heard)>>> = OnceLock::new();
     let cache = CACHE.get_or_init(|| Mutex::new(HashMap::new()));
     let before = match cache.lock().unwrap().get(&path) {
-        Some((t, heard)) if *t == mtime => return heard.said.clone(),
+        Some((t, heard)) if *t == version => return heard.said.clone(),
         Some((_, heard)) => Some(heard.clone()),
         None => None,
     };
-    let heard = newest_said(&path, before.as_ref(), parse)?;
+    let heard = read(&path, before.as_ref())?;
     let said = heard.said.clone();
-    cache.lock().unwrap().insert(path, (mtime, heard));
+    cache.lock().unwrap().insert(path, (version, heard));
     said
 }
 
