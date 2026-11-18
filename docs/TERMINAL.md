@@ -4,6 +4,25 @@ How a session's terminal works end to end, as built through the terminal roadmap
 
 The shell integration scripts and the command ledger have their own page: [SHELL-INTEGRATION.md](SHELL-INTEGRATION.md).
 
+## Terminal drafts
+
+Unsubmitted commands can appear as a `[Draft]` preview in the session list.
+zsh supplies its editing buffer. Bash supports ordinary command-line editing
+through its Khor prompt integration and input tracking. On PowerShell,
+PSReadLine also supplies the actual buffer after supported history, completion,
+paste, and other editing actions.
+
+When Khor cannot read the editing buffer, it estimates the draft from the keys
+and text sent to the shell. This works during a recognized shell prompt, or
+for a directly hosted Unix shell in echoing line mode. History, completion,
+custom shortcuts, and multiline editing may make the estimate incomplete. If
+Khor cannot follow an edit, the preview clears until the editor reports its
+buffer or a new prompt begins.
+
+Submitting or cancelling clears the preview. Input for foreground programs
+and full-screen applications is excluded from the estimate. Draft previews
+can appear on other devices that can view the session.
+
 ## The path of a byte
 
 ```
@@ -152,7 +171,7 @@ SHELL-INTEGRATION.md's ConPTY section covers the marks: create the pseudoconsole
    - Win32 input mode (`?9001`), if a program asks for it, needs its own encoder in the pane's key path, as kitty's has.
    - Do not translate kitty sequences into Win32 input records.
 4. **Size before the first prompt.** Start the pseudoconsole at the size `open_on` was given (`term-size-hint`); PowerShell's prompt is written at that width as zsh's is.
-5. **Integration scripts.** `khor.ps1` and `khor.cmd` are written but not wired. Wire them as SHELL-INTEGRATION.md says; cmd has no hook before a command runs, so its blocks have no C mark.
+5. **Integration scripts.** The host loads `khor.ps1` for PowerShell and `khor.cmd` for cmd. Cmd has no pre-execution hook, so its blocks have no C mark.
 6. **Paths.** `lib/term-links.ts` recognises POSIX paths only. `C:\…` and `\\server\…` need their own candidate pattern, and a listing that answers on Windows.
 7. **Environment** (T-26). Set `TERM_PROGRAM=khor`, `TERM_PROGRAM_VERSION` and `COLORTERM=truecolor`. Strip the launching terminal's `WT_SESSION`, `TERM_SESSION_ID` and their kind, as the Unix host strips `ITERM_*` and `TMUX*`.
 

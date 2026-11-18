@@ -77,6 +77,8 @@
 //! past [`HISTORY_MAX`]. A full-screen program (the alternate screen, the
 //! mouse taken) is read off the same bytes (`crate::modes`).
 
+mod input_draft;
+
 use std::collections::{BTreeMap, VecDeque};
 use std::path::{Path, PathBuf};
 
@@ -268,6 +270,9 @@ fn blank(line: &[u8]) -> bool {
 #[derive(Debug, Default)]
 pub struct Ledger {
     editor: Option<String>,
+    input_draft: input_draft::InputDraft,
+    prompt_open: bool,
+    saw_prompt: bool,
     scan: Scan,
     buf: Vec<u8>,
     modes: Modes,
@@ -310,6 +315,14 @@ pub struct Ledger {
     tail: Tail,
 }
 
+/// What the host can prove about the recipient of user keystrokes.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum DraftInput {
+    Unavailable,
+    MarkedPrompt,
+    EchoingShell,
+}
+
 impl Ledger {
     /// A ledger for a host whose PTY runs khor's tmux client.
     pub fn tmux() -> Ledger {
@@ -319,12 +332,37 @@ impl Ledger {
         }
     }
 
+    pub(crate) fn observe_keys(&mut self, bytes: &[u8], available: DraftInput) {
+        let before = self.input_draft.excerpt();
+        if available == DraftInput::Unavailable || self.modes.program_holds_screen() {
+            self.close_input_draft();
+        } else if self.editor.is_none() {
+            if !self.saw_prompt && available == DraftInput::EchoingShell && !self.prompt_open {
+                self.prompt_open = true;
+                self.input_draft.reset();
+            }
+            if self.prompt_open && self.input_draft.keys(bytes) {
+                self.close_input_draft();
+            }
+        }
+        self.changed |= before != self.input_draft.excerpt();
+    }
+
+    fn close_input_draft(&mut self) {
+        self.changed |= self.input_draft.excerpt().is_some();
+        self.input_draft.discard();
+        self.prompt_open = false;
+    }
+
     /// Eats the session's output in stream order; sequences may be split
     /// anywhere across calls. `now_ms` stamps what starts or ends here.
     pub fn feed(&mut self, bytes: &[u8], now_ms: u64) {
         let full = self.modes.program_holds_screen();
         self.modes.feed(bytes);
         if self.modes.program_holds_screen() != full {
+            if self.modes.program_holds_screen() {
+                self.close_input_draft();
+            }
             self.changed = true;
         }
         if self.running.is_some() && (full || self.modes.program_holds_screen()) {
@@ -496,6 +534,7 @@ impl Ledger {
         self.running = back.running;
         self.cwd = back.cwd;
         self.typed.clear();
+        self.close_input_draft();
         self.pane = pane.map(str::to_owned);
         self.changed = true;
     }
@@ -551,6 +590,16 @@ impl Ledger {
                                 self.editor = Some(editor);
                                 self.changed = true;
                             }
+                        } else if let Some(checkpoint) = property.strip_prefix("KhorEditorCheckpoint=")
+                            && let Some((cursor, line)) = checkpoint.split_once(';')
+                            && let Ok(cursor) = cursor.parse()
+                            && self.prompt_open
+                            && !self.through_tmux()
+                            && !self.modes.program_holds_screen()
+                        {
+                            let before = self.input_draft.excerpt();
+                            self.input_draft.replace(&unescape(line), cursor);
+                            self.changed |= before != self.input_draft.excerpt();
                         }
                     }
                     Some(kind @ ("A" | "B" | "C" | "D")) => {
@@ -637,6 +686,7 @@ impl Ledger {
     fn mark(&mut self, kind: &str, params: &[&str], now: u64) {
         match kind {
             "A" => {
+                self.close_input_draft();
                 // A prompt over a command never marked as ended: the
                 // shell was interrupted, or its integration has no D.
                 if self.running.is_some() {
@@ -645,11 +695,17 @@ impl Ledger {
                 self.phase = Phase::Prompt;
             }
             "B" => {
+                self.saw_prompt = true;
+                if !self.prompt_open && !self.modes.program_holds_screen() {
+                    self.input_draft.reset();
+                    self.prompt_open = true;
+                }
                 self.phase = Phase::Input;
                 self.typed.clear();
             }
             "C" => {
-                self.editor = None;
+                self.close_input_draft();
+                self.changed |= self.editor.take().is_some();
                 if self.running.is_some() {
                     // Through tmux, a pane out of sight loses its marks
                     // (`allow-passthrough on`): a new command in it says
@@ -689,6 +745,7 @@ impl Ledger {
                 self.changed = true;
             }
             "D" => {
+                self.close_input_draft();
                 let exit = params.first().and_then(|p| p.trim().parse::<i32>().ok());
                 self.end(exit, now);
             }
@@ -774,7 +831,10 @@ impl Ledger {
             editor: if self.modes.program_holds_screen() && !self.tmux {
                 None
             } else if self.pane.as_deref() == pane {
-                self.editor.clone()
+                self.editor
+                    .clone()
+                    .or_else(|| self.input_draft.excerpt())
+                    .filter(|line| !line.is_empty())
             } else {
                 self.parked
                     .iter()
@@ -1443,6 +1503,57 @@ mod tests {
         );
         assert_eq!(one_line("a\n  b"), "a ⏎ b");
     }
+    #[test]
+    fn shell_draft_fallback_tracks_input_until_submission_or_owner_loss() {
+        let mut ledger = Ledger::default();
+        ledger.observe_keys(b"startup answer", DraftInput::MarkedPrompt);
+        assert_eq!(ledger.doing().editor, None);
+        ledger.feed(b"\x1b]133;B\x07", 1);
+        ledger.observe_keys("echo 雨r".as_bytes(), DraftInput::MarkedPrompt);
+        ledger.observe_keys(b"\x1b[Dx", DraftInput::MarkedPrompt);
+        assert_eq!(ledger.doing().editor.as_deref(), Some("echo 雨xr"));
+
+        ledger.observe_keys(b"\x7f\rprogram input", DraftInput::MarkedPrompt);
+        ledger.observe_keys(b"secret", DraftInput::Unavailable);
+        assert_eq!(ledger.doing().editor, None);
+        ledger.feed(b"\x1b]133;B\x07", 2);
+        ledger.observe_keys(b"next command", DraftInput::MarkedPrompt);
+        assert_eq!(ledger.doing().editor.as_deref(), Some("next command"));
+        ledger.feed(b"\x1b[?1049h", 3);
+        ledger.observe_keys(b"program input", DraftInput::MarkedPrompt);
+        assert_eq!(ledger.doing().editor, None);
+    }
+
+    #[test]
+    fn shell_draft_checkpoint_replaces_uncertain_input_and_native_reports_win() {
+        let mut ledger = fed(b"\x1b]133;B\x07");
+        ledger.observe_keys(b"foo\x1b[A", DraftInput::MarkedPrompt);
+        assert_eq!(ledger.doing().editor, None);
+        ledger.feed(
+            "\x1b]633;P;KhorEditorCheckpoint=3;🙂;x\x07".as_bytes(),
+            2,
+        );
+        ledger.observe_keys(b"e", DraftInput::MarkedPrompt);
+        assert_eq!(ledger.doing().editor.as_deref(), Some("🙂;ex"));
+
+        ledger.feed(b"\x1b]633;P;KhorEditor=exact\x07", 3);
+        ledger.observe_keys(b"more", DraftInput::MarkedPrompt);
+        assert_eq!(ledger.doing().editor.as_deref(), Some("exact"));
+        ledger.feed(b"\x1b]633;P;KhorEditor=\x07", 4);
+        assert_eq!(ledger.doing().editor, None);
+    }
+
+    #[test]
+    fn shell_draft_without_marks_requires_a_direct_echoing_shell() {
+        let mut ledger = Ledger::default();
+        ledger.observe_keys(b"first", DraftInput::EchoingShell);
+        assert_eq!(ledger.doing().editor.as_deref(), Some("first"));
+        ledger.observe_keys(b"private input", DraftInput::Unavailable);
+        assert_eq!(ledger.doing().editor, None);
+        ledger.observe_keys(b"another", DraftInput::EchoingShell);
+        assert_eq!(ledger.doing().editor.as_deref(), Some("another"));
+    }
+
     #[test]
     fn editor_reports_are_authoritative_isolated_and_cleared_on_execute() {
         let mut ledger = Ledger::default();
