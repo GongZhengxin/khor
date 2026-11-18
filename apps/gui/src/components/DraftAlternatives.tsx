@@ -11,7 +11,7 @@ export function DraftAlternatives({ draftKey }: { draftKey: string }) {
   if (rows.length < 2) return null;
   const selected = sessionDrafts.current(draftKey);
   return <div data-draft-alternatives className="mx-auto flex w-full max-w-measure items-center gap-in px-row py-in text-callout">
-    <span className="flex-none text-secondary">{gui.draft_alternatives(String(rows.length))}</span>
+    <span className="flex-none text-muted-foreground">{gui.draft_alternatives(String(rows.length))}</span>
     <ChoiceField label={gui.choose_draft} value={selected?.text.replace(/\s+/g, ' ').slice(0, 80) ?? ''} selected={selected?.id}
       options={rows.map(row => ({ id: row.id, label: row.text.replace(/\s+/g, ' ').slice(0, 160) }))}
       onPick={id => sessionDrafts.choose(draftKey, id)} />

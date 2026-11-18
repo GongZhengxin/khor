@@ -19,12 +19,13 @@ export function useStableListOrder<T extends OrderedRow>(rows: T[], root: RefObj
   useEffect(() => {
     if (!enabled) return;
     let held = false;
+    const keys = new Set<string>();
     let timer: ReturnType<typeof setTimeout> | undefined;
     const inside = (target: EventTarget | null) => target instanceof Node && root.current?.contains(target);
     const resume = () => {
       clearTimeout(timer);
       timer = setTimeout(() => {
-        if (held || document.querySelector('[role="menu"][data-state="open"]')) { resume(); return; }
+        if (held || keys.size || document.querySelector('[role="menu"][data-state="open"]')) { resume(); return; }
         setPaused(false);
       }, 300);
     };
@@ -35,12 +36,16 @@ export function useStableListOrder<T extends OrderedRow>(rows: T[], root: RefObj
     };
     const down = (event: PointerEvent) => { if (inside(event.target)) { held = true; suspend(); } };
     const up = () => { held = false; resume(); };
-    const key = (event: KeyboardEvent) => { if (inside(event.target)) suspend(); };
+    const key = (event: KeyboardEvent) => { if (inside(event.target)) { keys.add(event.code); suspend(); } };
+    const keyUp = (event: KeyboardEvent) => { keys.delete(event.code); resume(); };
+    const blur = () => { held = false; keys.clear(); resume(); };
     window.addEventListener('scroll', scroll, true);
     window.addEventListener('pointerdown', down, true);
     window.addEventListener('pointerup', up, true);
     window.addEventListener('pointercancel', up, true);
     window.addEventListener('keydown', key, true);
+    window.addEventListener('keyup', keyUp, true);
+    window.addEventListener('blur', blur);
     return () => {
       clearTimeout(timer);
       window.removeEventListener('scroll', scroll, true);
@@ -48,6 +53,8 @@ export function useStableListOrder<T extends OrderedRow>(rows: T[], root: RefObj
       window.removeEventListener('pointerup', up, true);
       window.removeEventListener('pointercancel', up, true);
       window.removeEventListener('keydown', key, true);
+      window.removeEventListener('keyup', keyUp, true);
+      window.removeEventListener('blur', blur);
     };
   }, [enabled, root]);
   let ordered = rows;

@@ -45,7 +45,7 @@ export class ReplicatedDraftStore {
 
   subscribe = (listener: () => void) => { this.listeners.add(listener); return () => { this.listeners.delete(listener); }; };
   version = () => this.serial;
-  durable = () => this.readable && this.writable;
+  durable = () => this.pending.length === 0 || this.readable && this.writable;
   private changed() {
     this.serial++;
     const raw = JSON.stringify({ submissions: [...this.submissions], migrated: this.migrated, remote: this.remote, pending: this.pending, selected: [...this.selected] });

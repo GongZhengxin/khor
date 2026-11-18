@@ -1,3 +1,4 @@
+import {checkSessionAttention} from './session-attention-checks.mjs';
 import {checkKhorAttachments} from './khor-attachment-checks.mjs';
 import {checkAttachmentDraft} from './attachment-draft-checks.mjs';
 import {checkResourceFiles} from './resource-checks.mjs';
@@ -492,7 +493,16 @@ let browser;
 const results = [];
 try {
   await waitForPreview();
-  if (process.env.LAB_CHECKS === 'session-import') {
+  if (process.env.LAB_CHECKS === 'session-attention') {
+    for (const engine of ['chromium','webkit']) {
+      browser=await(engine==='webkit'?webkit:chromium).launch({headless:true});
+      for (const width of [1280,390]) {
+        results.push(await checkSessionAttention(browser,{port,report,engine,width}));
+        await writeFile(path.join(report,'results.json'),JSON.stringify(results,null,2));
+      }
+      await browser.close();browser=undefined;
+    }
+  } else if (process.env.LAB_CHECKS === 'session-import') {
     for(const engine of ['chromium','webkit']){
       browser=await(engine==='webkit'?webkit:chromium).launch({headless:true});
       for(const theme of ['light','dark'])for(const width of [1280,412,390,320]){

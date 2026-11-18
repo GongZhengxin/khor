@@ -174,7 +174,8 @@ export function createLabFixture(terminal = true, options: {origin?: string; con
   const savedEditors = (() => { try { return JSON.parse(readSetting(editorDiskKey) ?? '{}'); } catch { return {}; } })();
   const editorRevisions = new Map<string, {id:string;key:string;text:string;at_ms:number}>(savedEditors.rows ?? []);
   const editorReceipts = new Set<string>(savedEditors.receipts ?? []);
-  const readVersions = new Map<string,number>();
+  const readVersions = new Map<string,number>((() => { try { return JSON.parse(readSetting('khor.lab.read-server') ?? '[]'); } catch { return []; } })());
+  const sessionOverrides = new Map<string, {word:string;at_ms:number}>();
   function agentAction(body: Record<string, any>) {
     if (body.action === "catalog") return view(providers);
     if(body.action==='put_paths'){
@@ -435,6 +436,11 @@ export function createLabFixture(terminal = true, options: {origin?: string; con
               });
             }else frames[index].push({kind:'control_result',token:body.token,operation:body.operation,data:{},error:null});break;
           }
+          case '__ai_preview/session-state': {
+            const before = sessionOverrides.get(String(body.id));
+            if (before?.word !== body.word) sessionOverrides.set(String(body.id), {word:String(body.word),at_ms:Date.now()});
+            answer = true; break;
+          }
           case 'session_drafts': answer = [...editorRevisions.values()]; break;
           case 'session_draft_edit': {
             const revision = body.revision;
@@ -458,6 +464,7 @@ export function createLabFixture(terminal = true, options: {origin?: string; con
             for(const imported of imports.rows())rows.push({...rows[0],id:imported.id,title:imported.title,kind:imported.intent==='fork'?'gui':'observe',category:imported.agent,imported:imported.intent==='import',can_control:imported.intent==='fork',hosted:imported.intent==='fork',pinned:false,unread:0,last:'导入的历史会话',execution_home:imported.home});
             const visible = notices.snapshot(devices.length ? rows : []);
             for (const row of visible) {
+              Object.assign(row, sessionOverrides.get(row.id) ?? {});
               const prefix = row.id.startsWith('wide/') ? 'khor:' : 'gui:';
               const draft = [...editorRevisions.values()].filter(revision => revision.key === prefix + row.id).sort((a,b) => b.at_ms-a.at_ms)[0];
               if (draft) row.draft = draft.text;
@@ -529,7 +536,10 @@ export function createLabFixture(terminal = true, options: {origin?: string; con
           }
           case "dir_pins": case "web_pins": answer = []; break;
           case "seen_snapshot": break;
-          case "seen": case "session_seen": readVersions.set(String(body.id), Math.max(readVersions.get(String(body.id)) ?? -1, Number(body.at_ms))); break;
+          case "seen": case "session_seen":
+            readVersions.set(String(body.id), Math.max(readVersions.get(String(body.id)) ?? -1, Number(body.at_ms)));
+            try { localStorage.setItem('khor.lab.read-server',JSON.stringify([...readVersions])); } catch { /* In-memory server. */ }
+            break;
           default: throw new Error(`Lab fixture does not implement ${path}`);
         }
       return structuredClone(answer);

@@ -78,7 +78,9 @@ async fn call(node: &Node, child: &Child, action: BoundAction) -> Result<Record,
     match answer {
         delegation::Answer::Task { record } => {
             use protocol::TaskState;
-            let rank = if !owns_latest_input(child, &record) { None } else {
+            let rank = if !owns_latest_input(child, &record) {
+                None
+            } else {
                 match record.task.status.state {
                     TaskState::InputRequired | TaskState::AuthRequired => Some(0),
                     TaskState::Working if delegation::approval(&record).is_some() => Some(0),
@@ -87,11 +89,13 @@ async fn call(node: &Node, child: &Child, action: BoundAction) -> Result<Record,
                 }
             };
             let _ = node.record_child_attention(&khor_sync::drafts::ChildAttention {
-                session: child.board.clone(), child: format!("{}:{}", child.run, child.key),
-                revision: record.revision, rank,
+                session: child.board.clone(),
+                child: format!("{}:{}", child.run, child.key),
+                revision: record.revision,
+                rank,
             });
             Ok(*record)
-        },
+        }
         _ => Err("Delegation returned no task".into()),
     }
 }
@@ -291,11 +295,19 @@ pub(super) async fn read(node: &Node, board: &str, request: &Value) -> Result<Va
     // calls. Reports replicate, independently of the parent's execution word.
     if request["summary_only"] == true && request["action"].is_null() {
         let count = children.len();
-        stream::iter(children.iter()).map(|child| async move {
-            if let Some(task) = child.link.task.clone() {
-                let _ = tokio::time::timeout(Duration::from_secs(3), call(node, child, BoundAction::Get { task })).await;
-            }
-        }).buffered(8).collect::<Vec<_>>().await;
+        stream::iter(children.iter())
+            .map(|child| async move {
+                if let Some(task) = child.link.task.clone() {
+                    let _ = tokio::time::timeout(
+                        Duration::from_secs(3),
+                        call(node, child, BoundAction::Get { task }),
+                    )
+                    .await;
+                }
+            })
+            .buffered(8)
+            .collect::<Vec<_>>()
+            .await;
         return Ok(json!({ "count": count, "at_least": count >= PAGE }));
     }
     if let Some(action) = request["action"].as_str() {

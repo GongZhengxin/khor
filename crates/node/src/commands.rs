@@ -649,7 +649,7 @@ impl Ledger {
                 self.typed.clear();
             }
             "C" => {
-                self.editor = self.editor.as_ref().map(|_| String::new());
+                self.editor = None;
                 if self.running.is_some() {
                     // Through tmux, a pane out of sight loses its marks
                     // (`allow-passthrough on`): a new command in it says
@@ -1455,6 +1455,6 @@ mod tests {
         ledger.feed(b"\x1b]633;P;KhorEditor=echo hello\x07", 2);
         assert_eq!(ledger.doing().editor.as_deref(), Some("echo hello"));
         ledger.feed(b"\x1b]133;C\x07", 3);
-        assert_eq!(ledger.doing().editor.as_deref(), Some(""));
+        assert_eq!(ledger.doing().editor, None);
     }
 }

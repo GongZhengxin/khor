@@ -178,7 +178,16 @@ async fn a_live_row_travels_as_a_report_and_the_seen_loop_closes() {
 
     let old_at = view.session.state.unwrap().at.0.min(i64::MAX as u64) as i64;
     for node in [&a, &b] {
-        assert_eq!(node.sessions().unwrap().into_iter().find(|v| v.session.id == id).unwrap().session.unread, 0);
+        assert_eq!(
+            node.sessions()
+                .unwrap()
+                .into_iter()
+                .find(|v| v.session.id == id)
+                .unwrap()
+                .session
+                .unread,
+            0
+        );
     }
     // beta's cached read is created while no sync runs. A newer completion
     // must survive that old mark when beta eventually reconnects.
@@ -186,15 +195,46 @@ async fn a_live_row_travels_as_a_report_and_the_seen_loop_closes() {
     a.report_state(&id, State::Busy).unwrap();
     std::thread::sleep(Duration::from_millis(5));
     a.report_state(&id, State::Done).unwrap();
-    timeout(Duration::from_secs(60), b.sync_now()).await.unwrap().unwrap();
-    let newest = b.sessions().unwrap().into_iter().find(|v| v.session.id == id).unwrap().session;
+    timeout(Duration::from_secs(60), b.sync_now())
+        .await
+        .unwrap()
+        .unwrap();
+    let newest = b
+        .sessions()
+        .unwrap()
+        .into_iter()
+        .find(|v| v.session.id == id)
+        .unwrap()
+        .session;
     assert_eq!(newest.unread, 1);
     b.seen_through(&id, old_at).unwrap();
-    assert_eq!(b.sessions().unwrap().into_iter().find(|v| v.session.id == id).unwrap().session.unread, 1);
-    b.seen_through(&id, newest.state.unwrap().at.0 as i64).unwrap();
-    timeout(Duration::from_secs(60), b.sync_now()).await.unwrap().unwrap();
+    assert_eq!(
+        b.sessions()
+            .unwrap()
+            .into_iter()
+            .find(|v| v.session.id == id)
+            .unwrap()
+            .session
+            .unread,
+        1
+    );
+    b.seen_through(&id, newest.state.unwrap().at.0 as i64)
+        .unwrap();
+    timeout(Duration::from_secs(60), b.sync_now())
+        .await
+        .unwrap()
+        .unwrap();
     for node in [&a, &b] {
-        assert_eq!(node.sessions().unwrap().into_iter().find(|v| v.session.id == id).unwrap().session.unread, 0);
+        assert_eq!(
+            node.sessions()
+                .unwrap()
+                .into_iter()
+                .find(|v| v.session.id == id)
+                .unwrap()
+                .session
+                .unread,
+            0
+        );
     }
 
     // Remote close is not a thing yet — refused by name, pointing home.

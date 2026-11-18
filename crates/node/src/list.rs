@@ -152,8 +152,10 @@ pub fn arrange_with_drafts(
 }
 
 pub fn arrange_with_attention(
-    views: Vec<SessionView>, mode: Arrange,
-    device_name: &dyn Fn(&DeviceId) -> Option<String>, drafts: &[DraftRevision],
+    views: Vec<SessionView>,
+    mode: Arrange,
+    device_name: &dyn Fn(&DeviceId) -> Option<String>,
+    drafts: &[DraftRevision],
     children: &std::collections::BTreeMap<String, u8>,
 ) -> Vec<Arranged> {
     let mut out: Vec<Arranged> = views
@@ -207,15 +209,19 @@ pub fn arrange_with_attention(
                         .filter(|_| a.view.session.state_known())
                         .map(|s| s.state),
                     a.draft.is_some(),
-                ).min(a.child_rank.unwrap_or(u8::MAX))
-                .cmp(&attention_rank(
-                    b.view
-                        .session
-                        .state
-                        .filter(|_| b.view.session.state_known())
-                        .map(|s| s.state),
-                    b.draft.is_some(),
-                ).min(b.child_rank.unwrap_or(u8::MAX)))
+                )
+                .min(a.child_rank.unwrap_or(u8::MAX))
+                .cmp(
+                    &attention_rank(
+                        b.view
+                            .session
+                            .state
+                            .filter(|_| b.view.session.state_known())
+                            .map(|s| s.state),
+                        b.draft.is_some(),
+                    )
+                    .min(b.child_rank.unwrap_or(u8::MAX)),
+                )
             })
             .then_with(|| {
                 b.view

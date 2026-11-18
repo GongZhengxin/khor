@@ -54,12 +54,16 @@ impl DraftDoc {
     }
 
     fn child_reports(&self) -> std::collections::BTreeMap<(String, String), ChildAttention> {
-        let mut reports: std::collections::BTreeMap<(String, String), ChildAttention> = Default::default();
+        let mut reports: std::collections::BTreeMap<(String, String), ChildAttention> =
+            Default::default();
         self.inner.get_map("children").for_each(|_, value| {
             if let Ok(LoroValue::String(value)) = value.into_value() {
                 if let Ok(report) = serde_json::from_str::<ChildAttention>(&value) {
                     let key = (report.session.clone(), report.child.clone());
-                    if reports.get(&key).is_none_or(|held| held.revision < report.revision) {
+                    if reports
+                        .get(&key)
+                        .is_none_or(|held| held.revision < report.revision)
+                    {
                         reports.insert(key, report);
                     }
                 }
@@ -72,7 +76,10 @@ impl DraftDoc {
         let mut priorities = std::collections::BTreeMap::<String, u8>::new();
         for report in self.child_reports().into_values() {
             if let Some(rank) = report.rank {
-                priorities.entry(report.session).and_modify(|held| *held = (*held).min(rank)).or_insert(rank);
+                priorities
+                    .entry(report.session)
+                    .and_modify(|held| *held = (*held).min(rank))
+                    .or_insert(rank);
             }
         }
         priorities
@@ -81,15 +88,24 @@ impl DraftDoc {
     pub fn record_child(&self, report: &ChildAttention) -> Result<(), String> {
         let key = (report.session.clone(), report.child.clone());
         let previous = self.child_reports();
-        if previous.get(&key).is_some_and(|held| held.revision >= report.revision) {
+        if previous
+            .get(&key)
+            .is_some_and(|held| held.revision >= report.revision)
+        {
             return Ok(());
         }
         let map = self.inner.get_map("children");
         // Version-qualified keys make a concurrent older poll harmless too.
-        let wire_key = serde_json::to_string(&(&key, report.revision)).map_err(|e| e.to_string())?;
-        map.insert(&wire_key, serde_json::to_string(report).map_err(|e| e.to_string())?).map_err(|e| e.to_string())?;
+        let wire_key =
+            serde_json::to_string(&(&key, report.revision)).map_err(|e| e.to_string())?;
+        map.insert(
+            &wire_key,
+            serde_json::to_string(report).map_err(|e| e.to_string())?,
+        )
+        .map_err(|e| e.to_string())?;
         if let Some(old) = previous.get(&key) {
-            let old_key = serde_json::to_string(&(&key, old.revision)).map_err(|e| e.to_string())?;
+            let old_key =
+                serde_json::to_string(&(&key, old.revision)).map_err(|e| e.to_string())?;
             map.delete(&old_key).map_err(|e| e.to_string())?;
         }
         self.inner.commit();
@@ -228,7 +244,12 @@ mod tests {
     fn child_attention_cannot_be_restored_by_an_older_status_reply() {
         let a = DraftDoc::new(1).unwrap();
         let b = DraftDoc::new(2).unwrap();
-        let report = |revision, rank| ChildAttention { session: "wide/parent".into(), child: "task".into(), revision, rank };
+        let report = |revision, rank| ChildAttention {
+            session: "wide/parent".into(),
+            child: "task".into(),
+            revision,
+            rank,
+        };
         a.record_child(&report(1, Some(0))).unwrap();
         b.record_child(&report(2, None)).unwrap();
         merge(&a, &b);
@@ -236,5 +257,4 @@ mod tests {
         a.record_child(&report(1, Some(0))).unwrap();
         assert!(a.child_priorities().is_empty());
     }
-
 }
