@@ -29,7 +29,9 @@ export async function checkSessionAttention(browser, { port, report, engine, wid
     assert.match(await list.locator(`[data-side-row="${four}"]`).innerText(), /\[草稿\]unsubmitted draft/);
     assert.equal((await ids())[0],pinned,'A pinned row remains above ordinary attention');
     const before = await ids();
-    const target = list.locator(`[data-side-row="${one}"]`), bounds = await target.boundingBox();
+    const target = list.locator(`[data-side-row="${one}"]`);
+    await target.scrollIntoViewIfNeeded();
+    const bounds = await target.boundingBox();
     await page.mouse.move(bounds.x+bounds.width/2,bounds.y+bounds.height/2);await page.mouse.down();
     await api('__ai_preview/session-state',{id:one,word:'blocked'});
     await page.waitForTimeout(2600);

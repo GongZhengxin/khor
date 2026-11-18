@@ -98,13 +98,14 @@ async fn a_live_row_travels_as_a_report_and_the_seen_loop_closes() {
         .expect("pairing must not hang")
         .unwrap();
 
-    // The agent: a real process alpha watches. Registered blocked — the
-    // word whose whole point is being seen from elsewhere.
+    // An explicit terminal resource with a real process alpha watches.
+    // Agent transcript imports now require verified native identities; this
+    // test exercises terminal state/read replication, not transcript import.
     let mut agent = std::process::Command::new("sleep")
         .arg("60")
         .spawn()
         .unwrap();
-    let id = SessionId("tui/agent1".to_owned());
+    let id = SessionId("shell/agent1".to_owned());
     let ephemeral = a.open_ephemeral("tui", "the agent").unwrap();
     a.report_state(&ephemeral, State::Busy).unwrap();
     {
@@ -112,7 +113,7 @@ async fn a_live_row_travels_as_a_report_and_the_seen_loop_closes() {
         // wrapper uses: open, then bind the pid.
         use khor_node::live::LiveKind;
         let k = LiveKind::new(ra.to_path_buf(), a.device());
-        k.register(&id, "tui", "claude in proj", Some(agent.id()), None)
+        k.register(&id, "shell", "shell command in proj", Some(agent.id()), Some("shell"))
             .unwrap();
         k.report(&id, State::Blocked, khor_node::live::Source::Reported)
             .unwrap();
@@ -136,7 +137,7 @@ async fn a_live_row_travels_as_a_report_and_the_seen_loop_closes() {
         State::Blocked,
         "等准许,从别的设备看得到"
     );
-    assert_eq!(view.session.title, "claude in proj");
+    assert_eq!(view.session.title, "shell command in proj");
     let (reporter, _) = view
         .source
         .as_ref()

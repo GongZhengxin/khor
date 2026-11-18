@@ -370,6 +370,7 @@ jobs:
         run: |
           cargo test --locked -p khor-sync --lib drafts:: -- --test-threads=1
           cargo test --locked -p khor-node --lib list::tests -- --test-threads=1
+          cargo test --locked -p khor-node --lib delegated_rows_and_commands_share_attention -- --test-threads=1
           cargo test --locked -p khor-node --lib editor_reports_are_authoritative -- --test-threads=1
           cargo test --locked -p khor-node --lib duplicate_status_reports_do_not_refresh -- --test-threads=1
           cargo test --locked -p khor-node --test live --test pairing -- --test-threads=1

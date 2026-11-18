@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 're
 
 type OrderedRow = { id: string; group: string };
 /** Freeze positions, never row data, while a person is operating the list. */
-export function useStableListOrder<T extends OrderedRow>(rows: T[], root: RefObject<HTMLDivElement | null>, enabled: boolean, filter: string): T[] {
+export function useStableListOrder<T extends OrderedRow>(rows: T[], root: RefObject<HTMLDivElement | null>, enabled: boolean, filter: string, attribute = 'data-side-row'): T[] {
   const [paused, setPaused] = useState(false);
   const positions = useRef<{ filter: string; rows: { id: string; group: string }[] }>({ filter, rows: [] });
   const anchor = useRef<{ scroller: HTMLElement; id: string; offset: number } | null>(null);
@@ -13,8 +13,9 @@ export function useStableListOrder<T extends OrderedRow>(rows: T[], root: RefObj
     while (scroller && !/auto|scroll/.test(getComputedStyle(scroller).overflowY)) scroller = scroller.parentElement;
     if (!scroller || scroller.scrollTop <= 0) { anchor.current = null; return; }
     const top = scroller.getBoundingClientRect().top;
-    const first = [...box.querySelectorAll<HTMLElement>('[data-side-row]')].find(row => row.getBoundingClientRect().bottom > top);
-    if (first?.dataset.sideRow) anchor.current = { scroller, id: first.dataset.sideRow, offset: first.getBoundingClientRect().top - top };
+    const first = [...box.querySelectorAll<HTMLElement>('['+attribute+']')].find(row => row.getBoundingClientRect().bottom > top);
+    const id = first?.getAttribute(attribute);
+    if (first && id) anchor.current = { scroller, id, offset: first.getBoundingClientRect().top - top };
   };
   useEffect(() => {
     if (!enabled) return;
@@ -72,7 +73,7 @@ export function useStableListOrder<T extends OrderedRow>(rows: T[], root: RefObj
   useLayoutEffect(() => {
     if (enabled && previous.current !== identity && anchor.current) {
       const { scroller, id, offset } = anchor.current;
-      const row = [...(root.current?.querySelectorAll<HTMLElement>('[data-side-row]') ?? [])].find(row => row.dataset.sideRow === id);
+      const row = [...(root.current?.querySelectorAll<HTMLElement>('['+attribute+']') ?? [])].find(row => row.getAttribute(attribute) === id);
       if (row) scroller.scrollTop += row.getBoundingClientRect().top - scroller.getBoundingClientRect().top - offset;
     }
     previous.current = identity;

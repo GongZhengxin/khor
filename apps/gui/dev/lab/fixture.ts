@@ -216,10 +216,12 @@ export function createLabFixture(terminal = true, options: {origin?: string; con
       } else if (p.action==="retry" && task?.can_retry) {
         task.state="working";task.can_cancel=true;task.can_retry=false;task.result=null;
       }
-      return view({children:childTasks,commands:[{
-        agent:'git status',machine:'MacLab',state:'completed',result:'Working tree clean',
-        run:'fixture-run',key:'fixture-command',task:null,context:null,can_cancel:false,can_retry:false,
-      }]});
+      const commands=[{agent:'git status',machine:'MacLab',state:'completed',result:'Working tree clean',
+        run:'fixture-run',key:'fixture-command',task:null,context:null,can_cancel:false,can_retry:false}];
+      const word: Record<string,string>={waiting:'blocked',submitted:'busy',working:'busy',completed:'done',failed:'failed',canceled:'idle'};
+      const ranked=[...childTasks,...commands].sort((a,b)=>labSessionAttention[word[a.state]??'unknown']-labSessionAttention[word[b.state]??'unknown']||a.key.localeCompare(b.key));
+      const order=new Map(ranked.map((row,index)=>[row.key,index]));
+      return view({children:childTasks.map(row=>({...row,attention_order:order.get(row.key)})),commands:commands.map(row=>({...row,attention_order:order.get(row.key)}))});
     }
     if (p.operation === 'acp_initialize' || p.operation === 'acp_authenticate') {
       acpSetupCalls.push({agent:String(p.agent),machine:String(body.machine),operation:p.operation});
@@ -460,7 +462,7 @@ export function createLabFixture(terminal = true, options: {origin?: string; con
               hosted: true, can_control: true, attachable: false, dead: false, last: '隔离示例 · 不连接真实智能体',
               via: null, via_face: null, home: devices[i%Math.max(1,devices.length)]?.name??device.name, execution_home: devices[i%Math.max(1,devices.length)]?.id??device.id, place:labRoot(devices[i%Math.max(1,devices.length)])+'/project', doing: null, mux: false, ended: null}));
             if (terminal) rows.push({...rows[0], id: 'shell/layout-lab', kind: 'shell', title: '终端 · 布局试验',
-              category: 'shell', activity:[], attachable: true, last: '隔离终端示例'});
+              category: 'shell', activity:[], pinned:false, attachable: true, last: '隔离终端示例'});
             for(const imported of imports.rows())rows.push({...rows[0],id:imported.id,title:imported.title,kind:imported.intent==='fork'?'gui':'observe',category:imported.agent,imported:imported.intent==='import',can_control:imported.intent==='fork',hosted:imported.intent==='fork',pinned:false,unread:0,last:'导入的历史会话',execution_home:imported.home});
             const visible = notices.snapshot(devices.length ? rows : []);
             for (const row of visible) {
