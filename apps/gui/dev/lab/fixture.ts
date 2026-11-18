@@ -472,7 +472,8 @@ export function createLabFixture(terminal = true, options: {origin?: string; con
               row.group = row.pinned ? 'pin' : body.by === 'category' ? 'cat:'+(row.category??'') : body.by === 'device' ? 'dev:'+row.home : body.by === 'state' ? 'state:'+(row.word??'') : body.by === 'place' ? 'at:'+(row.place??'') : '';
             }
             const rank = (row: SessionRow) => Math.min(labSessionAttention[row.word??'unknown'], row.draft ? labSessionAttention.draft : Infinity);
-            visible.sort((a,b) => Number(b.pinned)-Number(a.pinned) || rank(a)-rank(b) || b.at_ms-a.at_ms || a.id.localeCompare(b.id));
+            const attentionAt = (row: SessionRow) => Math.max(row.at_ms,...[...editorRevisions.values()].filter(revision => revision.key.endsWith(':'+row.id)).map(revision => revision.at_ms));
+            visible.sort((a,b) => Number(b.pinned)-Number(a.pinned) || rank(a)-rank(b) || attentionAt(b)-attentionAt(a) || a.id.localeCompare(b.id));
             visible.forEach((row,index) => row.attention_order=index);
             const groupOrder = new Map<string,number>();
             for(const row of visible)if(!groupOrder.has(row.group))groupOrder.set(row.group,groupOrder.size);

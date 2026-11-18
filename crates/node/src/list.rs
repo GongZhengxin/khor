@@ -104,6 +104,7 @@ pub struct Arranged {
     pub group: String,
     /// Global order before grouping, retained when a face filters the rows.
     pub attention_order: usize,
+    pub attention_at: u64,
     pub draft: Option<String>,
     pub child_rank: Option<u8>,
 }
@@ -168,11 +169,13 @@ pub fn arrange_with_attention(
             };
             let key = format!("{prefix}{}", view.session.id.0);
             let terminal = format!("term:{}", view.session.id.0);
-            let draft = drafts
+            let draft_revision = drafts
                 .iter()
                 .filter(|d| (d.key == key || d.key == terminal) && !d.text.trim().is_empty())
-                .max_by(|a, b| a.at_ms.cmp(&b.at_ms).then(a.id.cmp(&b.id)))
-                .map(|d| d.text.clone())
+                .max_by(|a, b| a.at_ms.cmp(&b.at_ms).then(a.id.cmp(&b.id)));
+            let attention_at = view.session.activity_at().map_or(0, |at| at.0)
+                .max(draft_revision.map_or(0, |draft| draft.at_ms));
+            let draft = draft_revision.map(|d| d.text.clone())
                 .or_else(|| {
                     view.session
                         .doing
@@ -192,6 +195,7 @@ pub fn arrange_with_attention(
                 view,
                 group,
                 attention_order: 0,
+                attention_at,
                 draft,
                 child_rank,
             }
@@ -224,10 +228,7 @@ pub fn arrange_with_attention(
                 )
             })
             .then_with(|| {
-                b.view
-                    .session
-                    .activity_at()
-                    .cmp(&a.view.session.activity_at())
+                b.attention_at.cmp(&a.attention_at)
             })
             .then_with(|| a.view.session.id.0.cmp(&b.view.session.id.0))
     });

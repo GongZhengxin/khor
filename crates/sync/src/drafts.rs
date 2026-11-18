@@ -8,8 +8,12 @@ use std::path::{Path, PathBuf};
 use crate::{glue, store::Doc};
 use loro::{LoroDoc, LoroValue, VersionVector};
 
+/// The legacy wire name is `titles`: the session-metadata document already
+/// traverses every supported peer. Loro preserves maps an older reader does not
+/// interpret, so adding editor namespaces does not make mixed-version sync fail.
+/// Do not introduce a second pile for the same document.
 pub fn drafts_dir(home: &Path) -> PathBuf {
-    home.join(".khor/drafts")
+    crate::titles::titles_dir(home)
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize, ts_rs::TS)]
@@ -257,4 +261,32 @@ mod tests {
         a.record_child(&report(1, Some(0))).unwrap();
         assert!(a.child_priorities().is_empty());
     }
+    #[test]
+    fn legacy_metadata_readers_relay_drafts_without_understanding_them() {
+        let newer = DraftDoc::new(1).unwrap();
+        let legacy = crate::titles::TitleDoc::new(2).unwrap();
+        newer.edit(&revision("editor", "retained through old peer"), &[]).unwrap();
+        legacy.merge(&newer.snapshot().unwrap()).unwrap();
+        legacy.set("gui:session", "user title").unwrap();
+        let phone = DraftDoc::new(3).unwrap();
+        phone.merge(&legacy.snapshot().unwrap()).unwrap();
+        assert_eq!(phone.all(), newer.all());
+        let names = crate::titles::TitleDoc::new(4).unwrap();
+        names.merge(&phone.snapshot().unwrap()).unwrap();
+        assert_eq!(names.title_of("gui:session").as_deref(), Some("user title"));
+    }
+
+    #[test]
+    fn concurrent_submission_clear_and_new_edit_keep_the_new_text() {
+        let phone = DraftDoc::new(1).unwrap();
+        let desktop = DraftDoc::new(2).unwrap();
+        phone.edit(&revision("old", "sent text"), &[]).unwrap();
+        merge(&phone, &desktop);
+        phone.edit(&revision("receipt", ""), &["old".into()]).unwrap();
+        desktop.edit(&revision("newer", "typing while the receipt arrives"), &["old".into()]).unwrap();
+        merge(&phone, &desktop);
+        assert_eq!(phone.all(), vec![revision("newer", "typing while the receipt arrives")]);
+        assert_eq!(phone.all(), desktop.all());
+    }
+
 }

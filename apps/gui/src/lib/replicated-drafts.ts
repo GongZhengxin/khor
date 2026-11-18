@@ -94,7 +94,9 @@ export class ReplicatedDraftStore {
       parents = previous.parents;
       this.pending = this.pending.filter(edit => edit !== previous);
     }
-    const revision = { id: this.mint(), key, text, at_ms: this.now() };
+    // Creation raises attention once; subsequent keystrokes update content,
+    // not the draft's position among other drafts.
+    const revision = { id: this.mint(), key, text, at_ms: current?.at_ms ?? this.now() };
     this.pending.push({ revision, parents });
     this.selected.set(key, revision.id);
     this.changed();

@@ -3,6 +3,9 @@
 //! and [`crate::seen`]).
 //!
 //! Shape: `titles : Map<session_id, string>` (per-key LWW).
+//! The same session-metadata pile also carries the independent editor and child
+//! attention maps owned by [`crate::drafts`]. Older peers relay those maps
+//! without interpreting them; renaming or compacting must preserve the whole doc.
 //!
 //! # An override, never the title itself
 //!

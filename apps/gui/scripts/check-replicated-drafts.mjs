@@ -66,3 +66,8 @@ assert.equal(afterRestart.get('gui:restart-send'),'sent but unconfirmed','unknow
 afterRestart.set('gui:restart-send','newer input');
 afterRestart.committed('restart-token');await afterRestart.sync();
 assert.equal(afterRestart.get('gui:restart-send'),'newer input','a replayed receipt after restart clears only its old snapshot');
+
+const stable=store();stable.set('gui:position','start');
+const created=stable.current('gui:position').at_ms;
+stable.set('gui:position','continued typing');
+assert.equal(stable.current('gui:position').at_ms,created,'typing does not continuously move a drafted row');

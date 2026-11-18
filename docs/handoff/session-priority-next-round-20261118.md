@@ -86,8 +86,7 @@ existing composer/receipt implementation when work resumes.
 
 First source checkpoint 69d82fd6e on feat/session-attention-20261118. Do not merge
 or ship yet. DraftDoc uses observed-remove immutable editor revision identities,
-retains concurrent alternatives and exact submission receipts, and is registered
-in the normal bounded document transfer. GUI edits are durably queued locally;
+retains concurrent alternatives and exact submission receipts, and shares the existing session-metadata (`titles`) CRDT pile and wire name. Old peers relay the additional maps without understanding them. GUI edits are durably queued locally;
 legacy text migration is one-time and closing tabs no longer discards unsent text.
 The backend assigns global attention ordinals; filtered lists group the surviving
 ordinals, and interaction freezes positions while updating current row content.
@@ -96,10 +95,17 @@ Read intent retries now survive a frontend restart. Added actual two-node QUIC
 coverage for draft alternatives and for old reads versus newly completed turns.
 Shell draft evidence is currently implemented for zsh through ZLE pre-redraw and
 finish hooks. Bash/arbitrary full-screen TUI editors remain unknown; do not infer
-their contents from the predictor or terminal drawing. They still receive GUI
-composer/attachment draft coverage where Khor owns that input surface.
+their contents from the predictor or terminal drawing. Khor-owned GUI text composers are covered. Attachment-only draft ranking remains an unimplemented proposal and is not part of the current claim.
 
 Child status summaries are bounded background requests; their version-qualified
 attention reports replicate without changing the parent's execution state. Active
 waiting/working children may raise the parent; terminal children stop raising it.
 All changes still require exact-source remote checks and Lab verification.
+
+Compatibility follow-up: drafts and child reports share the existing session-metadata
+pile/wire name (`titles`); no additional document name is sent to older peers.
+The compatibility regression passes the new maps through a legacy TitleDoc and
+renames concurrently, proving the opaque fields survive. Draft creation time is
+stable across keystrokes and participates in attention recency without changing
+the execution/read timestamp. Newer input and a concurrent send receipt are also
+covered by a two-replica merge test.
