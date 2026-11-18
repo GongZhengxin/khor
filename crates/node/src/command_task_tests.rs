@@ -265,15 +265,10 @@ fn cancellation_is_idempotent_and_confirms_the_owned_process_stopped() {
             std::thread::sleep(Duration::from_millis(20));
         }
         let answer = handle(&root, Request::Cancel { id: id.clone() }).unwrap();
-        assert_eq!(answer.task.phase, Phase::Cancelled);
+        assert_eq!(answer.task.phase, Phase::Cancelled, "{answer:?}");
         run.join().unwrap().unwrap();
-        assert_eq!(
-            handle(&root, Request::Cancel { id: id.clone() })
-                .unwrap()
-                .task
-                .phase,
-            Phase::Cancelled
-        );
+        let repeated = handle(&root, Request::Cancel { id: id.clone() }).unwrap();
+        assert_eq!(repeated.task.phase, Phase::Cancelled, "{repeated:?}");
     });
 }
 
@@ -347,5 +342,93 @@ fn a_canonical_local_directory_remains_the_cmd_workers_directory() {
     assert_eq!(
         answer.task.cwd, canonical,
         "retain the durable canonical identity"
+    );
+}
+
+#[test]
+fn cancelled_pipe_retry_preserves_its_drained_tail_without_an_output_failure() {
+    struct CancelledRetry {
+        control: Arc<Control>,
+        tail: std::io::Cursor<Vec<u8>>,
+    }
+    impl Read for CancelledRetry {
+        fn read(&mut self, bytes: &mut [u8]) -> std::io::Result<usize> {
+            let count = self.tail.read(bytes)?;
+            if count != 0 {
+                return Ok(count);
+            }
+            // Reproduce the owned Unix Pipe's WouldBlock -> cancellation ->
+            // retry error after its last successfully read output chunk.
+            self.control.terminate_now();
+            Err(std::io::Error::new(
+                std::io::ErrorKind::BrokenPipe,
+                "agent pipe closed",
+            ))
+        }
+    }
+    let root = crate::testdir::TempTree::fresh("command-cancelled-retry");
+    let id = seed(&root, "task-cancelled-retry-1234", "unused", None);
+    let dir = task_dir(&root, &id).unwrap();
+    let control = Arc::new(Control::default());
+    let reader = CancelledRetry {
+        control: control.clone(),
+        tail: std::io::Cursor::new(b"last-output".to_vec()),
+    };
+    drain(dir.clone(), "stdout", Box::new(reader), control).unwrap();
+    assert_eq!(
+        read_output(&dir, "stdout", 0, READ_LIMIT).unwrap().text,
+        "last-output"
+    );
+}
+
+#[test]
+fn read_and_retention_failures_are_not_disguised_as_successful_cancellation() {
+    struct FailedRead(std::io::ErrorKind);
+    impl Read for FailedRead {
+        fn read(&mut self, _: &mut [u8]) -> std::io::Result<usize> {
+            Err(std::io::Error::new(self.0, "fixture read failure"))
+        }
+    }
+    for (name, cancelled, kind) in [
+        (
+            "unexpected-broken-pipe",
+            false,
+            std::io::ErrorKind::BrokenPipe,
+        ),
+        (
+            "cancelled-permission-error",
+            true,
+            std::io::ErrorKind::PermissionDenied,
+        ),
+    ] {
+        let root = crate::testdir::TempTree::fresh(name);
+        let id = seed(&root, "task-real-read-error-1234", "unused", None);
+        let dir = task_dir(&root, &id).unwrap();
+        let control = Arc::new(Control::default());
+        if cancelled {
+            control.terminate_now();
+        }
+        assert!(
+            drain(dir, "stdout", Box::new(FailedRead(kind)), control)
+                .unwrap_err()
+                .contains("fixture read failure")
+        );
+    }
+    let root = crate::testdir::TempTree::fresh("command-cancelled-retention-error");
+    let id = seed(&root, "task-real-write-error-1234", "unused", None);
+    let dir = task_dir(&root, &id).unwrap();
+    // The output bytes were read before cancellation, but committing them
+    // still fails. That disk failure must not become an acknowledged cancel.
+    std::fs::create_dir(dir.join("stdout-0.bin")).unwrap();
+    let control = Arc::new(Control::default());
+    control.terminate_now();
+    assert!(
+        drain(
+            dir,
+            "stdout",
+            Box::new(std::io::Cursor::new(b"tail".to_vec())),
+            control
+        )
+        .is_err()
     );
 }

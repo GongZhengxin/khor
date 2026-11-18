@@ -655,7 +655,19 @@ fn drain(
     let result = (|| {
         let mut bytes = [0; 8192];
         loop {
-            let count = reader.read(&mut bytes).map_err(|error| error.to_string())?;
+            let count = match reader.read(&mut bytes) {
+                Ok(count) => count,
+                // Unix's cancellable pipe can observe cancellation between
+                // WouldBlock and its retry, reporting BrokenPipe rather than
+                // the normal zero-byte read. This is only an input boundary:
+                // failures retaining already-read output must still surface.
+                Err(error)
+                    if error.kind() == std::io::ErrorKind::BrokenPipe && control.is_cancelled() =>
+                {
+                    return Ok(());
+                }
+                Err(error) => return Err(error.to_string()),
+            };
             if count == 0 {
                 return Ok(());
             }
