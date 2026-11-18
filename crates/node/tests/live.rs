@@ -113,8 +113,14 @@ async fn a_live_row_travels_as_a_report_and_the_seen_loop_closes() {
         // wrapper uses: open, then bind the pid.
         use khor_node::live::LiveKind;
         let k = LiveKind::new(ra.to_path_buf(), a.device());
-        k.register(&id, "shell", "shell command in proj", Some(agent.id()), Some("shell"))
-            .unwrap();
+        k.register(
+            &id,
+            "shell",
+            "shell command in proj",
+            Some(agent.id()),
+            Some("shell"),
+        )
+        .unwrap();
         k.report(&id, State::Blocked, khor_node::live::Source::Reported)
             .unwrap();
     }

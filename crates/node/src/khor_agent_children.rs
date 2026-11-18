@@ -186,9 +186,12 @@ fn arrange_summaries(children: &mut [Value], commands: &mut [Value]) {
         crate::list::attention_rank(state, false)
     }
     let mut ordered: Vec<_> = children.iter_mut().chain(commands.iter_mut()).collect();
-    ordered.sort_by(|a, b| rank(a).cmp(&rank(b))
-        .then_with(|| a["run"].as_str().cmp(&b["run"].as_str()))
-        .then_with(|| a["key"].as_str().cmp(&b["key"].as_str())));
+    ordered.sort_by(|a, b| {
+        rank(a)
+            .cmp(&rank(b))
+            .then_with(|| a["run"].as_str().cmp(&b["run"].as_str()))
+            .then_with(|| a["key"].as_str().cmp(&b["key"].as_str()))
+    });
     for (order, row) in ordered.into_iter().enumerate() {
         row["attention_order"] = json!(order);
     }
@@ -530,7 +533,11 @@ mod tests {
     #[test]
     fn delegated_rows_and_commands_share_attention_order() {
         let row = |key, state| json!({"run":"turn", "key":key, "state":state});
-        let mut children = vec![row("done", "completed"), row("wait", "waiting"), row("failed", "failed")];
+        let mut children = vec![
+            row("done", "completed"),
+            row("wait", "waiting"),
+            row("failed", "failed"),
+        ];
         let mut commands = vec![row("busy-command", "working")];
         arrange_summaries(&mut children, &mut commands);
         assert_eq!(children[0]["key"], "wait");
@@ -539,5 +546,4 @@ mod tests {
         assert_eq!(commands[0]["attention_order"], 2);
         assert_eq!(children[2]["key"], "failed");
     }
-
 }
