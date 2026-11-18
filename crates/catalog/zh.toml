@@ -2735,6 +2735,9 @@ journal-why-punched = "打洞 {0} 轮，对方的候选地址都没有回应"
 
 [gui]
 child_tasks = "子任务"
+session_draft_tag = "草稿"
+choose_draft = "选择草稿"
+draft_alternatives = "保留了 {0} 份草稿"
 child_sessions = "子会话"
 child_sessions_count = "{0} 个子会话"
 child_sessions_count_more = "至少 {0} 个子会话"

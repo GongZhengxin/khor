@@ -95,6 +95,8 @@ pub mod satellite;
 pub mod secret;
 pub mod serves;
 pub mod session_content;
+mod session_drafts;
+pub use khor_sync::drafts::DraftRevision;
 pub mod session_import;
 pub mod shell_start;
 mod store_owner;
@@ -2803,18 +2805,8 @@ impl Node {
         });
         let mut have: std::collections::BTreeSet<String> =
             views.iter().map(|v| v.session.id.0.clone()).collect();
-        for (name, age, mut row) in reported {
+        for (name, age, row) in reported {
             if have.insert(row.id.0.clone()) {
-                // Read decisions are local facts already. A peer's stale report
-                // must not wait for a sync round trip to reflect them here.
-                if let Some(stamp) = row.state.as_mut() {
-                    if stamp.state == State::Done
-                        && seen.doc.watermark(&row.id.0) >= stamp.at.0 as i64
-                    {
-                        row.unread = 0;
-                        stamp.state = State::Idle;
-                    }
-                }
                 views.push(SessionView {
                     pinned: pins.doc.pinned(&row.id.0),
                     stale: false,
@@ -2833,6 +2825,17 @@ impl Node {
         // carried on the row for the pin's reason: the document
         // replicates, so every device answers from its own copy.
         for v in &mut views {
+            // Locally derived conversations already count exact message receipts.
+            // Only a cached peer row needs an overlay from this node's seen log.
+            if v.source.is_some()
+                && let Some(stamp) = v.session.state.as_mut()
+                && seen.doc.watermark(&v.session.id.0) >= stamp.at.0.min(i64::MAX as u64) as i64
+            {
+                v.session.unread = 0;
+                if stamp.state == State::Done {
+                    stamp.state = State::Idle;
+                }
+            }
             v.session.fallback_unbound_terminal();
             if let Some(t) = titles.doc.title_of(&v.session.id.0) {
                 v.session.title = t;
@@ -2885,9 +2888,14 @@ impl Node {
         by_id: &std::collections::BTreeMap<String, String>,
     ) -> Result<Vec<list::Arranged>, String> {
         let views = self.sessions()?;
-        Ok(list::arrange(views, mode, &|home: &DeviceId| {
-            by_id.get(&home.hex()).cloned()
-        }))
+        let (drafts, children) = self.session_attention()?;
+        Ok(list::arrange_with_attention(
+            views,
+            mode,
+            &|home: &DeviceId| by_id.get(&home.hex()).cloned(),
+            &drafts,
+            &children,
+        ))
     }
 
     /// **删除 on an imported row takes it off the list, and that is all**

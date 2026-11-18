@@ -178,6 +178,9 @@ async fn pairing_joins_both_tables_and_chat_flows_both_ways() {
 
     // A line nobody here typed (an agent's, say): lands as a raw block in
     // beta's copy of the broadcast, with no seen state riding along.
+    // The previous local post and the incoming line must have distinct
+    // millisecond stamps for the broadcast's legacy watermark.
+    tokio::time::sleep(Duration::from_millis(2)).await;
     {
         let far = ChatDoc::new(0xFA).unwrap();
         far.tell(
@@ -214,7 +217,23 @@ async fn pairing_joins_both_tables_and_chat_flows_both_ways() {
 
     // Seen is a decision that travels: beta looks, and alpha's badge
     // clears without anyone touching alpha.
-    b.seen(&row_b.session.id).unwrap();
+    let outside = b
+        .log(BROADCAST)
+        .unwrap()
+        .messages
+        .into_iter()
+        .find(|message| {
+            matches!(&message.body, khor_sync::chat::MsgBody::Text(text) if text == "an outside line")
+        })
+        .unwrap();
+    b.seen_snapshot(
+        &row_b.session.id,
+        &[khor_node::SeenMessage {
+            id: outside.id,
+            at_ms: outside.at,
+        }],
+    )
+    .unwrap();
     timeout(Duration::from_secs(60), b.sync_now())
         .await
         .expect("sync must not hang")
@@ -222,6 +241,43 @@ async fn pairing_joins_both_tables_and_chat_flows_both_ways() {
     let rows = a.sessions().unwrap();
     let row_a = rows.iter().find(|v| v.session.id.0 == BROADCAST).unwrap();
     assert_eq!(row_a.session.unread, 0, "seen on beta must clear on alpha");
+
+    let revision = |id: &str, text: &str| khor_sync::drafts::DraftRevision {
+        id: id.into(),
+        key: "gui:shared".into(),
+        text: text.into(),
+        at_ms: 1,
+    };
+    a.edit_session_draft(&revision("base-draft", "base"), &[])
+        .unwrap();
+    timeout(Duration::from_secs(60), b.sync_now())
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(
+        b.session_drafts().unwrap(),
+        vec![revision("base-draft", "base")]
+    );
+    a.edit_session_draft(&revision("desk-draft", "desktop"), &["base-draft".into()])
+        .unwrap();
+    b.edit_session_draft(&revision("phone-draft", "phone"), &["base-draft".into()])
+        .unwrap();
+    timeout(Duration::from_secs(60), b.sync_now())
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(a.session_drafts().unwrap(), b.session_drafts().unwrap());
+    assert_eq!(a.session_drafts().unwrap().len(), 2);
+    b.edit_session_draft(&revision("sent-draft", ""), &["phone-draft".into()])
+        .unwrap();
+    timeout(Duration::from_secs(60), b.sync_now())
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(
+        a.session_drafts().unwrap(),
+        vec![revision("desk-draft", "desktop")]
+    );
 
     // ── control groups ──────────────────────────────────────────────
     // A burned token pairs nobody: gamma replays beta's ticket.

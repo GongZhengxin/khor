@@ -28,6 +28,8 @@ export class SessionDraftStore {
     } catch { this.readable = false; }
   }
 
+  all(): readonly (readonly [string, string])[] { return [...this.entries]; }
+
   get(key: string): string { return this.entries.get(key) ?? ''; }
 
   set(key: string, text: string): void {

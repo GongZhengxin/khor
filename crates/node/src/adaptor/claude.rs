@@ -553,19 +553,29 @@ pub(crate) fn heard_last(
     mtime: std::time::SystemTime,
     parse: fn(&str) -> Vec<Utterance>,
 ) -> Option<String> {
+    cached_heard(path, (mtime, None), |path, before| {
+        newest_said(path, before, parse)
+    })
+}
+
+pub(crate) fn cached_heard(
+    path: PathBuf,
+    version: (std::time::SystemTime, Option<u64>),
+    read: impl FnOnce(&Path, Option<&Heard>) -> Option<Heard>,
+) -> Option<String> {
     use std::collections::HashMap;
     use std::sync::{Mutex, OnceLock};
-    static CACHE: OnceLock<Mutex<HashMap<PathBuf, (std::time::SystemTime, Heard)>>> =
-        OnceLock::new();
+    type Fingerprint = (std::time::SystemTime, Option<u64>);
+    static CACHE: OnceLock<Mutex<HashMap<PathBuf, (Fingerprint, Heard)>>> = OnceLock::new();
     let cache = CACHE.get_or_init(|| Mutex::new(HashMap::new()));
     let before = match cache.lock().unwrap().get(&path) {
-        Some((t, heard)) if *t == mtime => return heard.said.clone(),
+        Some((t, heard)) if *t == version => return heard.said.clone(),
         Some((_, heard)) => Some(heard.clone()),
         None => None,
     };
-    let heard = newest_said(&path, before.as_ref(), parse)?;
+    let heard = read(&path, before.as_ref())?;
     let said = heard.said.clone();
-    cache.lock().unwrap().insert(path, (mtime, heard));
+    cache.lock().unwrap().insert(path, (version, heard));
     said
 }
 
@@ -675,7 +685,10 @@ fn said_in(bytes: &[u8], parse: fn(&str) -> Vec<Utterance>) -> Option<String> {
             // marks only exist at the head of a line, and `preview` is what
             // takes the lines away.
             Utterance::User(t) | Utterance::Agent(t) => {
-                Some(khor_core::preview(&khor_core::plain(&t)))
+                // A blank assistant item can land before a tool call. Keep
+                // the previous preview until the agent actually says something.
+                let preview = khor_core::preview(&khor_core::plain(&t));
+                khor_core::says_something(&preview).then_some(preview)
             }
             // A thought or a tool name is the machine's bookkeeping — a
             // preview line should say what was *said*, and skipping back to

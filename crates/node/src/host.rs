@@ -1235,6 +1235,42 @@ fn shell_owns_terminal(master: &dyn portable_pty::MasterPty, child: u32) -> Opti
     }
 }
 
+fn shell_draft_input(
+    master: &dyn portable_pty::MasterPty,
+    child: u32,
+    allow_unmarked: bool,
+) -> crate::commands::DraftInput {
+    use crate::commands::DraftInput;
+    #[cfg(unix)]
+    {
+        if shell_owns_terminal(master, child) != Some(true) {
+            return DraftInput::Unavailable;
+        }
+        let Some(fd) = master.as_raw_fd() else {
+            return DraftInput::Unavailable;
+        };
+        // SAFETY: the PTY owns fd and tcgetattr initializes the buffer on success.
+        let mode = unsafe {
+            let mut mode = std::mem::MaybeUninit::<libc::termios>::uninit();
+            if libc::tcgetattr(fd, mode.as_mut_ptr()) != 0 {
+                return DraftInput::Unavailable;
+            }
+            mode.assume_init()
+        };
+        let canonical = mode.c_lflag & libc::ICANON != 0;
+        let echoing = mode.c_lflag & libc::ECHO != 0;
+        if canonical && !echoing {
+            return DraftInput::Unavailable;
+        }
+        if allow_unmarked && canonical && echoing {
+            return DraftInput::EchoingShell;
+        }
+    }
+    #[cfg(not(unix))]
+    let _ = (master, child, allow_unmarked);
+    DraftInput::MarkedPrompt
+}
+
 /// The least time between two repaints asked for after a panic: a
 /// program whose every repaint panics vt100 is not kept redrawing.
 const REPAINT_EVERY: Duration = Duration::from_secs(1);
@@ -2260,6 +2296,11 @@ fn host_serving(
         }))
     });
     let history = khor.join("history.jsonl");
+    let tracks_shell_input = kind == khor_core::kind::SHELL
+        && viewer.is_none()
+        && !mux_client
+        && std::env::var("KHOR_SHELL_INTEGRATION").as_deref() != Ok("0");
+    let allow_unmarked = integrated.is_none();
 
     // A screen to match patterns against, for an agent TUI khor can
     // name. None for a shell (the process group answers better), and
@@ -2386,10 +2427,12 @@ fn host_serving(
                     let mut c = c.lock().unwrap();
                     c.feed(&buf[..n], crate::live::now_ms().max(0) as u64);
                     let done = c.take_finished();
-                    c.take_changes().then(|| (c.saved(), done))
+                    if c.take_changes() {
+                        crate::commands::write_saved(&last_dir, &c.saved());
+                    }
+                    (!done.is_empty()).then_some(done)
                 });
-                if let Some((saved, done)) = &marked {
-                    crate::commands::write_saved(&last_dir, saved);
+                if let Some(done) = &marked {
                     crate::commands::append_history(&history, &session, done);
                 }
                 let integrated = commands.as_ref().is_some_and(|c| c.lock().unwrap().marked);
@@ -2598,6 +2641,8 @@ fn host_serving(
         let writer = writer.clone();
         let cmd = cmd.clone();
         let output_done = output_done.clone();
+        let draft_commands = commands.clone().filter(|_| tracks_shell_input);
+        let draft_dir = dir.clone();
         std::thread::spawn(move || {
             for conn in listener.incoming().flatten() {
                 let _ = conn.set_write_timeout(Some(Duration::from_secs(2)));
@@ -2711,6 +2756,8 @@ fn host_serving(
                     let writer = writer.clone();
                     let ledger = ledger.clone();
                     let shared = shared.clone();
+                    let draft_commands = draft_commands.clone();
+                    let draft_dir = draft_dir.clone();
                     std::thread::spawn(move || {
                         let mut readable = readable;
                         loop {
@@ -2731,6 +2778,20 @@ fn host_serving(
                                         continue;
                                     }
                                     let mut w = writer.lock().unwrap();
+                                    if let Some(commands) = &draft_commands
+                                        && !keys.is_empty()
+                                    {
+                                        let available = shell_draft_input(
+                                            &**master.lock().unwrap(),
+                                            child_pid,
+                                            allow_unmarked,
+                                        );
+                                        let mut c = commands.lock().unwrap();
+                                        c.observe_keys(&keys, available);
+                                        if c.take_changes() {
+                                            crate::commands::write_saved(&draft_dir, &c.saved());
+                                        }
+                                    }
                                     if w.write_classified(&bytes, &keys, &replies).is_err() {
                                         break;
                                     }

@@ -1770,6 +1770,9 @@ journal-why-punched = "{0} round(s) of hole punching, none of its candidates ans
 
 [gui]
 child_tasks = "Child tasks"
+session_draft_tag = "Draft"
+choose_draft = "Choose draft"
+draft_alternatives = "{0} draft versions retained"
 child_sessions = "Child sessions"
 child_sessions_count = "{0} child sessions"
 child_sessions_count_more = "At least {0} child sessions"
