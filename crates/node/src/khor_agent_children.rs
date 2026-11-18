@@ -174,6 +174,7 @@ fn summary(child: &Child, record: Option<&Record>) -> Value {
 /// Their source supplies no reliable activity stamp here, so stable identity
 /// breaks equal-priority ties rather than poll/arrival order.
 fn arrange_summaries(children: &mut [Value], commands: &mut [Value]) {
+    use khor_core::State;
     fn rank(row: &Value) -> u8 {
         let state = match row["state"].as_str() {
             Some("waiting") => Some(State::Blocked),
