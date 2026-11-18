@@ -510,6 +510,17 @@ mod tests {
         }
     }
 
+    /// Whether the roster named this file, **however Windows spells it**.
+    ///
+    /// A Windows filesystem is case-insensitive and \`find_program\` answers
+    /// with the name it built from \`PATHEXT\` (\`.EXE\`), which is the same
+    /// file as the \`codex.exe\` the test wrote. Comparing the strings exactly
+    /// made the merge with main fail on a path that names the right program
+    /// (2026-11-19), which is the same lesson \`pathKey\` carries in the GUI.
+    fn named_by(found: Option<&str>, want: &std::path::Path) -> bool {
+        found.is_some_and(|p| p.eq_ignore_ascii_case(&want.display().to_string()))
+    }
+
     /// A file `find_program` will call runnable.
     ///
     /// Windows only asks that it be a file; unix asks for the executable
@@ -535,9 +546,10 @@ mod tests {
         scratch.dir(".codex");
         let fleet = fleet_at(Some(&scratch.0), &bin.display().to_string());
         let row = fleet.agents.iter().find(|r| r.id == "codex").unwrap();
-        assert_eq!(
-            row.program.as_deref(),
-            Some(exe.display().to_string().as_str())
+        assert!(
+            named_by(row.program.as_deref(), &exe),
+            "the roster names the program it found: {:?}",
+            row.program
         );
         assert!(row.config.is_some(), "the config home is its own fact");
         let launch = row.launch.as_ref().unwrap();
@@ -589,9 +601,10 @@ mod tests {
             read: false,
         };
         let row = row_of(&known, Some(&scratch.0), &bin.display().to_string(), None);
-        assert_eq!(
-            row.program.as_deref(),
-            Some(exe.display().to_string().as_str())
+        assert!(
+            named_by(row.program.as_deref(), &exe),
+            "the roster names the program it found: {:?}",
+            row.program
         );
     }
 
@@ -632,9 +645,10 @@ mod tests {
         let row = row_of(&known, Some(&scratch.0), &bin.display().to_string(), None);
         // Deterministic when several builds are left behind, and it is the
         // one whose directory sorts last — readdir order is not an answer.
-        assert_eq!(
-            row.program.as_deref(),
-            Some(newest_exe.display().to_string().as_str())
+        assert!(
+            named_by(row.program.as_deref(), &newest_exe),
+            "the roster names the program it found: {:?}",
+            row.program
         );
     }
 

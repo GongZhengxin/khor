@@ -4911,7 +4911,7 @@ mod tests {
 
     /// A pid that is certainly dead: spawn `true`, reap it.
     fn dead_pid() -> u32 {
-        let mut c = std::process::Command::new("true").spawn().unwrap();
+        let mut c = crate::testproc::true_like().spawn().unwrap();
         let pid = c.id();
         c.wait().unwrap();
         pid
@@ -5078,6 +5078,9 @@ mod tests {
     /// shell in no tmux does not — and that second half is the control,
     /// because `term` is true of the first and a `mux` that merely
     /// copied `term` would send every khor conversation to the terminal.
+    // tmux and the fixtures below it are Unix; the merge with main brought
+    // these back without the gate our branch had (2026-11-19).
+    #[cfg(unix)]
     #[test]
     fn a_row_held_by_tmux_is_multiplexed_and_one_that_is_not_is_not() {
         use crate::adaptor::{Discovery, Proc, Procs, tmux::Tmux};
@@ -5919,6 +5922,9 @@ mod tests {
     /// The control group is the same tmux session with nothing listed
     /// inside it: it becomes a row. Without that half, an implementation
     /// that simply never emitted tmux rows would pass.
+    // tmux and the fixtures below it are Unix; the merge with main brought
+    // these back without the gate our branch had (2026-11-19).
+    #[cfg(unix)]
     #[test]
     fn a_tmux_session_holding_a_listed_agent_is_not_a_second_row() {
         use crate::adaptor::{Discovery, Proc, Procs, tmux::Tmux};
@@ -6013,6 +6019,9 @@ mod tests {
     /// Narrower since 2026-09-30 (docs/SESSION.md 形态随进程变): a bridge
     /// whose host runs is a terminal somebody has open, and it holds the
     /// seat instead — `a_terminal_that_starts_an_agent_becomes_that_agent_and_stays_open`.
+    // tmux and the fixtures below it are Unix; the merge with main brought
+    // these back without the gate our branch had (2026-11-19).
+    #[cfg(unix)]
     #[test]
     fn an_old_bridge_row_folds_into_the_agent_row_it_duplicates() {
         use crate::adaptor::{Discovery, Proc, Procs, tmux::Tmux};
@@ -6079,6 +6088,9 @@ mod tests {
     /// comment in `rows`), and the twin a bridge's client creates would
     /// otherwise appear as a phantom row for exactly as long as someone
     /// is looking at the terminal face.
+    // tmux and the fixtures below it are Unix; the merge with main brought
+    // these back without the gate our branch had (2026-11-19).
+    #[cfg(unix)]
     #[test]
     fn a_grouped_twin_of_a_listed_session_is_not_a_second_row() {
         use crate::adaptor::{Discovery, Proc, Procs, tmux::Tmux};
@@ -6653,10 +6665,7 @@ mod tests {
     impl FakeHost {
         fn up() -> FakeHost {
             FakeHost(
-                std::process::Command::new("sleep")
-                    .arg("60")
-                    .spawn()
-                    .unwrap(),
+                crate::testproc::sleeper(60).spawn().unwrap(),
             )
         }
 
@@ -7044,6 +7053,9 @@ mod tests {
         );
     }
 
+    // tmux and the fixtures below it are Unix; the merge with main brought
+    // these back without the gate our branch had (2026-11-19).
+    #[cfg(unix)]
     #[test]
     fn native_codex_title_switches_identity_and_reopen_routes_with_old_writer_loaded() {
         use crate::adaptor::{Discovery, Proc, Procs, tmux::Tmux};
@@ -7248,6 +7260,9 @@ mod tests {
         drop(writers);
     }
 
+    // tmux and the fixtures below it are Unix; the merge with main brought
+    // these back without the gate our branch had (2026-11-19).
+    #[cfg(unix)]
     #[test]
     fn workspace_directory_follows_active_tmux_pane_even_with_old_marks() {
         use crate::adaptor::{Discovery, Procs, tmux::Tmux};
@@ -7305,6 +7320,9 @@ mod tests {
     /// marks, reads tmux for that pane** (item 21's follow-up): never an
     /// empty row while the person's shells have no integration. A pane
     /// that marked keeps its own reading.
+    // tmux and the fixtures below it are Unix; the merge with main brought
+    // these back without the gate our branch had (2026-11-19).
+    #[cfg(unix)]
     #[test]
     fn an_attached_tmux_row_reads_tmux_for_a_front_pane_with_no_marks() {
         use crate::adaptor::{Discovery, Procs, tmux::Tmux};
@@ -7386,6 +7404,9 @@ mod tests {
         assert!(!doing().pane_unmarked, "the pane in front marks");
     }
 
+    // tmux and the fixtures below it are Unix; the merge with main brought
+    // these back without the gate our branch had (2026-11-19).
+    #[cfg(unix)]
     #[test]
     fn an_agent_leaving_its_tmux_session_turns_its_row_into_that_terminal() {
         use crate::adaptor::{Discovery, Procs, tmux::Tmux};
@@ -7488,6 +7509,9 @@ mod tests {
     /// gone. It has to turn into that tmux session's terminal exactly
     /// like a registered one, whether claude crashed (its status file
     /// left behind, still news) or exited cleanly (the file gone too).
+    // tmux and the fixtures below it are Unix; the merge with main brought
+    // these back without the gate our branch had (2026-11-19).
+    #[cfg(unix)]
     #[test]
     fn an_unregistered_agent_leaving_its_tmux_session_turns_its_row_into_that_terminal() {
         use crate::adaptor::{Discovery, Procs, tmux::Tmux};
@@ -7614,6 +7638,9 @@ mod tests {
     /// two rows whoever holds the session's seat: the one on the list
     /// holds it in its own form, and the other — newer, and so the one a
     /// non-agent holder would wear — is not folded into it.
+    // tmux and the fixtures below it are Unix; the merge with main brought
+    // these back without the gate our branch had (2026-11-19).
+    #[cfg(unix)]
     #[test]
     fn two_agents_in_one_tmux_session_stay_two_rows() {
         use crate::adaptor::{Discovery, Procs, tmux::Tmux};
@@ -7660,6 +7687,9 @@ mod tests {
     /// discovered claude row folds into it, and the terminal stays up —
     /// the reaper that used to close it finds nothing. When claude
     /// leaves, the row is a terminal again.
+    // tmux and the fixtures below it are Unix; the merge with main brought
+    // these back without the gate our branch had (2026-11-19).
+    #[cfg(unix)]
     #[test]
     fn a_terminal_that_starts_an_agent_becomes_that_agent_and_stays_open() {
         use crate::adaptor::{Discovery, Procs, tmux::Tmux};
@@ -7753,6 +7783,9 @@ mod tests {
     /// a claude started in it directly; its 「正在运行 tmux」 gives way to
     /// the agent's preview; and neither the claude nor the session is a
     /// second row.
+    // tmux and the fixtures below it are Unix; the merge with main brought
+    // these back without the gate our branch had (2026-11-19).
+    #[cfg(unix)]
     #[test]
     fn a_khor_shell_attached_to_tmux_wears_the_agent_in_that_session() {
         use crate::adaptor::{Discovery, Procs, tmux::Tmux};
@@ -7827,6 +7860,9 @@ mod tests {
     /// shell's own marks only ever saw it start the client. Where tmux
     /// named no front pane, the session's reading stands in, as for an
     /// attached tmux row. The session is no second row either way.
+    // tmux and the fixtures below it are Unix; the merge with main brought
+    // these back without the gate our branch had (2026-11-19).
+    #[cfg(unix)]
     #[test]
     fn a_khor_shell_attached_to_tmux_says_what_the_front_pane_runs() {
         use crate::adaptor::{Discovery, Procs, tmux::Tmux};
