@@ -7,7 +7,9 @@ export class SessionReads {
   private seen = new Map<string, number>();
   private queued = new Map<string, ReadReceipt>();
   private readable = true;
-  constructor(private storage: Pick<Storage, "getItem" | "setItem"> | null = null) {
+  private storage: Pick<Storage, "getItem" | "setItem"> | null;
+  constructor(storage: Pick<Storage, "getItem" | "setItem"> | null = null) {
+    this.storage = storage;
     try {
       const raw = storage?.getItem("khor.session-reads.v1");
       if (!raw) return;

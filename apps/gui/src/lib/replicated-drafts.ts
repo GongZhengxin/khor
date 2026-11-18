@@ -1,6 +1,7 @@
 import type { DraftStorage } from './session-drafts';
 import type { DraftRevision } from '@/api';
 
+type SubmissionPhase = 'pending' | 'failed' | 'cancelled' | 'unconfirmed';
 type Edit = { revision: DraftRevision; parents: string[] };
 type Transport = { read: () => Promise<DraftRevision[]>; write: (revision: DraftRevision, parents: string[]) => Promise<DraftRevision[]> };
 const KEY = 'khor.replicated-drafts.v1';
@@ -15,14 +16,19 @@ export class ReplicatedDraftStore {
   private listeners = new Set<() => void>();
   private serial = 0;
   private migrated = false;
-  private submissions = new Map<string, { key: string; id: string; active: boolean }>();
+  private submissions = new Map<string, { key: string; id: string; phase: SubmissionPhase }>();
   private sending: Edit | null = null;
   private syncing = false;
   private readable = true;
   private writable = true;
 
-  constructor(private storage: DraftStorage | null, private transport: Transport,
-    private mint: () => string = () => crypto.randomUUID(), private now: () => number = Date.now) {
+  private storage: DraftStorage | null;
+  private transport: Transport;
+  private mint: () => string;
+  private now: () => number;
+  constructor(storage: DraftStorage | null, transport: Transport,
+    mint: () => string = () => crypto.randomUUID(), now: () => number = Date.now) {
+    this.storage = storage; this.transport = transport; this.mint = mint; this.now = now;
     try {
       const raw = storage?.getItem(KEY);
       if (!raw) return;
@@ -35,7 +41,7 @@ export class ReplicatedDraftStore {
         !Array.isArray(parsed.selected) || !parsed.selected.every((pair: unknown) => Array.isArray(pair) && pair.length === 2 && pair.every(value => typeof value === 'string'))) throw Error('invalid draft storage');
       if (parsed.submissions !== undefined && (!Array.isArray(parsed.submissions) || !parsed.submissions.every((entry: unknown) =>
         Array.isArray(entry) && entry.length === 2 && typeof entry[0] === 'string' && entry[1] && typeof entry[1].id === 'string' && typeof entry[1].key === 'string'))) throw Error('invalid submission receipts');
-      this.submissions = new Map((parsed.submissions ?? []).map(([token, value]: [string, {key:string;id:string}]) => [token, {...value, active:false}]));
+      this.submissions = new Map((parsed.submissions ?? []).map(([token, value]: [string, {key:string;id:string}]) => [token, {...value, phase:'unconfirmed' as const}]));
       this.migrated = parsed.migrated === true;
       this.remote = parsed.remote;
       this.pending = parsed.pending;
@@ -62,7 +68,7 @@ export class ReplicatedDraftStore {
       for (const parent of edit.parents) rows.delete(parent);
       if (edit.revision.text) rows.set(edit.revision.id, edit.revision);
     }
-    const hidden = new Set([...this.submissions.values()].filter(entry => entry.active).map(entry => entry.id));
+    const hidden = new Set([...this.submissions.values()].filter(entry => entry.phase === 'pending').map(entry => entry.id));
     return [...rows.values()].filter(row => !hidden.has(row.id));
   }
   alternatives(key: string): DraftRevision[] {
@@ -101,7 +107,7 @@ export class ReplicatedDraftStore {
   }
   begin(key: string, token: string) {
     const current = this.current(key);
-    if (current) this.submissions.set(token, { key, id: current.id, active: true });
+    if (current) this.submissions.set(token, { key, id: current.id, phase: 'pending' });
     this.changed();
   }
   committed(token: string) {
@@ -110,9 +116,9 @@ export class ReplicatedDraftStore {
     this.submissions.delete(token);
     this.clear(submitted.key, submitted.id);
   }
-  failed(token: string) {
+  failed(token: string, phase: 'failed' | 'cancelled' = 'failed') {
     const submitted = this.submissions.get(token);
-    if (submitted) { submitted.active = false; this.changed(); }
+    if (submitted) { submitted.phase = phase; this.changed(); }
   }
   migrate(entries: readonly (readonly [string, string])[]) {
     if (this.migrated) return;
@@ -133,8 +139,11 @@ export class ReplicatedDraftStore {
         this.sending = null;
         this.changed();
       }
-      this.remote = await this.transport.read();
-      this.changed();
+      const rows = await this.transport.read();
+      // Revisions are immutable. An unchanged poll is neither an editor event
+      // nor a reason to rewrite storage and repaint every retained chat.
+      const identity = (values: DraftRevision[]) => values.map(row => row.id).sort().join('\n');
+      if (identity(rows) !== identity(this.remote)) { this.remote = rows; this.changed(); }
     } finally { this.sending = null; this.syncing = false; }
   }
 }

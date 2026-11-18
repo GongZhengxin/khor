@@ -1041,7 +1041,7 @@ export function ChatView({
               syncSessionDrafts();
             }
             if (frame.kind === "send_cancelled" || frame.kind === "unsent") {
-              sessionDrafts.failed(frame.token);
+              sessionDrafts.failed(frame.token, frame.kind === "send_cancelled" ? "cancelled" : "failed");
               const draft = settleChatDraft(id, frame.token, frame.kind === "send_cancelled" ? "cancelled" : "failed", draftOwner, receiptReader);
               if (draft) recovered.set(draft.token, draft);
             }
