@@ -295,12 +295,12 @@ pub(super) async fn read(node: &Node, board: &str, request: &Value) -> Result<Va
     // calls. Reports replicate, independently of the parent's execution word.
     if request["summary_only"] == true && request["action"].is_null() {
         let count = children.len();
-        stream::iter(children.iter())
+        stream::iter(children)
             .map(|child| async move {
                 if let Some(task) = child.link.task.clone() {
                     let _ = tokio::time::timeout(
                         Duration::from_secs(3),
-                        call(node, child, BoundAction::Get { task }),
+                        call(node, &child, BoundAction::Get { task }),
                     )
                     .await;
                 }
