@@ -50,7 +50,24 @@ jobs:
   runtime-store:
     if: ${{ inputs.suite != 'node' && inputs.suite != 'gui' && inputs.suite != 'agent' }}
     uses: ./.github/workflows/runtime-store.yml
+  session-attention-unit:
+    if: ${{ inputs.suite != 'agent' && inputs.suite != 'runtime' && !inputs.reuse_frontend }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: 22.19.0
+          cache: npm
+          cache-dependency-path: apps/gui/package-lock.json
+      - run: npm ci --prefix apps/gui
+      - name: Verify durable editor snapshots and bounded read receipts before native compilation
+        run: |
+          node apps/gui/scripts/check-replicated-drafts.mjs
+          node apps/gui/scripts/check-session-read.mjs
   frontend:
+    needs: session-attention-unit
     if: ${{ inputs.suite != 'agent' && inputs.suite != 'runtime' && !inputs.reuse_frontend }}
     uses: ./.github/workflows/frontend.yml
   developer-lab:
