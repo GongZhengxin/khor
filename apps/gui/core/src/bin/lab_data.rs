@@ -98,9 +98,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     khor_catalog::lang::set(khor_catalog::lang::Lang::En);
     let en = khor_gui_core::config_rows(&workspace.0);
     khor_catalog::lang::set(previous);
+    let attention: std::collections::BTreeMap<_, _> = [
+        khor_core::State::Blocked, khor_core::State::Errored, khor_core::State::Done,
+        khor_core::State::Busy, khor_core::State::Idle, khor_core::State::Failed,
+    ].into_iter().map(|state| (state.key(), khor_node::list::attention_rank(Some(state), false)))
+        .chain([("draft", khor_node::list::attention_rank(None, true)), ("unknown", khor_node::list::attention_rank(None, false))]).collect();
     println!(
         "{}",
-        json!({"schema":1,"machine_ids":ids,"avatars":avatars,"directories":directories,"documents":documents,"pairing_ticket":pairing_ticket,"settings":{"zh":zh,"en":en}})
+        json!({"session_attention":attention,"schema":1,"machine_ids":ids,"avatars":avatars,"directories":directories,"documents":documents,"pairing_ticket":pairing_ticket,"settings":{"zh":zh,"en":en}})
     );
     Ok(())
 }

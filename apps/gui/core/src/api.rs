@@ -97,12 +97,18 @@ pub fn answer(
         )?),
         "session_drafts" => to_json(&crate::session_drafts(root)?),
         "session_draft_edit" => {
-            let revision: khor_sync::drafts::DraftRevision = serde_json::from_value(
-                args.get("revision").cloned().ok_or("missing editor revision")?,
-            ).map_err(|e| e.to_string())?;
+            let revision: crate::DraftRevision = serde_json::from_value(
+                args.get("revision")
+                    .cloned()
+                    .ok_or("missing editor revision")?,
+            )
+            .map_err(|e| e.to_string())?;
             let parents: Vec<String> = serde_json::from_value(
-                args.get("parents").cloned().ok_or("missing editor parents")?,
-            ).map_err(|e| e.to_string())?;
+                args.get("parents")
+                    .cloned()
+                    .ok_or("missing editor parents")?,
+            )
+            .map_err(|e| e.to_string())?;
             to_json(&crate::edit_session_draft(root, &revision, &parents)?)
         }
         "sessions" => to_json(&crate::list_sessions(root, &arg("by")?)?),

@@ -3339,10 +3339,14 @@ pub async fn agent_recognition(
 }
 
 /// Local durable editor snapshots ride the network decision documents.
-pub use khor_sync::drafts::DraftRevision;
+pub use khor_node::DraftRevision;
 pub fn session_drafts(root: &Path) -> Result<Vec<DraftRevision>, String> {
     open(root)?.session_drafts()
 }
-pub fn edit_session_draft(root: &Path, revision: &DraftRevision, parents: &[String]) -> Result<Vec<DraftRevision>, String> {
+pub fn edit_session_draft(
+    root: &Path,
+    revision: &DraftRevision,
+    parents: &[String],
+) -> Result<Vec<DraftRevision>, String> {
     open(root)?.edit_session_draft(revision, parents)
 }

@@ -5,8 +5,8 @@
 //! submission cannot clear a new edit. Text is never guessed from PTY traffic.
 use std::path::{Path, PathBuf};
 
-use loro::{LoroDoc, LoroValue, VersionVector};
 use crate::{glue, store::Doc};
+use loro::{LoroDoc, LoroValue, VersionVector};
 
 pub fn drafts_dir(home: &Path) -> PathBuf {
     home.join(".khor/drafts")
@@ -21,13 +21,23 @@ pub struct DraftRevision {
     pub at_ms: u64,
 }
 
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+pub struct ChildAttention {
+    pub session: String,
+    pub child: String,
+    pub revision: u64,
+    pub rank: Option<u8>,
+}
+
 pub struct DraftDoc {
     inner: LoroDoc,
 }
 
 impl DraftDoc {
     pub fn new(peer: u64) -> Result<Self, String> {
-        Ok(Self { inner: glue::with_peer(peer)? })
+        Ok(Self {
+            inner: glue::with_peer(peer)?,
+        })
     }
 
     pub fn all(&self) -> Vec<DraftRevision> {
@@ -43,14 +53,64 @@ impl DraftDoc {
         rows
     }
 
+    fn child_reports(&self) -> std::collections::BTreeMap<(String, String), ChildAttention> {
+        let mut reports: std::collections::BTreeMap<(String, String), ChildAttention> = Default::default();
+        self.inner.get_map("children").for_each(|_, value| {
+            if let Ok(LoroValue::String(value)) = value.into_value() {
+                if let Ok(report) = serde_json::from_str::<ChildAttention>(&value) {
+                    let key = (report.session.clone(), report.child.clone());
+                    if reports.get(&key).is_none_or(|held| held.revision < report.revision) {
+                        reports.insert(key, report);
+                    }
+                }
+            }
+        });
+        reports
+    }
+
+    pub fn child_priorities(&self) -> std::collections::BTreeMap<String, u8> {
+        let mut priorities = std::collections::BTreeMap::<String, u8>::new();
+        for report in self.child_reports().into_values() {
+            if let Some(rank) = report.rank {
+                priorities.entry(report.session).and_modify(|held| *held = (*held).min(rank)).or_insert(rank);
+            }
+        }
+        priorities
+    }
+
+    pub fn record_child(&self, report: &ChildAttention) -> Result<(), String> {
+        let key = (report.session.clone(), report.child.clone());
+        let previous = self.child_reports();
+        if previous.get(&key).is_some_and(|held| held.revision >= report.revision) {
+            return Ok(());
+        }
+        let map = self.inner.get_map("children");
+        // Version-qualified keys make a concurrent older poll harmless too.
+        let wire_key = serde_json::to_string(&(&key, report.revision)).map_err(|e| e.to_string())?;
+        map.insert(&wire_key, serde_json::to_string(report).map_err(|e| e.to_string())?).map_err(|e| e.to_string())?;
+        if let Some(old) = previous.get(&key) {
+            let old_key = serde_json::to_string(&(&key, old.revision)).map_err(|e| e.to_string())?;
+            map.delete(&old_key).map_err(|e| e.to_string())?;
+        }
+        self.inner.commit();
+        Ok(())
+    }
+
     /// Repeating a delivery is harmless. A revision is immutable; an old reply
     /// never assigns the current editor, and unrelated alternatives remain.
     pub fn edit(&self, revision: &DraftRevision, parents: &[String]) -> Result<(), String> {
-        if revision.id.is_empty() || revision.id.len() > 128
-            || !revision.id.bytes().all(|c| c.is_ascii_alphanumeric() || b"-._:".contains(&c))
+        if revision.id.is_empty()
+            || revision.id.len() > 128
+            || !revision
+                .id
+                .bytes()
+                .all(|c| c.is_ascii_alphanumeric() || b"-._:".contains(&c))
             || revision.key.len() > 1024
-            || !(revision.key.starts_with("gui:") || revision.key.starts_with("khor:") || revision.key.starts_with("term:"))
-            || revision.text.len() > 512 * 1024 || parents.len() > 512
+            || !(revision.key.starts_with("gui:")
+                || revision.key.starts_with("khor:")
+                || revision.key.starts_with("term:"))
+            || revision.text.len() > 512 * 1024
+            || parents.len() > 512
             || parents.iter().any(|id| id == &revision.id)
         {
             return Err("invalid editor revision".into());
@@ -63,17 +123,25 @@ impl DraftDoc {
             return Ok(());
         }
         let rows = self.all();
-        if parents.iter().any(|id| rows.iter().any(|row| &row.id == id && row.key != revision.key)) {
+        if parents.iter().any(|id| {
+            rows.iter()
+                .any(|row| &row.id == id && row.key != revision.key)
+        }) {
             return Err("editor revision belongs to another session".into());
         }
         for parent in parents {
             map.delete(parent).map_err(|e| e.to_string())?;
         }
         if !revision.text.is_empty() {
-            map.insert(&revision.id, serde_json::to_string(revision).map_err(|e| e.to_string())?)
-                .map_err(|e| e.to_string())?;
+            map.insert(
+                &revision.id,
+                serde_json::to_string(revision).map_err(|e| e.to_string())?,
+            )
+            .map_err(|e| e.to_string())?;
         }
-        receipts.insert(&revision.id, true).map_err(|e| e.to_string())?;
+        receipts
+            .insert(&revision.id, true)
+            .map_err(|e| e.to_string())?;
         self.inner.commit();
         Ok(())
     }
@@ -105,7 +173,7 @@ impl Doc for DraftDoc {
     }
 
     fn items(&self) -> usize {
-        self.all().len()
+        self.all().len() + self.child_reports().len()
     }
 }
 
@@ -113,7 +181,12 @@ impl Doc for DraftDoc {
 mod tests {
     use super::*;
     fn revision(id: &str, text: &str) -> DraftRevision {
-        DraftRevision { id: id.into(), key: "gui:session".into(), text: text.into(), at_ms: 1 }
+        DraftRevision {
+            id: id.into(),
+            key: "gui:session".into(),
+            text: text.into(),
+            at_ms: 1,
+        }
     }
     fn merge(a: &DraftDoc, b: &DraftDoc) {
         a.merge(&b.snapshot().unwrap()).unwrap();
@@ -125,12 +198,18 @@ mod tests {
         let b = DraftDoc::new(2).unwrap();
         a.edit(&revision("base", "hello"), &[]).unwrap();
         merge(&a, &b);
-        a.edit(&revision("a", "hello from phone"), &["base".into()]).unwrap();
-        b.edit(&revision("b", "hello from desktop"), &["base".into()]).unwrap();
+        a.edit(&revision("a", "hello from phone"), &["base".into()])
+            .unwrap();
+        b.edit(&revision("b", "hello from desktop"), &["base".into()])
+            .unwrap();
         merge(&a, &b);
         assert_eq!(a.all(), b.all());
         assert_eq!(a.all().len(), 2);
-        a.edit(&revision("resolved", "hello from both"), &["a".into(), "b".into()]).unwrap();
+        a.edit(
+            &revision("resolved", "hello from both"),
+            &["a".into(), "b".into()],
+        )
+        .unwrap();
         merge(&a, &b);
         assert_eq!(a.all(), vec![revision("resolved", "hello from both")]);
         assert_eq!(a.all(), b.all());
@@ -139,9 +218,23 @@ mod tests {
     fn old_ack_does_not_clear_new_input() {
         let a = DraftDoc::new(1).unwrap();
         a.edit(&revision("sent", "old text"), &[]).unwrap();
-        a.edit(&revision("new", "new text"), &["sent".into()]).unwrap();
+        a.edit(&revision("new", "new text"), &["sent".into()])
+            .unwrap();
         a.edit(&revision("ack", ""), &["sent".into()]).unwrap();
         a.edit(&revision("sent", "old text"), &[]).unwrap();
         assert_eq!(a.all(), vec![revision("new", "new text")]);
     }
+    #[test]
+    fn child_attention_cannot_be_restored_by_an_older_status_reply() {
+        let a = DraftDoc::new(1).unwrap();
+        let b = DraftDoc::new(2).unwrap();
+        let report = |revision, rank| ChildAttention { session: "wide/parent".into(), child: "task".into(), revision, rank };
+        a.record_child(&report(1, Some(0))).unwrap();
+        b.record_child(&report(2, None)).unwrap();
+        merge(&a, &b);
+        assert!(a.child_priorities().is_empty());
+        a.record_child(&report(1, Some(0))).unwrap();
+        assert!(a.child_priorities().is_empty());
+    }
+
 }

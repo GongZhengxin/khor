@@ -776,7 +776,10 @@ impl Ledger {
             } else if self.pane.as_deref() == pane {
                 self.editor.clone()
             } else {
-                self.parked.iter().find(|(p, _)| p.as_deref() == pane).and_then(|(_, parked)| parked.editor.clone())
+                self.parked
+                    .iter()
+                    .find(|(p, _)| p.as_deref() == pane)
+                    .and_then(|(_, parked)| parked.editor.clone())
             },
             command: c.and_then(|c| c.text.as_ref()).map(|t| one_line(t)),
             running: running.is_some(),
@@ -1444,11 +1447,14 @@ mod tests {
     fn editor_reports_are_authoritative_isolated_and_cleared_on_execute() {
         let mut ledger = Ledger::default();
         ledger.feed(b"\x1b]133;B\x07printable screen text", 1);
-        assert_eq!(ledger.doing().editor, None, "screen text is not editor evidence");
+        assert_eq!(
+            ledger.doing().editor,
+            None,
+            "screen text is not editor evidence"
+        );
         ledger.feed(b"\x1b]633;P;KhorEditor=echo hello\x07", 2);
         assert_eq!(ledger.doing().editor.as_deref(), Some("echo hello"));
         ledger.feed(b"\x1b]133;C\x07", 3);
         assert_eq!(ledger.doing().editor.as_deref(), Some(""));
     }
-
 }

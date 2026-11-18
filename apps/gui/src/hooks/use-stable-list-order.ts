@@ -58,7 +58,7 @@ export function useStableListOrder<T extends OrderedRow>(rows: T[], root: RefObj
       current.delete(previous.id);
       return row ? [{ ...row, group: previous.group }] : [];
     });
-    ordered.push(...current.values());
+    // New rows wait until interaction ends; do not split a frozen group.
   } else positions.current = { filter, rows: rows.map(({ id, group }) => ({ id, group })) };
   const identity = ordered.map(row => `${row.group}\0${row.id}`).join('\n');
   const previous = useRef(identity);

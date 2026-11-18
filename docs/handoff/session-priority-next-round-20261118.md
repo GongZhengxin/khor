@@ -27,8 +27,7 @@ Implementation and remote verification are authorized. Main integration and rele
 
 User requested: a session with partly edited, unsent content should gain list
 priority. Show `[草稿]` in red followed by normally colored draft text. Desired
-coverage includes GUI conversations, shell terminals and agent TUIs. This is
-next-round planning only; no product implementation has started.
+coverage includes GUI conversations, shell terminals and agent TUIs. Implementation is active in the isolated session-attention worktree; validation is pending.
 
 Confirmed by the user on 2026-11-18: Blocked > Errored > Draft > Done >
 Busy > Idle > Failed. Draft is an attention overlay, not a seventh execution
@@ -82,3 +81,25 @@ not an empty draft. Draft appearance, clear and confirmed submission drive
 attention changes; continuous text edits update the excerpt with stable list
 interaction behavior. Final lifecycle details will be verified against the
 existing composer/receipt implementation when work resumes.
+
+## Implementation checkpoint 2026-11-18
+
+First source checkpoint 69d82fd6e on feat/session-attention-20261118. Do not merge
+or ship yet. DraftDoc uses observed-remove immutable editor revision identities,
+retains concurrent alternatives and exact submission receipts, and is registered
+in the normal bounded document transfer. GUI edits are durably queued locally;
+legacy text migration is one-time and closing tabs no longer discards unsent text.
+The backend assigns global attention ordinals; filtered lists group the surviving
+ordinals, and interaction freezes positions while updating current row content.
+
+Read intent retries now survive a frontend restart. Added actual two-node QUIC
+coverage for draft alternatives and for old reads versus newly completed turns.
+Shell draft evidence is currently implemented for zsh through ZLE pre-redraw and
+finish hooks. Bash/arbitrary full-screen TUI editors remain unknown; do not infer
+their contents from the predictor or terminal drawing. They still receive GUI
+composer/attachment draft coverage where Khor owns that input surface.
+
+Child status summaries are bounded background requests; their version-qualified
+attention reports replicate without changing the parent's execution state. Active
+waiting/working children may raise the parent; terminal children stop raising it.
+All changes still require exact-source remote checks and Lab verification.

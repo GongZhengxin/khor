@@ -11,6 +11,7 @@ INPUTS = (
     'crates/core/src/avatar.rs',
     'crates/core/src/avatar/mark.rs',
     'crates/node/src/files.rs',
+    'crates/node/src/list.rs',
     'apps/gui/core/src/bin/lab_data.rs',
     'apps/gui/core/src/qr.rs',
     'apps/gui/core/src/lib.rs',

@@ -9,6 +9,7 @@ use std::time::Duration;
 const PAGE: usize = 24;
 
 struct Child {
+    board: String,
     run: String,
     key: String,
     link: ChildLink,
@@ -50,6 +51,7 @@ fn collect(node: &Node, board: &str, runs: &[CommandRecord]) -> Result<Vec<Child
             );
             if seen.insert(unique) {
                 children.push(Child {
+                    board: board.into(),
                     run: run.id.clone(),
                     key,
                     link,
@@ -74,7 +76,22 @@ async fn call(node: &Node, child: &Child, action: BoundAction) -> Result<Record,
         )
         .await?;
     match answer {
-        delegation::Answer::Task { record } => Ok(*record),
+        delegation::Answer::Task { record } => {
+            use protocol::TaskState;
+            let rank = if !owns_latest_input(child, &record) { None } else {
+                match record.task.status.state {
+                    TaskState::InputRequired | TaskState::AuthRequired => Some(0),
+                    TaskState::Working if delegation::approval(&record).is_some() => Some(0),
+                    TaskState::Submitted | TaskState::Working => Some(4),
+                    _ => None,
+                }
+            };
+            let _ = node.record_child_attention(&khor_sync::drafts::ChildAttention {
+                session: child.board.clone(), child: format!("{}:{}", child.run, child.key),
+                revision: record.revision, rank,
+            });
+            Ok(*record)
+        },
         _ => Err("Delegation returned no task".into()),
     }
 }
@@ -184,6 +201,7 @@ fn owned_child(node: &Node, board: &str, run: &str, key: &str) -> Result<Child, 
         return Err("Child link identity mismatch".into());
     }
     Ok(Child {
+        board: board.into(),
         run: run.into(),
         key: key.into(),
         link,
@@ -268,13 +286,17 @@ pub(super) async fn read(node: &Node, board: &str, request: &Value) -> Result<Va
         })
         .collect();
     let children = collect(node, board, &runs)?;
-    // A list label needs only the parent's retained links. Do not contact
-    // every child agent or read command output just to paint that count.
+    // Collapsed parents still need authoritative child attention. Fetch only
+    // bounded status pages here; the ordinary session list never makes network
+    // calls. Reports replicate, independently of the parent's execution word.
     if request["summary_only"] == true && request["action"].is_null() {
-        return Ok(json!({
-            "count": children.len(),
-            "at_least": children.len() >= PAGE,
-        }));
+        let count = children.len();
+        stream::iter(children.iter()).map(|child| async move {
+            if let Some(task) = child.link.task.clone() {
+                let _ = tokio::time::timeout(Duration::from_secs(3), call(node, child, BoundAction::Get { task })).await;
+            }
+        }).buffered(8).collect::<Vec<_>>().await;
+        return Ok(json!({ "count": count, "at_least": count >= PAGE }));
     }
     if let Some(action) = request["action"].as_str() {
         let child = children

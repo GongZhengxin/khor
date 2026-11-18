@@ -3781,3 +3781,20 @@ fn a_local_read_clears_a_cached_remote_badge_before_sync() {
         "future receipts are clamped to the currently known row"
     );
 }
+
+#[test]
+fn duplicate_status_reports_do_not_refresh_attention_or_revive_unread() {
+    let r = root("attention-duplicate-status");
+    let n = Node::open_as(r.to_path_buf(), "one").unwrap();
+    let id = n.open_ephemeral(khor_core::kind::SHELL, "attention").unwrap();
+    n.report_state(&id, State::Busy).unwrap();
+    let stamp = n.sessions().unwrap().into_iter().find(|v| v.session.id == id).unwrap().session.activity_at();
+    std::thread::sleep(std::time::Duration::from_millis(5));
+    n.report_state(&id, State::Busy).unwrap();
+    assert_eq!(n.sessions().unwrap().into_iter().find(|v| v.session.id == id).unwrap().session.activity_at(), stamp);
+    n.report_state(&id, State::Done).unwrap();
+    n.seen(&id).unwrap();
+    std::thread::sleep(std::time::Duration::from_millis(5));
+    n.report_state(&id, State::Done).unwrap();
+    assert_eq!(n.sessions().unwrap().into_iter().find(|v| v.session.id == id).unwrap().session.unread, 0);
+}

@@ -365,6 +365,13 @@ jobs:
           KHOR_TEST_AGENT_BIN: ${{ runner.temp }}/khor-agent
       - run: cargo test --locked -p khor-node --lib --no-run --message-format=json > "${{ runner.temp }}/node-artifacts.json"
       - run: python3 scripts/native_provenance.py verify --prepared "${{ runner.temp }}/node-prepared.json" --artifacts "${{ runner.temp }}/node-artifacts.json" --output "${{ runner.temp }}/node-provenance.json"
+      - name: Verify shared attention, synchronized drafts and global read receipts
+        run: |
+          cargo test --locked -p khor-sync --lib drafts:: -- --test-threads=1
+          cargo test --locked -p khor-node --lib list::tests -- --test-threads=1
+          cargo test --locked -p khor-node --lib editor_reports_are_authoritative -- --test-threads=1
+          cargo test --locked -p khor-node --lib duplicate_status_reports_do_not_refresh -- --test-threads=1
+          cargo test --locked -p khor-node --test live --test pairing -- --test-threads=1
       - name: Verify query admission and pairing recovery during metadata publication
         shell: bash
         run: |

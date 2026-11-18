@@ -807,6 +807,8 @@ export function ChatView({
   };
   const discardDraft = (draft: ChatDraft) => {
     discardChatDraft(id, draft.token, draft.owner);
+    sessionDrafts.committed(draft.token);
+    syncSessionDrafts();
     setUnsent(was => was?.id === `say:${draft.token}` ? null : was);
   };
   const addDraft = (draft: ChatDraft) => {

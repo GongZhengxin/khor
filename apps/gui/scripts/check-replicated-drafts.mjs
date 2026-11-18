@@ -57,3 +57,12 @@ const legacyId = old.current('gui:legacy').id; old.clear('gui:legacy', legacyId)
 const migratedAgain = store(migratedDisk); migratedAgain.migrate([['gui:legacy', 'old draft']]);
 assert.equal(migratedAgain.get('gui:legacy'), '', 'one-time migration cannot resurrect sent text');
 console.log('PASS: replicated editor alternatives, offline restart, immutable submissions, late replies and migration');
+
+const submissionDisk=disk(), submitted=store(submissionDisk);
+submitted.set('gui:restart-send','sent but unconfirmed');await submitted.sync();
+submitted.begin('gui:restart-send','restart-token');
+const afterRestart=store(submissionDisk);
+assert.equal(afterRestart.get('gui:restart-send'),'sent but unconfirmed','unknown outcome remains recoverable after restart');
+afterRestart.set('gui:restart-send','newer input');
+afterRestart.committed('restart-token');await afterRestart.sync();
+assert.equal(afterRestart.get('gui:restart-send'),'newer input','a replayed receipt after restart clears only its old snapshot');

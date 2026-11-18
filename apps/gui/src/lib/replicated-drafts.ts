@@ -15,7 +15,7 @@ export class ReplicatedDraftStore {
   private listeners = new Set<() => void>();
   private serial = 0;
   private migrated = false;
-  private submissions = new Map<string, { key: string; id: string }>();
+  private submissions = new Map<string, { key: string; id: string; active: boolean }>();
   private sending: Edit | null = null;
   private syncing = false;
   private readable = true;
@@ -33,6 +33,9 @@ export class ReplicatedDraftStore {
       if (!Array.isArray(parsed.remote) || !parsed.remote.every(valid) || !Array.isArray(parsed.pending) ||
         !parsed.pending.every((edit: Edit) => valid(edit.revision) && Array.isArray(edit.parents) && edit.parents.every(id => typeof id === 'string')) ||
         !Array.isArray(parsed.selected) || !parsed.selected.every((pair: unknown) => Array.isArray(pair) && pair.length === 2 && pair.every(value => typeof value === 'string'))) throw Error('invalid draft storage');
+      if (parsed.submissions !== undefined && (!Array.isArray(parsed.submissions) || !parsed.submissions.every((entry: unknown) =>
+        Array.isArray(entry) && entry.length === 2 && typeof entry[0] === 'string' && entry[1] && typeof entry[1].id === 'string' && typeof entry[1].key === 'string'))) throw Error('invalid submission receipts');
+      this.submissions = new Map((parsed.submissions ?? []).map(([token, value]: [string, {key:string;id:string}]) => [token, {...value, active:false}]));
       this.migrated = parsed.migrated === true;
       this.remote = parsed.remote;
       this.pending = parsed.pending;
@@ -45,7 +48,7 @@ export class ReplicatedDraftStore {
   durable = () => this.readable && this.writable;
   private changed() {
     this.serial++;
-    const raw = JSON.stringify({ migrated: this.migrated, remote: this.remote, pending: this.pending, selected: [...this.selected] });
+    const raw = JSON.stringify({ submissions: [...this.submissions], migrated: this.migrated, remote: this.remote, pending: this.pending, selected: [...this.selected] });
     this.writable = false;
     if (this.readable && raw.length <= LIMIT && this.storage) {
       try { this.storage.setItem(KEY, raw); this.writable = true; } catch { /* Retain in memory and report unsaved state. */ }
@@ -59,7 +62,7 @@ export class ReplicatedDraftStore {
       for (const parent of edit.parents) rows.delete(parent);
       if (edit.revision.text) rows.set(edit.revision.id, edit.revision);
     }
-    const hidden = new Set([...this.submissions.values()].map(entry => entry.id));
+    const hidden = new Set([...this.submissions.values()].filter(entry => entry.active).map(entry => entry.id));
     return [...rows.values()].filter(row => !hidden.has(row.id));
   }
   alternatives(key: string): DraftRevision[] {
@@ -98,7 +101,7 @@ export class ReplicatedDraftStore {
   }
   begin(key: string, token: string) {
     const current = this.current(key);
-    if (current) this.submissions.set(token, { key, id: current.id });
+    if (current) this.submissions.set(token, { key, id: current.id, active: true });
     this.changed();
   }
   committed(token: string) {
@@ -107,7 +110,10 @@ export class ReplicatedDraftStore {
     this.submissions.delete(token);
     this.clear(submitted.key, submitted.id);
   }
-  failed(token: string) { if (this.submissions.delete(token)) this.changed(); }
+  failed(token: string) {
+    const submitted = this.submissions.get(token);
+    if (submitted) { submitted.active = false; this.changed(); }
+  }
   migrate(entries: readonly (readonly [string, string])[]) {
     if (this.migrated) return;
     for (const [key, text] of entries) if (text && !this.alternatives(key).some(row => row.text === text)) this.set(key, text);

@@ -224,19 +224,41 @@ async fn pairing_joins_both_tables_and_chat_flows_both_ways() {
     assert_eq!(row_a.session.unread, 0, "seen on beta must clear on alpha");
 
     let revision = |id: &str, text: &str| khor_sync::drafts::DraftRevision {
-        id: id.into(), key: "gui:shared".into(), text: text.into(), at_ms: 1,
+        id: id.into(),
+        key: "gui:shared".into(),
+        text: text.into(),
+        at_ms: 1,
     };
-    a.edit_session_draft(&revision("base-draft", "base"), &[]).unwrap();
-    timeout(Duration::from_secs(60), b.sync_now()).await.unwrap().unwrap();
-    assert_eq!(b.session_drafts().unwrap(), vec![revision("base-draft", "base")]);
-    a.edit_session_draft(&revision("desk-draft", "desktop"), &["base-draft".into()]).unwrap();
-    b.edit_session_draft(&revision("phone-draft", "phone"), &["base-draft".into()]).unwrap();
-    timeout(Duration::from_secs(60), b.sync_now()).await.unwrap().unwrap();
+    a.edit_session_draft(&revision("base-draft", "base"), &[])
+        .unwrap();
+    timeout(Duration::from_secs(60), b.sync_now())
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(
+        b.session_drafts().unwrap(),
+        vec![revision("base-draft", "base")]
+    );
+    a.edit_session_draft(&revision("desk-draft", "desktop"), &["base-draft".into()])
+        .unwrap();
+    b.edit_session_draft(&revision("phone-draft", "phone"), &["base-draft".into()])
+        .unwrap();
+    timeout(Duration::from_secs(60), b.sync_now())
+        .await
+        .unwrap()
+        .unwrap();
     assert_eq!(a.session_drafts().unwrap(), b.session_drafts().unwrap());
     assert_eq!(a.session_drafts().unwrap().len(), 2);
-    b.edit_session_draft(&revision("sent-draft", ""), &["phone-draft".into()]).unwrap();
-    timeout(Duration::from_secs(60), b.sync_now()).await.unwrap().unwrap();
-    assert_eq!(a.session_drafts().unwrap(), vec![revision("desk-draft", "desktop")]);
+    b.edit_session_draft(&revision("sent-draft", ""), &["phone-draft".into()])
+        .unwrap();
+    timeout(Duration::from_secs(60), b.sync_now())
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(
+        a.session_drafts().unwrap(),
+        vec![revision("desk-draft", "desktop")]
+    );
 
     // ── control groups ──────────────────────────────────────────────
     // A burned token pairs nobody: gamma replays beta's ticket.

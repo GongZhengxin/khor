@@ -105,6 +105,7 @@ pub struct Arranged {
     /// Global order before grouping, retained when a face filters the rows.
     pub attention_order: usize,
     pub draft: Option<String>,
+    pub child_rank: Option<u8>,
 }
 
 /// Arranges the list: pinned rows first, then this mode's groups.
@@ -147,23 +148,81 @@ pub fn arrange_with_drafts(
     device_name: &dyn Fn(&DeviceId) -> Option<String>,
     drafts: &[DraftRevision],
 ) -> Vec<Arranged> {
-    let mut out: Vec<Arranged> = views.into_iter().map(|view| {
-        let prefix = if view.session.id.0.starts_with("wide/") { "khor:" } else { "gui:" };
-        let key = format!("{prefix}{}", view.session.id.0);
-        let terminal = format!("term:{}", view.session.id.0);
-        let draft = drafts.iter().filter(|d| (d.key == key || d.key == terminal) && !d.text.trim().is_empty())
-            .max_by(|a, b| a.at_ms.cmp(&b.at_ms).then(a.id.cmp(&b.id)))
-            .map(|d| d.text.clone())
-            .or_else(|| view.session.doing.as_ref().and_then(|doing| doing.editor.as_ref())
-                .filter(|text| !text.trim().is_empty()).cloned());
-        let (group, _) = place_of(&view, mode, device_name);
-        Arranged { view, group, attention_order: 0, draft }
-    }).collect();
+    arrange_with_attention(views, mode, device_name, drafts, &Default::default())
+}
+
+pub fn arrange_with_attention(
+    views: Vec<SessionView>, mode: Arrange,
+    device_name: &dyn Fn(&DeviceId) -> Option<String>, drafts: &[DraftRevision],
+    children: &std::collections::BTreeMap<String, u8>,
+) -> Vec<Arranged> {
+    let mut out: Vec<Arranged> = views
+        .into_iter()
+        .map(|view| {
+            let prefix = if view.session.id.0.starts_with("wide/") {
+                "khor:"
+            } else {
+                "gui:"
+            };
+            let key = format!("{prefix}{}", view.session.id.0);
+            let terminal = format!("term:{}", view.session.id.0);
+            let draft = drafts
+                .iter()
+                .filter(|d| (d.key == key || d.key == terminal) && !d.text.trim().is_empty())
+                .max_by(|a, b| a.at_ms.cmp(&b.at_ms).then(a.id.cmp(&b.id)))
+                .map(|d| d.text.clone())
+                .or_else(|| {
+                    view.session
+                        .doing
+                        .as_ref()
+                        .and_then(|doing| doing.editor.as_ref())
+                        .filter(|text| !text.trim().is_empty())
+                        .cloned()
+                });
+            let child_rank = children.get(&view.session.id.0).copied();
+            let mut view = view;
+            if draft.is_some() || child_rank.is_some() {
+                view.stale = false;
+                view.quiet = false;
+            }
+            let (group, _) = place_of(&view, mode, device_name);
+            Arranged {
+                view,
+                group,
+                attention_order: 0,
+                draft,
+                child_rank,
+            }
+        })
+        .collect();
     out.sort_by(|a, b| {
-        b.view.pinned.cmp(&a.view.pinned)
-            .then_with(|| attention_rank(a.view.session.state.filter(|_| a.view.session.state_known()).map(|s| s.state), a.draft.is_some())
-                .cmp(&attention_rank(b.view.session.state.filter(|_| b.view.session.state_known()).map(|s| s.state), b.draft.is_some())))
-            .then_with(|| b.view.session.activity_at().cmp(&a.view.session.activity_at()))
+        b.view
+            .pinned
+            .cmp(&a.view.pinned)
+            .then_with(|| {
+                attention_rank(
+                    a.view
+                        .session
+                        .state
+                        .filter(|_| a.view.session.state_known())
+                        .map(|s| s.state),
+                    a.draft.is_some(),
+                ).min(a.child_rank.unwrap_or(u8::MAX))
+                .cmp(&attention_rank(
+                    b.view
+                        .session
+                        .state
+                        .filter(|_| b.view.session.state_known())
+                        .map(|s| s.state),
+                    b.draft.is_some(),
+                ).min(b.child_rank.unwrap_or(u8::MAX)))
+            })
+            .then_with(|| {
+                b.view
+                    .session
+                    .activity_at()
+                    .cmp(&a.view.session.activity_at())
+            })
             .then_with(|| a.view.session.id.0.cmp(&b.view.session.id.0))
     });
     let mut groups = std::collections::HashMap::new();
@@ -484,7 +543,11 @@ mod tests {
         let out = arrange(rows, Arrange::Device, &names);
         assert_eq!(out.last().unwrap().view.session.id.0, "wide/all");
         assert_eq!(out.last().unwrap().group, GROUP_KHOR);
-        assert!(out[..out.len()-1].iter().all(|r| r.group.starts_with(GROUP_DEVICE)));
+        assert!(
+            out[..out.len() - 1]
+                .iter()
+                .all(|r| r.group.starts_with(GROUP_DEVICE))
+        );
     }
 
     #[test]
@@ -521,16 +584,47 @@ mod tests {
     }
     #[test]
     fn drafts_are_orthogonal_and_pins_use_the_same_priority() {
-        let drafts = vec![DraftRevision { id: "draft".into(), key: "gui:c".into(), text: "unsent".into(), at_ms: 999 }];
+        let drafts = vec![DraftRevision {
+            id: "draft".into(),
+            key: "gui:c".into(),
+            text: "unsent".into(),
+            at_ms: 999,
+        }];
         for mode in Arrange::ALL {
             let rows = arrange_with_drafts(sample(), mode, &names, &drafts);
-            let ordered: Vec<_> = rows.iter().map(|row| (row.attention_order, row.view.session.id.0.as_str())).collect();
-            assert!(ordered.iter().find(|(_, id)| *id == "b").unwrap().0 < ordered.iter().find(|(_, id)| *id == "c").unwrap().0);
-            assert_eq!(rows.iter().find(|row| row.view.session.id.0 == "c").unwrap().view.session.state.unwrap().state, State::Failed);
+            let ordered: Vec<_> = rows
+                .iter()
+                .map(|row| (row.attention_order, row.view.session.id.0.as_str()))
+                .collect();
+            assert!(
+                ordered.iter().find(|(_, id)| *id == "b").unwrap().0
+                    < ordered.iter().find(|(_, id)| *id == "c").unwrap().0
+            );
+            assert_eq!(
+                rows.iter()
+                    .find(|row| row.view.session.id.0 == "c")
+                    .unwrap()
+                    .view
+                    .session
+                    .state
+                    .unwrap()
+                    .state,
+                State::Failed
+            );
         }
         let mut pinned = sample();
-        for row in &mut pinned { row.pinned = true; }
-        assert_eq!(ids(&arrange_with_drafts(pinned, Arrange::Device, &names, &drafts)), vec!["b", "c", "d", "a"]);
+        for row in &mut pinned {
+            row.pinned = true;
+        }
+        assert_eq!(
+            ids(&arrange_with_drafts(
+                pinned,
+                Arrange::Device,
+                &names,
+                &drafts
+            )),
+            vec!["b", "c", "d", "a"]
+        );
         assert_eq!(attention_rank(Some(State::Blocked), true), 0);
         assert_eq!(attention_rank(Some(State::Errored), true), 1);
         assert_eq!(attention_rank(Some(State::Busy), true), 2);
@@ -542,10 +636,15 @@ mod tests {
         rows.retain(|row| row.session.id.0 != "b");
         let ordered = arrange(rows, Arrange::Device, &names);
         assert_eq!(ids(&ordered), vec!["d", "a", "c"]);
-        let mut tied = vec![view("z", 10, State::Busy, None, 1), view("a", 10, State::Busy, None, 2)];
-        assert_eq!(ids(&arrange(tied.clone(), Arrange::Recent, &names)), vec!["a", "z"]);
+        let mut tied = vec![
+            view("z", 10, State::Busy, None, 1),
+            view("a", 10, State::Busy, None, 2),
+        ];
+        assert_eq!(
+            ids(&arrange(tied.clone(), Arrange::Recent, &names)),
+            vec!["a", "z"]
+        );
         tied.reverse();
         assert_eq!(ids(&arrange(tied, Arrange::Recent, &names)), vec!["a", "z"]);
     }
-
 }

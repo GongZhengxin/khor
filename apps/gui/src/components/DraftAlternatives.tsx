@@ -1,3 +1,4 @@
+import { gui } from '@/gen/catalog';
 import { useSyncExternalStore } from 'react';
 import { ChoiceField } from '@/components/ui/choice-field';
 import { sessionDrafts } from '@/hooks/use-session-draft';
@@ -10,8 +11,8 @@ export function DraftAlternatives({ draftKey }: { draftKey: string }) {
   if (rows.length < 2) return null;
   const selected = sessionDrafts.current(draftKey);
   return <div data-draft-alternatives className="mx-auto flex w-full max-w-measure items-center gap-in px-row py-in text-callout">
-    <span className="flex-none text-secondary">保留了 {rows.length} 份草稿</span>
-    <ChoiceField label="选择草稿" value={selected?.text.replace(/\s+/g, ' ').slice(0, 80) ?? ''} selected={selected?.id}
+    <span className="flex-none text-secondary">{gui.draft_alternatives(String(rows.length))}</span>
+    <ChoiceField label={gui.choose_draft} value={selected?.text.replace(/\s+/g, ' ').slice(0, 80) ?? ''} selected={selected?.id}
       options={rows.map(row => ({ id: row.id, label: row.text.replace(/\s+/g, ' ').slice(0, 160) }))}
       onPick={id => sessionDrafts.choose(draftKey, id)} />
   </div>;

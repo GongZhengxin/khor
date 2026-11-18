@@ -136,3 +136,5 @@ export function labWorkspaces(devices: DeviceRow[]): WorkspaceRow[] {
     } satisfies WorkspaceRow;
   }));
 }
+
+export const labSessionAttention = (generated as unknown as {session_attention: Record<string, number>}).session_attention;

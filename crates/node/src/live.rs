@@ -4276,6 +4276,15 @@ impl RowGate {
         source: Source,
         run: Option<&str>,
     ) -> Result<(), String> {
+        // A repeated status report is not another turn or meaningful activity.
+        // In particular, streamed tokens must not keep moving Busy rows.
+        if let Ok((_, previous)) = self.read_pair() {
+            if previous.gui_run.as_deref() == run && previous.word == word
+                && previous.exit == exit && previous.source == Some(source)
+            {
+                return Ok(());
+            }
+        }
         let state = LiveState {
             gui_run: run.map(str::to_owned),
             word,

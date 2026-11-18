@@ -68,7 +68,6 @@ pub mod khor_agent;
 pub mod legacy_codex;
 pub mod link;
 pub mod list;
-mod session_drafts;
 pub mod live;
 pub mod lock;
 pub mod mcp;
@@ -96,6 +95,8 @@ pub mod satellite;
 pub mod secret;
 pub mod serves;
 pub mod session_content;
+mod session_drafts;
+pub use khor_sync::drafts::DraftRevision;
 pub mod session_import;
 pub mod shell_start;
 mod store_owner;
@@ -2884,9 +2885,14 @@ impl Node {
         by_id: &std::collections::BTreeMap<String, String>,
     ) -> Result<Vec<list::Arranged>, String> {
         let views = self.sessions()?;
-        Ok(list::arrange_with_drafts(views, mode, &|home: &DeviceId| {
-            by_id.get(&home.hex()).cloned()
-        }, &self.session_drafts()?))
+        let (drafts, children) = self.session_attention()?;
+        Ok(list::arrange_with_attention(
+            views,
+            mode,
+            &|home: &DeviceId| by_id.get(&home.hex()).cloned(),
+            &drafts,
+            &children,
+        ))
     }
 
     /// **删除 on an imported row takes it off the list, and that is all**

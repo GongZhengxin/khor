@@ -72,8 +72,12 @@ async fn session_drafts() -> Result<Vec<khor_gui_core::DraftRevision>, String> {
 }
 
 #[tauri::command]
-async fn session_draft_edit(revision: khor_gui_core::DraftRevision, parents: Vec<String>) -> Result<Vec<khor_gui_core::DraftRevision>, String> {
-    off_main(move || khor_gui_core::edit_session_draft(&Node::root_from_env(), &revision, &parents)).await
+async fn session_draft_edit(
+    revision: khor_gui_core::DraftRevision,
+    parents: Vec<String>,
+) -> Result<Vec<khor_gui_core::DraftRevision>, String> {
+    off_main(move || khor_gui_core::edit_session_draft(&Node::root_from_env(), &revision, &parents))
+        .await
 }
 
 /// The day strips, on their own beat rather than riding the row list
