@@ -20,6 +20,7 @@ use std::{
 };
 
 mod platform;
+mod portable;
 
 pub const CHUNK_BYTES: usize = 256 * 1024;
 pub const MAX_METADATA_BYTES: usize = 64 * 1024;
@@ -231,8 +232,9 @@ impl TransferStore {
         Ok(gate)
     }
 
-    fn reconcile_initialization(&self, _held: &Gate<'_>) -> Result<()> {
-        clear_initialization(&self.root.join(INITIALIZING))
+    fn reconcile_initialization(&self, held: &Gate<'_>) -> Result<()> {
+        clear_initialization(&self.root.join(INITIALIZING))?;
+        portable::reconcile(self, held)
     }
 
     fn initialize_unpublished(
@@ -260,7 +262,22 @@ impl TransferStore {
             }
             #[cfg(test)]
             tests::pause_initialization(&dir, "before_publish");
-            platform::publish_no_replace(&dir, &final_dir)?;
+            #[cfg(test)]
+            let publication = if std::env::var_os("KHOR_TRANSFER_FORCE_PORTABLE").is_some() {
+                Err(io::Error::from(io::ErrorKind::Unsupported))
+            } else {
+                platform::publish_no_replace(&dir, &final_dir)
+            };
+            #[cfg(not(test))]
+            let publication = platform::publish_no_replace(&dir, &final_dir);
+            match publication {
+                Ok(()) => {}
+                Err(why) if portable::unsupported(&why) => {
+                    portable::publish(&self.root, manifest, id)?;
+                    clear_initialization(&dir)?;
+                }
+                Err(why) => return Err(why.into()),
+            }
             Ok(())
         })();
         if let Err(cause) = publish {
@@ -299,6 +316,10 @@ impl TransferStore {
                 check_file(&entry.path())?;
                 continue;
             }
+            if name == portable::DIRECTORY {
+                portable::check_container(&self.root)?;
+                continue;
+            }
             if name.len() != 64
                 || !name
                     .bytes()
@@ -308,8 +329,8 @@ impl TransferStore {
                     "unexpected root entry; explicit reconciliation required",
                 ));
             }
-            check_dir(&entry.path())?;
-            let manifest = read_manifest(&entry.path())?;
+            let dir = portable::resolve(&self.root, name)?;
+            let manifest = read_manifest(&dir)?;
             let id = manifest.id()?;
             if id.to_string() != name {
                 return Err(Error::InvalidStage("stage id does not bind manifest"));
@@ -360,10 +381,10 @@ impl TransferStore {
             ));
         }
         let (owner_path, mut owner_file) = self.available_owner(id, &gate)?;
-        let dir = self.root.join(id.to_string());
         if !exists {
             self.initialize_unpublished(&gate, &manifest, id)?;
         }
+        let dir = portable::resolve(&self.root, &id.to_string())?;
         if read_manifest(&dir)? != manifest {
             return Err(Error::InvalidStage("manifest changed"));
         }
@@ -403,6 +424,9 @@ impl TransferStore {
         // Drop cannot recursively lock LOCAL. The gate prevents new owners
         // from entering between the live-owner check and removal.
         let (_slot, _lease) = self.available_owner(id, &gate)?;
+        if let Some(cancelled) = portable::cancel(&self.root, expected, id)? {
+            return Ok(cancelled);
+        }
         let dir = self.root.join(id.to_string());
         match fs::symlink_metadata(&dir) {
             Err(why) if why.kind() == io::ErrorKind::NotFound => return Ok(Cancelled::Absent),
