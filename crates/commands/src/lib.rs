@@ -4986,7 +4986,13 @@ fn web(rest: &[String]) -> Result<(), String> {
     let Some(ips) = node()?.local_ips()? else {
         return Err(msg::web_face_not_serving().to_owned());
     };
-    let Some(ip) = khor_node::face::best_address(&ips) else {
+    // **The routing table decides, not the address list.** Both private
+    // addresses rank equal in `best_address`, and on this Windows box the
+    // WSL adapter came first — a link no phone could open (see
+    // `face::primary_address`). `reachable_address` asks the routing table
+    // which address would be used, and falls back to the ranking when that
+    // answer is not one this machine listens on.
+    let Some(ip) = khor_node::face::reachable_address(&ips) else {
         return Err(msg::web_face_not_serving().to_owned());
     };
     // **The address about to be printed is the address that gets
