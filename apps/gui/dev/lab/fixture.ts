@@ -503,7 +503,7 @@ export function createLabFixture(terminal = true, options: {origin?: string; con
             frames[index].push({kind:'settings',settings:structuredClone(preferences[index])});});break;
           }
           case "chat_answer": later(() => frames[index].push({ kind: "answered", ask: body.ask, option: body.option }, update("agent_message_chunk", text(body.option === "deny" ? "已取消。这次预览没有执行任何系统操作。" : "已确认。此处仅演示确认状态，不执行系统操作。"))), 900); break;
-          case "chat_say": sentPrompts.push(structuredClone(body));run(index, "收到。这是验收环境的示例回复，没有调用模型或执行命令。你可以展开上面的工具调用，检查输出与复制按钮。"); break;
+          case "chat_say": sentPrompts.push(structuredClone(body));if(typeof body.token==='string')frames[index].push({kind:'send_committed',token:body.token});run(index, "收到。这是验收环境的示例回复，没有调用模型或执行命令。你可以展开上面的工具调用，检查输出与复制按钮。"); break;
           case "chat_stop": generation[index]++; streaming.delete(index); frames[index].push({ kind: "turn", stop: "Cancelled" }); break;
           // Explicit no-PIN fixture facts; a failed read never unlocks production.
           case "lock_state": answer = {on: false, has_pin: false, timeout_min: 0, timeouts: [0, 1, 5, 15, 60], pin_min: 6, system_door: false}; break;

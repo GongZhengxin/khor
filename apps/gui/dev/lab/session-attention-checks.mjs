@@ -40,7 +40,28 @@ export async function checkSessionAttention(browser, { port, report, engine, wid
     await page.mouse.up();
     await page.waitForFunction(({one}) => document.querySelectorAll('[data-list] [data-side-row]')[1]?.getAttribute('data-side-row')===one,{one});
     await page.screenshot({path:path.join(report,`attention-${engine}-${width}.png`)});
+    // Exercise the real producer boundary, not just the editor model: upload
+    // preparation yields while the user continues typing into this composer.
+    await page.goto(`http://127.0.0.1:${port}/app/?scene=gui&items=3&machines=1`);
+    const input = page.locator('[data-chat-input]:visible'); await input.waitFor();
+    await input.fill('message before upload');
+    await api('__ai_preview/upload-mode',{mode:'delay'});
+    await page.locator('input[type=file]').last().setInputFiles({name:'attention-race.bin',mimeType:'application/octet-stream',buffer:Buffer.from('isolated upload race')});
+    await page.waitForFunction(()=>{const send=document.querySelector('[data-chat-send]');return send&&!send.disabled;});
+    await page.locator('[data-chat-send]').click();
+    await input.fill('draft typed while uploading');
+    await page.waitForFunction(async()=>{
+      const calls=await(await fetch('/api/__ai_preview/says',{method:'POST',body:'{}'})).json();
+      return calls.some(call=>String(call.text).startsWith('message before upload'));
+    });
+    assert.equal(await input.inputValue(),'draft typed while uploading','The old send never clears text entered during attachment preparation');
+    await page.waitForFunction(async()=>{
+      const drafts=await(await fetch('/api/session_drafts',{method:'POST',body:'{}'})).json();
+      return drafts.some(draft=>draft.text==='draft typed while uploading')&&!drafts.some(draft=>draft.text==='message before upload');
+    });
+    assert.equal(await input.inputValue(),'draft typed while uploading','A commit receipt preserves the newer editor revision');
+    await page.screenshot({path:path.join(report,`attention-upload-${engine}-${width}.png`)});
     assert.deepEqual(errors,[]);
-    return {name:`${engine} ${width}: draft preview, shared attention and held-pointer stability`,passed:true};
+    return {name:`${engine} ${width}: draft preview, shared attention, held-pointer stability and upload/commit race`,passed:true};
   } finally { await context.close(); }
 }
