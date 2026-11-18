@@ -1104,33 +1104,50 @@ mod tests {
         private_trust_root(&fixture.0);
         let directory = fixture.0.join(".khor/doc-transfer-state");
         private_dir(&directory).unwrap();
-        let held = open(&directory.join("gate"), true).unwrap();
-        held.try_lock().unwrap();
-        let mut root = RootPermit::acquire(&fixture.0).unwrap().attach().unwrap();
-        let allowance = Duration::from_millis(80);
-        root.permit.wait_remaining = Some(allowance);
-        let mut observations = 0;
-        let started = Instant::now();
-        let result = root.bootstrap_metadata(&fixture.0, || {
-            assert!(!METADATA_HELD.get());
-            let fence = open(&fixture.0.join(".khor/trust-mutation/gate"), false).unwrap();
-            assert!(
-                matches!(fence.try_lock(), Err(fs::TryLockError::WouldBlock)),
-                "every recheck requires its real root fence"
+        for settled in [false, true] {
+            let mut held = Some(open(&directory.join("gate"), true).unwrap());
+            held.as_ref().unwrap().try_lock().unwrap();
+            let mut root = RootPermit::acquire(&fixture.0).unwrap().attach().unwrap();
+            let mut observations = 0;
+            let started = Instant::now();
+            let result = root.bootstrap_metadata(&fixture.0, || {
+                assert!(!METADATA_HELD.get());
+                let fence = open(&fixture.0.join(".khor/trust-mutation/gate"), false).unwrap();
+                assert!(
+                    matches!(fence.try_lock(), Err(fs::TryLockError::WouldBlock)),
+                    "every recheck requires its real root fence"
+                );
+                observations += 1;
+                if observations > 1 {
+                    return Err("expired metadata observation was retried".into());
+                }
+                // Exceed the actual allowance inside one observation. The
+                // next result must reject expiry, even if publication settles
+                // and the metadata lease becomes free before that result.
+                // A scheduler or filesystem stall may delay returning from
+                // this work; it must never admit another observation/success.
+                std::thread::sleep(OPEN_WAIT);
+                if settled {
+                    drop(held.take());
+                }
+                Ok(!settled)
+            });
+            let why = result.err().map(|error| error.kind);
+            let remaining = root.permit.wait_remaining;
+            drop(root);
+            drop(held);
+            assert_eq!(why, Some(crate::proto::DocTransferFailure::Busy));
+            assert_eq!(observations, 1, "expiry cannot replenish the allowance");
+            assert_eq!(remaining, Some(Duration::ZERO));
+            eprintln!(
+                "[N-METADATA-DEADLINE] settled={settled} observations={observations} elapsed_ms={} remaining_zero=true",
+                started.elapsed().as_millis()
             );
-            observations += 1;
-            // A slow observation is waiting work, not a replenished allowance.
-            std::thread::sleep(Duration::from_millis(30));
-            Ok(true)
-        });
-        assert_eq!(
-            result.err().unwrap().kind,
-            crate::proto::DocTransferFailure::Busy
-        );
-        assert!(observations > 0);
-        assert!(started.elapsed() < allowance + Duration::from_millis(100));
-        drop(root);
+        }
+        let held = open(&directory.join("gate"), false).unwrap();
+        held.try_lock().unwrap();
         let mut control = root_gate(&fixture.0).unwrap();
+        assert!(control.permit.wait_remaining.is_none());
         let mut called = false;
         let started = Instant::now();
         let result = control.bootstrap_metadata(&fixture.0, || {
@@ -1142,7 +1159,11 @@ mod tests {
             crate::proto::DocTransferFailure::Busy
         );
         assert!(!called, "try0 control must not become a snapshot waiter");
-        assert!(started.elapsed() < allowance);
+        assert!(control.permit.wait_remaining.is_none());
+        eprintln!(
+            "[N-METADATA-CONTROL] observations=0 no_wait_allowance=true elapsed_ms={}",
+            started.elapsed().as_millis()
+        );
         drop(control);
         drop(held);
     }
