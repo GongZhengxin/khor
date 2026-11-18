@@ -5,15 +5,51 @@ use std::{
         io::{AsRawHandle, FromRawHandle, OwnedHandle},
     },
     path::PathBuf,
+    sync::OnceLock,
 };
 use windows_sys::Win32::{
-    Foundation::{ERROR_ACCESS_DENIED, WAIT_TIMEOUT},
-    System::Threading::{
-        OpenProcess, PROCESS_QUERY_LIMITED_INFORMATION, PROCESS_TERMINATE,
-        QueryFullProcessImageNameW, SYNCHRONIZATION_SYNCHRONIZE, TerminateProcess,
-        WaitForSingleObject,
+    Foundation::{
+        ERROR_ACCESS_DENIED, HANDLE_FLAG_INHERIT, INVALID_HANDLE_VALUE, SetHandleInformation,
+        WAIT_TIMEOUT,
+    },
+    System::{
+        Console::{GetStdHandle, STD_ERROR_HANDLE, STD_INPUT_HANDLE, STD_OUTPUT_HANDLE},
+        Threading::{
+            OpenProcess, PROCESS_QUERY_LIMITED_INFORMATION, PROCESS_TERMINATE,
+            QueryFullProcessImageNameW, SYNCHRONIZATION_SYNCHRONIZE, TerminateProcess,
+            WaitForSingleObject,
+        },
     },
 };
+
+/// Process-owned transport handles must not travel to detached hosts as extra
+/// inheritable handles. Explicit Stdio::inherit still works: std duplicates
+/// that selected handle for its child. Run once at entry, before any spawning,
+/// rather than temporarily changing process-wide flags around each spawn.
+pub(crate) fn privatize_standard_handles() -> Result<(), String> {
+    static PREPARED: OnceLock<Result<(), String>> = OnceLock::new();
+    PREPARED
+        .get_or_init(|| {
+            for (name, which) in [
+                ("stdin", STD_INPUT_HANDLE),
+                ("stdout", STD_OUTPUT_HANDLE),
+                ("stderr", STD_ERROR_HANDLE),
+            ] {
+                let handle = unsafe { GetStdHandle(which) };
+                if handle.is_null() || handle == INVALID_HANDLE_VALUE {
+                    continue;
+                }
+                if unsafe { SetHandleInformation(handle, HANDLE_FLAG_INHERIT, 0) } == 0 {
+                    return Err(format!(
+                        "Cannot isolate process {name}: {}",
+                        std::io::Error::last_os_error()
+                    ));
+                }
+            }
+            Ok(())
+        })
+        .clone()
+}
 
 fn open(pid: u32, access: u32) -> std::io::Result<OwnedHandle> {
     if pid == 0 {

@@ -608,7 +608,7 @@ const VIEWER_ENV: &str = "KHOR_HOST_VIEWER";
 const STARTUP_ENV: &str = "KHOR_HOST_STARTUP";
 const HEADLESS_ENV: &str = "KHOR_HOST_HEADLESS";
 
-/// portable-pty creates ConPTY with INHERIT_CURSOR. An unattended new screen
+/// portable-pty creates ConPTY with INHERIT_CURSOR. A new managed screen
 /// starts at its origin; consume this one bootstrap query before replay so a
 /// later viewer cannot answer it again. Subsequent child queries stay intact.
 #[cfg(any(windows, test))]
@@ -2159,7 +2159,8 @@ fn host_serving(
     // directory nothing can delete (第十四轮 第 4 条), and a shell born
     // in `/` is a shell nobody asked for.
     if let Some(cwd) = crate::cwd::standing() {
-        builder.cwd(cwd);
+        let cwd = crate::shell_start::native_shell_path(Path::new(&cmd[0]), &cwd);
+        builder.cwd(cwd.as_ref());
     }
     let mut child = pty
         .slave
@@ -2306,7 +2307,7 @@ fn host_serving(
             let mut shell_announced = false;
             let mut startup_released = false;
             #[cfg(windows)]
-            let mut initial_cursor = headless.then(InitialCursor::default);
+            let mut initial_cursor = Some(InitialCursor::default());
             loop {
                 let n = match reader.read(&mut buf) {
                     Ok(0) | Err(_) => break,

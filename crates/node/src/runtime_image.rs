@@ -99,6 +99,11 @@ fn current() -> Result<Info, String> {
 
 /// Every native face and the re-executing integration harness enter here before Node::open.
 pub fn process_entry() {
+    #[cfg(windows)]
+    if let Err(error) = crate::win_process::privatize_standard_handles() {
+        eprintln!("{error}");
+        std::process::exit(1);
+    }
     if std::env::args_os().nth(1).as_deref() == Some(std::ffi::OsStr::new("_verify_release")) {
         let result = (|| -> Result<String, String> {
             let args = std::env::args_os().skip(2).collect::<Vec<_>>();

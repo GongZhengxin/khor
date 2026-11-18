@@ -85,6 +85,8 @@ pub fn plan(dir: &Path, cmd: &[String], getenv: impl Fn(&str) -> Option<String>)
         .to_ascii_lowercase();
     let program = program.strip_suffix(".exe").unwrap_or(&program);
     let args = &cmd[1..];
+    let native_dir = crate::shell_start::native_shell_path(Path::new(&cmd[0]), dir);
+    let dir = native_dir.as_ref();
     let d = dir.display().to_string();
     match program {
         "zsh" | "-zsh" => Some(Plan {
@@ -271,6 +273,24 @@ mod tests {
             ),
             None
         );
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn native_hooks_use_local_disk_paths() {
+        let dir = Path::new(r"\\?\C:\Users\中文 user's dir\.khor\shell");
+        let ps = plan(dir, &["powershell.exe".into()], env(&[])).unwrap();
+        assert!(ps.args[3].contains(r"C:\Users\中文 user''s dir\.khor\shell\khor.ps1"));
+        assert!(!ps.args[3].contains(r"\\?\"));
+        assert_eq!(&ps.args[..3], ["-NoLogo", "-NoExit", "-Command"]);
+        let cmd = plan(dir, &["cmd.exe".into()], env(&[])).unwrap();
+        assert_eq!(
+            cmd.args,
+            ["/k", r#""C:\Users\中文 user's dir\.khor\shell\khor.cmd""#]
+        );
+        let unc = Path::new(r"\\?\UNC\server\share\shell");
+        let ps = plan(unc, &["pwsh.exe".into()], env(&[])).unwrap();
+        assert!(ps.args[3].contains(r"\\?\UNC\server\share\shell\khor.ps1"));
     }
 
     #[cfg(unix)]

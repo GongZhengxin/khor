@@ -1,9 +1,10 @@
 //! A command typed into a freshly-created shell. The target chooses its own
 //! shell and home; the host holds the command until a terminal can answer it.
 use serde::{Deserialize, Serialize};
+use std::borrow::Cow;
 use std::collections::VecDeque;
 use std::io::{self, Read, Write};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ShellStart {
@@ -231,6 +232,38 @@ pub(crate) fn hosted_command(cmd: &[String]) -> Vec<String> {
     } else {
         cmd.to_vec()
     }
+}
+
+/// Native Windows shell parsers can classify a verbatim local disk path as
+/// remote, unlike the filesystem APIs that produced its canonical spelling.
+/// Project only paths handed to those shells; durable identities stay intact.
+pub(crate) fn native_shell_path<'a>(program: &Path, path: &'a Path) -> Cow<'a, Path> {
+    #[cfg(windows)]
+    {
+        use std::path::{Component, Prefix};
+        let native = program
+            .file_name()
+            .and_then(|name| name.to_str())
+            .is_some_and(|name| {
+                let name = name.to_ascii_lowercase();
+                matches!(
+                    name.as_str(),
+                    "cmd" | "cmd.exe" | "powershell" | "powershell.exe" | "pwsh" | "pwsh.exe"
+                )
+            });
+        let mut components = path.components();
+        if native
+            && let Some(Component::Prefix(prefix)) = components.next()
+            && let Prefix::VerbatimDisk(drive) = prefix.kind()
+        {
+            let mut local = PathBuf::from(format!("{}:", char::from(drive)));
+            local.push(components.as_path());
+            return Cow::Owned(local);
+        }
+    }
+    #[cfg(not(windows))]
+    let _ = program;
+    Cow::Borrowed(path)
 }
 
 pub fn directory(typed: &str) -> Result<PathBuf, String> {
@@ -581,6 +614,37 @@ mod tests {
             hosted_command(&["/bin/zsh".into(), "-f".into()]),
             ["/bin/zsh", "-f"]
         );
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn native_shell_paths_project_only_verbatim_local_disks() {
+        use std::path::Path;
+        let canonical = Path::new(r"\\?\C:\Users\中文 用户\khor");
+        let local = Path::new(r"C:\Users\中文 用户\khor");
+        for shell in ["cmd", "CMD.EXE", "powershell.exe", "PowerShell", "pwsh.exe"] {
+            assert_eq!(
+                native_shell_path(Path::new(shell), canonical).as_ref(),
+                local
+            );
+        }
+        assert_eq!(
+            native_shell_path(Path::new("native-tool.exe"), canonical).as_ref(),
+            canonical
+        );
+        for path in [
+            r"C:\Users\中文 用户\khor",
+            r"\\server\share\khor",
+            r"\\?\UNC\server\share\khor",
+            r"\\?\Volume{1234}\khor",
+            r"\\.\C:\khor",
+        ] {
+            let path = Path::new(path);
+            assert_eq!(
+                native_shell_path(Path::new("powershell.exe"), path).as_ref(),
+                path
+            );
+        }
     }
 
     #[test]

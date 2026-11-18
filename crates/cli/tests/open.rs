@@ -185,7 +185,7 @@ fn the_child_is_told_what_terminal_it_is_in_not_what_the_opener_had() {
             "--",
             "sh",
             "-c",
-            "printf 'TERM=[%s] COLORTERM=[%s] NO_COLOR=[%s] FORCE_COLOR=[%s] CLICOLOR=[%s] CLICOLOR_FORCE=[%s] END\\n' \"$TERM\" \"$COLORTERM\" \"${NO_COLOR-unset}\" \"${FORCE_COLOR-unset}\" \"${CLICOLOR-unset}\" \"${CLICOLOR_FORCE-unset}\"; sleep 30",
+            "printf 'TERM=[%s] COLORTERM=[%s] NO_COLOR=[%s] FORCE_COLOR=[%s] CLICOLOR=[%s] CLICOLOR_FORCE=[%s] %s%s\\n' \"$TERM\" \"$COLORTERM\" \"${NO_COLOR-unset}\" \"${FORCE_COLOR-unset}\" \"${CLICOLOR-unset}\" \"${CLICOLOR_FORCE-unset}\" KHOR-ENV -DONE; sleep 30",
         ])
         .output()
         .unwrap();
@@ -206,7 +206,7 @@ fn the_child_is_told_what_terminal_it_is_in_not_what_the_opener_had() {
     let _reap = Reaper(hf.child_pid);
 
     let mut s = host::connect(&dir, 100, 30).unwrap();
-    let seen = read_until(&mut s, " END", 10);
+    let seen = read_until(&mut s, "KHOR-ENV-DONE", 10);
     assert!(
         seen.contains("TERM=[xterm-256color]"),
         "the child must be told khor's own screen model, not the opener's: {seen}"
@@ -425,7 +425,7 @@ fn a_host_that_dies_while_its_child_lives_is_not_a_failure() {
 
     let work_pid = home.join("work.pid");
     let startup = format!(
-        r#"trap "" HUP; sleep 300 & work=$!; printf '%s' "$work" > '{}'; printf 'KHOR-%s-ARMED\n' ORPHAN; wait "$work""#,
+        r#"trap "" HUP; sleep 300 & work=$(jobs -p); printf '%s' "$work" > '{}'; printf 'KHOR-%s-ARMED\n' ORPHAN; wait "$work""#,
         work_pid.display().to_string().replace('\'', "'\\''")
     );
     let (sid, dir) = open_detached(&home, &["--command", &startup]);
@@ -663,7 +663,7 @@ fn a_private_host_does_not_inherit_an_unrelated_native_agent_store() {
             "--",
             "sh",
             "-c",
-            "printf 'codex=%s;claude=%s;done\\n' \"$CODEX_HOME\" \"$CLAUDE_CONFIG_DIR\"; sleep 30",
+            "printf 'codex=%s;claude=%s;%s%s\\n' \"$CODEX_HOME\" \"$CLAUDE_CONFIG_DIR\" do ne; sleep 30",
         ])
         .output()
         .unwrap();
@@ -701,10 +701,92 @@ mod windows {
     use super::*;
     use khor_node::terminal_control::{self, HostOutput, Reply, Request};
     use std::{
-        fs,
-        process::Stdio,
+        fs::{self, File},
+        io::{self, Read},
+        process::{Child, ExitStatus, Output, Stdio},
+        sync::{
+            atomic::{AtomicU64, Ordering},
+            mpsc,
+        },
         time::{SystemTime, UNIX_EPOCH},
     };
+
+    fn wait_for_exit(child: &mut Child, timeout: Duration) -> io::Result<ExitStatus> {
+        let deadline = Instant::now() + timeout;
+        loop {
+            if let Some(status) = child.try_wait()? {
+                return Ok(status);
+            }
+            if Instant::now() >= deadline {
+                return Err(io::Error::new(io::ErrorKind::TimedOut, "CLI exit deadline"));
+            }
+            std::thread::sleep(Duration::from_millis(25));
+        }
+    }
+
+    fn remove_fixture_home(home: &Path) -> io::Result<()> {
+        let deadline = Instant::now() + Duration::from_secs(5);
+        loop {
+            match fs::remove_dir_all(home) {
+                Ok(()) => return Ok(()),
+                Err(error) if error.kind() == io::ErrorKind::NotFound && !home.exists() => {
+                    return Ok(());
+                }
+                Err(error) if Instant::now() >= deadline => return Err(error),
+                Err(_) => std::thread::sleep(Duration::from_millis(50)),
+            }
+        }
+    }
+
+    struct OpenerChild(Child);
+
+    impl Drop for OpenerChild {
+        fn drop(&mut self) {
+            if matches!(self.0.try_wait(), Ok(Some(_))) {
+                return;
+            }
+            let killed = self.0.kill();
+            if let Err(error) = wait_for_exit(&mut self.0, Duration::from_secs(5)) {
+                let message = format!("piped opener cleanup failed: kill={killed:?}, reap={error}");
+                eprintln!("{message}");
+                if !std::thread::panicking() {
+                    panic!("{message}");
+                }
+            }
+        }
+    }
+
+    #[derive(Default)]
+    struct StdoutReader {
+        handle: Option<std::thread::JoinHandle<()>>,
+        home: PathBuf,
+    }
+
+    impl Drop for StdoutReader {
+        fn drop(&mut self) {
+            let Some(reader) = self.handle.take() else {
+                return;
+            };
+            let deadline = Instant::now() + Duration::from_secs(5);
+            while !reader.is_finished() && Instant::now() < deadline {
+                std::thread::sleep(Duration::from_millis(25));
+            }
+            let failure = if !reader.is_finished() {
+                Some("stdout reader did not exit after closing the terminal")
+            } else if reader.join().is_err() {
+                Some("stdout reader panicked")
+            } else {
+                None
+            };
+            if let Some(failure) = failure {
+                let message = format!("{failure}; preserving {:?}", self.home);
+                eprintln!("{message}");
+                if !std::thread::panicking() {
+                    panic!("{message}");
+                }
+            }
+        }
+    }
 
     struct Fixture(PathBuf, std::cell::Cell<bool>);
 
@@ -747,25 +829,54 @@ mod windows {
             command
         }
 
-        fn cli(&self, args: &[&str]) -> Option<std::process::Output> {
+        fn cli_result(&self, args: &[&str]) -> io::Result<Output> {
+            static NEXT: AtomicU64 = AtomicU64::new(0);
+            let serial = NEXT.fetch_add(1, Ordering::Relaxed);
+            let stdout = self.0.join(format!("cli-{serial}.stdout.log"));
+            let stderr = self.0.join(format!("cli-{serial}.stderr.log"));
             let mut child = self
                 .command()
                 .args(args)
-                .stdout(Stdio::piped())
-                .stderr(Stdio::piped())
-                .spawn()
-                .ok()?;
-            let deadline = Instant::now() + Duration::from_secs(40);
-            loop {
-                if child.try_wait().ok()?.is_some() {
-                    return child.wait_with_output().ok();
+                .stdin(Stdio::null())
+                .stdout(File::create_new(&stdout)?)
+                .stderr(File::create_new(&stderr)?)
+                .spawn()?;
+            let status = match wait_for_exit(&mut child, Duration::from_secs(40)) {
+                Ok(status) => status,
+                Err(error) => {
+                    let killed = child.kill();
+                    let reaped = wait_for_exit(&mut child, Duration::from_secs(5));
+                    return Err(io::Error::new(
+                        error.kind(),
+                        format!(
+                            "{error}; kill={killed:?}, reap={reaped:?}; output: {stdout:?}, {stderr:?}"
+                        ),
+                    ));
                 }
-                if Instant::now() >= deadline {
-                    let _ = child.kill();
-                    let _ = child.wait();
-                    return None;
+            };
+            // Descendants can retain their writer handles; regular files
+            // let the test read available output without waiting for pipe EOF.
+            Ok(Output {
+                status,
+                stdout: fs::read(stdout)?,
+                stderr: fs::read(stderr)?,
+            })
+        }
+
+        fn cli(&self, args: &[&str]) -> Option<Output> {
+            eprintln!("Windows open fixture CLI starting: {args:?}");
+            match self.cli_result(args) {
+                Ok(output) => {
+                    eprintln!("Windows open fixture CLI finished: {}", output.status);
+                    Some(output)
                 }
-                std::thread::sleep(Duration::from_millis(25));
+                Err(error) => {
+                    eprintln!(
+                        "Windows open fixture CLI failed: {args:?}: {error}; preserving {:?}",
+                        self.0
+                    );
+                    None
+                }
             }
         }
 
@@ -802,37 +913,47 @@ mod windows {
 
     impl Drop for Fixture {
         fn drop(&mut self) {
-            if self.1.get() {
-                let _ = fs::remove_dir_all(&self.0);
-                return;
-            }
-            let mut stopped = true;
+            let mut failures = Vec::new();
             // Discover admitted hosts even after a failed/late CLI response.
             // The native close path owns process identity; a recorded PID alone
             // cannot safely authorize taskkill after a deadline.
-            if let Ok(entries) = fs::read_dir(self.0.join(".khor/sessions")) {
-                for entry in entries.flatten() {
-                    let directory = entry.path();
-                    let id = fs::read(directory.join("meta.json"))
-                        .ok()
-                        .and_then(|bytes| serde_json::from_slice::<serde_json::Value>(&bytes).ok())
-                        .and_then(|meta| meta["id"].as_str().map(str::to_owned));
-                    let closed = id
-                        .as_deref()
-                        .and_then(|id| self.cli(&["close", id]))
-                        .is_some_and(|output| output.status.success());
-                    if !closed {
-                        stopped = false;
+            if !self.1.get() {
+                if let Ok(entries) = fs::read_dir(self.0.join(".khor/sessions")) {
+                    for entry in entries.flatten() {
+                        let directory = entry.path();
+                        let id = fs::read(directory.join("meta.json"))
+                            .ok()
+                            .and_then(|bytes| {
+                                serde_json::from_slice::<serde_json::Value>(&bytes).ok()
+                            })
+                            .and_then(|meta| meta["id"].as_str().map(str::to_owned));
+                        let closed = id
+                            .as_deref()
+                            .and_then(|id| self.cli(&["close", id]))
+                            .is_some_and(|output| output.status.success());
+                        if !closed {
+                            failures.push(format!("terminal cleanup unconfirmed: {directory:?}"));
+                        }
                     }
                 }
             }
-            if stopped {
-                let _ = fs::remove_dir_all(&self.0);
-            } else {
-                eprintln!(
-                    "Windows terminal cleanup unconfirmed; preserving {:?}",
-                    self.0
+            if failures.is_empty() && !std::thread::panicking() {
+                if let Err(error) = remove_fixture_home(&self.0) {
+                    failures.push(format!("fixture directory cleanup: {error}"));
+                }
+            } else if failures.is_empty() {
+                eprintln!("Preserving failed Windows open fixture at {:?}", self.0);
+            }
+            if !failures.is_empty() {
+                let message = format!(
+                    "Windows terminal cleanup unconfirmed; preserving {:?}: {}",
+                    self.0,
+                    failures.join("; ")
                 );
+                eprintln!("{message}");
+                if !std::thread::panicking() {
+                    panic!("{message}");
+                }
             }
         }
     }
@@ -899,6 +1020,80 @@ mod windows {
         wait_until("native terminal ending", 10, || {
             node.ended(&khor_node::SessionId(id.clone())).is_some()
         });
+        fixture.1.set(true);
+    }
+
+    #[test]
+    fn piped_opener_stdout_reaches_eof_while_its_terminal_stays_alive() {
+        // Reverse declaration order guarantees: stop the opener, close all
+        // admitted fixture terminals, then bound the pipe reader's join.
+        let mut reader = StdoutReader::default();
+        let fixture = Fixture::new();
+        reader.home = fixture.0.clone();
+        let stderr = fixture.0.join("piped-opener.stderr.log");
+        let mut opener = OpenerChild(
+            fixture
+                .command()
+                .args([
+                    "open",
+                    "-d",
+                    "--command",
+                    "Write-Output ('PIPE-' + 'ALIVE')",
+                ])
+                .stdin(Stdio::null())
+                .stdout(Stdio::piped())
+                .stderr(File::create_new(&stderr).unwrap())
+                .spawn()
+                .unwrap(),
+        );
+        let mut stdout = opener.0.stdout.take().unwrap();
+        let (send, receive) = mpsc::channel();
+        reader.handle = Some(std::thread::spawn(move || {
+            let mut bytes = Vec::new();
+            let result = stdout.read_to_end(&mut bytes).map(|_| bytes);
+            let _ = send.send(result);
+        }));
+        let status = wait_for_exit(&mut opener.0, Duration::from_secs(40))
+            .expect("piped opener did not exit within 40 seconds");
+        assert!(
+            status.success(),
+            "{}",
+            fs::read_to_string(stderr).unwrap_or_default()
+        );
+        eprintln!("Piped opener exited; waiting for actual stdout EOF");
+        let bytes = receive
+            .recv_timeout(Duration::from_secs(5))
+            .expect("resident terminal retained the exited opener's stdout pipe")
+            .expect("reading the piped opener's stdout failed");
+        let id = String::from_utf8(bytes).unwrap().trim().to_owned();
+        assert!(id.starts_with("shell/"), "{id:?}");
+        let observed = fixture.read_until(&id, "PIPE-ALIVE");
+        assert!(
+            observed.shell_ready && observed.startup_released,
+            "the terminal must remain alive after its opener's stdout reaches EOF"
+        );
+        let acknowledged = terminal_control::handle(
+            &fixture.0,
+            Request::Input {
+                session: id.clone(),
+                token: "piped-opener-followup".into(),
+                generation: observed.generation,
+                revision: observed.input_revision,
+                text: "Write-Output ('AFTER-' + 'EOF')".into(),
+                enter: true,
+            },
+        )
+        .unwrap();
+        assert!(matches!(acknowledged, Reply::Input { .. }));
+        fixture.read_until(&id, "AFTER-EOF");
+        let closed = fixture
+            .cli(&["close", &id])
+            .expect("native close CLI did not finish");
+        assert!(
+            closed.status.success(),
+            "{}",
+            String::from_utf8_lossy(&closed.stderr)
+        );
         fixture.1.set(true);
     }
 }
