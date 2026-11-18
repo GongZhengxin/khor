@@ -2788,6 +2788,9 @@ search-recent = "Search recent"
 filter = "Filter"
 axis-state = "Status"
 axis-category = "Category"
+# See zh.toml: the values reuse view-chat / view-terminal; only the
+# heading is new.
+axis-talk = "Form"
 remove = "Remove"
 arrange = "Arrange by"
 by-recent = "By recent"
