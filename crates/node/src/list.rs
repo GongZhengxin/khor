@@ -173,17 +173,19 @@ pub fn arrange_with_attention(
                 .iter()
                 .filter(|d| (d.key == key || d.key == terminal) && !d.text.trim().is_empty())
                 .max_by(|a, b| a.at_ms.cmp(&b.at_ms).then(a.id.cmp(&b.id)));
-            let attention_at = view.session.activity_at().map_or(0, |at| at.0)
+            let attention_at = view
+                .session
+                .activity_at()
+                .map_or(0, |at| at.0)
                 .max(draft_revision.map_or(0, |draft| draft.at_ms));
-            let draft = draft_revision.map(|d| d.text.clone())
-                .or_else(|| {
-                    view.session
-                        .doing
-                        .as_ref()
-                        .and_then(|doing| doing.editor.as_ref())
-                        .filter(|text| !text.trim().is_empty())
-                        .cloned()
-                });
+            let draft = draft_revision.map(|d| d.text.clone()).or_else(|| {
+                view.session
+                    .doing
+                    .as_ref()
+                    .and_then(|doing| doing.editor.as_ref())
+                    .filter(|text| !text.trim().is_empty())
+                    .cloned()
+            });
             let child_rank = children.get(&view.session.id.0).copied();
             let mut view = view;
             if draft.is_some() || child_rank.is_some() {
@@ -227,9 +229,7 @@ pub fn arrange_with_attention(
                     .min(b.child_rank.unwrap_or(u8::MAX)),
                 )
             })
-            .then_with(|| {
-                b.attention_at.cmp(&a.attention_at)
-            })
+            .then_with(|| b.attention_at.cmp(&a.attention_at))
             .then_with(|| a.view.session.id.0.cmp(&b.view.session.id.0))
     });
     let mut groups = std::collections::HashMap::new();

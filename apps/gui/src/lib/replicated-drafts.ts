@@ -84,8 +84,8 @@ export class ReplicatedDraftStore {
     this.selected.set(key, id);
     this.changed();
   }
-  set(key: string, text: string): void {
-    if (text === this.get(key)) return;
+  set(key: string, text: string, force = false): void {
+    if (!force && text === this.get(key)) return;
     const current = this.current(key);
     let parents = current ? [current.id] : [];
     // Coalesce edits not yet sent, but never mutate an in-flight snapshot.
@@ -107,15 +107,24 @@ export class ReplicatedDraftStore {
     this.pending.push({ revision, parents: [id] });
     this.changed();
   }
-  begin(key: string, token: string) {
-    const current = this.current(key);
-    if (current) this.submissions.set(token, { key, id: current.id, phase: 'pending' });
+  begin(key: string, token: string, revision?: string | null) {
+    const id = revision === undefined ? this.current(key)?.id : revision;
+    if (id) this.submissions.set(token, { key, id, phase: 'pending' });
+    this.changed();
+  }
+  ownsEditor(token: string) {
+    const submitted = this.submissions.get(token);
+    return !!submitted && this.current(submitted.key)?.id === submitted.id;
+  }
+  retry(previous: string, token: string) {
+    const submitted = this.submissions.get(previous);
+    if (submitted) this.submissions.set(token, { ...submitted, phase: 'pending' });
     this.changed();
   }
   committed(token: string) {
     const submitted = this.submissions.get(token);
     if (!submitted) return;
-    this.submissions.delete(token);
+    for (const [held, snapshot] of this.submissions) if (snapshot.key === submitted.key && snapshot.id === submitted.id) this.submissions.delete(held);
     this.clear(submitted.key, submitted.id);
   }
   failed(token: string, phase: 'failed' | 'cancelled' = 'failed') {

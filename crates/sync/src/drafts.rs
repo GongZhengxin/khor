@@ -265,7 +265,9 @@ mod tests {
     fn legacy_metadata_readers_relay_drafts_without_understanding_them() {
         let newer = DraftDoc::new(1).unwrap();
         let legacy = crate::titles::TitleDoc::new(2).unwrap();
-        newer.edit(&revision("editor", "retained through old peer"), &[]).unwrap();
+        newer
+            .edit(&revision("editor", "retained through old peer"), &[])
+            .unwrap();
         legacy.merge(&newer.snapshot().unwrap()).unwrap();
         legacy.set("gui:session", "user title").unwrap();
         let phone = DraftDoc::new(3).unwrap();
@@ -282,11 +284,20 @@ mod tests {
         let desktop = DraftDoc::new(2).unwrap();
         phone.edit(&revision("old", "sent text"), &[]).unwrap();
         merge(&phone, &desktop);
-        phone.edit(&revision("receipt", ""), &["old".into()]).unwrap();
-        desktop.edit(&revision("newer", "typing while the receipt arrives"), &["old".into()]).unwrap();
+        phone
+            .edit(&revision("receipt", ""), &["old".into()])
+            .unwrap();
+        desktop
+            .edit(
+                &revision("newer", "typing while the receipt arrives"),
+                &["old".into()],
+            )
+            .unwrap();
         merge(&phone, &desktop);
-        assert_eq!(phone.all(), vec![revision("newer", "typing while the receipt arrives")]);
+        assert_eq!(
+            phone.all(),
+            vec![revision("newer", "typing while the receipt arrives")]
+        );
         assert_eq!(phone.all(), desktop.all());
     }
-
 }

@@ -71,3 +71,16 @@ const stable=store();stable.set('gui:position','start');
 const created=stable.current('gui:position').at_ms;
 stable.set('gui:position','continued typing');
 assert.equal(stable.current('gui:position').at_ms,created,'typing does not continuously move a drafted row');
+
+const preparing=store();preparing.set('gui:prepare','snapshot before upload');
+const preparingId=preparing.current('gui:prepare').id;
+preparing.begin('gui:prepare','upload-token',preparingId);
+preparing.set('gui:prepare','typed during upload');
+preparing.committed('upload-token');await preparing.sync();
+assert.equal(preparing.get('gui:prepare'),'typed during upload');
+const staleId=preparing.current('gui:prepare').id;
+preparing.set('gui:prepare','another current revision');
+preparing.begin('gui:prepare','stale-render',staleId);
+assert.equal(preparing.get('gui:prepare'),'another current revision','a stale render cannot hide current input');
+preparing.committed('stale-render');await preparing.sync();
+assert.equal(preparing.get('gui:prepare'),'another current revision');

@@ -207,7 +207,8 @@ export function MachineChat({ id, active = true, onSession, sessions = [] }: { i
     const agentPrompt=text.startsWith('/')||(id==='wide/all'?text.length>0&&chosen.length===0:text.length>0||chosen.length>0);
     if(agentPrompt&&!agent?.config){setRefused(gui.agent_choose_first);return false;}
     const went=new Set(chosen.map(item=>item.key));
-    const draftRevision=sessionDrafts.current(`khor:${id}`)?.id;
+    const editing=sessionDrafts.current(`khor:${id}`),editorToken=crypto.randomUUID();
+    sessionDrafts.begin(`khor:${id}`,editorToken,editing?.text.trim()===text?editing.id:null);
     sendLock.current=true;setSending(true);setRefused(null);
     try{
       // Migrate a retained old native selection without trusting a path from
@@ -220,12 +221,12 @@ export function MachineChat({ id, active = true, onSession, sessions = [] }: { i
       if(agentPrompt&&khorPendingRuns.get(id)?.identity!==identity)khorPendingRuns.set(id,{identity,input:agentInput,token:crypto.randomUUID()});
       const issued=khorPendingRuns.get(id);
       await (agentPrompt?khorAgent('prompt',agent!.config!.home,{text:issued!.input,token:issued!.token,session:id}):compose(text,paths));
-      if(draftRevision){sessionDrafts.clear(`khor:${id}`,draftRevision);syncSessionDrafts();}
+      sessionDrafts.committed(editorToken);syncSessionDrafts();
       for(const key of went)pendingFiles.remove(key);
       if(khorPendingRuns.get(id)===issued)khorPendingRuns.delete(id);
       if(currentId.current===id){setDismissed(null);toBottom();refresh();if(chosen.length&&box.current)requestAnimationFrame(()=>{if(box.current)raiseKeyboard(box.current);});}
       return true;
-    }catch(error){if(currentId.current===id)setRefused(said(error));return false;}
+    }catch(error){sessionDrafts.failed(editorToken);if(currentId.current===id)setRefused(said(error));return false;}
     finally{sendLock.current=false;if(currentId.current===id)setSending(false);}
   };
   const ready = draft.trim()!==""||pending.length>0;

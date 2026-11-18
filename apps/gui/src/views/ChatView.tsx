@@ -814,10 +814,11 @@ export function ChatView({
   const addDraft = (draft: ChatDraft) => {
     if (!mounted.current || currentSession.current !== id || draft.session !== id || chatDraftOwner(id) !== draft.owner || !recoverableChatDrafts(id).some(entry => entry.draft === draft && entry.reason !== "unconfirmed")) return;
     const now = composer.current;
-    const next = now.text && draft.text ? `${now.text}\n\n${draft.text}` : now.text || draft.text;
+    const restored = sessionDrafts.ownsEditor(draft.token);
+    const next = restored ? sessionDrafts.get(`gui:${id}`) : now.text && draft.text ? `${now.text}\n\n${draft.text}` : now.text || draft.text;
     const documents = [...now.documents, ...draft.documents];
     composer.current = {session: id, text: next, documents, attachments: [...now.attachments, ...draft.attachments]};
-    setText(next);
+    sessionDrafts.set(`gui:${id}`, next, true);
     setDocs(documents);
     files.restore(draft.attachments);
     discardDraft(draft);
@@ -1516,24 +1517,28 @@ export function ChatView({
     if (!canSend||sendingDraft.current) return false;
     sendingDraft.current=true;setControlError(null);
     const reading=reader.current;
+    const editing=sessionDrafts.current(`gui:${id}`);
+    const token=crypto.randomUUID();
+    sessionDrafts.begin(`gui:${id}`,token,editing?.text===text?editing.id:null);
     let prepared:typeof files.items;
     try{prepared=await files.prepare();}
-    catch(error){setControlError(String(error));sendingDraft.current=false;return false;}
+    catch(error){sessionDrafts.failed(token);setControlError(String(error));sendingDraft.current=false;return false;}
     sendingDraft.current=false;
-    if(!mounted.current||currentSession.current!==id||reader.current!==reading)return false;
+    if(!mounted.current||currentSession.current!==id||reader.current!==reading){sessionDrafts.failed(token);return false;}
     const owner = chatDraftOwner(id);
-    if (!owner) return false;
+    if (!owner) {sessionDrafts.failed(token);return false;}
     const placed = prepared.filter(file => file.path !== null);
     const full = withAttachments(line, placed.map(file => file.path as string));
     const images = facts?.images ? placed.flatMap(file => file.inline ? [file.inline] : []) : [];
-    const draft = rememberChatDraft({owner, reader: reader.current, session: id, token: crypto.randomUUID(), text, full, images, documents: docs, attachments: prepared});
-    if (!draft) return false;
+    const draft = rememberChatDraft({owner, reader: reader.current, session: id, token, text, full, images, documents: docs, attachments: prepared});
+    if (!draft) {sessionDrafts.failed(token);return false;}
     if (placed.length > 0 && box.current) raiseKeyboard(box.current);
-    composer.current = {session: id, text: "", documents: [], attachments: []};
-    sessionDrafts.begin(`gui:${id}`, draft.token);
+    composer.current = {session: id, text: sessionDrafts.get(`gui:${id}`),
+      documents: composer.current.documents.filter(document=>!docs.includes(document)),
+      attachments: composer.current.attachments.filter(item=>!prepared.some(sent=>sent.key===item.key))};
     setInTurn(true);
     for(const item of prepared)files.remove(item.key);
-    setDocs([]);
+    setDocs(current=>current.filter(document=>!docs.includes(document)));
     setPaint(previous => ({...previous, live: boundedLive([...previous.live, {who: "user", text: full, token: draft.token}])}));
     sent.current = line;
     lastSay.current = draft;
@@ -1547,6 +1552,7 @@ export function ChatView({
     if (!owner || owner !== previous.owner || !recoverableChatDrafts(id).some(entry => entry.draft === previous && entry.reason === "failed")) return;
     const draft = rememberChatDraft({...previous, owner, reader: reader.current, token: crypto.randomUUID()});
     if (!draft) return;
+    sessionDrafts.retry(previous.token, draft.token);
     discardChatDraft(id, previous.token, previous.owner);
     setInTurn(true);
     setPaint(paint => ({...paint, live: boundedLive([...paint.live, {who: "user", text: draft.full, token: draft.token}])}));
