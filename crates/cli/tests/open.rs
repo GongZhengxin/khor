@@ -677,12 +677,37 @@ fn a_private_host_does_not_inherit_an_unrelated_native_agent_store() {
     let hf = host::read_host_file(&dir).unwrap();
     let _reap = Reaper(hf.host_pid);
     let mut stream = host::connect(&dir, 80, 24).unwrap();
-    let shown = read_until(&mut stream, ";done", 10);
+    let shown = match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        read_until(&mut stream, ";done", 10)
+    })) {
+        Ok(shown) => shown,
+        Err(failure) => {
+            // The viewer replay is a rendered snapshot, which omits OSC
+            // readiness marks. Capture the host's raw, read-only state before
+            // unwinding kills this private fixture's host.
+            let diagnostic = khor_node::terminal_control::handle(
+                &home,
+                khor_node::terminal_control::Request::Read {
+                    session: sid.clone(),
+                    cursor: None,
+                    limit: 8192,
+                    wait_ms: 0,
+                },
+            );
+            eprintln!("private startup host diagnostic: {diagnostic:?}");
+            eprintln!(
+                "private startup command ledger: {:?}",
+                khor_node::commands::read_saved(&dir)
+            );
+            std::panic::resume_unwind(failure)
+        }
+    };
+    let owned_home = std::fs::canonicalize(&home).unwrap();
     assert!(
         shown.contains(&format!(
             "codex={};claude={};done",
-            home.join(".codex").display(),
-            home.join(".claude").display()
+            owned_home.join(".codex").display(),
+            owned_home.join(".claude").display()
         )),
         "wrong store: {shown}"
     );
@@ -1008,7 +1033,29 @@ mod windows {
         )
         .unwrap();
         assert!(matches!(acknowledged, Reply::Input { .. }));
-        fixture.read_until(&id, "FOLLOWUP-WINDOWS");
+        let after_followup = fixture.read_until(&id, "FOLLOWUP-WINDOWS");
+        let exiting = terminal_control::handle(
+            &fixture.0,
+            Request::Input {
+                session: id.clone(),
+                token: "windows-open-exit".into(),
+                generation: after_followup.generation,
+                revision: after_followup.input_revision,
+                text: "exit 0".into(),
+                enter: true,
+            },
+        )
+        .unwrap();
+        assert!(matches!(exiting, Reply::Input { .. }));
+        let session = khor_node::SessionId(id.clone());
+        wait_until("native terminal ending", 10, || {
+            node.ended(&session).is_some()
+        });
+        assert_eq!(
+            node.ended(&session).unwrap().ending,
+            khor_node::live::Ending::Exit(0)
+        );
+        assert!(directory.exists(), "exiting retains the terminal history");
         let closed = fixture
             .cli(&["close", &id])
             .expect("native close CLI did not finish");
@@ -1017,9 +1064,8 @@ mod windows {
             "{}",
             String::from_utf8_lossy(&closed.stderr)
         );
-        wait_until("native terminal ending", 10, || {
-            node.ended(&khor_node::SessionId(id.clone())).is_some()
-        });
+        assert!(!directory.exists(), "close removes the retained record");
+        assert!(node.ended(&session).is_none());
         fixture.1.set(true);
     }
 

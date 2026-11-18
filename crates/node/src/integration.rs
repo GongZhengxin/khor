@@ -457,4 +457,110 @@ precmd_functions+=(khor_test_theme_precmd)
         assert!(d.join("fish-data/fish/vendor_conf.d/khor.fish").exists());
         let _ = std::fs::remove_dir_all(&d);
     }
+
+    #[cfg(unix)]
+    #[test]
+    fn posix_readiness_marks_survive_long_readline_prompts() {
+        use portable_pty::{CommandBuilder, PtySize, native_pty_system};
+        use std::io::Read;
+        use std::time::{Duration, Instant};
+        for shell in ["/bin/sh", "/bin/dash"] {
+            if !Path::new(shell).exists() {
+                continue;
+            }
+            for width in [74, 77] {
+                let root = crate::testdir::TempTree::fresh("posix-long-prompt");
+                let home = root.join("home");
+                let scripts = root.join("integration");
+                std::fs::create_dir(&home).unwrap();
+                let prompt = format!("{}$ ", "x".repeat(width - 2));
+                std::fs::write(home.join(".profile"), format!("PS1='{prompt}'\n")).unwrap();
+                write_scripts(&scripts).unwrap();
+                let plan = plan(
+                    &scripts,
+                    &[shell.into(), "-l".into(), "-i".into()],
+                    env(&[]),
+                )
+                .unwrap();
+                let pair = native_pty_system()
+                    .openpty(PtySize {
+                        rows: 24,
+                        cols: 80,
+                        pixel_width: 0,
+                        pixel_height: 0,
+                    })
+                    .unwrap();
+                let mut builder = CommandBuilder::new(shell);
+                builder.args(plan.args);
+                builder.env("HOME", home.as_os_str());
+                builder.env("PATH", "/usr/bin:/bin");
+                builder.env("TERM", "xterm-256color");
+                builder.env_remove("BASH_VERSION");
+                builder.env_remove("ENV");
+                for (key, value) in plan.env {
+                    builder.env(key, value);
+                }
+                let mut child = pair.slave.spawn_command(builder).unwrap();
+                drop(pair.slave);
+                let mut reader = pair.master.try_clone_reader().unwrap();
+                let mut writer = crate::shell_start::StartupInput::with_shell_readiness(
+                    pair.master.take_writer().unwrap(),
+                    Some("printf 'PROMPT-%s-%s\\n' READY RESULT"),
+                    true,
+                );
+                writer.ready().unwrap();
+                let (tx, rx) = std::sync::mpsc::channel();
+                let reading = std::thread::spawn(move || {
+                    let mut buffer = [0; 4096];
+                    while let Ok(size) = reader.read(&mut buffer) {
+                        if size == 0 || tx.send(buffer[..size].to_vec()).is_err() {
+                            break;
+                        }
+                    }
+                });
+                let result: Result<(), String> = (|| {
+                    let deadline = Instant::now() + Duration::from_secs(5);
+                    let mut readiness = crate::shell_start::PromptReady::default();
+                    let mut output = Vec::new();
+                    let mut prompts = 0;
+                    loop {
+                        let bytes = rx
+                            .recv_timeout(deadline.saturating_duration_since(Instant::now()))
+                            .map_err(|error| error.to_string())?;
+                        output.extend_from_slice(&bytes);
+                        if readiness.feed(&bytes) {
+                            readiness.take_ready();
+                            prompts += 1;
+                            writer.shell_ready().map_err(|error| error.to_string())?;
+                        }
+                        let marker = b"PROMPT-READY-RESULT";
+                        let results = output
+                            .windows(marker.len())
+                            .filter(|w| *w == marker)
+                            .count();
+                        if results > 1 {
+                            return Err("automatic startup repeated after prompt redraw".into());
+                        }
+                        if results == 1 && prompts >= 2 {
+                            if !output.windows(prompt.len()).any(|w| w == prompt.as_bytes()) {
+                                return Err(
+                                    "the test shell did not load the long profile prompt".into()
+                                );
+                            }
+                            if output.windows(2).any(|w| w == b"\\[" || w == b"\\]") {
+                                return Err("readline delimiters leaked into the terminal".into());
+                            }
+                            return Ok(());
+                        }
+                    }
+                })();
+                let _ = child.kill();
+                let _ = child.wait();
+                drop(writer);
+                drop(pair.master);
+                reading.join().unwrap();
+                assert!(result.is_ok(), "{shell} width={width}: {result:?}");
+            }
+        }
+    }
 }

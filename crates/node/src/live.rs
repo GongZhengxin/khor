@@ -1726,38 +1726,117 @@ impl LiveKind {
         }
     }
 
+    #[cfg(windows)]
+    fn close_windows_host(&self, id: &SessionId, dir: &Path) -> Result<(), String> {
+        let (meta, state) = read_pair(dir)?;
+        let host = match crate::host::read_host_file(dir) {
+            Ok(host) => host,
+            Err(_) => {
+                if state.exit.is_none() && meta.pid.is_some_and(crate::win_process::alive) {
+                    return Err("No authenticated host owns this running Windows session".into());
+                }
+                return Ok(());
+            }
+        };
+        let procs = crate::adaptor::Procs::snapshot();
+        let Some(process) = procs.get(host.host_pid) else {
+            if crate::win_process::alive(host.host_pid) {
+                return Err(
+                    "Windows host identity is unavailable; refusing an unconfirmed close".into(),
+                );
+            }
+            return Ok(());
+        };
+        let written = crate::host::host_file_path(dir)
+            .metadata()
+            .and_then(|metadata| metadata.modified())
+            .map_err(|error| error.to_string())?
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_err(|error| error.to_string())?;
+        // The same marker/metadata ownership facts used for terminal input,
+        // allowing an exited row whose host is still finishing its cleanup.
+        if (!meta.id.is_empty() && meta.id != id.0)
+            || meta.pid != Some(host.host_pid)
+            || process.started_ms < 0
+            || process.started_ms as u128 > written.as_millis()
+            || (host.child_pid == host.host_pid && meta.kind != khor_core::kind::GUI)
+            || (host.child_pid != host.host_pid
+                && procs
+                    .get(host.child_pid)
+                    .is_some_and(|child| child.ppid != Some(host.host_pid)))
+        {
+            return Err("Windows host ownership changed; refusing to close another process".into());
+        }
+        crate::win_process::terminate_owned_tree(
+            host.host_pid,
+            &procs,
+            written.as_nanos() / 100,
+            || {
+                let current = crate::host::read_host_file(dir)?;
+                if current.host_pid != host.host_pid
+                    || current.child_pid != host.child_pid
+                    || current.port != host.port
+                    || current.cookie != host.cookie
+                {
+                    return Err("Windows host changed before close authentication".into());
+                }
+                // Stop after Hello/Welcome: no Version, resize, replay, or input.
+                let (_connection, welcome) = crate::host::connect_welcomed(
+                    &format!("127.0.0.1:{}", host.port),
+                    &host.cookie,
+                    0,
+                    0,
+                )?;
+                if !welcome.ok {
+                    return Err("Windows host refused close authentication".into());
+                }
+                Ok(())
+            },
+        )
+    }
+
     pub fn close_session(&self, id: &SessionId) -> Result<(), String> {
         let dir = self.existing_dir(id)?;
-        if let Ok(hf) = crate::host::read_host_file(&dir) {
-            // A hosted session dies by its child's process group; the
-            // host sees the exit and leaves on its own. Anything on the
-            // tty that dodged the group gets SIGHUP when the host drops
-            // the PTY master. The host pid is the belt on top.
-            #[cfg(unix)]
-            unsafe {
-                libc::kill(-(hf.child_pid as i32), libc::SIGTERM);
-            }
-            #[cfg(not(unix))]
-            terminate(hf.child_pid);
-            for _ in 0..20 {
-                if !crate::link::pid_alive(hf.host_pid) {
-                    break;
-                }
-                std::thread::sleep(std::time::Duration::from_millis(100));
-            }
-            if crate::link::pid_alive(hf.host_pid) {
-                terminate(hf.host_pid);
-            }
-        } else {
-            let (meta, state) = read_pair(&dir)?;
-            if state.exit.is_none()
-                && pid_says_alive(&meta)
-                && let Some(pid) = meta.pid
-            {
-                terminate(pid);
-            }
+        #[cfg(windows)]
+        {
+            let gate = RowGate::try_acquire(&dir)?;
+            self.close_windows_host(id, &dir)?;
+            drop(gate);
+            return fs::remove_dir_all(&dir).map_err(msg::cant_delete);
         }
-        fs::remove_dir_all(&dir).map_err(msg::cant_delete)
+        #[cfg(not(windows))]
+        {
+            if let Ok(hf) = crate::host::read_host_file(&dir) {
+                // A hosted session dies by its child's process group; the
+                // host sees the exit and leaves on its own. Anything on the
+                // tty that dodged the group gets SIGHUP when the host drops
+                // the PTY master. The host pid is the belt on top.
+                #[cfg(unix)]
+                unsafe {
+                    libc::kill(-(hf.child_pid as i32), libc::SIGTERM);
+                }
+                #[cfg(not(unix))]
+                terminate(hf.child_pid);
+                for _ in 0..20 {
+                    if !crate::link::pid_alive(hf.host_pid) {
+                        break;
+                    }
+                    std::thread::sleep(std::time::Duration::from_millis(100));
+                }
+                if crate::link::pid_alive(hf.host_pid) {
+                    terminate(hf.host_pid);
+                }
+            } else {
+                let (meta, state) = read_pair(&dir)?;
+                if state.exit.is_none()
+                    && pid_says_alive(&meta)
+                    && let Some(pid) = meta.pid
+                {
+                    terminate(pid);
+                }
+            }
+            fs::remove_dir_all(&dir).map_err(msg::cant_delete)
+        }
     }
 
     /// Every live session on this device as a row: the ones registered
@@ -8169,6 +8248,105 @@ mod tests {
         assert!(
             k.ended(&alive).is_none(),
             "a live shell never reads the file"
+        );
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn windows_close_refuses_a_bad_cookie_and_never_kills_a_stale_hosts_child() {
+        use std::net::TcpListener;
+        use std::time::{Duration, Instant};
+        struct Child(std::process::Child);
+        impl Drop for Child {
+            fn drop(&mut self) {
+                let _ = self.0.kill();
+                let _ = self.0.wait();
+            }
+        }
+        let mut child = Child(
+            std::process::Command::new("cmd.exe")
+                .args(["/D", "/Q", "/C", "set /p owned_wait=waiting"])
+                .stdin(std::process::Stdio::piped())
+                .stdout(std::process::Stdio::null())
+                .stderr(std::process::Stdio::null())
+                .spawn()
+                .unwrap(),
+        );
+        let root = tmp("windows-close-owner");
+        let k = kind_at(&root);
+        let id = sid("gui/windows-close");
+        k.register(&id, "gui", "fixture", Some(child.0.id()), None)
+            .unwrap();
+        let dir = k.dir_of(&id).unwrap();
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        listener.set_nonblocking(true).unwrap();
+        let host = crate::host::HostFile {
+            port: listener.local_addr().unwrap().port(),
+            cookie: "owned-close-cookie".into(),
+            host_pid: child.0.id(),
+            child_pid: child.0.id(),
+        };
+        fs::write(
+            crate::host::host_file_path(&dir),
+            serde_json::to_vec(&host).unwrap(),
+        )
+        .unwrap();
+        let server = std::thread::spawn(move || {
+            let deadline = Instant::now() + Duration::from_secs(5);
+            loop {
+                match listener.accept() {
+                    Ok((mut connection, _)) => {
+                        connection.set_nonblocking(false).unwrap();
+                        connection
+                            .set_read_timeout(Some(Duration::from_secs(2)))
+                            .unwrap();
+                        let _: crate::host::Hello =
+                            crate::host::read_frame(&mut connection).unwrap();
+                        crate::host::write_frame(
+                            &mut connection,
+                            &crate::host::Welcome {
+                                ok: false,
+                                why: "cookie refused".into(),
+                            },
+                        )
+                        .unwrap();
+                        return true;
+                    }
+                    Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
+                        if Instant::now() >= deadline {
+                            return false;
+                        }
+                        std::thread::sleep(Duration::from_millis(5));
+                    }
+                    Err(error) => panic!("{error}"),
+                }
+            }
+        });
+        assert!(k.close_session(&id).is_err());
+        assert!(
+            server.join().unwrap(),
+            "close must authenticate the current host"
+        );
+        assert!(dir.exists() && child.0.try_wait().unwrap().is_none());
+        let stale = sid("shell/windows-stale");
+        k.register(&stale, "shell", "stale", Some(u32::MAX), None)
+            .unwrap();
+        let stale_dir = k.dir_of(&stale).unwrap();
+        fs::write(
+            crate::host::host_file_path(&stale_dir),
+            serde_json::to_vec(&crate::host::HostFile {
+                host_pid: u32::MAX,
+                child_pid: child.0.id(),
+                ..host
+            })
+            .unwrap(),
+        )
+        .unwrap();
+        k.close_session(&stale).unwrap();
+        assert!(!stale_dir.exists());
+        assert!(
+            child.0.try_wait().unwrap().is_none(),
+            "an old child PID grants no ownership"
         );
     }
 }

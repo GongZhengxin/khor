@@ -13,4 +13,12 @@ fi
 unset _khor_original_env
 # POSIX shells have no universal preexec hook. This only proves that their
 # native interactive startup has completed, and marks subsequent prompts.
-PS1="${PS1-\$ }$(printf '\033]133;B\007')"
+_khor_prompt_end=$(printf '\033]133;B\007')
+if [ -n "${BASH_VERSION-}" ]; then
+  # Bash also runs as /bin/sh. Readline must count the mark as zero width,
+  # or wrapping a long prompt inserts carriage returns inside the OSC.
+  PS1="${PS1-\$ }\\[$_khor_prompt_end\\]"
+else
+  PS1="${PS1-\$ }$_khor_prompt_end"
+fi
+unset _khor_prompt_end

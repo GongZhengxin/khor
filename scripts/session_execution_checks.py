@@ -22,6 +22,7 @@ def main():
         # This bounded login probe is Unix-only; Windows uses its native
         # inherited environment, covered by the path and real worker checks.
         filters.remove("user_environment")
+        filters.extend(["live::tests::windows_close", "win_process::tests"])
     commands = [
         ["cargo", "test", "--locked", "-p", "khor-node", "--lib", name,
          "--", "--nocapture", "--test-threads=1"]
