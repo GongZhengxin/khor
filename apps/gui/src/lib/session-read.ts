@@ -19,7 +19,7 @@ export class SessionReads {
         Array.isArray(entry) && entry.length === 2 && typeof entry[0] === "string" && Number.isSafeInteger(entry[1]) && entry[1] >= 0);
       if (!valid(saved.seen) || !valid(saved.queued)) throw Error("invalid read queue");
       this.seen = new Map(saved.seen);
-      this.queued = new Map(saved.queued.map(([id, at_ms]) => [id, { id, at_ms }]));
+      this.queued = new Map(saved.queued.map(([id, at_ms]: [string, number]) => [id, { id, at_ms }]));
     } catch { this.readable = false; }
   }
   private checkpoint() {
