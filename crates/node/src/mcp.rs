@@ -10,6 +10,8 @@ use khor_catalog::msg;
 use serde_json::{Value, json};
 
 use crate::Node;
+#[path = "mcp_execution.rs"]
+mod execution;
 
 /// The protocol version this server speaks. Sent back verbatim in the
 /// initialize result: a client that asked for something else learns it
@@ -56,6 +58,14 @@ fn task_schema(extra: &[&str], required_extra: &[&str]) -> Value {
 }
 
 const TOOLS: &[Tool] = &[
+    execution::EXECUTE,
+    execution::STATUS,
+    execution::OUTPUT,
+    execution::CANCEL,
+    execution::FORGET,
+    execution::TERMINAL_READ,
+    execution::TERMINAL_INPUT,
+    execution::TERMINAL_ENDED,
     Tool {
         name: "devices",
         reads: true,
@@ -107,9 +117,10 @@ const TOOLS: &[Tool] = &[
                     "machine": { "type": "string", "description": msg::mcp_open_machine() },
                     "command": { "type": "string", "description": msg::mcp_open_command() },
                     "title": { "type": "string", "description": msg::mcp_open_title() },
+                    "request": { "type": "string" },
                     "cwd": { "type": "string", "description": msg::mcp_open_cwd() }
                 },
-                "required": ["machine", "command"],
+                "required": ["machine", "request"],
                 "additionalProperties": false
             })
         },
@@ -316,6 +327,12 @@ pub(crate) fn call_with_parent(
     parent: Option<crate::delegation::TaskRef>,
 ) -> Result<String, String> {
     validate(name, args)?;
+    // Owned one-shot work must stay inside the turn's cancellable MCP worker
+    // and durable receipt path. Persistent terminals are explicitly opened;
+    // standalone command workers cannot silently escape the parent turn.
+    if parent.is_some() && name == "execute" {
+        return Err(msg::mcp_execute_owned().into());
+    }
     let s = |k: &str| {
         args.get(k)
             .and_then(|v| v.as_str())
@@ -323,6 +340,9 @@ pub(crate) fn call_with_parent(
             .to_owned()
     };
     let n = Node::open(root.to_path_buf())?;
+    if let Some(result) = execution::call(&n, name, args) {
+        return result;
+    }
     match name {
         "agents" | "agent_connect" | "agent_disconnect" | "delegate" | "task_status"
         | "task_wait" | "task_cancel" | "task_answer" | "task_list" => {
@@ -531,26 +551,18 @@ pub(crate) fn call_with_parent(
             Ok(out)
         }
         "open" => {
-            let command = s("command");
-            if command.is_empty() {
-                return Err(msg::mcp_open_needs_command().into());
-            }
-            let title = if s("title").is_empty() {
-                command.clone()
-            } else {
-                s("title")
+            let start = crate::shell_start::ShellStart {
+                argv: None,
+                token: s("request"),
+                title: s("title"),
+                cwd: s("cwd"),
+                command: s("command"),
+                cols: 80,
+                rows: 24,
+                headless: true,
             };
-            let rt = runtime()?;
-            let id = rt.block_on(n.open_on(
-                &s("machine"),
-                khor_core::kind::SHELL,
-                &title,
-                &s("cwd"),
-                &["sh".into(), "-c".into(), command],
-                (80, 24),
-                None,
-            ))?;
-            Ok(id.0)
+            let id = runtime()?.block_on(n.open_shell_on(&s("machine"), start))?;
+            Ok(json!({"session":id.0,"machine":s("machine"),"kind":"terminal"}).to_string())
         }
         "run_command" => {
             let parent = parent
@@ -602,7 +614,11 @@ fn decode_text(bytes: &[u8], truncated: bool) -> Result<&str, String> {
 /// The same catalogue and dispatcher are used by external MCP clients and
 /// khor's private Pi bridge. Tool metadata never grants permission by itself.
 pub(crate) fn tools(owned: bool) -> Value {
-    json!({"tools": TOOLS.iter().filter(|t| owned || t.name != "run_command").map(|t| json!({
+    json!({"tools": TOOLS.iter().filter(|tool| match tool.name {
+        "run_command" => owned,
+        "execute" => !owned,
+        _ => true,
+    }).map(|t| json!({
         "name": t.name, "description": (t.about)(), "inputSchema": (t.schema)(),
         "annotations": {"readOnlyHint": t.reads}
     })).collect::<Vec<_>>()})
@@ -624,18 +640,23 @@ pub(crate) fn validate(name: &str, args: &Value) -> Result<(), String> {
     let properties = schema["properties"]
         .as_object()
         .expect("tool schema properties");
-    if fields
-        .iter()
-        .any(|(key, value)| !properties.contains_key(key) || !value.is_string())
-    {
+    if fields.iter().any(|(key, value)| {
+        !properties.contains_key(key)
+            || match properties[key]["type"].as_str() {
+                Some("string") => !value.is_string(),
+                Some("integer") => value.as_u64().is_none(),
+                Some("boolean") => !value.is_boolean(),
+                _ => true,
+            }
+    }) {
         return Err(msg::agent_arguments().to_owned());
     }
     if schema["required"].as_array().is_some_and(|required| {
         required.iter().filter_map(Value::as_str).any(|key| {
-            fields
-                .get(key)
-                .and_then(Value::as_str)
-                .is_none_or(|s| s.trim().is_empty())
+            fields.get(key).is_none_or(|value| {
+                !(name == "terminal_input" && key == "text")
+                    && value.as_str().is_some_and(|s| s.trim().is_empty())
+            })
         })
     }) {
         return Err(msg::agent_arguments().to_owned());
@@ -655,6 +676,60 @@ fn runtime() -> Result<tokio::runtime::Runtime, String> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn owned_and_external_agents_receive_their_correct_command_lifetimes() {
+        fn names(owned: bool) -> Vec<String> {
+            super::tools(owned)["tools"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|tool| tool["name"].as_str().unwrap().to_owned())
+                .collect()
+        }
+        let owned = names(true);
+        let external = names(false);
+        assert!(owned.iter().any(|name| name == "run_command"));
+        assert!(!owned.iter().any(|name| name == "execute"));
+        assert!(external.iter().any(|name| name == "execute"));
+        assert!(!external.iter().any(|name| name == "run_command"));
+        for catalog in [&owned, &external] {
+            for tool in [
+                "open",
+                "terminal_read",
+                "execution_status",
+                "execution_output",
+                "execution_cancel",
+                "execution_forget",
+            ] {
+                assert!(catalog.iter().any(|name| name == tool), "{tool}");
+            }
+        }
+    }
+
+    #[test]
+    fn an_owned_turn_cannot_bypass_the_catalog_to_spawn_a_standalone_worker() {
+        let root = crate::testdir::TempTree::fresh("mcp-owned-execute-refusal");
+        let parent = crate::delegation::TaskRef {
+            home: crate::device_id_from_hex(&"00".repeat(32)).unwrap(),
+            id: "owned-agent-turn".into(),
+        };
+        let refused = super::call_with_parent(
+            &root,
+            "execute",
+            &serde_json::json!({
+                "machine": "target",
+                "command": "printf must-not-run",
+                "request": "owned-execute-request-1234",
+            }),
+            Some(parent),
+        );
+        assert!(refused.is_err());
+        assert!(
+            !root.join(".khor").exists(),
+            "refusal must precede Node or worker creation"
+        );
+    }
+
     #[test]
     fn tool_arguments_are_checked_before_execution() {
         use serde_json::json;

@@ -502,6 +502,7 @@ impl Drop for DelegatedHosts {
                 let _ = crate::host::write_frame(
                     &mut socket,
                     &crate::host::Hello {
+                        control: false,
                         cookie: host.cookie,
                         cols: 0,
                         rows: 0,

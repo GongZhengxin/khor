@@ -30,6 +30,16 @@ final class Probe: NSObject, WKNavigationDelegate {
         }
     }
 
+    func describeFailure(_ error: Error) -> [String: Any] {
+        let error = error as NSError
+        return [
+            "error": error.localizedDescription,
+            "domain": error.domain,
+            "code": error.code,
+            "underlying": String(describing: error.userInfo[NSUnderlyingErrorKey]),
+        ]
+    }
+
     func finish(_ result: [String: Any]) {
         guard !finished else { return }
         finished = true
@@ -43,16 +53,16 @@ final class Probe: NSObject, WKNavigationDelegate {
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         webView.evaluateJavaScript("document.body.innerText") { value, error in
-            if let error = error { self.finish(["error": error.localizedDescription]) }
+            if let error = error { self.finish(self.describeFailure(error)) }
             else { self.finish(["body": value as? String ?? ""]) }
         }
     }
 
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
-        finish(["error": error.localizedDescription])
+        finish(describeFailure(error))
     }
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
-        finish(["error": error.localizedDescription])
+        finish(describeFailure(error))
     }
 }
 

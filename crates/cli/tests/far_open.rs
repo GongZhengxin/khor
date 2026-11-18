@@ -19,8 +19,8 @@ use std::process::Command;
 use std::time::{Duration, Instant};
 
 use khor_node::Node;
-use khor_node::gui_host::{GuiNote, GuiOp};
-use khor_node::host::{connect_at, read_frame, write_frame};
+use khor_node::gui_host::{GuiNote, GuiOp, connect_at};
+use khor_node::host::{read_frame, write_frame};
 use tokio::time::timeout;
 
 /// A scratch tree that **takes itself away however the test leaves**
@@ -210,8 +210,8 @@ async fn a_conversation_is_born_on_the_machine_the_wizard_named_and_spoken_to_fr
     );
 
     // The control: a name alpha never registered is refused *by alpha*,
-    // in its registry's own words — alpha has registered nothing, and
-    // that is the sentence — not opened on some default.
+    // in its registry's own words, including the shipped DSH launch —
+    // not opened on some default.
     let refused = timeout(
         Duration::from_secs(30),
         b.open_agent_on(
@@ -226,8 +226,8 @@ async fn a_conversation_is_born_on_the_machine_the_wizard_named_and_spoken_to_fr
     .await
     .expect("the refusal must not hang");
     assert_eq!(
-        refused.as_ref().err().map(String::as_str),
-        Some(khor_catalog::msg::no_agents_registered()),
+        refused.as_ref().err(),
+        Some(&khor_catalog::msg::no_such_agent("nobody-here", "dsh")),
         "an unregistered name must come back as alpha's own refusal: {refused:?}"
     );
 
@@ -239,12 +239,22 @@ async fn a_conversation_is_born_on_the_machine_the_wizard_named_and_spoken_to_fr
         .await
         .expect("the reach must not hang")
         .expect("beta's resident pipes onto alpha's host");
-    let mut conn = connect_at(&addr, &cookie, 0, 0).expect("the far host welcomes the pipe");
+    let mut conn = connect_at(&addr, &cookie)
+        .expect("the far host welcomes the GUI pipe")
+        .stream;
     conn.set_read_timeout(Some(Duration::from_secs(30)))
         .unwrap();
     let GuiNote::Agent { .. } = next_note(&mut conn) else {
         panic!("the facts come first")
     };
+    let GuiNote::Capabilities(protocol) = next_note(&mut conn) else {
+        panic!("the complete protocol capabilities follow the facts")
+    };
+    assert!(
+        serde_json::from_str::<serde_json::Value>(&protocol)
+            .unwrap()
+            .is_object()
+    );
     let GuiNote::Settings(_) = next_note(&mut conn) else {
         panic!("then the settings — alpha's shim lists claude's modes")
     };

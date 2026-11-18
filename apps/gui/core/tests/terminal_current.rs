@@ -132,12 +132,16 @@ fn until(fixture: &Fixture, needle: &str) -> Vec<u8> {
 
 #[test]
 fn an_unavailable_connection_retires_its_lease_before_a_new_view_attaches() {
-    let mut fixture = Fixture::new("khor-host/5", |stream| {
+    let (release_peer, keep_peer) = mpsc::channel();
+    let mut fixture = Fixture::new("khor-host/5", move |stream| {
         assert!(matches!(
             host::read_frame::<ClientOp>(stream).unwrap(),
             ClientOp::Version(5)
         ));
         stream.write_all(b"Recovered terminal\r\n").unwrap();
+        // A recovered host must stay alive until the new view is checked.
+        // Returning here races EOF/lease retirement against that assertion.
+        keep_peer.recv_timeout(Duration::from_secs(3)).unwrap();
     });
     let node = Node::open(fixture.root.clone()).unwrap();
     let live = khor_node::live::LiveKind::new(fixture.root.clone(), node.device());
@@ -169,7 +173,9 @@ fn an_unavailable_connection_retires_its_lease_before_a_new_view_attaches() {
             .unwrap()
             .is_none()
     );
+    until(&fixture, "Recovered terminal");
     assert!(term::term_attach(&fixture.root, &fixture.id.0, &fixture.lease).is_ok());
+    release_peer.send(()).unwrap();
     fixture.finish();
 }
 

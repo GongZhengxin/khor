@@ -15,6 +15,10 @@ pub(crate) struct Observation {
     pub reference: ObservationRef,
     pub title: String,
     pub cwd: Option<String>,
+    #[serde(default)]
+    pub adopt_on_open: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub import_spec: Option<crate::AgentSpec>,
 }
 impl Observation {
     pub fn id(
@@ -51,6 +55,8 @@ impl Observation {
             },
             title,
             cwd,
+            adopt_on_open: false,
+            import_spec: None,
         }
     }
     fn path(root: &Path, id: &SessionId) -> PathBuf {
@@ -377,6 +383,24 @@ impl Node {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn old_observation_metadata_stays_readonly_when_adoption_field_is_absent() {
+        let home = DeviceId([7; 32]);
+        let record = Observation::new(
+            home,
+            home,
+            ObservationNamespace::Acp,
+            "fixture".into(),
+            "native".into(),
+            "same title".into(),
+            None,
+            None,
+        );
+        let mut encoded = serde_json::to_value(record).unwrap();
+        encoded.as_object_mut().unwrap().remove("adopt_on_open");
+        let decoded: Observation = serde_json::from_value(encoded).unwrap();
+        assert!(!decoded.adopt_on_open);
+    }
     struct Fixture(PathBuf);
     impl Fixture {
         fn new(name: &str) -> Self {

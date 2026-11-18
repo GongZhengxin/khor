@@ -135,6 +135,7 @@ fn a_complete_empty_option_list_removes_the_previous_controls() {
     write_frame(
         &mut conn,
         &Hello {
+            control: false,
             cookie: hf.cookie,
             cols: 0,
             rows: 0,
@@ -195,6 +196,7 @@ fn a_prompt_keeps_answering_interactions_across_two_faces() {
         write_frame(
             &mut c,
             &Hello {
+                control: false,
                 cookie: hf.cookie.clone(),
                 cols: 0,
                 rows: 0,
@@ -345,6 +347,7 @@ fn a_gui_session_is_one_row_wearing_the_protocols_words() {
     write_frame(
         &mut conn,
         &Hello {
+            control: false,
             cookie: hf.cookie,
             cols: 0,
             rows: 0,
@@ -491,6 +494,7 @@ fn capture_answers_its_own_view_and_contains_the_completed_turn() {
         write_frame(
             &mut c,
             &Hello {
+                control: false,
                 cookie: hf.cookie.clone(),
                 cols: 0,
                 rows: 0,
@@ -661,6 +665,7 @@ fn an_agent_that_cannot_replay_is_not_a_conversation_with_nothing_in_it() {
     write_frame(
         &mut conn,
         &Hello {
+            control: false,
             cookie: hf.cookie,
             cols: 0,
             rows: 0,
@@ -810,6 +815,7 @@ fn a_generic_agents_conversation_says_it_has_no_terminal_form() {
     write_frame(
         &mut conn,
         &Hello {
+            control: false,
             cookie: hf.cookie,
             cols: 0,
             rows: 0,
@@ -851,6 +857,7 @@ fn settings_reach_a_face_and_a_change_goes_round() {
         write_frame(
             &mut conn,
             &Hello {
+                control: false,
                 cookie: hf.cookie.clone(),
                 cols: 0,
                 rows: 0,

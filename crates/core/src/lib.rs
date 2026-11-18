@@ -12,6 +12,7 @@ pub mod activity;
 pub mod avatar;
 pub mod map;
 pub mod recovery;
+pub mod session_import;
 
 /// A device's identity: its public key (docs/NET.md).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]

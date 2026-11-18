@@ -8,7 +8,14 @@ fn khor(home: &std::path::Path) -> Command {
     let mut c = Command::new(env!("CARGO_BIN_EXE_khor"));
     c.env("KHOR_HOME", home)
         .env("KHOR_NAME", "box")
+        .env("HOME", home)
+        .env("KHOR_RUNTIME_DIR", home.join("runtime"))
+        .env("KHOR_RUNTIME_INSTALL_SOURCE", env!("CARGO_BIN_EXE_khor"))
         .env_remove("KHOR_SESSION");
+    #[cfg(unix)]
+    c.env("KHOR_SHELL", "/bin/sh");
+    #[cfg(windows)]
+    c.env_remove("KHOR_SHELL");
     c
 }
 
@@ -71,52 +78,71 @@ fn wrapped_commands_report_exit_and_read_state_without_hooks() {
     // Compare the same localized words the child selects at startup.
     khor_node::config::apply_lang(&home);
 
-    // A failing command: the child's code passes through the wrapper,
-    // and the row sinks to 失败.
-    let out = khor(&home)
-        .args(["run", "--", "sh", "-c", "exit 3"])
-        .output()
-        .unwrap();
+    // A failing one-shot command preserves its code and both output streams,
+    // with a durable task receipt instead of a retained terminal row.
+    let mut run = khor(&home);
+    run.args(["run", "--"]);
+    #[cfg(unix)]
+    run.args([
+        "sh",
+        "-c",
+        "printf run-output; printf run-error >&2; exit 3",
+    ]);
+    #[cfg(windows)]
+    run.args([
+        "cmd.exe",
+        "/d",
+        "/s",
+        "/c",
+        r#"<nul set /p "=run-output"& <nul set /p "=run-error" >&2& exit /b 3"#,
+    ]);
+    let out = run.output().unwrap();
     assert_eq!(
         out.status.code(),
         Some(3),
         "the wrapper must hand back the child's code"
     );
+    assert_eq!(out.stdout, b"run-output");
     let stderr = String::from_utf8_lossy(&out.stderr);
     assert!(
-        stderr.contains("session: shell/"),
-        "the id goes to stderr: {stderr}"
+        stderr.contains("run-error"),
+        "stderr must be preserved: {stderr}"
     );
+    let id = stderr
+        .lines()
+        .find_map(|line| line.strip_prefix("task: "))
+        .expect("the durable task ID goes to stderr")
+        .to_owned();
+    assert!(!id.starts_with("shell/"));
     let text = listed(&home);
     assert!(
-        text.lines()
-            .any(|l| l.contains("shell/") && l.contains(khor_catalog::state::word("failed"))),
-        "a non-zero ending must list as failed:\n{text}"
+        !text.contains(&id) && !text.contains("shell/"),
+        "one-shot execution must not populate sessions: {text}"
     );
-
-    // A clean command waits to be looked at; seen settles it.
-    let out = khor(&home)
-        .args(["run", "--title", "quick", "--", "true"])
+    let receipt = khor(&home)
+        .args(["execution", "read", &id])
         .output()
         .unwrap();
+    assert!(
+        receipt.status.success(),
+        "{}",
+        String::from_utf8_lossy(&receipt.stderr)
+    );
+    let receipt: serde_json::Value = serde_json::from_slice(&receipt.stdout).unwrap();
+    assert_eq!(receipt["task"]["exit"], 3);
+
+    let mut run = khor(&home);
+    run.args(["run", "--title", "quick", "--"]);
+    #[cfg(unix)]
+    run.arg("true");
+    #[cfg(windows)]
+    run.args(["cmd.exe", "/d", "/s", "/c", "exit /b 0"]);
+    let out = run.output().unwrap();
     assert_eq!(out.status.code(), Some(0));
     let text = listed(&home);
-    let row = text
-        .lines()
-        .find(|l| l.contains("quick"))
-        .expect("the clean run should be listed");
     assert!(
-        row.contains(khor_catalog::state::word("done"))
-            && row.contains(&khor_catalog::cli::unread(1)),
-        "{row}"
-    );
-    let id = row.split('\t').next().unwrap().to_owned();
-    assert!(khor(&home).args(["seen", &id]).status().unwrap().success());
-    let text = listed(&home);
-    assert!(
-        text.lines()
-            .any(|l| l.contains("quick") && l.contains(khor_catalog::state::word("idle"))),
-        "looked at = 空闲:\n{text}"
+        !text.contains("quick") && !text.contains("shell/"),
+        "clean one-shot execution must not be retained in session list: {text}"
     );
 
     // Control: a word outside the six is refused by name, and a report

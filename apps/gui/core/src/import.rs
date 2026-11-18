@@ -4,9 +4,22 @@
 
 use std::path::Path;
 
+pub use khor_core::session_import::{
+    ImportAgent, ImportCatalog, ImportIntent, ImportRow, SessionImportAction, SessionImportReply,
+};
 use khor_node::Node;
 use serde::Serialize;
 use ts_rs::TS;
+
+pub async fn session_import(
+    root: &Path,
+    home: &str,
+    action: SessionImportAction,
+) -> Result<SessionImportReply, String> {
+    Node::open(root.to_path_buf())?
+        .session_import_on(home, action)
+        .await
+}
 
 /// One candidate, as the import panel draws it.
 #[derive(Debug, Clone, Serialize, TS)]

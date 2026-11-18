@@ -156,22 +156,6 @@ pub(crate) fn input_line(text: &mut String) -> std::io::Result<usize> {
         None => std::io::stdin().read_line(text),
     })
 }
-pub(crate) fn input_all(text: &mut String) -> std::io::Result<usize> {
-    use std::io::Read;
-    REQUEST.with(|slot| match slot.borrow_mut().as_mut() {
-        Some(r) => r
-            .input
-            .as_mut()
-            .ok_or_else(|| {
-                std::io::Error::new(
-                    std::io::ErrorKind::InvalidInput,
-                    khor_catalog::msg::command_input_required(),
-                )
-            })?
-            .read_to_string(text),
-        None => std::io::stdin().read_to_string(text),
-    })
-}
 
 /// Split command arguments without shell expansion or execution. Backslashes
 /// remain literal in Windows paths unless they escape a quote or whitespace.
@@ -412,7 +396,9 @@ fn grammar(word: &str) -> &'static str {
         "usage" => "usage [--days <number>]",
         "sessions" => "sessions [--by recent|category|device|state|place] [--all]",
         "find" => "find <word>",
-        "import" => "import [<number|id>...]",
+        "import" => {
+            "import [--machine SOURCE] [--refresh AGENT] [--agent AGENT] [--fork] [NUMBER|NATIVE_ID] [--token TOKEN]"
+        }
         "tell" => "tell <machine>|@<machine>[:<dir>]... <words>...",
         "send" => {
             "send <machine>|@<machine>[:<dir>]... <file>|<machine>:<path>|<words>... [--into <dir>]"
@@ -420,8 +406,17 @@ fn grammar(word: &str) -> &'static str {
         "retry" => "retry <transfer>",
         "log" => "log [<machine>]",
         "run" => "run [--tui] [--title <title>] -- <command>...",
+        "exec" => {
+            "exec [--on <machine>] --request <token> --command <command> [--cwd <directory>] [--timeout-ms <number>]"
+        }
+        "execution" => {
+            "execution status|cancel|forget [--on <machine>] <task> | execution read [--on <machine>] <task> [--stdout-cursor <number>] [--stderr-cursor <number>] [--limit <number>] [--wait-ms <number>]"
+        }
+        "terminal" => {
+            "terminal read [--on <machine>] <session> [--cursor <number>] [--limit <number>] [--wait-ms <number>] | terminal input [--on <machine>] <session> --request <token> --generation <generation> --revision <number> [--text <text>] [--enter] | terminal ended [--on <machine>] <session>"
+        }
         "open" => {
-            "open [-d] [--tui|--gui] [--agent <agent> [--resume <id>]] [--on <machine>] [--title <title>] [-- <command>...]"
+            "open [-d] [--tui|--gui] [--agent <agent> [--resume <id>]] [--on <machine>] [--title <title>] [--command <command>|-- <command>...]"
         }
         "attach" => "attach <session>",
         "takeover" => "takeover <session>",
@@ -500,7 +495,7 @@ mod tests {
     #[test]
     fn every_public_verb_has_one_catalog_entry_and_internal_verbs_stay_private() {
         let rows = catalog();
-        assert_eq!(rows.len(), 73);
+        assert_eq!(rows.len(), 76);
         for row in &rows {
             assert!(!row.word.starts_with('_'));
             assert!(row.usage.starts_with(&row.word));

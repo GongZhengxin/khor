@@ -98,6 +98,17 @@ pub struct Hello {
     pub cookie: String,
     pub cols: u16,
     pub rows: u16,
+    #[serde(default)]
+    pub control: bool,
+}
+
+// Ordinary viewers retain the positional three-field v5 greeting. An added
+// serialized field would prevent an already-running v5 host from decoding it.
+#[derive(Serialize)]
+struct ViewerHello<'a> {
+    cookie: &'a str,
+    cols: u16,
+    rows: u16,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -125,12 +136,22 @@ pub enum ClientOp {
     /// most any face has asked for, up to [`MODEL_SCROLLBACK_MOST`].
     Scrollback(u32),
     /// The terminal has parsed its initial replay and can answer live
-    /// queries. Releases this host's initial shell input once.
+    /// queries. Startup also waits for the shell's first prompt.
     Ready,
 }
 
-/// Both sides require this exact current terminal protocol.
+/// The viewer protocol is unchanged, including already-running durable hosts.
 pub const HOST_VERSION: u32 = 5;
+/// Bounded automation requests use a distinct connection and protocol.
+pub const CONTROL_VERSION: u32 = 6;
+
+fn hello_version(hello: &Hello) -> u32 {
+    if hello.control {
+        CONTROL_VERSION
+    } else {
+        HOST_VERSION
+    }
+}
 
 /// Far attachers return Version over the network after receiving Welcome.
 /// Use the shared handshake budget for that complete round trip as well.
@@ -433,6 +454,9 @@ pub fn read_frame<T: for<'a> Deserialize<'a>>(s: &mut (impl Read + ?Sized)) -> R
 /// terminal waited on a host.json nobody would ever write.
 pub fn main_if_host(root: std::path::PathBuf) {
     crate::runtime_image::process_entry();
+    if let Some(code) = crate::command_task::main_if_requested(&root) {
+        std::process::exit(code);
+    }
     crate::legacy_codex::main_if_shim();
     let args: Vec<String> = std::env::args().skip(1).collect();
     let outcome = match args.first().map(String::as_str) {
@@ -478,12 +502,11 @@ fn host_args(root: &Path, rest: &[String]) -> Result<(), String> {
         rows.parse::<u16>()
             .map_err(|_| msg::host_bad_convention().to_string())?,
     );
-    host_main_with_startup(
+    host_main_from_env(
         root.to_path_buf(),
         SessionId(sid.clone()),
         size,
         cmd.to_vec(),
-        std::env::var(STARTUP_ENV).ok(),
     )
 }
 
@@ -514,7 +537,7 @@ pub fn spawn_host(
     cmd: &[String],
     size: (u16, u16),
 ) -> Result<(), String> {
-    spawn_host_with(dir, id, cmd, size, None, None, None)
+    spawn_host_with(dir, id, cmd, size, None, None, None, false)
 }
 
 /// `spawn_host`, born in a chosen working directory — the wizard names
@@ -526,7 +549,7 @@ pub fn spawn_host_at(
     cmd: &[String],
     size: (u16, u16),
 ) -> Result<(), String> {
-    spawn_host_with(dir, id, cmd, size, None, Some(cwd), None)
+    spawn_host_with(dir, id, cmd, size, None, Some(cwd), None, false)
 }
 
 /// A normal shell host with a single initial input. Attach never calls this.
@@ -538,7 +561,19 @@ pub fn spawn_shell_at(
     size: (u16, u16),
     startup: &str,
 ) -> Result<(), String> {
-    spawn_host_with(dir, id, cmd, size, None, Some(cwd), Some(startup))
+    spawn_shell_with_readiness_at(cwd, dir, id, cmd, size, startup, false)
+}
+
+pub fn spawn_shell_with_readiness_at(
+    cwd: &Path,
+    dir: &Path,
+    id: &SessionId,
+    cmd: &[String],
+    size: (u16, u16),
+    startup: &str,
+    headless: bool,
+) -> Result<(), String> {
+    spawn_host_with(dir, id, cmd, size, None, Some(cwd), Some(startup), headless)
 }
 
 /// A host that is a **lens, not an owner**: it bridges a terminal onto a
@@ -563,6 +598,7 @@ pub fn spawn_viewer_host(
         Some(if made { "made" } else { "keep" }),
         None,
         None,
+        false,
     )
 }
 
@@ -570,6 +606,37 @@ pub fn spawn_viewer_host(
 /// contract (`host_args`) stays what every existing binary parses.
 const VIEWER_ENV: &str = "KHOR_HOST_VIEWER";
 const STARTUP_ENV: &str = "KHOR_HOST_STARTUP";
+const HEADLESS_ENV: &str = "KHOR_HOST_HEADLESS";
+
+/// portable-pty creates ConPTY with INHERIT_CURSOR. A new managed screen
+/// starts at its origin; consume this one bootstrap query before replay so a
+/// later viewer cannot answer it again. Subsequent child queries stay intact.
+#[cfg(any(windows, test))]
+#[derive(Default)]
+struct InitialCursor {
+    pending: Vec<u8>,
+    done: bool,
+}
+
+#[cfg(any(windows, test))]
+impl InitialCursor {
+    fn feed(&mut self, bytes: &[u8]) -> (Vec<u8>, bool) {
+        const REQUEST: &[u8] = b"\x1b[6n";
+        if self.done {
+            return (bytes.to_vec(), false);
+        }
+        self.pending.extend_from_slice(bytes);
+        if self.pending.starts_with(REQUEST) {
+            self.done = true;
+            (self.pending.split_off(REQUEST.len()), true)
+        } else if REQUEST.starts_with(&self.pending) {
+            (Vec::new(), false)
+        } else {
+            self.done = true;
+            (std::mem::take(&mut self.pending), false)
+        }
+    }
+}
 
 fn host_store_root(dir: &Path) -> Result<PathBuf, String> {
     let root = dir
@@ -577,6 +644,14 @@ fn host_store_root(dir: &Path) -> Result<PathBuf, String> {
         .nth(3)
         .ok_or_else(|| msg::no_such_dir(dir.display()))?;
     std::fs::canonicalize(root).map_err(|e| msg::cant_read(root.display(), e))
+}
+
+fn record_unspawned_failure(dir: &Path, id: &SessionId, why: &str) -> Result<bool, String> {
+    let root = host_store_root(dir)?;
+    let key = khor_net::identity::load_or_create(&root.join(".khor/identity.key"))
+        .map_err(|error| error.to_string())?;
+    LiveKind::new(root, khor_core::DeviceId(*key.public().as_bytes()))
+        .record_startup_failure(id, None, why)
 }
 
 fn spawn_host_with(
@@ -587,141 +662,165 @@ fn spawn_host_with(
     viewer: Option<&str>,
     cwd: Option<&Path>,
     startup: Option<&str>,
+    headless: bool,
 ) -> Result<(), String> {
-    let image = crate::runtime_image::host()?;
-    crate::startup_trace::mark("client-image");
-    let mut c = std::process::Command::new(image.path());
-    // A host belongs to the store containing this session. A GUI request may
-    // name a different root from its process environment; only the child gets
-    // that root, before it changes directory to the session's working path.
-    let root = host_store_root(dir)?;
-    crate::startup_trace::mark("client-root");
-    c.env("KHOR_HOME", &root);
-    // Native TUI resume must read the very store the GUI shim/discovery used.
-    // Set these on the child only; a private node cannot inherit the user's
-    // unrelated native store through its parent process environment.
-    c.env("CLAUDE_CONFIG_DIR", crate::adaptor::claude_home(&root));
-    c.env("CODEX_HOME", crate::adaptor::codex_home(&root));
-    c.env_remove(STARTUP_ENV);
-    if let Some(text) = startup {
-        c.env(STARTUP_ENV, text);
-    }
-    crate::startup_trace::mark("client-env");
-    if let Some(cwd) = cwd {
-        c.current_dir(cwd);
-    }
-    c.arg("_host")
-        .arg(&id.0)
-        .arg(cols.to_string())
-        .arg(rows.to_string())
-        .arg("--")
-        .args(cmd)
-        .stdin(std::process::Stdio::null())
-        .stdout(std::process::Stdio::null())
-        .stderr(std::process::Stdio::null());
-    match viewer {
-        Some(v) => {
-            c.env(VIEWER_ENV, v);
+    let mut host_spawned = false;
+    let result = (|| -> Result<(), String> {
+        // Public viewer compatibility permits older installed runtimes. This
+        // child implements our private startup/control ABI and must use the
+        // same code as its opener, including when the opener is the GUI.
+        let image = crate::runtime_image::running_host()?;
+        crate::startup_trace::mark("client-image");
+        let mut c = std::process::Command::new(image.path());
+        // A host belongs to the store containing this session. A GUI request may
+        // name a different root from its process environment; only the child gets
+        // that root, before it changes directory to the session's working path.
+        let root = host_store_root(dir)?;
+        crate::startup_trace::mark("client-root");
+        c.env("KHOR_HOME", &root);
+        // Native TUI resume must read the very store the GUI shim/discovery used.
+        // Set these on the child only; a private node cannot inherit the user's
+        // unrelated native store through its parent process environment.
+        c.env("CLAUDE_CONFIG_DIR", crate::adaptor::claude_home(&root));
+        c.env("CODEX_HOME", crate::adaptor::codex_home(&root));
+        c.env_remove(STARTUP_ENV);
+        c.env_remove(HEADLESS_ENV);
+        if headless {
+            c.env(HEADLESS_ENV, "1");
         }
-        None => {
-            // A host spawned by a viewer host's own re-exec must not
-            // inherit viewerhood.
-            c.env_remove(VIEWER_ENV);
+        if let Some(text) = startup {
+            c.env(STARTUP_ENV, text);
         }
-    }
-    #[cfg(unix)]
-    unsafe {
-        use std::os::unix::process::CommandExt;
-        c.pre_exec(|| {
-            libc::setsid();
-            Ok(())
-        });
-    }
-    // **The same promise on Windows, which had no counterpart** (measured
-    // 2026-11-16). `setsid` above is what lets the opener's terminal go away
-    // without taking the session with it; without an equivalent, a host was an
-    // ordinary child of whoever ran `open`, so it died with that process and the
-    // session came back `Failed / 宿主被结束` for good. Reproduced both ways on
-    // Windows: with no resident the session died when the CLI exited, and
-    // sessions hosted by `khor serve` died when that serve was stopped.
-    //
-    // `DETACHED_PROCESS` gives the child no console of its own to inherit and
-    // outlives the parent's; `CREATE_NEW_PROCESS_GROUP` keeps the parent's
-    // Ctrl+C / console close from being delivered to it. Its stdio is already
-    // /dev/null above, so it has nothing to say to a console anyway.
-    //
-    // **Conditional because `prepare_durable_child` below also sets flags**, and
-    // `creation_flags` replaces rather than merges: that call carries the same
-    // detach bits (plus breakaway) when this process is a durable worker, so
-    // setting them here first would be undone there and vice versa.
-    #[cfg(windows)]
-    {
-        use std::os::windows::process::CommandExt;
-        use windows_sys::Win32::System::Threading::{CREATE_NEW_PROCESS_GROUP, DETACHED_PROCESS};
-        if !crate::mcp_worker::worker_process() {
-            c.creation_flags(DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP);
+        if let Some(cwd) = cwd {
+            c.current_dir(cwd);
         }
-    }
-    crate::mcp_worker::prepare_durable_child(&mut c);
-    crate::startup_trace::mark("client-durable-child");
-    // The `PATH` this process worked out travels down rather than
-    // being worked out again: `_host` is a fresh process and would
-    // otherwise re-run the user's login shell on every single spawn
-    // (measured 0.78s cold, and it runs their rc files). `KHOR_PATH` is
-    // the override that already exists for exactly "khor, here is where
-    // things are" — no second mechanism.
-    c.env(crate::PATH_ENV, crate::Node::user_path());
-    crate::startup_trace::mark("client-path");
-    // The locale travels the same way and for the same reason: `_host`
-    // is a fresh process, and a repaired locale set here is one it does
-    // not have to go back to the login shell for.
-    for (name, value) in crate::Node::user_locale() {
-        c.env(name, value);
-    }
-    // **Wait for the file this host will actually write.** A viewer
-    // leaves its address in `view.json` (`view_file_path` has why), and
-    // an opener watching `host.json` for it waited the full five
-    // seconds beside a viewer that had been up for four of them, then
-    // told the person the host never came — measured live 2026-09-01
-    // on a conversation the person had resumed in tmux: `view.json`
-    // written, viewer alive, screen saying 宿主没在 5 秒内就位.
-    let marker = if viewer.is_some() {
-        view_file_path(dir)
-    } else {
-        host_file_path(dir)
-    };
-    let complaint = host_error_path(dir);
-    // A leftover from a previous failed spawn must never answer for
-    // this one; nothing else writes this file.
-    let _ = std::fs::remove_file(&complaint);
-    let mut child = image.spawn(&mut c).map_err(msg::host_wont_start)?;
-    crate::startup_trace::mark("client-spawned");
-    for _ in 0..100 {
-        if marker.exists() {
-            crate::startup_trace::mark("client-ready");
-            return Ok(());
-        }
-        // The host's own words beat the timeout whenever it managed to
-        // leave any (`host_error_path`).
-        if let Ok(why) = std::fs::read_to_string(&complaint) {
-            let why = why.trim();
-            if !why.is_empty() {
-                return Err(why.to_owned());
+        c.arg("_host")
+            .arg(&id.0)
+            .arg(cols.to_string())
+            .arg(rows.to_string())
+            .arg("--")
+            .args(cmd)
+            .stdin(std::process::Stdio::null())
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null());
+        match viewer {
+            Some(v) => {
+                c.env(VIEWER_ENV, v);
+            }
+            None => {
+                // A host spawned by a viewer host's own re-exec must not
+                // inherit viewerhood.
+                c.env_remove(VIEWER_ENV);
             }
         }
-        // **A host that is already gone is not going to be ready.**
-        // Without this the person waits the whole five seconds for a
-        // process that died in a millisecond, and the wait itself is
-        // the misleading part.
-        if matches!(child.try_wait(), Ok(Some(_))) && !marker.exists() {
-            return Err(match std::fs::read_to_string(&complaint) {
-                Ok(why) if !why.trim().is_empty() => why.trim().to_owned(),
-                _ => msg::host_died_mute().to_string(),
+        #[cfg(unix)]
+        unsafe {
+            use std::os::unix::process::CommandExt;
+            c.pre_exec(|| {
+                libc::setsid();
+                Ok(())
             });
         }
-        std::thread::sleep(Duration::from_millis(50));
+        // **The same promise on Windows, which had no counterpart** (measured
+        // 2026-11-16, and it is the reason this block is here after the merge
+        // that brought main's `running_host` refactor: main has no
+        // `DETACHED_PROCESS` anywhere). `setsid` above is what lets the
+        // opener's terminal go away without taking the session with it;
+        // without an equivalent a host was an ordinary child of whoever ran
+        // `open`, so it died with that process and the session came back
+        // `Failed / 宿主被结束` for good. Reproduced both ways on Windows:
+        // with no resident the session died when the CLI exited, and sessions
+        // hosted by `khor serve` died when that serve was stopped.
+        //
+        // `DETACHED_PROCESS` gives the child no console of its own to inherit
+        // and outlives the parent's; `CREATE_NEW_PROCESS_GROUP` keeps the
+        // parent's Ctrl+C / console close from being delivered to it. Its
+        // stdio is already /dev/null above, so it has nothing to say to a
+        // console anyway.
+        //
+        // **Conditional because `prepare_durable_child` below also sets
+        // flags**, and `creation_flags` replaces rather than merges: that call
+        // carries the same detach bits (plus breakaway) when this process is a
+        // durable worker, so setting them here first would be undone there and
+        // vice versa.
+        #[cfg(windows)]
+        {
+            use std::os::windows::process::CommandExt;
+            use windows_sys::Win32::System::Threading::{CREATE_NEW_PROCESS_GROUP, DETACHED_PROCESS};
+            if !crate::mcp_worker::worker_process() {
+                c.creation_flags(DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP);
+            }
+        }
+        crate::mcp_worker::prepare_durable_child(&mut c);
+        crate::startup_trace::mark("client-durable-child");
+        // The `PATH` this process worked out travels down rather than
+        // being worked out again: `_host` is a fresh process and would
+        // otherwise re-run the user's login shell on every single spawn
+        // (measured 0.78s cold, and it runs their rc files). `KHOR_PATH` is
+        // the override that already exists for exactly "khor, here is where
+        // things are" — no second mechanism.
+        c.env(crate::PATH_ENV, crate::Node::user_path());
+        crate::startup_trace::mark("client-path");
+        // The locale travels the same way and for the same reason: `_host`
+        // is a fresh process, and a repaired locale set here is one it does
+        // not have to go back to the login shell for.
+        for (name, value) in crate::Node::user_locale() {
+            c.env(name, value);
+        }
+        // **Wait for the file this host will actually write.** A viewer
+        // leaves its address in `view.json` (`view_file_path` has why), and
+        // an opener watching `host.json` for it waited the full five
+        // seconds beside a viewer that had been up for four of them, then
+        // told the person the host never came — measured live 2026-09-01
+        // on a conversation the person had resumed in tmux: `view.json`
+        // written, viewer alive, screen saying 宿主没在 5 秒内就位.
+        let marker = if viewer.is_some() {
+            view_file_path(dir)
+        } else {
+            host_file_path(dir)
+        };
+        let complaint = host_error_path(dir);
+        // A leftover from a previous failed spawn must never answer for
+        // this one; nothing else writes this file.
+        let _ = std::fs::remove_file(&complaint);
+        let mut child = image.spawn(&mut c).map_err(msg::host_wont_start)?;
+        crate::startup_trace::mark("client-spawned");
+        host_spawned = true;
+        for _ in 0..100 {
+            if marker.exists() {
+                crate::startup_trace::mark("client-ready");
+                return Ok(());
+            }
+            // The host's own words beat the timeout whenever it managed to
+            // leave any (`host_error_path`).
+            if let Ok(why) = std::fs::read_to_string(&complaint) {
+                let why = why.trim();
+                if !why.is_empty() {
+                    return Err(why.to_owned());
+                }
+            }
+            // **A host that is already gone is not going to be ready.**
+            // Without this the person waits the whole five seconds for a
+            // process that died in a millisecond, and the wait itself is
+            // the misleading part.
+            if matches!(child.try_wait(), Ok(Some(_))) && !marker.exists() {
+                return Err(match std::fs::read_to_string(&complaint) {
+                    Ok(why) if !why.trim().is_empty() => why.trim().to_owned(),
+                    _ => msg::host_died_mute().to_string(),
+                });
+            }
+            std::thread::sleep(Duration::from_millis(50));
+        }
+        Err(msg::host_never_ready().into())
+    })();
+    // No process exists on this branch. A timeout after spawning is uncertain
+    // and must never turn a possibly running execution into a dead row.
+    if !host_spawned && viewer.is_none() {
+        if let Err(why) = &result {
+            let _ = record_unspawned_failure(dir, id, why);
+        }
     }
-    Err(msg::host_never_ready().into())
+    result
 }
 
 /// Connects and completes the handshake; on return the stream carries
@@ -811,14 +910,7 @@ fn connect_welcomed_typed(
     let _ = s.set_nodelay(true);
     let _ = s.set_read_timeout(Some(HANDSHAKE));
     let _ = s.set_write_timeout(Some(HANDSHAKE));
-    write_handshake(
-        &mut s,
-        &Hello {
-            cookie: cookie.to_owned(),
-            cols,
-            rows,
-        },
-    )?;
+    write_handshake(&mut s, &ViewerHello { cookie, cols, rows })?;
     let welcome: Welcome = read_handshake_typed(&mut s, HANDSHAKE)?;
     if !welcome.ok {
         return Err(ConnectError::Refused(welcome.why));
@@ -1784,7 +1876,7 @@ fn state_of(word: khor_detect::Word) -> State {
     }
 }
 
-/// The body of `khor _host` — blocks until the child ends.
+/// The body of a programmatically-created host — blocks until the child ends.
 pub fn host_main(
     root: PathBuf,
     id: SessionId,
@@ -1792,6 +1884,17 @@ pub fn host_main(
     cmd: Vec<String>,
 ) -> Result<(), String> {
     host_main_with_startup(root, id, size, cmd, None)
+}
+
+/// Shared native `_host` entry. The GUI and CLI read the opener's private
+/// startup input here; programmatic hosts keep their explicit arguments.
+pub fn host_main_from_env(
+    root: PathBuf,
+    id: SessionId,
+    size: (u16, u16),
+    cmd: Vec<String>,
+) -> Result<(), String> {
+    host_main_with_startup(root, id, size, cmd, std::env::var(STARTUP_ENV).ok())
 }
 
 /// Explicit startup input belongs to a newly created host, never a connection.
@@ -1814,11 +1917,170 @@ pub fn host_main_with_startup(
     // until now every reason it had for dying went nowhere and the
     // opener had one sentence for all of them — a timeout
     // (`HOST_NEVER_READY`). See `host_error_path` for what that cost.
-    let served = host_serving(&live, &dir, &khor, &id, size, &cmd, startup.as_deref());
+    let mut stage = HostStartupStage::default();
+    let served = host_serving(
+        &live,
+        &dir,
+        &khor,
+        &id,
+        size,
+        &cmd,
+        startup.as_deref(),
+        &mut stage,
+    );
     if let Err(why) = &served {
-        let _ = std::fs::write(host_error_path(&dir), why);
+        if !stage.child_started && std::env::var_os(VIEWER_ENV).is_none() {
+            let expected_pid = stage.claimed_pid.then_some(std::process::id());
+            let _ = live.record_startup_failure(&id, expected_pid, why);
+        } else {
+            let _ = std::fs::write(host_error_path(&dir), why);
+        }
     }
     served
+}
+
+fn control_output<W: Write>(
+    generation: &str,
+    shared: &Shared,
+    writer: &Mutex<crate::shell_start::StartupInput<W>>,
+    cursor: Option<u64>,
+    limit: usize,
+) -> crate::terminal_control::HostOutput {
+    let (bytes, cursor, end, reset) = {
+        let ring = shared.ring.lock().unwrap();
+        let end = ring.gone + ring.bytes.len() as u64;
+        let reset = cursor.is_none_or(|at| at < ring.gone || at > end);
+        let start = cursor
+            .filter(|at| *at >= ring.gone && *at <= end)
+            .unwrap_or_else(|| end.saturating_sub(limit as u64).max(ring.gone));
+        let bytes: Vec<u8> = ring
+            .bytes
+            .iter()
+            .skip((start - ring.gone) as usize)
+            .take(limit)
+            .copied()
+            .collect();
+        let cursor = start + bytes.len() as u64;
+        (bytes, cursor, end, reset)
+    };
+    let writer = writer.lock().unwrap();
+    let (shell_ready, startup_released) = writer.readiness();
+    crate::terminal_control::HostOutput {
+        generation: generation.to_owned(),
+        bytes,
+        cursor,
+        end,
+        reset,
+        input_revision: writer.revision(),
+        shell_ready,
+        startup_released,
+    }
+}
+
+fn control_input<W: Write>(
+    generation: &str,
+    writer: &Mutex<crate::shell_start::StartupInput<W>>,
+    observed_generation: &str,
+    token: &str,
+    revision: u64,
+    bytes: &[u8],
+) -> crate::terminal_control::HostReply {
+    use crate::terminal_control::HostReply;
+    if observed_generation != generation {
+        return HostReply::Refused {
+            why: "Terminal execution changed; read its current generation before sending input"
+                .into(),
+        };
+    }
+    match writer
+        .lock()
+        .unwrap()
+        .automated_input_in_generation(generation, token, revision, bytes)
+    {
+        Ok(revision) => HostReply::Input {
+            generation: generation.to_owned(),
+            revision,
+        },
+        Err(why) => HostReply::Refused { why },
+    }
+}
+
+fn serve_control<W: Write>(
+    stream: &mut TcpStream,
+    generation: &str,
+    shared: &Shared,
+    writer: &Mutex<crate::shell_start::StartupInput<W>>,
+    output_done: &AtomicBool,
+) -> Result<(), String> {
+    use crate::terminal_control::{HostReply, HostRequest, MAX_OUTPUT, MAX_WAIT_MS};
+    static CALLS: AtomicU64 = AtomicU64::new(0);
+    struct Call;
+    impl Drop for Call {
+        fn drop(&mut self) {
+            CALLS.fetch_sub(1, Ordering::SeqCst);
+        }
+    }
+    if CALLS.fetch_add(1, Ordering::SeqCst) >= 32 {
+        CALLS.fetch_sub(1, Ordering::SeqCst);
+        return write_frame(
+            stream,
+            &HostReply::Refused {
+                why: "Too many concurrent terminal observers".into(),
+            },
+        );
+    }
+    let _call = Call;
+    let request = read_handshake_frame::<HostRequest>(stream, FIRST_FRAME)?;
+    let reply = match request {
+        HostRequest::Read {
+            cursor,
+            limit,
+            wait_ms,
+        } => {
+            if limit == 0 || limit > MAX_OUTPUT || wait_ms > MAX_WAIT_MS {
+                HostReply::Refused {
+                    why: "Terminal read exceeds its output or wait budget".into(),
+                }
+            } else {
+                let deadline = std::time::Instant::now() + Duration::from_millis(wait_ms);
+                let mut output = control_output(generation, shared, writer, cursor, limit);
+                let revision = output.input_revision;
+                let ready = output.shell_ready;
+                while !output.reset
+                    && output.bytes.is_empty()
+                    && !output_done.load(Ordering::SeqCst)
+                    && std::time::Instant::now() < deadline
+                {
+                    std::thread::sleep(Duration::from_millis(20));
+                    output = control_output(generation, shared, writer, cursor, limit);
+                    if output.input_revision != revision || output.shell_ready != ready {
+                        break;
+                    }
+                }
+                HostReply::Output(output)
+            }
+        }
+        HostRequest::Input {
+            generation: observed_generation,
+            token,
+            revision,
+            bytes,
+        } => control_input(
+            generation,
+            writer,
+            &observed_generation,
+            &token,
+            revision,
+            &bytes,
+        ),
+    };
+    write_frame(stream, &reply)
+}
+
+#[derive(Default)]
+struct HostStartupStage {
+    claimed_pid: bool,
+    child_started: bool,
 }
 
 fn host_serving(
@@ -1829,12 +2091,12 @@ fn host_serving(
     size: (u16, u16),
     cmd: &[String],
     startup: Option<&str>,
+    stage: &mut HostStartupStage,
 ) -> Result<(), String> {
-    crate::startup_trace::mark("host-serving");
     let dir = dir.to_path_buf();
     let id = id.clone();
     let live = live.clone();
-    let cmd = cmd.to_vec();
+    let mut cmd = cmd.to_vec();
     let kind = id.0.split('/').next().unwrap_or("").to_owned();
     // A PTY carrying a tmux client shows tmux's status bar as its
     // bottom line, so its "last non-empty line" is chrome, never the
@@ -1850,8 +2112,13 @@ fn host_serving(
     // A viewer never claims the row (`spawn_viewer_host`): the pid slot,
     // the words and the ending all stay the vendor's.
     let viewer = std::env::var(VIEWER_ENV).ok();
+    if kind == khor_core::kind::SHELL && viewer.is_none() && !mux_client {
+        cmd = crate::shell_start::hosted_command(&cmd);
+    }
+    let headless = std::env::var(HEADLESS_ENV).as_deref() == Ok("1");
     if viewer.is_none() {
         live.set_pid(&id, std::process::id())?;
+        stage.claimed_pid = true;
     }
 
     let pty = native_pty_system()
@@ -1862,7 +2129,6 @@ fn host_serving(
             pixel_height: 0,
         })
         .map_err(msg::cant_open_pty)?;
-    crate::startup_trace::mark("pty-open");
     // **The PTY's command is looked up by khor, against a `PATH` that
     // can answer** — `crate::spawn_path`. A `khor serve` under launchd
     // has `/usr/bin:/bin:/usr/sbin:/sbin` and `tmux` lives in
@@ -1879,7 +2145,6 @@ fn host_serving(
     let path = crate::legacy_codex::clean_path(khor, &path);
     let found = crate::find_program(&cmd[0], &path)
         .ok_or_else(|| msg::command_not_found(&cmd[0], &path))?;
-    crate::startup_trace::mark("program-found");
     let mut builder = CommandBuilder::new(&found);
     // **The shell is taught to mark its commands** (roadmap 1.1,
     // `crate::integration`): a shell this host starts for a shell row,
@@ -1892,6 +2157,13 @@ fn host_serving(
             crate::integration::plan(&scripts, &cmd, |k| std::env::var(k).ok())
         })
         .flatten();
+    if startup.is_some_and(|command| !command.trim().is_empty())
+        && !integrated
+            .as_ref()
+            .is_some_and(|_| crate::integration::marks_prompt(&cmd))
+    {
+        return Err("Automatic startup requires a supported shell integration; open an empty terminal or enable its integration".into());
+    }
     match &integrated {
         Some(plan) => {
             builder.args(&plan.args);
@@ -1904,6 +2176,7 @@ fn host_serving(
     builder.env("PATH", &path);
     builder.env_remove(crate::legacy_codex::SHIM_ENV);
     builder.env_remove(STARTUP_ENV);
+    builder.env_remove(HEADLESS_ENV);
     // **The person's own locale, when this process has none.**
     // launchd's environment has no `LANG`, and a tmux client without a
     // UTF-8 locale falls back to the DEC line-drawing set and writes
@@ -1922,12 +2195,14 @@ fn host_serving(
     // directory nothing can delete (第十四轮 第 4 条), and a shell born
     // in `/` is a shell nobody asked for.
     if let Some(cwd) = crate::cwd::standing() {
-        builder.cwd(cwd);
+        let cwd = crate::shell_start::native_shell_path(Path::new(&cmd[0]), &cwd);
+        builder.cwd(cwd.as_ref());
     }
     let mut child = pty
         .slave
         .spawn_command(builder)
         .map_err(|e| msg::wont_start(&cmd[0], e))?;
+    stage.child_started = true;
     crate::startup_trace::mark("child-spawned");
     drop(pty.slave);
     let child_pid = child.process_id().ok_or(msg::child_has_no_pid())?;
@@ -1937,18 +2212,22 @@ fn host_serving(
         .unwrap()
         .try_clone_reader()
         .map_err(msg::cant_read_pty)?;
-    let writer = Arc::new(Mutex::new(crate::shell_start::StartupInput::new(
-        master
-            .lock()
-            .unwrap()
-            .take_writer()
-            .map_err(msg::cant_write_pty)?,
-        startup,
-    )));
+    let waits_for_prompt = kind == khor_core::kind::SHELL && viewer.is_none() && !mux_client;
+    let writer = Arc::new(Mutex::new(
+        crate::shell_start::StartupInput::with_shell_readiness(
+            master
+                .lock()
+                .unwrap()
+                .take_writer()
+                .map_err(msg::cant_write_pty)?,
+            startup,
+            waits_for_prompt,
+        )
+        .with_receipts(dir.join("terminal-input")),
+    ));
 
     let listener = TcpListener::bind(("127.0.0.1", 0)).map_err(msg::cant_listen_loopback)?;
     let port = listener.local_addr().map_err(|e| e.to_string())?.port();
-    crate::startup_trace::mark("listener-bind");
     let cookie = crate::link::fresh_hex()?;
     crate::link::write_private(
         // A viewer's address goes in its own file (`view_file_path`).
@@ -1965,7 +2244,6 @@ fn host_serving(
         })
         .map_err(|e| e.to_string())?,
     )?;
-    crate::startup_trace::mark("host-json");
 
     let shared = Arc::new(Shared {
         ring: Mutex::new(Ring::default()),
@@ -1977,12 +2255,19 @@ fn host_serving(
     let output_done = Arc::new(AtomicBool::new(false));
     // The questions the program asked its terminal, and which answers
     // may reach it (`answers`, T-4/T-5). Locked alone, never with Shared's.
-    let ledger = Arc::new(Mutex::new(crate::answers::Ledger::default()));
+    let ledger = Arc::new(Mutex::new(if headless {
+        crate::answers::Ledger::headless()
+    } else {
+        crate::answers::Ledger::default()
+    }));
     {
         let ledger = ledger.clone();
         let writer = writer.clone();
         let output_done = output_done.clone();
         std::thread::spawn(move || {
+            if headless {
+                let _ = writer.lock().unwrap().ready();
+            }
             while !output_done.load(Ordering::SeqCst) {
                 std::thread::sleep(std::time::Duration::from_millis(50));
                 let own = ledger.lock().unwrap().fallback(std::time::Instant::now());
@@ -2030,6 +2315,7 @@ fn host_serving(
         let last_dir = dir.clone();
         let ledger = ledger.clone();
         let commands = commands.clone();
+        let writer = writer.clone();
         let history = history.clone();
         let session = id.0.clone();
         let master = master.clone();
@@ -2054,17 +2340,51 @@ fn host_serving(
             // cheap; the change gate keeps the disk out of the loop.
             let mut last_written: Option<String> = None;
             let mut repainted: Option<std::time::Instant> = None;
+            let mut prompt = crate::shell_start::PromptReady::default();
+            let mut shell_announced = false;
+            let mut startup_released = false;
+            #[cfg(windows)]
+            let mut initial_cursor = Some(InitialCursor::default());
             loop {
                 let n = match reader.read(&mut buf) {
                     Ok(0) | Err(_) => break,
                     Ok(n) => n,
                 };
+                #[cfg(windows)]
+                let initial_output = initial_cursor.as_mut().map(|cursor| cursor.feed(&buf[..n]));
+                #[cfg(windows)]
+                if initial_output.as_ref().is_some_and(|(_, reply)| *reply) {
+                    let _ = writer.lock().unwrap().reply(b"\x1b[1;1R");
+                }
+                #[cfg(windows)]
+                if initial_cursor.as_ref().is_some_and(|cursor| cursor.done) {
+                    initial_cursor = None;
+                }
+                #[cfg(windows)]
+                let buf = initial_output
+                    .as_ref()
+                    .map_or(&buf[..n], |(bytes, _)| bytes.as_slice());
+                #[cfg(windows)]
+                let n = buf.len();
+                if n == 0 {
+                    continue;
+                }
                 // Before anyone can see it: a question is pending before
                 // a face can answer it.
                 ledger
                     .lock()
                     .unwrap()
                     .saw_output(&buf[..n], std::time::Instant::now());
+                if waits_for_prompt
+                    && (!shell_announced || !startup_released)
+                    && prompt.feed(&buf[..n])
+                {
+                    prompt.take_ready();
+                    shell_announced = true;
+                    let mut input = writer.lock().unwrap();
+                    let _ = input.shell_ready();
+                    startup_released = input.readiness().1;
+                }
                 // **Mouse tracking off once the shell has the terminal
                 // back** (item 25; the owner's zsh prompt filling with
                 // `35;6;5M…`). A program that turned mouse tracking on and
@@ -2314,6 +2634,7 @@ fn host_serving(
         let master = master.clone();
         let writer = writer.clone();
         let cmd = cmd.clone();
+        let output_done = output_done.clone();
         std::thread::spawn(move || {
             for conn in listener.incoming().flatten() {
                 let _ = conn.set_write_timeout(Some(Duration::from_secs(2)));
@@ -2331,11 +2652,12 @@ fn host_serving(
                     );
                     continue;
                 }
+                let version = hello_version(&hello);
                 if write_frame(
                     &mut conn,
                     &Welcome {
                         ok: true,
-                        why: format!("{GREETING}{HOST_VERSION}"),
+                        why: format!("{GREETING}{version}"),
                     },
                 )
                 .is_err()
@@ -2350,8 +2672,24 @@ fn host_serving(
                     // current Version arrives whole inside its fixed deadline.
                     if !matches!(
                         read_handshake_frame::<ClientOp>(&mut readable, FIRST_FRAME),
-                        Ok(ClientOp::Version(HOST_VERSION))
+                        Ok(ClientOp::Version(current)) if current == version
                     ) {
+                        continue;
+                    }
+                    if hello.control {
+                        let generation = blake3::hash(cookie.as_bytes()).to_hex().to_string();
+                        let writer = writer.clone();
+                        let shared = shared.clone();
+                        let output_done = output_done.clone();
+                        std::thread::spawn(move || {
+                            let _ = serve_control(
+                                &mut readable,
+                                &generation,
+                                &shared,
+                                &writer,
+                                &output_done,
+                            );
+                        });
                         continue;
                     }
                     if readable.set_read_timeout(None).is_err() {
@@ -2422,15 +2760,15 @@ fn host_serving(
                                 ClientOp::Input(bytes) => {
                                     // An answer only while its question waits
                                     // (`answers`); keys whole.
-                                    let bytes = ledger
+                                    let (bytes, keys, replies) = ledger
                                         .lock()
                                         .unwrap()
-                                        .take_input(&bytes, std::time::Instant::now());
+                                        .classify_input(&bytes, std::time::Instant::now());
                                     if bytes.is_empty() {
                                         continue;
                                     }
                                     let mut w = writer.lock().unwrap();
-                                    if w.write_all(&bytes).and_then(|()| w.flush()).is_err() {
+                                    if w.write_classified(&bytes, &keys, &replies).is_err() {
                                         break;
                                     }
                                 }
@@ -2484,9 +2822,7 @@ fn host_serving(
     // back to being a discovered one, exactly as before the bridge.
     let status = child.wait().map_err(msg::host_child_wait)?;
     match &viewer {
-        None => {
-            let _ = live.record_exit(&id, status.exit_code() as i32);
-        }
+        None => {}
         Some(v) => {
             if v == "made" {
                 let _ = std::fs::remove_dir_all(&dir);
@@ -2505,6 +2841,11 @@ fn host_serving(
     // may have removed the dir already, and then this writes nothing.
     if keeps_ring && dir.exists() {
         shared.save_ring(&dir, &mut saved.lock().unwrap());
+    }
+    // A dead row may be opened immediately. Publish its ending only after
+    // the bounded final read and snapshot, never before its content exists.
+    if viewer.is_none() {
+        let _ = live.record_exit(&id, status.exit_code() as i32);
     }
     Ok(())
 }
@@ -3518,7 +3859,54 @@ mod handshake_tests {
     use std::time::Instant;
 
     #[test]
-    fn a_current_client_sends_version_five_before_any_input() {
+    fn conpty_initial_cursor_query_is_consumed_once_across_reads() {
+        let request = b"\x1b[6n";
+        for split in 0..=request.len() {
+            let mut cursor = InitialCursor::default();
+            let (mut output, first) = cursor.feed(&request[..split]);
+            let mut rest = request[split..].to_vec();
+            rest.extend_from_slice(b"prompt\x1b[6n");
+            let (tail, second) = cursor.feed(&rest);
+            output.extend(tail);
+            assert_eq!(usize::from(first) + usize::from(second), 1);
+            assert_eq!(output, b"prompt\x1b[6n");
+            assert_eq!(cursor.feed(request), (request.to_vec(), false));
+        }
+    }
+
+    #[test]
+    fn cursor_bootstrap_preserves_output_that_is_not_the_initial_query() {
+        for output in [b"hello".as_slice(), b"\x1b[5n", b"\x1b]133;B\x07"] {
+            let mut cursor = InitialCursor::default();
+            let mut seen = Vec::new();
+            for byte in output {
+                let (bytes, reply) = cursor.feed(&[*byte]);
+                assert!(!reply);
+                seen.extend(bytes);
+            }
+            assert_eq!(seen, output);
+            assert_eq!(cursor.feed(b"\x1b[6n"), (b"\x1b[6n".to_vec(), false));
+        }
+    }
+
+    #[test]
+    fn cursor_bootstrap_reply_does_not_claim_input_or_release_pending_startup() {
+        let mut input = crate::shell_start::StartupInput::with_shell_readiness(
+            Vec::new(),
+            Some("echo startup"),
+            true,
+        );
+        input.ready().unwrap();
+        input.reply(b"\x1b[1;1R").unwrap();
+        assert_eq!(input.revision(), 0);
+        assert_eq!(input.readiness(), (false, false));
+        input.shell_ready().unwrap();
+        assert_eq!(input.readiness(), (true, true));
+        assert_eq!(input.revision(), 0);
+    }
+
+    #[test]
+    fn a_current_viewer_sends_the_legacy_three_field_hello_and_v5_before_input() {
         let listener = TcpListener::bind("127.0.0.1:0").unwrap();
         let addr = listener.local_addr().unwrap().to_string();
         let host = std::thread::spawn(move || {
@@ -3526,7 +3914,17 @@ mod handshake_tests {
             stream
                 .set_read_timeout(Some(Duration::from_secs(2)))
                 .unwrap();
-            let hello: Hello = read_frame(&mut stream).unwrap();
+            let mut length = [0; 4];
+            stream.read_exact(&mut length).unwrap();
+            let mut body = vec![0; u32::from_be_bytes(length) as usize];
+            stream.read_exact(&mut body).unwrap();
+            assert_eq!(body[0], 0x93, "legacy hosts require a three-field Hello");
+            let hello: Hello = proto::decode(&body).unwrap();
+            assert!(
+                !hello.control,
+                "new hosts accept missing control as a viewer"
+            );
+            assert_eq!(hello_version(&hello), 5);
             assert_eq!(
                 (hello.cookie.as_str(), hello.cols, hello.rows),
                 ("owned-cookie", 80, 24)
@@ -3535,13 +3933,13 @@ mod handshake_tests {
                 &mut stream,
                 &Welcome {
                     ok: true,
-                    why: "khor-host/5".into(),
+                    why: format!("khor-host/{HOST_VERSION}"),
                 },
             )
             .unwrap();
             assert!(matches!(
                 read_frame(&mut stream).unwrap(),
-                ClientOp::Version(5)
+                ClientOp::Version(HOST_VERSION)
             ));
             assert!(
                 matches!(read_frame(&mut stream).unwrap(), ClientOp::Input(bytes) if bytes == b"hi")
@@ -3556,13 +3954,29 @@ mod handshake_tests {
     }
 
     #[test]
+    fn control_connections_declare_v6_without_changing_the_viewer_protocol() {
+        let hello = Hello {
+            cookie: "owned-cookie".into(),
+            cols: 0,
+            rows: 0,
+            control: true,
+        };
+        assert_eq!(hello_version(&hello), 6);
+        assert_eq!(HOST_VERSION, 5);
+        assert_eq!(CONTROL_VERSION, 6);
+        let frame = proto::encode(&hello).unwrap();
+        assert_eq!(frame[0], 0x94);
+        assert!(proto::decode::<Hello>(&frame).unwrap().control);
+    }
+
+    #[test]
     fn empty_old_future_unknown_and_gui_welcomes_are_protocol_errors() {
         for greeting in [
             "",
             "khor-host/1",
             "khor-host/4",
             "khor-host/6",
-            "khor-host/05",
+            "khor-host/06",
             "unknown",
             "khor-gui/1",
             "khor-gui/2",
@@ -3683,7 +4097,7 @@ mod handshake_tests {
     fn the_first_frame_deadline_covers_silence_partial_prefix_partial_body_and_drips() {
         let budget = Duration::from_millis(150);
         let mut frame = Vec::new();
-        write_frame(&mut frame, &ClientOp::Version(5)).unwrap();
+        write_frame(&mut frame, &ClientOp::Version(HOST_VERSION)).unwrap();
         for case in 0..4 {
             let listener = TcpListener::bind("127.0.0.1:0").unwrap();
             let mut client = TcpStream::connect(listener.local_addr().unwrap()).unwrap();
@@ -3753,6 +4167,63 @@ mod ring_file_tests {
             model: Mutex::new(Some(Model::new(rows, cols))),
             changes: AtomicU64::new(0),
         }
+    }
+
+    #[test]
+    fn control_reads_keep_size_and_report_bounded_cursors() {
+        let shared = shared(24, 80);
+        shared.ring.lock().unwrap().push(b"abcdef");
+        let mut input =
+            crate::shell_start::StartupInput::with_shell_readiness(Vec::new(), None, true);
+        input.ready().unwrap();
+        let writer = Mutex::new(input);
+        let tail = control_output("generation-current", &shared, &writer, None, 3);
+        assert_eq!(tail.bytes, b"def");
+        assert_eq!((tail.cursor, tail.end, tail.reset), (6, 6, true));
+        assert!(!tail.shell_ready);
+        let middle = control_output("generation-current", &shared, &writer, Some(2), 2);
+        assert_eq!(middle.bytes, b"cd");
+        assert_eq!((middle.cursor, middle.end, middle.reset), (4, 6, false));
+        let future = control_output("generation-current", &shared, &writer, Some(100), 2);
+        assert_eq!(future.bytes, b"ef");
+        assert!(future.reset);
+        let model = shared.model.lock().unwrap();
+        assert_eq!(model.as_ref().unwrap().parser.screen().size(), (24, 80));
+    }
+
+    #[test]
+    fn input_from_a_previous_host_generation_cannot_reach_its_replacement() {
+        use crate::terminal_control::HostReply;
+        let shared = shared(24, 80);
+        let old_generation = blake3::hash(b"old-host-cookie").to_hex().to_string();
+        let new_generation = blake3::hash(b"new-host-cookie").to_hex().to_string();
+        assert_ne!(old_generation, new_generation);
+        let mut old = crate::shell_start::StartupInput::new(Vec::new(), None);
+        old.ready().unwrap();
+        let old = Mutex::new(old);
+        let observed = control_output(&old_generation, &shared, &old, None, 10);
+        assert_eq!(observed.input_revision, 0);
+        let mut replacement = crate::shell_start::StartupInput::new(Vec::new(), None);
+        replacement.ready().unwrap();
+        let replacement = Mutex::new(replacement);
+        assert!(matches!(
+            control_input(
+                &new_generation,
+                &replacement,
+                &observed.generation,
+                "input-delayed-0001",
+                observed.input_revision,
+                b"echo delayed\r"
+            ),
+            HostReply::Refused { .. }
+        ));
+        assert_eq!(replacement.lock().unwrap().revision(), 0);
+        let fresh = control_output(&new_generation, &shared, &replacement, None, 10);
+        assert!(
+            matches!(control_input(&new_generation, &replacement, &fresh.generation,
+            "input-current-0001", fresh.input_revision, b"echo current\r"),
+            HostReply::Input { generation, revision: 1 } if generation == new_generation)
+        );
     }
 
     /// What the PTY reader does with a read: the ring, the model, the count.
@@ -3913,5 +4384,55 @@ mod command_root_tests {
             std::fs::canonicalize(&root).unwrap()
         );
         std::fs::remove_dir_all(root).unwrap();
+    }
+}
+
+#[cfg(test)]
+mod startup_failure_tests {
+    use super::*;
+
+    fn registered(name: &str) -> (crate::testdir::TempTree, LiveKind, SessionId) {
+        let root = crate::testdir::TempTree::fresh(name);
+        std::fs::create_dir_all(root.join(".khor")).unwrap();
+        let key = khor_net::identity::load_or_create(&root.join(".khor/identity.key")).unwrap();
+        let live = LiveKind::new(root.path(), khor_core::DeviceId(*key.public().as_bytes()));
+        let id = SessionId("shell/startup-failure".into());
+        live.register(
+            &id,
+            khor_core::kind::SHELL,
+            "startup failure",
+            None,
+            Some(khor_core::category::SHELL),
+        )
+        .unwrap();
+        (root, live, id)
+    }
+
+    #[test]
+    fn a_known_pre_child_failure_has_an_ended_diagnostic() {
+        let (root, live, id) = registered("host-pre-child-failure");
+        let why = host_main_with_startup(
+            root.path(),
+            id.clone(),
+            (80, 24),
+            vec!["khor-startup-program-does-not-exist-761948".into()],
+            None,
+        )
+        .unwrap_err();
+        assert_eq!(live.ending(&id), Some(crate::live::Ending::Exit(1)));
+        let dir = live.dir_of(&id).unwrap();
+        assert_eq!(std::fs::read_to_string(host_error_path(&dir)).unwrap(), why);
+    }
+
+    #[test]
+    fn an_unspawned_host_failure_settles_the_registered_row() {
+        let (_root, live, id) = registered("host-unspawned-failure");
+        let dir = live.dir_of(&id).unwrap();
+        assert!(record_unspawned_failure(&dir, &id, "runtime image cannot start").unwrap());
+        assert_eq!(live.ending(&id), Some(crate::live::Ending::Exit(1)));
+        assert_eq!(
+            std::fs::read_to_string(host_error_path(&dir)).unwrap(),
+            "runtime image cannot start"
+        );
     }
 }

@@ -1028,6 +1028,13 @@ export const windowsApp = inApp && /win/i.test(navigator.platform || navigator.u
     off the app and off macOS. */
 export const trafficRoom = () => call<number>("traffic_room");
 export const fetchImportCandidates = () => call<CandidateRow[]>("import_candidates");
+export type { ImportCatalog } from "./gen/bindings/ImportCatalog";
+export type { ImportRow } from "./gen/bindings/ImportRow";
+export type { ImportIntent } from "./gen/bindings/ImportIntent";
+import type { SessionImportAction } from "./gen/bindings/SessionImportAction";
+import type { SessionImportReply } from "./gen/bindings/SessionImportReply";
+export type { SessionImportReply } from "./gen/bindings/SessionImportReply";
+export const sessionImport = (home:string,action:SessionImportAction) => call<SessionImportReply>("session_import",{home,action});
 /** Brings these onto the list, in order; answers their session ids.
     Stops at the first refusal and says it. */
 export const importSessions = (ids: string[]) => call<string[]>("import_sessions", { ids });
@@ -2172,7 +2179,8 @@ export const termAttach = (id: string, lease: string) => call<TermStart>("term_a
 export const termReady = (id: string, lease: string) => call<null>("term_ready", { id, lease });
 /** **A dead terminal row's page** (P5-SHELL): how it ended, its last
     screen when its host left one (`ring.bin`), else the commands it ran,
-    newest first. `null` while the session is not dead on this machine. */
+    newest first, fetched from its execution home. `null` when that home has no
+    ended content for this identity; transport failures reject the request. */
 export const termEnded = (id: string) => call<EndedPage | null>("term_ended", { id });
 export const termStream = (id: string, lease: string, since: number) =>
   call<TermChunk>("term_stream", { id, lease, since });

@@ -1,5 +1,5 @@
 import {checkCommandTab} from './child-command-checks.mjs';
-import {readFile,writeFile} from 'node:fs/promises';
+import {writeFile} from 'node:fs/promises';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 export async function checkGuiExperience(browser,{port,report,engine}){
@@ -16,7 +16,8 @@ export async function checkGuiExperience(browser,{port,report,engine}){
   await input.fill('Draft belongs to the original session');
   await api('__ai_preview/upload-mode',{mode:'fail'});
   await page.locator('input[type=file]').last().setInputFiles({name:'failed.txt',mimeType:'text/plain',buffer:Buffer.from('synthetic attachment')});
-  const failed=page.locator('[data-chat-pending-file="failed.txt"]');await page.waitForFunction(()=>document.querySelector('[data-chat-pending-file="failed.txt"]')?.title.includes('上传失败'));
+  await page.locator('[data-chat-send]').click();
+  const failed=page.locator('[data-chat-pending-file="failed.txt"]');await failed.getByRole('button',{name:'重试',exact:true}).waitFor();assert.match(await failed.innerText(),/发送失败/);
   assert.equal(await page.locator('[data-chat-send]').isDisabled(),true,'An upload failure blocks the entire send, including keyboard Enter');
   await input.press('Enter');assert.equal((await api('__ai_preview/says')).length,0);
   const original='gui/ai-elements-review',other='gui/ai-elements-plan';
@@ -24,7 +25,7 @@ export async function checkGuiExperience(browser,{port,report,engine}){
   await page.locator(`[data-session-tabs] [data-tab-open="${original}"]`).click();
   await page.locator('[data-chat-doc]').waitFor();await failed.waitFor();
   assert.equal(await input.inputValue(),'Draft belongs to the original session');
-  await failed.locator('[data-chat-pending-drop]').click();
+  await failed.locator('[data-files-select]').click();
   await page.waitForFunction(()=>{const send=document.querySelector('[data-chat-send]');return send&&!send.disabled;});
   // Read older pages using a real reader gesture, without touching Load older.
   const scroll=page.locator('[data-chat-scroll]:visible');await scroll.hover();
@@ -50,8 +51,12 @@ export async function checkGuiExperience(browser,{port,report,engine}){
    return node&&Math.abs(node.getBoundingClientRect().top-root.getBoundingClientRect().top-anchor.top)<3;
   },anchor);
   await page.locator('[data-chat-message] [data-message-actions]').first().waitFor();
-  await page.locator('[data-lab-add]').click();await page.locator('[role=menuitem][data-history-find-open]').click();
+  await page.locator('[data-lab-session-settings]:visible').click();
+  assert.equal(await page.locator('[data-lab-preferences] [data-history-find-open],[data-lab-preferences] [data-history-readable-export]').count(),0,'Conversation menus do not contain the removed find/export entries');
+  await page.keyboard.press('Escape');
+  await input.press(await page.evaluate(()=>/Mac|iPhone|iPad/.test(navigator.userAgent))?'Meta+f':'Control+f');
   await page.locator('[data-history-search] input').waitFor();
+  await page.waitForFunction(()=>document.activeElement?.matches('[data-history-search] input'));
   await page.screenshot({path:path.join(report,`gui-experience-${engine}.png`)});
   await page.keyboard.press('Escape');
   await api('__ai_preview/settings-hold',{hold:true});
@@ -74,10 +79,7 @@ export async function checkGuiExperience(browser,{port,report,engine}){
   await api('__ai_preview/settings-refuse',{refuse:false});await refusal.getByRole('button',{name:'重试'}).click();
   await refusal.waitFor({state:'detached'});
   await page.waitForFunction(()=>document.querySelector('[data-lab-session-settings]')?.textContent.includes('Sonnet'));
-  const download=page.waitForEvent('download');
-  await page.locator('[data-lab-add]').click();await page.locator('[data-history-readable-export]').click();
-  const exported=await download,body=await readFile(await exported.path(),'utf8');
-  assert(body.includes('修一下编辑器')&&!body.includes('iVBOR'),'Readable export reads canonical text and media names, never encoded payloads');
+  await page.keyboard.press('Escape');
   await api('__ai_preview/poll-mode',{mode:'fail'});
   await page.locator('[data-session-tabs] [data-tab-notice="rejoin"]').waitFor();
   assert.equal(await input.inputValue(),'Draft belongs to the original session');
@@ -86,12 +88,15 @@ export async function checkGuiExperience(browser,{port,report,engine}){
   assert.equal((await api('__ai_preview/says')).length,0,'Reconnect only resumes reads; it never resends a prompt');
   await api('__ai_preview/upload-mode',{mode:'ok'});
   await page.locator('input[type=file]').last().setInputFiles({name:'notes.txt',mimeType:'text/plain',buffer:Buffer.from('This selected file can be previewed.')});
-  const card=page.locator('[data-chat-pending-file="notes.txt"][data-placed]');
-  await card.locator('[data-chat-pending-preview]').click();
-  const file=page.locator('[data-file-preview="/preview/uploads/notes.txt"]');
+  const card=page.locator('[data-chat-pending-file="notes.txt"]');
+  await card.waitFor();assert.equal((await api('__ai_preview/attachment-events')).filter(event=>event.operation==='chat_put'&&event.name==='notes.txt').length,0,'A picked file remains local until explicit Send');
+  await card.locator('[data-files-open]').click();
+  const file=page.locator('[data-attachment-file]:visible');
   await file.waitFor();
-  await file.getByText('This selected file can be previewed.',{exact:false}).last().waitFor();
-  await file.locator('[data-file-preview-close]').click();
+  await file.locator('.cm-content').waitFor();
+  assert.equal(await file.locator('.cm-content').innerText(),'This selected file can be previewed.');
+  await file.locator('[data-file-back]').click();
+  await file.waitFor({state:'hidden'});
   await card.waitFor();
   await page.locator('[data-chat-send]').click();
   await page.waitForFunction(()=>document.activeElement?.matches('[data-chat-input]'));
@@ -99,7 +104,7 @@ export async function checkGuiExperience(browser,{port,report,engine}){
   assert.deepEqual(errors,[]);
   return {name:`GUI composer and reader ${engine}`,passed:true,errors};
  }catch(error){
-  errors.push(String(error));await page.screenshot({path:path.join(report,`gui-experience-${engine}-failure.png`)}).catch(()=>{});
+  errors.push(String(error.stack??error));await page.screenshot({path:path.join(report,`gui-experience-${engine}-failure.png`)}).catch(()=>{});
   const reading=await page.locator('[data-chat-scroll]').evaluate(root=>({top:root.scrollTop,height:root.scrollHeight,viewport:root.clientHeight,
    items:[...root.querySelectorAll('[data-history-key]')].map(node=>({key:node.dataset.historyKey,top:node.getBoundingClientRect().top-root.getBoundingClientRect().top,text:node.textContent.slice(0,120)}))})).catch(()=>null);
   await writeFile(path.join(report,`gui-experience-${engine}-failure.json`),JSON.stringify({readingAnchor,reading,errors},null,2));

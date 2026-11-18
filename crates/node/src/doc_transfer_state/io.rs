@@ -256,6 +256,17 @@ impl RootPermit {
         }
         Ok(())
     }
+    fn limit_wait_until(&mut self, until: Instant) -> Result<(), Error> {
+        // Re-observing a publication is part of this metadata wait, not a
+        // fresh constructor allowance. Include that work in the same budget.
+        let left = self.wait_remaining.ok_or_else(Error::busy)?;
+        let left = left.min(until.saturating_duration_since(Instant::now()));
+        self.wait_remaining = Some(left);
+        if left.is_zero() {
+            return Err(Error::busy());
+        }
+        Ok(())
+    }
     pub(crate) fn attach(self) -> Result<RootGate, Error> {
         let mut owned = RootGate {
             permit: self,
@@ -311,7 +322,11 @@ impl RootGate {
             }
         }
     }
-    pub(super) fn bootstrap_metadata(&mut self, root: &Path) -> Result<Gate, Error> {
+    pub(super) fn bootstrap_metadata(
+        &mut self,
+        root: &Path,
+        mut needs_recovery: impl FnMut() -> Result<bool, Error>,
+    ) -> Result<Option<Gate>, Error> {
         if self.permit.root != root || self.file.is_none() {
             return Err("bootstrap metadata needs its held root fence".into());
         }
@@ -320,24 +335,47 @@ impl RootGate {
         }
         // The same owner keeps local admission and the cumulative allowance.
         // Never sleep for metadata while holding the physical root fence.
+        let until = self.permit.wait_remaining.map(|left| Instant::now() + left);
+        let mut waiting = false;
         self.file.take();
         let directory = root.join(".khor/doc-transfer-state");
         loop {
-            let metadata = gate_with_wait(&directory, Some(&mut self.permit))?;
-            // Workers use metadata -> root try0 too. Only the two leases
-            // together admit journal loading or any recovery side effects.
-            match self.acquire_file(false) {
-                Ok(()) => return Ok(metadata),
-                Err(why) if why.kind == crate::proto::DocTransferFailure::Busy => {
-                    drop(metadata);
-                    // Charge this contention even if the next root try finds
-                    // it free, so alternating owners cannot spin for free.
-                    self.permit.wait_for_lock()?;
-                    self.acquire_file(true)?;
-                    self.file.take();
-                }
-                Err(why) => return Err(why),
+            if waiting {
+                self.permit
+                    .limit_wait_until(until.ok_or_else(Error::busy)?)?;
             }
+            if let Some(metadata) = try_gate(&directory)? {
+                // Workers use metadata -> root try0 too. Only the two leases
+                // together admit journal loading or any recovery side effects.
+                match self.acquire_file(false) {
+                    Ok(()) => {
+                        if waiting {
+                            self.permit
+                                .limit_wait_until(until.ok_or_else(Error::busy)?)?;
+                        }
+                        return Ok(Some(metadata));
+                    }
+                    Err(why) if why.kind == crate::proto::DocTransferFailure::Busy => {
+                        drop(metadata);
+                    }
+                    Err(why) => return Err(why),
+                }
+            }
+            let until = until.ok_or_else(Error::busy)?;
+            waiting = true;
+            self.permit.limit_wait_until(until)?;
+            self.permit.wait_for_lock()?;
+            self.acquire_file(true)?;
+            self.permit.limit_wait_until(until)?;
+            // A partial/renamed ordinary image can have settled while its
+            // original metadata owner continues other work. Reuse the existing
+            // conservative classifier, and only inspect it under the root fence.
+            let pending = needs_recovery()?;
+            self.permit.limit_wait_until(until)?;
+            if !pending {
+                return Ok(None);
+            }
+            self.file.take();
         }
     }
 }
@@ -388,22 +426,20 @@ pub(crate) fn publish_anchor(root: &Path, bytes: &[u8]) -> Result<(), String> {
     fs::rename(next, target).map_err(error)
 }
 
-pub(super) fn has_publication(root: &Path) -> Result<bool, String> {
-    match fs::symlink_metadata(root.join("registry.next")) {
-        Ok(_) => {
-            check_file(&root.join("registry.next"))?;
-            Ok(true)
-        }
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(false),
-        Err(e) => Err(error(e)),
-    }
+pub(super) enum BootstrapView {
+    Images(Vec<Vec<u8>>),
+    Recover,
 }
 
 /// Atomic registry reads do not acquire/mutate a transfer owner. Before any
 /// trust bootstrap, a critical intent must be recovered under both leases.
-pub(super) fn peek(root: &Path) -> Result<Option<Vec<u8>>, String> {
+/// The caller holds the root fence: Ready writers need that same fence, while
+/// ordinary receipt writers may still publish under their metadata lease.
+pub(super) fn bootstrap_view(root: &Path) -> Result<BootstrapView, String> {
     match fs::symlink_metadata(root) {
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+            return Ok(BootstrapView::Images(Vec::new()));
+        }
         Err(e) => return Err(error(e)),
         Ok(metadata) => {
             if !metadata.is_dir() || metadata.file_type().is_symlink() {
@@ -422,47 +458,75 @@ pub(super) fn peek(root: &Path) -> Result<Option<Vec<u8>>, String> {
         {
             return Err("unrecognized transfer metadata file; reconciliation required".into());
         }
-        check_file(&entry.path())?;
+        let metadata = match fs::symlink_metadata(entry.path()) {
+            Ok(metadata) => metadata,
+            Err(why) if why.kind() == std::io::ErrorKind::NotFound => {
+                return Ok(BootstrapView::Recover);
+            }
+            Err(why) => return Err(error(why)),
+        };
+        if !metadata.is_file() || metadata.file_type().is_symlink() {
+            return Err("unsafe transfer metadata file".into());
+        }
+        if entry.file_name().to_str() == Some("gate") {
+            private(&metadata)?;
+        } else {
+            private_snapshot(&metadata)?;
+        }
     }
-    read_optional(&root.join("registry"))?
-        .map(|bytes| decode(&bytes).map(|(_, body)| body.to_vec()))
-        .transpose()
+    // Read next first. Reading only the committed image could miss the first
+    // Ready intent left there by a dead writer. A rename between these reads
+    // is deliberately ambiguous and goes through the locked recovery path.
+    let next = read_snapshot(&root.join("registry.next"))?;
+    #[cfg(test)]
+    tests::publication_snapshot_read(root, next.as_deref());
+    let current = read_snapshot(&root.join("registry"))?;
+    let mut images = Vec::new();
+    let generation = if let Some(bytes) = current {
+        let (generation, body) = decode(&bytes)?;
+        images.push(body.to_vec());
+        generation
+    } else {
+        0
+    };
+    if let Some(bytes) = next {
+        let Ok((next_generation, body)) = decode(&bytes) else {
+            // Partial/unknown/corrupt publications keep Journal::load's exact
+            // recovery and preservation rules; this view never removes them.
+            return Ok(BootstrapView::Recover);
+        };
+        if generation.checked_add(1) != Some(next_generation) {
+            return Ok(BootstrapView::Recover);
+        }
+        images.push(body.to_vec());
+    }
+    Ok(BootstrapView::Images(images))
 }
 
 pub(super) fn gate(root: &Path) -> Result<Gate, Error> {
-    gate_with_wait(root, None)
+    try_gate(root)?.ok_or_else(Error::busy)
 }
-fn gate_with_wait(root: &Path, mut permit: Option<&mut RootPermit>) -> Result<Gate, Error> {
-    let local = loop {
-        match LOCAL.try_lock() {
-            Ok(guard) => break guard,
-            Err(TryLockError::Poisoned(error)) => break error.into_inner(),
-            Err(TryLockError::WouldBlock) => permit
-                .as_deref_mut()
-                .ok_or_else(Error::busy)?
-                .wait_for_lock()?,
-        }
+fn try_gate(root: &Path) -> Result<Option<Gate>, Error> {
+    let local = match LOCAL.try_lock() {
+        Ok(guard) => guard,
+        Err(TryLockError::Poisoned(error)) => error.into_inner(),
+        Err(TryLockError::WouldBlock) => return Ok(None),
     };
     private_dir(root)?;
     let file = open(root.join("gate").as_path(), true)?;
     if file.metadata().map_err(error)?.len() != 0 {
         return Err("unexpected transfer metadata gate bytes".to_owned().into());
     }
-    loop {
-        match file.try_lock() {
-            Ok(()) => break,
-            Err(fs::TryLockError::WouldBlock) => permit
-                .as_deref_mut()
-                .ok_or_else(Error::busy)?
-                .wait_for_lock()?,
-            Err(fs::TryLockError::Error(why)) => return Err(error(why).into()),
-        }
+    match file.try_lock() {
+        Ok(()) => (),
+        Err(fs::TryLockError::WouldBlock) => return Ok(None),
+        Err(fs::TryLockError::Error(why)) => return Err(error(why).into()),
     }
     METADATA_HELD.set(true);
-    Ok(Gate {
+    Ok(Some(Gate {
         _local: local,
         _file: file,
-    })
+    }))
 }
 
 pub(super) struct Journal {
@@ -574,6 +638,8 @@ impl Journal {
         checksum.update(body);
         header.extend_from_slice(checksum.finalize().as_bytes());
         file.write_all(&header).map_err(error)?;
+        #[cfg(test)]
+        tests::publication_header_written(&self.root);
         file.write_all(body).map_err(error)?;
         file.sync_all().map_err(error)?;
         drop(file);
@@ -585,6 +651,8 @@ impl Journal {
             OPEN_WAIT,
             (&header, body),
         );
+        #[cfg(test)]
+        tests::publication_before_rename(&self.root);
         fs::rename(&next, self.root.join("registry")).map_err(error)?;
         self.generation = generation;
         Ok(())
@@ -617,6 +685,32 @@ fn read_optional(path: &Path) -> Result<Option<Vec<u8>>, String> {
         Ok(_) => {}
     }
     let file = open(path, false)?;
+    read_image(file).map(Some)
+}
+
+fn read_snapshot(path: &Path) -> Result<Option<Vec<u8>>, String> {
+    let mut options = options();
+    options.write(false);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::OpenOptionsExt;
+        // A replaced special file must not block before its type is checked.
+        options.custom_flags(libc::O_NOFOLLOW | libc::O_NONBLOCK);
+    }
+    let file = match options.open(path) {
+        Ok(file) => file,
+        Err(why) if why.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+        Err(why) => return Err(error(why)),
+    };
+    let metadata = file.metadata().map_err(error)?;
+    if !metadata.is_file() {
+        return Err("transfer metadata control is not a file".into());
+    }
+    private_snapshot(&metadata)?;
+    read_image(file).map(Some)
+}
+
+fn read_image(file: File) -> Result<Vec<u8>, String> {
     if file.metadata().map_err(error)?.len() > (MAX_IMAGE + HEADER) as u64 {
         return Err("transfer metadata file exceeds budget".into());
     }
@@ -627,7 +721,7 @@ fn read_optional(path: &Path) -> Result<Option<Vec<u8>>, String> {
     if bytes.len() > MAX_IMAGE + HEADER {
         return Err("transfer metadata file grew past budget".into());
     }
-    Ok(Some(bytes))
+    Ok(bytes)
 }
 
 fn options() -> OpenOptions {
@@ -682,6 +776,24 @@ fn private_dir(path: &Path) -> Result<(), String> {
         return Err("unsafe transfer metadata directory".into());
     }
     private(&metadata)
+}
+
+fn private_snapshot(metadata: &fs::Metadata) -> Result<(), String> {
+    // Atomic registry replacement can unlink a read-only observer's inode.
+    // Zero links is safe for this snapshot; extra links, owner/mode changes,
+    // writers and lockfiles retain the original strict checks.
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::MetadataExt;
+        if metadata.is_file()
+            && metadata.nlink() == 0
+            && metadata.uid() == unsafe { libc::geteuid() }
+            && metadata.mode() & 0o077 == 0
+        {
+            return Ok(());
+        }
+    }
+    private(metadata)
 }
 
 fn private(metadata: &fs::Metadata) -> Result<(), String> {
@@ -753,6 +865,308 @@ mod tests {
         f.write_all(bytes).unwrap();
         f.sync_all().unwrap();
     }
+
+    #[derive(Clone)]
+    struct PublicationWindow {
+        directory: PathBuf,
+        partial: bool,
+        finishes: bool,
+        prepared: PathBuf,
+        observed: PathBuf,
+        committed: PathBuf,
+        release: PathBuf,
+    }
+    static PUBLICATION_WINDOW: Mutex<Option<PublicationWindow>> = Mutex::new(None);
+
+    fn signal(path: &Path) {
+        match options().create_new(true).open(path) {
+            Ok(_) => (),
+            Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => (),
+            Err(error) => panic!("owned publication signal: {error}"),
+        }
+    }
+
+    fn await_signal(path: &Path) {
+        let until = Instant::now() + Duration::from_secs(3);
+        while !path.is_file() {
+            assert!(
+                Instant::now() < until,
+                "owned publication checkpoint: {}",
+                path.display()
+            );
+            std::thread::sleep(Duration::from_millis(5));
+        }
+    }
+
+    fn pause_publication(directory: &Path, partial: bool) {
+        let window = PUBLICATION_WINDOW
+            .lock()
+            .unwrap()
+            .as_ref()
+            .filter(|window| window.directory == directory && window.partial == partial)
+            .cloned();
+        if let Some(window) = window {
+            signal(&window.prepared);
+            await_signal(&window.observed);
+        }
+    }
+
+    pub(super) fn publication_header_written(directory: &Path) {
+        pause_publication(directory, true);
+    }
+
+    pub(super) fn publication_before_rename(directory: &Path) {
+        pause_publication(directory, false);
+    }
+
+    pub(super) fn publication_snapshot_read(directory: &Path, bytes: Option<&[u8]>) {
+        let window = {
+            let mut slot = PUBLICATION_WINDOW.lock().unwrap();
+            if !slot
+                .as_ref()
+                .is_some_and(|window| window.directory == directory)
+            {
+                return;
+            }
+            slot.take().unwrap()
+        };
+        let bytes = bytes.expect("reader must observe the actual pending publication");
+        if window.partial {
+            assert_eq!(
+                bytes.len(),
+                HEADER,
+                "actual writer is between header and body writes"
+            );
+            assert!(u64::from_be_bytes(bytes[16..24].try_into().unwrap()) > 0);
+        } else {
+            decode(bytes).expect("reader captures a complete, checksum-valid next image");
+        }
+        if !window.finishes {
+            return;
+        }
+        signal(&window.observed);
+        await_signal(&window.committed);
+    }
+
+    struct HeldPublication {
+        window: PublicationWindow,
+        worker: Option<std::thread::JoinHandle<()>>,
+    }
+    impl Drop for HeldPublication {
+        fn drop(&mut self) {
+            PUBLICATION_WINDOW
+                .lock()
+                .unwrap_or_else(|error| error.into_inner())
+                .take();
+            signal(&self.window.observed);
+            signal(&self.window.release);
+            if let Some(worker) = self.worker.take() {
+                let result = worker.join();
+                assert!(
+                    result.is_ok() || std::thread::panicking(),
+                    "publication owner panicked"
+                );
+            }
+        }
+    }
+
+    fn query_rechecks_a_finished_publication(partial: bool) {
+        query_during_publication(partial, true);
+    }
+
+    fn query_during_publication(partial: bool, finishes: bool) {
+        let _serial = TEST_SERIAL
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
+        let fixture = Fixture::new();
+        let node =
+            crate::Node::open_hosting(fixture.0.clone(), "publication-query", false).unwrap();
+        let own_id = node.device_str().to_owned();
+        let context = crate::doc_transfer_state::Context {
+            root: fixture.0.clone(),
+            // This fixture publishes empty, canonical transfer records only;
+            // it never opens or changes a writer's CRDT document.
+            writer: 90001,
+            local: std::array::from_fn(|index| {
+                u8::from_str_radix(&own_id[index * 2..index * 2 + 2], 16).unwrap()
+            }),
+        };
+        let mut initial = crate::doc_transfer_state::State::open(&context).unwrap();
+        initial.save().unwrap();
+        drop(initial);
+        let local = context.local;
+        let anchor = fs::read(fixture.0.join(".khor/root.pub")).unwrap();
+        let identity = fs::read(fixture.0.join(".khor/identity.key")).unwrap();
+        drop(node);
+
+        let directory = fixture.0.join(".khor/doc-transfer-state");
+        let window = PublicationWindow {
+            directory: directory.clone(),
+            partial,
+            finishes,
+            prepared: fixture.0.join("writer-prepared"),
+            observed: fixture.0.join("reader-observed"),
+            committed: fixture.0.join("writer-committed"),
+            release: fixture.0.join("release-writer"),
+        };
+        *PUBLICATION_WINDOW.lock().unwrap() = Some(window.clone());
+        let worker_window = window.clone();
+        let worker = std::thread::spawn(move || {
+            // Separate file descriptions exercise the actual OS metadata lock,
+            // as with a different process; no LOCAL mutex is held by this owner.
+            let held = open(&worker_window.directory.join("gate"), false).unwrap();
+            held.try_lock().unwrap();
+            let (mut journal, body) = Journal::load(&worker_window.directory, |bytes| {
+                crate::doc_transfer_state::validate_records(bytes, local).map_err(String::from)
+            })
+            .unwrap();
+            journal.save(&body.unwrap()).unwrap();
+            signal(&worker_window.committed);
+            await_signal(&worker_window.release);
+            drop(held);
+        });
+        let held = HeldPublication {
+            window,
+            worker: Some(worker),
+        };
+        await_signal(&held.window.prepared);
+        let started = Instant::now();
+        let query = crate::Node::open_hosting(fixture.0.clone(), "publication-query", false);
+        let elapsed = started.elapsed();
+        let still_owned = open(&directory.join("gate"), false).unwrap();
+        let writer_still_holds_metadata =
+            matches!(still_owned.try_lock(), Err(fs::TryLockError::WouldBlock));
+        drop(still_owned);
+        let pending_before_release = if finishes {
+            None
+        } else {
+            Some(fs::read(directory.join("registry.next")).unwrap())
+        };
+        // Reap the real owner before any result assertion can unwind.
+        drop(held);
+        assert!(
+            writer_still_holds_metadata,
+            "query must finish before the original metadata owner exits"
+        );
+        if finishes {
+            let query =
+                query.expect("finished ordinary publication must not force metadata recovery");
+            assert!(
+                elapsed < OPEN_WAIT,
+                "query spent the lock budget after publication finished"
+            );
+            assert_eq!(query.device_str(), own_id);
+        } else {
+            let error = query
+                .err()
+                .expect("an unpublished image still requires recovery");
+            assert!(error.contains("document transfer state busy"));
+            assert!(elapsed >= OPEN_WAIT && elapsed < OPEN_WAIT + Duration::from_millis(500));
+            assert_eq!(
+                pending_before_release.unwrap().len(),
+                HEADER,
+                "query must not discard or publish the held partial image"
+            );
+        }
+        assert_eq!(fs::read(fixture.0.join(".khor/root.pub")).unwrap(), anchor);
+        assert_eq!(
+            fs::read(fixture.0.join(".khor/identity.key")).unwrap(),
+            identity
+        );
+        assert!(!directory.join("registry.next").exists());
+        eprintln!(
+            "[N-PUBLICATION-RECHECK] partial={partial} finishes={finishes} elapsed_ms={} writer_still_owned=true identity_and_anchor_unchanged=true",
+            elapsed.as_millis()
+        );
+    }
+
+    #[test]
+    fn query_rechecks_a_next_image_renamed_between_snapshot_reads() {
+        query_rechecks_a_finished_publication(false);
+    }
+
+    #[test]
+    fn query_rechecks_a_partial_publication_that_finishes_while_metadata_is_owned() {
+        query_rechecks_a_finished_publication(true);
+    }
+
+    #[test]
+    fn query_still_refuses_an_unfinished_publication_within_the_original_budget() {
+        query_during_publication(true, false);
+    }
+
+    #[test]
+    fn metadata_rechecks_charge_the_remaining_budget_and_never_delay_control() {
+        let _serial = TEST_SERIAL
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
+        let fixture = Fixture::new();
+        private_trust_root(&fixture.0);
+        let directory = fixture.0.join(".khor/doc-transfer-state");
+        private_dir(&directory).unwrap();
+        for settled in [false, true] {
+            let mut held = Some(open(&directory.join("gate"), true).unwrap());
+            held.as_ref().unwrap().try_lock().unwrap();
+            let mut root = RootPermit::acquire(&fixture.0).unwrap().attach().unwrap();
+            let mut observations = 0;
+            let started = Instant::now();
+            let result = root.bootstrap_metadata(&fixture.0, || {
+                assert!(!METADATA_HELD.get());
+                let fence = open(&fixture.0.join(".khor/trust-mutation/gate"), false).unwrap();
+                assert!(
+                    matches!(fence.try_lock(), Err(fs::TryLockError::WouldBlock)),
+                    "every recheck requires its real root fence"
+                );
+                observations += 1;
+                if observations > 1 {
+                    return Err("expired metadata observation was retried".into());
+                }
+                // Exceed the actual allowance inside one observation. The
+                // next result must reject expiry, even if publication settles
+                // and the metadata lease becomes free before that result.
+                // A scheduler or filesystem stall may delay returning from
+                // this work; it must never admit another observation/success.
+                std::thread::sleep(OPEN_WAIT);
+                if settled {
+                    drop(held.take());
+                }
+                Ok(!settled)
+            });
+            let why = result.err().map(|error| error.kind);
+            let remaining = root.permit.wait_remaining;
+            drop(root);
+            drop(held);
+            assert_eq!(why, Some(crate::proto::DocTransferFailure::Busy));
+            assert_eq!(observations, 1, "expiry cannot replenish the allowance");
+            assert_eq!(remaining, Some(Duration::ZERO));
+            eprintln!(
+                "[N-METADATA-DEADLINE] settled={settled} observations={observations} elapsed_ms={} remaining_zero=true",
+                started.elapsed().as_millis()
+            );
+        }
+        let held = open(&directory.join("gate"), false).unwrap();
+        held.try_lock().unwrap();
+        let mut control = root_gate(&fixture.0).unwrap();
+        assert!(control.permit.wait_remaining.is_none());
+        let mut called = false;
+        let started = Instant::now();
+        let result = control.bootstrap_metadata(&fixture.0, || {
+            called = true;
+            Ok(false)
+        });
+        assert_eq!(
+            result.err().unwrap().kind,
+            crate::proto::DocTransferFailure::Busy
+        );
+        assert!(!called, "try0 control must not become a snapshot waiter");
+        assert!(control.permit.wait_remaining.is_none());
+        eprintln!(
+            "[N-METADATA-CONTROL] observations=0 no_wait_allowance=true elapsed_ms={}",
+            started.elapsed().as_millis()
+        );
+        drop(control);
+        drop(held);
+    }
     #[test]
     fn a_complete_unpublished_image_recovers_and_every_partial_prefix_keeps_the_committed_image() {
         let _serial = TEST_SERIAL.lock().unwrap_or_else(|e| e.into_inner());
@@ -804,6 +1218,76 @@ mod tests {
             assert_eq!(fs::read(fixture.0.join("registry.next")).unwrap(), bytes);
             assert_eq!(fs::read(fixture.0.join("registry")).unwrap(), previous);
         }
+    }
+    #[cfg(unix)]
+    #[test]
+    fn an_atomic_registry_replacement_keeps_the_opened_read_snapshot_valid() {
+        use std::os::unix::fs::MetadataExt;
+        let _serial = TEST_SERIAL.lock().unwrap_or_else(|e| e.into_inner());
+        let fixture = Fixture::new();
+        let _gate = gate(&fixture.0).unwrap();
+        let (mut journal, _) = Journal::load(&fixture.0, |_| Ok(())).unwrap();
+        journal.save(b"previous").unwrap();
+        let opened = options().open(fixture.0.join("registry")).unwrap();
+        journal.save(b"current").unwrap();
+        let metadata = opened.metadata().unwrap();
+        assert_eq!(
+            metadata.nlink(),
+            0,
+            "real atomic replacement unlinked the old inode"
+        );
+        assert_eq!(metadata.mode() & 0o077, 0);
+        assert_eq!(metadata.uid(), unsafe { libc::geteuid() });
+        assert_ne!(
+            metadata.ino(),
+            fs::metadata(fixture.0.join("registry")).unwrap().ino()
+        );
+        assert!(
+            private_snapshot(&metadata).is_ok(),
+            "a private opened read snapshot is still valid after replacement"
+        );
+        assert!(
+            private(&metadata).is_err(),
+            "writers must still require exactly one live pathname link"
+        );
+        let mut bytes = Vec::new();
+        (&opened).read_to_end(&mut bytes).unwrap();
+        assert_eq!(decode(&bytes).unwrap(), (1, b"previous".as_slice()));
+    }
+    #[cfg(unix)]
+    #[test]
+    fn read_snapshots_still_refuse_hard_links_symlinks_and_public_files() {
+        use std::os::unix::{
+            ffi::OsStrExt,
+            fs::{PermissionsExt, symlink},
+        };
+        let _serial = TEST_SERIAL.lock().unwrap_or_else(|e| e.into_inner());
+        let fixture = Fixture::new();
+        let _gate = gate(&fixture.0).unwrap();
+        let (mut journal, _) = Journal::load(&fixture.0, |_| Ok(())).unwrap();
+        journal.save(b"private").unwrap();
+        let registry = fixture.0.join("registry");
+        let original = fs::read(&registry).unwrap();
+        let linked = fixture.0.join("registry.next");
+        fs::hard_link(&registry, &linked).unwrap();
+        assert!(read_snapshot(&registry).is_err());
+        fs::remove_file(&linked).unwrap();
+        symlink(&registry, &linked).unwrap();
+        assert!(read_snapshot(&linked).is_err());
+        fs::remove_file(&linked).unwrap();
+        fs::set_permissions(&registry, fs::Permissions::from_mode(0o644)).unwrap();
+        assert!(read_snapshot(&registry).is_err());
+        fs::set_permissions(&registry, fs::Permissions::from_mode(0o600)).unwrap();
+        assert_eq!(read_snapshot(&registry).unwrap(), Some(original.clone()));
+        let fifo = fixture.0.join("registry.next");
+        let path = std::ffi::CString::new(fifo.as_os_str().as_bytes()).unwrap();
+        assert_eq!(unsafe { libc::mkfifo(path.as_ptr(), 0o600) }, 0);
+        assert!(
+            read_snapshot(&fifo).is_err(),
+            "a FIFO must fail without waiting for a writer"
+        );
+        fs::remove_file(&fifo).unwrap();
+        assert_eq!(fs::read(&registry).unwrap(), original);
     }
     #[cfg(unix)]
     #[test]
@@ -1143,9 +1627,12 @@ mod tests {
 
         let mut joint = root_gate(&fixture.0).unwrap();
         let other = fixture.0.join("different-root");
-        assert!(joint.bootstrap_metadata(&other).is_err());
+        assert!(joint.bootstrap_metadata(&other, || Ok(true)).is_err());
         assert!(!other.exists(), "mismatched root created metadata");
-        let metadata = joint.bootstrap_metadata(&fixture.0).unwrap();
+        let metadata = joint
+            .bootstrap_metadata(&fixture.0, || Ok(true))
+            .unwrap()
+            .unwrap();
         assert!(METADATA_HELD.get());
         let same_file = open(&fixture.0.join(".khor/trust-mutation/gate"), false).unwrap();
         assert!(matches!(

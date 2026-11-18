@@ -15,6 +15,18 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 use crate::proto::{self, MAX_FRAME};
 
+#[cfg(test)]
+mod client_tests;
+pub(crate) mod lease;
+
+/// Read atomically from one endpoint file, including during refused-connect refresh.
+#[derive(PartialEq, Eq)]
+pub(crate) struct Target {
+    pub(crate) port: u16,
+    pub(crate) cookie: String,
+    pub(crate) max_version: u8,
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Handoff {
     pub cookie: String,
@@ -42,6 +54,14 @@ pub(crate) fn validate_reply(reply: &Reply, bytes: usize) -> Result<(), String> 
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum Op {
+    ExecutionOn {
+        machine: String,
+        action: crate::execution::Action,
+    },
+    SessionImport {
+        home: khor_core::DeviceId,
+        action: khor_core::session_import::SessionImportAction,
+    },
     SessionRecovery {
         home: khor_core::DeviceId,
         id: crate::SessionId,
@@ -498,6 +518,10 @@ pub enum Op {
     },
     OpenShellOn {
         machine: String,
+        start: crate::proto::LegacyShellStart,
+    },
+    OpenTerminalOn {
+        machine: String,
         start: crate::shell_start::ShellStart,
     },
     SubscriptionsOn {
@@ -588,6 +612,8 @@ impl Op {
     /// the bug this table exists to end.
     fn table(&self) -> (&'static str, std::time::Duration) {
         match self {
+            Op::ExecutionOn { .. } => ("ExecutionOn", DEADLINE_SLOW),
+            Op::SessionImport { .. } => ("SessionImport", DEADLINE_SLOW),
             Op::ContentRead { .. } => ("ContentRead", DEADLINE_FAR),
             Op::SessionRecovery { .. } => ("SessionRecovery", DEADLINE_FAR),
             Op::RecoverSession { .. } => ("RecoverSession", DEADLINE_FAR),
@@ -624,6 +650,7 @@ impl Op {
             Op::WritePathOn { .. } => ("WritePathOn", DEADLINE_FAR),
             Op::OpenOn { .. } => ("OpenOn", DEADLINE_FAR),
             Op::OpenShellOn { .. } => ("OpenShellOn", DEADLINE_FAR),
+            Op::OpenTerminalOn { .. } => ("OpenTerminalOn", DEADLINE_FAR),
             Op::OpenAgentOn { .. } => ("OpenAgentOn", DEADLINE_FAR),
             Op::ReachOn { .. } => ("ReachOn", DEADLINE_FAR),
             Op::Rejoin { .. } => ("Rejoin", DEADLINE_FAR),
@@ -667,6 +694,12 @@ impl Op {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum Reply {
+    Execution {
+        value: crate::execution::Reply,
+    },
+    SessionImport {
+        value: khor_core::session_import::SessionImportReply,
+    },
     SessionRecovery {
         value: khor_core::recovery::SessionRecovery,
     },
@@ -952,92 +985,106 @@ pub(crate) async fn call_refreshing(
     op: Op,
     mut refresh: impl FnMut() -> Option<(u16, String)>,
 ) -> Result<Reply, String> {
+    call_target(
+        Target {
+            port,
+            cookie: cookie.to_owned(),
+            max_version: 0,
+        },
+        op,
+        || {
+            refresh().map(|(port, cookie)| Target {
+                port,
+                cookie,
+                max_version: 0,
+            })
+        },
+    )
+    .await
+}
+
+pub(crate) async fn call_target(
+    target: Target,
+    op: Op,
+    mut refresh: impl FnMut() -> Option<Target>,
+) -> Result<Reply, String> {
     let (name, deadline) = (op.name(), op.deadline());
+    let began = tokio::time::Instant::now();
+    let by = crate::deadline::earlier(Some(began + deadline))
+        .expect("an IPC operation supplies its deadline");
+    let budget = by.saturating_duration_since(began);
+    let seconds = budget.as_secs() + u64::from(budget.subsec_nanos() != 0);
+    let timed_out = || msg::serve_op_timed_out(name, seconds);
     let attempt = async {
-        let until = tokio::time::Instant::now() + std::time::Duration::from_millis(500);
-        let (mut port, mut cookie) = (port, cookie.to_owned());
-        // Each attempt is bounded by the same retry budget, and a refresh is
-        // taken at most once. A refused loopback connection is instant on
-        // Unix but can take seconds on a Windows host with a filter driver,
-        // so the silence is read the same way as a refusal: this endpoint is
-        // not serving, ask the endpoint file once whether it moved.
-        let mut refreshed = false;
-        let mut ask = |port: u16, cookie: &str, spent: &mut bool| {
-            if *spent {
-                return None;
-            }
-            let (next_port, next_cookie) = refresh()?;
-            if next_port == 0 || (next_port == port && next_cookie == cookie) {
-                return None;
-            }
-            *spent = true;
-            Some((next_port, next_cookie))
-        };
+        let until = by.min(tokio::time::Instant::now() + std::time::Duration::from_millis(500));
+        let mut target = target;
         let stream = loop {
-            let remaining = until.saturating_duration_since(tokio::time::Instant::now());
-            match tokio::time::timeout(
-                remaining,
-                tokio::net::TcpStream::connect(("127.0.0.1", port)),
-            )
-            .await
-            {
-                Ok(Ok(stream)) => break stream,
-                Ok(Err(error)) if error.kind() == std::io::ErrorKind::ConnectionRefused => {
-                    match ask(port, &cookie, &mut refreshed) {
-                        Some((next_port, next_cookie)) => {
-                            (port, cookie) = (next_port, next_cookie);
-                            continue;
-                        }
-                        None => {
-                            if refreshed || tokio::time::Instant::now() >= until {
-                                return Err(msg::serve_unreachable(error));
-                            }
-                            tokio::time::sleep_until(until.min(
-                                tokio::time::Instant::now() + std::time::Duration::from_millis(50),
-                            ))
-                            .await;
-                        }
+            if crate::deadline::expired(Some(by)) {
+                return Err(timed_out());
+            }
+            match tokio::net::TcpStream::connect(("127.0.0.1", target.port)).await {
+                Ok(stream) => break stream,
+                Err(error) => {
+                    if error.kind() != std::io::ErrorKind::ConnectionRefused
+                        || tokio::time::Instant::now() >= until
+                    {
+                        return Err(msg::serve_unreachable(error));
                     }
+                    let Some(next) = refresh() else {
+                        return Err(msg::serve_unreachable(error));
+                    };
+                    if next.port == 0 {
+                        return Err(msg::serve_unreachable(error));
+                    }
+                    if next == target {
+                        tokio::time::sleep_until(until.min(
+                            tokio::time::Instant::now() + std::time::Duration::from_millis(50),
+                        ))
+                        .await;
+                    }
+                    target = next;
                 }
-                Ok(Err(error)) => return Err(msg::serve_unreachable(error)),
-                Err(_) => match ask(port, &cookie, &mut refreshed) {
-                    Some((next_port, next_cookie)) => {
-                        (port, cookie) = (next_port, next_cookie);
-                        continue;
-                    }
-                    None => {
-                        return Err(msg::serve_unreachable(std::io::Error::new(
-                            std::io::ErrorKind::TimedOut,
-                            "connecting to the serve did not answer in time",
-                        )));
-                    }
-                },
             }
         };
-        exchange(stream, &cookie, op).await
+        exchange(stream, target, op, by, timed_out).await
     };
-    match tokio::time::timeout(deadline, attempt).await {
+    match crate::deadline::wait(Some(by), attempt).await {
         Ok(r) => r,
-        Err(_) => Err(msg::serve_op_timed_out(name, deadline.as_secs())),
+        Err(_) => Err(timed_out()),
     }
 }
 
 async fn exchange(
     mut stream: tokio::net::TcpStream,
-    cookie: &str,
+    target: Target,
     op: Op,
+    by: tokio::time::Instant,
+    timed_out: impl FnOnce() -> String,
 ) -> Result<Reply, String> {
+    let leased = target.max_version >= lease::VERSION;
     let handoff = Handoff {
-        cookie: cookie.to_owned(),
+        cookie: target.cookie,
         op,
     };
     let frame = proto::encode(&handoff)?;
     validate_handoff(&handoff, frame.len())?;
+    if crate::deadline::expired(Some(by)) {
+        return Err(timed_out());
+    }
+    if leased {
+        let header = lease::header(frame.len(), by)?;
+        stream
+            .write_all(&header)
+            .await
+            .map_err(msg::handoff_failed)?;
+    }
     stream
         .write_all(&frame)
         .await
         .map_err(msg::handoff_failed)?;
-    stream.shutdown().await.map_err(msg::cant_close_stream)?;
+    if !leased {
+        stream.shutdown().await.map_err(msg::cant_close_stream)?;
+    }
     let mut bytes = Vec::new();
     (&mut stream)
         .take(MAX_FRAME as u64)
@@ -1131,6 +1178,25 @@ mod tests {
         assert!(
             matches!(next, Ok(Reply::Hops { .. })),
             "the next call is not held by the stuck one: {next:?}"
+        );
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn an_ipc_call_keeps_its_callers_shorter_deadline() {
+        let (mute, server) = mute_serve().await;
+        let by = tokio::time::Instant::now() + std::time::Duration::from_millis(40);
+        let outcome = tokio::time::timeout(
+            std::time::Duration::from_millis(250),
+            crate::deadline::scope(by, call(mute, "c", Op::Hops)),
+        )
+        .await;
+        server.abort();
+        let _ = server.await;
+        let reply = outcome.expect("IPC replaced the caller's shorter deadline");
+        let why = reply.expect_err("a mute resident did not answer");
+        assert!(
+            why.contains(Op::Hops.name()),
+            "the deadline error names its operation: {why}"
         );
     }
 

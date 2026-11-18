@@ -16,12 +16,21 @@ use khor_sync::store::Doc;
 
 use crate::proto::{self, DocumentInventory, MAX_FRAME, Request, Response};
 use crate::{Node, ipc, wires};
+#[path = "link_pull_pool.rs"]
+pub(crate) mod pull_pool;
+#[path = "link_pull_window.rs"]
+mod pull_window;
 #[path = "link_tree.rs"]
 mod tree;
 
 use crate::doc_transfer_state::registry::{ROUND_DOCS, with_doc};
 #[path = "link_doc_transfer.rs"]
 pub(crate) mod documents;
+#[path = "link_execution.rs"]
+mod execution;
+#[cfg(test)]
+#[path = "link_legacy_shell_tests.rs"]
+mod legacy_shell_tests;
 #[path = "link_pairing.rs"]
 pub(crate) mod pairing;
 
@@ -945,17 +954,47 @@ const DIAL_TIMEOUT: Duration = Duration::from_secs(10);
 /// every dial to turing while it was stuck, from every machine.
 const DIAL_MOST: Duration = Duration::from_secs(25);
 
+type HopPreparation<'a> = std::pin::Pin<&'a mut (dyn std::future::Future<Output = ()> + Send + 'a)>;
+
+/// A prepared carrier is a distinct handshake candidate, not an update to
+/// the shared initial path selected by another connection to this peer.
+async fn connect_prepared_carrier(
+    ep: &iroh::Endpoint,
+    addr: iroh::EndpointAddr,
+    alpn: &[u8],
+) -> Result<iroh::endpoint::Connection, iroh::endpoint::ConnectError> {
+    let mut options = iroh::endpoint::ConnectOptions::default();
+    if let Some(iroh::TransportAddr::Custom(custom)) = addr
+        .addrs
+        .iter()
+        .find(|addr| matches!(addr, iroh::TransportAddr::Custom(_)))
+    {
+        options = options.with_initial_custom_addr(custom.clone());
+    }
+    let connecting = ep.connect_with_opts(addr, alpn, options).await?;
+    Ok(connecting.await?)
+}
+
+struct DialWindow {
+    within: Duration,
+    by: Option<tokio::time::Instant>,
+}
+
 /// How long a dial to a machine is given: [`DIAL_TIMEOUT`], or twelve of
 /// the last round trip measured to it when that is longer, never past
 /// [`DIAL_MOST`]; short for one its relay just said left; and never past
 /// the caller's own deadline `by`.
-fn dial_within(last_rtt: Duration, gone_lately: bool, by: Option<std::time::Instant>) -> Duration {
+fn dial_within(
+    last_rtt: Duration,
+    gone_lately: bool,
+    by: Option<tokio::time::Instant>,
+) -> Duration {
     let mut within = DIAL_TIMEOUT.max(last_rtt.saturating_mul(12)).min(DIAL_MOST);
     if gone_lately {
         within = within.min(Duration::from_secs(3).max(last_rtt.saturating_mul(6)));
     }
     if let Some(by) = by {
-        within = within.min(by.saturating_duration_since(std::time::Instant::now()));
+        within = within.min(by.saturating_duration_since(tokio::time::Instant::now()));
     }
     within
 }
@@ -979,6 +1018,11 @@ pub fn dial_budget_seconds() -> u64 {
 /// 50 Mbit/s road at 300 ms, and well inside the 32 streams a far
 /// machine answers at once (`STREAMS_AT_ONCE`).
 const PULL_AHEAD: u64 = 8;
+
+/// Experimental continued-file response class. The first slice keeps ordinary
+/// priority. A foreground file may need all slices: acceptance still requires
+/// first-usable-content, throughput and starvation checks.
+const CONTINUED_FILE_RESPONSE_PRIORITY: i32 = 0;
 
 /// How often a drop's asker asks how far it got (`Node::drop_file`):
 /// often enough for a progress line to move, and each ask is one small
@@ -1105,11 +1149,24 @@ struct EndpointFile {
     ipc_port: u16,
     #[serde(default)]
     ipc_cookie: String,
+    /// Maximum backwards-compatible request framing version; absence is legacy.
+    #[serde(default)]
+    ipc_max_version: u8,
     /// The resident is an app (a resumable serve — the desktop app or the
     /// phone), not a kept `khor serve`. `khor quit` stops a kept serve; it
     /// never signals an app, whose window a person closes themselves.
     #[serde(default)]
     app: bool,
+}
+
+impl EndpointFile {
+    fn ipc(&self) -> ipc::Target {
+        ipc::Target {
+            port: self.ipc_port,
+            cookie: self.ipc_cookie.clone(),
+            max_version: self.ipc_max_version,
+        }
+    }
 }
 
 /// How a [`Node::leave`] ended, per machine that was in the table.
@@ -1225,7 +1282,16 @@ impl Node {
         ep: &std::sync::Arc<iroh::Endpoint>,
         wake: &tokio::sync::mpsc::UnboundedSender<Wake>,
     ) {
-        *self.ears.lock().unwrap_or_else(|p| p.into_inner()) = Some(ep.clone());
+        {
+            let mut ears = self.ears.lock().unwrap_or_else(|p| p.into_inner());
+            if ears
+                .as_ref()
+                .is_none_or(|old| !std::sync::Arc::ptr_eq(old, ep))
+            {
+                self.wires.pulls.clear(b"endpoint replaced");
+            }
+            *ears = Some(ep.clone());
+        }
         // New ears have homed nowhere yet (round NET-11, `ears_heard`).
         self.ears_homed
             .store(false, std::sync::atomic::Ordering::Relaxed);
@@ -1357,6 +1423,7 @@ impl Node {
             relays: self.published_relays(ep),
             ipc_port: handoffs.local_addr().map_err(|e| e.to_string())?.port(),
             ipc_cookie: cookie.to_owned(),
+            ipc_max_version: ipc::lease::VERSION,
             app: self.app_resident.load(std::sync::atomic::Ordering::Relaxed),
         };
         write_private(
@@ -1542,15 +1609,19 @@ impl Node {
             services.spawn(async move { n.cpu_recorder().await });
         }
         // 暂停 (docs/MORE.md), read **off this loop**. The file stays the
-        // one truth — `khor pause` writes it from another process and
-        // nothing here caches a decision — but the accept arm may not
-        // touch a disk: a `read_to_string` per connection put the
+        // one truth — `khor pause` can write it from another process,
+        // while a resident shares the polled reading — but the accept
+        // arm may not touch a disk: a `read_to_string` per connection put the
         // reactor over its second under load (2026-09-20,
         // `crates/node/tests/load.rs`, which is the gate that said so,
         // and this file's own rule about the loop). So a task of its
         // own does the reading, on a beat a person cannot feel, and the
         // two arms below consult a bit.
-        let paused = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(node.paused()));
+        // Initialize the shared reading before accepting connections. Local
+        // pause/resume updates it synchronously, without accept-loop disk I/O.
+        let paused = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(crate::pause::poll(
+            node.root(),
+        )));
         {
             let flag = paused.clone();
             let root = node.root().clone();
@@ -1580,6 +1651,10 @@ impl Node {
                             n.wires.let_go_served(wires::Retired::Paused);
                         }
                         flag.store(now, std::sync::atomic::Ordering::Relaxed);
+                        #[cfg(test)]
+                        if now {
+                            crate::session_content::wire_tests::pause_poll(&root).await;
+                        }
                     }
                 }
             });
@@ -1685,7 +1760,7 @@ impl Node {
                     // learns at once that this machine is not taking
                     // connections, rather than waiting out its dial.
                     // Not silence: that would be `Incoming::ignore`.
-                    if paused.load(std::sync::atomic::Ordering::Relaxed) { continue }
+                    if node.paused() { continue }
                     if resting.load(std::sync::atomic::Ordering::Relaxed) { continue }
                     let n = node.clone();
                     let e = ep.clone();
@@ -1736,6 +1811,7 @@ impl Node {
                                 conn,
                                 n.wires.journal.get().cloned(),
                                 &n.carry,
+                                &n.wires,
                             );
                             // **A machine that dials in is back**: one this
                             // node holds no wire to — a phone returning to
@@ -1764,7 +1840,9 @@ impl Node {
                             } else if conn.alpn() == endpoint::TUNNEL_ALPN {
                                 let _ = n.serve_tunnel(conn, e).await;
                             } else {
-                                let _ = n.handle(conn, remote, e, done).await;
+                                let observed_alpn = std::env::var_os("KHOR_NET_DIAGNOSTICS")
+                                    .map(|_| conn.alpn().to_vec());
+                                let _ = n.handle(conn, remote, e, done, observed_alpn).await;
                             }
                             return;
                         };
@@ -1778,7 +1856,9 @@ impl Node {
                                 }
                             });
                         }
-                        let _ = n.handle(early, remote.to_string(), e, done).await;
+                        let observed_alpn = std::env::var_os("KHOR_NET_DIAGNOSTICS")
+                            .and_then(|_| early.alpn());
+                        let _ = n.handle(early, remote.to_string(), e, done, observed_alpn).await;
                     });
                 }
                 accepted = handoffs.accept() => {
@@ -2266,52 +2346,51 @@ impl Node {
         ep: &iroh::Endpoint,
         cookie: &str,
     ) -> Result<(), String> {
-        use tokio::io::{AsyncReadExt, AsyncWriteExt};
-        let mut bytes = Vec::new();
-        (&mut stream)
-            .take(MAX_FRAME as u64)
-            .read_to_end(&mut bytes)
-            .await
-            .map_err(msg::handoff_unreadable)?;
-        let handoff = proto::decode::<ipc::Handoff>(&bytes).and_then(|handoff| {
-            if handoff.cookie != cookie {
-                return Err(msg::handoff_wrong_cookie().into());
+        use tokio::io::AsyncWriteExt;
+        let request = ipc::lease::read(&mut stream).await?;
+        let by = request.by;
+        let (mut reader, mut writer) = stream.into_split();
+        ipc::lease::within(&mut reader, by, async {
+            let handoff: Result<_, String> = if request.handoff.cookie != cookie {
+                Err(msg::handoff_wrong_cookie().into())
+            } else {
+                Ok(request.handoff)
+            };
+            // Declared before payloads so the owner outlives their buffers on drop.
+            let content_response = match &handoff {
+                Ok(handoff)
+                    if matches!(
+                        &handoff.op,
+                        ipc::Op::ContentRead {
+                            action: crate::session_content::remote::Action::Window { .. }
+                                | crate::session_content::remote::Action::Record { .. }
+                        }
+                    ) =>
+                {
+                    self.content_response_permit().map(Some)
+                }
+                _ => Ok(None),
+            };
+            let reply = match (handoff, &content_response) {
+                (Ok(handoff), Ok(permit)) => {
+                    // Keep the large operation-dispatch future out of the lease
+                    // combinators' inline state and the worker's polling stack.
+                    Box::pin(self.run_handoff_within(ep, handoff.op, permit.clone())).await
+                }
+                (Err(why), _) => ipc::Reply::Refused { why },
+                (_, Err(why)) => ipc::Reply::Refused { why: why.clone() },
+            };
+            let frame = proto::encode(&reply)?;
+            ipc::validate_reply(&reply, frame.len())?;
+            #[cfg(test)]
+            if matches!(&content_response, Ok(Some(_))) {
+                crate::session_content::wire_tests::pause_response(self.root()).await;
             }
-            ipc::validate_handoff(&handoff, bytes.len())?;
-            Ok(handoff)
-        });
-        // Declared before payloads so the owner outlives their buffers on drop.
-        let content_response = match &handoff {
-            Ok(handoff)
-                if matches!(
-                    &handoff.op,
-                    ipc::Op::ContentRead {
-                        action: crate::session_content::remote::Action::Window { .. }
-                            | crate::session_content::remote::Action::Record { .. }
-                    }
-                ) =>
-            {
-                self.content_response_permit().map(Some)
-            }
-            _ => Ok(None),
-        };
-        let reply = match (handoff, &content_response) {
-            (Ok(handoff), Ok(permit)) => {
-                self.run_handoff_within(ep, handoff.op, permit.clone())
-                    .await
-            }
-            (Err(why), _) => ipc::Reply::Refused { why },
-            (_, Err(why)) => ipc::Reply::Refused { why: why.clone() },
-        };
-        let frame = proto::encode(&reply)?;
-        ipc::validate_reply(&reply, frame.len())?;
-        #[cfg(test)]
-        if matches!(&content_response, Ok(Some(_))) {
-            crate::session_content::wire_tests::pause_response(self.root()).await;
-        }
-        stream.write_all(&frame).await.map_err(msg::cant_reply)?;
-        stream.shutdown().await.map_err(msg::cant_close_stream)?;
-        Ok(())
+            writer.write_all(&frame).await.map_err(msg::cant_reply)?;
+            writer.shutdown().await.map_err(msg::cant_close_stream)?;
+            Ok(())
+        })
+        .await
     }
 
     /// [`Self::run_handoff`] under the op's deadline (SHELL.md 第五轮 第 2
@@ -2327,9 +2406,12 @@ impl Node {
     ) -> ipc::Reply {
         let (name, deadline) = (op.name(), op.deadline());
         let mine = deadline.saturating_sub(Duration::from_millis(500));
-        match tokio::time::timeout(mine, self.run_handoff(ep, op, response)).await {
-            Ok(reply) => reply,
-            Err(_) => {
+        let by = crate::deadline::earlier(Some(tokio::time::Instant::now() + mine))
+            .expect("an operation supplies its deadline");
+        let operation = crate::deadline::scope(by, self.run_handoff(ep, op, response));
+        match tokio::time::timeout_at(by, operation).await {
+            Ok(reply) if !crate::deadline::expired(Some(by)) => reply,
+            _ => {
                 let stamp = jiff::Zoned::now().strftime("%Y-%m-%d %H:%M:%S").to_string();
                 eprintln!("{}", msg::serve_op_late(&stamp, name, mine.as_secs()));
                 self.wires
@@ -2350,6 +2432,12 @@ impl Node {
         response: Option<crate::session_content::remote::ResponsePermit>,
     ) -> ipc::Reply {
         match op {
+            ipc::Op::SessionImport { home, action } => {
+                match self.session_import_with(ep, home, action).await {
+                    Ok(value) => ipc::Reply::SessionImport { value },
+                    Err(why) => ipc::Reply::Refused { why },
+                }
+            }
             ipc::Op::ContentRead { action } => {
                 match self.content_read_with(ep, action, response).await {
                     Ok(reply) => ipc::Reply::ContentRead { reply },
@@ -2560,7 +2648,19 @@ impl Node {
                 Ok(value) => ipc::Reply::NewShellRun { value },
                 Err(why) => ipc::Reply::Refused { why },
             },
+            ipc::Op::ExecutionOn { machine, action } => {
+                match self.execution_with(ep, &machine, action).await {
+                    Ok(value) => ipc::Reply::Execution { value },
+                    Err(why) => ipc::Reply::Refused { why },
+                }
+            }
             ipc::Op::OpenShellOn { machine, start } => {
+                match self.open_legacy_shell_on_with(ep, &machine, start).await {
+                    Ok(id) => ipc::Reply::OpenedOn { session: id.0 },
+                    Err(why) => ipc::Reply::Refused { why },
+                }
+            }
+            ipc::Op::OpenTerminalOn { machine, start } => {
                 match self.open_shell_on_with(ep, &machine, start).await {
                     Ok(id) => ipc::Reply::OpenedOn { session: id.0 },
                     Err(why) => ipc::Reply::Refused { why },
@@ -3025,7 +3125,7 @@ impl Node {
             d => std::path::PathBuf::from(d),
         };
         let cmd = if cmd.is_empty() {
-            vec![std::env::var("SHELL").unwrap_or_else(|_| "/bin/sh".into())]
+            crate::shell_start::command(&crate::shell_start::default_shell())
         } else {
             cmd
         };
@@ -3136,11 +3236,23 @@ impl Node {
         else {
             return;
         };
+        self.list_what_opened_on(ep, &d, id, within).await;
+    }
+
+    /// Populate the row from the exact device that authenticated the open.
+    /// Stable home IDs must not be translated back through visible labels.
+    async fn list_what_opened_on(
+        &self,
+        ep: &iroh::Endpoint,
+        device: &DeviceInfo,
+        id: &crate::SessionId,
+        within: Duration,
+    ) {
         let _ = self.roster_new(id);
         if let Ok(Ok(Response::SessionRows { rows })) =
-            tokio::time::timeout(within, self.ask_on(ep, &d, &Request::Sessions)).await
+            tokio::time::timeout(within, self.ask_on(ep, device, &Request::Sessions)).await
         {
-            let _ = self.cache_peer_rows(&d.id, &d.name, &rows);
+            let _ = self.cache_peer_rows(&device.id, &device.name, &rows);
         }
     }
 
@@ -3233,7 +3345,7 @@ impl Node {
                 std::path::PathBuf::from(cwd)
             };
             let cmd = if cmd.is_empty() {
-                vec![std::env::var("SHELL").unwrap_or_else(|_| "/bin/sh".into())]
+                crate::shell_start::command(&crate::shell_start::default_shell())
             } else {
                 cmd.to_vec()
             };
@@ -3434,6 +3546,10 @@ impl Node {
         by: Option<std::time::Instant>,
         may_hop: bool,
     ) -> Result<Line, DialFailure> {
+        let by = crate::deadline::earlier(by.map(tokio::time::Instant::from_std));
+        if crate::deadline::expired(by) {
+            return Err(DialFailure::CallerExpired);
+        }
         if crate::pause::peer_on(self.root(), &d.id) {
             self.wires.retire_peer(&d.id, wires::Retired::Paused);
             return Err(DialFailure::Refused(msg::peer_paused_refusal().to_owned()));
@@ -3467,7 +3583,15 @@ impl Node {
         }
         let waited = std::time::Instant::now();
         let lock = self.wires.dial_lock(&d.id, proto);
-        let mut one = lock.lock().await;
+        let mut one = crate::deadline::wait(by, lock.lock())
+            .await
+            .map_err(|_| DialFailure::CallerExpired)?;
+        // A ready lock must not win after the caller's clock has run out.
+        // Expiring a waiter neither changes the owner's result nor says
+        // anything about the peer's reachability.
+        if crate::deadline::expired(by) {
+            return Err(DialFailure::CallerExpired);
+        }
         if let Some(conn) = self.wires.live(&d.id, proto) {
             return Ok(line(conn));
         }
@@ -3475,17 +3599,36 @@ impl Node {
         // (net-dial). A round and a person's ask meeting on one dead
         // machine used to dial it one after the other — a whole second
         // dial right after the first had just said no.
-        if let Some((at, failed)) = one.as_ref()
+        if let Some((at, failed, contact)) = one.as_ref()
             && *at >= waited
+            && contact.is_current_for(failed, self.wires.dial_contact(&d.id, proto))
         {
             return Err(failed.clone());
         }
-        // The peer hop (round ROAD-3): a road through a third machine,
-        // ready before the dial so it races from the first packet.
-        if may_hop {
-            self.hop_ahead(ep, d).await;
-        }
-        match self.dial(ep, &d.id, &d.addrs, proto.alpn(), by).await {
+        let contact = self.wires.dial_contact(&d.id, proto);
+        // Prepare a peer hop beside the ordinary dial. Keep the future
+        // and finite usage lease through adoption, so dropping a losing
+        // preparation cannot withdraw the winner's carried stream.
+        let _using = self.wires.pending_dial(&d.id);
+        let mut hop = self.hop_ahead(ep, d);
+        let preparation: Option<HopPreparation<'_>> =
+            if may_hop { Some(hop.as_mut()) } else { None };
+        let outcome = if may_hop {
+            self.dial_preparing(
+                ep,
+                &d.id,
+                &d.addrs,
+                proto.alpn(),
+                by,
+                DIAL_MOST,
+                preparation,
+            )
+            .await
+        } else {
+            self.dial(ep, &d.id, &d.addrs, proto.alpn(), by, DIAL_MOST)
+                .await
+        };
+        match outcome {
             // Gone to the background while it dialled (net-dial B6): the
             // suspension let every wire go and this one is not taken up.
             Ok(conn) if self.resting.load(std::sync::atomic::Ordering::Relaxed) => {
@@ -3497,21 +3640,30 @@ impl Node {
                 Ok(line(conn))
             }
             Err(e) => {
-                *one = Some((std::time::Instant::now(), e.clone()));
+                #[cfg(test)]
+                if matches!(e, DialFailure::Asleep(_)) {
+                    self.wires.hold_asleep_dial_for_test().await;
+                }
+                let failure = match &e {
+                    DialFailure::CallerExpired => return Err(e),
+                    DialFailure::Asleep(_) => None,
+                    DialFailure::TimedOut => Some(msg::machine_unreachable_timeout(&d.name)),
+                    DialFailure::Refused(why) | DialFailure::Transport(why) => {
+                        Some(msg::cant_reach_named(&d.name, why))
+                    }
+                };
+                *one = Some((std::time::Instant::now(), e.clone(), contact));
                 // A middle's dial for another machine is that machine's
                 // miss, not this one's (net-dial B3, `journal::By::Onward`).
                 // A machine that refused is resting, not down: left alone
                 // until it dials back (net-dial B4).
-                if let DialFailure::Asleep(_) = &e {
-                    self.wires.asleep(&d.id);
-                } else if crate::journal::by_now() != crate::journal::By::Onward {
-                    let words = match &e {
-                        DialFailure::TimedOut | DialFailure::Asleep(_) => {
-                            msg::machine_unreachable_timeout(&d.name)
-                        }
-                        DialFailure::Refused(why) => msg::cant_reach_named(&d.name, why),
-                    };
-                    self.wires.failed(&d.id, proto, words);
+                if let Some(words) = failure {
+                    if crate::journal::by_now() != crate::journal::By::Onward {
+                        self.wires
+                            .failed_if_unchanged(&d.id, proto, words, contact.protocol);
+                    }
+                } else {
+                    self.wires.asleep_if_unchanged(&d.id, contact.presence);
                 }
                 Err(e)
             }
@@ -3540,7 +3692,8 @@ impl Node {
     /// skip the retirement, so a dead wire was handed out again for
     /// 100 s of 29.5 s hangs.
     pub(crate) async fn exchange_on(&self, line: &Line, req: &Request) -> Result<Response, Miss> {
-        self.exchange_on_inner(line, req, None).await
+        self.exchange_on_inner(line, req, None, crate::deadline::current())
+            .await
     }
 
     async fn exchange_doc_on(
@@ -3549,7 +3702,8 @@ impl Node {
         req: &Request,
         attempt: &mut DocAttempt,
     ) -> Result<Response, Miss> {
-        self.exchange_on_inner(line, req, Some(attempt)).await
+        self.exchange_on_inner(line, req, Some(attempt), crate::deadline::current())
+            .await
     }
 
     async fn exchange_on_inner(
@@ -3557,10 +3711,25 @@ impl Node {
         line: &Line,
         req: &Request,
         attempt: Option<&mut DocAttempt>,
+        by: Option<tokio::time::Instant>,
     ) -> Result<Response, Miss> {
         let mut guard = RetireUnheard::new(&self.wires, line);
         let budget = wires::budget_for(req.budget(), &line.conn);
-        let out = exchange_inner(&line.conn, &line.name, req, budget, attempt).await;
+        let endpoint = self.ears.lock().unwrap_or_else(|p| p.into_inner()).clone();
+        let out = crate::deadline::wait(
+            by,
+            exchange_inner(
+                &line.conn,
+                &line.name,
+                req,
+                budget,
+                attempt,
+                Some(&guard),
+                endpoint.as_deref(),
+            ),
+        )
+        .await
+        .map_err(|_| Miss::CallerExpired)?;
         guard.disarm();
         match &out {
             Ok(_) => self.wires.heard(&line.id, line.proto, &line.conn),
@@ -3582,7 +3751,7 @@ impl Node {
                     .answers_late
                     .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
             }
-            Err(Miss::Garbled(_)) => {}
+            Err(Miss::Garbled(_) | Miss::CallerExpired) => {}
         }
         out
     }
@@ -3601,36 +3770,216 @@ impl Node {
         d: &DeviceInfo,
         req: &Request,
     ) -> Result<Response, String> {
-        // **Answer inside the face's own wait** (round NET-5): a face asks
-        // through the resident, which gives up after `ipc::DEADLINE_FAR`
-        // and says only that it stopped waiting. A dead wire's ack wait
-        // plus the redial behind a slow road could run past that (29.5 s
-        // at 600 ms / 5 % loss), so the redial is cut to what is left,
-        // and the face reads 「无法连接」 rather than 「未在 30 秒内完成」.
-        let by = std::time::Instant::now() + ipc::DEADLINE_FAR - Duration::from_secs(2);
-        match self.ask_early(ep, d, req, Some(by)).await {
+        // A resident op has already chosen its deadline. Standalone work
+        // reserves the existing stage limits around the request's own work,
+        // including the maximum road allowance, rather than inventing an IPC op.
+        let by = crate::deadline::current().unwrap_or_else(|| {
+            let budget = req
+                .budget()
+                .saturating_add(DIAL_MOST)
+                .saturating_add(crate::hop::HOP_WITHIN)
+                .saturating_add(wires::RTT_BUDGET_MOST);
+            tokio::time::Instant::now() + budget
+        });
+        crate::deadline::scope(by, self.ask_on_within(ep, d, req, by)).await
+    }
+
+    async fn ask_on_within(
+        &self,
+        ep: &iroh::Endpoint,
+        d: &DeviceInfo,
+        req: &Request,
+        by: tokio::time::Instant,
+    ) -> Result<Response, String> {
+        match self.ask_early(ep, d, req, Some(by.into_std())).await {
             Early::Answered(resp) => return Ok(resp),
             Early::Failed(e) => return Err(unreached_words(&d.name, e)),
             Early::NotTaken => {}
         }
         let line = self
-            .line_to(ep, d, wires::Proto::Main)
+            .line_to_by(ep, d, wires::Proto::Main, Some(by.into_std()))
             .await
             .map_err(|e| unreached_words(&d.name, e))?;
-        match self.exchange_on(&line, req).await {
+        self.ask_on_line_within(ep, d, req, &line, by).await
+    }
+
+    /// The existing exchange and at-most-one read retry, with its original by.
+    /// A transfer-owned Main uses this without replacing the cached Main.
+    async fn ask_on_line_within(
+        &self,
+        ep: &iroh::Endpoint,
+        d: &DeviceInfo,
+        req: &Request,
+        line: &Line,
+        by: tokio::time::Instant,
+    ) -> Result<Response, String> {
+        match self.exchange_on_inner(line, req, None, Some(by)).await {
             Err(Miss::Unreached(_)) if req.is_reading() => {
+                if crate::deadline::expired(Some(by)) {
+                    return Err(unreached_words(&d.name, DialFailure::CallerExpired));
+                }
                 self.wires
                     .counts
                     .reads_retried
                     .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                 let line = self
-                    .line_to_by(ep, d, wires::Proto::Main, Some(by))
+                    .line_to_by(ep, d, wires::Proto::Main, Some(by.into_std()))
                     .await
                     .map_err(|e| unreached_words(&d.name, e))?;
-                self.exchange_on(&line, req).await.map_err(Miss::words)
+                self.exchange_on_inner(&line, req, None, Some(by))
+                    .await
+                    .map_err(Miss::words)
             }
             other => other.map_err(Miss::words),
         }
+    }
+
+    fn pull_peer(
+        &self,
+        ep: &iroh::Endpoint,
+        d: &DeviceInfo,
+    ) -> Option<std::sync::Arc<pull_pool::Peer>> {
+        let ears = self.ears.lock().unwrap_or_else(|p| p.into_inner());
+        let owner = ears.as_ref()?;
+        if !std::ptr::eq(owner.as_ref(), ep) || ep.is_closed() {
+            return None;
+        }
+        Some(self.wires.pulls.peer(owner, &d.id))
+    }
+
+    async fn pooled_transfer(
+        &self,
+        ep: &iroh::Endpoint,
+        d: &DeviceInfo,
+        peer: &std::sync::Arc<pull_pool::Peer>,
+    ) -> Result<std::sync::Arc<pull_pool::Lease>, PreparationFailure> {
+        self.transfer_admission(d)?;
+        let lease = peer
+            .prepare(|most| self.transfer_line_within(ep, d, most))
+            .await?;
+        self.transfer_admission(d)?;
+        let ears = self.ears.lock().unwrap_or_else(|p| p.into_inner());
+        if !ears
+            .as_ref()
+            .is_some_and(|owner| std::ptr::eq(owner.as_ref(), ep))
+        {
+            return Err(PreparationFailure::Stop("connection changed".into()));
+        }
+        Ok(lease)
+    }
+
+    fn transfer_admission(&self, d: &DeviceInfo) -> Result<(), PreparationFailure> {
+        if self.paused() || crate::pause::peer_on(self.root(), &d.id) {
+            return Err(PreparationFailure::Stop(unreached_words(
+                &d.name,
+                DialFailure::Refused(msg::paused_no_dial().to_owned()),
+            )));
+        }
+        if self.resting.load(std::sync::atomic::Ordering::Relaxed) {
+            return Err(PreparationFailure::Stop(unreached_words(
+                &d.name,
+                DialFailure::Refused(msg::resting_no_dial().to_owned()),
+            )));
+        }
+        Ok(())
+    }
+
+    /// One experimental Main; its owner never replaces the cached Main.
+    #[cfg(test)]
+    async fn transfer_line_for(
+        &self,
+        ep: &iroh::Endpoint,
+        d: &DeviceInfo,
+    ) -> Result<TransferLine, PreparationFailure> {
+        self.transfer_line_within(ep, d, DIAL_MOST).await
+    }
+
+    async fn transfer_line_within(
+        &self,
+        ep: &iroh::Endpoint,
+        d: &DeviceInfo,
+        most: Duration,
+    ) -> Result<TransferLine, PreparationFailure> {
+        if self.paused() || crate::pause::peer_on(self.root(), &d.id) {
+            return Err(PreparationFailure::Stop(unreached_words(
+                &d.name,
+                DialFailure::Refused(msg::paused_no_dial().to_owned()),
+            )));
+        }
+        if self.resting.load(std::sync::atomic::Ordering::Relaxed) {
+            return Err(PreparationFailure::Stop(unreached_words(
+                &d.name,
+                DialFailure::Refused(msg::resting_no_dial().to_owned()),
+            )));
+        }
+        let conn = self
+            .dial(ep, &d.id, &d.addrs, ALPN, crate::deadline::current(), most)
+            .await
+            .map_err(|e| {
+                let unavailable = matches!(e, DialFailure::TimedOut | DialFailure::Transport(_));
+                let words = unreached_words(&d.name, e);
+                if unavailable {
+                    PreparationFailure::RetryCached(words)
+                } else {
+                    PreparationFailure::Stop(words)
+                }
+            })?;
+        let line = TransferLine(Line {
+            id: d.id.clone(),
+            name: d.name.clone(),
+            proto: wires::Proto::Main,
+            conn,
+        });
+        // Registration precedes the suspension check, closing the adoption race.
+        self.wires.transferring(&line.0.conn);
+        if self.paused() || crate::pause::peer_on(self.root(), &d.id) {
+            return Err(PreparationFailure::Stop(unreached_words(
+                &d.name,
+                DialFailure::Refused(msg::paused_no_dial().to_owned()),
+            )));
+        }
+        if self.resting.load(std::sync::atomic::Ordering::Relaxed) {
+            return Err(PreparationFailure::Stop(unreached_words(
+                &d.name,
+                DialFailure::Refused(msg::resting_no_dial().to_owned()),
+            )));
+        }
+        khor_net::carry::observe_lifecycle(
+            &d.id,
+            "pull_wire_opened",
+            || serde_json::json!({"wire":line.0.conn.stable_id(),"alpn":String::from_utf8_lossy(line.0.conn.alpn())}),
+        );
+        Ok(line)
+    }
+
+    async fn ask_on_transfer(
+        &self,
+        ep: &iroh::Endpoint,
+        d: &DeviceInfo,
+        req: &Request,
+        line: &Line,
+    ) -> Result<Response, String> {
+        if self.paused() || crate::pause::peer_on(self.root(), &d.id) {
+            return Err(unreached_words(
+                &d.name,
+                DialFailure::Refused(msg::paused_no_dial().to_owned()),
+            ));
+        }
+        if self.resting.load(std::sync::atomic::Ordering::Relaxed) {
+            return Err(unreached_words(
+                &d.name,
+                DialFailure::Refused(msg::resting_no_dial().to_owned()),
+            ));
+        }
+        let by = crate::deadline::current().unwrap_or_else(|| {
+            let budget = req
+                .budget()
+                .saturating_add(DIAL_MOST)
+                .saturating_add(crate::hop::HOP_WITHIN)
+                .saturating_add(wires::RTT_BUDGET_MOST);
+            tokio::time::Instant::now() + budget
+        });
+        crate::deadline::scope(by, self.ask_on_line_within(ep, d, req, line, by)).await
     }
 
     /// **A redial that carries its first question** (round NET-3): with
@@ -3652,6 +4001,10 @@ impl Node {
         req: &Request,
         by: Option<std::time::Instant>,
     ) -> Early {
+        let by = crate::deadline::earlier(by.map(tokio::time::Instant::from_std));
+        if crate::deadline::expired(by) {
+            return Early::Failed(DialFailure::CallerExpired);
+        }
         // Resting: not taken here, and refused by `line_to_inner` after.
         if !req.rides_early()
             || self.paused()
@@ -3663,22 +4016,32 @@ impl Node {
         }
         let waited = std::time::Instant::now();
         let lock = self.wires.dial_lock(&d.id, wires::Proto::Main);
-        let mut one = lock.lock().await;
+        let Ok(mut one) = crate::deadline::wait(by, lock.lock()).await else {
+            return Early::Failed(DialFailure::CallerExpired);
+        };
+        if crate::deadline::expired(by) {
+            return Early::Failed(DialFailure::CallerExpired);
+        }
         if self.wires.live(&d.id, wires::Proto::Main).is_some() {
             return Early::NotTaken;
         }
-        if let Some((at, failed)) = one.as_ref()
+        if let Some((at, failed, contact)) = one.as_ref()
             && *at >= waited
+            && contact.is_current_for(failed, self.wires.dial_contact(&d.id, wires::Proto::Main))
         {
             return Early::Failed(failed.clone());
         }
-        self.hop_ahead(ep, d).await;
+        let contact = self.wires.dial_contact(&d.id, wires::Proto::Main);
+        let using = self.wires.pending_dial(&d.id);
+        let mut hop = self.hop_ahead(ep, d);
         let Ok(mut addr) = endpoint::dial_addr(&d.id, &d.addrs, &self.published_relays(ep)) else {
             return Early::NotTaken;
         };
         // A road this machine carries itself, as `dial_with` adds it.
-        addr.addrs.extend(self.carried_addr(&d.id));
-        let tried = crate::journal::offered(&addr);
+        let carried_at_start = self.carried_addr(&d.id);
+        let had_carried = carried_at_start.is_some();
+        addr.addrs.extend(carried_at_start.clone());
+        let mut tried = crate::journal::offered(&addr);
         let Ok(frame) = proto::encode(req) else {
             return Early::NotTaken;
         };
@@ -3691,7 +4054,12 @@ impl Node {
             by,
         );
         let started = std::time::Instant::now();
+        let dial_by = tokio::time::Instant::now() + within;
+        let mut early_data = false;
         let attempt = async {
+            if crate::deadline::expired(by) {
+                return Err(DialFailure::CallerExpired);
+            }
             let connecting = ep
                 .connect_with_opts(addr, ALPN, Default::default())
                 .await
@@ -3708,6 +4076,8 @@ impl Node {
                 // as usual on the wire it made.
                 Err(connecting) => {
                     let conn = connecting.await.map_err(of_connecting)?;
+                    #[cfg(test)]
+                    self.wires.note_early_dial_for_test(false);
                     return Ok((conn, None));
                 }
             };
@@ -3719,7 +4089,8 @@ impl Node {
             // timed out, or a handshake that failed, used to leave this task
             // running with its clone of the connection — an orphan wire that
             // nobody held, answered by the far side until its idle timeout.
-            let mut asked = Aborts(Some({
+            early_data = true;
+            let asked = Aborts(Some({
                 let (early, frame, budget) = (early.clone(), frame.clone(), req.budget());
                 tokio::spawn(async move {
                     let (mut send, mut recv) = early.open_bi().await.ok()?;
@@ -3729,23 +4100,215 @@ impl Node {
                         .await
                         .ok()?
                         .ok()?;
-                    proto::answer(&bytes).ok()
+                    Some((proto::answer(&bytes).ok()?, send.id()))
                 })
             }));
             match early.handshake_completed().await.map_err(of_connecting)? {
-                iroh::endpoint::ZeroRttStatus::Accepted(conn) => Ok((conn, asked.0.take())),
+                iroh::endpoint::ZeroRttStatus::Accepted(conn) => {
+                    #[cfg(test)]
+                    self.wires.note_early_dial_for_test(true);
+                    Ok((conn, Some(asked)))
+                }
                 // Rejected: the far side kept nothing of it; asked again
                 // on the wire, which is up. (`asked` aborts as it drops.)
-                iroh::endpoint::ZeroRttStatus::Rejected(conn) => Ok((conn, None)),
+                iroh::endpoint::ZeroRttStatus::Rejected(conn) => {
+                    #[cfg(test)]
+                    self.wires.note_early_dial_for_test(false);
+                    Ok((conn, None))
+                }
             }
         };
-        let outcome = tokio::time::timeout(within, attempt).await;
+        // Keep the ordinary early attempt fast. An installed or newly
+        // prepared carrier gets one ordinary handshake in the SAME window;
+        // it sends no early request. Only rides_early readings enter here.
+        let mut attempt = Box::pin(tokio::time::timeout_at(dial_by, attempt));
+        let mut carried_attempt: Option<
+            futures::future::BoxFuture<'_, Result<iroh::endpoint::Connection, DialFailure>>,
+        > = None;
+        let mut raced_carrier = false;
+        if let Some(carried) = carried_at_start
+            && let Ok(mut addr) = endpoint::dial_addr(&d.id, &[], &[])
+        {
+            addr.addrs.insert(carried);
+            let ep = ep.clone();
+            let until = by.map_or(dial_by, |caller| caller.min(dial_by));
+            raced_carrier = true;
+            carried_attempt = Some(Box::pin(async move {
+                match crate::deadline::wait(Some(until), connect_prepared_carrier(&ep, addr, ALPN))
+                    .await
+                {
+                    Ok(Ok(conn)) => Ok(conn),
+                    Ok(Err(error)) => Err(DialFailure::of_connect(&error)),
+                    Err(_) => Err(DialFailure::CallerExpired),
+                }
+            }));
+        }
+        let mut original_pending = true;
+        let mut original_outcome = None;
+        let mut preparing = true;
+        let mut outcome = loop {
+            tokio::select! {
+                biased;
+                outcome = &mut attempt, if original_pending => {
+                    // A failed cached route does not decide an in-flight
+                    // carrier. Authenticated resting and success still do.
+                    if carried_attempt.is_none()
+                        || matches!(&outcome, Ok(Ok(_)) | Ok(Err(DialFailure::Asleep(_))))
+                    {
+                        break outcome;
+                    }
+                    original_pending = false;
+                    original_outcome = Some(outcome);
+                },
+                () = &mut hop, if preparing => {
+                    preparing = false;
+                    if !had_carried
+                        && !crate::deadline::expired(by)
+                        && let Some(carried) = self.carried_addr(&d.id)
+                        && let Ok(mut addr) = endpoint::dial_addr(&d.id, &[], &[])
+                    {
+                        addr.addrs.insert(carried);
+                        tried.2 = true;
+                        raced_carrier = true;
+                        let ep = ep.clone();
+                        let until = by.map_or(dial_by, |caller| caller.min(dial_by));
+                        carried_attempt = Some(Box::pin(async move {
+                            match crate::deadline::wait(
+                                Some(until), connect_prepared_carrier(&ep, addr, ALPN),
+                            ).await {
+                                Ok(Ok(conn)) => Ok(conn),
+                                Ok(Err(error)) => Err(DialFailure::of_connect(&error)),
+                                Err(_) => Err(DialFailure::CallerExpired),
+                            }
+                        }));
+                    }
+                },
+                connected = async {
+                    match carried_attempt.as_mut() {
+                        Some(attempt) => attempt.as_mut().await,
+                        None => std::future::pending().await,
+                    }
+                }, if carried_attempt.is_some() => {
+                    carried_attempt = None;
+                    match connected {
+                        Ok(conn) => break Ok(Ok((conn, None))),
+                        Err(error @ DialFailure::Asleep(_)) => break Ok(Err(error)),
+                        // One failed alternative does not decide the original.
+                        Err(_) => {
+                            if let Some(outcome) = original_outcome.take() {
+                                break outcome;
+                            }
+                        }
+                    }
+                },
+            }
+        };
+        drop(attempt);
+        drop(carried_attempt);
+        #[cfg(test)]
+        if let Ok(Err(failed)) = &outcome {
+            let why = match failed {
+                DialFailure::Refused(why) | DialFailure::Transport(why) => {
+                    format!("Refused: {why}")
+                }
+                DialFailure::Asleep(why) => format!("Asleep: {why}"),
+                DialFailure::TimedOut => "TimedOut".to_owned(),
+                DialFailure::CallerExpired => "CallerExpired".to_owned(),
+            };
+            self.wires.note_early_failure_for_test(why);
+        }
+        #[cfg(test)]
+        if matches!(
+            outcome,
+            Ok(Err(DialFailure::Refused(_) | DialFailure::Transport(_)))
+        ) {
+            eprintln!(
+                "[early-fallback-stage] refused early_data={early_data} had_carried={had_carried} preparing={preparing} remaining_ms={}",
+                dial_by
+                    .saturating_duration_since(tokio::time::Instant::now())
+                    .as_millis()
+            );
+        }
+        // No early request could have escaped a cold failed handshake.
+        // Give a newly prepared carrier one ordinary handshake, still inside
+        // the original absolute window. A prior carrier, resting refusal or
+        // failure after starting the early task never enters this fallback.
+        if !early_data
+            && !had_carried
+            && !raced_carrier
+            && matches!(
+                outcome,
+                Ok(Err(DialFailure::Refused(_) | DialFailure::Transport(_)))
+            )
+            && !crate::deadline::expired(by)
+            && tokio::time::Instant::now() < dial_by
+        {
+            let ready = if preparing {
+                tokio::time::timeout_at(dial_by, &mut hop).await
+            } else {
+                Ok(())
+            };
+            #[cfg(test)]
+            eprintln!(
+                "[early-fallback-stage] prepared={} carrier={} caller_expired={} remaining_ms={}",
+                ready.is_ok(),
+                self.carried_addr(&d.id).is_some(),
+                crate::deadline::expired(by),
+                dial_by
+                    .saturating_duration_since(tokio::time::Instant::now())
+                    .as_millis()
+            );
+            match ready {
+                Err(elapsed) => outcome = Err(elapsed),
+                Ok(()) => {
+                    if !crate::deadline::expired(by)
+                        && tokio::time::Instant::now() < dial_by
+                        && let Some(carried) = self.carried_addr(&d.id)
+                        && let Ok(mut addr) = endpoint::dial_addr(&d.id, &[], &[])
+                    {
+                        #[cfg(test)]
+                        eprintln!("[early-fallback-stage] starting carried handshake");
+                        addr.addrs.insert(carried);
+                        tried.2 = true;
+                        outcome = tokio::time::timeout_at(dial_by, async {
+                            connect_prepared_carrier(ep, addr, ALPN)
+                                .await
+                                .map(|conn| (conn, None))
+                                .map_err(|error| DialFailure::of_connect(&error))
+                        })
+                        .await;
+                        #[cfg(test)]
+                        {
+                            let result = match &outcome {
+                                Ok(Ok(_)) => "connected".to_owned(),
+                                Ok(Err(
+                                    DialFailure::Refused(why) | DialFailure::Transport(why),
+                                )) => format!("refused: {why}"),
+                                Ok(Err(DialFailure::Asleep(why))) => format!("asleep: {why}"),
+                                Ok(Err(DialFailure::TimedOut)) => "timed out".to_owned(),
+                                Ok(Err(DialFailure::CallerExpired)) => "caller expired".to_owned(),
+                                Err(_) => "dial window expired".to_owned(),
+                            };
+                            eprintln!("[early-fallback-stage] carried result={result}");
+                        }
+                    }
+                }
+            }
+        }
+        if crate::deadline::expired(by) {
+            if let Ok(Ok((conn, _))) = &outcome {
+                conn.close(0u32.into(), b"caller deadline");
+            }
+            return Early::Failed(DialFailure::CallerExpired);
+        }
         {
             let (won, error) = match &outcome {
                 Ok(Ok(_)) => (Some(crate::journal::Won::Early), None),
-                Ok(Err(DialFailure::Refused(why) | DialFailure::Asleep(why))) => {
-                    (None, Some(crate::journal::scrub(why)))
-                }
+                Ok(Err(
+                    DialFailure::Refused(why)
+                    | DialFailure::Transport(why)
+                    | DialFailure::Asleep(why),
+                )) => (None, Some(crate::journal::scrub(why))),
                 _ => (None, None),
             };
             let asleep = matches!(outcome, Ok(Err(DialFailure::Asleep(_))));
@@ -3775,10 +4338,7 @@ impl Node {
             );
         }
         match outcome {
-            Ok(Ok((conn, asked))) if self.resting.load(std::sync::atomic::Ordering::Relaxed) => {
-                if let Some(asked) = asked {
-                    asked.abort();
-                }
+            Ok(Ok((conn, _asked))) if self.resting.load(std::sync::atomic::Ordering::Relaxed) => {
                 conn.close(0u32.into(), b"suspended");
                 Early::Failed(DialFailure::Refused(msg::resting_no_dial().to_owned()))
             }
@@ -3790,46 +4350,81 @@ impl Node {
                     &conn,
                     self.wires.journal.get().cloned(),
                     &self.carry,
+                    &self.wires,
                 );
                 self.wires.adopt(&d.id, wires::Proto::Main, conn.clone());
+                drop(hop);
+                drop(using);
                 drop(one);
                 match asked {
-                    Some(asked) => match asked.await.ok().flatten() {
-                        Some(resp) => {
-                            self.wires.heard(&d.id, wires::Proto::Main, &conn);
-                            Early::Answered(resp)
+                    Some(mut asked) => {
+                        // The response task and its stream remain owned after
+                        // adoption. A long abandoned wait also joins the wire's
+                        // independent confirmation, just like an ordinary ask.
+                        let line = Line {
+                            id: d.id.clone(),
+                            name: d.name.clone(),
+                            proto: wires::Proto::Main,
+                            conn: conn.clone(),
+                        };
+                        let mut guard = RetireUnheard::new(&self.wires, &line);
+                        let answer = crate::deadline::wait(
+                            by,
+                            asked.0.as_mut().expect("accepted answer is owned"),
+                        )
+                        .await;
+                        match answer {
+                            Ok(Ok(Some((resp, stream)))) => {
+                                guard.disarm();
+                                self.wires.heard(&d.id, wires::Proto::Main, &conn);
+                                observe_workload_reply(&conn, req, &resp, stream, true, || {
+                                    started.elapsed()
+                                });
+                                Early::Answered(resp)
+                            }
+                            Err(_) => Early::Failed(DialFailure::CallerExpired),
+                            // No answer to the early question: asked again on
+                            // the wire, which is up — a reading, so twice is
+                            // the same as once.
+                            Ok(_) => Early::NotTaken,
                         }
-                        // No answer to the early question: asked again on
-                        // the wire, which is up — a reading, so twice is
-                        // the same as once.
-                        None => Early::NotTaken,
-                    },
+                    }
                     None => Early::NotTaken,
                 }
             }
             Ok(Err(e)) => {
-                *one = Some((std::time::Instant::now(), e.clone()));
-                match &e {
-                    DialFailure::Asleep(_) => self.wires.asleep(&d.id),
-                    DialFailure::Refused(why) => self.wires.failed(
+                #[cfg(test)]
+                if matches!(e, DialFailure::Asleep(_)) {
+                    self.wires.hold_asleep_dial_for_test().await;
+                }
+                let failure = match &e {
+                    DialFailure::CallerExpired => return Early::Failed(e),
+                    DialFailure::Asleep(_) => None,
+                    DialFailure::Refused(why) | DialFailure::Transport(why) => {
+                        Some(msg::cant_reach_named(&d.name, why))
+                    }
+                    DialFailure::TimedOut => Some(msg::cant_reach_named(&d.name, "")),
+                };
+                *one = Some((std::time::Instant::now(), e.clone(), contact));
+                if let Some(words) = failure {
+                    self.wires.failed_if_unchanged(
                         &d.id,
                         wires::Proto::Main,
-                        msg::cant_reach_named(&d.name, why),
-                    ),
-                    DialFailure::TimedOut => self.wires.failed(
-                        &d.id,
-                        wires::Proto::Main,
-                        msg::cant_reach_named(&d.name, ""),
-                    ),
+                        words,
+                        contact.protocol,
+                    );
+                } else {
+                    self.wires.asleep_if_unchanged(&d.id, contact.presence);
                 }
                 Early::Failed(e)
             }
             Err(_) => {
-                *one = Some((std::time::Instant::now(), DialFailure::TimedOut));
-                self.wires.failed(
+                *one = Some((std::time::Instant::now(), DialFailure::TimedOut, contact));
+                self.wires.failed_if_unchanged(
                     &d.id,
                     wires::Proto::Main,
                     msg::machine_unreachable_timeout(&d.name),
+                    contact.protocol,
                 );
                 Early::Failed(DialFailure::TimedOut)
             }
@@ -3864,9 +4459,9 @@ impl Node {
             return Some(Err(msg::serve_no_handoff_port(f.pid)));
         }
         Some(
-            ipc::call_refreshing(f.ipc_port, &f.ipc_cookie, op, || {
+            ipc::call_target(f.ipc(), op, || {
                 let latest = self.endpoint_file().ok().flatten()?;
-                Some((latest.ipc_port, latest.ipc_cookie))
+                Some(latest.ipc())
             })
             .await
             .map_err(|e| msg::serve_handoff_failed(f.pid, e)),
@@ -3900,6 +4495,10 @@ impl Node {
             // here, per stream, so a pause bites on a tunnel already up.
             let paired =
                 !crate::pause::peer_on(self.root(), &remote) && self.admit(&remote).is_ok();
+            let incoming = conn.weak_handle();
+            let reply_wire = conn.stable_id();
+            let reply_alpn = std::env::var_os("KHOR_NET_DIAGNOSTICS")
+                .map(|_| String::from_utf8_lossy(conn.alpn()).into_owned());
             let (node, ep, remote) = (self.clone(), ep.clone(), remote.clone());
             tokio::spawn(async move {
                 let Ok(target) = crate::tunnel::read_target(&mut recv).await else {
@@ -3907,8 +4506,19 @@ impl Node {
                 };
                 // A hop's ask rides the exit's stream (round ROAD-3).
                 match crate::hop::Ask::of(&target) {
-                    Some(ask) => node.serve_hop(ep, &remote, ask, send, recv, paired).await,
+                    Some(ask) => {
+                        node.serve_hop(ep, &remote, incoming, ask, send, recv, paired)
+                            .await
+                    }
                     None => {
+                        khor_net::carry::observe_lifecycle(
+                            &remote,
+                            "tunnel_target_accepted",
+                            || {
+                                serde_json::json!({"wire": reply_wire, "stream": send.id().to_string(),
+                                "alpn": reply_alpn, "paired": paired})
+                            },
+                        );
                         let _ = crate::tunnel::serve_target(send, recv, &target, paired).await;
                     }
                 }
@@ -3940,9 +4550,14 @@ impl Node {
         remote: String,
         ep: std::sync::Arc<iroh::Endpoint>,
         done: tokio::sync::watch::Receiver<Option<bool>>,
+        observed_alpn: Option<Vec<u8>>,
     ) -> Result<(), String> {
         let seats = std::sync::Arc::new(tokio::sync::Semaphore::new(STREAMS_AT_ONCE));
         while let Ok((mut send, mut recv)) = conn.accept_bi().await {
+            // Opt-in facts on this actual stream, with no timer or observer
+            // task. These clocks are absent from ordinary resident work.
+            let accepted_at =
+                std::env::var_os("KHOR_NET_DIAGNOSTICS").map(|_| std::time::Instant::now());
             // 按机器暂停 (SHELL.md 第五轮 第 3 条): a machine this one has
             // paused gets no answer — the connection is closed, the way
             // a machine that is not there closes nothing. Asked per
@@ -3953,14 +4568,22 @@ impl Node {
                 conn.close(0u32.into(), b"paused");
                 return Ok(());
             }
+            let permit_asked_at = accepted_at.map(|_| std::time::Instant::now());
             let Ok(seat) = seats.clone().acquire_owned().await else {
                 return Ok(());
             };
+            let seated_at = accepted_at.map(|_| std::time::Instant::now());
             // A machine reached this one: these ears work (round NET-11).
             self.reached_at
                 .store(crate::now_ms(), std::sync::atomic::Ordering::Relaxed);
             let (node, ep, remote, mut done) =
                 (self.clone(), ep.clone(), remote.clone(), done.clone());
+            let reply_wire = conn.stable_id();
+            // ALPN is exposed on the concrete established/early states at
+            // admission, rather than on Connection<T>'s generic interface.
+            let reply_alpn = observed_alpn
+                .as_ref()
+                .map(|alpn| String::from_utf8_lossy(alpn).into_owned());
             tokio::spawn(async move {
                 let mut seat = Some(seat);
                 let mut content_response = None;
@@ -3968,10 +4591,18 @@ impl Node {
                 let Ok(bytes) = recv.read_to_end(MAX_FRAME).await else {
                     return;
                 };
+                let request_read_at = accepted_at.map(|_| std::time::Instant::now());
                 // **A watch keeps its stream** (`crate::watch`): answered
                 // as it goes, not once — through the same gate as every
                 // other request.
-                if let Ok(Request::Watch { scope }) = proto::question(&bytes) {
+                let question = proto::question(&bytes);
+                let listing = matches!(&question, Ok(Request::Ls { .. }));
+                let fetch_offset = match &question {
+                    Ok(Request::FetchPath { offset, .. })
+                    | Ok(Request::SatFetchPath { offset, .. }) => Some(*offset),
+                    _ => None,
+                };
+                if let Ok(Request::Watch { scope }) = question {
                     if early && *done.borrow() != Some(true) {
                         while done.borrow().is_none() {
                             if done.changed().await.is_err() {
@@ -4003,67 +4634,158 @@ impl Node {
                 }
                 #[cfg(test)]
                 let wire_tag = documents::flow_tests::FrameTag::new(node.root(), &remote);
-                let resp = match proto::question(&bytes) {
-                    Ok(req) => {
-                        if early && !req.rides_early() {
-                            while done.borrow().is_none() {
-                                if done.changed().await.is_err() {
-                                    return;
+                // A request FIN is normal. Only the reader abandoning its reply
+                // stops disposable content work; accepted controls and jobs keep
+                // their existing execution semantics.
+                let interruptible = matches!(
+                    &question,
+                    Ok(Request::ContentRead {
+                        action: crate::session_content::remote::Action::Resolve { .. }
+                            | crate::session_content::remote::Action::Window { .. }
+                            | crate::session_content::remote::Action::Record { .. }
+                    })
+                );
+                #[cfg(test)]
+                if let Ok(Request::ContentRead { action }) = &question {
+                    use crate::session_content::remote::Action;
+                    let kind = match action {
+                        Action::Begin { .. } => "begin",
+                        Action::Cancel { .. } => "cancel",
+                        Action::Window { .. } => "window",
+                        _ => "other",
+                    };
+                    crate::session_content::wire_tests::note_quic_reply_event(
+                        node.root(),
+                        reply_wire,
+                        send.id().to_string(),
+                        kind,
+                        None,
+                    );
+                }
+                let prepare = async {
+                    let resp = match question {
+                        Ok(req) => {
+                            if early && !req.rides_early() {
+                                while done.borrow().is_none() {
+                                    if done.changed().await.is_err() {
+                                        return None;
+                                    }
+                                }
+                                if *done.borrow() != Some(true) {
+                                    return None;
                                 }
                             }
-                            if *done.borrow() != Some(true) {
-                                return;
+                            let admission = if matches!(
+                                &req,
+                                Request::ContentRead {
+                                    action: crate::session_content::remote::Action::Window { .. }
+                                        | crate::session_content::remote::Action::Record { .. }
+                                }
+                            ) && node.admit(&remote).is_ok()
+                            {
+                                node.content_response_permit().map(|permit| {
+                                    content_response = Some(permit);
+                                    drop(seat.take());
+                                })
+                            } else {
+                                Ok(())
+                            };
+                            match admission {
+                                Err(why) => Response::Refused { why },
+                                Ok(()) => {
+                                    #[cfg(test)]
+                                    let response = node
+                                        .dispatch_wire(
+                                            &remote,
+                                            req,
+                                            &ep,
+                                            &wire_tag,
+                                            content_response.clone(),
+                                        )
+                                        .await;
+                                    #[cfg(not(test))]
+                                    let response = node
+                                        .dispatch(&remote, req, &ep, content_response.clone())
+                                        .await;
+                                    response
+                                }
                             }
                         }
-                        let admission = if matches!(
-                            &req,
-                            Request::ContentRead {
-                                action: crate::session_content::remote::Action::Window { .. }
-                                    | crate::session_content::remote::Action::Record { .. }
-                            }
-                        ) && node.admit(&remote).is_ok()
-                        {
-                            node.content_response_permit().map(|permit| {
-                                content_response = Some(permit);
-                                drop(seat.take());
-                            })
-                        } else {
-                            Ok(())
-                        };
-                        match admission {
-                            Err(why) => Response::Refused { why },
-                            Ok(()) => {
-                                #[cfg(test)]
-                                let response = node
-                                    .dispatch_wire(
-                                        &remote,
-                                        req,
-                                        &ep,
-                                        &wire_tag,
-                                        content_response.clone(),
-                                    )
-                                    .await;
-                                #[cfg(not(test))]
-                                let response = node
-                                    .dispatch(&remote, req, &ep, content_response.clone())
-                                    .await;
-                                response
-                            }
-                        }
+                        Err(e) => Response::Refused { why: e },
+                    };
+                    let prepared_at = accepted_at.map(|_| std::time::Instant::now());
+                    let Ok(frame) = proto::encode_response(&resp) else {
+                        return None;
+                    };
+                    let encoded_at = accepted_at.map(|_| std::time::Instant::now());
+                    #[cfg(test)]
+                    if content_response.is_some() {
+                        crate::session_content::wire_tests::pause_response(node.root()).await;
                     }
-                    Err(e) => Response::Refused { why: e },
+                    Some((frame, resp, prepared_at, encoded_at))
                 };
-                let Ok(frame) = proto::encode_response(&resp) else {
+                let frame = if interruptible {
+                    tokio::select! {
+                        biased;
+                        _stopped = send.stopped() => {
+                            #[cfg(test)]
+                            crate::session_content::wire_tests::note_quic_reply_event(
+                                node.root(), reply_wire, send.id().to_string(), "stop",
+                                Some(matches!(_stopped, Ok(Some(_)))),
+                            );
+                            return;
+                        },
+                        frame = Box::pin(prepare) => frame,
+                    }
+                } else {
+                    prepare.await
+                };
+                let Some((frame, _resp, prepared_at, encoded_at)) = frame else {
                     return;
                 };
-                #[cfg(test)]
-                if content_response.is_some() {
-                    crate::session_content::wire_tests::pause_response(node.root()).await;
-                }
+                let continued_file = fetch_offset.is_some_and(|offset| offset > 0)
+                    && matches!(&_resp, Response::PathSlice { .. });
+                let priority_applied =
+                    !continued_file || send.set_priority(CONTINUED_FILE_RESPONSE_PRIORITY).is_ok();
+                // Read before the first write/FIN, and only for the opt-in
+                // trace. Both experimental sources have the same readback.
+                let observed_priority = accepted_at.and_then(|_| send.priority().ok());
                 if send.write_all(&frame).await.is_ok() {
+                    let written_at = accepted_at.map(|_| std::time::Instant::now());
                     #[cfg(test)]
-                    documents::flow_tests::reply_written(&wire_tag, &resp);
-                    let _ = send.finish();
+                    documents::flow_tests::reply_written(&wire_tag, &_resp);
+                    let finished = send.finish();
+                    let observed = match (listing, fetch_offset, &_resp) {
+                        (true, _, Response::Dir { .. }) => {
+                            Some(("list_response_sent", "directory"))
+                        }
+                        (_, Some(_), Response::PathSlice { .. }) => {
+                            Some(("path_slice_response_sent", "fetch_path"))
+                        }
+                        _ => None,
+                    };
+                    if let Some((event, operation)) = observed.filter(|_| finished.is_ok()) {
+                        khor_net::carry::observe_lifecycle(&remote, event, || {
+                            let after_accept = |at| {
+                                accepted_at.zip(at).map(
+                                    |(a, b): (std::time::Instant, std::time::Instant)| {
+                                        b.duration_since(a).as_micros()
+                                    },
+                                )
+                            };
+                            serde_json::json!({
+                                "wire": reply_wire, "stream": send.id().to_string(),
+                                "alpn": reply_alpn,
+                                "early": early, "operation": operation, "offset": fetch_offset,
+                                "response_priority": observed_priority, "priority_applied": priority_applied,
+                                "frame_bytes": frame.len(), "timing_origin": "stream_accepted",
+                                "permit_asked_us": after_accept(permit_asked_at),
+                                "seated_us": after_accept(seated_at), "request_read_us": after_accept(request_read_at),
+                                "prepared_us": after_accept(prepared_at), "encoded_us": after_accept(encoded_at),
+                                "written_us": after_accept(written_at),
+                            })
+                        });
+                    }
                 }
             });
         }
@@ -4410,13 +5132,22 @@ impl Node {
                 // many ask (`accounts::refresh_quotas`). The cache read
                 // is off the reactor for the `Days` arm's reason.
                 let root = self.root().to_path_buf();
-                crate::accounts::refresh_quotas(root.clone());
+                // Reuse the admitted resident. Opening a second Node here
+                // bootstraps under the root mutation fence and can make the
+                // same round's Devices apply return Busy.
+                let resident = self.me();
+                crate::accounts::refresh_quotas(root.clone(), resident.clone());
                 let readings = tokio::task::spawn_blocking(move || {
                     let rt = tokio::runtime::Builder::new_current_thread()
                         .enable_all()
                         .build()
                         .map_err(|e| e.to_string())?;
-                    rt.block_on(crate::Node::open(root)?.quota_readings_held())
+                    rt.block_on(async {
+                        match resident {
+                            Some(node) => node.quota_readings_held().await,
+                            None => crate::Node::open(root)?.quota_readings_held().await,
+                        }
+                    })
                 })
                 .await
                 .map_err(|e| e.to_string())??;
@@ -4619,6 +5350,14 @@ impl Node {
                     truncated,
                 })
             }
+            Request::SessionImport { home, action } => {
+                if home != self.device() {
+                    return Err("Import request reached another source home".into());
+                }
+                Ok(Response::SessionImport {
+                    value: self.session_import_here(action).await?,
+                })
+            }
             Request::SessionRecovery {
                 home,
                 id,
@@ -4654,7 +5393,14 @@ impl Node {
                     .new_shell_run_here(home, &id, expected_run.as_deref(), token, cwd.as_deref())
                     .await?,
             }),
+            Request::Execution { action } => Ok(Response::Execution {
+                value: self.execution_here(action).await?,
+            }),
             Request::OpenShellOnce { start } => {
+                let id = self.open_legacy_shell_here(start).await?;
+                Ok(Response::Opened { session: id.0 })
+            }
+            Request::OpenTerminalOnce { start } => {
                 let id = self.open_shell_here(start).await?;
                 Ok(Response::Opened { session: id.0 })
             }
@@ -5827,6 +6573,81 @@ impl Node {
         Ok(reference)
     }
 
+    /// One authenticated route for discovery and import; incoming requests are
+    /// executed here and never bounced to a second machine.
+    pub async fn session_import_on(
+        &self,
+        home_hex: &str,
+        action: khor_core::session_import::SessionImportAction,
+    ) -> Result<khor_core::session_import::SessionImportReply, String> {
+        let home = Self::recovery_home(home_hex)?;
+        if serde_json::to_vec(&action)
+            .map_err(|error| error.to_string())?
+            .len()
+            > 16 * 1024
+        {
+            return Err("Import request exceeds its metadata budget".into());
+        }
+        if let Some(reply) = self
+            .via_serve(ipc::Op::SessionImport {
+                home,
+                action: action.clone(),
+            })
+            .await
+        {
+            return match reply? {
+                ipc::Reply::SessionImport { value } => Self::import_reply(home, value),
+                ipc::Reply::Refused { why } => Err(why),
+                _ => Err("Unexpected session import response".into()),
+            };
+        }
+        if home == self.device() {
+            return self.session_import_here(action).await;
+        }
+        let ep = endpoint::bind_with(
+            self.secret_key().clone(),
+            self.relay_map(),
+            self.relays_n0(),
+        )
+        .await
+        .map_err(|error| error.to_string())?;
+        let result = self.session_import_with(&ep, home, action).await;
+        ep.close().await;
+        result
+    }
+    fn import_reply(
+        home: khor_core::DeviceId,
+        value: khor_core::session_import::SessionImportReply,
+    ) -> Result<khor_core::session_import::SessionImportReply, String> {
+        let actual = match &value {
+            khor_core::session_import::SessionImportReply::Catalog { value } => &value.home,
+            khor_core::session_import::SessionImportReply::Imported { home, .. } => home,
+        };
+        if *actual != home.hex() {
+            return Err("Import reply names another source home".into());
+        }
+        Ok(value)
+    }
+    async fn session_import_with(
+        &self,
+        ep: &iroh::Endpoint,
+        home: khor_core::DeviceId,
+        action: khor_core::session_import::SessionImportAction,
+    ) -> Result<khor_core::session_import::SessionImportReply, String> {
+        if home == self.device() {
+            return self.session_import_here(action).await;
+        }
+        let device = self.recovery_peer(home)?;
+        match self
+            .ask_on(ep, &device, &Request::SessionImport { home, action })
+            .await?
+        {
+            Response::SessionImport { value } => Self::import_reply(home, value),
+            Response::Refused { why } => Err(why),
+            _ => Err("Unexpected session import response".into()),
+        }
+    }
+
     pub async fn session_recovery_on(
         &self,
         home_hex: &str,
@@ -6103,7 +6924,7 @@ impl Node {
         start.validate()?;
         self.refuse_unless_it_hosts(machine)?;
         if let Some(reply) = self
-            .via_serve(ipc::Op::OpenShellOn {
+            .via_serve(ipc::Op::OpenTerminalOn {
                 machine: machine.into(),
                 start: start.clone(),
             })
@@ -6132,13 +6953,113 @@ impl Node {
         machine: &str,
         start: crate::shell_start::ShellStart,
     ) -> Result<crate::SessionId, String> {
-        let (channel, home) = self.resolve(machine)?;
-        if home == self.device() {
-            return self.open_shell_here(start).await;
-        }
-        self.ask_open(ep, &channel, Request::OpenShellOnce { start }, None)
+        self.open_shell_on_with_contract(ep, machine, start, None)
             .await
     }
+
+    async fn open_legacy_shell_on_with(
+        &self,
+        ep: &iroh::Endpoint,
+        machine: &str,
+        legacy: crate::proto::LegacyShellStart,
+    ) -> Result<crate::SessionId, String> {
+        self.open_shell_on_with_contract(ep, machine, legacy.clone().into(), Some(legacy))
+            .await
+    }
+
+    async fn open_shell_on_with_contract(
+        &self,
+        ep: &iroh::Endpoint,
+        machine: &str,
+        start: crate::shell_start::ShellStart,
+        legacy: Option<crate::proto::LegacyShellStart>,
+    ) -> Result<crate::SessionId, String> {
+        let (channel, home) = self.execution_target(machine)?;
+        if home == self.device() {
+            return match legacy {
+                Some(legacy) => self.open_legacy_shell_here(legacy).await,
+                None => self.open_shell_here(start).await,
+            };
+        }
+        let device = self.recovery_peer(home)?;
+        if device.sponsor.is_some() {
+            if !start.command.trim().is_empty()
+                || start.argv.as_ref().is_some_and(|args| !args.is_empty())
+            {
+                return Err(msg::terminal_ssh_startup().into());
+            }
+            return self
+                .open_on_with(
+                    ep,
+                    &channel,
+                    crate::kind::SHELL,
+                    &start.title,
+                    &start.cwd,
+                    &[],
+                    (start.cols, start.rows),
+                    Some(&start.token),
+                )
+                .await;
+        }
+
+        let asked = std::time::Instant::now();
+        // Preserve the published operation for an older caller and peer. New
+        // argv/readiness semantics must travel only under their new word.
+        let request = match legacy {
+            Some(start) => Request::OpenShellOnce { start },
+            None => Request::OpenTerminalOnce { start },
+        };
+        match self.ask_on(ep, &device, &request).await? {
+            Response::Opened { session } => {
+                let left =
+                    (ipc::DEADLINE_FAR - Duration::from_secs(3)).saturating_sub(asked.elapsed());
+                let id = crate::SessionId(session);
+                self.list_what_opened_on(ep, &device, &id, LISTED_WITHIN.min(left))
+                    .await;
+                Ok(id)
+            }
+            Response::Refused { why } => Err(why),
+            other => Err(msg::peer_non_answer(format_args!("{other:?}"))),
+        }
+    }
+
+    fn legacy_shell_receipt(&self, token: &str) -> Result<Option<crate::SessionId>, String> {
+        let receipt = self.root().join(".khor/opened").join(token);
+        if !receipt.try_exists().map_err(|error| error.to_string())? {
+            return Ok(None);
+        }
+        let id = crate::once::made(self.root(), token)
+            .filter(|id| id.starts_with("shell/") && id.len() > "shell/".len() && id.len() <= 512)
+            .map(crate::SessionId)
+            .ok_or("Legacy shell creation receipt is invalid; refusing to repeat startup")?;
+        let directory = self.live.dir_of(&id).ok_or(
+            "Legacy shell creation receipt names an invalid session; refusing to repeat startup",
+        )?;
+        let meta = std::fs::read(directory.join("meta.json"))
+            .ok()
+            .and_then(|bytes| serde_json::from_slice::<crate::live::Meta>(&bytes).ok())
+            .ok_or("Legacy shell creation receipt has no registered session; refusing to repeat startup")?;
+        if meta.kind != crate::kind::SHELL || meta.id != id.0 || meta.gui_run.is_some() {
+            return Err("Legacy shell creation receipt does not name its registered shell; refusing to repeat startup".into());
+        }
+        Ok(Some(id))
+    }
+
+    async fn open_legacy_shell_here(
+        &self,
+        legacy: crate::proto::LegacyShellStart,
+    ) -> Result<crate::SessionId, String> {
+        self.refuse_unless_hosting()?;
+        let start: crate::shell_start::ShellStart = legacy.into();
+        start.validate()?;
+        let token = start.token.clone();
+        let id = self.open_shell_here(start).await?;
+        // Retain the published ledger too, so an older resident still answers
+        // this legacy caller's retry after a rollback without another startup.
+        crate::once::note(self.root(), &token, &id.0)?;
+        Ok(id)
+    }
+
     async fn open_shell_here(
         &self,
         start: crate::shell_start::ShellStart,
@@ -6154,15 +7075,38 @@ impl Node {
         self.refuse_unless_hosting()?;
         start.validate()?;
         let _held = crate::once::lock(&start.token).await;
-        let cwd = crate::shell_start::directory(&start.cwd)?;
-        let id = match crate::once::made(self.root(), &start.token) {
-            Some(id) => crate::SessionId(id),
-            None => {
-                let id = crate::SessionId(format!("shell/{}", fresh_leaf()?));
-                crate::once::note(self.root(), &start.token, &id.0)?;
-                id
+        let fingerprint = blake3::hash(
+            &serde_json::to_vec(&(
+                &start.title,
+                &start.cwd,
+                &start.command,
+                &start.argv,
+                start.headless,
+                &selected_shell,
+            ))
+            .map_err(|e| e.to_string())?,
+        )
+        .to_hex()
+        .to_string();
+        if let Some(id) = self.legacy_shell_receipt(&start.token)? {
+            let equivalent = !start.headless
+                && start.argv.is_none()
+                && selected_shell.is_none()
+                && ancestry.is_none();
+            let binding = if equivalent {
+                fingerprint.as_str()
+            } else {
+                "legacy-startup-reserved"
+            };
+            let (_durable, original) =
+                crate::once::claim_shell_with_id(self.root(), &start.token, binding, Some(&id.0))?;
+            if !equivalent {
+                return Err("Legacy shell creation token already ran; new startup options require a new token".into());
             }
-        };
+            return Ok(crate::SessionId(original));
+        }
+        let (_durable, id) = crate::once::claim_shell(self.root(), &start.token, &fingerprint)?;
+        let id = crate::SessionId(id);
         if self
             .live
             .dir_of(&id)
@@ -6170,9 +7114,25 @@ impl Node {
         {
             return Ok(id);
         }
+        let cwd = crate::shell_start::directory(&start.cwd)?;
         let live = self.live.clone();
+        let shell_scripts = crate::integration::dir(&self.root().join(".khor"));
         let id = tokio::task::spawn_blocking(move || {
             let shell = selected_shell.unwrap_or_else(crate::shell_start::default_shell);
+            let startup =
+                crate::shell_start::startup_command(&shell, &start.command, start.argv.as_deref())?;
+            let argv = crate::shell_start::command(&shell);
+            if crate::find_program(&shell, Node::user_path()).is_none() {
+                return Err(msg::command_not_found(&shell, Node::user_path()));
+            }
+            if !startup.trim().is_empty()
+                && crate::integration::plan(&shell_scripts, &argv, |key| std::env::var(key).ok())
+                    .is_none()
+            {
+                return Err(
+                    "Automatic terminal startup requires a supported shell integration".into(),
+                );
+            }
             let title = if start.title.trim().is_empty() {
                 std::path::Path::new(&shell)
                     .file_name()
@@ -6196,13 +7156,14 @@ impl Node {
             let dir = live
                 .dir_of(&id)
                 .ok_or_else(|| msg::not_a_session_id(&id.0))?;
-            crate::host::spawn_shell_at(
+            crate::host::spawn_shell_with_readiness_at(
                 &cwd,
                 &dir,
                 &id,
-                &[shell],
+                &argv,
                 (start.cols.clamp(20, 500), start.rows.clamp(5, 200)),
-                &start.command,
+                &startup,
+                start.headless,
             )?;
             Ok::<_, String>(id)
         })
@@ -9465,6 +10426,24 @@ impl Node {
         cap: Option<u64>,
         resume: bool,
     ) -> Result<(u64, std::path::PathBuf), String> {
+        let separate =
+            std::env::var("KHOR_EXPERIMENT_PULL_WIRE").is_ok_and(|layout| layout == "separate");
+        self.pull_into_with_layout(ep, machine, path, fell, job, cap, resume, separate)
+            .await
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    async fn pull_into_with_layout(
+        &self,
+        ep: &iroh::Endpoint,
+        machine: &str,
+        path: &str,
+        fell: crate::files::Landing,
+        job: Option<&crate::drops::Job>,
+        cap: Option<u64>,
+        resume: bool,
+        separate: bool,
+    ) -> Result<(u64, std::path::PathBuf), String> {
         use std::io::Write;
         let (channel, home) = self.resolve(machine)?;
         let stopped = job.map(|j| j.stopped.clone());
@@ -9577,9 +10556,41 @@ impl Node {
         // before a partial file is made for it. Each slice is then asked
         // on its own: a reading, so a wire that dies mid-file costs one
         // slice asked again on a fresh wire, not the whole pull.
-        self.line_to(ep, &dial_to, wires::Proto::Main)
-            .await
-            .map_err(|e| unreached_words(&dial_to.name, e))?;
+        let stopped = async {
+            match job {
+                Some(job) => job.wait_stopped().await,
+                None => std::future::pending::<()>().await,
+            }
+        };
+        tokio::pin!(stopped);
+        tokio::select! {
+            biased;
+            _ = &mut stopped => {
+                let _ = std::fs::remove_file(&fell.part);
+                let _ = std::fs::remove_file(PullNote::path_of(&fell.part));
+                return Err(crate::drops::cancelled());
+            }
+            line = self.line_to(ep, &dial_to, wires::Proto::Main) => {
+                line.map_err(|e| unreached_words(&dial_to.name, e))?;
+            }
+        }
+        let pool = if separate {
+            self.pull_peer(ep, &dial_to)
+        } else {
+            None
+        };
+        let mut transfer: Option<std::sync::Arc<pull_pool::Lease>> = None;
+        let mut opening: Option<
+            std::pin::Pin<
+                Box<
+                    dyn std::future::Future<
+                            Output = Result<std::sync::Arc<pull_pool::Lease>, PreparationFailure>,
+                        > + Send
+                        + '_,
+                >,
+            >,
+        > = None;
+        let mut attempted_transfer = pool.is_none();
         // **A pull resumes from what it already has** (round NET-4), the
         // way an offer does from its `.partial`: the bytes so far stay in
         // the part file, and beside it what they are bytes *of* — which
@@ -9610,6 +10621,9 @@ impl Node {
             ),
         };
         let resumed_from = offset;
+        let progress = pool
+            .as_ref()
+            .map(|_| std::sync::Arc::new(pull_pool::Progress::new(offset)));
         let ask = |at: u64| match &sat {
             Some(s) => Request::SatFetchPath {
                 sat: s.clone(),
@@ -9629,30 +10643,85 @@ impl Node {
             Spoiled(String),
         }
         let outcome: Result<u64, Stop> = 'pull: loop {
-            // A drop cancelled (item 71): before the next slices are
-            // asked, and its part file goes as a spoiled one does.
-            if is_stopped() {
-                break 'pull Err(Stop::Spoiled(crate::drops::cancelled()));
-            }
-            // The first slice alone until the file's (size, mtime) is
-            // known; then up to `PULL_AHEAD` asked at once, written in
-            // order (the offers' shape, `pull_one`).
-            let total = contract.map(|(t, _)| t);
-            let offsets: Vec<u64> = match total {
-                None => vec![offset],
-                Some(t) => (0..PULL_AHEAD)
-                    .map(|k| offset + k * proto::SLICE)
-                    .take_while(|o| *o < t)
-                    .collect(),
-            };
-            if offsets.is_empty() {
-                break Ok(offset);
-            }
-            let reqs: Vec<Request> = offsets.iter().map(|&at| ask(at)).collect();
-            let asks = reqs.iter().map(|r| self.ask_on(ep, &dial_to, r)).collect();
-            for (at, resp) in offsets.iter().zip(join_all(asks).await) {
-                if *at != offset {
-                    break;
+            let preparing = pool.is_some() && (!attempted_transfer || opening.is_some());
+            let mut window =
+                pull_window::Window::new(offset, if preparing { 1 } else { PULL_AHEAD as usize });
+            let target = &dial_to;
+            loop {
+                // No detached work: cancellation or a version/offset restart
+                // drops both pending requests and ready out-of-order slices.
+                if is_stopped() {
+                    break 'pull Err(Stop::Spoiled(crate::drops::cancelled()));
+                }
+                let next = tokio::select! {
+                    biased;
+                    _ = &mut stopped => {
+                        break 'pull Err(Stop::Spoiled(crate::drops::cancelled()));
+                    }
+                    prepared = async { opening.as_mut().unwrap().as_mut().await }, if opening.is_some() => {
+                        opening = None;
+                        match prepared {
+                            Ok(line) => transfer = Some(line),
+                            Err(PreparationFailure::RetryCached(_words)) => {}
+                            Err(PreparationFailure::Stop(words)) => {
+                                break 'pull Err(Stop::Unreached(words));
+                            }
+                        }
+                        window.widen(PULL_AHEAD as usize);
+                        continue;
+                    }
+                    next = window.next(contract.map(|(total, _)| total), |at| {
+                        let req = ask(at);
+                        let line = transfer.clone();
+                        let peer = pool.clone();
+                        let progress = progress.clone();
+                        let first = at == resumed_from;
+                        async move {
+                            let by = crate::deadline::current().unwrap_or_else(|| {
+                                tokio::time::Instant::now() + req.budget()
+                                    .saturating_add(DIAL_MOST)
+                                    .saturating_add(crate::hop::HOP_WITHIN)
+                                    .saturating_add(wires::RTT_BUDGET_MOST)
+                            });
+                            let (answer, credit) = crate::deadline::scope(by, async {
+                                let credit = match peer {
+                                    Some(peer) => match peer.credit(first, at, progress.as_deref().unwrap()).await {
+                                        Ok(credit) => Some(credit),
+                                        Err(error) => return (Err(error), None),
+                                    },
+                                    None => None,
+                                };
+                                let answer = match line {
+                                    Some(line) => self.ask_on_transfer(ep, target, &req, &line.line.0).await,
+                                    None => self.ask_on(ep, target, &req).await,
+                                };
+                                let answer = match answer {
+                                    Ok(Response::PathSlice { bytes, .. }) if bytes.len() > proto::SLICE as usize => {
+                                        Err("file slice exceeds protocol limit".into())
+                                    }
+                                    other => other,
+                                };
+                                (answer, credit)
+                            }).await;
+                            #[cfg(test)]
+                            let credit = credit.map(|mut credit| {
+                                if matches!(&answer, Ok(Response::PathSlice { .. })) {
+                                    credit.decoded();
+                                }
+                                credit
+                            });
+                            (at, answer, credit)
+                        }
+                    }) => next,
+                };
+                if is_stopped() {
+                    break 'pull Err(Stop::Spoiled(crate::drops::cancelled()));
+                }
+                let Some((at, resp, _credit)) = next else {
+                    break 'pull Ok(offset);
+                };
+                if at != offset {
+                    continue 'pull;
                 }
                 match resp {
                     Ok(Response::PathSlice {
@@ -9690,6 +10759,9 @@ impl Node {
                                 if offset == resumed_from && resumed_from > 0 {
                                     let _ = out.set_len(0);
                                     offset = 0;
+                                    if let Some(progress) = &progress {
+                                        progress.advance(0);
+                                    }
                                     contract = None;
                                     continue 'pull;
                                 }
@@ -9706,12 +10778,33 @@ impl Node {
                             break 'pull Err(Stop::Spoiled(e.to_string()));
                         }
                         offset += bytes.len() as u64;
+                        if let Some(progress) = &progress {
+                            progress.advance(offset);
+                        }
                         if let Some(job) = job {
                             job.moved
                                 .store(offset, std::sync::atomic::Ordering::Relaxed);
                         }
                         if offset >= total {
                             break 'pull Ok(offset);
+                        }
+                        if !attempted_transfer {
+                            attempted_transfer = true;
+                            opening = Some(Box::pin(self.pooled_transfer(
+                                ep,
+                                &dial_to,
+                                pool.as_ref().unwrap(),
+                            )));
+                            // Drop the first-slice window before preparing the rest.
+                            continue 'pull;
+                        }
+                        // A cached request can keep the original window moving even
+                        // when optional preparation is still waiting for a handshake.
+                        window.widen(PULL_AHEAD as usize);
+                        // A legitimate short read resumes from the bytes
+                        // committed, rather than using precomputed later offsets.
+                        if (bytes.len() as u64) < proto::SLICE {
+                            continue 'pull;
                         }
                     }
                     Ok(Response::Refused { why }) => break 'pull Err(Stop::Spoiled(why)),
@@ -9725,6 +10818,11 @@ impl Node {
             }
         };
         drop(out);
+        let outcome = if is_stopped() {
+            Err(Stop::Spoiled(crate::drops::cancelled()))
+        } else {
+            outcome
+        };
         match outcome {
             Ok(total) => {
                 std::fs::rename(&fell.part, &fell.dest).map_err(|e| e.to_string())?;
@@ -10636,14 +11734,21 @@ impl Node {
                 for (is_origin, d) in sources {
                     if !here && let Err(e) = self.line_to(ep, &d, wires::Proto::Main).await {
                         tried.push(match (is_origin, e) {
+                            (_, DialFailure::CallerExpired) => msg::dial_timed_out().to_string(),
                             (true, DialFailure::TimedOut) => msg::take_sender_down(&d.name),
                             (false, DialFailure::TimedOut) => msg::take_holder_down(&d.name),
-                            (true, DialFailure::Refused(why) | DialFailure::Asleep(why)) => {
-                                msg::take_sender_failed(&d.name, why)
-                            }
-                            (false, DialFailure::Refused(why) | DialFailure::Asleep(why)) => {
-                                msg::take_holder_failed(&d.name, why)
-                            }
+                            (
+                                true,
+                                DialFailure::Refused(why)
+                                | DialFailure::Transport(why)
+                                | DialFailure::Asleep(why),
+                            ) => msg::take_sender_failed(&d.name, why),
+                            (
+                                false,
+                                DialFailure::Refused(why)
+                                | DialFailure::Transport(why)
+                                | DialFailure::Asleep(why),
+                            ) => msg::take_holder_failed(&d.name, why),
                         });
                         continue;
                     }
@@ -10813,13 +11918,11 @@ impl Node {
         let (job, fresh) = crate::road::job(&key);
         let ended = job.state();
         if !fresh && ended.as_ref().is_ok_and(|s| !s.done) {
-            job.stopped
-                .store(true, std::sync::atomic::Ordering::Relaxed);
+            job.request_stop();
             return Ok(());
         }
         if fresh || ended.is_err() {
-            job.stopped
-                .store(true, std::sync::atomic::Ordering::Relaxed);
+            job.request_stop();
             job.finish(Err(crate::road::cancelled()));
         }
         if self
@@ -11131,30 +12234,47 @@ impl Node {
         // 「the machine that issued the ticket is not answering」, and the
         // two are checked in different places. Beside, so the answer is in
         // by the time the dial gives up rather than three seconds after.
-        let probe = tokio::spawn(crate::doctor::any_relay_answers(relays.clone()));
+        let mut probe = Aborts(Some(tokio::spawn(crate::doctor::any_relay_answers(
+            relays.clone(),
+        ))));
         let dialled = crate::journal::BY
             .scope(
                 crate::journal::By::Pair,
-                self.dial_with(ep, &t.id, &t.direct, &relays, ALPN, DIAL_TIMEOUT),
+                self.dial_with(
+                    ep,
+                    &t.id,
+                    &t.direct,
+                    &relays,
+                    ALPN,
+                    DialWindow {
+                        within: DIAL_TIMEOUT,
+                        by: None,
+                    },
+                ),
             )
             .await;
         let conn = match dialled {
-            Ok(conn) => {
-                probe.abort();
-                conn
-            }
+            Ok(conn) => conn,
             Err(DialFailure::TimedOut) => {
-                return Err(if probe.await.unwrap_or(true) {
+                let answer = probe.0.as_mut().expect("pairing probe is owned");
+                return Err(if answer.await.unwrap_or(true) {
                     msg::inviter_unreachable_timeout().to_string()
                 } else {
                     msg::no_relay_reached().to_string()
                 });
             }
-            Err(DialFailure::Refused(why) | DialFailure::Asleep(why)) => {
-                probe.abort();
+            Err(DialFailure::CallerExpired) => {
+                return Err(msg::dial_timed_out().to_string());
+            }
+            Err(
+                DialFailure::Refused(why) | DialFailure::Transport(why) | DialFailure::Asleep(why),
+            ) => {
                 return Err(msg::inviter_unreachable(why));
             }
         };
+        // The dial has answered; no diagnostic task should outlive it while
+        // the pairing exchange uses the connection it established.
+        drop(probe);
         self.pair_over(&conn, &t, report_addrs).await
     }
 
@@ -11809,8 +12929,10 @@ impl Node {
 
     async fn sync_device(&self, ep: &iroh::Endpoint, d: &DeviceInfo) -> Result<String, String> {
         let unreached = |e| match e {
-            DialFailure::TimedOut => msg::dial_timed_out().to_string(),
-            DialFailure::Refused(why) | DialFailure::Asleep(why) => msg::cant_reach_plain(why),
+            DialFailure::TimedOut | DialFailure::CallerExpired => msg::dial_timed_out().to_string(),
+            DialFailure::Refused(why) | DialFailure::Transport(why) | DialFailure::Asleep(why) => {
+                msg::cant_reach_plain(why)
+            }
         };
         // **The round's opening question rides a redial's handshake**
         // (`Node::ask_early`): it is a reading, so after a wake or a
@@ -12545,15 +13667,14 @@ pub(crate) async fn content_on_resident(
     if file.ipc_port == 0 {
         return Err("content resident has no handoff port".into());
     }
-    let reply = ipc::call_refreshing(
-        file.ipc_port,
-        &file.ipc_cookie,
+    let reply = ipc::call_target(
+        file.ipc(),
         ipc::Op::ContentRead {
             action: action.clone(),
         },
         || {
             let latest = endpoint_file_at(root).ok().flatten()?;
-            Some((latest.ipc_port, latest.ipc_cookie))
+            Some(latest.ipc())
         },
     )
     .await?;
@@ -12776,6 +13897,22 @@ pub(crate) struct Line {
     pub(crate) conn: iroh::endpoint::Connection,
 }
 
+/// The isolated experiment's file connection. Pending slice futures borrow it,
+/// so they are dropped before this closes on completion/error/cancellation.
+struct TransferLine(Line);
+
+#[derive(Debug)]
+enum PreparationFailure {
+    RetryCached(String),
+    Stop(String),
+}
+
+impl Drop for TransferLine {
+    fn drop(&mut self) {
+        self.0.conn.close(0u32.into(), b"pull ended");
+    }
+}
+
 /// What [`Node::ask_early`] came to.
 enum Early {
     /// Answered inside the redial's handshake.
@@ -12786,10 +13923,13 @@ enum Early {
     NotTaken,
 }
 
-/// Why one exchange produced no answer — three things, because only the
-/// first may be asked again and only the first retires the wire.
+/// Why one exchange produced no answer. Only Unreached permits a read
+/// retry; independent liveness evidence also protects abandoned requests.
 #[derive(Debug)]
 pub(crate) enum Miss {
+    /// The local operation's total budget ended. Independent liveness
+    /// evidence may still retire a truly silent wire via RetireUnheard.
+    CallerExpired,
     /// The wire is dead, or the far machine never acknowledged the
     /// request: nothing came back within [`wires::ACK_WITHIN`] of
     /// sending, or nothing for [`wires::SILENT_AFTER`] after that, or the
@@ -12806,6 +13946,7 @@ pub(crate) enum Miss {
 impl Miss {
     pub(crate) fn words(self) -> String {
         match self {
+            Miss::CallerExpired => msg::dial_timed_out().to_string(),
             Miss::Unreached(w) | Miss::Late(w) | Miss::Garbled(w) => w,
         }
     }
@@ -12847,7 +13988,47 @@ async fn exchange(
     req: &Request,
     budget: Duration,
 ) -> Result<Response, Miss> {
-    exchange_inner(conn, who, req, budget, None).await
+    crate::deadline::wait(
+        crate::deadline::current(),
+        exchange_inner(conn, who, req, budget, None, None, None),
+    )
+    .await
+    .map_err(|_| Miss::CallerExpired)?
+}
+
+/// Completed business replies in the existing opt-in lifecycle trace. Never
+/// includes a path or payload. An early answer's clock starts at its dial;
+/// an ordinary answer's starts at exchange, so those durations stay labelled.
+fn observe_workload_reply(
+    conn: &iroh::endpoint::Connection,
+    req: &Request,
+    response: &Response,
+    stream: impl std::fmt::Display,
+    early: bool,
+    elapsed: impl FnOnce() -> Duration,
+) {
+    let (event, operation, offset, payload_bytes) = match (req, response) {
+        (Request::Ls { .. }, Response::Dir { .. }) => {
+            ("list_response_received", "directory", None, None)
+        }
+        (Request::FetchPath { offset, .. }, Response::PathSlice { bytes, .. }) => (
+            "path_slice_received",
+            "fetch_path",
+            Some(*offset),
+            Some(bytes.len()),
+        ),
+        _ => return,
+    };
+    khor_net::carry::observe_lifecycle(conn.remote_id(), event, || {
+        serde_json::json!({
+            "wire": conn.stable_id(), "stream": stream.to_string(), "early": early,
+            "alpn": String::from_utf8_lossy(conn.alpn()),
+            "operation": operation, "offset": offset, "payload_bytes": payload_bytes,
+            "elapsed_us": elapsed().as_micros(),
+            "timing_origin": if early { "early_dial_started" } else { "exchange_started" },
+            "measurements": khor_net::path::path_facts(conn),
+        })
+    });
 }
 
 async fn exchange_inner(
@@ -12856,6 +14037,8 @@ async fn exchange_inner(
     req: &Request,
     budget: Duration,
     mut attempt: Option<&mut DocAttempt>,
+    owner: Option<&RetireUnheard<'_>>,
+    endpoint: Option<&iroh::Endpoint>,
 ) -> Result<Response, Miss> {
     let frame = proto::encode_request(req).map_err(Miss::Garbled)?;
     if let Some(attempt) = attempt.as_deref_mut() {
@@ -12864,6 +14047,7 @@ async fn exchange_inner(
     let sent = tokio::time::Instant::now();
     let mut count = wires::heard_count(conn);
     let mut heard: Option<tokio::time::Instant> = None;
+    let mut relay_checked = false;
     // When every path was asked whether it is there, and how long the
     // answers get (`wires::ask_every_path`).
     let mut asked: Option<(tokio::time::Instant, Duration)> = None;
@@ -12879,6 +14063,15 @@ async fn exchange_inner(
             .open_bi()
             .await
             .map_err(|e| Miss::Unreached(msg::cant_reach_named(who, msg::cant_open_stream(e))))?;
+        khor_net::carry::observe_lifecycle(conn.remote_id(), "request_stream_opened", || {
+            serde_json::json!({
+                "wire": conn.stable_id(), "stream": send.id().to_string(),
+                "alpn": String::from_utf8_lossy(conn.alpn()),
+                "reading": req.is_reading(), "measurements": khor_net::path::path_facts(conn),
+                "operation": match req { Request::Ls { .. } => "directory", Request::FetchPath { .. } => "fetch_path", _ => "other" },
+                "exchange_us": sent.elapsed().as_micros(),
+            })
+        });
         send.write_all(&frame)
             .await
             .map_err(|e| lost(msg::cant_send(e)))?;
@@ -12890,11 +14083,13 @@ async fn exchange_inner(
             .read_to_end(MAX_FRAME)
             .await
             .map_err(|e| lost(msg::no_answer(e)))?;
-        match attempt.as_deref_mut() {
+        let response = match attempt.as_deref_mut() {
             Some(attempt) => proto::answer_doc_observed(&bytes, &mut attempt.response_body),
             None => proto::answer(&bytes),
         }
-        .map_err(Miss::Garbled)
+        .map_err(Miss::Garbled)?;
+        observe_workload_reply(conn, req, &response, send.id(), false, || sent.elapsed());
+        Ok(response)
     };
     tokio::pin!(work);
     let mut beat = tokio::time::interval(LIVENESS_BEAT);
@@ -12909,10 +14104,28 @@ async fn exchange_inner(
                     count = seen;
                     heard = Some(now);
                     asked = None;
+                    if let Some(owner) = owner {
+                        owner.wires.heard(&owner.line.id, owner.line.proto, conn);
+                    }
                 }
                 // The road's own patience, read each beat: QUIC refines its
                 // round trip as the answers come (`wires::Patience`).
                 let patience = wires::Patience::of(conn);
+                // A live application request can expose a silently wedged
+                // relay TCP flow before the idle 15s heartbeat. Ask the
+                // transport's existing health checker; the pending work and
+                // QUIC connection stay intact, with no application replay.
+                // Any received datagram suppresses this early check: a slow
+                // answer after an ACK is not a transport failure.
+                let relay_check_after = wires::rtt_of(conn).saturating_mul(3).max(LIVENESS_BEAT);
+                if !relay_checked
+                    && heard.is_none()
+                    && now.duration_since(sent) >= relay_check_after
+                    && conn.paths().iter().any(|path| path.is_selected() && path.is_relay())
+                    && let Some(endpoint) = endpoint
+                {
+                    relay_checked = endpoint.check_relay_connections();
+                }
                 let quiet = match heard {
                     None => now.duration_since(sent) >= patience.ack,
                     Some(at) => now.duration_since(at) >= patience.silent,
@@ -12920,7 +14133,7 @@ async fn exchange_inner(
                 // **Silent on every path, not just the one in use**: each
                 // path is asked first, and only if none answers within its
                 // grace is the wire dead.
-                if quiet {
+                if quiet && !owner.is_some_and(|owner| owner.probe()) {
                     match asked {
                         None => asked = Some((now, wires::ask_every_path(conn))),
                         Some((at, grace)) if now.duration_since(at) < grace => {}
@@ -12947,29 +14160,35 @@ async fn request(
         .map_err(Miss::words)
 }
 
-/// Retires a wire whose request was abandoned before an answer — an ipc
-/// deadline cancelling the op, a face going away — **if nothing at all
-/// was heard on it since the request went out** and that silence has
-/// already lasted [`wires::ACK_WITHIN`]. Shorter than that is no
-/// evidence either way, and the resident's tick catches a wire that
-/// stays silent.
+/// A cancelled request ends only its own stream. Long unanswered waits
+/// start or join the wire owner's all-path confirmation, whose grace and
+/// receive count are independent of the caller's deadline (F7/F8).
 struct RetireUnheard<'a> {
-    wires: &'a wires::Wires,
+    wires: &'a std::sync::Arc<wires::Wires>,
     line: &'a Line,
     count: u64,
     at: std::time::Instant,
+    runtime: Option<tokio::runtime::Handle>,
     armed: bool,
 }
 
 impl<'a> RetireUnheard<'a> {
-    fn new(wires: &'a wires::Wires, line: &'a Line) -> Self {
+    fn new(wires: &'a std::sync::Arc<wires::Wires>, line: &'a Line) -> Self {
         Self {
             wires,
             line,
             count: wires::heard_count(&line.conn),
             at: std::time::Instant::now(),
+            runtime: tokio::runtime::Handle::try_current().ok(),
             armed: true,
         }
+    }
+
+    fn probe(&self) -> bool {
+        self.runtime.as_ref().is_some_and(|runtime| {
+            self.wires
+                .probe_unheard(&self.line.id, self.line.proto, &self.line.conn, runtime)
+        })
     }
 
     fn disarm(&mut self) {
@@ -12979,16 +14198,19 @@ impl<'a> RetireUnheard<'a> {
 
 impl Drop for RetireUnheard<'_> {
     fn drop(&mut self) {
-        if self.armed
-            && wires::heard_count(&self.line.conn) == self.count
-            && self.at.elapsed() >= wires::Patience::of(&self.line.conn).ack
+        if !self.armed {
+            return;
+        }
+        let elapsed = self.at.elapsed();
+        let patience = wires::Patience::of(&self.line.conn);
+        if elapsed >= patience.ack
+            && (wires::heard_count(&self.line.conn) == self.count || elapsed >= patience.silent)
         {
-            self.wires.retire(
-                &self.line.id,
-                self.line.proto,
-                &self.line.conn,
-                wires::Retired::Unanswered,
-            );
+            // With no progress, ACK patience justifies a probe. A longer
+            // abandoned wait can have old handshake ACKs, too: validate its
+            // current count rather than treating those as indefinite health.
+            // Only the wire owner's subsequent all-path proof can retire it.
+            self.probe();
         }
     }
 }
@@ -13008,8 +14230,11 @@ async fn wait_for(job: &crate::road::Job) -> Result<(u64, Vec<String>), String> 
 /// A dial's failure as the sentence a person reads.
 pub(crate) fn unreached_words(name: &str, e: DialFailure) -> String {
     match e {
+        DialFailure::CallerExpired => msg::dial_timed_out().to_string(),
         DialFailure::TimedOut => msg::machine_unreachable_timeout(name),
-        DialFailure::Refused(why) | DialFailure::Asleep(why) => msg::cant_reach_named(name, why),
+        DialFailure::Refused(why) | DialFailure::Transport(why) | DialFailure::Asleep(why) => {
+            msg::cant_reach_named(name, why)
+        }
     }
 }
 
@@ -13126,6 +14351,13 @@ impl Node {
                 .store(offset, std::sync::atomic::Ordering::Relaxed);
         }
         let mut moved = 0u64;
+        let stopped = async {
+            match job {
+                Some(job) => job.wait_stopped().await,
+                None => std::future::pending::<()>().await,
+            }
+        };
+        tokio::pin!(stopped);
         // The first slice alone (it is the one that marks the offer
         // started over there), then up to `PULL_AHEAD` asked at once and
         // written in order.
@@ -13146,7 +14378,17 @@ impl Node {
                 })
                 .collect();
             let asks = fetches.iter().map(|r| self.ask_on(ep, home, r)).collect();
-            for (at, resp) in offsets.iter().zip(join_all(asks).await) {
+            // All requests are borrowed by this caller. A conversation stop
+            // or sender cut drops only these reads, with no detached worker.
+            let responses = tokio::select! {
+                biased;
+                _ = &mut stopped => return Err(crate::road::cancelled()),
+                responses = join_all(asks) => responses,
+            };
+            for (at, resp) in offsets.iter().zip(responses) {
+                if job.is_some_and(|j| j.is_stopped()) {
+                    return Err(crate::road::cancelled());
+                }
                 // A short slice moved the offset: what was asked beyond
                 // it is asked again from there.
                 if *at != offset {
@@ -13273,7 +14515,12 @@ impl<T> Drop for Aborts<T> {
 
 #[derive(Clone)]
 pub(crate) enum DialFailure {
+    /// This caller stopped waiting, before learning the peer's outcome.
+    /// Never a shared failed dial, peer-down observation or backoff event.
+    CallerExpired,
     TimedOut,
+    /// An unavailable transport, distinct from policy or application refusal.
+    Transport(String),
     Refused(String),
     /// The far machine refused the connection: it is paused or in the
     /// background (`wires::resting_close`; net-dial B4). Its words are
@@ -13282,8 +14529,8 @@ pub(crate) enum DialFailure {
 }
 
 impl DialFailure {
-    /// A connect error as a dial's failure: the far side resting is
-    /// [`DialFailure::Asleep`], anything else refused.
+    /// Keep concrete QUIC transport failures separate from an application,
+    /// local-policy or resting refusal. Unknown connect/auth errors stop.
     fn of_connect(e: &iroh::endpoint::ConnectError) -> DialFailure {
         use iroh::endpoint::{ConnectError, ConnectingError};
         let end = match e {
@@ -13303,8 +14550,21 @@ impl DialFailure {
     ) -> DialFailure {
         if end.is_some_and(wires::resting_close) {
             DialFailure::Asleep(msg::peer_resting().to_owned())
-        } else {
+        } else if matches!(
+            end,
+            None | Some(iroh::endpoint::ConnectionError::ApplicationClosed(_))
+                | Some(iroh::endpoint::ConnectionError::LocallyClosed)
+        ) {
             DialFailure::Refused(e.to_string())
+        } else {
+            DialFailure::Transport(e.to_string())
+        }
+    }
+
+    fn detail(&self) -> Option<&str> {
+        match self {
+            Self::Transport(why) | Self::Refused(why) | Self::Asleep(why) => Some(why),
+            Self::CallerExpired | Self::TimedOut => None,
         }
     }
 }
@@ -13342,8 +14602,26 @@ impl Node {
         direct: &[String],
         relays: &[String],
         alpn: &[u8],
-        within: Duration,
+        window: DialWindow,
     ) -> Result<iroh::endpoint::Connection, DialFailure> {
+        self.dial_with_preparation(ep, id, direct, relays, alpn, window, None)
+            .await
+    }
+
+    async fn dial_with_preparation(
+        &self,
+        ep: &iroh::Endpoint,
+        id: &str,
+        direct: &[String],
+        relays: &[String],
+        alpn: &[u8],
+        window: DialWindow,
+        mut preparation: Option<HopPreparation<'_>>,
+    ) -> Result<iroh::endpoint::Connection, DialFailure> {
+        let by = crate::deadline::earlier(window.by);
+        if crate::deadline::expired(by) {
+            return Err(DialFailure::CallerExpired);
+        }
         // 按机器暂停: not dialled at all, and said so — the sync tick,
         // every verb and every tunnel come through here.
         if crate::pause::peer_on(self.root(), id) {
@@ -13356,44 +14634,66 @@ impl Node {
         // 首包时间 starts here, before either road is tried: what a
         // person waits through is the whole dial, head start included.
         let started = std::time::Instant::now();
+        let preparing_hop = preparation.is_some();
         let mut roads = tokio::task::JoinSet::new();
         // A road this machine carries itself (round ROAD-2): a candidate
         // beside the direct ones, so it races them from the first packet
         // (`khor_net::carry::RoadOrder` then keeps the owner's order).
         let carried = self.carried_addr(id);
-        let ahead = !direct.is_empty() || carried.is_some();
+        let already_carried = carried.is_some();
+        let ahead = !direct.is_empty() || already_carried;
         // What this dial offered, for the journal (`crate::journal`).
         let mut tried = (0, Vec::new(), false);
         if ahead {
             let mut addr = endpoint::dial_addr(id, direct, relays).map_err(bare)?;
-            addr.addrs.extend(carried);
+            addr.addrs.extend(carried.clone());
             tried = crate::journal::offered(&addr);
             let (ep, alpn) = (ep.clone(), alpn.to_vec());
-            roads
-                .spawn(async move { (crate::journal::Won::Direct, ep.connect(addr, &alpn).await) });
+            roads.spawn(async move {
+                let connected = crate::deadline::wait(by, ep.connect(addr, &alpn)).await;
+                (crate::journal::Won::Direct, connected)
+            });
         }
-        // By identity alone. Nothing here can be stale: a machine's id
-        // is the one thing about it that a restart does not change.
-        {
+        // An installed carrier uses the second existing slot immediately.
+        // The ordinary route still races it; neither path type is forced.
+        // Without a carrier, keep the identity-only relay attempt as before.
+        let relay_attempt = if let Some(carried) = carried {
+            let mut addr = endpoint::dial_addr(id, &[], &[]).map_err(bare)?;
+            addr.addrs.insert(carried);
+            let (ep, alpn) = (ep.clone(), alpn.to_vec());
+            roads.spawn(async move {
+                let connected =
+                    crate::deadline::wait(by, connect_prepared_carrier(&ep, addr, &alpn)).await;
+                (crate::journal::Won::Direct, connected)
+            })
+        } else {
             let addr = endpoint::dial_addr(id, &[], relays).map_err(bare)?;
             if !ahead {
                 tried = crate::journal::offered(&addr);
             }
             let (ep, alpn, wait) = (ep.clone(), alpn.to_vec(), ahead);
             roads.spawn(async move {
-                if wait {
-                    tokio::time::sleep(RELAY_HEAD_START).await;
+                if wait
+                    && crate::deadline::wait(by, tokio::time::sleep(RELAY_HEAD_START))
+                        .await
+                        .is_err()
+                {
+                    return (crate::journal::Won::Relay, Err(crate::deadline::Expired));
                 }
-                (crate::journal::Won::Relay, ep.connect(addr, &alpn).await)
-            });
-        }
+                let connected = crate::deadline::wait(by, ep.connect(addr, &alpn)).await;
+                (crate::journal::Won::Relay, connected)
+            })
+        };
         let tunnel = alpn == khor_net::endpoint::TUNNEL_ALPN;
-        let by = crate::journal::by_now();
-        let note = |won: Option<crate::journal::Won>, error: Option<String>, asleep: bool| {
+        let origin = crate::journal::by_now();
+        let note = |won: Option<crate::journal::Won>,
+                    error: Option<String>,
+                    asleep: bool,
+                    carried: bool| {
             // A failure's backoff is the one its caller is about to count
             // (`Node::line_to_inner`); a pairing dial counts none, nor a
             // middle's for another machine, nor one the far side refused.
-            let (failures, retry_s) = match (won, by) {
+            let (failures, retry_s) = match (won, origin) {
                 (None, b)
                     if !asleep
                         && !matches!(b, crate::journal::By::Pair | crate::journal::By::Onward) =>
@@ -13413,12 +14713,12 @@ impl Node {
             self.wires.note(
                 Some(id),
                 crate::journal::What::Dial {
-                    by,
+                    by: origin,
                     tunnel,
                     ms: crate::journal::ms(started.elapsed()),
                     direct: tried.0,
                     relays: tried.1.clone(),
-                    carried: tried.2,
+                    carried,
                     won,
                     error,
                     failures,
@@ -13428,42 +14728,126 @@ impl Node {
             );
         };
 
-        let deadline = tokio::time::sleep(within);
+        let deadline = tokio::time::sleep(window.within);
         tokio::pin!(deadline);
+        let caller = async {
+            match by {
+                Some(by) => tokio::time::sleep_until(by).await,
+                None => std::future::pending::<()>().await,
+            }
+        };
+        tokio::pin!(caller);
         // First road home wins; a road that fails only counts if every
         // other one does too, so one dead direct address cannot decide
         // the answer while the relay is still walking.
-        let mut refused: Option<String> = None;
+        let mut refused: Option<DialFailure> = None;
+        let mut carried_retry = false;
+        let mut offered_carried = tried.2;
         loop {
+            if crate::deadline::expired(by) {
+                return Err(DialFailure::CallerExpired);
+            }
+            if deadline.is_elapsed() {
+                note(
+                    None,
+                    refused
+                        .as_ref()
+                        .and_then(DialFailure::detail)
+                        .map(crate::journal::scrub),
+                    false,
+                    offered_carried,
+                );
+                return Err(match refused {
+                    Some(failure @ DialFailure::Refused(_)) => failure,
+                    _ => DialFailure::TimedOut,
+                });
+            }
+            // A pending handshake is not yet in iroh's live path registry.
+            // Give a newly prepared carrier its own initial route now. An
+            // aborted relay task must be joined before its slot is reused.
+            if preparing_hop
+                && preparation.is_none()
+                && !already_carried
+                && !carried_retry
+                && roads.len() < 2
+                && let Some(carried) = self.carried_addr(id)
+            {
+                carried_retry = true;
+                offered_carried = true;
+                let mut addr = endpoint::dial_addr(id, &[], &[]).map_err(bare)?;
+                addr.addrs.insert(carried);
+                let (ep, alpn) = (ep.clone(), alpn.to_vec());
+                roads.spawn(async move {
+                    let connected =
+                        crate::deadline::wait(by, connect_prepared_carrier(&ep, addr, &alpn)).await;
+                    (crate::journal::Won::Direct, connected)
+                });
+            }
+            if roads.is_empty() && preparation.is_none() {
+                note(
+                    None,
+                    refused
+                        .as_ref()
+                        .and_then(DialFailure::detail)
+                        .map(crate::journal::scrub),
+                    false,
+                    offered_carried,
+                );
+                return Err(refused.unwrap_or(DialFailure::TimedOut));
+            }
             tokio::select! {
+                biased;
+                () = &mut caller => return Err(DialFailure::CallerExpired),
                 () = &mut deadline => {
-                    note(None, refused.map(|why| crate::journal::scrub(&why)), false);
-                    return Err(DialFailure::TimedOut);
+                    note(None, refused.as_ref().and_then(DialFailure::detail).map(crate::journal::scrub), false, offered_carried);
+                    return Err(match refused {
+                        Some(failure @ DialFailure::Refused(_)) => failure,
+                        _ => DialFailure::TimedOut,
+                    });
                 }
-                joined = roads.join_next() => match joined {
-                    Some(Ok((won, Ok(conn)))) => {
-                        note(Some(won), None, false);
+                joined = roads.join_next(), if !roads.is_empty() => match joined {
+                    Some(Ok((won, Ok(Ok(conn))))) => {
+                        note(Some(won), None, false, offered_carried);
                         crate::roads::replied(&self.roads, id, started.elapsed());
-                        crate::roads::watch(&self.roads, id, &conn, self.wires.journal.get().cloned(), &self.carry);
+                        crate::roads::watch(&self.roads, id, &conn, self.wires.journal.get().cloned(), &self.carry, &self.wires);
                         return Ok(conn);
                     }
                     // **Refused is the far machine's own answer** (net-dial
                     // B4): whichever road carried it, the machine is there
                     // and resting, and the other road would hear the same.
-                    Some(Ok((_, Err(e)))) => match DialFailure::of_connect(&e) {
+                    Some(Ok((_, Err(_)))) => return Err(DialFailure::CallerExpired),
+                    Some(Ok((_, Ok(Err(e))))) => match DialFailure::of_connect(&e) {
                         DialFailure::Asleep(why) => {
-                            note(None, Some(why.clone()), true);
+                            note(None, Some(why.clone()), true, offered_carried);
                             return Err(DialFailure::Asleep(why));
                         }
-                        _ => refused = Some(e.to_string()),
+                        failure => {
+                            // Another road failing in transport cannot erase an
+                            // explicit refusal already learned from the peer.
+                            if !matches!(&refused, Some(DialFailure::Refused(_)))
+                                || matches!(&failure, DialFailure::Refused(_))
+                            {
+                                refused = Some(failure);
+                            }
+                        },
                     },
                     Some(Err(_)) => {}
-                    None => {
-                        note(None, refused.as_deref().map(crate::journal::scrub), false);
-                        return Err(match refused {
-                            Some(why) => DialFailure::Refused(why),
-                            None => DialFailure::TimedOut,
-                        });
+                    None => {}
+                },
+                () = async {
+                    match preparation.as_mut() {
+                        Some(preparing) => preparing.as_mut().await,
+                        None => std::future::pending::<()>().await,
+                    }
+                }, if preparation.is_some() => {
+                    preparation = None;
+                    offered_carried |= self.carried_addr(id).is_some();
+                    if !already_carried
+                        && !carried_retry
+                        && self.carried_addr(id).is_some()
+                        && roads.len() >= 2
+                    {
+                        relay_attempt.abort();
                     }
                 },
             }
@@ -13477,7 +14861,22 @@ impl Node {
         id: &str,
         direct: &[String],
         alpn: &[u8],
-        by: Option<std::time::Instant>,
+        by: Option<tokio::time::Instant>,
+        most: Duration,
+    ) -> Result<iroh::endpoint::Connection, DialFailure> {
+        self.dial_preparing(ep, id, direct, alpn, by, most, None)
+            .await
+    }
+
+    async fn dial_preparing(
+        &self,
+        ep: &iroh::Endpoint,
+        id: &str,
+        direct: &[String],
+        alpn: &[u8],
+        by: Option<tokio::time::Instant>,
+        most: Duration,
+        preparation: Option<HopPreparation<'_>>,
     ) -> Result<iroh::endpoint::Connection, DialFailure> {
         // A machine last seen behind a slow road is given that road's time
         // to answer a handshake (`wires::Patience`); one never measured, or
@@ -13486,7 +14885,8 @@ impl Node {
         // A machine its relay just said left, and that has not been heard
         // from since: a short dial — long enough for one that came straight
         // back on a new connection, not the full wait on one that is gone.
-        let mut within = dial_within(self.wires.last_rtt(id), self.wires.gone_lately(id), by);
+        let mut within =
+            dial_within(self.wires.last_rtt(id), self.wires.gone_lately(id), by).min(most);
         // No relay to go out by (C7): only a road this machine has can
         // answer — a direct one, or the hop asked for before the dial.
         // A short dial, not the full wait on relays it cannot reach.
@@ -13496,14 +14896,432 @@ impl Node {
         // This machine's own home among the relays tried (net-f): two
         // machines homed on the same public relay meet there even while
         // each one's row still names only its own list.
-        self.dial_with(ep, id, direct, &self.published_relays(ep), alpn, within)
-            .await
+        self.dial_with_preparation(
+            ep,
+            id,
+            direct,
+            &self.published_relays(ep),
+            alpn,
+            DialWindow { within, by },
+            preparation,
+        )
+        .await
     }
 }
 
 #[cfg(test)]
 mod dial_budget {
     use super::*;
+
+    mod cached_quotas;
+    mod initial_custom;
+    mod peer_contact;
+    mod probe;
+    mod pull_window_wire;
+    mod wire;
+
+    async fn fixture() -> (tempfile::TempDir, Node, DeviceInfo, iroh::Endpoint) {
+        fixture_for(iroh::SecretKey::generate().public().to_string()).await
+    }
+
+    async fn fixture_for(peer_id: String) -> (tempfile::TempDir, Node, DeviceInfo, iroh::Endpoint) {
+        let root = tempfile::tempdir().unwrap();
+        std::fs::create_dir_all(root.path().join(".khor")).unwrap();
+        std::fs::write(
+            root.path().join(".khor/relays.json"),
+            r#"{"relays":[{"url":"http://127.0.0.1:9"}],"only_mine":true}"#,
+        )
+        .unwrap();
+        let node = Node::open_hosting(root.path().to_path_buf(), "budget", false).unwrap();
+        {
+            let loaded = node.devices_loaded().unwrap();
+            loaded.doc.upsert(&peer_id, "peer", &[]).unwrap();
+            let mut store = loaded.store;
+            store.flush(&loaded.doc).unwrap();
+        }
+        let peer = node
+            .devices()
+            .unwrap()
+            .into_iter()
+            .find(|d| d.id == peer_id)
+            .unwrap();
+        // Minimal has no discovery or public relay. Bind before starting the
+        // caller's clock, so first-touch Mac network setup is outside its budget.
+        let ep = iroh::Endpoint::builder(iroh::endpoint::presets::Minimal)
+            .relay_mode(iroh::RelayMode::Disabled)
+            .alpns(vec![ALPN.to_vec()])
+            .bind()
+            .await
+            .unwrap();
+        (root, node, peer, ep)
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn cancelling_an_accepted_early_answer_stops_only_its_stream() {
+        observe_accepted_answer_stop(None, false, false).await;
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn an_accepted_early_answer_keeps_the_callers_deadline() {
+        observe_accepted_answer_stop(Some(Duration::from_secs(1)), false, false).await;
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn cancelling_a_long_healthy_accepted_answer_keeps_its_wire() {
+        observe_accepted_answer_stop(None, false, true).await;
+    }
+
+    async fn observe_accepted_answer_stop(
+        budget: Option<Duration>,
+        blackhole: bool,
+        long_wait: bool,
+    ) {
+        #[cfg(not(target_os = "linux"))]
+        assert!(!blackhole);
+        use std::sync::{
+            Arc,
+            atomic::{AtomicUsize, Ordering},
+        };
+
+        let long_read = blackhole || long_wait;
+        let server = iroh::Endpoint::builder(iroh::endpoint::presets::Minimal)
+            .relay_mode(iroh::RelayMode::Disabled)
+            .alpns(vec![ALPN.to_vec()])
+            .clear_ip_transports()
+            .bind_addr("127.0.0.1:0")
+            .unwrap()
+            .bind()
+            .await
+            .unwrap();
+        let (_root, node, mut peer, ep) = fixture_for(server.id().to_string()).await;
+        peer.addrs = server
+            .addr()
+            .addrs
+            .iter()
+            .filter_map(|addr| match addr {
+                iroh::TransportAddr::Ip(addr) => Some(addr.to_string()),
+                _ => None,
+            })
+            .collect();
+        assert!(!peer.addrs.is_empty());
+        let node = Arc::new(node);
+        let requests = Arc::new(AtomicUsize::new(0));
+        let (entered, ready) = tokio::sync::oneshot::channel();
+        let (stopped, stop_seen) = tokio::sync::oneshot::channel();
+        let mut serving = Aborts(Some(tokio::spawn({
+            let endpoint = server.clone();
+            let requests = requests.clone();
+            async move {
+                let answer = proto::encode(&Response::SessionRows { rows: vec![] }).unwrap();
+                // A real first handshake populates the client's resumption cache.
+                let warm = endpoint
+                    .accept()
+                    .await
+                    .unwrap()
+                    .accept()
+                    .unwrap()
+                    .await
+                    .unwrap();
+                let (mut send, mut recv) = warm.accept_bi().await.unwrap();
+                let bytes = recv.read_to_end(MAX_FRAME).await.unwrap();
+                assert!(matches!(
+                    proto::question(&bytes).unwrap(),
+                    Request::Sessions
+                ));
+                requests.fetch_add(1, Ordering::SeqCst);
+                send.write_all(&answer).await.unwrap();
+                send.finish().unwrap();
+                warm.closed().await;
+
+                let incoming = endpoint.accept().await.unwrap();
+                let resumed = incoming.accept().unwrap().into_0rtt();
+                let (delayed, mut recv) = resumed.accept_bi().await.unwrap();
+                let was_early = recv.is_0rtt();
+                let bytes = recv.read_to_end(MAX_FRAME).await.unwrap();
+                assert!(matches!(
+                    (long_read, proto::question(&bytes).unwrap()),
+                    (false, Request::Sessions) | (true, Request::FetchPath { offset: 0, .. })
+                ));
+                requests.fetch_add(1, Ordering::SeqCst);
+                let remote = resumed.handshake_completed().await.unwrap();
+                entered.send((was_early, remote.weak_handle())).unwrap();
+                tokio::join!(
+                    async {
+                        // STOP_SENDING is evidence of stream cancellation; a
+                        // closed connection cannot satisfy this observation.
+                        let _ = stopped.send(matches!(delayed.stopped().await, Ok(Some(_))));
+                    },
+                    async {
+                        let (mut send, mut recv) = resumed.accept_bi().await.unwrap();
+                        let bytes = recv.read_to_end(MAX_FRAME).await.unwrap();
+                        assert!(matches!(
+                            proto::question(&bytes).unwrap(),
+                            Request::Sessions
+                        ));
+                        requests.fetch_add(1, Ordering::SeqCst);
+                        send.write_all(&answer).await.unwrap();
+                        send.finish().unwrap();
+                    }
+                );
+                // Keep the shared wire alive until the test has observed its reply.
+                resumed.closed().await;
+            }
+        })));
+        let warm = tokio::time::timeout(Duration::from_secs(5), ep.connect(server.addr(), ALPN))
+            .await
+            .unwrap()
+            .unwrap();
+        let (mut send, mut recv) = warm.open_bi().await.unwrap();
+        send.write_all(&proto::encode(&Request::Sessions).unwrap())
+            .await
+            .unwrap();
+        send.finish().unwrap();
+        let bytes = tokio::time::timeout(Duration::from_secs(5), recv.read_to_end(MAX_FRAME))
+            .await
+            .unwrap()
+            .unwrap();
+        assert!(matches!(
+            proto::answer(&bytes).unwrap(),
+            Response::SessionRows { .. }
+        ));
+        warm.close(0u32.into(), b"resumption cache primed");
+
+        let by = budget.map(|budget| std::time::Instant::now() + budget);
+        let (freeze, freeze_requested) = tokio::sync::oneshot::channel::<()>();
+        let (frozen, freeze_seen) = tokio::sync::oneshot::channel::<()>();
+        let mut asking = Aborts(Some(tokio::spawn({
+            let node = node.clone();
+            let endpoint = ep.clone();
+            let peer = peer.clone();
+            async move {
+                let request = if long_read {
+                    Request::FetchPath {
+                        path: "/fixture-read-only".to_owned(),
+                        offset: 0,
+                    }
+                } else {
+                    Request::Sessions
+                };
+                assert!(request.rides_early());
+                let asking = node.ask_early(&endpoint, &peer, &request, by);
+                tokio::pin!(asking);
+                tokio::select! {
+                    biased;
+                    _ = freeze_requested => {
+                        frozen.send(()).unwrap();
+                        std::future::pending::<Early>().await
+                    }
+                    out = &mut asking => out,
+                }
+            }
+        })));
+        let (was_early, remote) = tokio::time::timeout(Duration::from_secs(5), ready)
+            .await
+            .unwrap()
+            .unwrap();
+        // Noq computes is_0rtt when this server task accepts the stream,
+        // so a fast handshake can clear it before the application runs.
+        eprintln!("server accepted stream while handshaking: {was_early}");
+        let shared = tokio::time::timeout(Duration::from_secs(5), async {
+            loop {
+                if let Some(conn) = node.wires.live(&peer.id, wires::Proto::Main) {
+                    break conn;
+                }
+                assert!(
+                    !asking.0.as_ref().unwrap().is_finished(),
+                    "early answer did not wait after adoption"
+                );
+                tokio::task::yield_now().await;
+            }
+        })
+        .await
+        .unwrap();
+        assert!(!asking.0.as_ref().unwrap().is_finished());
+        // Only Accepted with an outstanding answer waits after adoption;
+        // the fresh-handshake and Rejected paths return NotTaken. Observe
+        // the real task past a scheduler turn before testing its owner.
+        assert!(
+            tokio::time::timeout(Duration::from_millis(20), asking.0.as_mut().unwrap())
+                .await
+                .is_err(),
+            "fixture must reach Accepted with an outstanding answer"
+        );
+        assert!(by.is_none_or(|by| std::time::Instant::now() < by));
+        #[cfg(target_os = "linux")]
+        if blackhole {
+            freeze.send(()).unwrap();
+            tokio::time::timeout(Duration::from_secs(1), freeze_seen)
+                .await
+                .unwrap()
+                .unwrap();
+            wire::observe_accepted_blackhole(
+                &node,
+                &peer,
+                &shared,
+                &remote.upgrade().unwrap(),
+                &mut asking,
+                &requests,
+            )
+            .await;
+            ep.close().await;
+            server.close().await;
+            let task = serving.0.take().unwrap();
+            task.abort();
+            let _ = task.await;
+            return;
+        }
+        #[cfg(not(target_os = "linux"))]
+        drop(remote);
+        if long_wait {
+            tokio::time::sleep(Duration::from_secs(16)).await;
+            assert!(!asking.0.as_ref().unwrap().is_finished());
+            assert_eq!(requests.load(Ordering::SeqCst), 2);
+        }
+        let grace = long_wait.then(|| wires::ask_every_path(&shared));
+        let mut task = asking.0.take().unwrap();
+        let ended = match by {
+            Some(by) => {
+                let observed = tokio::time::timeout_at(
+                    tokio::time::Instant::from_std(by) + Duration::from_millis(500),
+                    &mut task,
+                )
+                .await;
+                let ended = matches!(&observed, Ok(Ok(Early::Failed(DialFailure::CallerExpired))));
+                if observed.is_err() {
+                    task.abort();
+                    let _ = task.await;
+                }
+                ended
+            }
+            None => {
+                task.abort();
+                assert!(matches!(task.await, Err(error) if error.is_cancelled()));
+                true
+            }
+        };
+        let stream_stopped = matches!(
+            tokio::time::timeout(Duration::from_millis(500), stop_seen).await,
+            Ok(Ok(true))
+        );
+        if let Some(grace) = grace {
+            tokio::time::sleep(grace + Duration::from_millis(500)).await;
+            assert_eq!(
+                node.wires
+                    .live(&peer.id, wires::Proto::Main)
+                    .map(|c| c.stable_id()),
+                Some(shared.stable_id())
+            );
+            let counts = node.wires.counts.snapshot();
+            assert_eq!(counts.retired_unanswered, 0);
+            assert_eq!(counts.retired_network, 0);
+            assert_eq!(counts.retired_silent, 0);
+            assert_eq!(counts.retired_closed, 0);
+        }
+        let control = tokio::time::timeout(
+            Duration::from_secs(5),
+            node.ask_on(&ep, &peer, &Request::Sessions),
+        )
+        .await;
+        let held_id = node
+            .wires
+            .live(&peer.id, wires::Proto::Main)
+            .map(|conn| conn.stable_id());
+        ep.close().await;
+        server.close().await;
+        let task = serving.0.take().unwrap();
+        task.abort();
+        let _ = task.await;
+
+        assert!(
+            matches!(control, Ok(Ok(Response::SessionRows { .. }))),
+            "another request must still use the healthy wire"
+        );
+        assert_eq!(held_id, Some(shared.stable_id()));
+        assert_eq!(
+            requests.load(Ordering::SeqCst),
+            3,
+            "warmup, cancelled read and independent control only"
+        );
+        assert_eq!(node.wires.counts.snapshot().dial_failed, 0);
+        drop((freeze, freeze_seen));
+        assert!(ended, "accepted early answer ignored the caller's deadline");
+        assert!(
+            stream_stopped,
+            "accepted early answer outlived its cancelled caller"
+        );
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn a_call_deadline_bounds_waiting_for_another_dial_without_blaming_the_peer() {
+        let (_root, node, peer, ep) = fixture().await;
+        let lock = node.wires.dial_lock(&peer.id, wires::Proto::Main);
+        let held = lock.lock().await;
+        let by = std::time::Instant::now() + Duration::from_millis(40);
+        let answer = tokio::time::timeout(
+            Duration::from_millis(500),
+            node.line_to_by(&ep, &peer, wires::Proto::Main, Some(by)),
+        )
+        .await;
+        ep.close().await;
+
+        assert!(
+            answer.is_ok(),
+            "waiting for the dial lock outlived the caller"
+        );
+        assert!(
+            matches!(answer.unwrap(), Err(DialFailure::CallerExpired)),
+            "caller expiry is distinct from a failed peer dial"
+        );
+        assert!(
+            held.is_none(),
+            "the active dial's shared result is untouched"
+        );
+        assert_eq!(node.wires.counts.snapshot().dial_failed, 0);
+        assert_eq!(node.wires.link(&peer.id).down, None);
+        assert_eq!(node.wires.backing_off(&peer.id), None);
+        drop(held);
+        let expired = node
+            .line_to_by(&ep, &peer, wires::Proto::Main, Some(by))
+            .await;
+        assert!(matches!(expired, Err(DialFailure::CallerExpired)));
+        assert_eq!(node.wires.counts.snapshot().dialed, 0);
+        assert_eq!(node.wires.counts.snapshot().dial_failed, 0);
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn an_early_call_deadline_bounds_waiting_for_another_dial() {
+        let (_root, node, peer, ep) = fixture().await;
+        let lock = node.wires.dial_lock(&peer.id, wires::Proto::Main);
+        let held = lock.lock().await;
+        let by = std::time::Instant::now() + Duration::from_millis(40);
+        let answer = tokio::time::timeout(
+            Duration::from_millis(500),
+            node.ask_early(&ep, &peer, &Request::Sessions, Some(by)),
+        )
+        .await;
+        ep.close().await;
+
+        assert!(
+            answer.is_ok(),
+            "early-data lock admission outlived the caller"
+        );
+        assert!(matches!(
+            answer.unwrap(),
+            Early::Failed(DialFailure::CallerExpired)
+        ));
+        assert!(held.is_none());
+        assert_eq!(node.wires.counts.snapshot().dial_failed, 0);
+        assert_eq!(node.wires.link(&peer.id).down, None);
+        assert_eq!(node.wires.backing_off(&peer.id), None);
+        drop(held);
+        assert!(matches!(
+            node.ask_early(&ep, &peer, &Request::Sessions, Some(by))
+                .await,
+            Early::Failed(DialFailure::CallerExpired)
+        ));
+        assert_eq!(node.wires.counts.snapshot().dialed, 0);
+        assert_eq!(node.wires.counts.snapshot().dial_failed, 0);
+    }
 
     /// **A dial never outlasts QUIC's own idle timeout** (net-dial B5): a
     /// machine once measured slow — 2.6 s on a relay, turing 2026-10-20 —
@@ -13528,11 +15346,62 @@ mod dial_budget {
             Duration::from_secs(3),
             "its relay said it left: short"
         );
-        let by = std::time::Instant::now() + Duration::from_secs(2);
+        let by = tokio::time::Instant::now() + Duration::from_secs(2);
         assert!(
             dial_within(Duration::from_secs(1), false, Some(by)) <= Duration::from_secs(2),
             "inside the caller's deadline"
         );
+    }
+
+    async fn observe_scoped_ask(budget: Duration, advance: Duration) -> (bool, u64) {
+        let (_root, node, peer, ep) = fixture().await;
+        let node = std::sync::Arc::new(node);
+        let lock = node.wires.dial_lock(&peer.id, wires::Proto::Main);
+        let held = lock.lock().await;
+        tokio::time::pause();
+        let by = tokio::time::Instant::now() + budget;
+        let (entered, ready) = tokio::sync::oneshot::channel();
+        let requester = node.clone();
+        let endpoint = ep.clone();
+        let mut ask = tokio::spawn(crate::deadline::scope(by, async move {
+            let _ = entered.send(());
+            requester.ask_on(&endpoint, &peer, &Request::Sessions).await
+        }));
+        ready.await.unwrap();
+        tokio::time::advance(advance).await;
+        // Let a ready caller finish; otherwise advance only this small
+        // observation allowance, rather than auto-advancing to its full budget.
+        let observed = tokio::time::timeout(Duration::from_millis(5), &mut ask).await;
+        let finished = observed.is_ok();
+        let returned_error = matches!(observed, Ok(Ok(Err(_))));
+        if !finished {
+            ask.abort();
+            let _ = ask.await;
+        }
+        tokio::time::resume();
+        ep.close().await;
+        assert!(!finished || returned_error);
+        assert!(held.is_none());
+        (finished, node.wires.counts.snapshot().dial_failed)
+    }
+
+    #[tokio::test]
+    async fn a_scoped_operation_deadline_reaches_the_actual_ask() {
+        let (finished, failed) =
+            observe_scoped_ask(Duration::from_millis(40), Duration::from_millis(50)).await;
+        assert!(finished, "ask_on ignored the operation's remaining budget");
+        assert_eq!(failed, 0);
+    }
+
+    #[tokio::test]
+    async fn a_long_scoped_operation_keeps_its_budget_past_twenty_eight_seconds() {
+        let (finished, failed) =
+            observe_scoped_ask(Duration::from_secs(300), Duration::from_secs(29)).await;
+        assert!(
+            !finished,
+            "ask_on replaced the long operation's budget with a fresh 28 seconds"
+        );
+        assert_eq!(failed, 0);
     }
 }
 
@@ -13966,7 +15835,8 @@ impl Node {
             &target.id,
             &target.addrs,
             endpoint::UPDATE_ALPN,
-            Some(std::time::Instant::now() + DIAL_TIMEOUT),
+            crate::deadline::current(),
+            DIAL_TIMEOUT,
         )
         .await
         .map_err(|e| unreached_words(&target.shown(), e))

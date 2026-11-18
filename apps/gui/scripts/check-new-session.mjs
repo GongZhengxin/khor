@@ -48,7 +48,7 @@ try{
  await name.fill('   ');sent=await count();assert.equal(sent.title,'','Blank name keeps node default');
  const launch=form.locator('[data-new-session-launch] textarea');await launch.click();await page.getByRole('option').filter({hasText:'研究环境'}).click();sent=await count();assert.equal(sent.title,'研究环境','Blank custom preset keeps preset name');
  await name.fill('自定义覆盖');sent=await count();assert.equal(sent.title,'自定义覆盖','Typed name overrides preset');
- await launch.click();await page.getByRole('option').filter({hasText:'Claude · 对话'}).click();sent=await count();assert.equal(sent.title,'自定义覆盖');assert.equal(sent.kind,'agent');
+ await launch.click();await page.locator('[data-choice-option="agent:claude"]').click();sent=await count();assert.equal(sent.title,'自定义覆盖');assert.equal(sent.kind,'agent');
  await name.fill('');sent=await count();assert.equal(sent.title,'','Blank agent name keeps node directory fallback');
  await page.screenshot({path:join(scratch,'desktop.png')});console.log('PASS desktop label alignment, optional/trimmed names, shell/agent requests and preset precedence');
  await page.setViewportSize({width:390,height:844});await name.waitFor();await name.fill('窄屏会话');sent=await count();assert.equal(sent.title,'窄屏会话');

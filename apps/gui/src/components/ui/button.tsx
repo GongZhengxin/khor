@@ -104,15 +104,19 @@ function Button({
   variant,
   size,
   asChild = false,
+  compactTouch = false,
   ...props
 }: React.ComponentProps<"button"> &
   VariantProps<typeof buttonVariants> & {
     asChild?: boolean;
+    /** Task headers keep a compact face inside the full mobile touch target. */
+    compactTouch?: boolean;
   }) {
   const Comp = asChild ? Slot : "button";
   return (
     <Comp
       data-slot="button"
+      data-compact-primary={compactTouch ? variant === "primary" ? "brand" : "neutral" : undefined}
       className={cn(buttonVariants({ variant, size, className }))}
       {...props}
     />

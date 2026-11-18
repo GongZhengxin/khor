@@ -1,3 +1,4 @@
+import {sessionImportFixture} from '../dev/lab/session-import-fixture';
 // The production page under its actual wide strip / narrow bottom deck.
 // All API answers below are closed fixtures. No command reaches a khor node.
 import {useEffect,useState} from 'react';
@@ -25,6 +26,7 @@ speakLang('zh');
 const face=(background:string,one:string,two:string):Avatar=>({canvas:80,background,radius_ratio:.5,mark:{ink:'light',veil:0},paint:{variant:'marble',blur:7,veins:[{vein:'shard',scale:1.2,rotate:20,dx:3,dy:-3,overlay:false,color:one},{vein:'sweep',scale:1.4,rotate:200,dx:-4,dy:6,overlay:true,color:two}]}});
 const faces=[face('#5f6b2a','#c5c8a6','#a6b87a'),face('#2a4f6b','#8abeb7','#81a2be'),face('#6b3a2a','#f0c674','#cc6666')];
 const devices=['MacLab','turing','Studio','hinton','lecun','gpu-01','gpu-02','gpu-03','lab-server','nas','build-node','devbox','test-linux','research-a','research-b'].map((name,i)=>({id:'device-'+i,name,shown:name,label:null,me:i===0,hosts:true,sponsor:null,face:faces[i%3],hop:i===3?'quiet':'direct',heard_ms:i===3?600000:0,down_ms:i===3?60000:null,paused:false,home:i===0?'/Users/zgh':i===2?'C:\\Users\\zgh':'/home/zgh'}));
+const imports=sessionImportFixture(devices.map(device=>device.id));
 const candidates=devices.slice(0,4).flatMap((d,i)=>Array.from({length:6},(_,n)=>({id:'shell/import-'+i+'-'+n,form:'shell',machine:d.name,device:d.id,title:['research','khor','notes','analysis','daily','project'][n],place:d.home+'/Projects',at_ms:Date.now()-n*60000,category:null,agent:null,command:n===0?'codex':'zsh'})));
 const STORE='khor.lab.launch-presets.v1';
 let presets:LaunchPreset[];
@@ -37,6 +39,7 @@ window.fetch=async(input,init)=>{
  const cmd=url.pathname.replace('/api/','');
  const args=input instanceof Request?await input.clone().json():JSON.parse(String(init?.body||'{}'));
  if(cmd==='devices')return json(devices);
+ if(cmd==='session_import')return json(imports.request(String(args.home),args.action));
  if(cmd==='import_candidates')return json(candidates);
  if(cmd==='import_sessions')return json(args.ids);
  if(cmd==='agent_seen')return json({said:'unasked'});

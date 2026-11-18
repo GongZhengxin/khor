@@ -1,3 +1,4 @@
+import {sessionImportFixture} from './session-import-fixture';
 import labMedia from './data/media.generated.json';
 import {noticeFixture} from './notice-fixture';
 import {longHistoryFrames} from './long-history';
@@ -17,7 +18,7 @@ const update = (sessionUpdate: string, rest: Record<string, unknown>): Frame => 
   kind: "note", update: { update: { sessionUpdate, ...rest } },
 });
 const text = (value: string) => ({ content: { type: "text", text: value } });
-const ids = ["gui/ai-elements-review", "gui/ai-elements-plan", "gui/ai-elements-stream", "gui/codex-review", "wide/all"];
+const defaultIds = ["gui/ai-elements-review", "gui/ai-elements-plan", "gui/ai-elements-stream", "gui/codex-review", "wide/all"];
 const titles = ["AI Elements · 组件总览", "AI Elements · 计划与确认", "AI Elements · 流式响应", "Codex · 工具与补丁", "khor · 网络任务"];
 const device: DeviceRow = {
   id: "e".repeat(64), name: "验收环境", shown: "验收环境", label: null,
@@ -25,7 +26,7 @@ const device: DeviceRow = {
   hop: null, heard_ms: null, rtt_ms: null, down_ms: null, last_rtt_ms: null,
   since_ms: null, last_hop: null, relay: null, via: null, sponsor: null, ssh_jump: null,
   roads: [], watch: [], watched: null, seat: {left: 50, top: 50}, hosts: true,
-  receive_dir: null, receive_at: "/preview/files", receive_for: null, receive_why: null,
+  receive_dir: null, receive_at: "/preview/khor-drop", receive_for: null, receive_why: null,
 };
 const boot = (): Frame => ({ kind: "agent", name: "Claude", replays: true, needs_login: false, images: false, embeds: false, lists: false });
 const editorSource = (updated: boolean) => [
@@ -64,8 +65,12 @@ function sample(index: number): Frame[] {
   ];
 }
 
-export function createLabFixture(terminal = true, options: {origin?: string; content?: boolean; items?:number; machines?:number; page?:boolean;pageSize?:number;settings?:boolean;notices?:boolean;noticeBurst?:boolean;longHistory?:boolean} = {}) {
+export function createLabFixture(terminal = true, options: {origin?: string; content?: boolean; items?:number; machines?:number; page?:boolean;pageSize?:number;settings?:boolean;notices?:boolean;noticeBurst?:boolean;longHistory?:boolean;khorSession?:string;dsh?:boolean} = {}) {
+  const ids = defaultIds.map((id,index)=>index===4 ? options.khorSession??id : index===3&&options.dsh?'gui/dsh-review':id);
   const devices = labDevices(device,options.machines ?? 3);
+  const importFrames=new Map<string,Frame[]>();
+  const importReaders=new Map<string,ReturnType<typeof canonicalChatFixture>>();
+  const imports = sessionImportFixture(devices.map(device=>device.id));
   const pairing = pairingFixture(devices, labDevices(device, 6));
   const navigation = navigationFixture(devices, options.origin ?? 'http://127.0.0.1:23776', options.content ?? false, options.items ?? 3, options.page ?? false);
   const quota = labQuota(devices);
@@ -102,8 +107,28 @@ export function createLabFixture(terminal = true, options: {origin?: string; con
       {id:'reasoning',name:'思考方式',category:'thought_level',type:'select',currentValue:'standard',options:[{value:'standard',name:'标准'},{value:'deep',name:'深入'}]},
     ],
   }));
+  if(options.dsh){
+    preferences[3].model='["deepseek-official","deepseek-flash"]';
+    preferences[3].options=[
+      {id:'model',name:'Model',category:'model',type:'select',currentValue:preferences[3].model,options:[
+        {value:preferences[3].model,name:'DeepSeek-V4.1-Flash'},
+        {value:'["deepseek-official","deepseek-v4-pro"]',name:'DeepSeek-V4-Pro'},
+      ]},
+      {id:'reasoning_effort',name:'Reasoning effort',category:'thought_level',type:'select',currentValue:'off',options:[{value:'off',name:'Off'},{value:'high',name:'High'}]},
+    ];
+  }
   const initialPreferences=structuredClone(preferences);
-  const sampleWithSettings=(i:number)=>{const source=sample(i);if(options.longHistory&&i===0)return [source[0],{kind:'settings',settings:preferences[i]},...longHistoryFrames(240,labMedia.image)];return [source[0],...(i===0?[update('user_message_chunk',{content:{type:'image',mimeType:'image/png',name:'设备协作示例.png',data:labMedia.image}})]:[]),{kind:'settings',settings:preferences[i]},...source.slice(1), ...(options.content ? [update('agent_message_chunk', text('Open Lab file: /preview/project/README.md\n\n[Open Lab page](' + options.origin + '/lab/example' + (options.page ? '' : '?from=message') + ')'))] : [])];};
+  const sessionSettings=(i:number)=>options.dsh&&i===3?{...preferences[i],modes:null}:preferences[i];
+  const sampleWithSettings=(i:number)=>{
+    if(options.dsh&&i===3)return [
+      {...boot(),name:'deepseek-harness-acp',replays:false,lists:true},
+      {kind:'settings',settings:sessionSettings(i)},
+      update('user_message_chunk',text('读取校验文件并返回其中的内容。')),
+      update('tool_call',{toolCallId:'dsh-read',title:'read',kind:'other',status:'in_progress'}),
+      update('tool_call_update',{toolCallId:'dsh-read',status:'completed'}),
+      update('agent_message_chunk',text('KHOR_DSH_PREVIEW_VERIFIED')),
+    ];
+    const source=sample(i);if(options.longHistory&&i===0)return [source[0],{kind:'settings',settings:preferences[i]},...longHistoryFrames(240,labMedia.image)];return [source[0],...(i===0?[update('user_message_chunk',{content:{type:'image',mimeType:'image/png',name:'设备协作示例.png',data:labMedia.image}})]:[]),{kind:'settings',settings:preferences[i]},...source.slice(1), ...(options.content ? [update('agent_message_chunk', text('Open Lab file: /preview/project/README.md\n\n[Open Lab page](' + options.origin + '/lab/example' + (options.page ? '' : '?from=message') + ')'))] : [])];};
   let frames = ids.map((_, i) => sampleWithSettings(i));
   const historyStats={pages:0,backward:0,forward:0,last:[] as {cursor:unknown;newer:boolean}[]};
   const makeCanonical = () => canonicalChatFixture({pageSize:options.pageSize??128,ids: ids.slice(0, 4),
@@ -147,9 +172,14 @@ export function createLabFixture(terminal = true, options: {origin?: string; con
     can_cancel:task.state==='waiting',can_retry:task.state==='failed'}));
   function agentAction(body: Record<string, any>) {
     if (body.action === "catalog") return view(providers);
+    if(body.action==='put_paths'){
+      const payload=body.payload??{};attachmentEvents.push({operation:'khor_put_paths',...payload,machine:modelConfig.home});
+      if(uploadMode==='fail')throw new FixtureRefusal('Controlled Khor attachment delivery failure');
+      return view((payload.paths??[]).map((path:string)=>String(payload.into??'/preview/khor-drop')+'/'+path.split('/').pop()));
+    }
     const p = body.payload ?? {};
     const models = labModels(modelAccounts.find(account=>account.id===(p.account??modelConfig.account))?.provider??'anthropic');
-    if(body.action==='prompt'){khorRunning=true;khorPrompt=String(p.text);later(()=>{khorRunning=false;},10000);return view();}
+    if(body.action==='prompt'){attachmentEvents.push({operation:'khor_prompt',session:p.session,text:p.text,machine:body.machine});khorRunning=true;khorPrompt=String(p.text);later(()=>{khorRunning=false;},10000);return view();}
     if(body.action==='stop'){khorRunning=false;khorApproval=null;return view();}
     if(body.action==='answer'&&p.run==='khor-preview-run'&&p.ask===khorApproval?.id){khorAnswers.push({ask:p.ask,allow:p.allow});khorApproval=null;khorRunning=false;return view();}
     if (body.action === "configure") { modelConfig = { home: body.machine, account: p.account, model: p.model,options:{thought_level:"medium",auto_compaction:true} }; return view(); }
@@ -189,7 +219,7 @@ export function createLabFixture(terminal = true, options: {origin?: string; con
       acpSetupCalls.push({agent:String(p.agent),machine:String(body.machine),operation:p.operation});
       const id=`acp-${++jobCounter}`;
       jobs.set(id,failAcpSetup?{status:'failed',error:'Incoming transport closed: initialize',reason:'npm_cache_unavailable'}:
-        {status:'done',result:{agentInfo:{name:String(p.agent).startsWith('codex')?'Codex':'Claude',version:'lab'},capabilities:{},authMethods:[]}});
+        {status:'done',result:{agentInfo:{name:p.agent==='dsh'?'deepseek-harness-acp':String(p.agent).startsWith('codex')?'Codex':String(p.agent).startsWith('claude')?'Claude':String(p.agent),version:'lab'},capabilities:{},authMethods:[]}});
       return view({job:id,status:'running'});
     }
     if (p.operation === 'acp_poll') return view(jobs.get(p.job)??{status:'failed',error:'示例已结束'});
@@ -256,16 +286,37 @@ export function createLabFixture(terminal = true, options: {origin?: string; con
     preferences:{channel:'beta',automatic_check:true,automatic_download:true,install_on_start:false}};
   const resourcePreviews=new Map<string,string>();let resourceSequence=0;
   let updateMode='current';
+  const attachmentEvents:Record<string,unknown>[]=[];
+  const terminalSizes:Record<string,unknown>[]=[];
   let pollMode='ok';let uploadMode='ok';const sentPrompts:unknown[]=[];
+  const controlCalls:Record<string,unknown>[]=[];
   let holdSettings=false,refuseSetting=false;const pendingSettings:(()=>void)[]=[];
   const applySetting=(apply:()=>void)=>{if(holdSettings)pendingSettings.push(apply);else apply();};
   return {
     dispose() { for(const url of resourcePreviews.values())URL.revokeObjectURL(url);resourcePreviews.clear();for (const timer of timers) clearTimeout(timer); timers.clear(); },
     request(path: string, body: Record<string, any> = {}): unknown {
+      if(path==='session_import'){
+        const reply=imports.request(String(body.home),body.action);
+        if(reply.kind==='imported'&&!importReaders.has(reply.id)){
+          const id=reply.id;
+          importFrames.set(id,[boot(),update('user_message_chunk',text('保留已有的项目上下文。')),update('agent_message_chunk',text(reply.intent==='fork'?'这是从原会话创建的独立分支。后续消息只写入此分支。':'这是导入的历史会话。尚未启动智能体。'))]);
+          importReaders.set(id,canonicalChatFixture({ids:[id],bindingPrefix:'import-fixture',takeFrames:()=>importFrames.get(id)?.splice(0)??[]}));
+        }
+        return reply;
+      }
+      if(importReaders.has(String(body.id))){
+        const id=String(body.id);
+        if(path==='session_content')return {kind:'available',binding:'import-fixture:'+id,following:false,capture:null};
+        if(path==='chat_say'){importFrames.get(id)?.push(update('user_message_chunk',text(String(body.text))),update('agent_message_chunk',text('此回复只属于新分支。')));return null;}
+        const projected=importReaders.get(id)!.answer(path,body);
+        if(projected){try{return structuredClone(projected.value);}finally{projected.finish?.();}}
+      }
+      if(path==='__ai_preview/import-calls')return imports.calls;
       if (path === '__ai_preview/reset') {
           settingsValues={...settingsProfile};try { localStorage.removeItem(settingsKey); } catch { /* Server fixture has no browser storage. */ }
           holdSettings=false;refuseSetting=false;pendingSettings.length=0;
           failAcpSetup=false;acpSetupCalls.length=0;
+          controlCalls.length=0;
           for (const timer of timers) clearTimeout(timer); timers.clear(); streaming.clear(); khorRunning=false; khorApproval=null; khorAnswers.length=0; generation.fill(0);
           preferences.splice(0,preferences.length,...structuredClone(initialPreferences));
           modelConfig={home:device.id,account:account.id,model:account.default_model,options:{thought_level:"medium",auto_compaction:true}};
@@ -279,6 +330,7 @@ export function createLabFixture(terminal = true, options: {origin?: string; con
       if(path==='__ai_preview/upload-mode'){uploadMode=String(body.mode??'ok');return uploadMode;}
       if(path==='__ai_preview/upload-state')return uploadMode;
       if(path==='__ai_preview/says')return structuredClone(sentPrompts);
+      if(path==='__ai_preview/control-calls')return structuredClone(controlCalls);
       if(path==='__ai_preview/settings-hold'){
         holdSettings=body.hold===true;
         if(!holdSettings)for(const apply of pendingSettings.splice(0))apply();
@@ -286,8 +338,19 @@ export function createLabFixture(terminal = true, options: {origin?: string; con
       }
       if(path==='__ai_preview/settings-pending')return pendingSettings.length;
       if(path==='__ai_preview/settings-refuse'){refuseSetting=body.refuse===true;return true;}
-      if(path==='chat_put')return '/preview/uploads/'+String(body.name??'attachment');
-      if(path==='chat_put_paths')return body.paths;
+      if(path==='__ai_preview/attachment-events')return structuredClone(attachmentEvents);
+      if(path==='__ai_preview/terminal-sizes')return structuredClone(terminalSizes);
+      if(['chat_put','upload','term_drop_stage','term_drop_stage_into'].includes(path)){
+        attachmentEvents.push({operation:path,...body});
+        const base=path.startsWith('term_drop_')?'/preview/staging/':String(body.into??'/preview/khor-drop')+'/';
+        return base+String(body.name??body.path??'attachment');
+      }
+      if(path==='term_drop_folder')return '/preview/staging/'+String(body.name);
+      if(path==='term_drop_forget')return null;
+      if(path==='chat_put_paths'){
+        attachmentEvents.push({operation:path,...body});
+        return body.paths.map((path:string)=>String(body.into??'/preview/khor-drop')+'/'+path.split('/').pop());
+      }
       if (path === '__ai_preview/acp-setup') {failAcpSetup=body.fail===true;return true;}
       if (path === '__ai_preview/acp-setup-calls') return structuredClone(acpSetupCalls);
       if (pairing.handles(path)) return structuredClone(pairing.request(path, body));
@@ -322,6 +385,13 @@ export function createLabFixture(terminal = true, options: {origin?: string; con
         if (path === 'term_ended') return null;
         if (!terminalLeases.has(body.lease)) throw new Error('Unknown fixture terminal attachment');
         if (path === 'term_leave') terminalLeases.delete(body.lease);
+        if(path==='term_drop'||path==='term_drop_items'){
+          attachmentEvents.push({operation:path,...body});
+          const paths=body.paths??body.items.map((item:{path:string})=>item.path);
+          return {landed:paths.map((path:string)=>String(body.into??'/preview/khor-drop')+'/'+path.split('/').pop()),miss:null};
+        }
+        if(path==='term_drop_progress')return 1;
+        if(path==='term_resize')terminalSizes.push({...body});
         const screen = '\x1b[2J\x1b[Hkhor / layout-lab\r\n\r\n$ git status --short\r\n  clean working tree\r\n\r\nIsolated terminal: input is not executed.\r\npreview % ';
         return path === 'term_attach' ? {bytes: btoa(screen), seq: 1}
           : ['term_stream', 'term_wait'].includes(path) ? {bytes: '', seq: 1, gone: false, reset: false, stall: null} : null;
@@ -347,27 +417,29 @@ export function createLabFixture(terminal = true, options: {origin?: string; con
           case "__ai_preview/answers":answer=interactionAnswers;break;
           case "chat_respond":interactionAnswers.push(body);frames[index].push({kind:'elicit_answered',ask:body.ask,response:{action:'accept'}});break;
           case "chat_control":{
+            controlCalls.push(structuredClone(body));
             if(body.operation==='set_option'||body.operation==='set_mode'){
               const refused=refuseSetting;
               applySetting(()=>{
                 if(!refused){const payload=body.payload??{};
                   if(body.operation==='set_mode')preferences[index].modes.currentModeId=String(payload.mode);
                   else{const option=preferences[index].options.find(option=>option.id===payload.option);if(option)(option as {currentValue:unknown}).currentValue=payload.value;if(payload.option==='model')preferences[index].model=String(payload.value);}
-                  frames[index].push({kind:'settings',settings:structuredClone(preferences[index])});
+                  frames[index].push({kind:'settings',settings:structuredClone(sessionSettings(index))});
                 }
                 frames[index].push({kind:'control_result',token:body.token,operation:body.operation,data:null,error:refused?'setting-refused':null});
               });
             }else frames[index].push({kind:'control_result',token:body.token,operation:body.operation,data:{},error:null});break;
           }
           case "sessions": {
-            const rows: SessionRow[] = ids.map((id, i) => ({id, kind: i === 4 ? 'broadcast' : 'gui', title: options.longHistory&&i===0?'长对话历史 · 240轮':titles[i],
+            const rows: SessionRow[] = ids.map((id, i) => ({id, kind: i === 4 ? 'broadcast' : 'gui', title: options.longHistory&&i===0?'长对话历史 · 240轮':options.dsh&&i===3?'DeepSeek Harness · 文件校验':titles[i],
               activity: [], observation_owner: options.notices||options.noticeBurst?null:device.id, content_locator: null, imported: false, quiet: false,
               word: streaming.has(i)||i===2 ? 'busy' : i===1 ? 'blocked' : 'idle', at_ms: previewAt-i*45_000, unread:i===1 ? 3 : 0, source: null, pinned:i===0,
-              stale: false, category: i === 4 ? 'khor' : i === 3 ? 'codex' : 'claude', group: '', face: devices[i%Math.max(1,devices.length)]?.face??null,
-              hosted: true, can_control: true, attachable: false, last: '隔离示例 · 不连接真实智能体',
+              stale: false, category: i === 4 ? 'khor' : i === 3 ? options.dsh?'dsh':'codex' : 'claude', group: '', face: devices[i%Math.max(1,devices.length)]?.face??null,
+              hosted: true, can_control: true, attachable: false, dead: false, last: '隔离示例 · 不连接真实智能体',
               via: null, via_face: null, home: devices[i%Math.max(1,devices.length)]?.name??device.name, execution_home: devices[i%Math.max(1,devices.length)]?.id??device.id, place:labRoot(devices[i%Math.max(1,devices.length)])+'/project', doing: null, mux: false, ended: null}));
             if (terminal) rows.push({...rows[0], id: 'shell/layout-lab', kind: 'shell', title: '终端 · 布局试验',
               category: 'shell', activity:[], attachable: true, last: '隔离终端示例'});
+            for(const imported of imports.rows())rows.push({...rows[0],id:imported.id,title:imported.title,kind:imported.intent==='fork'?'gui':'observe',category:imported.agent,imported:imported.intent==='import',can_control:imported.intent==='fork',hosted:imported.intent==='fork',pinned:false,unread:0,last:'导入的历史会话',execution_home:imported.home});
             answer = notices.snapshot(devices.length ? rows : []);
             break;
           }
@@ -399,7 +471,9 @@ export function createLabFixture(terminal = true, options: {origin?: string; con
           case "usage": answer = labUsage(); break;
           case "quota": answer = { quota:quota[0] ? {windows:quota[0].reading.windows,as_of:null,plan:'Max 20x',credits:null,fill:.36,source:'lab',limit_reached:false} : null,trouble:null }; break;
           case "agents": answer = [{name:'codex-acp',command:'npx -y @agentclientprotocol/codex-acp@2.2.2'},
-            {name:'claude-acp',command:'npx -y @agentclientprotocol/claude-agent-acp@0.94.0'}];break;
+            {name:'dsh',command:'dsh --profile acp'},
+            {name:'claude-acp',command:'npx -y @agentclientprotocol/claude-agent-acp@0.94.0'},
+            {name:'reviewer-acp',command:'reviewer'}];break;
           case "about": answer=labAbout;break;
           case '__ai_preview/update-mode': updateMode=String(body.mode??'current');answer=true;break;
           case 'app_update_status': answer=appUpdate;break;

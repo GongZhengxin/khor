@@ -6,6 +6,46 @@ use khor_catalog::msg;
 use khor_core::recovery::{RecoveryResult, RecoveryToken};
 use std::fs;
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn dsh_readonly_recovery_uses_the_same_default_and_override() {
+        let root = tempfile::tempdir().unwrap();
+        let node = crate::Node::open(root.path().to_path_buf()).unwrap();
+        let native = Identity {
+            home: node.device(),
+            agent: "dsh".into(),
+            native_id: "dsh-readonly-recovery-test".into(),
+        };
+        let launch = |readonly| {
+            node.recovery_launch(
+                "DSH recovery",
+                root.path().to_str(),
+                native.clone(),
+                readonly,
+            )
+            .map(|launch| launch.encoded)
+        };
+        // Resolution may refuse an absent optional executable. Both entry
+        // points must name that same launch, including on a machine with DSH.
+        let default = launch(false);
+        assert_eq!(launch(true), default, "The offer must resolve the default");
+        assert!(node.agents_loaded().unwrap().doc.all().is_empty());
+        node.register_agent(
+            "dsh",
+            &[
+                std::env::current_exe().unwrap().display().to_string(),
+                "--custom-acp".into(),
+            ],
+        )
+        .unwrap();
+        let registered = launch(false).unwrap();
+        assert_eq!(launch(true).unwrap(), registered, "An override still wins");
+    }
+}
+
 /// Internal work or an already-determined reply. A replayed token is never
 /// converted into a new spawn claim by the legacy convenience wrapper.
 enum NativePreparation {
@@ -102,7 +142,7 @@ impl LiveKind {
         }
     }
 
-    fn observed_execution_ended(&self, native: &Identity) -> Result<bool, String> {
+    pub(crate) fn observed_execution_ended(&self, native: &Identity) -> Result<bool, String> {
         let mut positive = false;
         for id in super::native_aliases(native) {
             let directory = self.dir(&id).ok_or("invalid source alias")?;
@@ -348,6 +388,7 @@ impl crate::Node {
                 self.peer,
             )?
             .get(name)
+            .or_else(|| khor_sync::agents::registry::builtin(name).and_then(|agent| agent.spec()))
             .ok_or("native agent is not registered")?,
             name => self.agent_or_refuse(name)?,
         };
@@ -423,15 +464,30 @@ impl crate::Node {
                     &khor_sync::agents::agents_dir(self.root()),
                     self.peer,
                 )?;
-                let listed = match agents.seen(&reference.agent) {
-                    Some(khor_sync::agents::Answer::Sessions {
-                        home: Some(home),
-                        rows,
-                    }) if home == self.device().0 => {
-                        rows.into_iter().find(|row| row.id == reference.native_id)
-                    }
-                    _ => None,
-                };
+                let listed =
+                    if let Some(imported) = stored.as_ref().filter(|record| record.adopt_on_open) {
+                        let pinned = imported
+                            .import_spec
+                            .as_ref()
+                            .ok_or("The imported launch is not qualified")?;
+                        if Some(pinned) != self.agent(&reference.agent)?.as_ref() {
+                            return Err("The imported agent launch changed".into());
+                        }
+                        Some(
+                            self.import_recovery_metadata(&reference.agent, &reference.native_id)
+                                .ok_or("The imported source catalog is no longer qualified")?,
+                        )
+                    } else {
+                        match agents.seen(&reference.agent) {
+                            Some(khor_sync::agents::Answer::Sessions {
+                                home: Some(home),
+                                rows,
+                            }) if home == self.device().0 => {
+                                rows.into_iter().find(|row| row.id == reference.native_id)
+                            }
+                            _ => None,
+                        }
+                    };
                 if let Some(row) = listed {
                     (
                         row.title.unwrap_or_else(|| reference.native_id.clone()),
@@ -488,6 +544,10 @@ impl crate::Node {
             reference.updated_at,
         );
         record.reference = reference.clone();
+        record.adopt_on_open = stored.as_ref().is_some_and(|stored| stored.adopt_on_open);
+        record.import_spec = stored
+            .as_ref()
+            .and_then(|stored| stored.import_spec.clone());
         Ok(record)
     }
 
@@ -525,6 +585,12 @@ impl crate::Node {
                 .and_then(|launch| {
                     recovery_attempt::matching_support(&directory, &native, &launch.encoded).ok()
                 })
+                .or_else(|| {
+                    record
+                        .adopt_on_open
+                        .then(|| self.import_recovery_support(&native.agent, &native.native_id))
+                        .flatten()
+                })
                 .unwrap_or(RecoverySupport::Unknown);
             return Ok(SessionRecovery {
                 id: id.clone(),
@@ -538,7 +604,13 @@ impl crate::Node {
                 } else {
                     Execution::Unknown
                 },
-                action: if ended { Action::Native } else { Action::None },
+                action: if ended && record.adopt_on_open {
+                    Action::Adopt
+                } else if ended {
+                    Action::Native
+                } else {
+                    Action::None
+                },
                 native: Some(NativeRecovery {
                     agent: native.agent,
                     native_id: native.native_id,
@@ -704,6 +776,14 @@ impl crate::Node {
                     attempt_epoch: supplied.epoch,
                     reason: "observed-execution-owner-unknown".into(),
                 });
+            }
+            if record.adopt_on_open {
+                if let Err(reason) = self
+                    .recheck_import_recovery(&native.agent, &native.native_id)
+                    .await
+                {
+                    return Ok(RecoveryResult::Refused { reason });
+                }
             }
             (
                 self.recovery_launch(&record.title, record.cwd.as_deref(), native, false)?,
@@ -1094,6 +1174,8 @@ impl crate::Node {
         let opened = self
             .open_shell_here_from(
                 crate::shell_start::ShellStart {
+                    argv: None,
+                    headless: false,
                     token: once,
                     title: meta.title,
                     cwd: cwd.display().to_string(),

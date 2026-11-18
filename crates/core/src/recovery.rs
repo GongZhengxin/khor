@@ -29,6 +29,9 @@ pub enum RecoveryAction {
     Native,
     NewShell,
     None,
+    /// A newly adopted external history; first entry may restore its original
+    /// context after the execution owner rechecks source state and admission.
+    Adopt,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ts_rs::TS)]

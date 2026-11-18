@@ -718,14 +718,15 @@ fn submit<T: Send + 'static>(
 
 /// **A dead terminal row's page** (P5-SHELL items 1 and 2): how it ended,
 /// its last screen when its host left one (`ring.bin`), else the last
-/// commands its shell marked. Read only for a dead row of this machine's;
-/// a live one is attached as ever, and never reads the file.
+/// commands its shell marked. Read from the execution home; a live session
+/// continues through the attachment path.
 #[derive(Debug, Clone, Serialize, TS)]
 pub struct EndedPage {
     pub ended: crate::RowEnding,
     pub screen: Option<EndedScreen>,
     /// Newest first.
     pub recent: Vec<EndedCommand>,
+    pub startup_error: Option<String>,
 }
 
 /// The last screen: what a reconnecting face would have been handed, and
@@ -752,10 +753,24 @@ pub struct EndedCommand {
     pub ended_ms: Option<u64>,
 }
 
-/// [`EndedPage`] for `id`; `None` while the session is not dead here.
+/// Reads ended content on a separate runtime, safe for async native callers too.
 pub fn ended(root: &Path, id: &str) -> Result<Option<EndedPage>, String> {
-    let n = Node::open(root.to_path_buf())?;
-    Ok(n.ended(&SessionId(id.to_owned())).map(|e| EndedPage {
+    let (root, id) = (root.to_path_buf(), SessionId(id.to_owned()));
+    let content = std::thread::spawn(move || {
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .map_err(khor_catalog::msg::runtime_wont_start)?;
+        let n = Node::open(root)?;
+        rt.block_on(n.ended_anywhere(&id))
+    })
+    .join()
+    .map_err(|_| khor_catalog::msg::reach_thread_died().to_owned())??;
+    Ok(content.map(ended_page))
+}
+
+fn ended_page(e: khor_node::live::Ended) -> EndedPage {
+    EndedPage {
         ended: e.ending.into(),
         screen: e.screen.map(|r| EndedScreen {
             cols: r.cols,
@@ -777,7 +792,8 @@ pub fn ended(root: &Path, id: &str) -> Result<Option<EndedPage>, String> {
                 })
             })
             .collect(),
-    }))
+        startup_error: e.startup_error,
+    }
 }
 
 /// One command line from a machine's history (roadmap 2.6): its newest
@@ -1697,6 +1713,69 @@ mod io_tests;
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn ended_startup_error_is_readable_from_an_async_native_caller() {
+        struct Fixture(PathBuf);
+        impl Drop for Fixture {
+            fn drop(&mut self) {
+                let _ = std::fs::remove_dir_all(&self.0);
+            }
+        }
+        let stamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let root = Fixture(
+            std::env::temp_dir().join(format!("khor-ended-reader-{}-{stamp}", std::process::id())),
+        );
+        let node = Node::open(root.0.clone()).unwrap();
+        let id = SessionId("shell/ended-reader-fixture".into());
+        let live = khor_node::live::LiveKind::new(root.0.clone(), node.device());
+        live.register(&id, "shell", "failed shell startup", None, None)
+            .unwrap();
+        live.record_exit(&id, 127).unwrap();
+        std::fs::write(
+            khor_node::host::host_error_path(&live.dir_of(&id).unwrap()),
+            "Selected shell could not be started",
+        )
+        .unwrap();
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap();
+        let page = rt
+            .block_on(async { ended(&root.0, &id.0) })
+            .unwrap()
+            .unwrap();
+        assert_eq!(page.ended.exit, Some(127));
+        assert_eq!(
+            page.startup_error.as_deref(),
+            Some("Selected shell could not be started")
+        );
+        assert!(page.screen.is_none());
+        assert!(page.recent.is_empty());
+    }
+
+    #[test]
+    fn ended_screen_keeps_its_original_size_and_bytes() {
+        let page = ended_page(khor_node::live::Ended {
+            ending: khor_node::live::Ending::Exit(0),
+            startup_error: None,
+            screen: Some(khor_node::host::RingFile {
+                form: khor_node::host::RING_FORM_SNAPSHOT,
+                cols: 103,
+                rows: 31,
+                at_ms: 123,
+                bytes: b"saved output\r\n".to_vec(),
+            }),
+            recent: Vec::new(),
+        });
+        let screen = page.screen.unwrap();
+        assert_eq!((screen.cols, screen.rows, screen.at_ms), (103, 31, 123));
+        assert_eq!(B64.decode(screen.bytes).unwrap(), b"saved output\r\n");
+        assert!(page.startup_error.is_none());
+    }
 
     /// T-16's second half: a paste of 3 MiB goes as frames the host
     /// takes (at most 64 KiB each, under its 1 MiB `MAX_OP`), in order,

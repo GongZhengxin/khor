@@ -125,3 +125,100 @@ mod tests {
         let _ = std::fs::remove_dir_all(&root);
     }
 }
+
+/// Bind a terminal create token to its arguments and identity across processes.
+/// The file lock covers registration and spawn; retries never mint a second ID.
+pub(crate) fn claim_shell(
+    root: &Path,
+    token: &str,
+    fingerprint: &str,
+) -> Result<(std::fs::File, String), String> {
+    claim_shell_with_id(root, token, fingerprint, None)
+}
+
+/// Adopt a verified older identity under the same durable token gate. Existing
+/// bindings are immutable, including a reservation that refuses replay.
+pub(crate) fn claim_shell_with_id(
+    root: &Path,
+    token: &str,
+    fingerprint: &str,
+    legacy_id: Option<&str>,
+) -> Result<(std::fs::File, String), String> {
+    if !valid(token) {
+        return Err("Invalid shell creation token".into());
+    }
+    let directory = root.join(".khor").join("shell-opened");
+    std::fs::create_dir_all(&directory).map_err(|e| e.to_string())?;
+    let held = crate::remote_cancel::gate(&directory.join(format!("{token}.lock")))?;
+    let file = directory.join(format!("{token}.json"));
+    let id = if file.exists() {
+        let value: serde_json::Value =
+            serde_json::from_slice(&std::fs::read(&file).map_err(|e| e.to_string())?)
+                .map_err(|e| e.to_string())?;
+        if value["fingerprint"].as_str() != Some(fingerprint) {
+            return Err("Shell creation token already names different arguments".into());
+        }
+        let id = value["session"]
+            .as_str()
+            .ok_or("Invalid shell creation receipt")?
+            .to_owned();
+        if legacy_id.is_some_and(|legacy| legacy != id.as_str()) {
+            return Err("Shell creation token already names another session".into());
+        }
+        id
+    } else {
+        let id = match legacy_id {
+            Some(id)
+                if id.starts_with("shell/") && id.len() > "shell/".len() && id.len() <= 512 =>
+            {
+                id.to_owned()
+            }
+            Some(_) => return Err("Invalid legacy shell identity".into()),
+            None => format!("shell/{}", crate::link::fresh_leaf()?),
+        };
+        let bytes =
+            serde_json::to_vec(&serde_json::json!({"fingerprint":fingerprint,"session":id}))
+                .map_err(|e| e.to_string())?;
+        crate::live::write_whole(&file, &bytes)?;
+        id
+    };
+    Ok((held, id))
+}
+
+#[cfg(test)]
+mod shell_claim_tests {
+    #[test]
+    fn an_adopted_legacy_identity_cannot_be_rebound_or_overwritten() {
+        let root = crate::testdir::TempTree::fresh("shell-claim-adopted");
+        let token = "shell-legacy-adopt-token";
+        let original = "shell/already-started";
+        let (held, id) =
+            super::claim_shell_with_id(&root, token, "original", Some(original)).unwrap();
+        assert_eq!(id, original);
+        drop(held);
+        let (held, retry) = super::claim_shell(&root, token, "original").unwrap();
+        assert_eq!(retry, original);
+        drop(held);
+        assert!(
+            super::claim_shell_with_id(&root, token, "original", Some("shell/another")).is_err()
+        );
+        assert!(super::claim_shell_with_id(&root, token, "changed", Some(original)).is_err());
+        let (held, retry) = super::claim_shell(&root, token, "original").unwrap();
+        assert_eq!(retry, original);
+        drop(held);
+    }
+
+    #[test]
+    fn shell_identity_is_argument_bound_and_survives_another_claimant() {
+        let root = crate::testdir::TempTree::fresh("shell-claim");
+        let (held, id) = super::claim_shell(&root, "shell-create-token-12345", "original").unwrap();
+        assert!(super::claim_shell(&root, "shell-create-token-12345", "original").is_err());
+        drop(held);
+        let (held, retry) =
+            super::claim_shell(&root, "shell-create-token-12345", "original").unwrap();
+        assert_eq!(id, retry);
+        drop(held);
+        assert!(super::claim_shell(&root, "shell-create-token-12345", "different").is_err());
+        drop(root);
+    }
+}

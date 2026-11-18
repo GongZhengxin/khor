@@ -144,6 +144,7 @@ const LIVE = {
   pencil: fit(1.99, 1.95, 12.06), // round
   compose: fit(1.1, 0.7, 13.9), // square: frame and diagonal pen
   share: fit(1.2, 0.9, 13.6),
+  preview: fit(-0.35, -0.35, 16.7), // eyeglasses, centred on the 16 canvas
   // A file going into a session (item 71, 2026-10-07), on the 16 canvas,
   // computed: a disc of r 6.5 with its line fills the whole box — it
   // stands in a face's seat, and a face fills its seat.
@@ -1183,6 +1184,15 @@ export function IconShare({ className }: IconProps) {
       <path data-body d="M8 1.8l2.4 2.8H5.6Z" />
     </Mark>
   );
+}
+
+/** In-app file preview: the owner's eyeglasses choice, in the shared line weight. */
+export function IconPreview({className}:IconProps){
+  return <Mark className={className} live={LIVE.preview} icon="preview">
+    <circle cx="4.6" cy="8" r="2.8"/>
+    <circle cx="11.4" cy="8" r="2.8"/>
+    <path d="M1.1 8h.7m5.6-.6a1 1 0 0 1 1.2 0m5.6.6h.7"/>
+  </Mark>;
 }
 
 /**

@@ -2,15 +2,14 @@ import {KhorAgentSettings} from '@/views/KhorAgent';
 import {gui} from '@/gen/catalog';
 import {useSessionSettingsSeat} from '@/components/SessionFrame';
 /** Shared model, permissions, context and attachment controls for GUI sessions. */
-import {useEffect,useLayoutEffect,useRef,useState,isValidElement,cloneElement,Fragment,type ReactNode,type ReactElement,type ComponentProps} from 'react';
+import {useEffect,useLayoutEffect,useRef,useState,isValidElement,Fragment,type ReactNode,type ComponentProps} from 'react';
 import {createPortal} from 'react-dom';
 import {BarSeat,useInBar} from '@/components/SessionBar';
 import {DropdownMenu,DropdownMenuTrigger,DropdownMenuContent,DropdownMenuItem,DropdownMenuLabel,DropdownMenuSeparator,DropdownMenuCheckboxItem,DropdownMenuRadioGroup,DropdownMenuRadioItem} from '@/components/ui/dropdown-menu';
-import {IconBack,IconChevronDown,IconChevronRight,IconFiles,IconUpload,IconMore,IconFilter} from '@/components/icons';
+import {IconBack,IconChevronDown,IconChevronRight,IconMore,IconFilter} from '@/components/icons';
 import {Button} from '@/components/ui/button';
 import {Dialog,DialogContent,DialogTitle,DialogBody,DialogFooter} from '@/components/ui/dialog';
-import {SendInto,type SendIntoControl} from '@/views/chat-files';
-import {AddSeat,PlusSeat,SendSeat,StopSeat,ModeSeat,type AddOption,type Who} from '@/views/Composer';
+import {PlusSeat,SendSeat,StopSeat,ModeSeat,type AddOption,type Who} from '@/views/Composer';
 import {piJob} from '@/lib/pi-accounts';
 import type {AgentProtocol,SessionConfigOption} from '@/lib/acp-session';
 import {khorAgent,type KhorAgentView} from '@/api';
@@ -130,23 +129,9 @@ export function KhorHeader({view,onChanged,disabled,updates=[],session="wide/all
     {error&&<DropdownMenuLabel role="alert" className="composer-lab-menu-note text-state-failed">{error}</DropdownMenuLabel>}
   </Preferences><KhorAgentSettings session={session} view={view} onChanged={onChanged} disabled={disabled} openRequest={configure} hideTrigger/></>;
 }
-export function SessionAdd({destination,onFind,onExport,exportBusy,...props}:ComponentProps<typeof AddSeat>&{destination?:ReactElement<ComponentProps<typeof SendInto>>|null;onFind?:()=>void;onExport?:()=>void;exportBusy?:boolean}){
-
-  if(!props.onAttach&&!props.onAttachMachine&&!onFind&&!onExport)return null;
-  const menu=(target?:SendIntoControl)=><DropdownMenu>
-    <DropdownMenuTrigger asChild><PlusSeat data-lab-add aria-label="添加附件"/></DropdownMenuTrigger>
-    <DropdownMenuContent side="top" align="start" sideOffset={16} alignOffset={-6} data-lab-attachments className="min-w-nav-menu composer-lab-menu" onCloseAutoFocus={e=>e.preventDefault()}>
-      {onFind&&<DropdownMenuItem data-history-find-open onSelect={onFind}>查找对话</DropdownMenuItem>}
-      {onExport&&<DropdownMenuItem data-history-readable-export disabled={exportBusy} onSelect={onExport}>导出对话</DropdownMenuItem>}
-      {props.onAttach&&<DropdownMenuItem data-lab-attach-device onSelect={props.onAttach}><IconUpload className="size-nav-glyph"/>从这台设备添加</DropdownMenuItem>}
-      {props.onAttachMachine&&<DropdownMenuItem onSelect={props.onAttachMachine.pick}><IconFiles className="size-nav-glyph"/>{props.onAttachMachine.label}</DropdownMenuItem>}
-      {target&&<><DropdownMenuSeparator/><DropdownMenuItem data-send-into-change onSelect={target.pick}><span>上传位置</span><span data-send-into-path className="composer-lab-menu-value ml-auto">{target.path}</span><IconChevronRight className="size-affordance text-muted-foreground"/></DropdownMenuItem>
-        {target.reset&&<DropdownMenuItem data-send-into-reset onSelect={target.reset}>恢复默认位置</DropdownMenuItem>}
-      </>}
-    </DropdownMenuContent>
-  </DropdownMenu>;
-  // DirPicker must survive closing the menu that opened it.
-  return destination?cloneElement(destination,{render:menu}):menu();
+/** The composer plus has one job: enter the shared attachment draft. */
+export function SessionAdd({onAttach}:{onAttach?:()=>void}){
+  return onAttach?<PlusSeat data-lab-add aria-label="添加附件" onClick={onAttach}/>:null;
 }
 export function KhorSend({record,onStopped,ready,sending,onSend,blocked=false,session="wide/all"}:{session?:string;record:CommandRecord|null;onStopped:()=>void;ready:boolean;sending:boolean;onSend:()=>void;blocked?:boolean}){
   if(record)return <StopSeat tip={false} onStop={()=>{void khorAgent('stop',record.owner,{run:record.id,session}).then(onStopped);}}/>;

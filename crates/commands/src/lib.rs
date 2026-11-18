@@ -56,9 +56,10 @@ use khor_node::{
 };
 
 mod execution;
+mod task_commands;
 use execution::{
-    CLI_EXIT, START_WEB, command_root, emit_output, err, in_request, input_all, input_line,
-    json_output, navigate, record_data,
+    CLI_EXIT, START_WEB, command_root, emit_output, err, in_request, input_line, json_output,
+    navigate, record_data,
 };
 pub use execution::{
     CommandOutcome, CommandProgress, CommandSpec, ProgressSink, catalog, execute, execute_with,
@@ -85,6 +86,9 @@ pub fn console_main_if_requested(start_web: fn(&std::path::Path)) -> Option<i32>
         return Some(0);
     }
     khor_node::runtime_image::process_entry();
+    if let Some(code) = khor_node::command_task::main_if_requested(&Node::root_from_env()) {
+        return Some(code);
+    }
     if let Some(code) = khor_node::mcp_worker::main_if_requested() {
         return Some(code);
     }
@@ -460,6 +464,21 @@ const VERBS: &[Verb] = &[
         word: "usage",
         run: usage,
         reach: Reach::Read,
+    },
+    Verb {
+        word: "exec",
+        run: task_commands::exec,
+        reach: Reach::Act,
+    },
+    Verb {
+        word: "execution",
+        run: task_commands::execution,
+        reach: Reach::Act,
+    },
+    Verb {
+        word: "terminal",
+        run: task_commands::terminal,
+        reach: Reach::Act,
     },
     Verb {
         word: "sessions",
@@ -4041,51 +4060,115 @@ fn find(rest: &[String]) -> Result<(), String> {
 /// numbers are this listing's, so they are asked again right before use
 /// — a number from a listing a minute old is not a promise.
 fn import(rest: &[String]) -> Result<(), String> {
+    use khor_node::session_import::{ImportIntent, SessionImportAction, SessionImportReply};
     let n = node()?;
-    let candidates = n.import_candidates()?;
-    if rest.is_empty() {
-        if candidates.is_empty() {
-            println!("{}", cli::import_none());
+    let mut machine = String::new();
+    let mut refresh = None;
+    let mut agent = None;
+    let mut which = None;
+    let mut fork = false;
+    let mut token = None;
+    let mut args = rest.iter();
+    while let Some(arg) = args.next() {
+        match arg.as_str(){
+            "--machine"=>machine=args.next().ok_or("--machine requires a source")?.clone(),
+            "--refresh"=>refresh=Some(args.next().ok_or("--refresh requires an agent")?.clone()),
+            "--agent"=>agent=Some(args.next().ok_or("--agent requires a name")?.clone()),
+            "--token"=>token=Some(args.next().ok_or("--token requires a value")?.clone()),
+            "--fork"=>fork=true,
+            value if !value.starts_with('-')&&which.is_none()=>which=Some(value.to_owned()),
+            _=>return Err("Use khor import [--machine SOURCE] [--refresh AGENT] [--agent AGENT] [--fork] [NUMBER|NATIVE_ID] [--token TOKEN]".into()),
         }
-        let names: std::collections::HashMap<String, String> = n
-            .devices()?
-            .into_iter()
-            .map(|d| (d.id.clone(), d.shown().to_owned()))
-            .collect();
-        let now = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map(|d| d.as_millis() as i64)
-            .unwrap_or(0);
-        for (i, c) in candidates.iter().enumerate() {
-            let age = if c.at_ms > 0 {
-                human_age(now.saturating_sub(c.at_ms).max(0) as u64)
-            } else {
-                String::new()
+    }
+    let home = if machine.is_empty() {
+        n.device_str().to_owned()
+    } else {
+        n.resolve_machine(&machine)?.1.hex()
+    };
+    let action = refresh
+        .map(|agent| SessionImportAction::Refresh { agent })
+        .unwrap_or(SessionImportAction::Read);
+    let SessionImportReply::Catalog { value } =
+        rt()?.block_on(n.session_import_on(&home, action))?
+    else {
+        return Err("Unexpected import catalog response".into());
+    };
+    let rows: Vec<_> = value
+        .rows
+        .iter()
+        .filter(|row| agent.as_ref().is_none_or(|agent| &row.agent == agent))
+        .collect();
+    let Some(which) = which else {
+        record_data(serde_json::to_value(&value).map_err(|error| error.to_string())?);
+        for source in &value.agents {
+            println!("{}\t{}", source.agent, source.status);
+        }
+        if rows.is_empty() {
+            println!("{}", khor_catalog::gui::import_empty());
+        }
+        for (index, row) in rows.iter().enumerate() {
+            let action = match row.intent {
+                Some(ImportIntent::Import) => "import",
+                Some(ImportIntent::Fork) => "fork",
+                None => row.reason.as_deref().unwrap_or("unavailable"),
             };
             println!(
-                "{}\t{}\t{}\t{}\t{}\t{}\t{}",
-                i + 1,
-                names
-                    .get(&c.home)
-                    .cloned()
-                    .unwrap_or_else(|| c.home.clone()),
-                c.form,
-                c.title,
-                c.place.as_deref().unwrap_or(""),
-                age,
-                c.id
+                "{}\t{}\t{}\t{}\t{}\t{}",
+                index + 1,
+                row.agent,
+                row.title,
+                row.cwd,
+                action,
+                row.native_id
             );
         }
         return Ok(());
+    };
+    let row = if let Ok(index) = which.parse::<usize>() {
+        rows.get(index.saturating_sub(1))
+            .filter(|_| index > 0)
+            .copied()
+    } else {
+        let mut matches = rows.iter().filter(|row| row.native_id == which);
+        let found = matches.next().copied();
+        if matches.next().is_some() {
+            return Err(
+                "This native ID occurs in multiple agents; select an agent or row number".into(),
+            );
+        }
+        found
     }
-    for which in rest {
-        let id = match which.parse::<usize>() {
-            Ok(k) if k >= 1 && k <= candidates.len() => candidates[k - 1].id.clone(),
-            _ => which.clone(),
-        };
-        println!("{}", n.import(&id)?.0);
+    .ok_or("The requested session is not in this source catalog")?;
+    let intent = if fork {
+        ImportIntent::Fork
+    } else {
+        ImportIntent::Import
+    };
+    if row.intent != Some(intent) {
+        return Err(format!(
+            "Requested import action is unavailable: {}",
+            row.reason
+                .as_deref()
+                .unwrap_or("use --fork to create an independent branch")
+        ));
     }
-    Ok(())
+    let token = token.unwrap_or(khor_node::link::fresh_hex()?);
+    let result = rt()?.block_on(n.session_import_on(
+        &home,
+        SessionImportAction::Apply {
+            agent: row.agent.clone(),
+            native_id: row.native_id.clone(),
+            intent,
+            token,
+        },
+    ))?;
+    record_data(serde_json::to_value(&result).map_err(|error| error.to_string())?);
+    if let SessionImportReply::Imported { id, .. } = result {
+        println!("{id}");
+        Ok(())
+    } else {
+        Err("Unexpected import action response".into())
+    }
 }
 
 fn sessions(rest: &[String]) -> Result<(), String> {
@@ -4469,6 +4552,9 @@ fn run(rest: &[String]) -> Result<(), String> {
         return Err(usage_text().into());
     }
     let n = node()?;
+    if !tui {
+        return task_commands::run_once(&n, &cmd);
+    }
     let kind = if tui {
         khor_node::kind::TUI
     } else {
@@ -4501,6 +4587,7 @@ fn open(rest: &[String]) -> Result<(), String> {
     let mut detached = in_request();
     let mut title: Option<String> = None;
     let mut cmd: Vec<String> = Vec::new();
+    let mut startup: Option<String> = None;
     let mut on: Option<String> = None;
     let mut agent: Option<String> = None;
     let mut resume: Option<String> = None;
@@ -4531,11 +4618,60 @@ fn open(rest: &[String]) -> Result<(), String> {
             "--title" if cmd.is_empty() => {
                 title = Some(it.next().ok_or_else(|| usage_text().to_string())?.clone());
             }
+            "--command" if cmd.is_empty() => {
+                startup = Some(it.next().ok_or_else(|| usage_text().to_owned())?.clone());
+            }
             "--" if cmd.is_empty() => {}
             _ => cmd.push(a.clone()),
         }
     }
+    if startup.is_some() && !cmd.is_empty() {
+        return Err(usage_text().into());
+    }
     let n = node()?;
+    if !gui && !tui && agent.is_none() {
+        if resume.is_some() {
+            return Err(cli::resume_needs_agent().into());
+        }
+        let argv = if startup.is_none() && !cmd.is_empty() {
+            Some(cmd)
+        } else {
+            None
+        };
+        let command = startup.unwrap_or_default();
+        let (cols, rows) = tty_size().unwrap_or((80, 24));
+        let cwd = if on.is_some() {
+            String::new()
+        } else {
+            std::env::current_dir()
+                .map_err(|e| e.to_string())?
+                .display()
+                .to_string()
+        };
+        let id = rt()?.block_on(n.open_shell_on(
+            on.as_deref().unwrap_or(""),
+            khor_node::shell_start::ShellStart {
+                argv,
+                token: khor_node::link::fresh_hex()?,
+                title: title.unwrap_or_default(),
+                cwd,
+                command,
+                cols,
+                rows,
+                headless: detached || on.is_some(),
+            },
+        ))?;
+        navigate(&id.0);
+        if detached || on.is_some() {
+            println!("{}", id.0);
+            return Ok(());
+        }
+        return attach_to(&n, &id);
+    }
+    if startup.is_some() {
+        return Err(usage_text().into());
+    }
+
     // Whether the person named a command at all, read before the agent
     // resolution below fills `cmd` in: the far-agent road takes a name
     // and never a command.
@@ -4744,7 +4880,7 @@ fn host(rest: &[String]) -> Result<(), String> {
         cols.parse::<u16>().map_err(|_| usage_text().to_string())?,
         rows.parse::<u16>().map_err(|_| usage_text().to_string())?,
     );
-    khor_node::host::host_main(command_root(), SessionId(sid.clone()), size, cmd.to_vec())
+    khor_node::host::host_main_from_env(command_root(), SessionId(sid.clone()), size, cmd.to_vec())
 }
 
 /// 接管 (批C): typing the verb is the confirmation — the CLI's precedent

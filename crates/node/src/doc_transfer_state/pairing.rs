@@ -381,21 +381,22 @@ fn row_size(row: &impl Serialize) -> Result<(), Error> {
 }
 pub(crate) fn needs_recovery(root: &Path, local: Id) -> Result<bool, Error> {
     let directory = root.join(".khor/doc-transfer-state");
-    // A complete next image may contain the first Ready intent. Bootstrap
-    // must go through Journal::load before deciding that no recovery exists.
-    if io::has_publication(&directory)? {
+    let io::BootstrapView::Images(images) = io::bootstrap_view(&directory)? else {
         return Ok(true);
-    }
-    let Some(bytes) = io::peek(&directory)? else {
-        return Ok(false);
     };
-    super::validate_records(&bytes, local)?;
-    let rows: AllRecords = rmp_serde::from_slice(&bytes).map_err(Error::from_std)?;
-    Ok(rows
-        .pairing
-        .settlements
-        .iter()
-        .any(|s| s.ready && !s.finished))
+    for bytes in images {
+        super::validate_records(&bytes, local)?;
+        let rows: AllRecords = rmp_serde::from_slice(&bytes).map_err(Error::from_std)?;
+        if rows
+            .pairing
+            .settlements
+            .iter()
+            .any(|s| s.ready && !s.finished)
+        {
+            return Ok(true);
+        }
+    }
+    Ok(false)
 }
 pub(crate) fn root_fence(root: &Path) -> Result<io::RootGate, Error> {
     io::root_gate(root)
@@ -1007,6 +1008,188 @@ impl State {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+    use std::{
+        fs,
+        io::Write,
+        path::PathBuf,
+        sync::atomic::{AtomicU64, Ordering},
+    };
+
+    static NEXT: AtomicU64 = AtomicU64::new(0);
+    struct Fixture(PathBuf);
+    impl Fixture {
+        fn new(current: &AllRecords, pending: &AllRecords) -> Self {
+            let root = std::env::temp_dir().join(format!(
+                "khor-bootstrap-view-{}-{}",
+                std::process::id(),
+                NEXT.fetch_add(1, Ordering::Relaxed)
+            ));
+            fs::create_dir_all(root.join(".khor")).unwrap();
+            let fixture = Self(root);
+            let directory = fixture.directory();
+            let _gate = io::gate(&directory).unwrap();
+            let (mut journal, _) = io::Journal::load(&directory, |_| Ok(())).unwrap();
+            journal.save(&rmp_serde::to_vec(current).unwrap()).unwrap();
+            let previous = fs::read(directory.join("registry")).unwrap();
+            journal.save(&rmp_serde::to_vec(pending).unwrap()).unwrap();
+            fs::rename(directory.join("registry"), directory.join("registry.next")).unwrap();
+            let mut options = fs::OpenOptions::new();
+            options.write(true).create_new(true);
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::OpenOptionsExt;
+                options.mode(0o600);
+            }
+            options
+                .open(directory.join("registry"))
+                .unwrap()
+                .write_all(&previous)
+                .unwrap();
+            fixture
+        }
+        fn directory(&self) -> PathBuf {
+            self.0.join(".khor/doc-transfer-state")
+        }
+    }
+    impl Drop for Fixture {
+        fn drop(&mut self) {
+            let _ = fs::remove_dir_all(&self.0);
+        }
+    }
+    fn settlement(ready: bool, finished: bool) -> AllRecords {
+        let local = [42; 32];
+        let remote = [43; 32];
+        let nonce = [44; 32];
+        let token_hash = [45; 32];
+        let id = claim_id(local, remote, token_hash, nonce);
+        let version = DocumentVersion {
+            epoch: 1,
+            version: Default::default(),
+        }
+        .encode()
+        .unwrap();
+        let mut records = AllRecords::default();
+        records.pairing.claims.push(Claim {
+            id,
+            caller: remote,
+            nonce,
+            token_hash,
+            minted_ms: 0,
+            header: PairHeader {
+                name: "peer".into(),
+                addrs: vec![],
+                devices_have: version.clone().into(),
+                roster: None,
+            },
+            name: "peer".into(),
+            phase: PairPhase::Receiving,
+            anchor: None,
+            roster_out: None,
+            roster_released: false,
+            devices_have: vec![].into(),
+            devices_out: None,
+            devices_in: None,
+            devices_offer_decided: false,
+            completed_ms: None,
+        });
+        records.pairing.settlements.push(Settlement {
+            id,
+            remote,
+            dialed: false,
+            before_anchor: None,
+            before_roster: None,
+            before_key: None,
+            desired_anchor: None,
+            desired_roster: None,
+            epoch: 1,
+            target: finished.then(|| version.into()),
+            ready,
+            finished,
+            remote_name: "peer".into(),
+            remote_addrs: vec![],
+            row_before: None,
+            input_roster: None,
+        });
+        super::super::validate_records(&rmp_serde::to_vec(&records).unwrap(), local).unwrap();
+        records
+    }
+    #[test]
+    fn bootstrap_checks_ready_in_both_images_without_publishing_ordinary_receipts() {
+        let _serial = io::TEST_SERIAL.lock().unwrap_or_else(|e| e.into_inner());
+        for (current, pending, expected) in [
+            (AllRecords::default(), AllRecords::default(), false),
+            (AllRecords::default(), settlement(false, false), false),
+            (AllRecords::default(), settlement(true, false), true),
+            (settlement(true, false), AllRecords::default(), true),
+            (settlement(true, false), settlement(true, true), true),
+            (settlement(true, true), settlement(true, true), false),
+        ] {
+            let fixture = Fixture::new(&current, &pending);
+            let directory = fixture.directory();
+            let before = fs::read(directory.join("registry")).unwrap();
+            let next = fs::read(directory.join("registry.next")).unwrap();
+            let _root = root_fence(&fixture.0).unwrap();
+            assert_eq!(needs_recovery(&fixture.0, [42; 32]).unwrap(), expected);
+            assert_eq!(fs::read(directory.join("registry")).unwrap(), before);
+            assert_eq!(fs::read(directory.join("registry.next")).unwrap(), next);
+        }
+    }
+    #[test]
+    fn bootstrap_never_bypasses_incomplete_corrupt_or_ambiguous_publications() {
+        let _serial = io::TEST_SERIAL.lock().unwrap_or_else(|e| e.into_inner());
+        for case in 0..6 {
+            let fixture = Fixture::new(&AllRecords::default(), &AllRecords::default());
+            let directory = fixture.directory();
+            let next = directory.join("registry.next");
+            let mut bytes = fs::read(&next).unwrap();
+            match case {
+                0 => bytes.truncate(20),
+                1 => bytes[24] ^= 1,
+                2 => bytes = fs::read(directory.join("registry")).unwrap(),
+                3 => {
+                    bytes[8..16].copy_from_slice(&6u64.to_be_bytes());
+                    let mut hash = blake3::Hasher::new();
+                    hash.update(&bytes[..24]);
+                    hash.update(&bytes[56..]);
+                    bytes[24..56].copy_from_slice(hash.finalize().as_bytes());
+                }
+                4 => {
+                    // Complete checksum, invalid canonical Records body.
+                    *bytes.last_mut().unwrap() = 0xc0;
+                    let mut hash = blake3::Hasher::new();
+                    hash.update(&bytes[..24]);
+                    hash.update(&bytes[56..]);
+                    bytes[24..56].copy_from_slice(hash.finalize().as_bytes());
+                }
+                _ => {
+                    fs::write(directory.join("unknown"), b"preserve").unwrap();
+                }
+            }
+            fs::write(&next, &bytes).unwrap();
+            let _root = root_fence(&fixture.0).unwrap();
+            assert!(!matches!(needs_recovery(&fixture.0, [42; 32]), Ok(false)));
+            assert_eq!(fs::read(&next).unwrap(), bytes);
+        }
+    }
+    #[test]
+    fn first_publication_cannot_hide_ready_before_any_committed_registry() {
+        let _serial = io::TEST_SERIAL.lock().unwrap_or_else(|e| e.into_inner());
+        for (records, expected) in [
+            (AllRecords::default(), false),
+            (settlement(true, false), true),
+        ] {
+            let fixture = Fixture::new(&records, &records);
+            let directory = fixture.directory();
+            fs::remove_file(directory.join("registry.next")).unwrap();
+            fs::rename(directory.join("registry"), directory.join("registry.next")).unwrap();
+            let next = fs::read(directory.join("registry.next")).unwrap();
+            let _root = root_fence(&fixture.0).unwrap();
+            assert_eq!(needs_recovery(&fixture.0, [42; 32]).unwrap(), expected);
+            assert!(!directory.join("registry").exists());
+            assert_eq!(fs::read(directory.join("registry.next")).unwrap(), next);
+        }
+    }
     #[test]
     fn adding_pairing_preserves_the_existing_empty_doc_journal_bytes() {
         #[derive(serde::Serialize)]

@@ -299,7 +299,12 @@ impl State {
         context: &Context,
         root_guard: &mut RootMutationGuard,
     ) -> Result<Option<Self>, Error> {
-        let gate = root_guard.bootstrap_metadata(&context.root)?;
+        let Some(gate) = root_guard.bootstrap_metadata(&context.root, || {
+            pairing::needs_recovery(&context.root, context.local)
+        })?
+        else {
+            return Ok(None);
+        };
         // The physical root fence was handed off. Decide against the latest
         // publication only after both corresponding leases are held again.
         if !pairing::needs_recovery(&context.root, context.local)? {

@@ -340,13 +340,10 @@ impl Node {
         if loaded.doc.get(remote).is_none() {
             return Err(msg::not_paired().into());
         }
-        if self
-            .standing_in(&loaded.doc, remote, crate::now_ms())
-            .admitted()
-        {
-            Ok(())
-        } else {
-            Err(msg::not_in_roster().into())
+        match self.standing_in(&loaded.doc, remote, crate::now_ms()) {
+            Standing::Legacy | Standing::Trusted => Ok(()),
+            Standing::Pending => Err(msg::not_in_roster().into()),
+            Standing::Revoked => Err(msg::admission_revoked().into()),
         }
     }
 
@@ -2383,6 +2380,30 @@ mod tests {
         assert!(
             !d.root_state().root.unwrap().eq(&root),
             "d keeps its network"
+        );
+    }
+
+    #[test]
+    fn admission_separates_waiting_approval_from_revoked_access() {
+        let (ta, tb) = (
+            TempTree::fresh("trust-admission-a"),
+            TempTree::fresh("trust-admission-b"),
+        );
+        let a = node(&ta, "alpha");
+        let b = node(&tb, "beta");
+        join_through_a_member(&a, &b);
+        assert_eq!(a.admit(b.device_str()).unwrap_err(), msg::not_in_roster());
+        assert!(a.pending().unwrap().iter().any(|r| r.id == b.device_str()));
+        a.approve_here("beta").unwrap();
+        assert_eq!(a.admit(b.device_str()), Ok(()));
+        a.revoke_here("beta").unwrap();
+        assert_eq!(
+            a.admit(b.device_str()).unwrap_err(),
+            msg::admission_revoked()
+        );
+        assert!(
+            a.pending().unwrap().is_empty(),
+            "revocation is not a pending request"
         );
     }
 

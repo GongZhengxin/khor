@@ -24,6 +24,8 @@ macro_rules! roots {
         $visit!(khor_gui_core::term::EndedPage);
         $visit!(khor_gui_core::DeviceRow);
         $visit!(khor_gui_core::import::CandidateRow);
+        $visit!(khor_gui_core::import::SessionImportAction);
+        $visit!(khor_gui_core::import::SessionImportReply);
         $visit!(khor_gui_core::FindHit);
         $visit!(khor_gui_core::DayRun);
         $visit!(khor_gui_core::FaceChoices);

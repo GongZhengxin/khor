@@ -1,3 +1,4 @@
+import {Button} from "@/components/ui/button";
 import {ScrollToBottom} from '@/components/ScrollToBottom';
 import {linkIntent,canActivateTerminalLink,type LinkIntent} from "@/lib/content-link-intent";
 import {claimTerminalLinkClicks} from "@/lib/term-link-gesture";
@@ -68,7 +69,7 @@ import { WebLinksAddon } from "@xterm/addon-web-links";
 import "@xterm/xterm/css/xterm.css";
 
 import { TerminalUnavailable, terminalAttachment, bellHaptic, faceNote, inApp, said, termDropForget, termEnded, type Miss } from "@/api";
-import { addAttachments, deviceAttachments, droppedAttachments, prepareAttachments, type Attachment, type PreparedDrop } from "@/lib/term-attachments";
+import { addAttachments, pathAttachment, deviceAttachments, droppedAttachments, prepareAttachments, type Attachment, type PreparedDrop } from "@/lib/term-attachments";
 import { GlassCircle, GlassItem } from "@/components/Glass";
 import { usePinch } from "@/hooks/use-pinch";
 import { offerTabAct } from "@/lib/tab-acts";
@@ -84,7 +85,6 @@ import { TermPeek } from "@/views/TermPeek";
 import { IconChevronDown, IconChevronUp, IconClose, IconReload } from "@/components/icons";
 import { RegionState, Waiting } from "@/components/RegionState";
 import { gui, menu, msg } from "@/gen/catalog";
-import { baseName } from "@/lib/paths";
 import { levelOf, treeChanged } from "@/lib/tree-changed";
 import { cn } from "@/lib/utils";
 import { HIDDEN_MS, useHidden } from "@/hooks/use-hidden";
@@ -117,6 +117,7 @@ import type { Doing } from "@/gen/bindings/Doing";
 import { tapAsks, termWake, useTermWake, watchesCursor } from "@/lib/term-tap";
 import { holdFocus, keyboardUp, lowerKeyboard, onKeyboardChange, raiseKeyboard, terminalShown } from "@/lib/soft-keyboard";
 import { dropsComposition } from "@/lib/term-compose-drop";
+import {AttachmentPicker} from "@/views/TermFiles";
 import { KeyboardSwitch, KeyRowSwitch, TermKeys } from "@/views/TermKeys";
 import { useKeyRowOpen } from "@/lib/key-row-open";
 import { iipSizes } from "@/lib/term-iip";
@@ -1483,6 +1484,10 @@ export function TerminalPane({
       macOptionIsMeta: termOptionMeta(),
     });
     const fit = new FitAddon();
+    const fitGrid=fit.fit.bind(fit);
+    // Attachment panels and their nested file pages cover the existing grid.
+    // Search focus, sheet detents and keyboard swaps must never resize its PTY.
+    fit.fit=()=>{if(!document.querySelector('[data-attachment-picker]'))fitGrid();};
     term.loadAddon(fit);
     // Real east-asian widths — the measured `wideFit` scale hack this
     // replaces existed because the DOM painter had to guess what a
@@ -2191,11 +2196,11 @@ export function TerminalPane({
           // Wired only now: a resize racing the open would size a pty
           // the open is about to size again.
           resizing ??= term.onResize(({ cols, rows }) => {
-            attachment.resize(cols, rows).catch(() => {});
+            if(!document.querySelector('[data-attachment-picker]'))attachment.resize(cols, rows).catch(() => {});
           });
           if (again) {
             fit.fit();
-            joining.resize(term.cols, term.rows).catch(() => {});
+            if(!document.querySelector('[data-attachment-picker]'))joining.resize(term.cols, term.rows).catch(() => {});
             term.scrollToBottom();
             // A reload keeps the terminal the focus, and the keyboard as
             // it was.
@@ -2369,6 +2374,7 @@ export function TerminalPane({
     // costs nothing; the kernel signals the program only on a change.
     let sizedAt = performance.now();
     const ownSize = () => {
+      if(document.querySelector('[data-attachment-picker]'))return;
       if (performance.now() - sizedAt < SIZE_AGAIN_MS) {
         sizedAt = performance.now();
         return;
@@ -3014,6 +3020,8 @@ export function TerminalPane({
   }, []);
   useEffect(() => { notifyRecovery(); }, [joining, opening, dropShare, dropNames]);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [attachmentOpen,setAttachmentOpen]=useState(false);
+  const [attachmentInto,setAttachmentInto]=useState<string|null>(null);
   const attachmentsRef = useRef(attachments);
   attachmentsRef.current = attachments;
   const changeAttachments = useCallback((next: Attachment[]) => {
@@ -3152,18 +3160,22 @@ export function TerminalPane({
   );
   const dropFromRef = useRef(dropFrom);
   dropFromRef.current = dropFrom;
-  const drop = useCallback(
-    (paths: string[], from: string | null, into?: string | null) => { void dropFrom(paths, paths.map(baseName), from, into ?? null); }, [dropFrom],
-  );
+  const queueAttachments=useCallback((items:Attachment[])=>{
+    if(dropping.current)return;
+    changeAttachments(addAttachments(attachmentsRef.current,items));setAttachmentOpen(true);
+  },[changeAttachments]);
+  const drop = useCallback((paths:string[],from:string|null)=>{
+    queueAttachments(paths.map(path=>pathAttachment(path,from,from??gui.machine_here,false,null,from===null)));
+  },[queueAttachments]);
   const sendAttachments = useCallback((entries: Attachment[], into: string | null = null) =>
     dropFrom((gone) => prepareAttachments(entries, gone), entries.map((x) => x.name), null, into, () => {
       changeAttachments(attachmentsRef.current.filter((x) => !entries.some((e) => e.key === x.key)));
     }), [dropFrom, changeAttachments]);
   const dropFiles = useCallback((files: File[]) => {
     if (!files.length || dropping.current) return;
-    try { void sendAttachments(deviceAttachments(files, false, gui.machine_here)); }
+    try { queueAttachments(deviceAttachments(files, false, gui.machine_here)); }
     catch (e) { fail({ kind: "other", machine: null, raw: said(e) }, files.map((x) => x.name), () => {}, () => {}); }
-  }, [sendAttachments, fail]);
+  }, [queueAttachments, fail]);
   const dropRef = useRef(drop);
   dropRef.current = drop;
   // A pasted picture (item 60 part 4), from the pane's own handlers.
@@ -3338,7 +3350,7 @@ export function TerminalPane({
         if (!dragged && (inApp || !e.dataTransfer.types.includes("Files"))) return;
         e.preventDefault();
         if (dragged) drop([dragged.path], dragged.machine);
-        else void droppedAttachments(e.dataTransfer, gui.machine_here).then((items) => sendAttachments(items)).catch((err: unknown) => {
+        else void droppedAttachments(e.dataTransfer, gui.machine_here).then(queueAttachments).catch((err: unknown) => {
           fail({ kind: "other", machine: null, raw: said(err) }, [], () => {}, () => {});
         });
       }}
@@ -3602,6 +3614,7 @@ export function TerminalPane({
         </div>
       )}
     </div>
+    {active&&!attachmentOpen&&attachments.length>0&&<div className="pointer-events-none absolute bottom-0 right-0 z-10 p-row"><Button data-term-attachment-resume className="pointer-events-auto min-h-touch" onClick={()=>setAttachmentOpen(true)}>待发送 · {attachments.length} 项</Button></div>}
     {/* **Under a finger, the keys a soft keyboard lacks and the switch
         for the keyboard** (`TermKeys`, 2026-10-02). On the narrow face
         they go to the session bar (row 2, and row 1's right end); where
@@ -3665,12 +3678,20 @@ export function TerminalPane({
             `lib/term-tap`'s (`useTermWake`). */}
         <KeyRowSeats field={keysRef} keyboard={wake === "button" && <KeyboardSwitch field={keysRef} />}>
           <TermKeys term={termRef} mods={mods} onMods={latch} files={{ machine: machine ?? null, cwd: doing?.cwd ?? null, selected: attachments,
-            add: (items) => changeAttachments(addAttachments(attachmentsRef.current, items)),
-            remove: (item) => changeAttachments(attachmentsRef.current.filter((x) => x.key !== item.key)),
-            send: sendAttachments, dropFiles, busy: dropShare !== null, stopping: dropStopping, progress: dropShare, cancel: () => dropCancel.current() }} />
+            open:()=>setAttachmentOpen(true),opened:attachmentOpen,add:queueAttachments,
+            remove:item=>changeAttachments(attachmentsRef.current.filter(x=>x.key!==item.key)),
+            send:sendAttachments,dropFiles,busy:dropShare!==null,progress:dropShare,cancel:()=>dropCancel.current() }} />
         </KeyRowSeats>
       </>
     )}
+    {active&&<AttachmentPicker viewport={boxRef} open={attachmentOpen} onClose={()=>setAttachmentOpen(false)} onSent={()=>{setAttachmentOpen(false);const field=termRef.current?.textarea;if(field?.isConnected)raiseKeyboard(field);}}
+      road={{machine:machine??null,cwd:doing?.cwd??null,selected:attachments,into:attachmentInto,onInto:setAttachmentInto,
+       add:items=>changeAttachments(addAttachments(attachmentsRef.current,items)),
+       replace:(entry,file)=>changeAttachments(attachmentsRef.current.flatMap(item=>item.key===entry.key?deviceAttachments([file],false,gui.machine_here):[item])),
+       remove:entry=>changeAttachments(attachmentsRef.current.filter(item=>item.key!==entry.key)),
+       send:sendAttachments,dropFiles,busy:dropShare!==null,stopping:dropStopping,progress:dropShare,cancel:()=>dropCancel.current()}}/>}
+
+
     </>
   );
 }
@@ -3710,36 +3731,70 @@ function KeyRowSeats({
   );
 }
 
-/**
- * **A dead terminal row's page** (P5-SHELL items 1 and 2, the owner
- * 2026-10-12): a shell whose host is gone opened to nothing — its screen
- * lived in the host's memory. Its host now leaves `ring.bin`, and the
- * page draws that last screen, read-only, on the muted ground, under the
- * one sentence that says how it ended (`session-over`, the row's own
- * cause). A host from before the file, or one killed before its first
- * write, left only `commands.json`: the page lists those commands —
- * command, directory, exit code, when — under the same sentence. A live
- * shell never comes here; its host serves the ring as ever.
- */
+const ENDED_PAGE_CACHE = 8;
+const endedPages = new Map<string, EndedPage>();
+
+function rememberEnded(id: string, page: EndedPage | null) {
+  endedPages.delete(id);
+  if (page) endedPages.set(id, page);
+  while (endedPages.size > ENDED_PAGE_CACHE) {
+    const oldest = endedPages.keys().next().value;
+    if (oldest === undefined) break;
+    endedPages.delete(oldest);
+  }
+}
+
+/** A read-only final screen or command ledger, resolved on its execution home. */
 export function EndedPane({ id, at }: { id: string; at: number }) {
-  // `undefined` while asked; `null` when nothing is dead here to show.
-  const [page, setPage] = useState<EndedPage | null | undefined>(undefined);
+  const [attempt, setAttempt] = useState(0);
+  const [read, setRead] = useState(() => ({
+    id,
+    page: endedPages.get(id) ?? null,
+    loading: true,
+    error: null as string | null,
+  }));
+  const retry = () => setAttempt((value) => value + 1);
   useEffect(() => {
     let gone = false;
+    setRead({ id, page: endedPages.get(id) ?? null, loading: true, error: null });
     termEnded(id).then(
-      (p) => !gone && setPage(p),
-      () => !gone && setPage(null),
+      (page) => {
+        if (gone) return;
+        rememberEnded(id, page);
+        setRead({ id, page, loading: false, error: null });
+      },
+      (error) => {
+        if (gone) return;
+        setRead({ id, page: endedPages.get(id) ?? null, loading: false, error: said(error) });
+      },
     );
     return () => {
       gone = true;
     };
-  }, [id, at]);
-  if (!page) return <div data-term-ended-wait className="min-h-0 flex-1 bg-card" />;
+  }, [id, at, attempt]);
+  const current = read.id === id ? read : { id, page: endedPages.get(id) ?? null, loading: true, error: null };
+  const page = current.page;
+  if (!page) {
+    return (
+      <div data-term-ended-wait className="flex min-h-0 flex-1 flex-col bg-card">
+        <RegionState
+          state={current.loading ? "loading-never" : current.error ? "error" : "empty"}
+          message={current.error ?? gui.ended_content_unavailable}
+          onRetry={retry}
+        />
+      </div>
+    );
+  }
   return (
-    <div data-term-ended={page.screen ? "screen" : "ledger"} className="flex min-h-0 flex-1 flex-col bg-card font-sans">
-      <p data-term-ended-why className="flex-none border-b border-border px-3 py-2 text-callout text-muted-foreground">
-        {msg.session_over(endedWord(page.ended))}
-      </p>
+    <div data-term-ended={page.screen ? "screen" : "ledger"} aria-busy={current.loading || undefined} className="flex min-h-0 flex-1 flex-col bg-card font-sans">
+      <div data-term-ended-why className="flex flex-none items-center gap-row border-b border-border px-3 py-2 text-callout text-muted-foreground">
+        <span className="min-w-0 flex-1">{msg.session_over(endedWord(page.ended))}</span>
+        {current.error && <>
+          <span role="status" data-term-ended-refresh-error className="min-w-0 flex-1">{current.error}</span>
+          <Button variant="ghost" onClick={retry}>{gui.region_retry}</Button>
+        </>}
+      </div>
+      {page.startup_error && <p data-term-ended-startup-error className="flex-none whitespace-pre-wrap p-row text-callout text-muted-foreground">{page.startup_error}</p>}
       {page.screen ? <EndedScreenView screen={page.screen} /> : <EndedLedger recent={page.recent} />}
     </div>
   );

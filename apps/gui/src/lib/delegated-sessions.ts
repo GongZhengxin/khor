@@ -1,6 +1,7 @@
 import { useCallback, useSyncExternalStore } from "react";
 import type { DeviceRow, SessionRow } from "@/api";
 import { gui } from "@/gen/catalog";
+import {agentPresentation} from './acp-session';
 
 export type DelegatedChild = {
   kind?: "agent" | "command"; run: string; key: string; agent: string; machine: string; home?: string;
@@ -47,10 +48,10 @@ export function useSessionRowLookup(rows: readonly SessionRow[], devices: readon
     const child = metadata.get(id), device = devices.find(device => device.id === child?.home);
     const word = child ? ({submitted: "busy", working: "busy", waiting: "blocked", completed: "done", failed: "failed", canceled: "idle"} as Record<string, string>)[child.state] ?? null : null;
     return {
-      id, kind: "delegated", title: child?.agent || gui.child_sessions, category: delegatedSessionRef(id)?.kind==="command"?"shell":child?.agent ?? null,
+      id, kind: "delegated", title: child?.agent?(delegatedSessionRef(id)?.kind==='command'?child.agent:agentPresentation(child.agent).name):gui.child_sessions, category: delegatedSessionRef(id)?.kind==="command"?"shell":child?.agent ?? null,
       activity: [], observation_owner: null, content_locator: null, can_control: false,
       word, at_ms: 0, unread: 0, source: null, pinned: false, imported: false, stale: false, quiet: false,
-      group: "", face: device?.face ?? null, hosted: false, attachable: false, last: child?.result ?? null,
+      group: "", face: device?.face ?? null, hosted: false, attachable: false, dead: false, last: child?.result ?? null,
       doing: null, via: null, via_face: null, home: device?.name ?? child?.machine ?? child?.home ?? "",
       place: child?.cwd ?? null, mux: false, ended: null, execution_home: child?.home ?? null,
     };

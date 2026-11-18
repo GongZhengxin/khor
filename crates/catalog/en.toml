@@ -305,12 +305,18 @@ usage: khor <verb>
                         on any machine)
   log [<machine>]       shows the broadcast's messages; with a machine,
                         only those pushed to it
+  exec --on <machine> --request <token> --command <text> [--cwd <path>] [--timeout-ms N]
+                        Start one command task; return its ID and receipt without a session row.
+  execution status|read|cancel|forget --on <machine> <task> [--stdout-cursor N --stderr-cursor N --limit N --wait-ms N]
+                        Inspect, wait for output, cancel, or retire a command task.
+  terminal read|input|ended <session> [--on <machine>] [--cursor N --limit N --wait-ms N]
+                        Observe a terminal; input also needs --request TOKEN --generation GENERATION --revision N --text TEXT [--enter].
   run [--tui] [--title <name>] -- <command...>
-                        a temporary session: lives as long as this
-                        terminal, visible on the network the whole
-                        time
-  open [-d] [--tui|--gui] [--agent <name> [--resume <id>]] [--on <machine>] [--title <name>] [-- command]
-                        a persistent session: survives closing the
+                        runs a one-shot command and returns its exit code without a session row;
+                        --tui explicitly creates a temporary interactive terminal
+  open [-d] [--tui|--gui] [--agent <name> [--resume <id>]] [--on <machine>] [--title <name>] [--command <startup text> | -- command arguments]
+                        an interactive user shell, followed by startup input; stays after the command.
+                        A persistent session: survives closing the
                         terminal, can be reattached (defaults to
                         attaching; -d just opens it; --gui speaks the
                         ACP protocol — khor draws the conversation —
@@ -1158,7 +1164,8 @@ invite-expired = "This ticket has expired (valid for {0} minutes after issue). I
 cant-burn-invite = "Can't burn pairing code: {0}"
 not-paired = "This machine isn't in the machine table — pair first"
 # The roster is the one source of trust (docs/CONNECT.md 身份).
-not-in-roster = "This machine is not on the roster: it is waiting for the root holder to approve it, or it was revoked"
+admission-revoked = "Access from this machine was revoked; pair it again through the root holder to restore access"
+not-in-roster = "This machine is waiting for the root holder to approve it"
 words-need-confirm = "The recovery words restore the whole network's root key; anyone who sees them can sign their own machine into your network. To see them, type this machine's name back: khor root words {0}"
 words-names-another = "\"{0}\" is not this machine's name. To see the recovery words, type this machine's name: khor root words {1}"
 peer-not-in-roster = "That machine is not on the roster (waiting or revoked); not syncing with it"
@@ -1649,10 +1656,21 @@ mcp-sessions = "Every session on the network: id, state word, title, and which m
 mcp-ls = "Lists a directory on a machine. Without a path, that machine's home directory. Reads only; changes nothing."
 mcp-ls-machine = "The machine's name (as devices lists it)"
 mcp-ls-path = "An absolute path; omitted means the home directory"
-mcp-open = "Opens a persistent session on a machine running one command. **This starts a process on that machine.**"
+command-output-retired = "Some earlier command output exceeded the retained buffer; read the truncation marker in the task receipt."
+terminal-ssh-startup = "Automatic startup input requires a Khor host. Open this SSH terminal without a startup command, or install Khor on the target."
+mcp-execute-owned = "This Khor turn owns its command tasks. Use run_command for a command receipt, or open for a durable interactive terminal."
+mcp-execute = "Execute a one-shot command task on the target machine without adding a session row. Use for finite work; choose open for user-visible interactive or long-running work. Reuse request with identical arguments after an uncertain response."
+mcp-execution-status = "Read a command task phase, exit status, and cleanup outcome on its execution machine."
+mcp-execution-output = "Read bounded incremental stdout and stderr, optionally waiting for new output. Cursors count source bytes; bytes is exact base64 and truncated identifies retired output."
+mcp-execution-cancel = "Cancel one command task and wait for confirmed owned-process cleanup. This does not close a persistent terminal."
+mcp-execution-forget = "Retire the saved output of a completed command task with confirmed cleanup. Its retry token remains reserved to prevent accidental re-execution."
+mcp-terminal-read = "Observe a persistent terminal without resizing it or sending input. Returns incremental output, input revision, readiness, shell state and foreground command facts; optionally wait for output."
+mcp-terminal-input = "Send literal input to a persistent terminal, optionally pressing Enter. First read input_revision, use that revision and a unique stable request token; stale revisions or a partly typed user line are refused. Reuse identical arguments after an uncertain response."
+mcp-terminal-ended = "Read the final screen, command history and startup error of a stopped terminal from its execution machine."
+mcp-open = "Open a persistent interactive terminal on the target machine, load its user environment, then type the optional startup command once. The shell stays after the command finishes. Choose execute for one-shot tasks. A stable request token makes creation retry-safe."
 mcp-run-command = "Run a command on this Khor conversation's execution machine and return its result as a child command task."
 mcp-open-machine = "Which machine to open it on"
-mcp-open-command = "The command to run (handed to that machine's shell)"
+mcp-open-command = "Optional literal startup input interpreted by the target user shell after readiness."
 mcp-open-title = "What the row is called; omitted means the command itself"
 mcp-open-cwd = "Which directory to run in; omitted means that machine's home directory"
 mcp-close = "Closes a session. **This ends the process on that machine.**"
@@ -2294,6 +2312,7 @@ row-ended-host = "Host was terminated"
 # A dead terminal row with no last screen: the commands it ran.
 ended-commands = "Recent commands"
 ended-commands-none = "No commands were recorded"
+ended-content-unavailable = "No saved terminal content is available for this session"
 day-unreachable = "Unreachable"
 reading-unreachable = "Down · last {0}"
 machine-cant-reach = "Can't reach {0}"
@@ -2426,6 +2445,15 @@ new-session-attached = "Connected"
 new-session-byhand = "Install it yourself, then connect it from the command line."
 import-sessions = "Import"
 import-title = "Import sessions"
+import-reading = "Reading sessions"
+import-refresh-required = "Refresh to check available actions"
+import-archive-unknown = "The agent does not report archive state"
+import-directory-unknown = "No working directory is available"
+import-running-elsewhere = "Running in another host; branching is unsupported"
+import-restore-unsupported = "The agent cannot restore this session"
+import-owner-unknown = "Unable to confirm whether this session is running"
+import-source-changed = "The session source changed; refresh and retry"
+import-fork = "Create branch"
 import-machines-count = "{0} machines selected"
 import-search = "Search sessions to import"
 import-note = "Choose one to import and open it; deleting it from the list later leaves the session itself untouched."

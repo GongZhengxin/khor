@@ -440,3 +440,9 @@ async fn c_a_relay_flow_gone_silent_is_noticed_and_replaced() {
         "beta hears alpha again within {NOTICE:?}"
     );
 }
+
+#[path = "relay/demand.rs"]
+mod demand;
+
+#[path = "relay/jitter.rs"]
+mod jitter;

@@ -14,7 +14,9 @@ import { DeckBand, TabSheetRows } from '@/components/SessionBar';
 import { SessionFace, fileKind, pageKind, newTabKind, historyKind } from '@/components/SessionFace';
 import { GlassCircle, GlassCapsule, GlassItem } from '@/components/Glass';
 import { IconBack, IconClose, IconPlus, IconSearch } from '@/components/icons';
-import { Input } from '@/components/ui/input';
+import {ContentSearch} from '@/components/ContentSearch';
+import {ContentDeck,ContentPill} from '@/components/ContentDeck';
+export {ContentSearch} from '@/components/ContentSearch';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ContentPathField } from '@/views/ContentPathField';
 import { gui } from '@/gen/catalog';
@@ -22,8 +24,6 @@ import type { ContentNavigation, ContentScene, ContentSource } from '@/hooks/use
 import type { ContentTab, SessionContent } from '@/hooks/use-session-content';
 import { useContentSheet } from '@/hooks/use-content-sheet';
 import { directoryOf } from '@/lib/paths';
-import { imeKey } from '@/lib/ime';
-import { useFieldDismiss } from '@/hooks/use-field-dismiss';
 import { sessionCwdOnScreen } from '@/lib/session-cwd';
 import { SideWorkspace } from '@/views/SideWorkspace';
 import type { PlaceDetent } from '@/views/SessionPlaceSheet';
@@ -64,11 +64,11 @@ export function ContentDocumentBand({session,face,content,navigation,title,onTit
   return <DeckBand faces={faces} active={active||''} onFocus={key=>{const tab=targets.get(key);if(tab){navigation.select(tab);quiet(content.focus(tab.id));}}} onTitle={onTitle} onNew={()=>navigation.add(session)} onOverview={()=>navigation.overview(session)} renderFace={(item,role)=>item.mark?.key==='new-tab'?<span className="content-new-identity"><span className="content-owner-face"><TabAvatar f={{...item,face:null,mark:newTabKind()}} bare="size-tab-face" seat="tab"/></span><span className="content-new-title">{gui.content_new}</span></span>:<ContentOwnerIdentity face={face} title={role==='cur'?title:item.label}/>}/>;
 }
 export function MobileContentDeck({session,navigation,onClose,children,editing=false,onEditEnd,leading,actions}: DeckOwner & {session:string;children:ReactNode;editing?:boolean;onEditEnd?:()=>void;leading?:ReactNode;actions?:ReactNode}) {
-  return <div className="mobile-content-deck" data-content-deck data-content-editing={editing||undefined}>
+  return <ContentDeck data-content-editing={editing||undefined}>
     {!editing&&leading}
-    <div className="glass mobile-content-pill">{children}</div>
+    <ContentPill>{children}</ContentPill>
     {editing?<GlassCircle data-content-edit-end aria-label={gui.edit_done} onPointerDown={e=>e.preventDefault()} onClick={onEditEnd}><IconClose/></GlassCircle>:<>{actions}{navigation.get(session).scene==='overview'&&<GlassCircle aria-label={gui.side_hide} onClick={onClose}><IconClose/></GlassCircle>}</>}
-  </div>;
+  </ContentDeck>;
 }
 function ContentFileIdentity({session,face,content,navigation,title,devices,tab}: DeckOwner & {session:string;title:string;devices:DeviceRow[];tab:ContentTab}) {
  const [editing,setEditing]=useState(false),device=devices.find(d=>d.id===tab.device);
@@ -77,12 +77,6 @@ function ContentFileIdentity({session,face,content,navigation,title,devices,tab}
 export function contentFileDeck(props: DeckOwner & {session:string;title:string;devices:DeviceRow[];tab:ContentTab}) {
  const {face,title}=props;
  return {identity:<div className="mobile-file-identity"><ContentFileIdentity {...props}/></div>,folded:<span className="mobile-fold-identity"><ContentOwnerIdentity face={face} title={title}/></span>};
-}
-/** Search has one clear button inside and an independent end-editing control outside. */
-export function ContentSearch({label,value,onChange,onEditing,onEnter,onDismiss}: {label:string;value:string;onChange:(value:string)=>void;onEditing:(editing:boolean)=>void;onEnter?:()=>void;onDismiss?:()=>void}) {
-  const input=useRef<HTMLInputElement>(null),region=useRef<HTMLDivElement>(null);
-  useFieldDismiss(onDismiss!==undefined,()=>[region.current],()=>onDismiss?.());
-  return <div ref={region} className="content-search-field"><IconSearch/><Input ref={input} autoFocus type="search" aria-label={label} placeholder={label} value={value} onFocus={()=>onEditing(true)} onBlur={()=>onEditing(false)} onChange={e=>onChange(e.target.value)} onKeyDown={e=>{if(imeKey(e))return;if(e.key==='Enter')onEnter?.();if(e.key==='Escape'){e.preventDefault();e.stopPropagation();input.current?.blur();onDismiss?.();}}}/>{value&&<button data-content-search-clear aria-label={gui.search_clear} onPointerDown={e=>e.preventDefault()} onClick={()=>{onChange('');input.current?.focus();}}><IconClose/></button>}</div>;
 }
 /** One location toolbar for both sizes; the content below keeps its own scroll. */
 export function ContentPicker({row,devices,navigation,onOpen,onWorkspaceFile,onOpenCommit,onFilesMoved,onFilesGone,face,content,onClose,desktop=false,active=true}: DeckOwner & {

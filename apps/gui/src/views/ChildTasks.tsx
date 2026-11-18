@@ -7,6 +7,7 @@ import { SessionFace } from "@/components/SessionFace";
 import { IconChevronRight } from "@/components/icons";
 import { delegatedSessionId, type DelegatedChild } from "@/lib/delegated-sessions";
 import { cn } from "@/lib/utils";
+import {agentPresentation} from '@/lib/acp-session';
 
 type ChildTask = DelegatedChild;
 
@@ -79,7 +80,7 @@ export function ChildTasks({ parent, id, devices, selected, onOpen }: {
                 </span>
                 <span className="flex min-w-0 flex-1 items-center gap-row border-b py-1">
                   <span className="flex min-w-0 flex-1 flex-col">
-                    <span className="truncate text-headline">{child.agent}</span>
+                    <span className="truncate text-headline">{command?child.agent:agentPresentation(child.agent).name}</span>
                     <span className="truncate text-callout text-muted-foreground">{preview}</span>
                   </span>
                   <span className="min-w-0 flex-none"><TaskStatus state={child.state}/></span>

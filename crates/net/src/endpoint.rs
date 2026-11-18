@@ -579,9 +579,9 @@ pub async fn bind_preferring(
 /// WireGuard a fixed `ListenPort`, Syncthing 22000.
 ///
 /// **`carry`: the roads khor carries itself** (round ROAD-2,
-/// [`crate::carry`]): registered with khor's [`crate::carry::RoadOrder`]
-/// selector when given; `None` is the transport not registered at all —
-/// both switches off.
+/// [`crate::carry`]): the custom transport is registered when given.
+/// Every bind uses khor's speed-first selector, including one-shot
+/// clients and endpoints with no carried roads.
 pub async fn bind_pinned(
     secret: iroh::SecretKey,
     relays: &[Relay],
@@ -592,9 +592,7 @@ pub async fn bind_pinned(
 ) -> Result<iroh::Endpoint> {
     let mut b = builder(secret, relays, n0, on_the_segment())?;
     if let Some(links) = carry {
-        b = b
-            .add_custom_transport(links.transport())
-            .path_selector(std::sync::Arc::new(crate::carry::RoadOrder::default()));
+        b = b.add_custom_transport(links.transport());
     }
     if let Some(ip) = bind_ip().filter(|_| std::env::var_os(RELAY_ONLY_ENV).is_none()) {
         let port = if ip.is_ipv4() { v4 } else { v6 };
@@ -665,26 +663,9 @@ fn builder(
     // TLS (https relays); iroh's own encryption never touched the
     // Keychain in the first place.
     .ca_tls_config(ca_roots())
-    // Explicit public nameservers instead of "read the system's":
-    // on macOS the system route goes through SCDynamicStore, whose
-    // ApplicationBundleID lookup hung 40 SECONDS per process for
-    // unbundled binaries — measured with `sample` on 2026-08-20,
-    // the whole of #73's frozen-timer mystery (the hang is
-    // synchronous, so it froze single-threaded tokio clocks too).
-    // The Khor tier is an IP and needs no DNS at all; these servers
-    // resolve a relay somebody named by its domain. The cost — a
-    // network whose ONLY nameserver is an internal one cannot
-    // resolve such a relay — is on the ledger.
-    .dns_resolver(
-        iroh::dns::DnsResolver::builder()
-            .add_nameserver_configs(
-                ["223.5.5.5", "8.8.8.8", "1.1.1.1", "2400:3200::1"]
-                    .map(|ip| iroh::dns::NameserverConfig::udp(ip.parse().unwrap())),
-            )
-            .build(),
-    )
     .proxy_from_env()
     .transport_config(transport())
+    .path_selector(std::sync::Arc::new(crate::carry::RoadOrder::default()))
     .alpns(vec![
         ALPN.to_vec(),
         TUNNEL_ALPN.to_vec(),
@@ -1074,6 +1055,10 @@ impl Ticket {
         serde_json::from_slice(&bytes).context(msg::not_a_ticket_content())
     }
 }
+
+#[cfg(test)]
+#[path = "endpoint/source_addr_tests.rs"]
+mod source_addr_tests;
 
 #[cfg(test)]
 mod tests {

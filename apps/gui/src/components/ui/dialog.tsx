@@ -314,7 +314,7 @@ function TaskFrame({children, ...props}: Omit<React.ComponentProps<typeof Dialog
           children: role === "close" ? <IconClose className="size-icon-mark"/> : role === "back" ? <><IconBack className="size-icon-mark"/>{leading.props.children}</> : leading.props.children,
         })}
       </div>
-      {actions?.primary && <div data-task-action="primary">{React.cloneElement(actions.primary, {variant:"primary", disabled:actions.busy || actions.primary.props.disabled, "aria-busy":actions.busy || actions.primary.props["aria-busy"]})}</div>}
+      {actions?.primary && <div data-task-action="primary">{React.cloneElement(actions.primary, {variant:"primary", compactTouch:true, disabled:actions.busy || actions.primary.props.disabled, "aria-busy":actions.busy || actions.primary.props["aria-busy"]})}</div>}
       <div ref={setBody} data-slot="dialog-body" inert={actions?.busy || undefined} aria-busy={actions?.busy || undefined} className="flex min-h-0 min-w-0 flex-1 flex-col gap-row overflow-x-hidden overflow-y-auto overscroll-contain">
         <Fault name="task"><TaskContext.Provider value={slots}>{children}</TaskContext.Provider></Fault>
       </div>

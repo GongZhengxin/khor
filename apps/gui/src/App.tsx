@@ -74,6 +74,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { BrowseLanding } from "@/browse/BrowseLanding";
 import { TabCount, TabSwitcher, type TabFace } from "@/browse/TabStrip";
 import { SessionFrame } from "@/components/SessionFrame";
+import { isConversationKind } from "@/lib/session-layout";
 import { useSessionContent, type ContentView } from "@/hooks/use-session-content";
 import { SessionContentPane } from "@/views/SessionContent";
 import { useContentNavigation } from "@/hooks/use-content-navigation";
@@ -2991,13 +2992,13 @@ export default function App() {
       <ImportDialog
         open={dialog === "import"}
         onOpenChange={(o) => setDialog(o ? "import" : null)}
-        // The first one imported is what the person came to see, the
-        // way a freshly opened session is (`NewSessionPage`).
-        onImported={(ids) => {
+        // Import registers history; an explicit independent fork also opens
+        // its ordinary conversation tab.
+        onImported={(ids, open) => {
           if (ids.length === 0) return;
           setLanding("sessions");
-          sessionTabs.open(ids[0]);
-          setScreen("detail");
+          if(open){sessionTabs.open(ids[0]);setScreen("detail");}
+          else setScreen("list");
         }}
       />
       {/* ⚠️ 墓碑 (UX-45): the 新建会话 dialog. Every road opens a new tab
@@ -3086,15 +3087,15 @@ export default function App() {
   // beside a terminal and a conversation alike); ⚠️ 墓碑 (UX-17): the
   // terminal's alone, for its directory.
   const terminalPill = selectedRow !== null;
+  const conversationNavigation = isConversationKind(selectedRow?.kind) || isChatTab(selected);
   const sessionScreen = (
     <SessionScreen
       navigation
-      renderHeader={selectedRow?.kind === 'gui' || isChatTab(selected) ? props=><SessionHeader {...props}/> : undefined}
-      deckAt={selectedRow?.kind === 'gui' || isChatTab(selected) ? 'top' : 'bottom'}
+      renderHeader={conversationNavigation ? props=><SessionHeader {...props}/> : undefined}
       faces={tabFaces}
       active={selected ?? ""}
       contentMode={narrow && side.open && selectedRow !== null}
-      onTabs={narrow&&selectedRow&&selectedRow.kind!=='gui'&&!isChatTab(selected)?()=>{(document.activeElement as HTMLElement|null)?.blur();contentNavigation.sessions(selectedRow.id);setSessionSide(selectedRow.id,{open:true,seat:"workspace"});}:undefined}
+      onTabs={narrow&&selectedRow&&!conversationNavigation?()=>{(document.activeElement as HTMLElement|null)?.blur();contentNavigation.sessions(selectedRow.id);setSessionSide(selectedRow.id,{open:true,seat:"workspace"});}:undefined}
       onTitle={terminalPill && selectedRow ? () => {
         (document.activeElement as HTMLElement | null)?.blur();
         if (!side.open) contentNavigation.resume(selectedRow.id);

@@ -179,23 +179,20 @@ impl Worker {
         }
     }
     fn kill_wait(&mut self) {
+        #[cfg(unix)]
+        use std::os::unix::process::ExitStatusExt;
         self.0.kill().unwrap();
         let by = Instant::now() + Duration::from_secs(5);
         loop {
             if let Some(status) = self.0.try_wait().unwrap() {
                 self.1 = true;
                 self.2.store(true, std::sync::atomic::Ordering::SeqCst);
-                // SIGKILL on Unix; TerminateProcess on Windows. The
-                // contract is "the kill was observed", not the number.
                 #[cfg(unix)]
-                {
-                    use std::os::unix::process::ExitStatusExt;
-                    assert_eq!(status.signal(), Some(9));
-                }
+                assert_eq!(status.signal(), Some(9));
                 #[cfg(windows)]
                 assert!(
-                    status.code().is_some(),
-                    "the killed Pair caller must report an exit code"
+                    !status.success(),
+                    "killed Pair caller must not report success"
                 );
                 break;
             }

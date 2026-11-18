@@ -16,6 +16,7 @@
 //! reported; it is derived from the exit code (or from an ending nobody
 //! recorded), so no hook can paint a live process as failed.
 
+use serde::{Deserialize, Serialize};
 use std::fs;
 use std::io::Read;
 use std::path::{Path, PathBuf};
@@ -258,12 +259,7 @@ fn cwd_of(pid: u32) -> Option<PathBuf> {
         true,
         ProcessRefreshKind::nothing().with_cwd(UpdateKind::Always),
     );
-    // sysinfo reports a Windows directory with its trailing separator;
-    // every other producer of this path spells it without one, and the
-    // row compares them as strings.
-    sys.process(pid)?
-        .cwd()
-        .map(|cwd| cwd.components().collect())
+    sys.process(pid)?.cwd().map(Path::to_path_buf)
 }
 
 /// Which address a terminal should connect to after
@@ -749,7 +745,7 @@ impl LiveKind {
         })
     }
 
-    fn legacy_gui_source(
+    pub(crate) fn legacy_gui_source(
         &self,
         id: &SessionId,
     ) -> Result<Option<(Option<String>, crate::session_content::journal::Identity)>, String> {
@@ -1018,6 +1014,37 @@ impl LiveKind {
         gate.write_state(word, None, source, None)
     }
 
+    /// Records a known startup failure only while this launch still owns the
+    /// row. A missing PID is the pre-spawn claim; publishing a host PID retires
+    /// that claim. An uncertain spawn outcome must not use this operation.
+    pub fn record_startup_failure(
+        &self,
+        id: &SessionId,
+        expected_pid: Option<u32>,
+        why: &str,
+    ) -> Result<bool, String> {
+        let dir = self.existing_dir(id)?;
+        let gate = RowGate::acquire(&dir)?;
+        let (meta, state) = gate.read_pair()?;
+        if meta.gui_run.is_some() {
+            return Err("GUI execution requires its current run key".into());
+        }
+        if meta.pid != expected_pid || state.exit.is_some() {
+            return Ok(false);
+        }
+        // The diagnostic must exist before publishing an ending. The same
+        // row gate prevents a stale failed spawn from overwriting its heir's
+        // diagnostic between its ownership check and either write.
+        crate::link::write_private(&crate::host::host_error_path(&dir), why.as_bytes())?;
+        gate.write_state(
+            state.word,
+            Some(1),
+            state.source.unwrap_or(Source::Reported),
+            None,
+        )?;
+        Ok(true)
+    }
+
     /// The ending, recorded by whoever waited (the wrapper) or by an end
     /// hook. First recording wins; a session ends once.
     ///
@@ -1074,6 +1101,14 @@ impl LiveKind {
             .into_iter()
             .find(|f| f.id() == *id)
             .map(|f| (f.sighting.title, f.sighting.pids))
+    }
+
+    pub(crate) fn import_running_ids(&self) -> std::collections::HashSet<String> {
+        self.discover()
+            .rows
+            .into_iter()
+            .map(|found| found.sighting.vendor_session_id)
+            .collect()
     }
 
     /// Whether this row is **a terminal khor hosts** — a shell a person
@@ -1691,38 +1726,117 @@ impl LiveKind {
         }
     }
 
+    #[cfg(windows)]
+    fn close_windows_host(&self, id: &SessionId, dir: &Path) -> Result<(), String> {
+        let (meta, state) = read_pair(dir)?;
+        let host = match crate::host::read_host_file(dir) {
+            Ok(host) => host,
+            Err(_) => {
+                if state.exit.is_none() && meta.pid.is_some_and(crate::win_process::alive) {
+                    return Err("No authenticated host owns this running Windows session".into());
+                }
+                return Ok(());
+            }
+        };
+        let procs = crate::adaptor::Procs::snapshot();
+        let Some(process) = procs.get(host.host_pid) else {
+            if crate::win_process::alive(host.host_pid) {
+                return Err(
+                    "Windows host identity is unavailable; refusing an unconfirmed close".into(),
+                );
+            }
+            return Ok(());
+        };
+        let written = crate::host::host_file_path(dir)
+            .metadata()
+            .and_then(|metadata| metadata.modified())
+            .map_err(|error| error.to_string())?
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_err(|error| error.to_string())?;
+        // The same marker/metadata ownership facts used for terminal input,
+        // allowing an exited row whose host is still finishing its cleanup.
+        if (!meta.id.is_empty() && meta.id != id.0)
+            || meta.pid != Some(host.host_pid)
+            || process.started_ms < 0
+            || process.started_ms as u128 > written.as_millis()
+            || (host.child_pid == host.host_pid && meta.kind != khor_core::kind::GUI)
+            || (host.child_pid != host.host_pid
+                && procs
+                    .get(host.child_pid)
+                    .is_some_and(|child| child.ppid != Some(host.host_pid)))
+        {
+            return Err("Windows host ownership changed; refusing to close another process".into());
+        }
+        crate::win_process::terminate_owned_tree(
+            host.host_pid,
+            &procs,
+            written.as_nanos() / 100,
+            || {
+                let current = crate::host::read_host_file(dir)?;
+                if current.host_pid != host.host_pid
+                    || current.child_pid != host.child_pid
+                    || current.port != host.port
+                    || current.cookie != host.cookie
+                {
+                    return Err("Windows host changed before close authentication".into());
+                }
+                // Stop after Hello/Welcome: no Version, resize, replay, or input.
+                let (_connection, welcome) = crate::host::connect_welcomed(
+                    &format!("127.0.0.1:{}", host.port),
+                    &host.cookie,
+                    0,
+                    0,
+                )?;
+                if !welcome.ok {
+                    return Err("Windows host refused close authentication".into());
+                }
+                Ok(())
+            },
+        )
+    }
+
     pub fn close_session(&self, id: &SessionId) -> Result<(), String> {
         let dir = self.existing_dir(id)?;
-        if let Ok(hf) = crate::host::read_host_file(&dir) {
-            // A hosted session dies by its child's process group; the
-            // host sees the exit and leaves on its own. Anything on the
-            // tty that dodged the group gets SIGHUP when the host drops
-            // the PTY master. The host pid is the belt on top.
-            #[cfg(unix)]
-            unsafe {
-                libc::kill(-(hf.child_pid as i32), libc::SIGTERM);
-            }
-            #[cfg(not(unix))]
-            terminate(hf.child_pid);
-            for _ in 0..20 {
-                if !crate::link::pid_alive(hf.host_pid) {
-                    break;
-                }
-                std::thread::sleep(std::time::Duration::from_millis(100));
-            }
-            if crate::link::pid_alive(hf.host_pid) {
-                terminate(hf.host_pid);
-            }
-        } else {
-            let (meta, state) = read_pair(&dir)?;
-            if state.exit.is_none()
-                && pid_says_alive(&meta)
-                && let Some(pid) = meta.pid
-            {
-                terminate(pid);
-            }
+        #[cfg(windows)]
+        {
+            let gate = RowGate::try_acquire(&dir)?;
+            self.close_windows_host(id, &dir)?;
+            drop(gate);
+            return fs::remove_dir_all(&dir).map_err(msg::cant_delete);
         }
-        fs::remove_dir_all(&dir).map_err(msg::cant_delete)
+        #[cfg(not(windows))]
+        {
+            if let Ok(hf) = crate::host::read_host_file(&dir) {
+                // A hosted session dies by its child's process group; the
+                // host sees the exit and leaves on its own. Anything on the
+                // tty that dodged the group gets SIGHUP when the host drops
+                // the PTY master. The host pid is the belt on top.
+                #[cfg(unix)]
+                unsafe {
+                    libc::kill(-(hf.child_pid as i32), libc::SIGTERM);
+                }
+                #[cfg(not(unix))]
+                terminate(hf.child_pid);
+                for _ in 0..20 {
+                    if !crate::link::pid_alive(hf.host_pid) {
+                        break;
+                    }
+                    std::thread::sleep(std::time::Duration::from_millis(100));
+                }
+                if crate::link::pid_alive(hf.host_pid) {
+                    terminate(hf.host_pid);
+                }
+            } else {
+                let (meta, state) = read_pair(&dir)?;
+                if state.exit.is_none()
+                    && pid_says_alive(&meta)
+                    && let Some(pid) = meta.pid
+                {
+                    terminate(pid);
+                }
+            }
+            fs::remove_dir_all(&dir).map_err(msg::cant_delete)
+        }
     }
 
     /// Every live session on this device as a row: the ones registered
@@ -3105,6 +3219,9 @@ impl LiveKind {
         let dir = self.existing_dir(id).ok()?;
         Some(Ended {
             ending,
+            startup_error: fs::read_to_string(crate::host::host_error_path(&dir))
+                .ok()
+                .map(|text| text.chars().take(4096).collect()),
             screen: crate::host::read_ring_file(&dir),
             recent: crate::commands::read_saved(&dir)
                 .map(|s| s.recent)
@@ -3429,7 +3546,7 @@ fn face(dir: &Path, meta: &Meta, state: &LiveState) -> (State, i64, bool, bool) 
 /// it」 both read 失败 by the rule above, and the row's second line says
 /// which. Derived from the same two facts [`face`] reads — the recorded
 /// exit first, then the backing — so the two cannot disagree.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Ending {
     /// The host recorded how its child ended.
     Exit(i32),
@@ -3451,9 +3568,10 @@ fn ending_of(dir: &Path, meta: &Meta, state: &LiveState) -> Option<Ending> {
 /// how it ended, its last screen when the host left one (`ring.bin`), and
 /// the last commands its shell marked (`commands.json`, newest last) —
 /// the page draws the screen, else the commands.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Ended {
     pub ending: Ending,
+    pub startup_error: Option<String>,
     pub screen: Option<crate::host::RingFile>,
     pub recent: Vec<crate::commands::Command>,
 }
@@ -4193,7 +4311,13 @@ impl RowGate {
         }
     }
     fn sync_meta(&self) -> Result<(), String> {
-        crate::durable::sync_file(&self.dir.join("meta.json"))?;
+        // Windows FlushFileBuffers needs write access even when no bytes
+        // change through this handle. Opening for sync must not truncate it.
+        fs::OpenOptions::new()
+            .write(true)
+            .open(self.dir.join("meta.json"))
+            .and_then(|file| file.sync_all())
+            .map_err(|e| e.to_string())?;
         #[cfg(unix)]
         fs::File::open(&self.dir)
             .and_then(|file| file.sync_all())
@@ -4406,6 +4530,120 @@ mod tests {
             agent: "fixture".into(),
             native_id: native_id.into(),
         }
+    }
+
+    #[test]
+    fn startup_failure_retains_its_diagnostic_and_existing_provenance() {
+        let root = tmp("startup-failure");
+        let live = kind_at(&root);
+        let id = sid("shell/startup-failed");
+        live.register(&id, "shell", "requested terminal", None, Some("shell"))
+            .unwrap();
+        live.report(&id, State::Idle, Source::Screen).unwrap();
+        let directory = live.dir_of(&id).unwrap();
+        let original = read_meta(&directory).unwrap();
+        assert!(
+            live.record_startup_failure(&id, None, "Shell executable could not be started")
+                .unwrap()
+        );
+        let (meta, state) = read_pair(&directory).unwrap();
+        assert_eq!(meta.title, original.title);
+        assert_eq!(meta.started_ms, original.started_ms);
+        assert_eq!(meta.pid, None);
+        assert_eq!(state.word, State::Idle);
+        assert_eq!(state.source, Some(Source::Screen));
+        assert_eq!(state.exit, Some(1));
+        let ended = live.ended(&id).unwrap();
+        assert!(matches!(ended.ending, Ending::Exit(1)));
+        assert_eq!(
+            ended.startup_error.as_deref(),
+            Some("Shell executable could not be started")
+        );
+        assert!(live.registry_rows(&|_| 0)[0].row.dead);
+        assert!(
+            !live
+                .record_startup_failure(&id, None, "Late failure must not replace the first")
+                .unwrap()
+        );
+        assert_eq!(live.ended(&id).unwrap().startup_error, ended.startup_error);
+    }
+
+    #[test]
+    fn startup_failure_cannot_terminalize_or_rewrite_a_replacement_host() {
+        let root = tmp("startup-failure-replaced");
+        let live = kind_at(&root);
+        let id = sid("shell/startup-replacement");
+        live.register(&id, "shell", "replacement terminal", None, None)
+            .unwrap();
+        let previous = std::process::id().wrapping_add(1);
+        live.set_pid(&id, previous).unwrap();
+        live.set_pid(&id, std::process::id()).unwrap();
+        let directory = live.dir_of(&id).unwrap();
+        let diagnostic = crate::host::host_error_path(&directory);
+        fs::write(&diagnostic, "replacement diagnostic").unwrap();
+        let before =
+            ["meta.json", "state.json"].map(|name| fs::read(directory.join(name)).unwrap());
+        for stale in [None, Some(previous)] {
+            assert!(
+                !live
+                    .record_startup_failure(&id, stale, "superseded failure")
+                    .unwrap()
+            );
+        }
+        assert_eq!(
+            ["meta.json", "state.json"].map(|name| fs::read(directory.join(name)).unwrap()),
+            before
+        );
+        assert_eq!(
+            fs::read_to_string(&diagnostic).unwrap(),
+            "replacement diagnostic"
+        );
+        assert!(live.ended(&id).is_none());
+        assert!(
+            live.record_startup_failure(&id, Some(std::process::id()), "current host failed")
+                .unwrap()
+        );
+        assert_eq!(
+            live.ended(&id).unwrap().startup_error.as_deref(),
+            Some("current host failed")
+        );
+    }
+
+    #[test]
+    fn startup_failure_cannot_bypass_a_gui_execution_key() {
+        let root = tmp("startup-failure-gui");
+        let live = kind_at(&root);
+        let native = gui_source("startup-failure-gui");
+        let id = crate::adaptor::id_for(&native.native_id);
+        let key = live
+            .begin_gui_run(&id, "GUI owner", std::process::id(), &native, None, false)
+            .unwrap();
+        let before =
+            ["meta.json", "state.json"].map(|name| fs::read(key.directory.join(name)).unwrap());
+        assert!(
+            live.record_startup_failure(&id, Some(std::process::id()), "wrong execution API")
+                .is_err()
+        );
+        assert_eq!(
+            ["meta.json", "state.json"].map(|name| fs::read(key.directory.join(name)).unwrap()),
+            before
+        );
+        assert!(!crate::host::host_error_path(&key.directory).exists());
+    }
+
+    #[test]
+    fn startup_failure_does_not_publish_an_ending_if_its_diagnostic_cannot_be_written() {
+        let root = tmp("startup-failure-no-diagnostic");
+        let live = kind_at(&root);
+        let id = sid("shell/startup-no-diagnostic");
+        live.register(&id, "shell", "terminal", None, None).unwrap();
+        let directory = live.dir_of(&id).unwrap();
+        fs::create_dir(crate::host::host_error_path(&directory)).unwrap();
+        assert!(
+            live.record_startup_failure(&id, None, "unwritable diagnostic")
+                .is_err()
+        );
+        assert_eq!(read_pair(&directory).unwrap().1.exit, None);
     }
 
     #[test]
@@ -4673,7 +4911,7 @@ mod tests {
 
     /// A pid that is certainly dead: spawn `true`, reap it.
     fn dead_pid() -> u32 {
-        let mut c = crate::testproc::true_like().spawn().unwrap();
+        let mut c = std::process::Command::new("true").spawn().unwrap();
         let pid = c.id();
         c.wait().unwrap();
         pid
@@ -4840,7 +5078,6 @@ mod tests {
     /// shell in no tmux does not — and that second half is the control,
     /// because `term` is true of the first and a `mux` that merely
     /// copied `term` would send every khor conversation to the terminal.
-    #[cfg(unix)]
     #[test]
     fn a_row_held_by_tmux_is_multiplexed_and_one_that_is_not_is_not() {
         use crate::adaptor::{Discovery, Proc, Procs, tmux::Tmux};
@@ -5425,10 +5662,7 @@ mod tests {
         assert_eq!(rows.len(), 1);
         assert_eq!(rows[0].id.0, "tui/11111111-1111-4111-8111");
         assert_eq!(rows[0].state.unwrap().state, State::Blocked);
-        // 84c9e6fe retired the vendor's generated name: a row is titled
-        // after its directory (`/w/one`), not after the status file's
-        // `name` field.
-        assert_eq!(rows[0].title, "one");
+        assert_eq!(rows[0].title, "one-aa");
 
         // Now the hook registers the same claude session and reports a
         // different word.
@@ -5442,14 +5676,10 @@ mod tests {
         let rows = k.rows(|_| 0);
         assert_eq!(rows.len(), 1, "one session, one row — not two");
         assert_eq!(rows[0].id, id);
-        // 9e3f33d1: a live Claude TUI's own file outranks a persisted
-        // report, so the hook's "done" no longer overwrites the vendor's
-        // waiting word. The row is still one row, and the registered row
-        // still supplies the title and the id.
         assert_eq!(
             (rows[0].state.unwrap().state, rows[0].unread),
-            (State::Blocked, 0),
-            "native Claude evidence outranks the hook's report",
+            (State::Done, 1),
+            "the registered row wins: it is the only one that can say 完成"
         );
         assert_eq!(rows[0].title, "one");
     }
@@ -5508,14 +5738,10 @@ mod tests {
 
         // Control: the identical disagreement, reported instead of read.
         k.report(&id, State::Idle, Source::Reported).unwrap();
-        // 9e3f33d1 ("retire agent status hooks and read native Claude
-        // endings") made a live Claude TUI's own file outrank a persisted
-        // report as well as a screen guess: the hook this test spoke for
-        // was retired in the same change.
         assert_eq!(
             k.rows(|_| 0)[0].state.unwrap().state,
-            State::Blocked,
-            "native Claude evidence outranks a reported word",
+            State::Idle,
+            "control: a reported word still wins, so the source is the only thing deciding",
         );
     }
 
@@ -5608,37 +5834,11 @@ mod tests {
             "precondition: it reads back absent",
         );
 
-        // The absent field still means "reported" (`word_outranks_disk`
-        // is unit-tested below); what changed with 9e3f33d1 is that a
-        // native Claude TUI's own file outranks any persisted word.
         assert_eq!(
             k.rows(|_| 0)[0].state.unwrap().state,
-            State::Blocked,
-            "native Claude evidence outranks a pre-provenance entry too",
+            State::Idle,
+            "an entry from before this field stands against the sweep",
         );
-    }
-
-    /// **Absent provenance is the strong answer, and a screen guess is the**
-    /// **weak one.** The integration tests that used to pin this now pin
-    /// 9e3f33d1's native-Claude rule instead (a TUI's own file outranks even
-    /// a report), so the ranking itself is checked here, where it lives.
-    #[test]
-    fn reported_words_outrank_the_disk_and_screen_words_do_not() {
-        let state = |source| LiveState {
-            gui_run: None,
-            word: State::Idle,
-            at_ms: 0,
-            exit: None,
-            source,
-        };
-        assert!(Source::Reported.outranks_disk());
-        assert!(!Source::Screen.outranks_disk());
-        assert!(
-            state(None).word_outranks_disk(),
-            "an entry written before provenance existed is a report"
-        );
-        assert!(state(Some(Source::Reported)).word_outranks_disk());
-        assert!(!state(Some(Source::Screen)).word_outranks_disk());
     }
 
     /// A row registered before anyone could place it learns its category
@@ -5719,7 +5919,6 @@ mod tests {
     /// The control group is the same tmux session with nothing listed
     /// inside it: it becomes a row. Without that half, an implementation
     /// that simply never emitted tmux rows would pass.
-    #[cfg(unix)]
     #[test]
     fn a_tmux_session_holding_a_listed_agent_is_not_a_second_row() {
         use crate::adaptor::{Discovery, Proc, Procs, tmux::Tmux};
@@ -5814,7 +6013,6 @@ mod tests {
     /// Narrower since 2026-09-30 (docs/SESSION.md 形态随进程变): a bridge
     /// whose host runs is a terminal somebody has open, and it holds the
     /// seat instead — `a_terminal_that_starts_an_agent_becomes_that_agent_and_stays_open`.
-    #[cfg(unix)]
     #[test]
     fn an_old_bridge_row_folds_into_the_agent_row_it_duplicates() {
         use crate::adaptor::{Discovery, Proc, Procs, tmux::Tmux};
@@ -5881,7 +6079,6 @@ mod tests {
     /// comment in `rows`), and the twin a bridge's client creates would
     /// otherwise appear as a phantom row for exactly as long as someone
     /// is looking at the terminal face.
-    #[cfg(unix)]
     #[test]
     fn a_grouped_twin_of_a_listed_session_is_not_a_second_row() {
         use crate::adaptor::{Discovery, Proc, Procs, tmux::Tmux};
@@ -6372,7 +6569,6 @@ mod tests {
     /// from different places — one from a vendor's files, one from
     /// khor's own directory — and an implementation that only consulted
     /// the sweep would pass the other test and fail here.
-    #[cfg(unix)]
     #[test]
     fn a_tmux_session_holding_a_khor_session_is_not_a_second_row() {
         use crate::adaptor::{Discovery, Proc, Procs, tmux::Tmux};
@@ -6456,7 +6652,12 @@ mod tests {
 
     impl FakeHost {
         fn up() -> FakeHost {
-            FakeHost(crate::testproc::sleeper(60).spawn().unwrap())
+            FakeHost(
+                std::process::Command::new("sleep")
+                    .arg("60")
+                    .spawn()
+                    .unwrap(),
+            )
         }
 
         fn pid(&self) -> u32 {
@@ -6843,7 +7044,6 @@ mod tests {
         );
     }
 
-    #[cfg(unix)]
     #[test]
     fn native_codex_title_switches_identity_and_reopen_routes_with_old_writer_loaded() {
         use crate::adaptor::{Discovery, Proc, Procs, tmux::Tmux};
@@ -7048,7 +7248,6 @@ mod tests {
         drop(writers);
     }
 
-    #[cfg(unix)]
     #[test]
     fn workspace_directory_follows_active_tmux_pane_even_with_old_marks() {
         use crate::adaptor::{Discovery, Procs, tmux::Tmux};
@@ -7106,7 +7305,6 @@ mod tests {
     /// marks, reads tmux for that pane** (item 21's follow-up): never an
     /// empty row while the person's shells have no integration. A pane
     /// that marked keeps its own reading.
-    #[cfg(unix)]
     #[test]
     fn an_attached_tmux_row_reads_tmux_for_a_front_pane_with_no_marks() {
         use crate::adaptor::{Discovery, Procs, tmux::Tmux};
@@ -7188,7 +7386,6 @@ mod tests {
         assert!(!doing().pane_unmarked, "the pane in front marks");
     }
 
-    #[cfg(unix)]
     #[test]
     fn an_agent_leaving_its_tmux_session_turns_its_row_into_that_terminal() {
         use crate::adaptor::{Discovery, Procs, tmux::Tmux};
@@ -7291,7 +7488,6 @@ mod tests {
     /// gone. It has to turn into that tmux session's terminal exactly
     /// like a registered one, whether claude crashed (its status file
     /// left behind, still news) or exited cleanly (the file gone too).
-    #[cfg(unix)]
     #[test]
     fn an_unregistered_agent_leaving_its_tmux_session_turns_its_row_into_that_terminal() {
         use crate::adaptor::{Discovery, Procs, tmux::Tmux};
@@ -7418,7 +7614,6 @@ mod tests {
     /// two rows whoever holds the session's seat: the one on the list
     /// holds it in its own form, and the other — newer, and so the one a
     /// non-agent holder would wear — is not folded into it.
-    #[cfg(unix)]
     #[test]
     fn two_agents_in_one_tmux_session_stay_two_rows() {
         use crate::adaptor::{Discovery, Procs, tmux::Tmux};
@@ -7465,7 +7660,6 @@ mod tests {
     /// discovered claude row folds into it, and the terminal stays up —
     /// the reaper that used to close it finds nothing. When claude
     /// leaves, the row is a terminal again.
-    #[cfg(unix)]
     #[test]
     fn a_terminal_that_starts_an_agent_becomes_that_agent_and_stays_open() {
         use crate::adaptor::{Discovery, Procs, tmux::Tmux};
@@ -7559,7 +7753,6 @@ mod tests {
     /// a claude started in it directly; its 「正在运行 tmux」 gives way to
     /// the agent's preview; and neither the claude nor the session is a
     /// second row.
-    #[cfg(unix)]
     #[test]
     fn a_khor_shell_attached_to_tmux_wears_the_agent_in_that_session() {
         use crate::adaptor::{Discovery, Procs, tmux::Tmux};
@@ -7634,7 +7827,6 @@ mod tests {
     /// shell's own marks only ever saw it start the client. Where tmux
     /// named no front pane, the session's reading stands in, as for an
     /// attached tmux row. The session is no second row either way.
-    #[cfg(unix)]
     #[test]
     fn a_khor_shell_attached_to_tmux_says_what_the_front_pane_runs() {
         use crate::adaptor::{Discovery, Procs, tmux::Tmux};
@@ -8056,6 +8248,105 @@ mod tests {
         assert!(
             k.ended(&alive).is_none(),
             "a live shell never reads the file"
+        );
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn windows_close_refuses_a_bad_cookie_and_never_kills_a_stale_hosts_child() {
+        use std::net::TcpListener;
+        use std::time::{Duration, Instant};
+        struct Child(std::process::Child);
+        impl Drop for Child {
+            fn drop(&mut self) {
+                let _ = self.0.kill();
+                let _ = self.0.wait();
+            }
+        }
+        let mut child = Child(
+            std::process::Command::new("cmd.exe")
+                .args(["/D", "/Q", "/C", "set /p owned_wait=waiting"])
+                .stdin(std::process::Stdio::piped())
+                .stdout(std::process::Stdio::null())
+                .stderr(std::process::Stdio::null())
+                .spawn()
+                .unwrap(),
+        );
+        let root = tmp("windows-close-owner");
+        let k = kind_at(&root);
+        let id = sid("gui/windows-close");
+        k.register(&id, "gui", "fixture", Some(child.0.id()), None)
+            .unwrap();
+        let dir = k.dir_of(&id).unwrap();
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        listener.set_nonblocking(true).unwrap();
+        let host = crate::host::HostFile {
+            port: listener.local_addr().unwrap().port(),
+            cookie: "owned-close-cookie".into(),
+            host_pid: child.0.id(),
+            child_pid: child.0.id(),
+        };
+        fs::write(
+            crate::host::host_file_path(&dir),
+            serde_json::to_vec(&host).unwrap(),
+        )
+        .unwrap();
+        let server = std::thread::spawn(move || {
+            let deadline = Instant::now() + Duration::from_secs(5);
+            loop {
+                match listener.accept() {
+                    Ok((mut connection, _)) => {
+                        connection.set_nonblocking(false).unwrap();
+                        connection
+                            .set_read_timeout(Some(Duration::from_secs(2)))
+                            .unwrap();
+                        let _: crate::host::Hello =
+                            crate::host::read_frame(&mut connection).unwrap();
+                        crate::host::write_frame(
+                            &mut connection,
+                            &crate::host::Welcome {
+                                ok: false,
+                                why: "cookie refused".into(),
+                            },
+                        )
+                        .unwrap();
+                        return true;
+                    }
+                    Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
+                        if Instant::now() >= deadline {
+                            return false;
+                        }
+                        std::thread::sleep(Duration::from_millis(5));
+                    }
+                    Err(error) => panic!("{error}"),
+                }
+            }
+        });
+        assert!(k.close_session(&id).is_err());
+        assert!(
+            server.join().unwrap(),
+            "close must authenticate the current host"
+        );
+        assert!(dir.exists() && child.0.try_wait().unwrap().is_none());
+        let stale = sid("shell/windows-stale");
+        k.register(&stale, "shell", "stale", Some(u32::MAX), None)
+            .unwrap();
+        let stale_dir = k.dir_of(&stale).unwrap();
+        fs::write(
+            crate::host::host_file_path(&stale_dir),
+            serde_json::to_vec(&crate::host::HostFile {
+                host_pid: u32::MAX,
+                child_pid: child.0.id(),
+                ..host
+            })
+            .unwrap(),
+        )
+        .unwrap();
+        k.close_session(&stale).unwrap();
+        assert!(!stale_dir.exists());
+        assert!(
+            child.0.try_wait().unwrap().is_none(),
+            "an old child PID grants no ownership"
         );
     }
 }

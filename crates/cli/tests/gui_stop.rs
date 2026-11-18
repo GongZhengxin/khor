@@ -122,6 +122,7 @@ fn a_stop_always_brings_the_turn_to_an_end() {
     write_frame(
         &mut conn,
         &Hello {
+            control: false,
             cookie: hf.cookie,
             cols: 0,
             rows: 0,

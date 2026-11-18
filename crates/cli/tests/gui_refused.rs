@@ -134,6 +134,7 @@ fn a_dropped_op_is_said_back_to_the_face_that_sent_it() {
         write_frame(
             &mut c,
             &Hello {
+                control: false,
                 cookie: hf.cookie.clone(),
                 cols: 0,
                 rows: 0,

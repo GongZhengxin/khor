@@ -853,7 +853,9 @@ pub(crate) async fn check_roster(node: &Node) -> (Health, String, Option<String>
 /// Every registered agent's command, against the PATH khor would start
 /// it with.
 async fn check_agents(node: &Node) -> (Health, String, Option<String>) {
-    let Ok(rows) = node.agents() else {
+    // Shipped launch defaults are optional software, not installation requests.
+    // Only a person's explicit registrations can require a command to exist.
+    let Ok(rows) = node.agents_loaded().map(|loaded| loaded.doc.all()) else {
         return (
             Health::Unmeasured,
             cli::doctor_agents_unread().to_owned(),
@@ -877,6 +879,30 @@ async fn check_agents(node: &Node) -> (Health, String, Option<String>) {
             cli::doctor_agents_missing(missing.join(cli::name_separator())),
             None,
         )
+    }
+}
+
+#[cfg(test)]
+mod agent_tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn dsh_default_is_optional_but_an_explicit_missing_agent_is_diagnosed() {
+        let root = tempfile::tempdir().unwrap();
+        let node = Node::open(root.path().to_path_buf()).unwrap();
+        let (health, text, _) = check_agents(&node).await;
+        assert_eq!(health, Health::Ok, "An unused optional agent: {text}");
+        node.register_agent(
+            "dsh",
+            &[root.path().join("missing-dsh").display().to_string()],
+        )
+        .unwrap();
+        let (health, text, _) = check_agents(&node).await;
+        assert_eq!(health, Health::Warn);
+        assert!(
+            text.contains("dsh"),
+            "Name the explicit broken launch: {text}"
+        );
     }
 }
 
@@ -1106,12 +1132,14 @@ pub(crate) async fn relay_round_trip(url: &str) -> Option<u64> {
 /// answering puts the silence on the machine that issued the ticket.
 /// Asked of every relay at once, each within [`relay_rtt`]'s budget.
 pub(crate) async fn any_relay_answers(urls: Vec<String>) -> bool {
-    let asks: Vec<_> = urls
-        .into_iter()
-        .map(|url| tokio::spawn(async move { relay_rtt(&url).await.is_some() }))
-        .collect();
-    for ask in asks {
-        if ask.await.unwrap_or(false) {
+    // Join by completion, and keep ownership of every in-flight request.
+    // A first success or a cancelled caller drops the remaining probes.
+    let mut asks = tokio::task::JoinSet::new();
+    for url in urls {
+        asks.spawn(async move { relay_rtt(&url).await.is_some() });
+    }
+    while let Some(ask) = asks.join_next().await {
+        if ask.unwrap_or(false) {
             return true;
         }
     }

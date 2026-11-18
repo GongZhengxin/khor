@@ -1,5 +1,4 @@
-# khor shell integration for PowerShell 7 (written, not wired yet: khor does
-# not host on Windows; see docs/SHELL-INTEGRATION.md for how it would load).
+# khor shell integration for PowerShell, loaded after native Profiles.
 #
 # The marks are khor.zsh's: OSC 133 A/B/C/D, OSC 633;E and OSC 7, following
 # VS Code's shellIntegration.ps1: the prompt function is wrapped so D and A

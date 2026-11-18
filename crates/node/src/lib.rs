@@ -35,11 +35,13 @@ pub mod code;
 mod codex_process;
 pub mod codex_terminal;
 pub mod codexagent;
+pub mod command_task;
 pub mod commands;
 pub mod config;
 mod console;
 pub mod cwd;
 pub mod day;
+mod deadline;
 pub mod delegation;
 mod doc_transfer_state;
 pub mod doctor;
@@ -47,6 +49,7 @@ pub mod drops;
 pub mod dsh_sessions;
 mod durable;
 pub(crate) mod egress;
+pub mod execution;
 pub mod face;
 pub mod favicon;
 pub mod file_resource;
@@ -98,11 +101,13 @@ pub mod satellite;
 pub mod secret;
 pub mod serves;
 pub mod session_content;
+pub mod session_import;
 pub mod shell_start;
 pub mod startup_trace;
 mod store_owner;
 pub mod subscriptions;
 pub mod tabs;
+pub mod terminal_control;
 #[cfg(test)]
 pub(crate) mod testdir;
 #[cfg(test)]
@@ -115,6 +120,7 @@ pub mod tunnel;
 mod update_wire;
 pub mod updates;
 pub mod usage;
+mod user_environment;
 pub mod vitals;
 pub mod watch;
 pub mod wide;
@@ -1281,6 +1287,7 @@ impl Node {
         // what the build running it is. Every other machine reads it off
         // the table to decide whether to offer a session here.
         loaded.doc.set_hosts(&self.device_str, self.hosts)?;
+        loaded.doc.set_hop_staged(&self.device_str, true)?;
         // **No style is written here any more** (2026-09-21). It used to
         // push `.khor/avatar.json` into the table on every open, back
         // when the file was the choice and the table was a report of it.
@@ -1975,10 +1982,10 @@ impl Node {
             .unwrap_or_else(|| self.name.clone())
     }
 
-    /// Whether this machine is paused (docs/MORE.md 暂停) — read from
-    /// the file every time, never cached, so a resident serve and a
-    /// `khor pause` in another terminal cannot disagree about it
-    /// (`crate::pause` has the whole of that reasoning).
+    /// Whether this machine is paused (docs/MORE.md 暂停). A resident
+    /// uses its shared polled reading; local pause/resume updates it
+    /// immediately. Without a resident reading, consult the file.
+    /// See [`crate::pause`] for cross-process polling and ownership.
     pub fn paused(&self) -> bool {
         crate::pause::is_on(&self.root)
     }
@@ -2067,14 +2074,24 @@ impl Node {
         load_pile(&titles_dir(&self.root), self.peer)
     }
 
-    /// Every ACP agent this person has named, by name (`khor_sync::agents`).
+    /// ACP launch defaults and this person's registrations. An explicit
+    /// registration overrides a default, without writing that default to sync.
     pub fn agents(&self) -> Result<Vec<(String, AgentSpec)>, String> {
-        Ok(self.agents_loaded()?.doc.all())
+        let mut agents: std::collections::BTreeMap<_, _> = agent_registry::BUILTIN_ACP
+            .iter()
+            .filter_map(|agent| agent.spec().map(|spec| (agent.id.to_owned(), spec)))
+            .collect();
+        agents.extend(self.agents_loaded()?.doc.all());
+        Ok(agents.into_iter().collect())
     }
 
-    /// One of them, or `None` for a name nobody registered.
+    /// A registration takes precedence over the shipped launch default.
     pub fn agent(&self, name: &str) -> Result<Option<AgentSpec>, String> {
-        Ok(self.agents_loaded()?.doc.get(name))
+        Ok(self
+            .agents_loaded()?
+            .doc
+            .get(name)
+            .or_else(|| agent_registry::builtin(name).and_then(|agent| agent.spec())))
     }
 
     /// What sessions a registered agent says it has (`session/list`).
@@ -2130,11 +2147,10 @@ impl Node {
     /// steps, and 「登记过的有: 」 trailing into nothing is not a
     /// sentence.
     pub fn agent_or_refuse(&self, name: &str) -> Result<AgentSpec, String> {
-        let loaded = self.agents_loaded()?;
-        if let Some(spec) = loaded.doc.get(name) {
+        if let Some(spec) = self.agent(name)? {
             return Ok(spec);
         }
-        let known = loaded.doc.all();
+        let known = self.agents()?;
         if known.is_empty() {
             return Err(msg::no_agents_registered().into());
         }
@@ -6256,16 +6272,19 @@ pub(crate) fn device_id_from_hex(s: &str) -> Result<DeviceId, String> {
 /// the other way, and it would be the harder one to see. An empty
 /// answer (no shell, a shell that failed) leaves what was there.
 pub(crate) fn merge_paths(asked: &str, here: &str) -> String {
-    if asked.trim().is_empty() {
+    if asked.is_empty() {
         return here.to_owned();
     }
-    let mut seen: Vec<&str> = Vec::new();
-    for dir in asked.split(':').chain(here.split(':')) {
-        if !dir.is_empty() && !seen.contains(&dir) {
-            seen.push(dir);
+    let mut seen = Vec::new();
+    for directory in std::env::split_paths(asked).chain(std::env::split_paths(here)) {
+        if !directory.as_os_str().is_empty() && !seen.contains(&directory) {
+            seen.push(directory);
         }
     }
-    seen.join(":")
+    std::env::join_paths(seen)
+        .ok()
+        .and_then(|value| value.into_string().ok())
+        .unwrap_or_else(|| here.to_owned())
 }
 
 /// Told to khor by hand: "here is where the programs are." Read by
@@ -6322,15 +6341,32 @@ pub(crate) fn asked_shell() -> &'static Asked {
         };
         #[cfg(not(windows))]
         {
-            let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/sh".into());
-            let out = std::process::Command::new(&shell)
-                .args(["-lic", &probe_script()])
-                .stdin(std::process::Stdio::null())
-                .output();
-            let said = match out {
-                Ok(o) if o.status.success() => String::from_utf8_lossy(&o.stdout).into_owned(),
-                _ => String::new(),
-            };
+            // **Main's newer probe, kept on the merge**: it asks the shell this
+            // machine actually starts (`shell_start::default_shell`), runs the
+            // answer through `user_environment::probe`, and strips a marker so
+            // a shell's own chatter cannot be read as the answer. The Windows
+            // branch above never reaches it — that is our 3.1 s fix, and main
+            // has no equivalent (a Windows `SHELL` is exported by whatever tool
+            // felt like it).
+            let shell = crate::shell_start::default_shell();
+            let marker = format!(
+                "KHOR_ENV_{}",
+                crate::link::fresh_hex().unwrap_or_else(|_| std::process::id().to_string())
+            );
+            let script =
+                if std::path::Path::new(&shell).file_name().is_some_and(|name| name == "fish") {
+                    format!(
+                        "printf '%s\\0' '{marker}' (string join : $PATH) \"$LC_ALL\" \"$LC_CTYPE\" \"$LANG\""
+                    )
+                } else {
+                    format!("printf '%s\\0' '{marker}'; {}", probe_script())
+                };
+            let said = crate::user_environment::probe(&shell, &script)
+                .and_then(|said| {
+                    said.split_once(&(marker + "\0"))
+                        .map(|(_, answer)| answer.to_owned())
+                })
+                .unwrap_or_default();
             read_shell_answer(&said)
         }
     })
@@ -6399,6 +6435,11 @@ pub(crate) fn read_shell_answer(said: &str) -> Asked {
 /// a child an exec error nobody will ever read.
 pub(crate) fn spawn_path(command: &str) -> String {
     let here = std::env::var("PATH").unwrap_or_default();
+    if let Ok(told) = std::env::var(PATH_ENV)
+        && !told.trim().is_empty()
+    {
+        return told;
+    }
     if repair_needed(command, &here) {
         return Node::user_path().to_owned();
     }
@@ -6440,47 +6481,49 @@ pub(crate) fn repair_needed(command: &str, here: &str) -> bool {
 /// that answered "found" for one would move the failure back to where
 /// it was, a child that dies with nothing to say.
 pub(crate) fn find_program(command: &str, path: &str) -> Option<String> {
-    let runnable = |p: &std::path::Path| -> bool {
+    let runnable = |candidate: &std::path::Path| -> bool {
         #[cfg(unix)]
         {
             use std::os::unix::fs::PermissionsExt;
-            std::fs::metadata(p).is_ok_and(|m| m.is_file() && m.permissions().mode() & 0o111 != 0)
+            std::fs::metadata(candidate)
+                .is_ok_and(|m| m.is_file() && m.permissions().mode() & 0o111 != 0)
         }
         #[cfg(not(unix))]
         {
-            p.is_file()
+            candidate.is_file()
         }
     };
-    // A path with a directory in it is used as given. Windows also accepts
-    // the backslash separator there, and resolves a bare name through
-    // PATHEXT's usual three extensions.
-    let names_a_directory = command.contains('/') || (cfg!(windows) && command.contains('\\'));
-    if names_a_directory {
-        let p = std::path::Path::new(command);
-        return runnable(p).then(|| command.to_owned());
-    }
-    // `split_paths` is the platform's own splitter: ';' on Windows, ':'
-    // elsewhere, quotes handled. Splitting on ':' by hand turned every
-    // Windows PATH into fragments of drive letters and found nothing.
-    for dir in std::env::split_paths(std::ffi::OsStr::new(path)) {
-        if dir.as_os_str().is_empty() {
-            continue;
-        }
-        let candidate = dir.join(command);
-        if runnable(&candidate) {
-            return Some(candidate.display().to_string());
-        }
+    let candidate = std::path::Path::new(command);
+    let names = vec![candidate.to_path_buf()];
+    #[cfg(windows)]
+    let names = {
+        let mut values = names;
         #[cfg(windows)]
-        if std::path::Path::new(command).extension().is_none() {
-            for extension in ["exe", "cmd", "bat"] {
-                let with = candidate.with_extension(extension);
-                if runnable(&with) {
-                    return Some(with.display().to_string());
-                }
+        if candidate.extension().is_none() {
+            let extensions =
+                std::env::var("PATHEXT").unwrap_or_else(|_| ".COM;.EXE;.BAT;.CMD".into());
+            for extension in extensions
+                .split(';')
+                .filter(|s| s.starts_with('.') && s.len() > 1)
+            {
+                let mut name = candidate.as_os_str().to_os_string();
+                name.push(extension);
+                values.push(std::path::PathBuf::from(name));
             }
         }
+        values
+    };
+    if candidate.is_absolute() || candidate.components().count() > 1 {
+        return names
+            .into_iter()
+            .find(|p| runnable(p))
+            .map(|p| p.display().to_string());
     }
-    None
+    std::env::split_paths(path)
+        .filter(|d| !d.as_os_str().is_empty())
+        .flat_map(|dir| names.iter().map(move |name| dir.join(name)))
+        .find(|p| runnable(p))
+        .map(|p| p.display().to_string())
 }
 
 #[cfg(test)]
@@ -6518,5 +6561,56 @@ impl Picked {
             Picked::Codex => mine("_codexagent", adaptor::codex::VENDOR),
             Picked::Registered(name, spec) => Ok((Node::agent_launch(spec)?, name.clone())),
         }
+    }
+}
+
+#[cfg(test)]
+mod platform_path_tests {
+    #[test]
+    fn native_program_search_preserves_paths_with_spaces_and_unicode() {
+        let tree = crate::testdir::TempTree::fresh("native-path-space-路径");
+        let programs = tree.join("program files");
+        std::fs::create_dir_all(&programs).unwrap();
+        #[cfg(windows)]
+        let (name, file) = ("khor-path-probe", "khor-path-probe.exe");
+        #[cfg(not(windows))]
+        let (name, file) = ("khor-path-probe", "khor-path-probe");
+        let program = programs.join(file);
+        std::fs::write(&program, b"#!/bin/sh\nexit 0\n").unwrap();
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            std::fs::set_permissions(&program, std::fs::Permissions::from_mode(0o755)).unwrap();
+        }
+        let path = std::env::join_paths([
+            tree.join("missing first"),
+            programs.clone(),
+            tree.join("missing last"),
+        ])
+        .unwrap()
+        .into_string()
+        .unwrap();
+        let found = super::find_program(name, &path).expect("native program is found");
+        assert_eq!(
+            std::fs::canonicalize(found).unwrap(),
+            std::fs::canonicalize(&program).unwrap()
+        );
+        assert_eq!(
+            super::find_program(&program.display().to_string(), ""),
+            Some(program.display().to_string())
+        );
+        let inherited = std::env::join_paths([programs.clone(), tree.join("tail")])
+            .unwrap()
+            .into_string()
+            .unwrap();
+        let asked = std::env::join_paths([tree.join("prefix"), programs.clone()])
+            .unwrap()
+            .into_string()
+            .unwrap();
+        let joined = super::merge_paths(&asked, &inherited);
+        assert_eq!(
+            std::env::split_paths(&joined).collect::<Vec<_>>(),
+            [tree.join("prefix"), programs, tree.join("tail")]
+        );
     }
 }

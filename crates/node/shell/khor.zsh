@@ -26,7 +26,8 @@
 # so they come last and a theme that rebuilds PS1 cannot drop the input
 # mark (Kitty and VS Code defer the same way). A shell that already has an
 # integration emitting these marks (VS Code's, iTerm2's, Kitty's, WezTerm's,
-# Ghostty's, Warp's) is left to it, so nothing is marked twice.
+# Ghostty's, Warp's) keeps its command hooks. Editor entries still report
+# readiness, independent of how that integration draws PS1.
 #
 # Opt out: KHOR_SHELL_INTEGRATION=0 in the environment khor runs in.
 
@@ -100,10 +101,19 @@ _khor_other() {
     || ${+functions[_warp_precmd]} || ${+functions[warp_precmd]} ))
 }
 
+_khor_line_init() {
+  # A theme can rebuild PS1 after our precmd, even moving its own hook last.
+  # Each real line-editor entry proves native startup has completed and
+  # cannot be erased with the prompt. Keep the person's existing widgets.
+  _khor_osc '133;B'
+  return 0
+}
+
 _khor_install() {
   precmd_functions=(${precmd_functions:#_khor_install})
+  builtin autoload -Uz add-zsh-hook add-zle-hook-widget
+  add-zle-hook-widget line-init _khor_line_init
   _khor_other && return
-  builtin autoload -Uz add-zsh-hook
   add-zsh-hook precmd _khor_precmd
   add-zsh-hook preexec _khor_preexec
   # Marks pass through only with the pane's `allow-passthrough` on (tmux

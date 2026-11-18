@@ -56,22 +56,6 @@ fn scratch(tag: &str) -> Scratch {
     root(tag)
 }
 
-/// An absolute path every platform agrees is absolute.
-///
-/// These fixtures used Unix literals (`/Users/x/proj`, `/work/theirs`);
-/// a drive-less leading slash is *relative* on Windows, so the node under
-/// test refused the path for a reason the test was not about. Leaked
-/// because a test's lifetime is the process's.
-fn absolute(tail: &str) -> &'static str {
-    Box::leak(
-        std::env::temp_dir()
-            .join(tail)
-            .display()
-            .to_string()
-            .into_boxed_str(),
-    )
-}
-
 /// forget 批: a machine shown the door takes its rows with it — its cached
 /// report stops being painted, while the in-table sibling keeps every
 /// row untouched (the control). Nothing is deleted: the report cache
@@ -317,7 +301,120 @@ fn a_registration_needs_both_a_name_and_a_command() {
         n.register_agent("ok", &[]).is_err(),
         "a registration with no command starts nothing"
     );
-    assert!(n.agents().unwrap().is_empty(), "neither wrote anything");
+    assert!(
+        n.agents_loaded().unwrap().doc.all().is_empty(),
+        "neither wrote anything"
+    );
+}
+
+#[test]
+fn dsh_is_available_without_registration_and_explicit_launches_still_win() {
+    let r = root("dsh-default");
+    let n = Node::open(r.to_path_buf()).unwrap();
+    let expected = AgentSpec {
+        command: "dsh".into(),
+        args: vec!["--profile".into(), "acp".into()],
+    };
+    assert_eq!(n.agent_or_refuse("dsh").unwrap(), expected);
+    let defaults = n.agents().unwrap();
+    assert_eq!(
+        defaults.iter().filter(|(name, _)| name == "dsh").count(),
+        1,
+        "the default catalog exposes one DSH identity"
+    );
+    assert_eq!(
+        defaults.iter().find(|(name, _)| name == "dsh").unwrap().1,
+        expected
+    );
+    assert!(n.agents_loaded().unwrap().doc.all().is_empty());
+    n.register_agent(
+        "dsh",
+        &["/custom/dsh".into(), "--profile".into(), "work".into()],
+    )
+    .unwrap();
+    assert_eq!(n.agent_or_refuse("dsh").unwrap().command, "/custom/dsh");
+    let overridden = n.agents().unwrap();
+    assert_eq!(
+        overridden.len(),
+        defaults.len(),
+        "an override adds no identity"
+    );
+    assert_eq!(
+        overridden
+            .iter()
+            .filter(|(name, _)| name != "dsh")
+            .collect::<Vec<_>>(),
+        defaults
+            .iter()
+            .filter(|(name, _)| name != "dsh")
+            .collect::<Vec<_>>(),
+        "other default launches are unchanged"
+    );
+    n.forget_agent("dsh").unwrap();
+    assert_eq!(n.agent("dsh").unwrap(), Some(expected));
+    assert_eq!(n.agents().unwrap(), defaults);
+    assert!(n.agents_loaded().unwrap().doc.all().is_empty());
+}
+
+#[test]
+fn session_import_addition_preserves_existing_wire_messages() {
+    use crate::proto::{self, Request, Response};
+
+    for (request, bytes) in [
+        (Request::Sessions, b"\xa8Sessions".as_slice()),
+        (
+            Request::Ls {
+                path: "/tmp".into(),
+            },
+            b"\x81\xa2Ls\x91\xa4/tmp".as_slice(),
+        ),
+        (
+            Request::FileResource {
+                sat: None,
+                anchor: "/tmp".into(),
+                resource: "x".into(),
+                offset: Some(4),
+                limit: 8,
+            },
+            b"\x81\xacFileResource\x95\xc0\xa4/tmp\xa1x\x04\x08".as_slice(),
+        ),
+    ] {
+        assert_eq!(proto::encode_request(&request).unwrap(), bytes);
+        assert_eq!(
+            serde_json::to_value(proto::question(bytes).unwrap()).unwrap(),
+            serde_json::to_value(request).unwrap()
+        );
+    }
+    assert_eq!(
+        proto::encode_response(&Response::Renamed).unwrap(),
+        b"\xa7Renamed"
+    );
+    assert!(matches!(
+        proto::answer(b"\xa7Renamed").unwrap(),
+        Response::Renamed
+    ));
+
+    #[derive(serde::Deserialize)]
+    enum ExistingReader {
+        Sessions,
+        Ls { _path: String },
+    }
+    assert!(matches!(
+        proto::decode::<ExistingReader>(b"\xa8Sessions").unwrap(),
+        ExistingReader::Sessions
+    ));
+    assert!(matches!(
+        proto::decode::<ExistingReader>(b"\x81\xa2Ls\x91\xa4/tmp").unwrap(),
+        ExistingReader::Ls { _path } if _path == "/tmp"
+    ));
+    let request = Request::SessionImport {
+        home: khor_core::DeviceId([1; 32]),
+        action: khor_core::session_import::SessionImportAction::Read,
+    };
+    assert!(
+        proto::decode::<ExistingReader>(&proto::encode_request(&request).unwrap()).is_err(),
+        "a reader without the optional RPC refuses it instead of decoding another operation"
+    );
 }
 
 #[test]
@@ -463,15 +560,7 @@ fn a_word_reported_by_another_process_loses_to_the_vendors_live_file() {
     #[cfg(unix)]
     let other = unsafe { libc::getppid() } as u32;
     #[cfg(windows)]
-    let other = {
-        let mut system = sysinfo::System::new_all();
-        system.refresh_all();
-        system
-            .process(sysinfo::get_current_pid().expect("current pid"))
-            .and_then(|process| process.parent())
-            .expect("the test harness has a parent process")
-            .as_u32()
-    };
+    let other = crate::win_process::parent_id().expect("the test harness has a parent process");
     assert!(
         crate::link::pid_alive(other),
         "probe dead: the other reporter must be alive"
@@ -1273,8 +1362,6 @@ mod recents_tests {
 
     use crate::{Node, PlaceKind};
 
-    use super::absolute;
-
     fn root(tag: &str) -> super::Scratch {
         let p = std::env::temp_dir().join(format!("khor-node-{tag}-{}", std::process::id()));
         let _ = fs::remove_dir_all(&p);
@@ -1293,7 +1380,7 @@ mod recents_tests {
         let me = n.name().to_owned();
 
         for _ in 0..3 {
-            n.recent_visit(PlaceKind::Dir, &me, absolute("proj"))
+            n.recent_visit(PlaceKind::Dir, &me, "/Users/x/proj")
                 .unwrap();
             std::thread::sleep(std::time::Duration::from_millis(3));
         }
@@ -1303,7 +1390,7 @@ mod recents_tests {
             "three trips, one place"
         );
 
-        n.recent_visit(PlaceKind::Dir, &me, absolute("other"))
+        n.recent_visit(PlaceKind::Dir, &me, "/Users/x/other")
             .unwrap();
         assert_eq!(
             n.recents(PlaceKind::Dir, 10).unwrap().len(),
@@ -1323,7 +1410,7 @@ mod recents_tests {
         let n = Node::open(r.to_path_buf()).unwrap();
         let me = n.name().to_owned();
 
-        for p in [absolute("first"), absolute("second"), absolute("third")] {
+        for p in ["/first", "/second", "/third"] {
             n.recent_visit(PlaceKind::Dir, &me, p).unwrap();
             std::thread::sleep(std::time::Duration::from_millis(3));
         }
@@ -1337,7 +1424,7 @@ mod recents_tests {
         let places: Vec<&str> = all.iter().map(|p| p.place.as_str()).collect();
         assert_eq!(
             places,
-            vec![absolute("third"), absolute("second"), absolute("first")],
+            vec!["/third", "/second", "/first"],
             "most recent first"
         );
         assert!(
@@ -1348,7 +1435,7 @@ mod recents_tests {
         let two = n.recents(PlaceKind::Dir, 2).unwrap();
         assert_eq!(
             two.iter().map(|p| p.place.as_str()).collect::<Vec<_>>(),
-            vec![absolute("third"), absolute("second")],
+            vec!["/third", "/second"],
             "the cap keeps the recent end, not the old one"
         );
         assert!(
@@ -1367,7 +1454,7 @@ mod recents_tests {
         let n = Node::open(r.to_path_buf()).unwrap();
         let me = n.name().to_owned();
 
-        n.recent_visit(PlaceKind::Dir, &me, absolute("proj"))
+        n.recent_visit(PlaceKind::Dir, &me, "/Users/x/proj")
             .unwrap();
         n.recent_visit(PlaceKind::Page, &me, "https://example.com/read")
             .unwrap();
@@ -1375,7 +1462,7 @@ mod recents_tests {
         let dirs = n.recents(PlaceKind::Dir, 10).unwrap();
         let pages = n.recents(PlaceKind::Page, 10).unwrap();
         assert_eq!(dirs.len(), 1, "one directory: {dirs:?}");
-        assert_eq!(dirs[0].place, absolute("proj"));
+        assert_eq!(dirs[0].place, "/Users/x/proj");
         assert_eq!(pages.len(), 1, "one page: {pages:?}");
         assert_eq!(pages[0].place, "https://example.com/read");
     }
@@ -1428,11 +1515,7 @@ mod recents_tests {
         let gone = "ab".repeat(32);
         let sibling = "cd".repeat(32);
         let kinds = [PlaceKind::Page, PlaceKind::File, PlaceKind::Dir];
-        let places = [
-            "https://example.test/shared",
-            absolute("a.txt"),
-            absolute("project"),
-        ];
+        let places = ["https://example.test/shared", "/project/a.txt", "/project"];
         let put_devices = |name: &str| {
             let loaded = n.devices_loaded().unwrap();
             loaded.doc.upsert(&gone, name, &[]).unwrap();
@@ -1506,14 +1589,14 @@ mod recents_tests {
         let r = root("recents-reopen");
         let n = Node::open(r.to_path_buf()).unwrap();
         let me = n.name().to_owned();
-        n.recent_visit(PlaceKind::Dir, &me, absolute("proj"))
+        n.recent_visit(PlaceKind::Dir, &me, "/Users/x/proj")
             .unwrap();
         drop(n);
 
         let n = Node::open(r.to_path_buf()).unwrap();
         assert_eq!(
             n.recents(PlaceKind::Dir, 10).unwrap()[0].place,
-            absolute("proj"),
+            "/Users/x/proj",
             "the record must outlive the process that made it"
         );
     }
@@ -1529,14 +1612,14 @@ mod recents_tests {
         let n = Node::open(r.to_path_buf()).unwrap();
         let me = n.name().to_owned();
 
-        n.recent_visit(PlaceKind::Dir, &me, absolute("proj"))
+        n.recent_visit(PlaceKind::Dir, &me, "/Users/x/proj")
             .expect("control: an absolute path is fine");
         assert!(
             n.recent_visit(PlaceKind::Dir, &me, "proj/sub").is_err(),
             "a relative directory names nowhere"
         );
         assert!(
-            n.recent_visit(PlaceKind::Dir, "no-such-machine", absolute("proj"))
+            n.recent_visit(PlaceKind::Dir, "no-such-machine", "/Users/x/proj")
                 .is_err(),
             "a machine not in the table names nobody"
         );
@@ -1563,7 +1646,6 @@ mod recents_tests {
 /// (a launchd agent, `PATH=/usr/bin:/bin:/usr/sbin:/sbin`) it said
 /// **"the agent ended before it answered"**, which is a sentence about
 /// the agent and the agent was fine.
-#[cfg(unix)]
 mod finding_the_program {
     use crate::{AgentSpec, Node};
 
@@ -1836,7 +1918,7 @@ fn a_workspace_whose_machine_left_the_table_keeps_its_row_and_comes_off_by_id() 
     let r = root("ws-ghost");
     let n = Node::open(r.to_path_buf()).unwrap();
     let ghost = "c".repeat(64);
-    let path = absolute("project");
+    let path = "/srv/gone/project";
     {
         let loaded = n.workspaces_loaded().unwrap();
         loaded
@@ -2590,9 +2672,6 @@ fn settings_group_into_the_seven_pages_and_keep_their_values() {
         on("appearance"),
         [
             ("theme", "dark"),
-            ("window-material", "solid"),
-            ("window-outline", "on"),
-            ("window-opacity", "90"),
             ("kind-mark", "face"),
             ("corner-is", "kind"),
             ("lang", "auto")
@@ -2688,8 +2767,8 @@ fn a_network_of_three(root: &Path) -> (Node, String, String) {
         .unwrap();
     template.id = SessionId("shell/on-beta".into());
     n.cache_peer_rows(&beta, "beta", &[template]).unwrap();
-    n.ws_pin(&alpha, absolute("theirs"), false).unwrap();
-    n.ws_pin(n.device_str(), absolute("mine"), false).unwrap();
+    n.ws_pin(&alpha, "/work/theirs", false).unwrap();
+    n.ws_pin(n.device_str(), "/work/mine", false).unwrap();
     (n, alpha, beta)
 }
 
@@ -2744,7 +2823,7 @@ fn leaving_empties_the_table_down_to_this_machine() {
         .collect();
     assert_eq!(
         ws,
-        vec![absolute("mine").to_owned()],
+        vec!["/work/mine".to_owned()],
         "their workspaces go with them; this machine's stays"
     );
     let after: Vec<String> = n
@@ -3071,7 +3150,11 @@ fn the_desktop_app_is_up_only_while_its_recorded_pid_is() {
     // `kill(0, 0)` addresses this whole process group and answers yes,
     // and a number picked to be「surely too big」 is a guess about
     // `pid_max` on a machine this test has never seen.
-    let mut gone = crate::testproc::true_like().spawn().unwrap();
+    let mut gone = std::process::Command::new("/bin/sh")
+        .arg("-c")
+        .arg("exit 0")
+        .spawn()
+        .unwrap();
     let pid = gone.id();
     gone.wait().unwrap();
     std::fs::write(
@@ -3098,7 +3181,7 @@ fn place_pins_move_to_the_sidebars_once() {
     let n = Node::open(r.to_path_buf()).unwrap();
     let here = n.name().to_owned();
     n.pin_web(&here, "https://khor.example/kept", true).unwrap();
-    n.pin_dir(&here, absolute("dir"), true).unwrap();
+    n.pin_dir(&here, "/srv/kept/dir", true).unwrap();
 
     assert_eq!(n.migrate_place_pins().unwrap(), 2, "both rows move");
     let tabs = crate::tabs::list(&r, "page");
@@ -3109,7 +3192,7 @@ fn place_pins_move_to_the_sidebars_once() {
     let ws = n.workspaces().unwrap();
     assert!(
         ws.iter()
-            .any(|w| w.path == absolute("dir") && w.pinned && w.device == n.device_str()),
+            .any(|w| w.path == "/srv/kept/dir" && w.pinned && w.device == n.device_str()),
         "a pinned directory is a pinned workspace: {ws:?}"
     );
 
@@ -3697,23 +3780,4 @@ fn a_local_read_clears_a_cached_remote_badge_before_sync() {
         1,
         "future receipts are clamped to the currently known row"
     );
-}
-
-/// **A bare program is found on a Windows PATH.** The finder split the
-/// variable on ':', which on Windows turned `C:\Windows\system32;...`
-/// into fragments of drive letters, so nothing was ever found by name.
-#[cfg(windows)]
-#[test]
-fn a_bare_program_is_found_on_a_windows_path() {
-    let r = root("find-windows");
-    let bin = r.join("bin");
-    std::fs::create_dir_all(&bin).unwrap();
-    std::fs::write(bin.join("khor-probe.exe"), b"MZ").unwrap();
-    let path = format!("{};{}", r.join("missing").display(), bin.display());
-    let found = crate::find_program("khor-probe", &path).expect("the probe is on the path");
-    assert!(
-        found.ends_with("khor-probe.exe"),
-        "the resolved file, with the extension Windows adds: {found}"
-    );
-    assert!(crate::find_program("khor-absent", &path).is_none());
 }

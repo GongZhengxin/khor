@@ -388,6 +388,26 @@ createRoot(document.getElementById('root')).render(<Lab/>);
   await page.evaluate(()=>window.wearWindowChoice({material:'frost',opacity:0},false));
   assert.equal(await page.locator('html').evaluate(el=>el.style.getPropertyValue('--window-opacity')),'0%','frost tint also reaches zero');
   if(process.env.APPEARANCE_SHOT) await page.screenshot({path:process.env.APPEARANCE_SHOT.replace(/\.png$/, '-ansi.png')});
+  // macOS 15 transparent native chrome must not acquire a second WK
+  // backdrop surface. Other floating controls and sticky titles retain it.
+  await page.evaluate(() => {
+    const host=document.createElement('div');host.dataset.chromeProbe='';
+    host.innerHTML='<nav class="glass" data-float-nav></nav><div class="glass" data-chrome-tabs><div data-tab-strip></div></div><div class="glass" data-chrome-control></div><div data-band data-scrolled></div>';
+    document.getElementById('root').append(host);
+  });
+  for (const platform of ['macos','windows','linux']) for (const legacy of [false,true]) for (const material of ['solid','clear','frost']) {
+    const actual=await page.evaluate(({platform,legacy,material})=>{
+      window.__KHOR_WINDOW_PLATFORM__=platform;window.__KHOR_WINDOW_NATIVE_CHROME__=legacy;
+      window.wearWindowChoice({material,opacity:20},false);
+      const host=document.querySelector('[data-chrome-probe]');
+      return Object.fromEntries(['nav','[data-chrome-tabs]','[data-chrome-control]','[data-band]'].map(selector=>[selector,getComputedStyle(host.querySelector(selector),selector==='[data-band]'?'::before':null).backdropFilter]));
+    },{platform,legacy,material});
+    const native=platform==='macos'&&legacy&&material!=='solid';
+    for(const key of ['nav','[data-chrome-tabs]']) assert.equal(actual[key]==='none',native,`${platform}/${legacy}/${material} ${key}: ${actual[key]}`);
+    assert.notEqual(actual['[data-chrome-control]'],'none','ordinary controls retain CSS glass');
+    assert.notEqual(actual['[data-band]'],'none','scrolling list titles retain CSS blur');
+  }
+  await page.evaluate(()=>document.querySelector('[data-chrome-probe]').remove());
   assert.deepEqual(errors, []);
   console.log("appearance: presets/DIY/JSON, cross-window sync, same PTY/buffer/scroll, retained/hidden tab backgrounds, background-only single-layer alpha in WebGL/DOM/recovery at 1x/2x, unsupported blur, parser bounds and narrow editor passed");
 } catch(error) { console.error("appearance primary failure:",error);throw error;
