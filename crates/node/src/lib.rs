@@ -2805,7 +2805,7 @@ impl Node {
         });
         let mut have: std::collections::BTreeSet<String> =
             views.iter().map(|v| v.session.id.0.clone()).collect();
-        for (name, age, mut row) in reported {
+        for (name, age, row) in reported {
             if have.insert(row.id.0.clone()) {
                 views.push(SessionView {
                     pinned: pins.doc.pinned(&row.id.0),
@@ -2825,12 +2825,15 @@ impl Node {
         // carried on the row for the pin's reason: the document
         // replicates, so every device answers from its own copy.
         for v in &mut views {
-            if let Some(stamp) = v.session.state.as_mut() {
-                if seen.doc.watermark(&v.session.id.0) >= stamp.at.0.min(i64::MAX as u64) as i64 {
-                    v.session.unread = 0;
-                    if stamp.state == State::Done {
-                        stamp.state = State::Idle;
-                    }
+            // Locally derived conversations already count exact message receipts.
+            // Only a cached peer row needs an overlay from this node's seen log.
+            if v.source.is_some()
+                && let Some(stamp) = v.session.state.as_mut()
+                && seen.doc.watermark(&v.session.id.0) >= stamp.at.0.min(i64::MAX as u64) as i64
+            {
+                v.session.unread = 0;
+                if stamp.state == State::Done {
+                    stamp.state = State::Idle;
                 }
             }
             v.session.fallback_unbound_terminal();

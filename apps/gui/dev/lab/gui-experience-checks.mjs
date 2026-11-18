@@ -126,7 +126,7 @@ export async function checkWorkspaceSessions(browser,{port,report,engine,mobile=
    await page.locator('[data-ws-sessions] [data-machine-chat-scroll]:visible').waitFor();
    if(mobile)await page.locator('[data-ws-sessions] [data-lab-model-back]:visible').click();
    await page.locator('[data-ws-sessions-list] [data-side-disclosure="wide/all"]').click();
-   await page.locator('[data-ws-sessions-list] [data-child-task-row]').first().click();
+   await page.locator('[data-ws-sessions-list] [data-child-task-row="fixture-run/fixture-child-0"]').click();
    const child=page.locator('[data-ws-sessions] [data-child-session]:visible');
    await child.locator('[data-child-session-message]').first().waitFor();
    assert.match(await child.innerText(),/3 checks passed/);

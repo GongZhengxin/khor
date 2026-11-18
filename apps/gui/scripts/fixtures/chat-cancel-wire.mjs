@@ -24,6 +24,7 @@ export function installChatCancelWire({scenario, http = false}) {
   const revoke = URL.revokeObjectURL.bind(URL), create = URL.createObjectURL.bind(URL);
   URL.revokeObjectURL = url => { wire.revoked.push(url); revoke(url); };
   URL.createObjectURL = file => { const url = create(file); wire.created.push(url); return url; };
+  const editors = new Map();
   const invoke = async (cmd, args = {}, options = {}) => {
     wire.calls.push({cmd, args: cmd === 'chat_put' ? {name: options.headers?.['x-khor-name']} : args});
     const scope = cmd === 'chat_put' ? {
@@ -32,6 +33,12 @@ export function installChatCancelWire({scenario, http = false}) {
     } : args;
     const admission = window.__attachmentLeases(cmd,scope);
     if (admission.handled) return admission.value;
+    if (cmd === 'session_draft_edit') {
+      for (const parent of args.parents) editors.delete(parent);
+      if (args.revision.text) editors.set(args.revision.id, args.revision);
+      return [...editors.values()];
+    }
+    if (cmd === 'session_drafts') return [...editors.values()];
     if (cmd === 'chat_open') {
       const previous = wire.history.get(args.id);
       if (previous?.gone || previous?.frames.some(frame => frame.kind === 'send_cancelled' && frame.reconnect)) wire.history.delete(args.id);
@@ -63,7 +70,7 @@ export function installChatCancelWire({scenario, http = false}) {
     window.fetch = async (input, init = {}) => {
       const url = new URL(typeof input === 'string' ? input : input.url, location.href);
       const cmd = url.pathname.split('/').pop();
-      if (cmd !== 'attachment_begin' && !cmd.startsWith('chat_')) return original(input, init);
+      if (cmd !== 'attachment_begin' && !cmd.startsWith('chat_') && !cmd.startsWith('session_draft')) return original(input, init);
       let value;
       if (cmd === 'chat_put') value = await invoke(cmd, {}, {headers: {'x-khor-name': url.searchParams.get('name'),'x-khor-chat': encodeURIComponent(url.searchParams.get('id') ?? ''),'x-khor-lease': encodeURIComponent(url.searchParams.get('lease') ?? '')}});
       else value = await invoke(cmd, JSON.parse(init.body || '{}'));

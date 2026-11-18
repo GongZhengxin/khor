@@ -81,7 +81,7 @@ async function inspect(browser, scene, size, data = {}) {
       assert.equal((await childTab.locator('[data-tab-open]').innerText()).trim(),'Codex','Child tabs use the same protocol-free agent name');
       await page.locator('[data-session-tabs] [data-tab-open="wide/all"]').click();
       await page.locator('[data-machine-chat-scroll]:visible').waitFor();
-      await page.locator('[data-child-task-row]').first().click();
+      await page.locator('[data-child-task-row="fixture-run/fixture-child-0"]').click();
       await reader.waitFor();
       assert.equal(await childTab.count(),1,'Opening the same child focuses its existing tab');
       await childTab.locator('[data-tab-close]').click();
@@ -351,11 +351,17 @@ async function inspect(browser, scene, size, data = {}) {
         const childFaces=page.locator('[data-child-tasks="wide/all"] [data-child-task-face] [data-side-face]');
         assert.equal(await childFaces.count(),4,'Agents and command records reuse the session avatar assembly');
         const devices=await page.evaluate(async()=> (await (await fetch('/api/devices',{method:'POST',body:'{}'})).json()));
-        assert.deepEqual(await page.locator('[data-child-task-face]').evaluateAll(nodes=>nodes.slice(0,3).map(node=>node.dataset.childTaskFace)),devices.slice(0,3).map(device=>device.id),'Child avatars resolve the stable machine identity rather than a display name');
+        const childRows = await page.locator('[data-child-tasks="wide/all"] [data-child-task-row]').evaluateAll(rows =>
+          rows.map(row => ({key:row.dataset.childTaskRow, device:row.querySelector('[data-child-task-face]').dataset.childTaskFace})));
+        assert.equal(childRows[0].key, 'fixture-run/fixture-child-1', 'The waiting child leads the expanded tree');
+        for (const [index, device] of devices.slice(0,3).entries()) {
+          assert.equal(childRows.find(row => row.key === 'fixture-run/fixture-child-'+index)?.device, device.id,
+            'Child avatars follow machine identity as the rows reorder');
+        }
         assert.equal(await page.locator('[role="dialog"]:visible').count(),0,'Expanding tasks stays in the session list');
         assert.equal(await parent.isVisible(),true,'The parent remains visible above its inline children');
         await page.screenshot({path:path.join(report,name+'-child-tree.png')});
-        await page.locator('[data-child-task-row]').first().click();
+        await page.locator('[data-child-task-row="fixture-run/fixture-child-0"]').click();
         await checkChildConversation();
         await page.locator('[data-lab-model-back]:visible').click();
         await parent.waitFor({state:'visible'});
@@ -390,7 +396,7 @@ async function inspect(browser, scene, size, data = {}) {
         assert.equal(await page.locator('[role="dialog"]:visible').count(),0,'Task branches expand in the original list');
         assert.equal(await page.locator('[data-side-list] [data-child-tasks="wide/all"]').count(),1);
         await page.screenshot({path:path.join(report,name+'-child-tree.png')});
-        await tasks.first().click();
+        await tasks.filter({hasText:'3 checks passed'}).click();
         await checkChildConversation();
         await tasks.first().waitFor();
         await checkCommandTab(page,{report,name,mobile:false});

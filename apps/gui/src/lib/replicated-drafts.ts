@@ -7,6 +7,19 @@ type Transport = { read: () => Promise<DraftRevision[]>; write: (revision: Draft
 const KEY = 'khor.replicated-drafts.v1';
 const LIMIT = 2 * 1024 * 1024;
 
+function isDraftRevision(row: unknown): row is DraftRevision {
+  if (!row || typeof row !== 'object') return false;
+  const candidate = row as Partial<DraftRevision>;
+  return typeof candidate.id === 'string' && typeof candidate.key === 'string' &&
+    /^(gui|khor|term):.+/.test(candidate.key) && typeof candidate.text === 'string' &&
+    Number.isSafeInteger(candidate.at_ms);
+}
+
+function checkedRows(rows: unknown): DraftRevision[] {
+  if (!Array.isArray(rows) || !rows.every(isDraftRevision)) throw Error('Invalid draft sync response');
+  return rows;
+}
+
 /** The editor and its delivery queue have independent lifetimes. Only observed
  * revisions are replaced; concurrently edited alternatives stay available. */
 export class ReplicatedDraftStore {
@@ -16,7 +29,7 @@ export class ReplicatedDraftStore {
   private listeners = new Set<() => void>();
   private serial = 0;
   private migrated = false;
-  private submissions = new Map<string, { key: string; id: string; phase: SubmissionPhase }>();
+  private submissions = new Map<string, { key: string; id: string; phase: SubmissionPhase; held?: boolean }>();
   private sending: Edit | null = null;
   private syncing = false;
   private readable = true;
@@ -34,16 +47,15 @@ export class ReplicatedDraftStore {
       if (!raw) return;
       if (raw.length > LIMIT) throw Error('draft storage too large');
       const parsed = JSON.parse(raw);
-      const valid = (row: DraftRevision) => row && typeof row.id === 'string' && typeof row.key === 'string' &&
-        /^(gui|khor|term):.+/.test(row.key) && typeof row.text === 'string' && Number.isSafeInteger(row.at_ms);
-      if (!Array.isArray(parsed.remote) || !parsed.remote.every(valid) || !Array.isArray(parsed.pending) ||
-        !parsed.pending.every((edit: Edit) => valid(edit.revision) && Array.isArray(edit.parents) && edit.parents.every(id => typeof id === 'string')) ||
+      const remote = checkedRows(parsed.remote);
+      if (!Array.isArray(parsed.pending) ||
+        !parsed.pending.every((edit: Edit) => isDraftRevision(edit.revision) && Array.isArray(edit.parents) && edit.parents.every(id => typeof id === 'string')) ||
         !Array.isArray(parsed.selected) || !parsed.selected.every((pair: unknown) => Array.isArray(pair) && pair.length === 2 && pair.every(value => typeof value === 'string'))) throw Error('invalid draft storage');
       if (parsed.submissions !== undefined && (!Array.isArray(parsed.submissions) || !parsed.submissions.every((entry: unknown) =>
         Array.isArray(entry) && entry.length === 2 && typeof entry[0] === 'string' && entry[1] && typeof entry[1].id === 'string' && typeof entry[1].key === 'string'))) throw Error('invalid submission receipts');
       this.submissions = new Map((parsed.submissions ?? []).map(([token, value]: [string, {key:string;id:string}]) => [token, {...value, phase:'unconfirmed' as const}]));
       this.migrated = parsed.migrated === true;
-      this.remote = parsed.remote;
+      this.remote = remote;
       this.pending = parsed.pending;
       this.selected = new Map(parsed.selected);
     } catch { this.readable = false; }
@@ -68,7 +80,7 @@ export class ReplicatedDraftStore {
       for (const parent of edit.parents) rows.delete(parent);
       if (edit.revision.text) rows.set(edit.revision.id, edit.revision);
     }
-    const hidden = new Set([...this.submissions.values()].filter(entry => entry.phase === 'pending').map(entry => entry.id));
+    const hidden = new Set([...this.submissions.values()].filter(entry => entry.phase === 'pending' || entry.held).map(entry => entry.id));
     return [...rows.values()].filter(row => !hidden.has(row.id));
   }
   alternatives(key: string): DraftRevision[] {
@@ -118,7 +130,7 @@ export class ReplicatedDraftStore {
   }
   retry(previous: string, token: string) {
     const submitted = this.submissions.get(previous);
-    if (submitted) this.submissions.set(token, { ...submitted, phase: 'pending' });
+    if (submitted) this.submissions.set(token, { ...submitted, phase: 'pending', held: false });
     this.changed();
   }
   committed(token: string) {
@@ -127,9 +139,14 @@ export class ReplicatedDraftStore {
     for (const [held, snapshot] of this.submissions) if (snapshot.key === submitted.key && snapshot.id === submitted.id) this.submissions.delete(held);
     this.clear(submitted.key, submitted.id);
   }
-  failed(token: string, phase: 'failed' | 'cancelled' = 'failed') {
+  failed(token: string, phase: 'failed' | 'cancelled' = 'failed', held = false) {
     const submitted = this.submissions.get(token);
-    if (submitted) { submitted.phase = phase; this.changed(); }
+    if (!submitted) return;
+    // ChatView retains these sends with their attachments in its recovery UI.
+    // Keep the same revision available to restore without replacing an edit.
+    submitted.phase = phase;
+    submitted.held = held;
+    this.changed();
   }
   migrate(entries: readonly (readonly [string, string])[]) {
     if (this.migrated) return;
@@ -144,13 +161,13 @@ export class ReplicatedDraftStore {
       while (this.pending.length) {
         const edit = this.pending[0];
         this.sending = edit;
-        const rows = await this.transport.write(edit.revision, edit.parents);
+        const rows = checkedRows(await this.transport.write(edit.revision, edit.parents));
         this.remote = rows;
         this.pending = this.pending.filter(entry => entry !== edit);
         this.sending = null;
         this.changed();
       }
-      const rows = await this.transport.read();
+      const rows = checkedRows(await this.transport.read());
       // Revisions are immutable. An unchanged poll is neither an editor event
       // nor a reason to rewrite storage and repaint every retained chat.
       const identity = (values: DraftRevision[]) => values.map(row => row.id).sort().join('\n');

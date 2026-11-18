@@ -12,8 +12,6 @@ function schedule() {
   if (timer !== null) clearTimeout(timer);
   timer = setTimeout(() => { timer = null; void sessionDrafts.sync().catch(() => {}); }, 500);
 }
-// Closing a tab does not delete a person's unsent draft on the other devices.
-export function retainSessionDrafts(_ids: readonly string[]) {}
 export const checkpointSessionDrafts = (): boolean => sessionDrafts.durable();
 export function syncSessionDrafts() { void sessionDrafts.sync().catch(() => {}); }
 export function useSessionDraft(key: string): [string, Dispatch<SetStateAction<string>>] {

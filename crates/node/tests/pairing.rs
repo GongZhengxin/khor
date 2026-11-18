@@ -178,6 +178,9 @@ async fn pairing_joins_both_tables_and_chat_flows_both_ways() {
 
     // A line nobody here typed (an agent's, say): lands as a raw block in
     // beta's copy of the broadcast, with no seen state riding along.
+    // The previous local post and the incoming line must have distinct
+    // millisecond stamps for the broadcast's legacy watermark.
+    tokio::time::sleep(Duration::from_millis(2)).await;
     {
         let far = ChatDoc::new(0xFA).unwrap();
         far.tell(

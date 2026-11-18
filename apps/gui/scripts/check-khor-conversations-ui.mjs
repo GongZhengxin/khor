@@ -37,7 +37,7 @@ try {
  for(const [name,engine] of [['chromium',chromium],...(process.env.QUALITY_ENGINES?.includes('webkit')?[['webkit',webkit]]:[])]) {
   browser=await engine.launch({headless:true,...(name==='chromium'&&process.env.KHOR_TEST_CHROME?{channel:'chrome'}:{})});
   const page=await browser.newPage({viewport:{width:1000,height:760}});page.setDefaultTimeout(12000);
-  const errors=[],calls=[],histories=new Map([[A,[]],[B,[]]]),creates=new Map();let failedCreate=false,failNextCreate=false,holdNextCreate=false,releaseCreate;
+  const errors=[],calls=[],histories=new Map([[A,[]],[B,[]]]),creates=new Map(),editors=new Map();let failedCreate=false,failNextCreate=false,holdNextCreate=false,releaseCreate;
   page.on('pageerror',error=>{errors.push(error.message);console.error(error.message);});
   const config={home,account:'fixture-account',model:'fixture-model',options:{}};
   const account={id:config.account,name:'Fixture account',home,home_name:'fixture',provider:'anthropic',default_model:config.model,configured:true,base_url:null,auth_type:'api_key'};
@@ -52,7 +52,13 @@ try {
    if(route.request().method()==='OPTIONS'){await route.fulfill({status:204,headers:{'access-control-allow-origin':'*','access-control-allow-methods':'POST, OPTIONS','access-control-allow-headers':'content-type'}});return;}
    if(route.request().method()!=='POST'){await route.continue();return;}
    const cmd=new URL(route.request().url()).pathname.slice(1),args=route.request().postDataJSON()??{};calls.push({cmd,args});let result=null;
-   if(cmd==='devices')result=devices;
+   if(cmd==='session_draft_edit'){
+    for(const parent of args.parents)editors.delete(parent);
+    if(args.revision.text)editors.set(args.revision.id,args.revision);
+    result=[...editors.values()];
+   }
+   else if(cmd==='session_drafts')result=[...editors.values()];
+   else if(cmd==='devices')result=devices;
    else if(cmd==='agents')result=[{name:'fixture-acp'}];
    else if(cmd==='launch_presets')result=[];
    else if(cmd==='ls')result={path:'/fixture',entries:[],truncated:false};
