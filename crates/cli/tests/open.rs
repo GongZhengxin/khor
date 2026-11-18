@@ -425,7 +425,7 @@ fn a_host_that_dies_while_its_child_lives_is_not_a_failure() {
 
     let work_pid = home.join("work.pid");
     let startup = format!(
-        r#"trap "" HUP; sleep 300 & work=$(jobs -p); printf '%s' "$work" > '{}'; printf 'KHOR-%s-ARMED\n' ORPHAN; wait "$work""#,
+        r#"trap "" HUP; sleep 300 & eval 'work=$!'; printf '%s' "$work" > '{}'; printf 'KHOR-%s-ARMED\n' ORPHAN; wait "$work""#,
         work_pid.display().to_string().replace('\'', "'\\''")
     );
     let (sid, dir) = open_detached(&home, &["--command", &startup]);
