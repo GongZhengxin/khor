@@ -2268,3 +2268,8 @@ export function terminalAttachment(id: string) {
     dispose: owner.dispose,
   };
 }
+
+export type DraftRevision = { id: string; key: string; text: string; at_ms: number };
+export const fetchSessionDrafts = () => call<DraftRevision[]>("session_drafts", {});
+export const editSessionDraft = (revision: DraftRevision, parents: string[]) =>
+  call<DraftRevision[]>("session_draft_edit", { revision, parents });

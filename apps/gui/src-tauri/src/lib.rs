@@ -66,6 +66,16 @@ async fn sessions(by: String) -> Result<Vec<SessionRow>, String> {
     off_main(move || khor_gui_core::list_sessions(&Node::root_from_env(), &by)).await
 }
 
+#[tauri::command]
+async fn session_drafts() -> Result<Vec<khor_gui_core::DraftRevision>, String> {
+    off_main(move || khor_gui_core::session_drafts(&Node::root_from_env())).await
+}
+
+#[tauri::command]
+async fn session_draft_edit(revision: khor_gui_core::DraftRevision, parents: Vec<String>) -> Result<Vec<khor_gui_core::DraftRevision>, String> {
+    off_main(move || khor_gui_core::edit_session_draft(&Node::root_from_env(), &revision, &parents)).await
+}
+
 /// The day strips, on their own beat rather than riding the row list
 /// (`khor_gui_core::day_strips`). `cells` is how many the strip has room
 /// for, measured by the screen.
@@ -5738,6 +5748,8 @@ pub fn run() {
             tabs_reorder,
             tabs_save,
             sessions,
+            session_drafts,
+            session_draft_edit,
             widen,
             unwiden,
             day_strips,

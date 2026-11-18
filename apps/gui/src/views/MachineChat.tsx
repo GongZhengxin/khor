@@ -1,10 +1,11 @@
+import { DraftAlternatives } from "@/components/DraftAlternatives";
 import { raiseKeyboard } from "@/lib/soft-keyboard";
 import {MessageActions} from '@/components/MessageActions';
 import {ScrollToBottom} from '@/components/ScrollToBottom';
 import {composerFiles,composerReady} from '@/lib/composer-files';
 import type {CommandRecord} from '@/gen/bindings/CommandRecord';
 import {KhorHeader,SessionAdd,KhorSend} from '@/views/SessionPreferences';
-import {useSessionDraft} from '@/hooks/use-session-draft';
+import {sessionDrafts, syncSessionDrafts, useSessionDraft} from '@/hooks/use-session-draft';
 import {useUpdateBlocker} from '@/lib/update-readiness';
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 
@@ -206,6 +207,7 @@ export function MachineChat({ id, active = true, onSession, sessions = [] }: { i
     const agentPrompt=text.startsWith('/')||(id==='wide/all'?text.length>0&&chosen.length===0:text.length>0||chosen.length>0);
     if(agentPrompt&&!agent?.config){setRefused(gui.agent_choose_first);return false;}
     const went=new Set(chosen.map(item=>item.key));
+    const draftRevision=sessionDrafts.current(`khor:${id}`)?.id;
     sendLock.current=true;setSending(true);setRefused(null);
     try{
       // Migrate a retained old native selection without trusting a path from
@@ -218,7 +220,7 @@ export function MachineChat({ id, active = true, onSession, sessions = [] }: { i
       if(agentPrompt&&khorPendingRuns.get(id)?.identity!==identity)khorPendingRuns.set(id,{identity,input:agentInput,token:crypto.randomUUID()});
       const issued=khorPendingRuns.get(id);
       await (agentPrompt?khorAgent('prompt',agent!.config!.home,{text:issued!.input,token:issued!.token,session:id}):compose(text,paths));
-      setDraft(now=>now.trim()===text?'':now);
+      if(draftRevision){sessionDrafts.clear(`khor:${id}`,draftRevision);syncSessionDrafts();}
       for(const key of went)pendingFiles.remove(key);
       if(khorPendingRuns.get(id)===issued)khorPendingRuns.delete(id);
       if(currentId.current===id){setDismissed(null);toBottom();refresh();if(chosen.length&&box.current)requestAnimationFrame(()=>{if(box.current)raiseKeyboard(box.current);});}
@@ -296,6 +298,7 @@ export function MachineChat({ id, active = true, onSession, sessions = [] }: { i
           same reason: the line divides two regions, the column is where
           the writing is. On the narrow face it sits above the deck
           (`components/SessionBar`, 2026-10-13), like the agent composer. */}
+      <DraftAlternatives draftKey={`khor:${id}`} />
       <BarSeat at="above"><KhorHeader session={id} view={agent} onChanged={setAgent} disabled={!!(runningAgent)} updates={agentUpdates} />
       <div className="flex-none px-row pt-in pb-in">
       <div className="relative mx-auto flex w-full max-w-measure flex-col text-read">

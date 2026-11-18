@@ -7,7 +7,7 @@ import { NotificationBanners } from "@/views/NotificationBanners";
 import { clearNotifications, receiveNotifications, sessionNotificationsEnabled, useNotifications } from "@/lib/notifications";
 import { notificationPresence, type NotificationBanner, type NotificationPresence } from "@/lib/notification-banners";
 import {SessionHeader} from '@/components/SessionHeader';
-import {retainSessionDrafts} from '@/hooks/use-session-draft';
+import {retainSessionDrafts, syncSessionDrafts} from '@/hooks/use-session-draft';
 import {retainCancelledChatDrafts} from '@/lib/chat-drafts';
 import { useSessionAttention } from "@/hooks/use-session-attention";
 import { useWindowFocus } from "@/hooks/use-window-focus";
@@ -826,7 +826,7 @@ export default function App() {
     let live = true;
     const tick = () => {
       const request = ++sessionRequest.current;
-      fetchSessions(arrangeBy)
+      (syncSessionDrafts(), fetchSessions(arrangeBy))
         .then((rows) => {
           if (!live || request < sessionApplied.current) return;
           sessionApplied.current = request;

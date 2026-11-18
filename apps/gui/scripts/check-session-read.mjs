@@ -102,3 +102,16 @@ front=row('shell/b',1000);attention.render();assert.notEqual(observed.at(-1).id,
 surface.close();await tick();front=row('shell/a',1100);attention.render();assert.notEqual(observed.at(-1).at_ms,1100,'unmounted surface cannot read');
 attention.close();assert.equal(events.size,0,'focus listeners released');
 console.log('session attention: live completion, loading, history, background/focus, overlays, selection and cleanup passed');
+
+// An offline read must still reach the owner after closing and reopening the
+// face; persisting only a local zero would strand badges on every other seat.
+const disk = new Map();
+const persistence = { getItem: key => disk.get(key) ?? null, setItem: (key, value) => disk.set(key, value) };
+const offline = new SessionReads(persistence);
+const covered = offline.read(row('shell/offline', 100));
+const resumed = new SessionReads(persistence);
+assert.deepEqual(resumed.pending(), [covered]);
+assert.equal(resumed.project([row('shell/offline', 100)])[0].unread, 0);
+assert.equal(resumed.project([row('shell/offline', 101)])[0].unread, 1);
+resumed.confirmed(covered);
+assert.deepEqual(new SessionReads(persistence).pending(), []);

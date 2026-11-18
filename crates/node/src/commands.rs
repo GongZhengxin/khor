@@ -192,6 +192,7 @@ const PANES_MAX: usize = 64;
 /// One pane's place in its marks, while another pane's is being read.
 #[derive(Debug, Default)]
 struct Parked {
+    editor: Option<String>,
     phase: Phase,
     named: Option<String>,
     running: Option<Command>,
@@ -266,6 +267,7 @@ fn blank(line: &[u8]) -> bool {
 /// See the module head.
 #[derive(Debug, Default)]
 pub struct Ledger {
+    editor: Option<String>,
     scan: Scan,
     buf: Vec<u8>,
     modes: Modes,
@@ -471,6 +473,7 @@ impl Ledger {
         // is its own.
         if was.is_some() || !self.tmux {
             let parked = Parked {
+                editor: self.editor.take(),
                 phase: std::mem::take(&mut self.phase),
                 named: self.named.take(),
                 running: self.running.take(),
@@ -487,6 +490,7 @@ impl Ledger {
             .position(|(p, _)| p.as_deref() == pane)
             .map(|i| self.parked.remove(i).1)
             .unwrap_or_default();
+        self.editor = back.editor;
         self.phase = back.phase;
         self.named = back.named;
         self.running = back.running;
@@ -538,8 +542,15 @@ impl Ledger {
                         self.name(unescape(line));
                     }
                     Some("P") => {
-                        if let Some(cwd) = parts.next().and_then(|p| p.strip_prefix("Cwd=")) {
+                        let property = parts.next().unwrap_or("");
+                        if let Some(cwd) = property.strip_prefix("Cwd=") {
                             self.set_cwd(unescape(cwd));
+                        } else if let Some(editor) = property.strip_prefix("KhorEditor=") {
+                            let editor = unescape(editor).chars().take(1024).collect::<String>();
+                            if self.editor.as_ref() != Some(&editor) {
+                                self.editor = Some(editor);
+                                self.changed = true;
+                            }
                         }
                     }
                     Some(kind @ ("A" | "B" | "C" | "D")) => {
@@ -638,6 +649,7 @@ impl Ledger {
                 self.typed.clear();
             }
             "C" => {
+                self.editor = self.editor.as_ref().map(|_| String::new());
                 if self.running.is_some() {
                     // Through tmux, a pane out of sight loses its marks
                     // (`allow-passthrough on`): a new command in it says
@@ -759,6 +771,13 @@ impl Ledger {
     ) -> Doing {
         let c = running.or_else(|| self.recent.iter().rev().find(|c| c.pane.as_deref() == pane));
         Doing {
+            editor: if self.modes.program_holds_screen() && !self.tmux {
+                None
+            } else if self.pane.as_deref() == pane {
+                self.editor.clone()
+            } else {
+                self.parked.iter().find(|(p, _)| p.as_deref() == pane).and_then(|(_, parked)| parked.editor.clone())
+            },
             command: c.and_then(|c| c.text.as_ref()).map(|t| one_line(t)),
             running: running.is_some(),
             started_ms: c.map_or(0, |c| c.started_ms),
@@ -1421,4 +1440,15 @@ mod tests {
         );
         assert_eq!(one_line("a\n  b"), "a ⏎ b");
     }
+    #[test]
+    fn editor_reports_are_authoritative_isolated_and_cleared_on_execute() {
+        let mut ledger = Ledger::default();
+        ledger.feed(b"\x1b]133;B\x07printable screen text", 1);
+        assert_eq!(ledger.doing().editor, None, "screen text is not editor evidence");
+        ledger.feed(b"\x1b]633;P;KhorEditor=echo hello\x07", 2);
+        assert_eq!(ledger.doing().editor.as_deref(), Some("echo hello"));
+        ledger.feed(b"\x1b]133;C\x07", 3);
+        assert_eq!(ledger.doing().editor.as_deref(), Some(""));
+    }
+
 }

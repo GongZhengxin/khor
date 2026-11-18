@@ -1,3 +1,4 @@
+import { DraftAlternatives } from "@/components/DraftAlternatives";
 import {pathAttachment,type Attachment} from "@/lib/term-attachments";
 import {agentPresentation} from '@/lib/acp-session';
 import {AttachmentPicker,AttachmentDestination} from "@/views/TermFiles";
@@ -10,7 +11,7 @@ import {useHistoryPrefetch} from '@/hooks/use-history-prefetch';
 import {useSessionDocuments} from '@/hooks/use-session-documents';
 import { listenNativeDragDrop } from "@/lib/native-events";
 import { awaitChatDraftReceipt, chatDraftOwner, completeChatDraft, discardChatDraft, rememberChatDraft, recoverableChatDrafts, settleChatDraft, subscribeChatDrafts, unconfirmedChatDrafts, type ChatDraft } from '@/lib/chat-drafts';
-import {useSessionDraft} from '@/hooks/use-session-draft';
+import {sessionDrafts, syncSessionDrafts, useSessionDraft} from '@/hooks/use-session-draft';
 import {useUpdateBlocker} from '@/lib/update-readiness';
 import {unifiedSession,AcpHeader,SessionAdd} from "@/views/SessionPreferences";
 import {AgentInteraction,type InteractionRequest} from "@/components/AgentInteraction";
@@ -1032,8 +1033,13 @@ export function ChatView({
           const inactive = stopped || currentSession.current !== id || reader.current !== reading;
           const receiptReader = inactive ? reading : undefined;
           for (const frame of batch.frames) {
-            if (frame.kind === "send_committed" && draftOwner) completeChatDraft(id, frame.token, draftOwner, receiptReader);
+            if (frame.kind === "send_committed" && draftOwner) {
+              completeChatDraft(id, frame.token, draftOwner, receiptReader);
+              sessionDrafts.committed(frame.token);
+              syncSessionDrafts();
+            }
             if (frame.kind === "send_cancelled" || frame.kind === "unsent") {
+              sessionDrafts.failed(frame.token);
               const draft = settleChatDraft(id, frame.token, frame.kind === "send_cancelled" ? "cancelled" : "failed", draftOwner, receiptReader);
               if (draft) recovered.set(draft.token, draft);
             }
@@ -1522,7 +1528,7 @@ export function ChatView({
     if (!draft) return false;
     if (placed.length > 0 && box.current) raiseKeyboard(box.current);
     composer.current = {session: id, text: "", documents: [], attachments: []};
-    setText("");
+    sessionDrafts.begin(`gui:${id}`, draft.token);
     setInTurn(true);
     for(const item of prepared)files.remove(item.key);
     setDocs([]);
@@ -1814,6 +1820,7 @@ export function ChatView({
           has its row of accessory keys, a chat has its input box」) —
           above the deck (2026-10-13); the deck sits on the keyboard.
           On the wide face it stands here, as it always did. */}
+      <DraftAlternatives draftKey={`gui:${id}`} />
       <BarSeat at="above">{unifiedSession && <AcpHeader who={who} mode={modeSeat} options={addOptions} protocol={protocol} onControl={control} disabled={inTurn||settingRequest.pending} pending={settingRequest.pending} />}
       {settingRequest.pending&&<p role="status" className="px-row text-caption text-muted-foreground">正在应用{settingRequest.name}</p>}
       {settingRequest.error&&<div role="alert" className="flex items-center gap-in px-row text-caption text-destructive">未能确认{settingRequest.name}，保留当前设置<Button size="sm" variant="ghost" onClick={settingRequest.retry}>重试</Button></div>}

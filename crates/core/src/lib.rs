@@ -3134,6 +3134,11 @@ pub struct Doing {
     /// nearby thread. Tail field for older peers.
     #[serde(default)]
     pub thread_unbound: bool,
+    /// Authoritative shell editor excerpt: None = unsupported/unknown, Some("")
+    /// = known empty. Never reconstructed from input bytes or terminal output.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub editor: Option<String>,
 }
 
 impl Session {

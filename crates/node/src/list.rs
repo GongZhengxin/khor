@@ -23,7 +23,8 @@
 //! as 忙碌. The prefix states the kind of thing the rest of the key is,
 //! so a face can dispatch instead of falling back.
 
-use khor_core::DeviceId;
+use khor_core::{DeviceId, State};
+use khor_sync::drafts::DraftRevision;
 
 use crate::SessionView;
 
@@ -101,6 +102,9 @@ pub struct Arranged {
     pub view: SessionView,
     /// The group's stable key, or empty in a mode that does not group.
     pub group: String,
+    /// Global order before grouping, retained when a face filters the rows.
+    pub attention_order: usize,
+    pub draft: Option<String>,
 }
 
 /// Arranges the list: pinned rows first, then this mode's groups.
@@ -119,22 +123,58 @@ pub fn arrange(
     mode: Arrange,
     device_name: &dyn Fn(&DeviceId) -> Option<String>,
 ) -> Vec<Arranged> {
-    let mut out: Vec<(Arranged, Place)> = views
-        .into_iter()
-        .map(|view| {
-            let (group, place) = place_of(&view, mode, device_name);
-            (Arranged { view, group }, place)
-        })
-        .collect();
-    out.sort_by(|(a, pa), (b, pb)| {
-        pa.cmp(pb).then_with(|| {
-            b.view
-                .session
-                .activity_at()
-                .cmp(&a.view.session.activity_at())
-        })
+    arrange_with_drafts(views, mode, device_name, &[])
+}
+
+/// The execution word and editor presence are orthogonal. A draft raises
+/// attention without turning a running process into a seventh execution state.
+pub fn attention_rank(state: Option<State>, draft: bool) -> u8 {
+    let execution = match state {
+        Some(State::Blocked) => 0,
+        Some(State::Errored) => 1,
+        Some(State::Done) => 3,
+        Some(State::Busy) => 4,
+        Some(State::Idle) => 5,
+        Some(State::Failed) => 6,
+        None => 7,
+    };
+    if draft { execution.min(2) } else { execution }
+}
+
+pub fn arrange_with_drafts(
+    views: Vec<SessionView>,
+    mode: Arrange,
+    device_name: &dyn Fn(&DeviceId) -> Option<String>,
+    drafts: &[DraftRevision],
+) -> Vec<Arranged> {
+    let mut out: Vec<Arranged> = views.into_iter().map(|view| {
+        let prefix = if view.session.id.0.starts_with("wide/") { "khor:" } else { "gui:" };
+        let key = format!("{prefix}{}", view.session.id.0);
+        let terminal = format!("term:{}", view.session.id.0);
+        let draft = drafts.iter().filter(|d| (d.key == key || d.key == terminal) && !d.text.trim().is_empty())
+            .max_by(|a, b| a.at_ms.cmp(&b.at_ms).then(a.id.cmp(&b.id)))
+            .map(|d| d.text.clone())
+            .or_else(|| view.session.doing.as_ref().and_then(|doing| doing.editor.as_ref())
+                .filter(|text| !text.trim().is_empty()).cloned());
+        let (group, _) = place_of(&view, mode, device_name);
+        Arranged { view, group, attention_order: 0, draft }
+    }).collect();
+    out.sort_by(|a, b| {
+        b.view.pinned.cmp(&a.view.pinned)
+            .then_with(|| attention_rank(a.view.session.state.filter(|_| a.view.session.state_known()).map(|s| s.state), a.draft.is_some())
+                .cmp(&attention_rank(b.view.session.state.filter(|_| b.view.session.state_known()).map(|s| s.state), b.draft.is_some())))
+            .then_with(|| b.view.session.activity_at().cmp(&a.view.session.activity_at()))
+            .then_with(|| a.view.session.id.0.cmp(&b.view.session.id.0))
     });
-    out.into_iter().map(|(row, _)| row).collect()
+    let mut groups = std::collections::HashMap::new();
+    for (order, row) in out.iter_mut().enumerate() {
+        row.attention_order = order;
+        groups.entry(row.group.clone()).or_insert(order);
+    }
+    // A group's best member decides its place. Group identity, never size,
+    // breaks a tie. Pinned rows already belong exclusively to the pin group.
+    out.sort_by_key(|row| (groups[&row.group], row.attention_order));
+    out
 }
 
 /// Where a group sits: a band, then a name to sort within it. Bands keep
@@ -319,7 +359,7 @@ mod tests {
     /// the list — the same failure the unnamed-machine and unknown-
     /// category groups have their bands for.
     #[test]
-    fn place_groups_by_directory_and_puts_the_placeless_last() {
+    fn place_groups_by_directory_and_orders_groups_by_visible_attention() {
         let at = |id: &str, at_ms: u64, place: Option<&str>| {
             let mut v = view(id, at_ms, State::Idle, None, 1);
             v.session.place = place.map(str::to_owned);
@@ -338,12 +378,12 @@ mod tests {
 
         assert_eq!(
             rows.iter().map(|r| r.group.as_str()).collect::<Vec<_>>(),
-            vec!["at:/w/khor", "at:/w/khor", "at:/w/tokens", "at:"],
+            vec!["at:", "at:/w/khor", "at:/w/khor", "at:/w/tokens"],
             "one group per directory, alphabetical, and the placeless last",
         );
         assert_eq!(
             ids(&rows),
-            vec!["in-khor", "also-khor", "in-tokens", "no-place"],
+            vec!["no-place", "in-khor", "also-khor", "in-tokens"],
             "freshest first inside a group, as in every other mode",
         );
         // **The control arm**: the placeless row is the *freshest*, so
@@ -351,15 +391,15 @@ mod tests {
         // first — and one that grouped on the raw string with no band
         // would too, since "" leads the alphabet.
         assert_eq!(
-            rows.last().map(|r| r.view.session.id.0.as_str()),
+            rows.first().map(|r| r.view.session.id.0.as_str()),
             Some("no-place")
         );
     }
 
     #[test]
-    fn recent_is_freshest_first_and_groups_nothing() {
+    fn recent_is_attention_first_and_groups_nothing() {
         let rows = arrange(sample(), Arrange::Recent, &names);
-        assert_eq!(ids(&rows), vec!["b", "c", "d", "a"]);
+        assert_eq!(ids(&rows), vec!["b", "d", "a", "c"]);
         assert!(
             rows.iter().all(|r| r.group.is_empty()),
             "recent has no groups"
@@ -396,12 +436,12 @@ mod tests {
     /// be a confident wrong answer; putting it in alphabetical position
     /// would make an empty name look like a category.
     #[test]
-    fn category_keeps_the_unplaceable_row_in_its_own_group_last() {
+    fn category_keeps_unplaceable_rows_separate_without_overriding_attention() {
         let rows = arrange(sample(), Arrange::Category, &names);
-        assert_eq!(ids(&rows), vec!["c", "a", "b", "d"]);
+        assert_eq!(ids(&rows), vec!["b", "d", "a", "c"]);
         assert_eq!(
             rows.iter().map(|r| r.group.as_str()).collect::<Vec<_>>(),
-            vec!["cat:claude", "cat:claude", "cat:codex", "cat:"],
+            vec!["cat:codex", "cat:", "cat:claude", "cat:claude"],
         );
     }
 
@@ -415,15 +455,15 @@ mod tests {
     /// its hex begins with a digit, so alphabetical placement would put
     /// the one group nobody can name at the very top.
     #[test]
-    fn device_groups_by_machine_and_keeps_the_unnamed_one_last() {
+    fn device_groups_preserve_machine_identity_and_follow_attention() {
         let mut rows = sample();
         rows.push(view("e", 50, State::Idle, Some("khor"), 9));
         let out = arrange(rows, Arrange::Device, &names);
-        assert_eq!(ids(&out), vec!["d", "a", "b", "c", "e"]);
+        assert_eq!(ids(&out), vec!["b", "c", "d", "a", "e"]);
         let groups: Vec<String> = out.iter().map(|r| r.group.clone()).collect();
         assert_eq!(
             &groups[..4],
-            &["dev:alpha", "dev:alpha", "dev:beta", "dev:beta"]
+            &["dev:beta", "dev:beta", "dev:alpha", "dev:alpha"]
         );
         assert_eq!(
             groups[4],
@@ -438,13 +478,13 @@ mod tests {
     /// leads them under the khor's own group, not under the machine that
     /// derived it.
     #[test]
-    fn a_khor_wide_row_leads_the_machines_in_its_own_group() {
+    fn a_khor_wide_row_has_its_own_attention_ranked_group() {
         let mut rows = sample();
         rows.push(view("wide/all", 1, State::Idle, Some("khor"), 2));
         let out = arrange(rows, Arrange::Device, &names);
-        assert_eq!(out[0].view.session.id.0, "wide/all");
-        assert_eq!(out[0].group, GROUP_KHOR);
-        assert!(out[1..].iter().all(|r| r.group.starts_with(GROUP_DEVICE)));
+        assert_eq!(out.last().unwrap().view.session.id.0, "wide/all");
+        assert_eq!(out.last().unwrap().group, GROUP_KHOR);
+        assert!(out[..out.len()-1].iter().all(|r| r.group.starts_with(GROUP_DEVICE)));
     }
 
     #[test]
@@ -479,4 +519,33 @@ mod tests {
         }
         assert_eq!(Arrange::from_key("alphabetical"), None);
     }
+    #[test]
+    fn drafts_are_orthogonal_and_pins_use_the_same_priority() {
+        let drafts = vec![DraftRevision { id: "draft".into(), key: "gui:c".into(), text: "unsent".into(), at_ms: 999 }];
+        for mode in Arrange::ALL {
+            let rows = arrange_with_drafts(sample(), mode, &names, &drafts);
+            let ordered: Vec<_> = rows.iter().map(|row| (row.attention_order, row.view.session.id.0.as_str())).collect();
+            assert!(ordered.iter().find(|(_, id)| *id == "b").unwrap().0 < ordered.iter().find(|(_, id)| *id == "c").unwrap().0);
+            assert_eq!(rows.iter().find(|row| row.view.session.id.0 == "c").unwrap().view.session.state.unwrap().state, State::Failed);
+        }
+        let mut pinned = sample();
+        for row in &mut pinned { row.pinned = true; }
+        assert_eq!(ids(&arrange_with_drafts(pinned, Arrange::Device, &names, &drafts)), vec!["b", "c", "d", "a"]);
+        assert_eq!(attention_rank(Some(State::Blocked), true), 0);
+        assert_eq!(attention_rank(Some(State::Errored), true), 1);
+        assert_eq!(attention_rank(Some(State::Busy), true), 2);
+    }
+
+    #[test]
+    fn a_removed_best_member_cannot_hold_its_group_above_another() {
+        let mut rows = sample();
+        rows.retain(|row| row.session.id.0 != "b");
+        let ordered = arrange(rows, Arrange::Device, &names);
+        assert_eq!(ids(&ordered), vec!["d", "a", "c"]);
+        let mut tied = vec![view("z", 10, State::Busy, None, 1), view("a", 10, State::Busy, None, 2)];
+        assert_eq!(ids(&arrange(tied.clone(), Arrange::Recent, &names)), vec!["a", "z"]);
+        tied.reverse();
+        assert_eq!(ids(&arrange(tied, Arrange::Recent, &names)), vec!["a", "z"]);
+    }
+
 }

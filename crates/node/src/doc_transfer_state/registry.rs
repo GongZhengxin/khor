@@ -1,6 +1,6 @@
 //! One wire-name registry shared by inventory, transfer and ordinary loads.
 
-pub(crate) const ROUND_DOCS: [&str; 11] = [
+pub(crate) const ROUND_DOCS: [&str; 12] = [
     "devices",
     "seen",
     "pins",
@@ -12,6 +12,7 @@ pub(crate) const ROUND_DOCS: [&str; 11] = [
     "agents",
     "accounts",
     "titles",
+    "drafts",
 ];
 
 pub(crate) fn authorized_name(name: &str) -> bool {
@@ -99,6 +100,14 @@ macro_rules! with_doc {
             "accounts" => {
                 let mut l = khor_sync::store::load_pile::<khor_sync::accounts::AccountDoc>(
                     &khor_sync::accounts::accounts_dir(root),
+                    peer,
+                )?;
+                let $loaded = &mut l;
+                $body
+            }
+            "drafts" => {
+                let mut l = khor_sync::store::load_pile::<khor_sync::drafts::DraftDoc>(
+                    &khor_sync::drafts::drafts_dir(root),
                     peer,
                 )?;
                 let $loaded = &mut l;

@@ -1,8 +1,8 @@
 # Next round: session priority independent of grouping
 
-Status: deferred by user on 2026-11-18. Product implementation has NOT started.
-Baseline: main 745f334db237cd02854a0415aab7b11cd5f45b8a.
-Latest instruction: pause this feature and save it for the next round; investigate ACP import main CI failure first.
+Status: implementation authorized by the user on 2026-11-18 and now active.
+Implementation baseline: main329de18a67905cf843c849b9754fe91f67235c07.
+Latest instruction: implement this round; include cross-device GUI drafts and globally synchronized unread/read progress.
 
 ## Confirmed behavior
 
@@ -21,4 +21,64 @@ Latest instruction: pause this feature and save it for the next round; investiga
 
 Backend: all grouping modes, pinned/nonpinned, tie determinism, priority up/down, filter effects, unknown/stale state and meaningful-event timestamps.
 GUI/Lab: root, workspace and machine session hosts; group promotion/demotion; pinned internal order; children; menu/touch/keyboard/scroll stability. Verify actual source artifact remotely; local source-only restriction remains.
-Do not start implementation or publish as part of the CI investigation.
+Implementation and remote verification are authorized. Main integration and release need this round's later instruction.
+
+## Draft attention addition (2026-11-18)
+
+User requested: a session with partly edited, unsent content should gain list
+priority. Show `[草稿]` in red followed by normally colored draft text. Desired
+coverage includes GUI conversations, shell terminals and agent TUIs. This is
+next-round planning only; no product implementation has started.
+
+Confirmed by the user on 2026-11-18: Blocked > Errored > Draft > Done >
+Busy > Idle > Failed. Draft is an attention overlay, not a seventh execution
+state: a busy session remains busy, and approval/error outranks its draft.
+Apply the same effective priority within pinned rows, all groups and parent
+attention summaries.
+
+Confirmed presentation: retain the session title; replace the second-line preview
+with a red `[草稿]` prefix and one-line draft excerpt in the ordinary preview
+color, ellipsized as necessary. Sending or explicitly clearing the draft removes
+the overlay and restores the normal preview/priority. Creating a draft promotes
+the row; continuous typing updates the excerpt without per-keystroke reordering.
+Pending attachments without text should also count; an attachment-only summary
+is a proposal, not yet confirmed wording.
+
+Current implementation evidence: ChatView and MachineChat use useSessionDraft
+and a retained local SessionDraftStore. TerminalPane forwards onData immediately
+to the PTY; its predictive-echo queue is transport speculation, not the remote
+application's complete editable input. Shell prompt/command markers exist, but
+a reliable live editing-buffer report is not established by those markers.
+
+GUI can expose existing draft metadata. Shell requires authoritative editing
+buffer integration. TUI needs provider/input integration and verification;
+Enter may insert a newline, completion/history may change the buffer, and
+programs have different submission rules. Do not infer a universal draft by
+concatenating keystrokes or extracting arbitrary terminal output. Unsupported
+TUI draft visibility remains an explicit capability limitation.
+
+Confirmed: GUI drafts synchronize across devices in this round. Validate concurrent edits and delivery receipts. Session read progress must clear unread on every device and after offline rejoin, without acknowledging unseen later content. Open: exact shell/TUI integrations and capability coverage. Preserve
+current input timing and native TUI editing behavior while adding detection.
+
+### State-machine implementation proposal
+
+Use explicit, orthogonal draft lifecycle transitions; keep the existing
+execution state authoritative and independent. Do not enumerate every
+execution-state/draft-state combination. Derive effective attention rank from
+execution, verified draft presence and meaningful timestamps in one pure rule;
+derive group priority from those same results.
+
+Separate the current editable buffer (unknown/unsupported, empty, editing) from
+immutable submitted snapshots and their delivery lifecycle (pending, confirmed,
+failed, cancelled). Submission must not prevent a newer editable draft. A
+receipt can retire only its matching token/revision; an old acknowledgement
+must never erase newer input, and failure recovery must not overwrite it.
+Use actual existing receipt semantics for each transport rather than inventing
+confirmation from an Enter key or echoed output.
+
+GUI, shell and TUI adapters report authoritative draft changes/submission
+evidence into this shared model. Missing support or lost ownership is unknown,
+not an empty draft. Draft appearance, clear and confirmed submission drive
+attention changes; continuous text edits update the excerpt with stable list
+interaction behavior. Final lifecycle details will be verified against the
+existing composer/receipt implementation when work resumes.

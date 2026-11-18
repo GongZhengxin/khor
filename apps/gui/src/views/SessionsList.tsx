@@ -314,6 +314,7 @@ export function SessionsList({
     return {
     id: r.id,
     group: r.group,
+    attentionOrder: r.attention_order,
     pinned: r.pinned,
     // The machine's face carries the row; the halo is the state, the
     // mark the kind (`FaceMark`, which `SessionFace` also wears).
@@ -344,7 +345,9 @@ export function SessionsList({
     // ⚠️ 墓碑 (the redesign, 2026-10-02): 「来自 <machine>」 followed the
     // last line on a row that lives elsewhere. The face is that machine's
     // and says it; the row says what is happening, nothing else.
-    sub: away ? (
+    sub: r.draft ? (
+      <span data-session-draft className="block min-w-0 truncate"><span className="text-destructive">[草稿]</span>{r.draft.replace(/\s+/g, ' ')}</span>
+    ) : away ? (
       <span data-row-far className="block min-w-0 truncate">
         {gui.row_unreachable(agoOf(away.age))}
       </span>

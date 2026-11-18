@@ -6,6 +6,26 @@ type ReadRow = ReadReceipt & { unread: number };
 export class SessionReads {
   private seen = new Map<string, number>();
   private queued = new Map<string, ReadReceipt>();
+  private readable = true;
+  constructor(private storage: Pick<Storage, "getItem" | "setItem"> | null = null) {
+    try {
+      const raw = storage?.getItem("khor.session-reads.v1");
+      if (!raw) return;
+      if (raw.length > 512 * 1024) throw Error("invalid read queue");
+      const saved = JSON.parse(raw);
+      const valid = (entries: unknown): entries is [string, number][] => Array.isArray(entries) && entries.length <= 8192 && entries.every(entry =>
+        Array.isArray(entry) && entry.length === 2 && typeof entry[0] === "string" && Number.isSafeInteger(entry[1]) && entry[1] >= 0);
+      if (!valid(saved.seen) || !valid(saved.queued)) throw Error("invalid read queue");
+      this.seen = new Map(saved.seen);
+      this.queued = new Map(saved.queued.map(([id, at_ms]) => [id, { id, at_ms }]));
+    } catch { this.readable = false; }
+  }
+  private checkpoint() {
+    if (!this.readable) return;
+    try {
+      this.storage?.setItem("khor.session-reads.v1", JSON.stringify({ seen: [...this.seen], queued: [...this.queued].map(([id, receipt]) => [id, receipt.at_ms]) }));
+    } catch { /* Keep the live queue; a failed disk write is not a read receipt. */ }
+  }
 
   read(row: ReadRow): ReadReceipt | null {
     // The shared conversation acknowledges individual rendered message versions,
@@ -16,6 +36,7 @@ export class SessionReads {
     const receipt = { id: row.id, at_ms: row.at_ms };
     this.seen.set(row.id, row.at_ms);
     this.queued.set(row.id, receipt);
+    this.checkpoint();
     return receipt;
   }
 
@@ -30,6 +51,9 @@ export class SessionReads {
 
   confirmed(receipt: ReadReceipt): void {
     // An earlier request completing cannot drop the newer queued receipt.
-    if (this.queued.get(receipt.id)?.at_ms === receipt.at_ms) this.queued.delete(receipt.id);
+    if (this.queued.get(receipt.id)?.at_ms === receipt.at_ms) {
+      this.queued.delete(receipt.id);
+      this.checkpoint();
+    }
   }
 }
