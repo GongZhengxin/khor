@@ -1,5 +1,5 @@
 //! Actual MCP JSON-RPC, durable hosts and normal viewer input in a private store.
-use khor_node::host::{self, ClientOp, Hello, Welcome};
+use khor_node::host::{self, ClientOp};
 use serde_json::{Value, json};
 use std::{
     fs::{self, File},
@@ -284,28 +284,15 @@ impl Fixture {
 
     fn viewer(&self, id: &str) -> TcpStream {
         let directory = self.home.join(".khor/sessions").join(id.replace('/', "-"));
-        let address = host::read_host_file(&directory).unwrap();
-        let mut stream = TcpStream::connect(("127.0.0.1", address.port)).unwrap();
+        // The official viewer handshake selects a raw replay/live byte stream.
+        // It has no extra framed snapshot after Version.
+        let stream = host::connect(&directory, 80, 24).unwrap();
         stream
             .set_read_timeout(Some(Duration::from_secs(5)))
             .unwrap();
         stream
             .set_write_timeout(Some(Duration::from_secs(5)))
             .unwrap();
-        host::write_frame(
-            &mut stream,
-            &Hello {
-                cookie: address.cookie,
-                cols: 80,
-                rows: 24,
-                control: false,
-            },
-        )
-        .unwrap();
-        let welcome: Welcome = host::read_frame(&mut stream).unwrap();
-        assert!(welcome.ok);
-        host::write_frame(&mut stream, &ClientOp::Version(host::HOST_VERSION)).unwrap();
-        let _: Vec<u8> = host::read_frame(&mut stream).unwrap();
         stream
     }
 
