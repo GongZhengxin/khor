@@ -13,7 +13,7 @@ class LabProbeTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             probe = new_probe(root, 'open')
-            self.assertEqual(probe.parent, root / '.probe')
+            self.assertEqual(probe.parent, root.resolve() / '.probe')
             self.assertTrue((probe / MARKER).is_file())
             self.assertEqual(probe, probe.resolve())
 
