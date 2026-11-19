@@ -41,6 +41,7 @@
     "smoke": "node scripts/smoke.mjs",
     "web-face": "node scripts/web-face.mjs",
     "gates": "node scripts/check-gates.mjs",
+    "windows-installed": "node scripts/check-windows-installed.mjs",
     "dialogs": "node scripts/check-dialogs.mjs",
     "subscription-import": "node scripts/check-subscription-import.mjs",
     "overlay-policy": "node scripts/check-overlay-policy.mjs",

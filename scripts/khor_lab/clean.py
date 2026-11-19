@@ -49,13 +49,13 @@ def clean(manifest, allow_prefixes, dry_run=True, yes=False):
     """Remove manifest items; validate the whole manifest before touching anything."""
     if not dry_run and not yes:
         raise ValueError('refusing to delete without --yes')
-    prefixes = [str(prefix).replace('/', '\\').rstrip('\\').lower() for prefix in allow_prefixes]
+    prefixes = [os.path.normcase(str(Path(prefix).expanduser().resolve())) for prefix in allow_prefixes]
     planned = []
     for item in manifest.get('items', []):
         raw = Path(str(item['path'])).expanduser()
         assert_no_reparse(raw)
         resolved = raw.resolve()
-        text = str(resolved).lower()
+        text = os.path.normcase(str(resolved))
         if not any(text.startswith(prefix) for prefix in prefixes):
             raise UnsafePath('manifest path is outside the allowed prefixes: %s' % resolved)
         planned.append((resolved, item))

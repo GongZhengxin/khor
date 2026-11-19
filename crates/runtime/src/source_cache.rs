@@ -311,19 +311,33 @@ mod tests {
         }
     }
 
-    /// The identity changes when the file's contents change — the ordinary
-    /// rebuild path, which must miss.
+    /// A rebuild must miss when size or the last-write time changes.
     #[test]
     fn a_changed_file_does_not_match_its_entry() {
         let dir = scratch("changed");
         let source = scratch_file(&dir, "khor.exe", b"one");
+        let old_time = std::time::UNIX_EPOCH + std::time::Duration::from_secs(1_700_000_000);
+        let file = std::fs::OpenOptions::new()
+            .write(true)
+            .open(&source)
+            .unwrap();
+        file.set_modified(old_time).unwrap();
+        drop(file);
         let identity = Identity::of(&source).unwrap().unwrap();
         let mut recorded = entry(&identity);
         assert!(identity.matches(&recorded));
-        std::fs::write(&source, b"two").unwrap();
+        std::fs::write(&source, b"second").unwrap();
+        let file = std::fs::OpenOptions::new()
+            .write(true)
+            .open(&source)
+            .unwrap();
+        file.set_modified(old_time + std::time::Duration::from_secs(2))
+            .unwrap();
+        drop(file);
         let changed = Identity::of(&source).unwrap().unwrap();
         assert!(!changed.matches(&recorded));
-        // Restoring the size is not enough: the timestamp moved too.
+        // Check each field independently.
+        assert_ne!(changed.size, recorded.size);
         recorded.size = changed.size;
         assert!(!changed.matches(&recorded));
         let _ = std::fs::remove_dir_all(&dir);

@@ -4114,22 +4114,22 @@ fn agents_known() -> Vec<khor_gui_core::agents::KnownAgent> {
 /// fleet` answers the same question in the terminal). No store is
 /// opened and no agent is started, so this answers on a broken store.
 #[tauri::command]
-fn agent_fleet() -> khor_gui_core::agents::AgentFleet {
-    khor_gui_core::agents::agent_fleet()
+async fn agent_fleet() -> Result<khor_gui_core::agents::AgentFleet, String> {
+    off_main(|| Ok(khor_gui_core::agents::agent_fleet())).await
 }
 
 /// **The conversations DSH already has here** (`khor agents dsh`). Reads
 /// the store DSH writes — headers only, one small decompression per
 /// session — and answers an empty list on a machine without DSH.
 #[tauri::command]
-fn dsh_sessions() -> Vec<khor_gui_core::agents::DshConversation> {
-    khor_gui_core::agents::dsh_conversations()
+async fn dsh_sessions() -> Result<Vec<khor_gui_core::agents::DshConversation>, String> {
+    off_main(|| Ok(khor_gui_core::agents::dsh_conversations())).await
 }
 
 /// The argv a terminal should run to continue a foreign conversation.
 /// Pure string work, no process: the face opens the terminal.
 #[tauri::command(rename_all = "snake_case")]
-fn native_resume_argv(agent: String, id: String) -> Result<String, String> {
+async fn native_resume_argv(agent: String, id: String) -> Result<String, String> {
     khor_gui_core::agents::native_resume_argv(&agent, &id)
 }
 
