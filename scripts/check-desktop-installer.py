@@ -58,6 +58,45 @@ def retire_processes(processes, terminate, *, timeout=10, quiet=1,
         sleep(0.1)
 
 
+def close_windows_app(pid):
+    from ctypes import POINTER, WINFUNCTYPE, WinDLL, WinError, byref
+    from ctypes.wintypes import BOOL, DWORD, HWND, INT, LONG, LPARAM, UINT, WPARAM
+
+    user32 = WinDLL("user32", use_last_error=True)
+    callback = WINFUNCTYPE(BOOL, HWND, LPARAM)
+    user32.EnumWindows.argtypes = (callback, LPARAM)
+    user32.EnumWindows.restype = BOOL
+    user32.GetWindowThreadProcessId.argtypes = (HWND, POINTER(DWORD))
+    user32.GetWindowThreadProcessId.restype = DWORD
+    user32.IsWindowVisible.argtypes = (HWND,)
+    user32.IsWindowVisible.restype = BOOL
+    user32.GetWindowLongW.argtypes = (HWND, INT)
+    user32.GetWindowLongW.restype = LONG
+    user32.PostMessageW.argtypes = (HWND, UINT, WPARAM, LPARAM)
+    user32.PostMessageW.restype = BOOL
+    # GWL_STYLE and all four style flags for the caption and its controls.
+    style_index = -16
+    caption_controls = 0x00C00000 | 0x00080000 | 0x00020000 | 0x00010000
+    captioned = []
+
+    @callback
+    def collect(handle, _):
+        owner = DWORD()
+        user32.GetWindowThreadProcessId(handle, byref(owner))
+        if owner.value == pid and user32.IsWindowVisible(handle):
+            style = user32.GetWindowLongW(handle, style_index)
+            if style & caption_controls == caption_controls:
+                captioned.append(handle)
+        return True
+
+    if not user32.EnumWindows(collect, 0):
+        raise WinError()
+    assert len(captioned) == 1, "The installed App must have one native Windows caption"
+    # WM_CLOSE follows the same close request and draft guard as the system X.
+    if not user32.PostMessageW(captioned[0], 0x0010, 0, 0):
+        raise WinError()
+
+
 def launch_installed(directory):
     with tempfile.TemporaryDirectory(prefix="khor-install-home-") as temporary:
         runtime = Path(temporary) / "runtime"
@@ -125,11 +164,17 @@ def launch_installed(directory):
             subprocess.run([str(cli), "gui"], env=environment, check=True, timeout=30)
             deadline = time.monotonic() + 20
             while time.monotonic() < deadline:
-                if any(path.name == application.name for _, path in processes()):
+                app_pids = [pid for pid, path in processes() if path == application]
+                if app_pids:
                     if os.name == "nt":
                         check = Path(__file__).resolve().parents[1] / "apps/gui/scripts/check-windows-installed.mjs"
+                        workspace = Path(temporary) / "Khor 项目"
+                        workspace.mkdir()
+                        (workspace / "readme.md").write_text("# Khor installation workspace\n", encoding="utf-8")
                         subprocess.run(["node", str(check), str(debug_port), WINDOWS_SESSION_TITLE,
-                                        WINDOWS_READY_MARKER], check=True, timeout=150)
+                                        WINDOWS_READY_MARKER, str(workspace)], check=True, timeout=240)
+                        assert len(app_pids) == 1, "The installer check expects one App process"
+                        close_windows_app(app_pids[0])
                         deadline = time.monotonic() + 15
                         while any(path == application for _, path in processes()):
                             assert time.monotonic() < deadline, "Closing the window must exit the installed App"
@@ -268,6 +313,9 @@ def windows(package, expected_source):
             assert str(destination).casefold() in entries
             launch_installed(destination)
             proof["installed_terminal_roundtrip"] = True
+            proof["installed_native_caption"] = True
+            proof["installed_workspace_preview"] = True
+            proof["installed_browser_lifecycle"] = True
             return proof
         finally:
             if installed:

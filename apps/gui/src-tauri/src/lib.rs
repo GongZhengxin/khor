@@ -2575,17 +2575,10 @@ fn build_the_window(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error::Er
     {
         win = win.initialization_script(windows_transport);
     }
-    // **Windows is borderless, because the page already draws the controls.**
-    // `components/Region` renders `WindowControls` only on Windows — minimise,
-    // maximise, close at the right end of R0 — and its own note says why it
-    // may: 「Windows has no buttons of its own over it」. That was true only
-    // while somebody removed the system's; with decorations left on, the window
-    // showed two sets, the native bar above the page's (seen 2026-11-16).
-    // macOS keeps its overlay title bar and Linux keeps its decorations, so
-    // neither enters here.
+    // Windows owns its caption controls, just as macOS owns its traffic lights.
     #[cfg(target_os = "windows")]
     {
-        win = win.decorations(false).shadow(true);
+        win = win.decorations(true);
     }
     #[cfg(target_os = "macos")]
     {
@@ -5841,6 +5834,7 @@ pub fn run() {
             }
             #[cfg(target_os = "windows")]
             if matches!(event, tauri::WindowEvent::Destroyed) {
+                use tauri::Manager;
                 finish_windows_shutdown(window.app_handle().clone());
             }
             // **An Android phone's moves** (docs/IOS.md 前后台): tauri's

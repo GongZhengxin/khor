@@ -36,7 +36,7 @@ import { DeeperHeads, NarrowHead, SideSeat } from "@/components/SideHead";
 import { ListPane } from "@/components/ListPane";
 import { PaneBar, type ArrangeOption } from "@/components/PaneBar";
 import { PathCrumbs } from "@/components/PathCrumbs";
-import { RegionLead, WindowControls } from "@/components/Region";
+import { RegionLead } from "@/components/Region";
 import { WINDOW_DRAG } from "@/components/shell";
 import { RowMenu, type RowAction } from "@/components/RowMenu";
 import {
@@ -1210,7 +1210,6 @@ export function WorkspacePane({
         <DropdownMenuContent align="end">{workspaceActions.map(action => <DropdownMenuItem key={action.key} onSelect={action.run}>{action.label}</DropdownMenuItem>)}</DropdownMenuContent>
       </DropdownMenu>
     </>}
-    {!(picked!==null&&sessionDetailOpen)&&<WindowControls />}
   </div>;
 
   const workspaceSessionList = (

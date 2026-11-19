@@ -1,6 +1,5 @@
 import type { ContentView } from '@/lib/content';
 import { hasAppUpdates, hasNativeBackend } from '@/lib/backend-context';
-import { draftCount } from '@/lib/drafts';
 import type { AttachmentKind } from "./gen/bindings/AttachmentKind";
 import { attachmentView } from "./lib/attachment-view";
 import type { SessionContent } from "./gen/bindings/SessionContent";
@@ -368,12 +367,24 @@ export const onWebFace = !inApp && bridge === null;
  */
 export const isMenuFace = params.get("face") === "menu";
 
+// The Windows HTTP bridge also answers shared web commands. These commands
+// belong to the installed App and use its normal Tauri handlers and capability
+// grants. This includes machine setup and the native menu, which are absent
+// from the web server's command table.
+const desktopCommands = new Set([
+  "reach_probe", "add_start", "add_read", "promote_start",
+  "ssh_config_hosts", "open_copy_id", "pick_key_file", "root_words", "system_unlock",
+  "file_handoff_open", "file_preview_open", "page_sheet",
+  "show_menu", "hide_menu", "size_menu", "menu_rows", "menu_input", "menu_pick", "menu_state",
+  "face_note", "bell_haptic", "joy_haptic", "haptic", "open_settings", "notify_finished",
+]);
+
 async function call<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
-  if (bridge) return post<T>(`${bridge}/${cmd}`, bridgeHeaders(), args);
-  if (inApp) {
+  if (inApp && (!bridge || (windowTransport && desktopCommands.has(cmd)))) {
     const { invoke } = await import("@tauri-apps/api/core");
     return invoke<T>(cmd, args);
   }
+  if (bridge) return post<T>(`${bridge}/${cmd}`, bridgeHeaders(), args);
   // The web face. Same origin — the page came from here — so the
   // address is relative and no CORS is involved in either direction.
   //
@@ -1007,29 +1018,6 @@ export const find = (word: string) => call<FindHit[]>("find", { word });
 /** **Windows' own three, pressed** (docs/SHELL.md 第十轮). Only that
     platform draws them: macOS has the system's inside the row and Linux
     keeps its decorations. A no-op outside the app. */
-export const windowMinimize = () => call<null>("window_minimize");
-export const windowMaximizeToggle = () => call<null>("window_maximize_toggle");
-/**
- * Close the window, asking the draft guard only when it has something to
- * protect.
- *
- * **The page already knows the answer** (`lib/drafts`'s count), so using it
- * is not a way past the guard — it is the same decision taken where it is
- * known. The `close-requested` event (a title-bar click, Alt+F4) still
- * arrives and still meets the guard; the button is the path a person
- * presses, and it must work every time.
- */
-export const windowClose = () => (draftCount() === 0 ? call<null>("window_destroy") : call<null>("window_close"));
-/**
- * Whether this is the app on Windows — the one face that draws the
- * window's three buttons itself.
- *
- * `navigator.platform` for `trafficLights`' reason, one line up: it is
- * deprecated and still the only thing that answers without a round trip,
- * and a wrong answer costs three buttons that are not needed rather than
- * a broken face.
- */
-export const windowsApp = inApp && /win/i.test(navigator.platform || navigator.userAgent);
 /** How much of the title row's left end the system's three buttons stand
     in, **as the window measured them** (docs/SHELL.md 第十一轮): the SDK
     decides their size, so this is asked rather than written down. Zero
