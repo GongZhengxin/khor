@@ -22,6 +22,8 @@ export async function checkAttachmentDraft(browser,{port,report,engine,width=390
  };
  const assertPanelWidths=()=>{const issues=panelWidths.filter(({owner,panel})=>Math.abs(owner.x-panel.x)>1||Math.abs(owner.width-panel.width)>1);assert.deepEqual(issues,[],'Attachment panel follows its session width instead of a fixed dialog width');};
  const green=async()=>assert(await picker.locator('[data-files-send]').evaluate(button=>{const p=document.createElement('i');p.style.backgroundColor='var(--brand-strong)';document.body.append(p);const expected=getComputedStyle(p).backgroundColor;p.remove();const face=getComputedStyle(button,'::before');return !button.disabled&&(face.content!=='none'?face.backgroundColor:getComputedStyle(button).backgroundColor)===expected;}));
+ const terminal=page.locator('[data-terminal]');
+ const attachmentKey=page.locator('[data-term-key="attach"]:visible');
  let originalGrid,originalSizes;
  const unchanged=async label=>{assert.deepEqual(await grid(),originalGrid,`${label}: terminal cell grid unchanged`);const current=await api('__ai_preview/terminal-sizes');sizes.push({label,count:current.length});assert.equal(current.length,originalSizes,`${label}: no PTY resize`);};
  const image=async label=>{
@@ -39,6 +41,7 @@ export async function checkAttachmentDraft(browser,{port,report,engine,width=390
  try{
   await page.goto(`http://127.0.0.1:${port}/app/?scene=terminal&machines=3&environment=${encodeURIComponent(JSON.stringify(environment))}`);await page.locator('[data-terminal] .xterm').waitFor();await page.waitForTimeout(500);
   originalGrid=await grid();originalSizes=(await api('__ai_preview/terminal-sizes')).length;
+  const originalTerminal=await terminal.boundingBox();
   await page.locator('[data-terminal]').evaluate(node=>{const data=new DataTransfer();data.items.add(new File(['original attachment'],'draft.txt',{type:'text/plain'}));node.dispatchEvent(new DragEvent('drop',{bubbles:true,cancelable:true,dataTransfer:data}));});
   await picker.waitFor();await selected('draft.txt').waitFor();await unchanged('open fixed panel');
   if(mobile){
@@ -67,8 +70,14 @@ export async function checkAttachmentDraft(browser,{port,report,engine,width=390
    try{await probe.setViewportSize({width:680,height});await probe.goto(`http://127.0.0.1:${port}/app/?scene=terminal&machines=3&environment=${encodeURIComponent(JSON.stringify(environment))}`);await probe.locator('[data-terminal] .xterm').waitFor();await probe.waitForTimeout(500);await probe.locator('[data-terminal]').evaluate(node=>{const data=new DataTransfer();data.items.add(new File(['width probe'],'width.txt',{type:'text/plain'}));node.dispatchEvent(new DragEvent('drop',{bubbles:true,cancelable:true,dataTransfer:data}));});await probe.locator('[data-attachment-picker]:visible').waitFor();await measurePanel('narrow-680','[data-terminal]',probe);assertPanelWidths();}finally{await probe.close();}
   }
 
-  if(mobile)await page.waitForFunction(()=>document.querySelector('#root').getBoundingClientRect().bottom<=document.querySelector('[data-attachment-picker]').getBoundingClientRect().top+1);
-  await unchanged('chrome above the keyboard panel');assert.equal(await picker.locator('[data-files-actions]').innerText(),'取消\n发送 (1)');
+  if(mobile){
+   const panel=await picker.boundingBox();
+   const key=await attachmentKey.boundingBox();
+   assert.deepEqual(await terminal.boundingBox(),originalTerminal,'Opening attachments preserves the terminal viewport');
+   assert(Math.abs(panel.y+panel.height-originalTerminal.y-originalTerminal.height)<=1,'Attachment overlay meets the bottom edge of the terminal');
+   assert(panel.y>=originalTerminal.y&&key.y>=panel.y+panel.height-1,'The overlay covers the terminal and leaves the attachment shortcut accessible');
+  }
+  await unchanged('terminal behind the attachment overlay');assert.equal(await picker.locator('[data-files-actions]').innerText(),'取消\n发送 (1)');
   const regions=await picker.evaluate(root=>{
    const box=selector=>{const r=root.querySelector(selector).getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom};};
    return {source:box('[data-files-source]'),selected:box('[data-files-selection]'),destination:box('[data-files-destination]'),local:box('[data-files-local]'),machines:box('[data-files-machine-row]')};
