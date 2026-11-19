@@ -2695,8 +2695,7 @@ fn build_the_window(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error::Er
 /// How much of the left block's first row macOS's three buttons stand
 /// in, in CSS pixels — what the face sets `--traffic` from, and where
 /// the search box starts. **Zero where the system draws no buttons over
-/// the row** (Windows draws its own at the tab strip's end, Linux keeps
-/// its decorations, a browser has no window).
+/// the row** (Windows and Linux have native decorations outside the row).
 #[cfg(desktop)]
 #[tauri::command]
 fn traffic_room() -> f64 {
@@ -4206,9 +4205,7 @@ async fn agent_ask(name: String) -> Result<khor_gui_core::agents::AgentSaid, Str
     off_main(move || khor_gui_core::agents::agent_ask(&Node::root_from_env(), &name)).await
 }
 
-/// **Windows draws its own three, and these are what they press**
-/// (docs/SHELL.md 第十轮). macOS has the system's buttons inside the row
-/// and Linux keeps its decorations, so nothing there calls these.
+/// Programmatic window controls. The desktop's visible controls are native.
 #[cfg(desktop)]
 #[tauri::command]
 fn window_minimize(window: tauri::Window) -> Result<(), String> {

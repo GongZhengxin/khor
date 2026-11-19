@@ -11,12 +11,8 @@ fn main_window(app: &tauri::AppHandle) -> Result<tauri::Window, String> {
     // **`get_window`, not `get_webview_window`.** A Tauri window that has
     // child webviews at it — the browsing face is added with `add_child`
     // (`lib.rs`) — is no longer returned by `get_webview_window(label)`:
-    // that call answers `None`, so every verb here answered "no main
-    // window" and the page's own three buttons did nothing at all, with the
-    // error silently dropped (`Region.tsx` ignores the answer). The menu
-    // code had already met this and asks for the `Window` instead; this is
-    // the same window, and it exists whether or not anything is embedded in
-    // it.
+    // that call answers `None`. The `Window` remains available after a
+    // browser tab adds a child webview.
     app.get_window("main")
         .ok_or_else(|| "no main window".to_owned())
 }
@@ -46,22 +42,15 @@ fn window_verb(app: &tauri::AppHandle, cmd: &str) -> Option<Result<String, Strin
         // stuck window for lost work. The main window's `Destroyed` handler
         // retires its menu and gives editor windows their own close request.
         "window_close" => window().and_then(|w| w.close().map_err(|e| e.to_string())),
-        // **Closing past the event, not past the guard.** The close button
-        // is the page's own, and the page already counts unsaved drafts
-        // (`lib/drafts`). With none, it destroys the window here; with one,
-        // it goes through `window_close` and the dialog. The
-        // `close-requested` event turned out not to finish reliably — five
-        // release launches, one exit, and the failing rounds had no
-        // "main window was closed" line at all, so the window was never
-        // destroyed — while this path measured five of five in under a
-        // second. Same decision, taken where the answer is known.
+        // After the native close request, the frontend checks its drafts
+        // before invoking destroy. This completes that same close without
+        // raising a second close request.
         "window_destroy" => window().and_then(|w| w.destroy().map_err(|e| e.to_string())),
         // **Dragging.** Tauri's own `drag.js` calls
         // `invoke('plugin:window|start_dragging')` on a `data-tauri-drag-region`
         // mousedown, which is the same dead custom-protocol road as every other
-        // invoke — so a borderless window could not be moved at all (reported
-        // 2026-11-16). The page's own window controls already come through here,
-        // so the drag does too: `drag_shim` posts to this verb.
+        // invoke. `drag_shim` keeps the app's shared drag regions usable
+        // as well as the native caption.
         "window_drag" => window().and_then(|w| w.start_dragging().map_err(|e| e.to_string())),
         // Windows has no system buttons standing over the title row, so the
         // row reserves nothing for them (the same zero the skin answers off
