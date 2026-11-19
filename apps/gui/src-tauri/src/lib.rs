@@ -11,6 +11,7 @@ mod page_navigation;
 #[cfg(any(target_os = "macos", target_os = "ios"))]
 mod page_retire;
 mod updater_commands;
+#[cfg(target_os = "windows")]
 mod window_transport;
 
 #[cfg(all(desktop, unix))]
@@ -2555,25 +2556,11 @@ fn on_the_page_store<'a, R: tauri::Runtime, M: tauri::Manager<R>>(
 /// first frame rather than a moment later (`ground` has the
 /// measurements).
 #[cfg(desktop)]
-fn build_the_window(app: &tauri::AppHandle) -> tauri::Result<()> {
+fn build_the_window(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error::Error>> {
     use tauri::{WebviewUrl, WebviewWindowBuilder};
-    // The transport answers for this window from the next command onwards:
-    // minimise, maximise, close and the title row's measurements are window
-    // methods, not the store's (`window_transport::window_verb`).
-    window_transport::attach(app.clone());
-    // **`?bridge=` on Windows only.** That is where the custom protocol stalls
-    // (measured 2026-11-16: nine commands arrive, then nothing), so the page's
-    // `call()` is sent down the loopback road instead — see `window_transport`.
-    // macOS and Linux keep `WebviewUrl::default()` and their proven IPC: a
-    // workaround for one platform's transport must not change the path the
-    // others are verified on.
-    // The URL is bound in a statement rather than built inside the call, because
-    // a `#[cfg]`-gated block used as an expression would discard its value.
     #[cfg(target_os = "windows")]
-    let start_at = WebviewUrl::App(format!("index.html?bridge={}", window_transport::PORT).into());
-    #[cfg(not(target_os = "windows"))]
-    let start_at = WebviewUrl::default();
-    let mut win = WebviewWindowBuilder::new(app, "main", start_at)
+    let windows_transport = window_transport::start(app.clone())?;
+    let mut win = WebviewWindowBuilder::new(app, "main", WebviewUrl::default())
         .title("Khor")
         .inner_size(1080.0, 720.0)
         .min_inner_size(400.0, 500.0)
@@ -2586,7 +2573,7 @@ fn build_the_window(app: &tauri::AppHandle) -> tauri::Result<()> {
     // tauri's working handler for no reason.
     #[cfg(target_os = "windows")]
     {
-        win = win.initialization_script(window_transport::drag_shim(window_transport::PORT));
+        win = win.initialization_script(windows_transport);
     }
     // **Windows is borderless, because the page already draws the controls.**
     // `components/Region` renders `WindowControls` only on Windows — minimise,
@@ -4013,20 +4000,8 @@ async fn term_pick_folders(
 ) -> Result<Vec<String>, String> {
     #[cfg(desktop)]
     {
-        use tauri_plugin_dialog::DialogExt;
         let _ = window;
-        return app
-            .dialog()
-            .file()
-            .blocking_pick_folders()
-            .unwrap_or_default()
-            .into_iter()
-            .map(|p| {
-                p.into_path()
-                    .map(|p| p.display().to_string())
-                    .map_err(|e| e.to_string())
-            })
-            .collect();
+        return pick_desktop_paths(&app, true);
     }
     #[cfg(target_os = "ios")]
     {
@@ -4074,6 +4049,26 @@ async fn stop_transfer(msg: String) -> Result<(), String> {
     khor_gui_core::stop_transfer(&Node::root_from_env(), &msg).await
 }
 
+#[cfg(desktop)]
+fn pick_desktop_paths(app: &tauri::AppHandle, folders: bool) -> Result<Vec<String>, String> {
+    use tauri_plugin_dialog::DialogExt;
+    let dialog = app.dialog().file();
+    let picked = if folders {
+        dialog.blocking_pick_folders()
+    } else {
+        dialog.blocking_pick_files()
+    };
+    picked
+        .unwrap_or_default()
+        .into_iter()
+        .map(|path| {
+            path.into_path()
+                .map(|path| path.display().to_string())
+                .map_err(|error| error.to_string())
+        })
+        .collect()
+}
+
 /// The composer's ＋, desktop and phone form: a native picker answers
 /// with real local paths, which ride the message as they are (`post`) —
 /// no upload exists here, which is the whole advantage of this form (the
@@ -4087,18 +4082,23 @@ async fn stop_transfer(msg: String) -> Result<(), String> {
 /// the plugin's JS package and its capability grant.
 #[tauri::command]
 async fn pick_paths(app: tauri::AppHandle) -> Result<Vec<String>, String> {
-    use tauri_plugin_dialog::DialogExt;
-    let Some(picked) = app.dialog().file().blocking_pick_files() else {
-        return Ok(Vec::new());
-    };
-    picked
-        .into_iter()
-        .map(|p| {
-            p.into_path()
-                .map(|p| p.display().to_string())
-                .map_err(|e| e.to_string())
-        })
-        .collect()
+    #[cfg(desktop)]
+    return pick_desktop_paths(&app, false);
+    #[cfg(not(desktop))]
+    {
+        use tauri_plugin_dialog::DialogExt;
+        app.dialog()
+            .file()
+            .blocking_pick_files()
+            .unwrap_or_default()
+            .into_iter()
+            .map(|path| {
+                path.into_path()
+                    .map(|path| path.display().to_string())
+                    .map_err(|error| error.to_string())
+            })
+            .collect()
+    }
 }
 
 /// The wizard's 智能体 list (批⑥): every ACP agent this person named.
@@ -5523,19 +5523,6 @@ pub fn run() {
         std::process::exit(code);
     }
     eprintln!("khor app ui: {}", khor_web::ui_revision());
-    // **The window's own command transport, before the window exists.**
-    // Tauri's custom-protocol IPC stops after the startup burst on Windows
-    // (2026-11-16: nine arrivals, then nothing, while the page kept calling);
-    // the page already knows how to reach a loopback bridge
-    // (`apps/gui/src/api.ts`, `?bridge=`), so the window is built against one
-    // in this process. Started here so the port is listening before the first
-    // command is asked for.
-    // The window's own command transport, before the window exists. On Windows
-    // it is the road the page takes (`?bridge=`); elsewhere it still listens —
-    // `?bridge=` is not passed there, so nothing asks it for a command, and the
-    // listener costs one thread. Kept unconditional so the port is bound before
-    // the window is built on every platform that might use it.
-    window_transport::start();
     // **Stand somewhere that cannot be deleted, before anything else**
     // (docs/SHELL.md 第十四轮 第 4 条). The install script starts this
     // binary with `nohup` from inside the export directory and then
@@ -5763,92 +5750,13 @@ pub fn run() {
                     tauri::WindowEvent::Destroyed => {
                         let stamp = jiff::Zoned::now().strftime("%Y-%m-%d %H:%M:%S").to_string();
                         eprintln!("[{stamp}] khor app: the main window was closed");
-                        // **The overlay is destroyed; the others are
-                        // asked.** Tauri ends an app when its last window
-                        // goes, and a window that refuses to close keeps
-                        // the process alive — that is how a windowless
-                        // `khor-gui` came to hold port 1432. But an editor
-                        // (`code:*`) or the settings window may hold
-                        // unsaved text, and this is not the moment to
-                        // decide that for somebody: they are `close`d, so
-                        // their own guard runs. The menu overlay carries no
-                        // data at all, so it is destroyed.
+                        menu_overlay::desktop::close(window.app_handle());
+                        // Let each editor finish its own draft confirmation.
                         for (label, w) in window.app_handle().webview_windows() {
-                            if label != "main" {
-                                if label.starts_with("code:") || label == SETTINGS {
-                                    let _ = w.close();
-                                } else {
-                                    let _ = w.destroy();
-                                }
+                            if label.starts_with("code:") || label == SETTINGS {
+                                let _ = w.close();
                             }
                         }
-                        // **Then end the app, off the event loop.** Asking
-                        // `app.exit` from inside the event that is being
-                        // delivered was tried first and did not stop the
-                        // process; a thread that asks one turn later does,
-                        // and it runs the ordinary exit path — including
-                        // the agent runtime's own close, whose resident
-                        // retirement may take up to 15 s. So the last
-                        // resort below waits longer than that budget:
-                        // **it is not a way to cut cleanup short**, it is
-                        // what stops a broken cleanup from leaving a
-                        // windowless process holding port 1432 (which is
-                        // exactly what the owner met: the next launch could
-                        // not bind it, and the close "did nothing").
-                        let app = window.app_handle().clone();
-                        std::thread::spawn(move || {
-                            std::thread::sleep(std::time::Duration::from_millis(300));
-                            app.exit(0);
-                            // **The loop does not deliver `RunEvent::Exit`
-                            // here.** Measured 2026-11-18: the window is
-                            // destroyed (the line above is in the log), the
-                            // exit request is made, and no "exiting" line
-                            // ever follows — the process sits holding port
-                            // 1432, so the next launch cannot bind it. So
-                            // the one piece of work that handler performs is
-                            // done here instead, **bounded**, and then the
-                            // process leaves.
-                            //
-                            // It is the same call the exit handler makes
-                            // (`link::shutdown`, whose resident retirement
-                            // may take up to 15 s by its own budget) and it
-                            // gets a few seconds to answer. This is not a
-                            // way to cut cleanup short: the window is
-                            // already gone, no edit is at stake, and the
-                            // alternative that was measured is a process
-                            // that never leaves at all.
-                            let root = Node::root_from_env();
-                            let (said, heard) = std::sync::mpsc::channel();
-                            std::thread::spawn(move || {
-                                let closed = tauri::async_runtime::block_on(
-                                    khor_node::link::shutdown(&root),
-                                );
-                                let _ = said.send(closed);
-                            });
-                            match heard.recv_timeout(std::time::Duration::from_secs(3)) {
-                                Ok(Ok(khor_node::khor_agent::RuntimeClose::Closed)) => {
-                                    eprintln!("[khor] the agent runtime closed with the window");
-                                }
-                                Ok(Ok(khor_node::khor_agent::RuntimeClose::Busy)) => {
-                                    eprintln!(
-                                        "[khor] the agent runtime is busy; pending work retained"
-                                    );
-                                }
-                                Ok(Err(error)) => {
-                                    eprintln!("[khor] agent runtime close failed: {error}");
-                                }
-                                Err(_) => {
-                                    eprintln!(
-                                        "[khor] the agent runtime did not answer in 3 s; leaving"
-                                    );
-                                }
-                            }
-                            let stamp = jiff::Zoned::now()
-                                .strftime("%Y-%m-%d %H:%M:%S")
-                                .to_string();
-                            eprintln!("[{stamp}] khor app: exiting (the window was closed)");
-                            std::process::exit(0);
-                        });
                     }
                     // **A menu belongs to the face it hangs under, and
                     // follows it out of the room.** The overlay floats at
@@ -5927,6 +5835,10 @@ pub fn run() {
                     }
                     _ => {}
                 }
+            }
+            #[cfg(target_os = "windows")]
+            if matches!(event, tauri::WindowEvent::Destroyed) {
+                finish_windows_shutdown(window.app_handle().clone());
             }
             // **An Android phone's moves** (docs/IOS.md 前后台): tauri's
             // window events, which there pair as they should. **Not on
@@ -6237,42 +6149,71 @@ pub fn run() {
             }
             if let tauri::RunEvent::Exit = event {
                 let stamp = jiff::Zoned::now().strftime("%Y-%m-%d %H:%M:%S").to_string();
-                // **Bounded, because this ran the process into the ground.**
-                // `link::shutdown` asks the resident to retire, and that wait
-                // is 15 s by its own budget — but measured on 2026-11-17 it
-                // did not return at all: the window went, the log said so,
-                // and `khor-gui` sat there holding the loopback port, which
-                // made the next launch fail to bind it. Waiting forever for a
-                // clean goodbye is not clean; the close button says the
-                // person is done.
-                //
-                // The work still gets its chance — in a thread of its own,
-                // with a few seconds to answer — and the app leaves either
-                // way. Nothing here runs before the window is gone, so no
-                // unsaved edit is affected.
-                let root = agent_runtime_root.clone();
-                let (said, heard) = std::sync::mpsc::channel();
-                std::thread::spawn(move || {
-                    let closed = tauri::async_runtime::block_on(khor_node::link::shutdown(&root));
-                    let _ = said.send(closed);
-                });
-                match heard.recv_timeout(std::time::Duration::from_secs(3)) {
-                    Ok(Ok(khor_node::khor_agent::RuntimeClose::Closed)) => {
+                #[cfg(target_os = "windows")]
+                shutdown_windows_runtime(agent_runtime_root.clone());
+                #[cfg(not(target_os = "windows"))]
+                match tauri::async_runtime::block_on(khor_node::link::shutdown(&agent_runtime_root)) {
+                    Ok(khor_node::khor_agent::RuntimeClose::Closed) => {
                         eprintln!("[{stamp}] khor app: agent runtime closed");
                     }
-                    Ok(Ok(khor_node::khor_agent::RuntimeClose::Busy)) => {
+                    Ok(khor_node::khor_agent::RuntimeClose::Busy) => {
                         eprintln!("[{stamp}] khor app: agent runtime is busy; pending work retained");
                     }
-                    Ok(Err(error)) => {
+                    Err(error) => {
                         eprintln!("[{stamp}] khor app: agent runtime close failed: {error}");
-                    }
-                    Err(_) => {
-                        eprintln!("[{stamp}] khor app: agent runtime close did not answer in 3 s; leaving");
                     }
                 }
                 eprintln!("[{stamp}] khor app: exiting");
             }
         });
+}
+
+#[cfg(target_os = "windows")]
+fn shutdown_windows_runtime(root: std::path::PathBuf) {
+    static SHUTDOWN: std::sync::Once = std::sync::Once::new();
+    SHUTDOWN.call_once(|| {
+        let (said, heard) = std::sync::mpsc::channel();
+        std::thread::spawn(move || {
+            let closed = tauri::async_runtime::block_on(khor_node::link::shutdown(&root));
+            let _ = said.send(closed);
+        });
+        match heard.recv_timeout(std::time::Duration::from_secs(3)) {
+            Ok(Ok(khor_node::khor_agent::RuntimeClose::Closed)) => {
+                eprintln!("khor app: agent runtime closed");
+            }
+            Ok(Ok(khor_node::khor_agent::RuntimeClose::Busy)) => {
+                eprintln!("khor app: agent runtime is busy; pending work retained");
+            }
+            Ok(Err(error)) => eprintln!("khor app: agent runtime close failed: {error}"),
+            Err(_) => eprintln!("khor app: agent runtime close did not answer in 3 s"),
+        }
+    });
+}
+
+/// WebView2 can leave the process alive without an Exit event. Wait for
+/// Tauri to remove the destroyed window and leave the process running if
+/// any editor still has a window for its draft confirmation.
+#[cfg(target_os = "windows")]
+fn finish_windows_shutdown(app: tauri::AppHandle) {
+    use std::sync::atomic::{AtomicBool, Ordering};
+    use tauri::Manager;
+    static FINISHING: AtomicBool = AtomicBool::new(false);
+    std::thread::spawn(move || {
+        std::thread::sleep(std::time::Duration::from_millis(300));
+        if !app.windows().is_empty() || FINISHING.swap(true, Ordering::AcqRel) {
+            return;
+        }
+        shutdown_windows_runtime(Node::root_from_env());
+        if app.windows().is_empty() {
+            app.exit(0);
+            std::thread::sleep(std::time::Duration::from_secs(1));
+            if app.windows().is_empty() {
+                eprintln!("khor app: exiting after the last Windows window closed");
+                std::process::exit(0);
+            }
+        }
+        FINISHING.store(false, Ordering::Release);
+    });
 }
 
 /// **One resident per home, and on a machine with the app it is the

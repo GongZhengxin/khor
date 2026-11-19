@@ -442,9 +442,6 @@ mod tests {
     /// approximate one.
     #[test]
     fn reachable_address_falls_back_when_the_primary_is_not_among_the_ips() {
-        assert_eq!(
-            reachable_address(&[ip("127.0.0.1")]),
-            Some(ip("127.0.0.1"))
-        );
+        assert_eq!(reachable_address(&[ip("127.0.0.1")]), Some(ip("127.0.0.1")));
     }
 }

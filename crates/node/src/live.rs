@@ -6746,9 +6746,7 @@ mod tests {
 
     impl FakeHost {
         fn up() -> FakeHost {
-            FakeHost(
-                crate::testproc::sleeper(60).spawn().unwrap(),
-            )
+            FakeHost(crate::testproc::sleeper(60).spawn().unwrap())
         }
 
         fn pid(&self) -> u32 {

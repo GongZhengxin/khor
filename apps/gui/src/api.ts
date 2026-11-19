@@ -215,7 +215,15 @@ export type {
 };
 
 const params = new URLSearchParams(window.location.search);
-const bridge = params.get("bridge");
+const windowTransport = (window as Window & {
+  __KHOR_WINDOW_TRANSPORT__?: Readonly<{ url: string; token: string }>;
+}).__KHOR_WINDOW_TRANSPORT__;
+const devBridge = params.get("bridge");
+const bridge = windowTransport?.url ?? (devBridge ? `http://127.0.0.1:${devBridge}` : null);
+
+function bridgeHeaders(): Record<string, string> {
+  return windowTransport ? { "X-Khor-Window-Token": windowTransport.token } : {};
+}
 
 /**
  * Inside the desktop app's webview.
@@ -361,7 +369,7 @@ export const onWebFace = !inApp && bridge === null;
 export const isMenuFace = params.get("face") === "menu";
 
 async function call<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
-  if (bridge) return post<T>(`http://127.0.0.1:${bridge}/${cmd}`, {}, args);
+  if (bridge) return post<T>(`${bridge}/${cmd}`, bridgeHeaders(), args);
   if (inApp) {
     const { invoke } = await import("@tauri-apps/api/core");
     return invoke<T>(cmd, args);
@@ -875,12 +883,12 @@ export const pickPaths = () => call<string[]>("pick_paths");
     its refusal sentence are the backend's (`UPLOAD_CAP_BYTES`). */
 export const stageFile = async (file: File): Promise<string> => {
   const q = `name=${encodeURIComponent(file.name)}`;
-  const url = bridge ? `http://127.0.0.1:${bridge}/upload?${q}` : `/api/upload?${q}`;
+  const url = bridge ? `${bridge}/upload?${q}` : `/api/upload?${q}`;
   const r = await reach(url, {
     method: "POST",
     // Same rule as `call`: the header rides when the key is held; a
     // bare page leans on the remembered cookie (记住一次批).
-    headers: bridge || webKey === null ? {} : { authorization: `Bearer ${webKey}` },
+    headers: bridge ? bridgeHeaders() : webKey === null ? {} : { authorization: `Bearer ${webKey}` },
     body: file,
   });
   if (!r.ok) throw new Error(unwrap(await r.text()));
@@ -1320,6 +1328,10 @@ export const setMachinePaused = (machine: string, on: boolean) =>
 export const fetchAbout = () => call<About>("about");
 export type { AppUpdateStatus } from "./gen/bindings/AppUpdateStatus";
 export type { UpdatePreferences } from "./gen/bindings/UpdatePreferences";
+export const replyToUpdatePreparation = (nonce: string, blocked: import("./gen/bindings/UpdateBlocker").UpdateBlocker[]) =>
+  call<void>("app_update_prepared", { nonce, blocked });
+export const appUpdateUiReady = () => call<void>("app_update_ui_ready");
+
 export const fetchAppUpdateStatus = () => call<import("./gen/bindings/AppUpdateStatus").AppUpdateStatus>("app_update_status");
 export type { RuntimeCacheUsage } from "./gen/bindings/RuntimeCacheUsage";
 export const runtimeCacheUsage = (clean = false) => call<import("./gen/bindings/RuntimeCacheUsage").RuntimeCacheUsage>("app_update_runtime_cache", { clean });
@@ -1533,10 +1545,10 @@ export const chatPut = async (id: string, lease: string, file: File, into: strin
     });
   }
   const q = `id=${encodeURIComponent(id)}&lease=${encodeURIComponent(lease)}&name=${encodeURIComponent(file.name)}${into ? `&into=${encodeURIComponent(into)}` : ""}`;
-  const url = bridge ? `http://127.0.0.1:${bridge}/chat_put?${q}` : `/api/chat_put?${q}`;
+  const url = bridge ? `${bridge}/chat_put?${q}` : `/api/chat_put?${q}`;
   const r = await reach(url, {
     method: "POST",
-    headers: bridge || webKey === null ? {} : { authorization: `Bearer ${webKey}` },
+    headers: bridge ? bridgeHeaders() : webKey === null ? {} : { authorization: `Bearer ${webKey}` },
     body: file,
   });
   if (!r.ok) throw new Error(unwrap(await r.text()));
@@ -2259,10 +2271,10 @@ async function stageBytes(command: string, fields: Record<string, string>, file:
     });
   }
   const q = new URLSearchParams(fields);
-  const url = bridge ? `http://127.0.0.1:${bridge}/${command}?${q}` : `/api/${command}?${q}`;
+  const url = bridge ? `${bridge}/${command}?${q}` : `/api/${command}?${q}`;
   const r = await reach(url, {
     method: "POST",
-    headers: bridge || webKey === null ? {} : { authorization: `Bearer ${webKey}` },
+    headers: bridge ? bridgeHeaders() : webKey === null ? {} : { authorization: `Bearer ${webKey}` },
     body: file,
   });
   if (!r.ok) throw new Error(unwrap(await r.text()));
@@ -2272,7 +2284,7 @@ export const termDropItems = (id: string, lease: string, items: DropItem[], into
 export const termDropFolder = (name: string, dirs: string[]) => call<string>("term_drop_folder", { name, dirs });
 /** Releases only app-owned selection tokens, without cancelling a different transfer. */
 export const termDropForget = (paths: string[]) => call<null>("term_drop_forget", { paths });
-export const nativeFolders = () => inApp && !bridge && !/Android/i.test(navigator.userAgent);
+export const nativeFolders = () => inApp && (windowTransport !== undefined || !bridge) && !/Android/i.test(navigator.userAgent);
 export const termPickFolders = () => call<string[]>("term_pick_folders");
 /** How far this terminal's drop has got, 0 to 1, or `null` when none is
     under way (item 60): what its pill's line draws. */

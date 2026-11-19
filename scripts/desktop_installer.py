@@ -40,6 +40,9 @@ def build(target, output):
     else:
         config["bundle"]["resources"] = {"packaging/cli-owner.json": "cli-owner.json"}
         config["bundle"]["windows"] = {"wix": {
+            # WiX emits one MSI per language. The updater and release manifest
+            # expect one MSI per target; Khor localizes its own UI at runtime.
+            "language": "en-US",
             "fragmentPaths": ["packaging/cli-path.wxs"],
             "componentRefs": ["KhorCliPath"],
         }}

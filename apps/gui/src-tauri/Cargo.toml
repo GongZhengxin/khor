@@ -32,13 +32,6 @@ khor-web = { path = "../../../crates/web" }
 khor-catalog.workspace = true
 serde.workspace = true
 serde_json.workspace = true
-# The window's own loopback transport (`window_transport.rs`): Tauri's
-# custom-protocol IPC stops after the startup burst on Windows (2026-11-16),
-# and the page already speaks HTTP to a bridge on loopback. The version the
-# other faces name (`khor-web`, `khor-node`, the dev bridge); the root's
-# `[patch.crates-io]` points it at `vendor/tiny_http`, so this is the
-# workspace's own build of it.
-tiny_http = "0.12"
 tokio.workspace = true
 tempfile = "3"
 # `unstable` is for `Window::add_child`: a browsing tab's page is a second
@@ -67,6 +60,12 @@ tauri-plugin-dialog = "2"
 # background); a notification pushed to a sleeping phone is a later net
 # item.
 tauri-plugin-notification = "2"
+
+[target.'cfg(target_os = "windows")'.dependencies]
+# WebView2 command transport for the app's Windows main window.
+getrandom.workspace = true
+subtle = "2.6"
+tiny_http = "0.12"
 
 [target.'cfg(any(target_os = "macos", target_os = "linux", target_os = "windows"))'.dependencies]
 tauri-plugin-updater = "~2.12.0"

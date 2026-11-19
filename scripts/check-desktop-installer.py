@@ -3,12 +3,16 @@ import argparse
 import json
 import os
 from pathlib import Path
+import socket
 import subprocess
 import sys
 import tempfile
 import time
 
 from release_manifest import executable_info, source_sha
+
+WINDOWS_SESSION_TITLE = "Khor installer terminal"
+WINDOWS_READY_MARKER = "KHOR_TERMINAL_READY"
 
 
 def run(*args):
@@ -61,6 +65,16 @@ def launch_installed(directory):
                        "KHOR_RUNTIME_DIR": str(runtime), "LANG": "en_US.UTF-8"}
         suffix = ".exe" if os.name == "nt" else ""
         application = directory / ("khor-gui" + suffix)
+        cli = directory / ("khor" + suffix)
+        if os.name == "nt":
+            # Debugging is enabled only on this installed-package check, with the
+            # private WebView2 profile selected by KHOR_HOME.
+            with socket.socket() as listener:
+                listener.bind(("127.0.0.1", 0))
+                debug_port = listener.getsockname()[1]
+            logs = Path(os.environ.get("RUNNER_TEMP") or tempfile.gettempdir()) / "khor-installer-logs"
+            logs.mkdir(parents=True, exist_ok=True)
+            environment["KHOR_LOG_FILE"] = str(logs / "window.log")
 
         def processes():
             if os.name == "nt":
@@ -86,7 +100,7 @@ def launch_installed(directory):
         try:
             # The packaged CLI must run a real node, not only print metadata.
             log = (Path(temporary) / "serve.log").open("wb")
-            service = subprocess.Popen([str(directory / ("khor" + suffix)), "serve"],
+            service = subprocess.Popen([str(cli), "serve"],
                                        env=environment, stdout=log, stderr=subprocess.STDOUT)
             endpoint = Path(environment["KHOR_HOME"]) / ".khor/endpoint.json"
             deadline = time.monotonic() + 30
@@ -96,20 +110,33 @@ def launch_installed(directory):
                     raise AssertionError(f"Packaged serve exited before publishing its endpoint ({service.returncode}): {details}")
                 time.sleep(0.1)
             assert endpoint.is_file(), "The packaged CLI did not start its resident"
-            subprocess.run([str(directory / ("khor" + suffix)), "quit"], env=environment,
-                           check=True, timeout=30)
+            subprocess.run([str(cli), "quit"], env=environment, check=True, timeout=30)
             service.wait(timeout=10)
             deadline = time.monotonic() + 10
             while processes() and time.monotonic() < deadline:
                 time.sleep(0.1)
             assert not processes(), "Quitting the packaged node must not leave or respawn its resident"
-            subprocess.run([str(directory / ("khor" + suffix)), "gui"], env=environment,
-                           check=True, timeout=30)
+            if os.name == "nt":
+                cmd = Path(os.environ["SystemRoot"]) / "System32/cmd.exe"
+                subprocess.run([str(cli), "open", "-d", "--title", WINDOWS_SESSION_TITLE, "--",
+                                str(cmd), "/d", "/k", "echo", WINDOWS_READY_MARKER],
+                               env=environment, cwd=temporary, check=True, timeout=60)
+                environment["WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS"] = f"--remote-debugging-port={debug_port}"
+            subprocess.run([str(cli), "gui"], env=environment, check=True, timeout=30)
             deadline = time.monotonic() + 20
             while time.monotonic() < deadline:
                 if any(path.name == application.name for _, path in processes()):
-                    time.sleep(1)
-                    assert any(path.name == application.name for _, path in processes()), "The installed App exited during startup"
+                    if os.name == "nt":
+                        check = Path(__file__).resolve().parents[1] / "apps/gui/scripts/check-windows-installed.mjs"
+                        subprocess.run(["node", str(check), str(debug_port), WINDOWS_SESSION_TITLE,
+                                        WINDOWS_READY_MARKER], check=True, timeout=150)
+                        deadline = time.monotonic() + 15
+                        while any(path == application for _, path in processes()):
+                            assert time.monotonic() < deadline, "Closing the window must exit the installed App"
+                            time.sleep(0.1)
+                    else:
+                        time.sleep(1)
+                        assert any(path == application for _, path in processes()), "The installed App exited during startup"
                     return
                 time.sleep(0.1)
             raise AssertionError("khor gui did not launch the installed application")
@@ -135,7 +162,7 @@ def launch_installed(directory):
             # Closing the App intentionally leaves its node running. Stop the
             # node in this private home as well, before retiring late workers.
             try:
-                subprocess.run([str(directory / ("khor" + suffix)), "quit"], env=environment,
+                subprocess.run([str(cli), "quit"], env=environment,
                                capture_output=True, timeout=30)
             finally:
                 retire_processes(processes, terminate)
@@ -240,6 +267,7 @@ def windows(package, expected_source):
             assert entries[0] == str(independent).casefold(), "Independent CLI keeps its PATH priority"
             assert str(destination).casefold() in entries
             launch_installed(destination)
+            proof["installed_terminal_roundtrip"] = True
             return proof
         finally:
             if installed:

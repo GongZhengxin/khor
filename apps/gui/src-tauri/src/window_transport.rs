@@ -1,77 +1,13 @@
-//! The window's own loopback transport, for commands Tauri's IPC cannot carry.
-//!
-//! **Why this exists** (measured 2026-11-16, Windows 11 x64, WebView2 157).
-//! The window's page sends every command as a `fetch` to
-//! `http://ipc.localhost/<command>`, and that transport **stops after the
-//! startup burst**. Instrumented evidence, identical across many runs:
-//!
-//! - `[ipc]` lines printed at the top of `invoke_handler` always stop at the
-//!   same nine commands, after which nothing ever arrives again.
-//! - The page meanwhile made 38 `sessions` calls; none reached Rust; no error
-//!   was raised on either side — the promises simply stayed pending.
-//! - A page-side heartbeat of 15 invokes reported `{sent:15, ok:0, err:0,
-//!   pending:13}`; the arrival count stayed at 9.
-//! - **A bare `fetch` to `ipc.localhost` — no `invoke`, no command, no
-//!   callback bookkeeping — failed 40 of 40 times**, each timing out at the
-//!   abort deadline. So the defect is in wry's `WebResourceRequested`
-//!   handling (every matching request takes a `deferral` that is completed
-//!   only when the response is delivered back to the page) and not in Tauri's
-//!   dispatch or in Khor's commands.
-//! - Ruled out by experiment: the backend itself (80–120 ms for every
-//!   arrangement), `RootPermit` self-contention (126 ms), the tokio blocking
-//!   pool (`off_main` traces enter in 14 ms and settle in 310 ms), a corrupted
-//!   WebView2 profile (a brand-new profile behaves the same), and the window
-//!   being minimised (restoring it does not help).
-//! - The same frontend over plain HTTP works: the web face rendered the full
-//!   session list in a real browser.
-//!
-//! The page already has three transports (`apps/gui/src/api.ts`, `call()`):
-//! the dev bridge, Tauri's `invoke`, and the web face's `/api/`. The first is a
-//! loopback HTTP server dispatching to the very same
-//! [`khor_gui_core::api::answer`] table the others use. This module is that
-//! server, run inside the app: the window is pointed at
-//! `index.html?bridge=<port>`, so `call()` takes the loopback road and the dead
-//! custom protocol is never touched.
-//!
-//! **What does not change**: the page, its assets, events, window controls,
-//! drag regions and the native menu — those are Tauri's own APIs, not IPC
-//! commands, and `?bridge=` leaves them alone. `window.__TAURI_INTERNALS__` is
-//! still injected; `call()` simply checks `bridge` first.
-//!
-//! **What this is not**: a product web server. It binds loopback in this
-//! process and answers this window. The LAN face is `khor_web`'s job.
+//! Windows desktop transport. In the Windows 11 reproduction, Tauri's
+//! WebView2 custom-protocol requests stalled after the startup burst. The
+//! main webview uses this authenticated loopback listener for commands.
 
-use std::io::Read;
-use std::sync::OnceLock;
-// `get_webview_window` is a `Manager` method; without this the call does not
-// resolve on `&AppHandle`.
+use std::io::{self, Read};
+use std::sync::Arc;
+use subtle::ConstantTimeEq;
 use tauri::Manager;
 
-/// The window this transport answers for.
-///
-/// Set once, when the window is built. The loopback server starts earlier (the
-/// port has to be listening before the page's first command), so it cannot take
-/// the handle at construction time.
-static WINDOW: OnceLock<tauri::AppHandle> = OnceLock::new();
-
-/// Tell the transport which app it serves. Called from the window's build.
-pub fn attach(app: tauri::AppHandle) {
-    let _ = WINDOW.set(app);
-}
-
-/// The commands that are about *this window* rather than about the store.
-///
-/// **They cannot go through [`khor_gui_core::api::answer`]**, which is the
-/// store's table: minimise, maximise, close and the title-row measurements are
-/// Tauri window methods, and the page asks for them like any other command
-/// (`apps/gui/src/api.ts`). Before the loopback transport they reached the
-/// skin's own `#[tauri::command]`s; with the window on `?bridge=` they arrive
-/// here instead, so this is where they have to be answered — otherwise the
-/// borderless window's own three buttons do nothing at all (found 2026-11-16,
-/// the day the decorations came off).
-///
-/// `None` means "not a window verb, ask the store's table".
-fn window_verb(cmd: &str) -> Option<Result<String, String>> {
+fn main_window(app: &tauri::AppHandle) -> Result<tauri::Window, String> {
     // **`get_window`, not `get_webview_window`.** A Tauri window that has
     // child webviews at it — the browsing face is added with `add_child`
     // (`lib.rs`) — is no longer returned by `get_webview_window(label)`:
@@ -81,13 +17,13 @@ fn window_verb(cmd: &str) -> Option<Result<String, String>> {
     // code had already met this and asks for the `Window` instead; this is
     // the same window, and it exists whether or not anything is embedded in
     // it.
-    let window = || {
-        WINDOW
-            .get()
-            .ok_or_else(|| "the window is not attached yet".to_owned())?
-            .get_window("main")
-            .ok_or_else(|| "no main window".to_owned())
-    };
+    app.get_window("main")
+        .ok_or_else(|| "no main window".to_owned())
+}
+
+/// Commands owned by the window, outside the shared command table.
+fn window_verb(app: &tauri::AppHandle, cmd: &str) -> Option<Result<String, String>> {
+    let window = || main_window(app);
     let answer = match cmd {
         "window_minimize" => window().and_then(|w| w.minimize().map_err(|e| e.to_string())),
         "window_maximize_toggle" => window().and_then(|w| {
@@ -107,9 +43,8 @@ fn window_verb(cmd: &str) -> Option<Result<String, String>> {
         // not on a deadline — `flushAll` has no timeout, and a save that
         // fails opens the unsaved-drafts dialog, where a person may choose
         // to keep working. Force-destroying through that choice trades a
-        // stuck window for lost work. The stuck window is fixed where it
-        // belongs: the main window's own `Destroyed` handler destroys the
-        // auxiliaries, which is what used to keep the process alive.
+        // stuck window for lost work. The main window's `Destroyed` handler
+        // retires its menu and gives editor windows their own close request.
         "window_close" => window().and_then(|w| w.close().map_err(|e| e.to_string())),
         // **Closing past the event, not past the guard.** The close button
         // is the page's own, and the page already counts unsaved drafts
@@ -132,39 +67,31 @@ fn window_verb(cmd: &str) -> Option<Result<String, String>> {
         // row reserves nothing for them (the same zero the skin answers off
         // macOS).
         "traffic_room" => return Some(Ok("0".to_owned())),
-        // No vibrancy and no backdrop material on this platform; saying so is
-        // the honest answer, and the page already branches on it.
-        "window_appearance_support" => {
-            return Some(Ok(r#"{"supported":false,"blur":false}"#.to_owned()));
-        }
-        // Accepted and nothing to paint: the window is drawn by the page.
-        "set_window_theme" | "set_window_appearance" => {
-            return Some(Ok("null".to_owned()));
-        }
         _ => return None,
     };
     Some(answer.map(|()| "null".to_owned()))
 }
 
-/// The port the window's `?bridge=` names.
-///
-/// **Not 1431** — the dev bridge's default (`BRIDGE_PORT`); a developer running
-/// both would collide. Not 5467 either: that is the resident's web face, which
-/// a person may have open in a browser at the same time. This one belongs to
-/// the window.
-pub const PORT: u16 = 1432;
+const TOKEN_HEADER: &str = "x-khor-window-token";
 
-fn cors<R: Read>(response: tiny_http::Response<R>) -> tiny_http::Response<R> {
-    // The page's origin is `tauri.localhost`, not this loopback port, so every
-    // request is cross-origin and the preflight has to be answered.
+// Tauri uses the bundled HTTP origin on Windows. When custom-protocol is
+// disabled, it uses the Vite URL from tauri.conf.json instead.
+#[cfg(not(dev))]
+const WINDOW_ORIGIN: &str = "http://tauri.localhost";
+#[cfg(dev)]
+const WINDOW_ORIGIN: &str = "http://localhost:1430";
+
+fn header<'a>(request: &'a tiny_http::Request, name: &'static str) -> Option<&'a str> {
+    let mut values = request.headers().iter().filter(|h| h.field.equiv(name));
+    let value = values.next()?.value.as_str();
+    values.next().is_none().then_some(value)
+}
+
+fn cors<R: Read>(response: tiny_http::Response<R>, origin: &str) -> tiny_http::Response<R> {
     response
+        .with_header(tiny_http::Header::from_bytes("Access-Control-Allow-Origin", origin).unwrap())
         .with_header(
-            "Access-Control-Allow-Origin: *"
-                .parse::<tiny_http::Header>()
-                .unwrap(),
-        )
-        .with_header(
-            "Access-Control-Allow-Headers: content-type"
+            "Access-Control-Allow-Headers: content-type, x-khor-window-token"
                 .parse::<tiny_http::Header>()
                 .unwrap(),
         )
@@ -173,9 +100,13 @@ fn cors<R: Read>(response: tiny_http::Response<R>) -> tiny_http::Response<R> {
                 .parse::<tiny_http::Header>()
                 .unwrap(),
         )
+        .with_header("Vary: Origin".parse::<tiny_http::Header>().unwrap())
 }
 
-fn json(outcome: Result<String, String>) -> tiny_http::Response<std::io::Cursor<Vec<u8>>> {
+fn json(
+    outcome: Result<String, String>,
+    origin: &str,
+) -> tiny_http::Response<std::io::Cursor<Vec<u8>>> {
     let (code, payload) = match outcome {
         Ok(json) => (200, json),
         Err(why) => (
@@ -191,6 +122,7 @@ fn json(outcome: Result<String, String>) -> tiny_http::Response<std::io::Cursor<
                     .parse::<tiny_http::Header>()
                     .unwrap(),
             ),
+        origin,
     )
 }
 
@@ -230,6 +162,174 @@ fn answer(
     .unwrap_or_else(|_| Err("panic in handler".to_owned()))
 }
 
+// The web face's browser commands only arrange a network borrow. In the
+// desktop app these commands also own a child WebView and its lifecycle.
+fn native_command(
+    app: &tauri::AppHandle,
+    rt: &tokio::runtime::Runtime,
+    cmd: &str,
+    args: &serde_json::Value,
+) -> Option<Result<String, String>> {
+    use crate::{
+        close_page, hide_page, move_page, open_code_window, open_page, page_state, page_step,
+        page_steps, show_page,
+    };
+
+    let text = |key| argument::<String>(args, key);
+    let tab = || text("tab");
+    let webview = || {
+        app.get_webview("main")
+            .ok_or_else(|| "no main webview".to_owned())
+    };
+    use crate::updater_commands as updates;
+    let answer = || -> Result<Option<String>, String> {
+        let reply = match cmd {
+            "window_appearance_support" => encode(crate::window_appearance_support()),
+            "set_window_appearance" => encode(crate::set_window_appearance(
+                app.clone(),
+                text("material")?,
+            )?),
+            "set_window_theme" => {
+                crate::set_window_theme(app.clone(), text("theme")?);
+                encode(())
+            }
+            "pick_paths" => encode(crate::pick_desktop_paths(app, false)?),
+            "term_pick_folders" => encode(crate::pick_desktop_paths(app, true)?),
+            "open_code_window" => encode(rt.block_on(open_code_window(
+                app.clone(),
+                text("machine")?,
+                text("url")?,
+                text("title")?,
+            ))?),
+            "open_page" => encode(rt.block_on(open_page(
+                main_window(app)?,
+                tab()?,
+                text("machine")?,
+                text("url")?,
+                argument(args, "at")?,
+                text("agent")?,
+            ))?),
+            "move_page" => encode(move_page(main_window(app)?, tab()?, argument(args, "at")?)?),
+            "hide_page" => encode(hide_page(app.clone(), tab()?)?),
+            "close_page" => encode(close_page(app.clone(), tab()?)?),
+            "show_page" => encode(show_page(app.clone(), tab()?)?),
+            "page_state" => encode(page_state(tab()?)),
+            "page_steps" => encode(rt.block_on(page_steps(app.clone(), tab()?))?),
+            "page_step" => encode(rt.block_on(page_step(app.clone(), tab()?, text("way")?))?),
+            "file_preview_supported" => encode(crate::file_preview_supported(text("kind")?)),
+            "file_handoff_supported" => encode(crate::file_handoff_supported()),
+            "file_handoff_save" => encode(rt.block_on(crate::file_handoff_save(
+                app.clone(),
+                webview()?,
+                text("id")?,
+            ))?),
+            "file_export_begin" => encode(rt.block_on(crate::file_export_begin(
+                webview()?,
+                text("id")?,
+                text("name")?,
+            ))?),
+            "file_export_append" => encode(rt.block_on(crate::file_export_append(
+                webview()?,
+                text("id")?,
+                argument(args, "offset")?,
+                text("data")?,
+            ))?),
+            "file_export_finish" => encode(rt.block_on(crate::file_export_finish(
+                webview()?,
+                text("id")?,
+                argument(args, "total")?,
+            ))?),
+            "save_terminal_palette" => {
+                encode(rt.block_on(crate::save_terminal_palette(app.clone(), text("text")?))?)
+            }
+            "app_update_status" => {
+                encode(rt.block_on(updates::app_update_status(app.clone(), webview()?))?)
+            }
+            "app_update_check" => {
+                encode(rt.block_on(updates::app_update_check(app.clone(), webview()?))?)
+            }
+            "app_update_download" => {
+                encode(rt.block_on(updates::app_update_download(app.clone(), webview()?))?)
+            }
+            "app_update_install" => {
+                encode(rt.block_on(updates::app_update_install(app.clone(), webview()?))?)
+            }
+            "app_update_runtime_cache" => encode(rt.block_on(
+                updates::app_update_runtime_cache(webview()?, argument(args, "clean")?),
+            )?),
+            "app_update_preferences" => encode(rt.block_on(updates::app_update_preferences(
+                app.clone(),
+                webview()?,
+                argument(args, "preferences")?,
+            ))?),
+            "app_update_companions" => encode(rt.block_on(updates::app_update_companions(
+                app.clone(),
+                webview()?,
+                argument(args, "ids")?,
+            ))?),
+            "app_update_prepared" => encode(rt.block_on(updates::app_update_prepared(
+                app.clone(),
+                webview()?,
+                text("nonce")?,
+                argument(args, "blocked")?,
+            ))?),
+            "app_update_ui_ready" => {
+                encode(rt.block_on(updates::app_update_ui_ready(app.clone(), webview()?))?)
+            }
+            "machine_update_status" => {
+                encode(rt.block_on(updates::machine_update_status(webview()?, text("machine")?))?)
+            }
+            "machine_update_check" => encode(rt.block_on(updates::machine_update_check(
+                webview()?,
+                text("machine")?,
+                optional_argument(args, "channel")?,
+            ))?),
+            "machine_update_queue" => {
+                encode(rt.block_on(updates::machine_update_queue(app.clone(), webview()?))?)
+            }
+            "machine_update_start" => encode(rt.block_on(updates::machine_update_start(
+                app.clone(),
+                webview()?,
+                argument(args, "machines")?,
+                optional_argument(args, "channel")?,
+            ))?),
+            "machine_update_cancel" => encode(rt.block_on(updates::machine_update_cancel(
+                app.clone(),
+                webview()?,
+                text("machine")?,
+                text("request")?,
+            ))?),
+            _ => return Ok(None),
+        }?;
+        Ok(Some(reply))
+    };
+    answer().transpose()
+}
+
+fn argument<T: serde::de::DeserializeOwned>(
+    args: &serde_json::Value,
+    key: &str,
+) -> Result<T, String> {
+    let value = args.get(key).ok_or_else(|| format!("missing arg: {key}"))?;
+    serde_json::from_value(value.clone()).map_err(|error| format!("invalid {key}: {error}"))
+}
+
+fn optional_argument<T: serde::de::DeserializeOwned>(
+    args: &serde_json::Value,
+    key: &str,
+) -> Result<Option<T>, String> {
+    args.get(key)
+        .filter(|value| !value.is_null())
+        .map(|value| {
+            serde_json::from_value(value.clone()).map_err(|error| format!("invalid {key}: {error}"))
+        })
+        .transpose()
+}
+
+fn encode(value: impl serde::Serialize) -> Result<String, String> {
+    serde_json::to_string(&value).map_err(|error| error.to_string())
+}
+
 /// The initialization script that restores window dragging.
 ///
 /// Tauri ships its own (`tauri-2.11.5/src/window/scripts/drag.js`) and it is
@@ -248,10 +348,15 @@ fn answer(
 /// drag unless it carries the attribute itself, `="false"` disables, `="deep"`
 /// makes the whole subtree draggable, and a bare/`"true"` value drags only when
 /// the press landed on that very element.
-pub fn drag_shim(port: u16) -> String {
+fn initialization_script(address: &str, token: &str) -> String {
+    let bridge = serde_json::json!({ "url": format!("http://{address}"), "token": token });
+    let origin = serde_json::Value::String(WINDOW_ORIGIN.to_owned());
     format!(
         r#"(function () {{
-  var PORT = {port};
+  if (window !== window.top) return;
+  if (window.location.origin !== {origin}) return;
+  var bridge = Object.freeze({bridge});
+  Object.defineProperty(window, '__KHOR_WINDOW_TRANSPORT__', {{ value: bridge }});
   var ATTR = 'data-tauri-drag-region';
   var CLICKABLE = new Set(['A','BUTTON','INPUT','SELECT','TEXTAREA','LABEL','SUMMARY']);
   var ROLES = new Set(['button','link','menuitem','tab','checkbox','radio','switch','option']);
@@ -275,14 +380,13 @@ pub fn drag_shim(port: u16) -> String {
     return false;
   }}
   function ask(verb) {{
-    try {{
-      fetch('http://127.0.0.1:' + PORT + '/' + verb, {{
-        method: 'POST', body: '{{}}', headers: {{ 'Content-Type': 'application/json' }}
-      }});
-    }} catch (e) {{ /* nothing to say that the window can act on */ }}
+    fetch(bridge.url + '/' + verb, {{
+      method: 'POST', body: '{{}}',
+      headers: {{ 'Content-Type': 'application/json', 'X-Khor-Window-Token': bridge.token }}
+    }}).catch(() => {{}});
   }}
   document.addEventListener('mousedown', function (e) {{
-    if (e.button !== 0 || (e.detail !== 1 && e.detail !== 2)) return;
+    if (!e.isTrusted || e.button !== 0 || (e.detail !== 1 && e.detail !== 2)) return;
     var path = e.composedPath ? e.composedPath() : [];
     if (!dragRegion(path)) return;
     e.preventDefault();
@@ -293,56 +397,90 @@ pub fn drag_shim(port: u16) -> String {
     )
 }
 
-/// Start the window's loopback transport.
-///
-/// A port already taken means another window of this app owns it, which is
-/// fine: the second window talks to the first's server, and both reach the same
-/// store.
-pub fn start() {
-    let server = match tiny_http::Server::http(("127.0.0.1", PORT)) {
-        Ok(server) => server,
-        Err(error) => {
-            eprintln!("khor: the window's loopback transport did not bind {PORT}: {error}");
-            return;
-        }
-    };
-    eprintln!("khor: window transport on 127.0.0.1:{PORT} ({WORKERS} workers)");
-    let server = std::sync::Arc::new(server);
+/// Bind before creating the webview. The operating system selects an unused
+/// port and the credential goes only into the main webview's startup script.
+pub fn start(app: tauri::AppHandle) -> io::Result<String> {
+    let mut entropy = [0_u8; 32];
+    getrandom::fill(&mut entropy).map_err(|error| io::Error::other(error.to_string()))?;
+    let token = entropy
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect::<String>();
+    let server = Arc::new(
+        tiny_http::Server::http(("127.0.0.1", 0))
+            .map_err(|error| io::Error::other(error.to_string()))?,
+    );
+    let address = server
+        .server_addr()
+        .to_ip()
+        .ok_or_else(|| io::Error::other("Windows webview listener has no TCP address"))?
+        .to_string();
+    let script = initialization_script(&address, &token);
+    let address: Arc<str> = address.into();
+    let token: Arc<str> = token.into();
+    let mut worker_count = 0;
     for worker in 0..WORKERS {
-        let server = std::sync::Arc::clone(&server);
-        let spawned = std::thread::Builder::new()
+        let server = Arc::clone(&server);
+        let address = Arc::clone(&address);
+        let token = Arc::clone(&token);
+        let app = app.clone();
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?;
+        match std::thread::Builder::new()
             .name(format!("khor-window-{worker}"))
-            .spawn(move || serve(server));
-        if let Err(error) = spawned {
-            eprintln!("khor: a window-transport worker did not start: {error}");
+            .spawn(move || serve(server, &address, &token, &rt, &app))
+        {
+            Ok(_) => worker_count += 1,
+            Err(error) => eprintln!("khor: a window-transport worker did not start: {error}"),
         }
     }
+    if worker_count == 0 {
+        return Err(io::Error::other(
+            "Windows webview transport could not start",
+        ));
+    }
+    Ok(script)
 }
 
-/// One worker: its own runtime for the life of the thread, then requests until
-/// the server goes away.
-///
-/// A runtime per worker, not per request: `khor_gui_core::api::answer` takes a
-/// runtime for the verbs that dial, and a poll every two seconds should not pay
-/// a runtime's construction each time.
-fn serve(server: std::sync::Arc<tiny_http::Server>) {
-    let rt = match tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
+/// Return the complete response for preflight and rejected requests. Only
+/// authenticated POSTs proceed to a command or read an attachment body.
+fn admission(
+    request: &tiny_http::Request,
+    address: &str,
+    token: &str,
+) -> Option<tiny_http::Response<io::Empty>> {
+    if header(request, "Origin") != Some(WINDOW_ORIGIN) || header(request, "Host") != Some(address)
     {
-        Ok(rt) => rt,
-        Err(error) => {
-            eprintln!("khor: a window-transport worker has no runtime: {error}");
-            return;
-        }
+        return Some(tiny_http::Response::empty(403));
+    }
+    let method = request.method();
+    let status = if method == &tiny_http::Method::Options {
+        204
+    } else if method != &tiny_http::Method::Post {
+        405
+    } else if header(request, TOKEN_HEADER)
+        .is_some_and(|value| bool::from(value.as_bytes().ct_eq(token.as_bytes())))
+    {
+        return None;
+    } else {
+        403
     };
+    Some(cors(tiny_http::Response::empty(status), WINDOW_ORIGIN))
+}
+
+fn serve(
+    server: Arc<tiny_http::Server>,
+    address: &str,
+    token: &str,
+    rt: &tokio::runtime::Runtime,
+    app: &tauri::AppHandle,
+) {
     // `recv` hands this thread the next request, or an error when the server is
     // gone; several workers may call it at once, which is the point.
     while let Ok(mut request) = server.recv() {
-        if request.method() == &tiny_http::Method::Options {
-            let _ = request.respond(cors(
-                tiny_http::Response::from_string("").with_status_code(204),
-            ));
+        if let Some(response) = admission(&request, address, token) {
+            let _ = request.respond(response);
             continue;
         }
         let url = request.url().trim_start_matches('/').to_owned();
@@ -356,8 +494,8 @@ fn serve(server: std::sync::Arc<tiny_http::Server>) {
             eprintln!("[transport] {cmd}");
         }
         // The window's own verbs first: they are not the store's to answer.
-        if let Some(outcome) = window_verb(&cmd) {
-            let _ = request.respond(json(outcome));
+        if let Some(outcome) = window_verb(app, &cmd) {
+            let _ = request.respond(json(outcome, WINDOW_ORIGIN));
             continue;
         }
         // The raw-body routes carry a file, which is not UTF-8 and must
@@ -410,12 +548,12 @@ fn serve(server: std::sync::Arc<tiny_http::Server>) {
                             .map(|id| serde_json::to_string(&id).unwrap_or_default())
                     })
             };
-            let _ = request.respond(json(outcome));
+            let _ = request.respond(json(outcome, WINDOW_ORIGIN));
             continue;
         }
         let mut body = String::new();
         if let Err(error) = request.as_reader().read_to_string(&mut body) {
-            let _ = request.respond(json(Err(error.to_string())));
+            let _ = request.respond(json(Err(error.to_string()), WINDOW_ORIGIN));
             continue;
         }
         let args: serde_json::Value = if body.trim().is_empty() {
@@ -424,11 +562,90 @@ fn serve(server: std::sync::Arc<tiny_http::Server>) {
             match serde_json::from_str(&body) {
                 Ok(value) => value,
                 Err(error) => {
-                    let _ = request.respond(json(Err(error.to_string())));
+                    let _ = request.respond(json(Err(error.to_string()), WINDOW_ORIGIN));
                     continue;
                 }
             }
         };
-        let _ = request.respond(json(answer(&rt, &cmd, &args)));
+        let outcome =
+            native_command(app, rt, &cmd, &args).unwrap_or_else(|| answer(rt, &cmd, &args));
+        let _ = request.respond(json(outcome, WINDOW_ORIGIN));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Write;
+    use std::net::TcpStream;
+    use std::time::Duration;
+
+    fn exchange(
+        method: &str,
+        host: Option<&str>,
+        origin: Option<&str>,
+        token: Option<&str>,
+    ) -> String {
+        let server = tiny_http::Server::http(("127.0.0.1", 0)).unwrap();
+        let address = server.server_addr().to_ip().unwrap();
+        let worker = std::thread::spawn(move || {
+            let request = server
+                .recv_timeout(Duration::from_secs(3))
+                .unwrap()
+                .unwrap();
+            if let Some(response) = admission(&request, &address.to_string(), "test-token") {
+                request.respond(response).unwrap();
+            } else {
+                request
+                    .respond(tiny_http::Response::from_string("admitted"))
+                    .unwrap();
+            }
+        });
+        let mut socket = TcpStream::connect(address).unwrap();
+        socket
+            .set_read_timeout(Some(Duration::from_secs(3)))
+            .unwrap();
+        let mut head = format!(
+            "{method} /sessions HTTP/1.1\r\nHost: {}\r\nConnection: close\r\nContent-Length: 0\r\n",
+            host.map(str::to_owned)
+                .unwrap_or_else(|| address.to_string())
+        );
+        if let Some(origin) = origin {
+            head.push_str(&format!("Origin: {origin}\r\n"));
+        }
+        if let Some(token) = token {
+            head.push_str(&format!("{TOKEN_HEADER}: {token}\r\n"));
+        }
+        socket.write_all((head + "\r\n").as_bytes()).unwrap();
+        let mut response = String::new();
+        socket.read_to_string(&mut response).unwrap();
+        worker.join().unwrap();
+        response
+    }
+
+    #[test]
+    fn window_transport_admits_only_the_window_and_its_credential() {
+        let admitted = exchange("POST", None, Some(WINDOW_ORIGIN), Some("test-token"));
+        assert!(admitted.starts_with("HTTP/1.1 200 "));
+        assert!(admitted.ends_with("admitted"));
+        for (host, origin, token) in [
+            (None, Some(WINDOW_ORIGIN), None),
+            (None, Some(WINDOW_ORIGIN), Some("wrong-token")),
+            (None, None, Some("test-token")),
+            (None, Some("https://example.com"), Some("test-token")),
+            (Some("example.com"), Some(WINDOW_ORIGIN), Some("test-token")),
+        ] {
+            let rejected = exchange("POST", host, origin, token);
+            assert!(rejected.starts_with("HTTP/1.1 403 "), "{rejected}");
+        }
+    }
+
+    #[test]
+    fn window_transport_answers_preflight_without_running_a_command() {
+        let preflight = exchange("OPTIONS", None, Some(WINDOW_ORIGIN), None);
+        assert!(preflight.starts_with("HTTP/1.1 204 "), "{preflight}");
+        assert!(preflight.contains(&format!("Access-Control-Allow-Origin: {WINDOW_ORIGIN}")));
+        let rejected = exchange("GET", None, Some(WINDOW_ORIGIN), Some("test-token"));
+        assert!(rejected.starts_with("HTTP/1.1 405 "), "{rejected}");
     }
 }

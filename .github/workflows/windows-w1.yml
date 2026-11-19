@@ -48,7 +48,11 @@ jobs:
       # the Windows write path is stubbed out again.
       - name: Node lib tests (tabs write lock)
         shell: pwsh
-        run: cargo test --locked -p khor-node --lib tabs:: -- --test-threads=1
+        run: |
+          cargo test --locked -p khor-node --lib tabs:: -- --test-threads=1
+      - name: Check the desktop command listener
+        run: |
+          cargo test --locked -p khor-gui --lib window_transport::tests
 
       - name: Windows process harness
         run: cargo run --locked --manifest-path crates/node/tests/windows-process-harness/Cargo.toml

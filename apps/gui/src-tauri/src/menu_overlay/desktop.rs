@@ -203,6 +203,9 @@ pub fn owner_moved(window: &tauri::Window) {
 
 pub fn close(app: &tauri::AppHandle) {
     if let Some(menu) = app.get_webview_window(MENU) {
+        #[cfg(target_os = "windows")]
+        let _ = menu.destroy();
+        #[cfg(not(target_os = "windows"))]
         let _ = menu.close();
     }
 }
