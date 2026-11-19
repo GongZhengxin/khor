@@ -19,7 +19,7 @@ permissions:
   actions: read
 
 concurrency:
-  group: windows-desktop-${{ github.ref }}-${{ inputs.package_run || 'build' }}
+  group: windows-desktop-${{ github.ref }}-${{ inputs.package_run || 'build' }}-${{ inputs.retry_runner || 'default' }}
   cancel-in-progress: true
 
 jobs:
@@ -52,7 +52,7 @@ jobs:
         run: |
           $source = gh run view $env:PACKAGE_RUN --repo $env:GITHUB_REPOSITORY --json headSha --jq .headSha
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          python scripts/release_manifest.py verify --root desktop-product
+          python scripts/release_manifest.py verify --root desktop-product --sha $source --run-id $env:PACKAGE_RUN
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python scripts/check-desktop-installer.py --package desktop-product/khor-windows-x86_64.msi --output "$env:RUNNER_TEMP/installation.json" --expected-source $source
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
