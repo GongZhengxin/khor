@@ -831,6 +831,22 @@ impl Source {
         serde_json::to_string(&(VERSION, "acp_journal", id, &self.manifest.identity))
             .expect("journal identity serializes")
     }
+    /// Spoken text from the same published generation used by chat history.
+    pub fn last_said(&self) -> Option<String> {
+        use crate::adaptor::claude::{Heard, cached_heard};
+        let metadata = fs::metadata(&self.path).ok()?;
+        let version = (metadata.modified().ok()?, Some(metadata.len()));
+        cached_heard(self.path.clone(), version, |path, _| {
+            let mut file = File::open(path).ok()?;
+            Some(Heard {
+                said: last_spoken(&mut file).ok()?,
+                // Adjacent ACP notifications can be chunks of the same
+                // message. Recheck the bounded tail when the file grows.
+                upto: 0,
+            })
+        })
+    }
+
     pub fn open(&self) -> io::Result<File> {
         let file = File::open(&self.path)?;
         if !file.metadata()?.is_file() {
@@ -838,6 +854,103 @@ impl Source {
         }
         Ok(file)
     }
+}
+
+fn last_spoken(file: &mut File) -> io::Result<Option<String>> {
+    use crate::adaptor::transcript_window::{Record as TranscriptRecord, read_window};
+    let mut before = None;
+    for _ in 0..8 {
+        let window = read_window(file, before)?;
+        if let Some(said) = spoken_in(&window) {
+            return Ok(Some(said));
+        }
+        let Some(start) = window.before else {
+            break;
+        };
+        // Include a short record cut at the left edge in the next window.
+        before = Some(match window.records().next() {
+            Some(TranscriptRecord::Fragment {
+                range,
+                missing_start: true,
+                missing_end: false,
+            }) if range.end < window.range.end => range.end,
+            _ => start,
+        });
+    }
+    Ok(None)
+}
+
+fn spoken_in(window: &crate::adaptor::transcript_window::TranscriptWindow) -> Option<String> {
+    use super::ContentEvent;
+    use crate::adaptor::transcript_window::Record as TranscriptRecord;
+    const PREVIEW_SOURCE_CHARS: usize = 2048;
+    let mut message = String::new();
+    let mut spoke = None;
+    let mut message_id: Option<String> = None;
+    let mut chars = 0;
+    for record in window.records() {
+        let TranscriptRecord::Inline { bytes, .. } = record else {
+            spoke = None;
+            continue;
+        };
+        let text = String::from_utf8_lossy(bytes);
+        for event in parse_record(&text) {
+            let ContentEvent::Update {
+                update,
+                starts_message,
+            } = event
+            else {
+                if matches!(
+                    event,
+                    ContentEvent::Turn { .. } | ContentEvent::CaptureGap { .. }
+                ) {
+                    spoke = None;
+                }
+                continue;
+            };
+            let update = &update["update"];
+            let role = match update["sessionUpdate"].as_str() {
+                Some("agent_message_chunk") => "agent",
+                Some("user_message_chunk") => "user",
+                Some("agent_thought_chunk" | "tool_call" | "plan") => {
+                    spoke = None;
+                    continue;
+                }
+                _ => continue,
+            };
+            let content = &update["content"];
+            let Some(text) = content["text"]
+                .as_str()
+                .filter(|_| content["type"] == "text")
+            else {
+                spoke = None;
+                continue;
+            };
+            let id = update["messageId"].as_str();
+            let new_message = starts_message
+                || spoke != Some(role)
+                || message_id.as_deref().zip(id).is_some_and(|(a, b)| a != b);
+            if new_message {
+                if text.trim().is_empty() {
+                    spoke = None;
+                    continue;
+                }
+                message.clear();
+                chars = 0;
+                message_id = None;
+            }
+            spoke = Some(role);
+            if let Some(id) = id {
+                message_id = Some(id.to_owned());
+            }
+            for ch in text.chars().take(PREVIEW_SOURCE_CHARS - chars) {
+                message.push(ch);
+                chars += 1;
+            }
+        }
+    }
+    let preview = khor_core::preview(&khor_core::plain(&message));
+    khor_core::says_something(&preview).then_some(preview)
 }
 
 pub(crate) fn parse_record(text: &str) -> Vec<super::ContentEvent> {

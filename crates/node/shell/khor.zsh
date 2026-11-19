@@ -101,11 +101,29 @@ _khor_other() {
     || ${+functions[_warp_precmd]} || ${+functions[warp_precmd]} ))
 }
 
+_khor_editor_report() {
+  # ZLE owns the editable command; never inspect arbitrary program output.
+  local excerpt=${BUFFER[1,1024]}
+  [[ $_khor_editor_last == "$excerpt" ]] && return 0
+  typeset -g _khor_editor_last=$excerpt
+  _khor_escape "$excerpt"
+  _khor_osc "633;P;KhorEditor=$REPLY"
+  return 0
+}
+
+_khor_editor_finish() {
+  typeset -g _khor_editor_last=''
+  _khor_osc '633;P;KhorEditor='
+  return 0
+}
+
 _khor_line_init() {
   # A theme can rebuild PS1 after our precmd, even moving its own hook last.
   # Each real line-editor entry proves native startup has completed and
   # cannot be erased with the prompt. Keep the person's existing widgets.
   _khor_osc '133;B'
+  typeset -g _khor_editor_last=$'\x01'
+  _khor_editor_report
   return 0
 }
 
@@ -113,6 +131,8 @@ _khor_install() {
   precmd_functions=(${precmd_functions:#_khor_install})
   builtin autoload -Uz add-zsh-hook add-zle-hook-widget
   add-zle-hook-widget line-init _khor_line_init
+  add-zle-hook-widget line-pre-redraw _khor_editor_report
+  add-zle-hook-widget line-finish _khor_editor_finish
   _khor_other && return
   add-zsh-hook precmd _khor_precmd
   add-zsh-hook preexec _khor_preexec

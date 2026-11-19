@@ -1,3 +1,4 @@
+import { DraftAlternatives } from "@/components/DraftAlternatives";
 import {pathAttachment,type Attachment} from "@/lib/term-attachments";
 import {agentPresentation} from '@/lib/acp-session';
 import {AttachmentPicker,AttachmentDestination} from "@/views/TermFiles";
@@ -10,7 +11,7 @@ import {useHistoryPrefetch} from '@/hooks/use-history-prefetch';
 import {useSessionDocuments} from '@/hooks/use-session-documents';
 import { listenNativeDragDrop } from "@/lib/native-events";
 import { awaitChatDraftReceipt, chatDraftOwner, completeChatDraft, discardChatDraft, rememberChatDraft, recoverableChatDrafts, settleChatDraft, subscribeChatDrafts, unconfirmedChatDrafts, type ChatDraft } from '@/lib/chat-drafts';
-import {useSessionDraft} from '@/hooks/use-session-draft';
+import {sessionDrafts, syncSessionDrafts, useSessionDraft} from '@/hooks/use-session-draft';
 import {useUpdateBlocker} from '@/lib/update-readiness';
 import {unifiedSession,AcpHeader,SessionAdd} from "@/views/SessionPreferences";
 import {AgentInteraction,type InteractionRequest} from "@/components/AgentInteraction";
@@ -58,7 +59,7 @@ import { useHistoryExport } from '@/hooks/use-history-export';
 import type { FindHit } from '@/lib/history-find-model';
 import { historyReader, type HistoryReaderState } from '@/lib/history-reader';
 import { historyResumeCursor, historyEntries, historyReferences, historyWindowHasRoom } from '@/lib/history-window';
-import { paintHistory, retainHistoryIdentity, latestHistoryBody, historyContributionPoint, historyContributionPresent, type HistoryContributionPoint, type HistoryItem } from '@/lib/history-paint';
+import { projectHistory, retainHistoryIdentity, latestHistoryBody, historyContributionPoint, historyContributionPresent, type HistoryContributionPoint, type HistoryItem } from '@/lib/history-paint';
 import {HistoryRecordContent} from '@/components/history/HistoryRecordContent';
 import {historyRecordSlots} from '@/lib/history-record-presentation';
 import {Fragment} from 'react';
@@ -98,7 +99,7 @@ type Item = (
 
 /** Canonical pages own all body content. Live paint holds only current
  * optimistic inputs and bounded control notices; unresolved permissions remain actionable. */
-type Painting = { past: HistoryItem[]; live: Item[] };
+type Painting = { past: HistoryItem[]; live: Item[]; projection?: ReturnType<typeof projectHistory> };
 const BLANK: Painting = { past: [], live: [] };
 function boundedLive(items: Item[]): Item[] {
   let transient = 0;
@@ -107,9 +108,11 @@ function boundedLive(items: Item[]): Item[] {
     return ++transient <= 32;
   }).reverse();
 }
-function acceptHistory(previous: Painting, entries: Parameters<typeof paintHistory>[0], references: Parameters<typeof paintHistory>[1] = []): Painting {
+function acceptHistory(previous: Painting, entries: Parameters<typeof projectHistory>[0], references: Parameters<typeof projectHistory>[1], reset: boolean): Painting {
+  const projection = projectHistory(entries, references, reset ? undefined : previous.projection);
+  if (projection === previous.projection) return previous;
   const recorded = new Set(entries.flatMap(entry => entry.frame.kind === 'prompt_recorded' ? [entry.frame.token] : []));
-  return { ...previous, past: retainHistoryIdentity(previous.past, paintHistory(entries, references)),
+  return { projection, past: retainHistoryIdentity(reset ? [] : previous.past, projection.items),
     live: previous.live.filter(item => item.who !== 'user' || !item.token || !recorded.has(item.token)) };
 }
 
@@ -753,7 +756,7 @@ export function ChatView({
   // back does — and a single flag would have to pick one of those to
   // lie about. Both are cleared by arriving at the bottom, which is the
   // only way this pair can go to zero (docs/UX.md 角标可归零).
-  const { scroller, column: chatColumn, away, fresh, onScroll, captureDisclosure, toBottom, capturePositionTicket, acceptRestoredPosition, following, readingLatest } = useChatScroll(paint);
+  const { scroller, column: chatColumn, away, fresh, onScroll, captureDisclosure, toBottom, capturePositionTicket, acceptRestoredPosition, following, readingLatest, replyComplete, markReplyComplete } = useChatScroll(paint);
   const rememberReading=()=>{
     const element=scroller.current;
     if(!sourceBinding||!element||!history?.loaded||resumeReading.current)return;
@@ -806,15 +809,18 @@ export function ChatView({
   };
   const discardDraft = (draft: ChatDraft) => {
     discardChatDraft(id, draft.token, draft.owner);
+    sessionDrafts.committed(draft.token);
+    syncSessionDrafts();
     setUnsent(was => was?.id === `say:${draft.token}` ? null : was);
   };
   const addDraft = (draft: ChatDraft) => {
     if (!mounted.current || currentSession.current !== id || draft.session !== id || chatDraftOwner(id) !== draft.owner || !recoverableChatDrafts(id).some(entry => entry.draft === draft && entry.reason !== "unconfirmed")) return;
     const now = composer.current;
-    const next = now.text && draft.text ? `${now.text}\n\n${draft.text}` : now.text || draft.text;
+    const restored = sessionDrafts.ownsEditor(draft.token);
+    const next = restored ? sessionDrafts.get(`gui:${id}`) : now.text && draft.text ? `${now.text}\n\n${draft.text}` : now.text || draft.text;
     const documents = [...now.documents, ...draft.documents];
     composer.current = {session: id, text: next, documents, attachments: [...now.attachments, ...draft.attachments]};
-    setText(next);
+    sessionDrafts.set(`gui:${id}`, next, true);
     setDocs(documents);
     files.restore(draft.attachments);
     discardDraft(draft);
@@ -881,7 +887,7 @@ export function ChatView({
       let disposed = false;
       historyAnchor.current = null;
       setHistoryEpoch(epoch => epoch + 1);
-      setPaint(previous => ({...previous, past: []})); setHistory(null); setLoaded(false); setGone(false); setOpenWhy(null);
+      setPaint(previous => ({...previous, past: [], projection: undefined})); setHistory(null); setLoaded(false); setGone(false); setOpenWhy(null);
       if (still) setPlan([]);
       setOpen(new Set()); toBottom();
       const saved=readingPlaces.get(readingKey(id,readBinding));
@@ -901,7 +907,7 @@ export function ChatView({
         setHistory(state); setLoaded(state.loaded);
         if (previousPages !== state.window.pages) {
           previousPages = state.window.pages;
-          setPaint(previous => acceptHistory(state.reset ? {...previous, past: []} : previous, historyEntries(state.window), historyReferences(state.window)));
+          setPaint(previous => acceptHistory(previous, historyEntries(state.window), historyReferences(state.window), state.reset));
           if (state.reset) {
             setFindingHistory(false); setMatchedEntry(null); historyMatch.current = null;
             historyAnchor.current = null;resumeReading.current=null;readingPlaces.delete(readingKey(id,readBinding));
@@ -1032,9 +1038,16 @@ export function ChatView({
           const inactive = stopped || currentSession.current !== id || reader.current !== reading;
           const receiptReader = inactive ? reading : undefined;
           for (const frame of batch.frames) {
-            if (frame.kind === "send_committed" && draftOwner) completeChatDraft(id, frame.token, draftOwner, receiptReader);
+            if (frame.kind === "send_committed" && draftOwner) {
+              completeChatDraft(id, frame.token, draftOwner, receiptReader);
+              sessionDrafts.committed(frame.token);
+              syncSessionDrafts();
+            }
             if (frame.kind === "send_cancelled" || frame.kind === "unsent") {
-              const draft = settleChatDraft(id, frame.token, frame.kind === "send_cancelled" ? "cancelled" : "failed", draftOwner, receiptReader);
+              const phase = frame.kind === "send_cancelled" ? "cancelled" : "failed";
+              const draft = settleChatDraft(id, frame.token, phase, draftOwner, receiptReader);
+              const token = draft?.token ?? frame.token;
+              if (token) sessionDrafts.failed(token, phase, !!draft);
               if (draft) recovered.set(draft.token, draft);
             }
           }
@@ -1084,18 +1097,20 @@ export function ChatView({
           }
           if (batch.lost) capture();
           if (batch.frames.length) {
+            const contentChanged = batch.frames.some(frame => frame.kind === 'content_changed' || frame.kind === 'turn');
+            if (contentChanged) wakeVersion += 1;
             for (const frame of batch.frames) {
-              if (frame.kind === 'content_changed') {
-                wakeVersion += 1;
-                historyView.current?.wake();
-                if (!historyView.current && captureTransient && !captureAwaiting && !document.hidden && scroller.current?.clientHeight) capture(false);
-              }
               if (frame.kind === 'captured') receiveCapture(frame);
             }
+            if (contentChanged && !historyView.current && captureTransient && !captureAwaiting && !document.hidden && scroller.current?.clientHeight) capture(false);
+            let refreshHistory = contentChanged;
             for(const f of batch.frames){
               if(f.kind==='turn'||f.kind==='gone')setInTurn(false);
               if(f.kind==='turning'){setInTurn(true);setTurnStatus('正在处理');}
-              if(f.kind==='turn')setTurnStatus(f.stop==='Cancelled'?'已停止':'回复完成');
+              if (f.kind === 'turn') {
+                setTurnStatus(f.stop === 'Cancelled' ? '已停止' : '回复完成');
+                if (f.stop !== 'Cancelled') markReplyComplete();
+              }
               if(f.kind==='ask'||f.kind==='elicit')setTurnStatus('等待确认');
             }
             for (const f of batch.frames) {
@@ -1150,7 +1165,7 @@ export function ChatView({
               const u = usageIn(f);
               if (u) setUsage(u);
               const pl = planIn(f);
-              if (pl) {setPlan(pl);historyView.current?.wake();}
+              if (pl) { setPlan(pl); refreshHistory = true; }
               const u2 = updateOf(f);
               if(u2?.sessionUpdate==='compaction_update')setUsage(null);
               if (u2?.sessionUpdate === "current_mode_update" && u2.currentModeId) {
@@ -1159,6 +1174,7 @@ export function ChatView({
               const st = settingsIn(f);
               if(st){const model=modelOf(st);if(measuredModel.current!==null&&measuredModel.current!==model)setUsage(null);measuredModel.current=model;setSettings(st);}
             }
+            if (refreshHistory) historyView.current?.wake();
             setPaint((prev) => absorb(prev, batch.frames));
           }
           if (retired) {
@@ -1229,7 +1245,7 @@ export function ChatView({
         if (result.failures) console.warn("Chat attachment cleanup failed", result);
       });
     };
-  }, [binding, id, still, ended, attempt, watch]);
+  }, [binding, id, still, ended, attempt, watch, markReplyComplete]);
 
   useLayoutEffect(() => {
     const anchor = historyAnchor.current;
@@ -1508,24 +1524,28 @@ export function ChatView({
     if (!canSend||sendingDraft.current) return false;
     sendingDraft.current=true;setControlError(null);
     const reading=reader.current;
+    const editing=sessionDrafts.current(`gui:${id}`);
+    const token=crypto.randomUUID();
+    sessionDrafts.begin(`gui:${id}`,token,editing?.text===text?editing.id:null);
     let prepared:typeof files.items;
     try{prepared=await files.prepare();}
-    catch(error){setControlError(String(error));sendingDraft.current=false;return false;}
+    catch(error){sessionDrafts.failed(token);setControlError(String(error));sendingDraft.current=false;return false;}
     sendingDraft.current=false;
-    if(!mounted.current||currentSession.current!==id||reader.current!==reading)return false;
+    if(!mounted.current||currentSession.current!==id||reader.current!==reading){sessionDrafts.failed(token);return false;}
     const owner = chatDraftOwner(id);
-    if (!owner) return false;
+    if (!owner) {sessionDrafts.failed(token);return false;}
     const placed = prepared.filter(file => file.path !== null);
     const full = withAttachments(line, placed.map(file => file.path as string));
     const images = facts?.images ? placed.flatMap(file => file.inline ? [file.inline] : []) : [];
-    const draft = rememberChatDraft({owner, reader: reader.current, session: id, token: crypto.randomUUID(), text, full, images, documents: docs, attachments: prepared});
-    if (!draft) return false;
+    const draft = rememberChatDraft({owner, reader: reader.current, session: id, token, text, full, images, documents: docs, attachments: prepared});
+    if (!draft) {sessionDrafts.failed(token);return false;}
     if (placed.length > 0 && box.current) raiseKeyboard(box.current);
-    composer.current = {session: id, text: "", documents: [], attachments: []};
-    setText("");
+    composer.current = {session: id, text: sessionDrafts.get(`gui:${id}`),
+      documents: composer.current.documents.filter(document=>!docs.includes(document)),
+      attachments: composer.current.attachments.filter(item=>!prepared.some(sent=>sent.key===item.key))};
     setInTurn(true);
     for(const item of prepared)files.remove(item.key);
-    setDocs([]);
+    setDocs(current=>current.filter(document=>!docs.includes(document)));
     setPaint(previous => ({...previous, live: boundedLive([...previous.live, {who: "user", text: full, token: draft.token}])}));
     sent.current = line;
     lastSay.current = draft;
@@ -1539,6 +1559,7 @@ export function ChatView({
     if (!owner || owner !== previous.owner || !recoverableChatDrafts(id).some(entry => entry.draft === previous && entry.reason === "failed")) return;
     const draft = rememberChatDraft({...previous, owner, reader: reader.current, token: crypto.randomUUID()});
     if (!draft) return;
+    sessionDrafts.retry(previous.token, draft.token);
     discardChatDraft(id, previous.token, previous.owner);
     setInTurn(true);
     setPaint(paint => ({...paint, live: boundedLive([...paint.live, {who: "user", text: draft.full, token: draft.token}])}));
@@ -1643,7 +1664,12 @@ export function ChatView({
       <div
         ref={scroller}
         data-chat-scroll
-        onScroll={()=>{onScroll();rememberReading();}}
+        onScroll={() => {
+          const wasReadingLatest = readingLatest.current;
+          onScroll();
+          if (!wasReadingLatest && readingLatest.current) historyView.current?.wake();
+          rememberReading();
+        }}
         onClickCapture={captureDisclosure}
         className="min-h-0 flex-1 overflow-y-auto px-4 py-3 [overflow-anchor:none]"
       >
@@ -1806,14 +1832,20 @@ export function ChatView({
           the text under it every time somebody scrolled. Absent at the
           bottom — that is what makes it able to go to zero, and it is
           why the fresh flag is cleared in the same breath. */}
-      {away && <ScrollToBottom data-chat-bottom fresh={fresh}
-        onClick={() => { toBottom(); if (history && !history.window.latest) void historyView.current?.latest(); }}/>}
+      {(away || (history?.loaded && !history.window.latest)) && <ScrollToBottom data-chat-bottom fresh={fresh}
+        replyStatus={inTurn && !gone && !still ? 'replying' : replyComplete ? 'complete' : undefined}
+        onClick={() => {
+          toBottom();
+          if (history && !history.window.latest) void historyView.current?.latest();
+          else historyView.current?.wake();
+        }}/>}
       </div>
       {/* **On the narrow face the footer is the session bar's second
           row** (`components/SessionBar`, 2026-10-02: 「where a terminal
           has its row of accessory keys, a chat has its input box」) —
           above the deck (2026-10-13); the deck sits on the keyboard.
           On the wide face it stands here, as it always did. */}
+      <DraftAlternatives draftKey={`gui:${id}`} />
       <BarSeat at="above">{unifiedSession && <AcpHeader who={who} mode={modeSeat} options={addOptions} protocol={protocol} onControl={control} disabled={inTurn||settingRequest.pending} pending={settingRequest.pending} />}
       {settingRequest.pending&&<p role="status" className="px-row text-caption text-muted-foreground">正在应用{settingRequest.name}</p>}
       {settingRequest.error&&<div role="alert" className="flex items-center gap-in px-row text-caption text-destructive">未能确认{settingRequest.name}，保留当前设置<Button size="sm" variant="ghost" onClick={settingRequest.retry}>重试</Button></div>}

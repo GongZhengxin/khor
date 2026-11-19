@@ -1534,6 +1534,38 @@ mod current {
     }
 
     #[test]
+    fn blank_agent_items_preserve_the_last_spoken_preview() {
+        use crate::adaptor::claude::newest_said;
+
+        let home = Home::new("blank-agent-preview");
+        let path = home.rollout(THREAD, "", &(item("UserMessage", "question") + "\n"));
+        let first = newest_said(&path, None, utterances_of).unwrap();
+        assert_eq!(first.said.as_deref(), Some("question"));
+
+        let mut file = OpenOptions::new().append(true).open(&path).unwrap();
+        writeln!(file, "{}", item("AgentMessage", " ")).unwrap();
+        writeln!(file, "{}", item("AgentMessage", "---")).unwrap();
+        assert_eq!(
+            newest_said(&path, None, utterances_of)
+                .unwrap()
+                .said
+                .as_deref(),
+            Some("question"),
+        );
+        let during_tools = newest_said(&path, Some(&first), utterances_of).unwrap();
+        assert_eq!(during_tools.said.as_deref(), Some("question"));
+
+        writeln!(file, "{}", item("AgentMessage", "answer")).unwrap();
+        assert_eq!(
+            newest_said(&path, Some(&during_tools), utterances_of)
+                .unwrap()
+                .said
+                .as_deref(),
+            Some("answer"),
+        );
+    }
+
+    #[test]
     fn a_writer_backed_row_updates_its_preview_state_and_unread_without_a_pid() {
         use crate::adaptor::Discovery;
         use crate::live::LiveKind;

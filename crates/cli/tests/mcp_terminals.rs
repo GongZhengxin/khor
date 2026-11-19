@@ -521,6 +521,58 @@ fn actual_mcp_terminal_starts_without_a_viewer_and_coordinates_idempotent_input(
     }
 }
 
+#[cfg(any(unix, windows))]
+#[test]
+fn hosted_shell_projects_edited_drafts_and_clears_them_on_submission() {
+    #[cfg(unix)]
+    let mut fixture = Fixture::new_with_shell(Some(Path::new("/bin/bash")));
+    #[cfg(windows)]
+    let mut fixture = Fixture::new();
+    let (id, _) = fixture.open(
+        "mcp-shell-draft-test-1234",
+        &marker_command("DRAFT", "READY"),
+    );
+    fixture.read_until(&id, "DRAFT-READY");
+    let directory = fixture
+        .home
+        .join(".khor/sessions")
+        .join(id.replace('/', "-"));
+    let mut viewer = fixture.viewer(&id);
+    let mut send = |keys: &[u8]| {
+        host::write_frame(&mut viewer, &ClientOp::Input(keys.to_vec())).unwrap();
+    };
+    let wait = |condition: &dyn Fn(&khor_core::Doing) -> bool| {
+        let deadline = Instant::now() + Duration::from_secs(10);
+        loop {
+            let doing = khor_node::commands::read_doing(&directory);
+            if doing.as_ref().is_some_and(condition) {
+                return;
+            }
+            assert!(Instant::now() < deadline, "Last shell reading: {doing:?}");
+            thread::sleep(Duration::from_millis(25));
+        }
+    };
+    wait(&|doing| !doing.running);
+
+    send(b"echo KHOR-DRFT");
+    wait(&|doing| doing.editor.as_deref() == Some("echo KHOR-DRFT"));
+    send(b"\x1b[D\x1b[DA");
+    wait(&|doing| doing.editor.as_deref() == Some("echo KHOR-DRAFT"));
+    send(b"\r");
+    wait(&|doing| doing.editor.is_none());
+    fixture.read_until(&id, "KHOR-DRAFT");
+    wait(&|doing| doing.command.as_deref() == Some("echo KHOR-DRAFT") && !doing.running);
+
+    #[cfg(windows)]
+    {
+        // Retrieve actual PSReadLine history: the bytes contain no draft text.
+        send(b"\x1b[A");
+        wait(&|doing| doing.editor.as_deref() == Some("echo KHOR-DRAFT"));
+        send(b"\x03");
+        wait(&|doing| doing.editor.is_none());
+    }
+}
+
 #[test]
 fn actual_mcp_one_shot_retains_output_without_a_terminal_list_entry() {
     let mut fixture = Fixture::new();

@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useStableListOrder } from '@/hooks/use-stable-list-order';
+import { useEffect, useRef, useState } from "react";
 import { khorAgent, type DeviceRow, type SessionRow } from "@/api";
 import { StatusWord } from "@/components/StatusWord";
 import { Button } from "@/components/ui/button";
@@ -53,8 +54,19 @@ export function ChildTasks({ parent, id, devices, selected, onOpen }: {
     return () => { stopped = true; clearTimeout(timer); };
   }, [home, session, revision]);
 
+  const root = useRef<HTMLDivElement>(null);
+  const ordered = [
+    ...(groups?.children ?? []).map(record => ({...record,id:identity(record),group:'agents'})),
+    ...(groups?.commands ?? []).map(record => ({...record,id:identity(record),group:'commands'})),
+  ];
+  if (ordered.every(row=>row.attention_order!==undefined)) ordered.sort((a,b)=>a.attention_order!-b.attention_order!);
+  const stable = useStableListOrder(ordered, root, ordered.length>0&&ordered.every(row=>row.attention_order!==undefined), session, 'data-child-task-row');
+  const sections = [...new Set(stable.map(row=>row.group))].map(group => ({
+    label:group==='commands'?gui.key_group_commands:gui.child_task_agents,
+    rows:stable.filter(row=>row.group===group),command:group==='commands',
+  }));
   return <>
-    <div id={id} data-child-tasks={parent.id} role="group" aria-label={gui.child_tasks}
+    <div ref={root} id={id} data-child-tasks={parent.id} role="group" aria-label={gui.child_tasks}
       className="min-w-0 py-in pl-[calc(var(--rows-inset)+var(--list-face)/2)] pr-row">
       <div className="flex min-w-0 flex-col gap-in border-l pl-row">
         {error && <div role="alert" className="flex min-w-0 items-center gap-in text-callout text-destructive">
@@ -62,7 +74,7 @@ export function ChildTasks({ parent, id, devices, selected, onOpen }: {
           <Button size="sm" onClick={() => refresh(value => value + 1)}>{gui.region_retry}</Button>
         </div>}
         {groups && (groups.children.length > 0 || groups.commands.length > 0) ?
-          ([[gui.child_task_agents, groups.children, false], [gui.key_group_commands, groups.commands, true]] as const).map(([label, rows, command]) =>
+          sections.map(({label, rows, command}) =>
             rows.length > 0 && <section key={label} aria-label={label}>
               <h3 className="pb-xxs text-group text-muted-foreground">{label}</h3>
               {rows.map(record => {

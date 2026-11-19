@@ -4,7 +4,7 @@ Roadmap phase 1 (`audit/TERM-ROADMAP.md`). The host knows where a hosted shell's
 
 ## What the shell says
 
-Each hosted zsh, bash or fish loads a short script that writes these marks. They are the marks the field agreed on, as defined by FinalTerm and documented by iTerm2 ("Shell Integration"), Kitty (shell-integration), WezTerm, Ghostty, Windows Terminal ("Shell integration in the Windows Terminal") and VS Code (`terminal.integrated.shellIntegration`):
+Each supported hosted shell loads a short script that writes these marks. They are the marks the field agreed on, as defined by FinalTerm and documented by iTerm2 ("Shell Integration"), Kitty (shell-integration), WezTerm, Ghostty, Windows Terminal ("Shell integration in the Windows Terminal") and VS Code (`terminal.integrated.shellIntegration`):
 
 | Mark | Meaning |
 |---|---|
@@ -23,8 +23,8 @@ The scripts are in `crates/node/shell/`. The host writes them under `<khor home>
 | zsh | `ZDOTDIR` points at khor's directory. Its `.zshenv` first restores the person's `ZDOTDIR` and sources their `.zshenv`. | Kitty |
 | bash | `bash --init-file khor.bash`, which reads `~/.bashrc` first, as bash would. | VS Code |
 | fish | khor's directory goes first in `XDG_DATA_DIRS` (`fish/vendor_conf.d`). The variable is restored at once. | Kitty |
-| PowerShell 7 | `khor.ps1` wraps `prompt` and PSReadLine's Enter. It is written but not wired. | VS Code |
-| cmd | `khor.cmd` is a `PROMPT` with A, B, D and OSC 7. cmd has no hook before a command runs. It is written but not wired. | Windows Terminal |
+| PowerShell | `khor.ps1` loads after the native profiles and wraps `prompt` and PSReadLine actions. | VS Code |
+| cmd | `khor.cmd` is a `PROMPT` with A, B, D and OSC 7. The host loads it with `cmd /k`. Cmd has no hook before a command runs. | Windows Terminal |
 
 **When the hooks go in.** In zsh and fish they install at the first prompt, after the person's own startup files, so they come last. zsh re-adds the input mark to `PS1` at every prompt, because themes rebuild `PS1`.
 
@@ -36,6 +36,8 @@ The scripts are in `crates/node/shell/`. The host writes them under `<khor home>
 - A line that is only a subshell, such as `(exit 3)`, is not seen by a DEBUG trap.
 
 **Shells that already have an integration.** Such a shell is left alone. khor recognises one by the hook functions that VS Code's, iTerm2's, Kitty's, WezTerm's, Ghostty's or Warp's scripts define in the shell. It never relies on environment variables, because anything started from that terminal inherits them.
+
+Draft previews and the fallback are described in [Terminal drafts](TERMINAL.md#terminal-drafts).
 
 **Turning it off.** Set `KHOR_SHELL_INTEGRATION=0` in the environment khor runs in.
 

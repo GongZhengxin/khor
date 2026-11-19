@@ -221,7 +221,23 @@ impl KindSurface for ObservationKind {
                 }
                 true
             })
-            .map(|record| record.session())
+            .map(|record| {
+                let mut row = record.session();
+                if record.reference.home == node.device()
+                    && record.reference.namespace == ObservationNamespace::Acp
+                {
+                    let identity = super::journal::Identity {
+                        home: record.reference.home,
+                        agent: record.reference.agent,
+                        native_id: record.reference.native_id,
+                    };
+                    row.last = super::journal::Source::find(node.root(), identity)
+                        .ok()
+                        .flatten()
+                        .and_then(|source| source.last_said());
+                }
+                row
+            })
             .collect())
     }
     fn reportable(&self) -> bool {

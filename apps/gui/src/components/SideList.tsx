@@ -1,3 +1,4 @@
+import { useStableListOrder } from "@/hooks/use-stable-list-order";
 // **The list inside every sidebar — one, for all five** (docs/SHELL.md
 // 第四轮 第 1 条:「所有展开的一级侧边栏内容显示逻辑要一致, 都是如session
 // 那样, 可以被filter, 置顶的显示也是收起与展开, 形式完全一致, 不必写多份
@@ -46,6 +47,7 @@ export type SideRow = {
       pinned group every column has. A column whose groups come from the
       node (sessions' arrangements) hands those keys in as they are. */
   group: string;
+  attentionOrder?: number;
   pinned: boolean;
   /** Whose face: a machine's record (`{ machine }`, drawn by `FaceMark`
       at the row's size, the ink of its mark read off the same record),
@@ -254,7 +256,16 @@ export function SideList({
   // is nothing beside it to point at. Every landing's list is this one
   // component, so this is the one place. The wide face is unchanged.
   const narrow = useNarrow();
-  const shown = rows.filter((r) => finds(query, r.find));
+  const orderBox = useRef<HTMLDivElement>(null);
+  const matched = rows.filter((r) => finds(query, r.find));
+  // Ordinals are assigned by the shared backend policy, not a second state
+  // comparator. First visible member ranks each group after local filtering.
+  const ranked = matched.every(row => row.attentionOrder !== undefined)
+    ? [...matched].sort((a, b) => a.attentionOrder! - b.attentionOrder!) : matched;
+  const groups = new Map<string, number>();
+  for (const row of ranked) if (!groups.has(row.group)) groups.set(row.group, groups.size);
+  const arranged = [...ranked].sort((a, b) => groups.get(a.group)! - groups.get(b.group)!);
+  const shown = useStableListOrder(arranged, orderBox, ranked.length > 0 && ranked.every(row => row.attentionOrder !== undefined), query + String(filtered));
   // **A query reads everything**, the fold included: it is the person
   // asking for a row wherever it is. The fold is the untouched view's.
   const searching = query.trim() !== "" || filtered;
@@ -601,7 +612,7 @@ export function SideList({
   };
   return (
     <div
-      ref={box}
+      ref={element => { box.current = element; orderBox.current = element; }}
       data-side-list
       {...mark}
       // ↑ ↓ Home End walk the rows, the headings and the fold; ⏎ / Space

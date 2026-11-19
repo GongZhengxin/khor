@@ -1794,6 +1794,9 @@ journal-why-punched = "{0} round(s) of hole punching, none of its candidates ans
 
 [gui]
 child_tasks = "Child tasks"
+session_draft_tag = "Draft"
+choose_draft = "Choose draft"
+draft_alternatives = "{0} draft versions retained"
 child_sessions = "Child sessions"
 child_sessions_count = "{0} child sessions"
 child_sessions_count_more = "At least {0} child sessions"
@@ -3155,6 +3158,8 @@ chat-who = "This conversation's agent, model and context"
 chat-who-context = "Context"
 to-bottom = "Back to bottom"
 new-below = "New messages"
+chat-bottom-replying = "Back to bottom, reply in progress"
+chat-bottom-complete = "Back to bottom, reply complete"
 chat-refused-turn-in-flight = "Another window is already talking — that message wasn't sent, and it's back with you"
 chat-refused-no-turn = "There's no turn running right now"
 chat-upload-stopped-reconnect = "Upload stopped. Reconnect to continue."

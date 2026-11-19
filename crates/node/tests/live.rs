@@ -98,13 +98,14 @@ async fn a_live_row_travels_as_a_report_and_the_seen_loop_closes() {
         .expect("pairing must not hang")
         .unwrap();
 
-    // The agent: a real process alpha watches. Registered blocked — the
-    // word whose whole point is being seen from elsewhere.
+    // An explicit terminal resource with a real process alpha watches.
+    // Agent transcript imports now require verified native identities; this
+    // test exercises terminal state/read replication, not transcript import.
     let mut agent = std::process::Command::new("sleep")
         .arg("60")
         .spawn()
         .unwrap();
-    let id = SessionId("tui/agent1".to_owned());
+    let id = SessionId("shell/agent1".to_owned());
     let ephemeral = a.open_ephemeral("tui", "the agent").unwrap();
     a.report_state(&ephemeral, State::Busy).unwrap();
     {
@@ -112,8 +113,14 @@ async fn a_live_row_travels_as_a_report_and_the_seen_loop_closes() {
         // wrapper uses: open, then bind the pid.
         use khor_node::live::LiveKind;
         let k = LiveKind::new(ra.to_path_buf(), a.device());
-        k.register(&id, "tui", "claude in proj", Some(agent.id()), None)
-            .unwrap();
+        k.register(
+            &id,
+            "shell",
+            "shell command in proj",
+            Some(agent.id()),
+            Some("shell"),
+        )
+        .unwrap();
         k.report(&id, State::Blocked, khor_node::live::Source::Reported)
             .unwrap();
     }
@@ -136,7 +143,7 @@ async fn a_live_row_travels_as_a_report_and_the_seen_loop_closes() {
         State::Blocked,
         "等准许,从别的设备看得到"
     );
-    assert_eq!(view.session.title, "claude in proj");
+    assert_eq!(view.session.title, "shell command in proj");
     let (reporter, _) = view
         .source
         .as_ref()
@@ -175,6 +182,67 @@ async fn a_live_row_travels_as_a_report_and_the_seen_loop_closes() {
         (State::Idle, 0),
         "looked at on beta clears the row everywhere"
     );
+
+    let old_at = view.session.state.unwrap().at.0.min(i64::MAX as u64) as i64;
+    for node in [&a, &b] {
+        assert_eq!(
+            node.sessions()
+                .unwrap()
+                .into_iter()
+                .find(|v| v.session.id == id)
+                .unwrap()
+                .session
+                .unread,
+            0
+        );
+    }
+    // beta's cached read is created while no sync runs. A newer completion
+    // must survive that old mark when beta eventually reconnects.
+    b.seen_through(&id, old_at).unwrap();
+    a.report_state(&id, State::Busy).unwrap();
+    std::thread::sleep(Duration::from_millis(5));
+    a.report_state(&id, State::Done).unwrap();
+    timeout(Duration::from_secs(60), b.sync_now())
+        .await
+        .unwrap()
+        .unwrap();
+    let newest = b
+        .sessions()
+        .unwrap()
+        .into_iter()
+        .find(|v| v.session.id == id)
+        .unwrap()
+        .session;
+    assert_eq!(newest.unread, 1);
+    b.seen_through(&id, old_at).unwrap();
+    assert_eq!(
+        b.sessions()
+            .unwrap()
+            .into_iter()
+            .find(|v| v.session.id == id)
+            .unwrap()
+            .session
+            .unread,
+        1
+    );
+    b.seen_through(&id, newest.state.unwrap().at.0 as i64)
+        .unwrap();
+    timeout(Duration::from_secs(60), b.sync_now())
+        .await
+        .unwrap()
+        .unwrap();
+    for node in [&a, &b] {
+        assert_eq!(
+            node.sessions()
+                .unwrap()
+                .into_iter()
+                .find(|v| v.session.id == id)
+                .unwrap()
+                .session
+                .unread,
+            0
+        );
+    }
 
     // Remote close is not a thing yet — refused by name, pointing home.
     // Asked of the row khor started (on the list as `new`): an imported

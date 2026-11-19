@@ -4,6 +4,7 @@ import { gui } from "@/gen/catalog";
 import {agentPresentation} from './acp-session';
 
 export type DelegatedChild = {
+  attention_order?: number;
   kind?: "agent" | "command"; run: string; key: string; agent: string; machine: string; home?: string;
   state: string; task: string | null; context: string | null; result: string | null;
   cwd?: string | null; can_cancel: boolean; can_retry: boolean; truncated?: boolean;

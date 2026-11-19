@@ -6,7 +6,7 @@ import {longHistoryFrames} from './long-history';
 import {navigationFixture,FixtureRefusal} from './navigation';
 import type {AppUpdateStatus} from '../../src/gen/bindings/AppUpdateStatus';
 import {pairingFixture} from './pairing';
-import {labDevices,labModels,labQuota,labRoot,labUsage,labSettings,labAbout,labRelays,labRoadShare,labDoctor} from './world';
+import {labSessionAttention,labDevices,labModels,labQuota,labRoot,labUsage,labSettings,labAbout,labRelays,labRoadShare,labDoctor} from './world';
 import {canonicalChatFixture} from '../../scripts/fixtures/canonical-chat-routes.mjs';
 import type {DeviceRow} from '../../src/gen/bindings/DeviceRow';
 import type {SessionRow} from '../../src/gen/bindings/SessionRow';
@@ -170,6 +170,12 @@ export function createLabFixture(terminal = true, options: {origin?: string; con
     {agent:'a2a:review', machine:'Mac mini 构建机', state:'failed', result:'The review did not finish'},
   ].map((task,i)=>({...task,home:devices[i]?.id,run:'fixture-run',key:'fixture-child-'+i,task:'task-'+i,context:'context-'+i,
     can_cancel:task.state==='waiting',can_retry:task.state==='failed'}));
+  const editorDiskKey = 'khor.lab.editor-server';
+  const savedEditors = (() => { try { return JSON.parse(readSetting(editorDiskKey) ?? '{}'); } catch { return {}; } })();
+  const editorRevisions = new Map<string, {id:string;key:string;text:string;at_ms:number}>(savedEditors.rows ?? []);
+  const editorReceipts = new Set<string>(savedEditors.receipts ?? []);
+  const readVersions = new Map<string,number>((() => { try { return JSON.parse(readSetting('khor.lab.read-server') ?? '[]'); } catch { return []; } })());
+  const sessionOverrides = new Map<string, {word:string;at_ms:number}>();
   function agentAction(body: Record<string, any>) {
     if (body.action === "catalog") return view(providers);
     if(body.action==='put_paths'){
@@ -210,10 +216,12 @@ export function createLabFixture(terminal = true, options: {origin?: string; con
       } else if (p.action==="retry" && task?.can_retry) {
         task.state="working";task.can_cancel=true;task.can_retry=false;task.result=null;
       }
-      return view({children:childTasks,commands:[{
-        agent:'git status',machine:'MacLab',state:'completed',result:'Working tree clean',
-        run:'fixture-run',key:'fixture-command',task:null,context:null,can_cancel:false,can_retry:false,
-      }]});
+      const commands=[{agent:'git status',machine:'MacLab',state:'completed',result:'Working tree clean',
+        run:'fixture-run',key:'fixture-command',task:null,context:null,can_cancel:false,can_retry:false}];
+      const word: Record<string,string>={waiting:'blocked',submitted:'busy',working:'busy',completed:'done',failed:'failed',canceled:'idle'};
+      const ranked=[...childTasks,...commands].sort((a,b)=>labSessionAttention[word[a.state]??'unknown']-labSessionAttention[word[b.state]??'unknown']||a.key.localeCompare(b.key));
+      const order=new Map(ranked.map((row,index)=>[row.key,index]));
+      return view({children:childTasks.map(row=>({...row,attention_order:order.get(row.key)})),commands:commands.map(row=>({...row,attention_order:order.get(row.key)}))});
     }
     if (p.operation === 'acp_initialize' || p.operation === 'acp_authenticate') {
       acpSetupCalls.push({agent:String(p.agent),machine:String(body.machine),operation:p.operation});
@@ -313,6 +321,16 @@ export function createLabFixture(terminal = true, options: {origin?: string; con
       }
       if(path==='__ai_preview/import-calls')return imports.calls;
       if (path === '__ai_preview/reset') {
+          // Server-backed Lab uses one fixture across isolated browser contexts.
+          // Reset the synthetic backend as well as the client-facing settings.
+          editorRevisions.clear();
+          editorReceipts.clear();
+          readVersions.clear();
+          sessionOverrides.clear();
+          try {
+            localStorage.removeItem(editorDiskKey);
+            localStorage.removeItem('khor.lab.read-server');
+          } catch { /* Server fixture has no browser storage. */ }
           settingsValues={...settingsProfile};try { localStorage.removeItem(settingsKey); } catch { /* Server fixture has no browser storage. */ }
           holdSettings=false;refuseSetting=false;pendingSettings.length=0;
           failAcpSetup=false;acpSetupCalls.length=0;
@@ -430,6 +448,22 @@ export function createLabFixture(terminal = true, options: {origin?: string; con
               });
             }else frames[index].push({kind:'control_result',token:body.token,operation:body.operation,data:{},error:null});break;
           }
+          case '__ai_preview/session-state': {
+            const before = sessionOverrides.get(String(body.id));
+            if (before?.word !== body.word) sessionOverrides.set(String(body.id), {word:String(body.word),at_ms:Date.now()});
+            answer = true; break;
+          }
+          case 'session_drafts': answer = [...editorRevisions.values()]; break;
+          case 'session_draft_edit': {
+            const revision = body.revision;
+            if (!editorReceipts.has(revision.id)) {
+              for (const parent of body.parents) editorRevisions.delete(parent);
+              if (revision.text) editorRevisions.set(revision.id, revision);
+              editorReceipts.add(revision.id);
+              try { localStorage.setItem(editorDiskKey, JSON.stringify({rows:[...editorRevisions],receipts:[...editorReceipts]})); } catch { /* Server fixture retains its own memory. */ }
+            }
+            answer = [...editorRevisions.values()]; break;
+          }
           case "sessions": {
             const rows: SessionRow[] = ids.map((id, i) => ({id, kind: i === 4 ? 'broadcast' : 'gui', title: options.longHistory&&i===0?'长对话历史 · 240轮':options.dsh&&i===3?'DeepSeek Harness · 文件校验':titles[i],
               activity: [], observation_owner: options.notices||options.noticeBurst?null:device.id, content_locator: null, imported: false, quiet: false,
@@ -438,9 +472,25 @@ export function createLabFixture(terminal = true, options: {origin?: string; con
               hosted: true, can_control: true, attachable: false, dead: false, last: '隔离示例 · 不连接真实智能体',
               via: null, via_face: null, home: devices[i%Math.max(1,devices.length)]?.name??device.name, execution_home: devices[i%Math.max(1,devices.length)]?.id??device.id, place:labRoot(devices[i%Math.max(1,devices.length)])+'/project', doing: null, mux: false, ended: null}));
             if (terminal) rows.push({...rows[0], id: 'shell/layout-lab', kind: 'shell', title: '终端 · 布局试验',
-              category: 'shell', activity:[], attachable: true, last: '隔离终端示例'});
+              category: 'shell', activity:[], pinned:false, attachable: true, last: '隔离终端示例'});
             for(const imported of imports.rows())rows.push({...rows[0],id:imported.id,title:imported.title,kind:imported.intent==='fork'?'gui':'observe',category:imported.agent,imported:imported.intent==='import',can_control:imported.intent==='fork',hosted:imported.intent==='fork',pinned:false,unread:0,last:'导入的历史会话',execution_home:imported.home});
-            answer = notices.snapshot(devices.length ? rows : []);
+            const visible = notices.snapshot(devices.length ? rows : []);
+            for (const row of visible) {
+              Object.assign(row, sessionOverrides.get(row.id) ?? {});
+              const prefix = row.id.startsWith('wide/') ? 'khor:' : 'gui:';
+              const draft = [...editorRevisions.values()].filter(revision => revision.key === prefix + row.id).sort((a,b) => b.at_ms-a.at_ms)[0];
+              if (draft) row.draft = draft.text;
+              if ((readVersions.get(row.id) ?? -1) >= row.at_ms) row.unread = 0;
+              row.group = row.pinned ? 'pin' : body.by === 'category' ? 'cat:'+(row.category??'') : body.by === 'device' ? 'dev:'+row.home : body.by === 'state' ? 'state:'+(row.word??'') : body.by === 'place' ? 'at:'+(row.place??'') : '';
+            }
+            const rank = (row: SessionRow) => Math.min(labSessionAttention[row.word??'unknown'], row.draft ? labSessionAttention.draft : Infinity);
+            const attentionAt = (row: SessionRow) => Math.max(row.at_ms,...[...editorRevisions.values()].filter(revision => revision.key.endsWith(':'+row.id)).map(revision => revision.at_ms));
+            visible.sort((a,b) => Number(b.pinned)-Number(a.pinned) || rank(a)-rank(b) || attentionAt(b)-attentionAt(a) || a.id.localeCompare(b.id));
+            visible.forEach((row,index) => row.attention_order=index);
+            const groupOrder = new Map<string,number>();
+            for(const row of visible)if(!groupOrder.has(row.group))groupOrder.set(row.group,groupOrder.size);
+            answer = visible.sort((a,b) => groupOrder.get(a.group)!-groupOrder.get(b.group)!);
+
             break;
           }
           case 'session_recovery': answer = {id: body.id, home: device.id, current_run: 'fixture-live', next_attempt_epoch: null,
@@ -463,7 +513,7 @@ export function createLabFixture(terminal = true, options: {origin?: string; con
             frames[index].push({kind:'settings',settings:structuredClone(preferences[index])});});break;
           }
           case "chat_answer": later(() => frames[index].push({ kind: "answered", ask: body.ask, option: body.option }, update("agent_message_chunk", text(body.option === "deny" ? "已取消。这次预览没有执行任何系统操作。" : "已确认。此处仅演示确认状态，不执行系统操作。"))), 900); break;
-          case "chat_say": sentPrompts.push(structuredClone(body));run(index, "收到。这是验收环境的示例回复，没有调用模型或执行命令。你可以展开上面的工具调用，检查输出与复制按钮。"); break;
+          case "chat_say": sentPrompts.push(structuredClone(body));if(typeof body.token==='string')frames[index].push({kind:'send_committed',token:body.token});run(index, "收到。这是验收环境的示例回复，没有调用模型或执行命令。你可以展开上面的工具调用，检查输出与复制按钮。"); break;
           case "chat_stop": generation[index]++; streaming.delete(index); frames[index].push({ kind: "turn", stop: "Cancelled" }); break;
           // Explicit no-PIN fixture facts; a failed read never unlocks production.
           case "lock_state": answer = {on: false, has_pin: false, timeout_min: 0, timeouts: [0, 1, 5, 15, 60], pin_min: 6, system_door: false}; break;
@@ -498,7 +548,11 @@ export function createLabFixture(terminal = true, options: {origin?: string; con
             answer=settingsRows();break;
           }
           case "dir_pins": case "web_pins": answer = []; break;
-          case "seen_snapshot": case "seen": case "session_seen": break;
+          case "seen_snapshot": break;
+          case "seen": case "session_seen":
+            readVersions.set(String(body.id), Math.max(readVersions.get(String(body.id)) ?? -1, Number(body.at_ms)));
+            try { localStorage.setItem('khor.lab.read-server',JSON.stringify([...readVersions])); } catch { /* In-memory server. */ }
+            break;
           default: throw new Error(`Lab fixture does not implement ${path}`);
         }
       return structuredClone(answer);

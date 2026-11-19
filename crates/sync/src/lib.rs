@@ -13,6 +13,7 @@ pub mod chat;
 pub mod devices;
 pub mod dirpins;
 pub mod doc_transfer;
+pub mod drafts;
 mod glue;
 pub mod pins;
 pub mod plan;

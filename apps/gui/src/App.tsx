@@ -7,7 +7,7 @@ import { NotificationBanners } from "@/views/NotificationBanners";
 import { clearNotifications, receiveNotifications, sessionNotificationsEnabled, useNotifications } from "@/lib/notifications";
 import { notificationPresence, type NotificationBanner, type NotificationPresence } from "@/lib/notification-banners";
 import {SessionHeader} from '@/components/SessionHeader';
-import {retainSessionDrafts} from '@/hooks/use-session-draft';
+import {syncSessionDrafts} from '@/hooks/use-session-draft';
 import {retainCancelledChatDrafts} from '@/lib/chat-drafts';
 import { useSessionAttention } from "@/hooks/use-session-attention";
 import { useWindowFocus } from "@/hooks/use-window-focus";
@@ -872,7 +872,9 @@ export default function App() {
       // the window is the only place that can tell them apart.
       const w = window as unknown as { __sessionCalls?: number };
       w.__sessionCalls = (w.__sessionCalls ?? 0) + 1;
-      fetchSessions(arrangeBy)
+      // Upstream's draft sync rides the same expression (it must happen before
+      // the read answers, or a draft written this instant is not yet visible).
+      (syncSessionDrafts(), fetchSessions(arrangeBy))
         .then((rows) => {
           if (!live || request < sessionApplied.current) return;
           sessionApplied.current = request;
@@ -2453,7 +2455,6 @@ export default function App() {
   useEffect(()=>{
     if(!rowsRead||stale)return;
     const live=[...new Set([...allSessionTabs,...rawRows.map(row=>row.id)])];
-    retainSessionDrafts(live);
     retainComposerFiles(live);retainSessionDocuments(live);retainKhorPromptTokens(live);
   },[allSessionTabs,rawRows,rowsRead,stale]);
   /**

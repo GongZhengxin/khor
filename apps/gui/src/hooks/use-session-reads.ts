@@ -5,7 +5,7 @@ import { SessionReads, type ReadReceipt } from "@/lib/session-read";
 /** Read here now; persist independently of the list/network heartbeat. Failed
  * writes remain queued and retry while this face is alive, including after Back. */
 export function useSessionReads(raw: SessionRow[]) {
-  const [receipts] = useState(() => new SessionReads());
+  const [receipts] = useState(() => new SessionReads((() => { try { return window.localStorage; } catch { return null; } })()));
   const [version, setVersion] = useState(0);
   const sending = useRef(new Set<string>());
   const mounted = useRef(true);

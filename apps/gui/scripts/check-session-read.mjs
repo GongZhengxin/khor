@@ -22,6 +22,7 @@ receipts.confirmed(next);
 assert.equal(receipts.pending().length, 0);
 assert.equal(receipts.project([row()])[0].unread, 0, 'keep local coverage after backend acknowledgement');
 assert.equal(receipts.read(row('wide/all')), null, 'broadcast uses rendered message identities, never broad watermarks');
+assert.equal(receipts.read(row('wide/agent-test')), null, 'independent Khor chats acknowledge only the rendered snapshot');
 assert.equal(receipts.read(row('shell/a',NaN)), null);
 
 let rendering;
@@ -102,3 +103,16 @@ front=row('shell/b',1000);attention.render();assert.notEqual(observed.at(-1).id,
 surface.close();await tick();front=row('shell/a',1100);attention.render();assert.notEqual(observed.at(-1).at_ms,1100,'unmounted surface cannot read');
 attention.close();assert.equal(events.size,0,'focus listeners released');
 console.log('session attention: live completion, loading, history, background/focus, overlays, selection and cleanup passed');
+
+// An offline read must still reach the owner after closing and reopening the
+// face; persisting only a local zero would strand badges on every other seat.
+const disk = new Map();
+const persistence = { getItem: key => disk.get(key) ?? null, setItem: (key, value) => disk.set(key, value) };
+const offline = new SessionReads(persistence);
+const covered = offline.read(row('shell/offline', 100));
+const resumed = new SessionReads(persistence);
+assert.deepEqual(resumed.pending(), [covered]);
+assert.equal(resumed.project([row('shell/offline', 100)])[0].unread, 0);
+assert.equal(resumed.project([row('shell/offline', 101)])[0].unread, 1);
+resumed.confirmed(covered);
+assert.deepEqual(new SessionReads(persistence).pending(), []);
