@@ -35,7 +35,8 @@ class LabEnvironmentTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             home = Path(directory)
             result = native_environment(home, 'Fixture Lab', original)
-            for key in ('APPDATA', 'LOCALAPPDATA', 'WEBVIEW2_USER_DATA_FOLDER'):
+            self.assertNotIn('WEBVIEW2_USER_DATA_FOLDER', result)
+            for key in ('APPDATA', 'LOCALAPPDATA'):
                 self.assertIn(key, result)
                 self.assertTrue(Path(result[key]).is_relative_to(home.resolve()),
                                 key + ' must stay inside the Lab home')

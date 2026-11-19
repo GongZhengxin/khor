@@ -7,7 +7,7 @@ import { basename } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { chromium } from "playwright-core";
 
-const [, , port, title, ready, workspace] = process.argv;
+const [, , port, title, ready, workspace, exitMachine] = process.argv;
 const endpoint = `http://127.0.0.1:${port}`;
 const origin = "http://tauri.localhost";
 
@@ -25,46 +25,59 @@ async function waitForWindow() {
   throw new Error("The installed App never loaded its bundled frontend in WebView2");
 }
 
-function command(page, name, args) {
-  return page.evaluate(async ({name, args}) => {
+function command(page, name, args, timeout = 15_000) {
+  return page.evaluate(async ({name, args, timeout}) => {
     const transport = window.__KHOR_WINDOW_TRANSPORT__;
     const response = await fetch(`${transport.url}/${name}`, {
       method: "POST",
       headers: {"Content-Type": "application/json", "X-Khor-Window-Token": transport.token},
       body: JSON.stringify(args),
-      signal: AbortSignal.timeout(15_000),
+      signal: AbortSignal.timeout(timeout),
     });
     if (!response.ok) throw new Error(`${name} returned ${response.status}: ${await response.text()}`);
     return response.json();
-  }, {name, args});
+  }, {name, args, timeout});
 }
 
 async function checkBrowser(page) {
-  const fixture = createServer((_request, response) => {
+  const requests = new Map();
+  const fixture = createServer((request, response) => {
+    requests.set(request.url, request.headers.connection);
     response.writeHead(200, {"Content-Type": "text/html; charset=utf-8", "Connection": "close"});
     response.end("<!doctype html><title>Khor installer browser</title>");
   });
-  const tab = "windows-installer-browser";
   fixture.listen(0, "127.0.0.1");
   await once(fixture, "listening");
   try {
-    const url = `http://127.0.0.1:${fixture.address().port}/`;
-    let reached = false;
-    fixture.on("request", () => { reached = true; });
+    const base = `http://127.0.0.1:${fixture.address().port}`;
     const view = await page.evaluate(() => innerHeight);
     const agent = await page.evaluate(() => navigator.userAgent);
-    await command(page, "open_page", {tab, machine: "", url, agent, at: {x: 280, y: 75, w: 540, h: 400, view}});
-    const until = Date.now() + 15_000;
-    let state;
-    do {
-      state = await command(page, "page_state", {tab});
-      if (reached && ["finished", "settled"].includes(state?.phase)) break;
-      await delay(200);
-    } while (Date.now() < until);
-    assert(reached, "The native child WebView must request the fixture URL");
-    assert(["finished", "settled"].includes(state?.phase), `The child WebView did not finish: ${JSON.stringify(state)}`);
-    await command(page, "close_page", {tab});
-    assert.equal(await command(page, "page_state", {tab}), null, "Closing retires the native child WebView");
+    const at = {x: 280, y: 75, w: 540, h: 400, view};
+    const tabs = [
+      {tab: "windows-installer-direct", machine: "", path: "/direct"},
+      {tab: "windows-installer-borrow", machine: exitMachine, path: "/borrow"},
+    ];
+    for (const {tab, machine, path} of tabs) {
+      await command(page, "open_page", {tab, machine, url: base + path, agent, at}, 90_000);
+      const until = Date.now() + 15_000;
+      let state;
+      do {
+        state = await command(page, "page_state", {tab});
+        if (requests.has(path) && ["finished", "settled"].includes(state?.phase)) break;
+        await delay(200);
+      } while (Date.now() < until);
+      assert(requests.has(path), `The native WebView must request ${path}`);
+      assert(["finished", "settled"].includes(state?.phase), `The ${path} WebView did not finish: ${JSON.stringify(state)}`);
+      assert.equal(state.proxied, !!machine);
+    }
+    // Both nodes are on the runner. A direct WebView would reach the same
+    // address, but only the Khor tunnel's HTTP proxy rewrites Connection.
+    assert.equal(requests.get("/direct"), "keep-alive");
+    assert.equal(requests.get("/borrow"), "close");
+    for (const {tab} of tabs) {
+      await command(page, "close_page", {tab});
+      assert.equal(await command(page, "page_state", {tab}), null, "Closing retires the native child WebView");
+    }
   } finally {
     fixture.close();
   }

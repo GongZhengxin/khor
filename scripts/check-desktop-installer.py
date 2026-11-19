@@ -107,6 +107,26 @@ def close_windows_app(pid):
         raise WinError()
 
 
+def wait_for_resident(service, home, log):
+    endpoint = Path(home) / ".khor/endpoint.json"
+    deadline = time.monotonic() + 45
+    while not endpoint.is_file():
+        if service.poll() is not None or time.monotonic() >= deadline:
+            details = log.read_text(errors="replace")[-16000:]
+            raise AssertionError(f"Packaged serve did not publish its endpoint ({service.returncode}): {details}")
+        time.sleep(0.1)
+
+
+def test_direct_network(environment):
+    # Use only the runner's direct link. Never advertise these test devices
+    # on the physical network or submit their identities to a public relay.
+    environment.update(KHOR_NO_MDNS="1", KHOR_WEB_PORT="0")
+    directory = Path(environment["KHOR_HOME"]) / ".khor"
+    directory.mkdir(parents=True, exist_ok=True)
+    (directory / "relays.json").write_text(
+        '{"relays":[{"url":"http://127.0.0.1:9"}],"only_mine":true}', encoding="utf-8")
+
+
 def launch_installed(directory):
     with tempfile.TemporaryDirectory(prefix="khor-install-home-") as temporary:
         runtime = Path(temporary) / "runtime"
@@ -145,20 +165,19 @@ def launch_installed(directory):
             return [(pid, path) for pid, path in rows if path == application or path.is_relative_to(runtime)]
 
         service = None
+        exit_service = None
         log = None
+        exit_log = None
         try:
             # The packaged CLI must run a real node, not only print metadata.
-            log = (Path(temporary) / "serve.log").open("wb")
+            log_path = Path(temporary) / "serve.log"
+            log = log_path.open("wb")
+            if os.name == "nt":
+                environment["KHOR_NAME"] = "installer-client"
+                test_direct_network(environment)
             service = subprocess.Popen([str(cli), "serve"],
                                        env=environment, stdout=log, stderr=subprocess.STDOUT)
-            endpoint = Path(environment["KHOR_HOME"]) / ".khor/endpoint.json"
-            deadline = time.monotonic() + 30
-            while not endpoint.is_file() and time.monotonic() < deadline:
-                if service.poll() is not None:
-                    details = (Path(temporary) / "serve.log").read_text(errors="replace")[-16000:]
-                    raise AssertionError(f"Packaged serve exited before publishing its endpoint ({service.returncode}): {details}")
-                time.sleep(0.1)
-            assert endpoint.is_file(), "The packaged CLI did not start its resident"
+            wait_for_resident(service, environment["KHOR_HOME"], log_path)
             subprocess.run([str(cli), "quit"], env=environment, check=True, timeout=30)
             service.wait(timeout=10)
             deadline = time.monotonic() + 10
@@ -166,6 +185,19 @@ def launch_installed(directory):
                 time.sleep(0.1)
             assert not processes(), "Quitting the packaged node must not leave or respawn its resident"
             if os.name == "nt":
+                exit_name = "installer-exit"
+                exit_env = {**environment, "KHOR_HOME": str(Path(temporary) / "exit"),
+                            "KHOR_NAME": exit_name, "KHOR_LOG_FILE": str(logs / "exit.log")}
+                test_direct_network(exit_env)
+                exit_log_path = logs / "exit-serve.log"
+                exit_log = exit_log_path.open("wb")
+                exit_service = subprocess.Popen([str(cli), "serve"], env=exit_env,
+                                                stdout=exit_log, stderr=subprocess.STDOUT)
+                wait_for_resident(exit_service, exit_env["KHOR_HOME"], exit_log_path)
+                ticket = subprocess.run([str(cli), "invite"], env=exit_env,
+                                        stdout=subprocess.PIPE, check=True, timeout=30).stdout
+                subprocess.run([str(cli), "pair", "-"], env=environment,
+                               input=ticket, check=True, timeout=90)
                 cmd = Path(os.environ["SystemRoot"]) / "System32/cmd.exe"
                 subprocess.run([str(cli), "open", "-d", "--title", WINDOWS_SESSION_TITLE, "--",
                                 str(cmd), "/d", "/k", "echo", WINDOWS_READY_MARKER],
@@ -182,7 +214,7 @@ def launch_installed(directory):
                         workspace.mkdir()
                         (workspace / "readme.md").write_text("# Khor installation workspace\n", encoding="utf-8")
                         subprocess.run(["node", str(check), str(debug_port), WINDOWS_SESSION_TITLE,
-                                        WINDOWS_READY_MARKER, str(workspace)], check=True, timeout=240)
+                                        WINDOWS_READY_MARKER, str(workspace), exit_name], check=True, timeout=240)
                         assert len(app_pids) == 1, "The installer check expects one App process"
                         close_windows_app(app_pids[0])
                         deadline = time.monotonic() + 15
@@ -196,6 +228,11 @@ def launch_installed(directory):
                 time.sleep(0.1)
             raise AssertionError("khor gui did not launch the installed application")
         finally:
+            if exit_service is not None and exit_service.poll() is None:
+                exit_service.kill()
+                exit_service.wait(timeout=10)
+            if exit_log is not None:
+                exit_log.close()
             if service is not None and service.poll() is None:
                 service.kill()
                 service.wait(timeout=10)
@@ -326,6 +363,7 @@ def windows(package, expected_source):
             proof["installed_native_caption"] = True
             proof["installed_workspace_preview"] = True
             proof["installed_browser_lifecycle"] = True
+            proof["installed_browser_borrowed_loopback"] = True
             return proof
         finally:
             if installed:

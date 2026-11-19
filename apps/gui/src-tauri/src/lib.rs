@@ -10,6 +10,8 @@ mod page_history;
 mod page_navigation;
 #[cfg(any(target_os = "macos", target_os = "ios"))]
 mod page_retire;
+#[cfg(target_os = "windows")]
+mod page_windows;
 mod updater_commands;
 #[cfg(target_os = "windows")]
 mod window_transport;
@@ -1873,9 +1875,16 @@ struct PageWord {
 /// for and again when one **finishes**, which is what makes it the page's
 /// real address rather than the last one requested — a page that
 /// redirects, or follows a link, ends up somewhere nobody asked for.
-fn page_exits() -> &'static std::sync::Mutex<std::collections::HashMap<String, (String, String)>> {
+#[derive(Clone)]
+struct PageRoute {
+    machine: String,
+    proxy: String,
+    url: String,
+}
+
+fn page_exits() -> &'static std::sync::Mutex<std::collections::HashMap<String, PageRoute>> {
     static EXITS: std::sync::OnceLock<
-        std::sync::Mutex<std::collections::HashMap<String, (String, String)>>,
+        std::sync::Mutex<std::collections::HashMap<String, PageRoute>>,
     > = std::sync::OnceLock::new();
     EXITS.get_or_init(Default::default)
 }
@@ -1942,7 +1951,7 @@ fn page_went(label: &str, to: &str) {
     if let Ok(mut m) = page_exits().lock()
         && let Some(slot) = m.get_mut(label)
     {
-        slot.1 = to.to_owned();
+        slot.url = to.to_owned();
     }
 }
 
@@ -2055,6 +2064,7 @@ async fn open_page(
         khor_gui_core::web::borrow_web(&Node::root_from_env(), &machine).await?
     };
     let target: tauri::Url = url.parse().map_err(|_| format!("not a url: {url}"))?;
+    #[cfg(not(target_os = "windows"))]
     let proxy: Option<tauri::Url> = if direct {
         None
     } else {
@@ -2064,6 +2074,10 @@ async fn open_page(
                 .map_err(|e| format!("{e}"))?,
         )
     };
+    #[cfg(target_os = "windows")]
+    let proxy = (!direct)
+        .then(|| page_windows::proxy_address(&borrow.addr))
+        .transpose()?;
     let label = page_label(&tab);
     let going_to = target.to_string();
     let top = at.y + frame_lift(&window, at);
@@ -2077,8 +2091,7 @@ async fn open_page(
         .and_then(|m| m.get(&label).cloned());
     let same_exit = wired
         .as_ref()
-        .map(|(exit, _)| exit == &machine)
-        .unwrap_or(false);
+        .is_some_and(|route| route.machine == machine && route.proxy == borrow.addr);
     if !same_exit {
         // Retire this page before changing its route. Other pages retain
         // their own leases, so their loopback port cannot be retargeted.
@@ -2119,7 +2132,7 @@ async fn open_page(
             // Read from this side rather than from the webview: see
             // `page_exits`. Asking a webview that has not started its
             // navigation for its URL takes the process down with it.
-            let now = wired.as_ref().map(|(_, at)| at.as_str());
+            let now = wired.as_ref().map(|route| route.url.as_str());
             if now != Some(target.as_str()) {
                 page_went(&label, target.as_str());
                 navigate_page(&live, &tab, target).await?;
@@ -2191,11 +2204,26 @@ async fn open_page(
         builder =
             builder.data_store_identifier(khor_gui_core::web::page_store_identifier(&profile));
     }
+    #[cfg(target_os = "windows")]
+    {
+        if let Some(address) = proxy {
+            // The process and its proxy arguments are scoped to a data directory.
+            let directory = window
+                .state::<page_windows::Profiles>()
+                .directory(&machine, address)?;
+            builder = builder
+                .data_directory(directory)
+                .additional_browser_args(&page_windows::browser_args(address));
+        } else if let Some(directory) = page_windows::profile_directory() {
+            builder = builder.data_directory(directory);
+        }
+    }
+    #[cfg(not(target_os = "windows"))]
     if let Some(proxy) = proxy {
-        // The two ride together or not at all — see `direct` above.
-        builder = builder
-            .proxy_url(proxy)
-            .initialization_script_for_all_frames(khor_gui_core::web::PAGE_SHIM);
+        builder = builder.proxy_url(proxy);
+    }
+    if !direct {
+        builder = builder.initialization_script_for_all_frames(khor_gui_core::web::PAGE_SHIM);
         // A user agent that says「app」is what makes a site serve its
         // mobile face to a desktop window; an editor khor started needs
         // no such dressing.
@@ -2400,7 +2428,14 @@ async fn open_page(
     }
     // Publish the requested exit before native callbacks can report redirects.
     if let Ok(mut pages) = page_exits().lock() {
-        pages.insert(label.clone(), (machine.clone(), going_to.clone()));
+        pages.insert(
+            label.clone(),
+            PageRoute {
+                machine: machine.clone(),
+                proxy: borrow.addr.clone(),
+                url: going_to.clone(),
+            },
+        );
     }
     // A load that fails says so (UX-22, `page_fail`).
     #[cfg(target_os = "macos")]
@@ -2829,11 +2864,10 @@ fn control_page_navigation(view: &tauri::Webview, tab: &str, way: &str) -> Resul
                 .eval("history.forward()")
                 .map_err(|error| error.to_string()),
             "reload" => {
-                let target = page_exits().lock().ok().and_then(|pages| {
-                    pages
-                        .get(&page_label(tab))
-                        .map(|(_, target)| target.clone())
-                });
+                let target = page_exits()
+                    .lock()
+                    .ok()
+                    .and_then(|pages| pages.get(&page_label(tab)).map(|route| route.url.clone()));
                 if let Some(target) = target {
                     request_page_navigation(app, tab, target);
                 }
@@ -3486,6 +3520,10 @@ async fn open_code_window(
                     pos.y as f64 / scale + CODE_STEP,
                 );
         }
+    }
+    #[cfg(target_os = "windows")]
+    if let Some(directory) = page_windows::profile_directory() {
+        build = build.data_directory(directory);
     }
     let made = build.build().map_err(|e| e.to_string())?;
     // **The title bar wears khor's own light or dark** (2026-09-18:
@@ -5675,6 +5713,8 @@ pub fn run() {
             {
                 use tauri::Manager;
                 app.manage(menu::Held::default());
+                #[cfg(target_os = "windows")]
+                app.manage(page_windows::Profiles::default());
                 menu::install(app.handle())?;
             }
             // The window khor's own overlays are drawn in is hung once the
