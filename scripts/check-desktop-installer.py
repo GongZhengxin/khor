@@ -59,8 +59,13 @@ def retire_processes(processes, terminate, *, timeout=10, quiet=1,
 
 
 def close_windows_app(pid):
-    from ctypes import POINTER, WINFUNCTYPE, WinDLL, WinError, byref
-    from ctypes.wintypes import BOOL, DWORD, HWND, INT, LONG, LPARAM, UINT, WPARAM
+    from ctypes import POINTER, Structure, WINFUNCTYPE, WinDLL, WinError, byref, sizeof
+    from ctypes.wintypes import BOOL, DWORD, HWND, LPARAM, RECT, UINT, WORD, WPARAM
+
+    class WindowInfo(Structure):
+        _fields_ = [("size", DWORD), ("window", RECT), ("client", RECT),
+                    ("style", DWORD), ("extended_style", DWORD), ("status", DWORD),
+                    ("border_x", UINT), ("border_y", UINT), ("atom", WORD), ("version", WORD)]
 
     user32 = WinDLL("user32", use_last_error=True)
     callback = WINFUNCTYPE(BOOL, HWND, LPARAM)
@@ -70,12 +75,11 @@ def close_windows_app(pid):
     user32.GetWindowThreadProcessId.restype = DWORD
     user32.IsWindowVisible.argtypes = (HWND,)
     user32.IsWindowVisible.restype = BOOL
-    user32.GetWindowLongW.argtypes = (HWND, INT)
-    user32.GetWindowLongW.restype = LONG
+    user32.GetWindowInfo.argtypes = (HWND, POINTER(WindowInfo))
+    user32.GetWindowInfo.restype = BOOL
     user32.PostMessageW.argtypes = (HWND, UINT, WPARAM, LPARAM)
     user32.PostMessageW.restype = BOOL
-    # GWL_STYLE and all four style flags for the caption and its controls.
-    style_index = -16
+    # WS_CAPTION, WS_SYSMENU, WS_MINIMIZEBOX and WS_MAXIMIZEBOX.
     caption_controls = 0x00C00000 | 0x00080000 | 0x00020000 | 0x00010000
     captioned = []
 
@@ -84,9 +88,15 @@ def close_windows_app(pid):
         owner = DWORD()
         user32.GetWindowThreadProcessId(handle, byref(owner))
         if owner.value == pid and user32.IsWindowVisible(handle):
-            style = user32.GetWindowLongW(handle, style_index)
-            if style & caption_controls == caption_controls:
-                captioned.append(handle)
+            info = WindowInfo(size=sizeof(WindowInfo))
+            if user32.GetWindowInfo(handle, byref(info)):
+                # Tao can keep the caption style bits on a frameless window.
+                # A drawn caption also occupies space between the top resize
+                # border and the WebView client area.
+                top_inset = info.client.top - info.window.top
+                if (info.style & caption_controls == caption_controls
+                        and top_inset > info.border_y):
+                    captioned.append(handle)
         return True
 
     if not user32.EnumWindows(collect, 0):
