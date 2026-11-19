@@ -53,7 +53,7 @@ function command(page, name, args, timeout = 15_000) {
   }, {name, args, timeout});
 }
 
-async function checkBrowser(page) {
+async function checkBrowser(page, navigation) {
   const requests = new Map();
   const fixture = createServer((request, response) => {
     requests.set(request.url, request.headers.connection);
@@ -77,12 +77,14 @@ async function checkBrowser(page) {
       let state;
       do {
         state = await command(page, "page_state", {tab});
-        if (requests.has(path) && ["finished", "settled"].includes(state?.phase)) break;
+        if (requests.has(path) && ["finished", "settled"].includes(state?.phase)
+            && navigation.some(event => event.tab === tab)) break;
         await delay(200);
       } while (Date.now() < until);
       assert(requests.has(path), `The native WebView must request ${path}`);
       assert(["finished", "settled"].includes(state?.phase), `The ${path} WebView did not finish: ${JSON.stringify(state)}`);
       assert.equal(state.proxied, !!machine);
+      assert(navigation.some(event => event.tab === tab), `The main WebView missed navigation events for ${tab}`);
     }
     // Both nodes are on the runner. A direct WebView would reach the same
     // address, but only the Khor tunnel's HTTP proxy rewrites Connection.
@@ -97,41 +99,35 @@ async function checkBrowser(page) {
   }
 }
 
+async function findWindowPage(browser) {
+  const until = Date.now() + 15_000;
+  let pages = [];
+  do {
+    pages = browser.contexts().flatMap(context => context.pages());
+    const main = pages.find(page => isAppPage(page.url()));
+    if (main) return main;
+    await delay(200);
+  } while (Date.now() < until);
+  const targets = pages.map(page => page.url().split(/[?#]/, 1)[0]);
+  throw new Error(`WebView2 connected but did not attach the App page: ${JSON.stringify(targets)}`);
+}
+
 await waitForWindow();
 const browser = await chromium.connectOverCDP(endpoint, {timeout: 15_000});
 try {
-  const page = browser.contexts().flatMap(context => context.pages())
-    .find(page => isAppPage(page.url()));
-  if (!page) throw new Error("The bundled frontend is missing from the WebView2 session");
+  const page = await findWindowPage(browser);
   page.setDefaultTimeout(20_000);
   const windowButtons = page.locator("[data-window-controls], [data-window-control]");
 
-  // Drag and drop, navigation progress, and close requests use Tauri's
-  // event plugin and do not travel over the app's HTTP command bridge.
-  const eventFailure = await page.evaluate(async () => {
-    const native = window.__TAURI_INTERNALS__;
-    const event = "installer:probe";
-    const handler = native.transformCallback(() => {});
-    const timeout = AbortSignal.timeout(12_000);
-    const stopped = new Promise((_, reject) => timeout.addEventListener("abort", () =>
-      reject(new Error("WebView2 did not answer the native event subscription"))));
-    try {
-      const eventId = await Promise.race([
-        native.invoke("plugin:event|listen", {event, target: {kind: "Any"}, handler}),
-        stopped,
-      ]);
-      if (!Number.isInteger(eventId)) throw new Error("Native event subscription returned no listener ID");
-      await Promise.race([
-        native.invoke("plugin:event|unlisten", {event, eventId}),
-        stopped,
-      ]);
-    } finally {
-      native.unregisterCallback(handler);
-    }
-  }).then(() => null, error => {
-    console.error("Native event subscription failed:", error.message);
-    return error;
+  const navigation = [];
+  await page.exposeFunction("recordInstallerNavigation", (event) => navigation.push(event));
+  const callback = await page.evaluate(() => window.__TAURI_INTERNALS__.transformCallback(
+    event => { void window.recordInstallerNavigation(event.payload); },
+  ));
+  const eventId = await command(page, "window_event_listen", {
+    event: "page:navigation", target: {kind: "Any"}, handler: callback,
   });
+  assert(Number.isInteger(eventId), "The Windows event bridge must return its listener ID");
 
   await page.locator('[data-landing="sessions"]:visible').first().click();
   await page.locator('[data-pane-filter]:visible').click();
@@ -172,11 +168,12 @@ try {
   const preview = page.getByText("Khor installation workspace", {exact: true});
   await preview.waitFor();
   assert.equal(await windowButtons.count(), 0, "Workspace panes inherit the native caption");
-  await checkBrowser(page);
+  await checkBrowser(page, navigation);
+  await command(page, "window_event_unlisten", {eventId});
+  await page.evaluate(id => window.__TAURI_INTERNALS__.unregisterCallback(id), callback);
 
   // The installer checker closes the native window after CDP disconnects.
   console.log("Installed Windows App verified a live terminal, workspace file and child browser.");
-  if (eventFailure) throw eventFailure;
 } finally {
   await browser.close();
 }

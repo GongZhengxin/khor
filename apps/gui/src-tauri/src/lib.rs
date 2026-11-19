@@ -14,6 +14,8 @@ mod page_retire;
 mod page_windows;
 mod updater_commands;
 #[cfg(target_os = "windows")]
+mod window_events;
+#[cfg(target_os = "windows")]
 mod window_transport;
 
 #[cfg(all(desktop, unix))]
@@ -2674,6 +2676,11 @@ fn build_the_window(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error::Er
     #[cfg(target_os = "windows")]
     if traced {
         eprintln!("khor app: Windows main window created");
+    }
+    #[cfg(target_os = "windows")]
+    {
+        use tauri::Manager;
+        app.manage(window_events::MainWindowEvents::new(_built.clone()));
     }
     window_surface::apply(app, window_surface::material());
     // The kept numbers against the window they built (`traffic::check`):

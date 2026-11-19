@@ -17,7 +17,7 @@ import { gui, msg } from "./gen/catalog";
 // head describes about copying a token.
 import type { MenuRows } from "./components/OmniMenu";
 import { nativeMenuQueue } from "./lib/native-menu-queue";
-import { listenNativeEvent } from "./lib/native-events";
+import { listenNativeEvent, setWindowEventInvoker } from "./lib/native-events";
 import type { SyncOutcome } from "./gen/bindings/SyncOutcome";
 import type { Connections } from "./gen/bindings/Connections";
 import type { ReachReport } from "./gen/bindings/ReachReport";
@@ -334,6 +334,10 @@ async function post<T>(url: string, headers: Record<string, string>, args?: Reco
   });
   if (!r.ok) throw new Error(unwrap(await r.text()));
   return answer<T>(r);
+}
+
+if (windowTransport) {
+  setWindowEventInvoker((command, args) => call(`window_event_${command}`, args));
 }
 
 /**

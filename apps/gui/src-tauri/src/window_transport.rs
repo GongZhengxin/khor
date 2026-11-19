@@ -197,8 +197,20 @@ fn native_command(
             .ok_or_else(|| "no main webview".to_owned())
     };
     use crate::updater_commands as updates;
+    let events = || {
+        app.try_state::<crate::window_events::MainWindowEvents>()
+            .ok_or_else(|| "main window event bridge is not ready".to_owned())
+    };
     let answer = || -> Result<Option<String>, String> {
         let reply = match cmd {
+            "window_event_listen" => encode(events()?.listen(
+                app,
+                WINDOW_ORIGIN,
+                text("event")?,
+                argument(args, "target")?,
+                argument(args, "handler")?,
+            )?),
+            "window_event_unlisten" => encode(events()?.unlisten(argument(args, "eventId")?)?),
             "window_appearance_support" => encode(crate::window_appearance_support()),
             "set_window_appearance" => encode(crate::set_window_appearance(
                 app.clone(),
