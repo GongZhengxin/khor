@@ -305,22 +305,7 @@ impl Node {
     }
 
     pub(crate) fn standing_in(&self, doc: &DeviceDoc, id: &str, now_ms: u64) -> Standing {
-        let anchor = self.anchor();
-        let Some(idb) = nt::id_from_hex(id) else {
-            return if anchor.is_some() {
-                Standing::Pending
-            } else {
-                Standing::Legacy
-            };
-        };
-        let roster = anchor.as_ref().and_then(|a| newest_in(doc, a));
-        standing(
-            roster.as_deref(),
-            anchor.as_ref(),
-            &idb,
-            doc.cert_of(id).as_deref(),
-            now_ms,
-        )
+        standing_in_table(doc, self.anchor().as_ref(), id, now_ms)
     }
 
     /// How `id` stands with this machine right now.
@@ -337,14 +322,34 @@ impl Node {
     /// revoked) have different next steps.
     pub(crate) fn admit(&self, remote: &str) -> Result<(), String> {
         let loaded = self.devices_loaded()?;
-        if loaded.doc.get(remote).is_none() {
-            return Err(msg::not_paired().into());
-        }
-        match self.standing_in(&loaded.doc, remote, crate::now_ms()) {
-            Standing::Legacy | Standing::Trusted => Ok(()),
-            Standing::Pending => Err(msg::not_in_roster().into()),
-            Standing::Revoked => Err(msg::admission_revoked().into()),
-        }
+        admit_from_table(&loaded.doc, self.anchor().as_ref(), remote)
+    }
+
+    /// Run the same trust gate on storage workers. The outer error means
+    /// the state could not be read, which is separate from a trust refusal.
+    pub(crate) async fn link_admission(&self, remote: &str) -> Result<Result<(), String>, String> {
+        let root = self.root().to_path_buf();
+        let peer = self.peer;
+        let remote = remote.to_owned();
+        self.storage_io
+            .control
+            .admit(move || {
+                let loaded = khor_sync::store::load_pile::<DeviceDoc>(
+                    &khor_sync::devices::devices_dir(&root),
+                    peer,
+                )?;
+                let anchor = match std::fs::read_to_string(root.join(".khor").join(ROOT_PUB)) {
+                    Ok(text) => Some(
+                        nt::id_from_hex(text.trim())
+                            .and_then(|key| iroh::PublicKey::from_bytes(&key).ok())
+                            .ok_or_else(|| msg::not_in_roster().to_owned())?,
+                    ),
+                    Err(error) if error.kind() == std::io::ErrorKind::NotFound => None,
+                    Err(_) => return Err(msg::storage_io_busy().to_owned()),
+                };
+                Ok(admit_from_table(&loaded.doc, anchor.as_ref(), &remote))
+            })
+            .await
     }
 
     /// Stores a verified roster, and drops the versions it replaces.
@@ -1890,6 +1895,44 @@ impl PairTrust {
             return Err(refused());
         }
         Ok(*anchor.as_bytes())
+    }
+}
+
+fn standing_in_table(
+    doc: &DeviceDoc,
+    anchor: Option<&iroh::PublicKey>,
+    id: &str,
+    now_ms: u64,
+) -> Standing {
+    let Some(identity) = nt::id_from_hex(id) else {
+        return if anchor.is_some() {
+            Standing::Pending
+        } else {
+            Standing::Legacy
+        };
+    };
+    let roster = anchor.and_then(|key| newest_in(doc, key));
+    standing(
+        roster.as_deref(),
+        anchor,
+        &identity,
+        doc.cert_of(id).as_deref(),
+        now_ms,
+    )
+}
+
+fn admit_from_table(
+    doc: &DeviceDoc,
+    anchor: Option<&iroh::PublicKey>,
+    remote: &str,
+) -> Result<(), String> {
+    if doc.get(remote).is_none() {
+        return Err(msg::not_paired().into());
+    }
+    match standing_in_table(doc, anchor, remote, crate::now_ms()) {
+        Standing::Legacy | Standing::Trusted => Ok(()),
+        Standing::Pending => Err(msg::not_in_roster().into()),
+        Standing::Revoked => Err(msg::admission_revoked().into()),
     }
 }
 

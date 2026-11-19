@@ -633,7 +633,7 @@ impl NetRound {
             loop {
                 tokio::time::sleep(settle).await;
                 let out = n.sync_peers(&e, force).await;
-                let heard = if n.self_admitted() {
+                let heard = if n.serve_admitted(false).await {
                     out.as_slice()
                 } else {
                     &[]
@@ -1357,6 +1357,20 @@ impl Node {
         self.me.get().and_then(std::sync::Weak::upgrade)
     }
 
+    async fn serve_admitted(self: &std::sync::Arc<Self>, refresh: bool) -> bool {
+        let node = self.clone();
+        self.storage_io
+            .observations
+            .read(move || {
+                if refresh {
+                    let _ = node.trust_tick();
+                }
+                Ok(node.self_admitted())
+            })
+            .await
+            .unwrap_or(false)
+    }
+
     /// Own dialing hints go into the table so the snapshot handed to a
     /// pairing device already says how to reach us — relay roads
     /// included, or a peer behind a hostile network has no way in.
@@ -2023,7 +2037,7 @@ impl Node {
                                     None,
                                     crate::journal::What::Front { ms: crate::journal::ms(begun.elapsed()) },
                                 );
-                                let heard = if n.self_admitted() { out.as_slice() } else { &[] };
+                                let heard = if n.serve_admitted(false).await { out.as_slice() } else { &[] };
                                 let _ = deaf.lock().unwrap_or_else(|p| p.into_inner()).observe(heard);
                                 if let Some(synced) = synced {
                                     let _ = synced.send(out);
@@ -2107,8 +2121,7 @@ impl Node {
                     let deaf = deaf.clone();
                     services.spawn(async move {
                         let out = n.sync_peers_telling(&e, true, &told_to).await;
-                        let _ = n.trust_tick();
-                        let heard = if n.self_admitted() { out.as_slice() } else { &[] };
+                        let heard = if n.serve_admitted(true).await { out.as_slice() } else { &[] };
                         let _ = deaf.lock().expect("deaf watch poisoned").observe(heard);
                         for synced in synced_to {
                             let _ = synced.send(out.clone());
@@ -2172,10 +2185,14 @@ impl Node {
                         // And bridge hosts whose tmux session now lists
                         // through its own agent row (the fold in
                         // `LiveKind::rows` hides them; this stops them).
-                        n.live.reap_folded_bridges();
-                        // The workspaces this machine keeps facts for:
-                        // the table's, as of this beat (round NET-8).
-                        n.reconcile_workspace_facts();
+                        let maintenance = n.clone();
+                        let _ = n.storage_io.observations.read(move || {
+                            maintenance.live.reap_folded_bridges();
+                            // The workspaces this machine keeps facts for:
+                            // the table's, as of this beat (round NET-8).
+                            maintenance.reconcile_workspace_facts();
+                            Ok(())
+                        }).await;
                         // **Tidy up before the visits start**, at the one
                         // moment of a beat when no round is likely to be
                         // running: compaction rewrites a document, so it
@@ -2226,7 +2243,7 @@ impl Node {
                         // …and the trust beat on the same visit: the
                         // roster that just arrived may name this machine,
                         // and the holder's may be due for a new date.
-                        let _ = n.trust_tick();
+                        let admitted = n.serve_admitted(true).await;
                         // The serve's own hearing test: a long-lived
                         // endpoint can go silently, bidirectionally
                         // unreachable while the process looks healthy
@@ -2237,7 +2254,7 @@ impl Node {
                         // refused by everyone on purpose; that silence is
                         // an answer, not deafness, and replacing ears over
                         // it every two minutes would fix nothing.
-                        let heard = if n.self_admitted() { out.as_slice() } else { &[] };
+                        let heard = if admitted { out.as_slice() } else { &[] };
                         // A round that went through clears the backoff and
                         // the once-said reason: the next silence is new.
                         if heard.iter().any(|(_, r)| r.is_ok()) {
@@ -4491,16 +4508,25 @@ impl Node {
                 conn.close(0u32.into(), b"paused");
                 return Ok(());
             }
-            // A machine this one has paused is treated as a stranger
-            // here, per stream, so a pause bites on a tunnel already up.
-            let paired =
-                !crate::pause::peer_on(self.root(), &remote) && self.admit(&remote).is_ok();
             let incoming = conn.weak_handle();
             let reply_wire = conn.stable_id();
             let reply_alpn = std::env::var_os("KHOR_NET_DIAGNOSTICS")
                 .map(|_| String::from_utf8_lossy(conn.alpn()).into_owned());
             let (node, ep, remote) = (self.clone(), ep.clone(), remote.clone());
             tokio::spawn(async move {
+                let mut send = send;
+                let paired = if crate::pause::peer_on(node.root(), &remote) {
+                    false
+                } else {
+                    match node.link_admission(&remote).await {
+                        Ok(admission) => admission.is_ok(),
+                        Err(_) => {
+                            let _ = send.write_all(&[crate::tunnel::NO_ROUTE]).await;
+                            let _ = send.finish();
+                            return;
+                        }
+                    }
+                };
                 let Ok(target) = crate::tunnel::read_target(&mut recv).await else {
                     return;
                 };
@@ -4616,9 +4642,7 @@ impl Node {
                             return;
                         }
                     }
-                    let admitted = node.admit(&remote).and_then(|()| {
-                        crate::watch::Subscription::local(&node, remote.clone(), scope)
-                    });
+                    let admitted = crate::watch::Subscription::local(&node, remote, scope).await;
                     match admitted {
                         Ok(subscription) => {
                             drop(seat.take());
@@ -4684,8 +4708,10 @@ impl Node {
                                     action: crate::session_content::remote::Action::Window { .. }
                                         | crate::session_content::remote::Action::Record { .. }
                                 }
-                            ) && node.admit(&remote).is_ok()
-                            {
+                            ) && matches!(
+                                node.link_admission(&remote).await,
+                                Ok(Ok(()))
+                            ) {
                                 node.content_response_permit().map(|permit| {
                                     content_response = Some(permit);
                                     drop(seat.take());
@@ -4844,7 +4870,7 @@ impl Node {
         // used to be a table check repeated at the head of every arm;
         // an arm added without it would have been a door with no lock.
         if !matches!(req, Request::Pair { .. } | Request::Vouch { .. })
-            && let Err(e) = self.admit(remote)
+            && let Err(e) = self.link_admission(remote).await?
         {
             // **A stranger knocking is a reason to round now** (round
             // NET-6): most often it is a machine paired a moment ago
@@ -4898,9 +4924,17 @@ impl Node {
                     .map(|k| k.facts())
                     .unwrap_or_default(),
             }),
-            Request::Sessions => Ok(Response::SessionRows {
-                rows: self.reportable_rows()?,
-            }),
+            Request::Sessions => {
+                let rows = if let Some(node) = self.me() {
+                    self.storage_io
+                        .observations
+                        .read(move || node.reportable_rows())
+                        .await?
+                } else {
+                    self.reportable_rows()?
+                };
+                Ok(Response::SessionRows { rows })
+            }
             Request::Days => {
                 // A file read, off the reactor for the reason every
                 // registry read is (the `Ls` arm's note).
@@ -4944,23 +4978,25 @@ impl Node {
                 // reason. **Never the recycle bin over the wire** — a
                 // bin on a machine nobody is sitting at is not a place
                 // anything can be got back from (`Request::Remove`).
-                let p = path.clone();
-                tokio::task::spawn_blocking(move || crate::files::remove(&p, false))
-                    .await
-                    .map_err(|e| e.to_string())??;
+                self.storage_io
+                    .file(&path)
+                    .write(move || crate::files::remove(&path, false))
+                    .await?;
                 Ok(Response::Removed)
             }
             Request::Mkdir { path } => {
                 // Off the reactor with `Remove`, for `Remove`'s reason.
-                tokio::task::spawn_blocking(move || crate::files::mkdir(&path))
-                    .await
-                    .map_err(|e| e.to_string())??;
+                self.storage_io
+                    .file(&path)
+                    .write(move || crate::files::mkdir(&path))
+                    .await?;
                 Ok(Response::Made)
             }
             Request::RenamePath { from, to } => {
-                tokio::task::spawn_blocking(move || crate::files::rename_path(&from, &to))
-                    .await
-                    .map_err(|e| e.to_string())??;
+                self.storage_io
+                    .move_file(&from, &to)
+                    .write(move || crate::files::rename_path(&from, &to))
+                    .await?;
                 Ok(Response::Renamed)
             }
             Request::Recognition { action } => Ok(Response::Recognition {
@@ -5087,11 +5123,11 @@ impl Node {
                 // take a while, and holding the serve loop through a
                 // disk barrier is how one save makes every other
                 // machine's next question look slow.
-                let (at_ms, digest) = tokio::task::spawn_blocking(move || {
-                    crate::files::write_whole(&path, &bytes, &was)
-                })
-                .await
-                .map_err(|e| e.to_string())??;
+                let (at_ms, digest) = self
+                    .storage_io
+                    .file(&path)
+                    .write(move || crate::files::write_whole(&path, &bytes, &was))
+                    .await?;
                 Ok(Response::Wrote { at_ms, digest })
             }
             Request::CodeHere => {
@@ -5174,10 +5210,7 @@ impl Node {
             Request::Stat { path } => {
                 // One `stat` and at most one slice off the disk, off the
                 // reactor for the `Ls` arm's reason.
-                let (total, at_ms, digest) =
-                    tokio::task::spawn_blocking(move || crate::files::stat(&path))
-                        .await
-                        .map_err(|e| e.to_string())??;
+                let (total, at_ms, digest) = self.stat_here(&path).await?;
                 Ok(Response::Stat {
                     total,
                     at_ms,
@@ -5322,11 +5355,11 @@ impl Node {
                 }
             }
             Request::FetchTree { path } => {
-                let manifest = tokio::task::spawn_blocking(move || {
-                    crate::tree::scan(std::path::Path::new(&path))
-                })
-                .await
-                .map_err(|e| e.to_string())??;
+                let manifest = self
+                    .storage_io
+                    .file(&path)
+                    .read(move || crate::tree::scan(std::path::Path::new(&path)))
+                    .await?;
                 Ok(Response::Tree { manifest })
             }
             Request::SatFetchTree { sat, path } => {
@@ -5342,11 +5375,7 @@ impl Node {
                 // does it block", 坑节): a directory on a network mount
                 // can sit for seconds, and this reply's own QUIC
                 // connection would sit with it.
-                let root = self.root().to_path_buf();
-                let (path, entries, truncated) =
-                    tokio::task::spawn_blocking(move || listed_with_arrivals(&root, &path))
-                        .await
-                        .map_err(|e| e.to_string())??;
+                let (path, entries, truncated) = self.list_here(&path).await?;
                 Ok(Response::Dir {
                     path: path.display().to_string(),
                     entries,
@@ -5783,10 +5812,7 @@ impl Node {
             }
             Request::FetchPath { path, offset } => {
                 // Off the reactor with Ls, for Ls's reason.
-                let (total, at_ms, bytes) =
-                    tokio::task::spawn_blocking(move || crate::files::read_slice(&path, offset))
-                        .await
-                        .map_err(|e| e.to_string())??;
+                let (total, at_ms, bytes) = self.read_here(&path, offset).await?;
                 Ok(Response::PathSlice {
                     total,
                     at_ms,
@@ -7546,9 +7572,11 @@ impl Node {
         if home == self.device() {
             let p = path.to_owned();
             // The one caller that asks for the bin.
-            return tokio::task::spawn_blocking(move || crate::files::remove(&p, true))
-                .await
-                .map_err(|e| e.to_string())?;
+            return self
+                .storage_io
+                .file(&p)
+                .write(move || crate::files::remove(&p, true))
+                .await;
         }
         // Resolve proved the name microseconds ago, but two reads of
         // one table can straddle a removal.
@@ -7652,9 +7680,11 @@ impl Node {
         let (channel, home) = self.resolve_or_here(machine)?;
         if home == self.device() {
             let p = path.to_owned();
-            return tokio::task::spawn_blocking(move || crate::files::mkdir(&p))
-                .await
-                .map_err(|e| e.to_string())?;
+            return self
+                .storage_io
+                .file(&p)
+                .write(move || crate::files::mkdir(&p))
+                .await;
         }
         // A satellite routes to its sponsor, `remove_with`'s road.
         if let Some((sat, sponsor)) = self.sat_and_sponsor(&channel)? {
@@ -7737,9 +7767,11 @@ impl Node {
         let (channel, home) = self.resolve_or_here(machine)?;
         if home == self.device() {
             let p = path.to_owned();
-            return tokio::task::spawn_blocking(move || crate::files::touch(&p))
-                .await
-                .map_err(|e| e.to_string())?;
+            return self
+                .storage_io
+                .file(&p)
+                .write(move || crate::files::touch(&p))
+                .await;
         }
         if let Some((sat, sponsor)) = self.sat_and_sponsor(&channel)? {
             let Some(sponsor) = sponsor else {
@@ -8804,12 +8836,52 @@ impl Node {
         self.watches.begin(home.hex(), scopes, route)
     }
 
+    async fn list_here(
+        &self,
+        path: &str,
+    ) -> Result<(std::path::PathBuf, Vec<proto::DirEntry>, bool), String> {
+        let (root, path) = (self.root().to_path_buf(), path.to_owned());
+        self.storage_io
+            .file(&path)
+            .read(move || listed_with_arrivals(&root, &path))
+            .await
+    }
+
+    async fn stat_here(&self, path: &str) -> Result<(u64, u64, String), String> {
+        let path = path.to_owned();
+        self.storage_io
+            .file(&path)
+            .read(move || crate::files::stat(&path))
+            .await
+    }
+
+    async fn read_here(&self, path: &str, offset: u64) -> Result<(u64, u64, Vec<u8>), String> {
+        let path = path.to_owned();
+        self.storage_io
+            .file(&path)
+            .read(move || crate::files::read_slice(&path, offset))
+            .await
+    }
+
+    async fn write_here(
+        &self,
+        path: &str,
+        bytes: &[u8],
+        was: &str,
+    ) -> Result<(u64, String), String> {
+        let (path, bytes, was) = (path.to_owned(), bytes.to_vec(), was.to_owned());
+        self.storage_io
+            .file(&path)
+            .write(move || crate::files::write_whole(&path, &bytes, &was))
+            .await
+    }
+
     /// What a file on any machine is now, without its bytes
     /// (`crate::files::stat`): `(size, mtime, digest)`, the digest empty
     /// for a file bigger than one slice.
     pub async fn stat_of(&self, machine: &str, path: &str) -> Result<(u64, u64, String), String> {
         if machine.is_empty() || machine == self.name() {
-            return crate::files::stat(path);
+            return self.stat_here(path).await;
         }
         if let Some(reply) = self
             .via_serve(ipc::Op::StatOn {
@@ -8909,7 +8981,7 @@ impl Node {
     ) -> Result<(u64, u64, String), String> {
         let (channel, home) = self.resolve(machine)?;
         if home == self.device() {
-            return crate::files::stat(path);
+            return self.stat_here(path).await;
         }
         let target = self
             .devices_loaded()?
@@ -8954,7 +9026,7 @@ impl Node {
         path: &str,
     ) -> Result<(u64, u64, Vec<u8>), String> {
         if machine.is_empty() || machine == self.name() {
-            return crate::files::read_slice(path, 0);
+            return self.read_here(path, 0).await;
         }
         if let Some(reply) = self
             .via_serve(ipc::Op::ReadHead {
@@ -9223,7 +9295,7 @@ impl Node {
         bytes: &[u8],
     ) -> Result<(u64, String), String> {
         if machine.is_empty() || machine == self.name() {
-            return crate::files::write_whole(path, bytes, was);
+            return self.write_here(path, bytes, was).await;
         }
         if let Some(reply) = self
             .via_serve(ipc::Op::WritePathOn {
@@ -9262,7 +9334,7 @@ impl Node {
     ) -> Result<(u64, String), String> {
         let (channel, home) = self.resolve(machine)?;
         if home == self.device() {
-            return crate::files::write_whole(path, bytes, was);
+            return self.write_here(path, bytes, was).await;
         }
         // **A satellite's file can be saved, and the promise is kept on
         // the far side** (工作区批7). This road was refused on the
@@ -9672,7 +9744,7 @@ impl Node {
         offset: u64,
     ) -> Result<(u64, u64, Vec<u8>), String> {
         if machine.is_empty() || machine == self.name() {
-            return crate::files::read_slice(path, offset);
+            return self.read_here(path, offset).await;
         }
         if let Some(reply) = self
             .via_serve(ipc::Op::ReadAt {
@@ -9713,7 +9785,7 @@ impl Node {
     ) -> Result<(u64, u64, Vec<u8>), String> {
         let (channel, home) = self.resolve(machine)?;
         if home == self.device() {
-            return crate::files::read_slice(path, offset);
+            return self.read_here(path, offset).await;
         }
         // A satellite's file comes off its sponsor's staged copy, the
         // road `pull_path` already takes (卫星工作区批). Without this
@@ -10245,11 +10317,7 @@ impl Node {
         // asked exactly that and drew nothing (2026-09-15).
         let (channel, home) = self.resolve_or_here(machine)?;
         if home == self.device() {
-            let (path, root) = (path.to_owned(), self.root().to_path_buf());
-            let (at, entries, truncated) =
-                tokio::task::spawn_blocking(move || listed_with_arrivals(&root, &path))
-                    .await
-                    .map_err(|e| e.to_string())??;
+            let (at, entries, truncated) = self.list_here(path).await?;
             return Ok((at.display().to_string(), entries, truncated));
         }
         // Resolve proved the name microseconds ago, but two reads of
@@ -15939,7 +16007,7 @@ impl Node {
         while let Ok((send, recv)) = connection.accept_bi().await {
             let paired = !self.paused()
                 && !crate::pause::peer_on(self.root(), &remote)
-                && self.admit(&remote).is_ok();
+                && matches!(self.link_admission(&remote).await, Ok(Ok(())));
             let permit = permits
                 .clone()
                 .acquire_owned()
@@ -15957,3 +16025,7 @@ impl Node {
         Ok(())
     }
 }
+
+#[cfg(all(test, target_os = "linux"))]
+#[path = "link_storage_isolation_tests.rs"]
+mod storage_isolation_tests;

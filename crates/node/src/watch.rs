@@ -964,12 +964,12 @@ pub(crate) struct Subscription {
 }
 
 impl Subscription {
-    pub(crate) fn local(
+    pub(crate) async fn local(
         node: &Arc<crate::Node>,
         peer: String,
         scope: Scope,
     ) -> Result<Self, String> {
-        node.admit(&peer)?;
+        node.link_admission(&peer).await??;
         let watches = node.watches.clone();
         let opened = watches.begin(node.device_str().into(), vec![scope], Route::Here)?;
         Ok(Self {
@@ -990,7 +990,7 @@ impl Subscription {
                     batch = self.watches.wait(&self.opened.machine_id, &self.opened.id, Some(&cursor), Duration::from_secs(20)) => batch?,
                 };
                 let node = self.node.upgrade().ok_or("Directory watch resident stopped")?;
-                node.admit(&self.peer)?;
+                node.link_admission(&self.peer).await??;
                 if node.paused() || crate::pause::peer_on(node.root(), &self.peer) { return Err("Directory watch peer is paused".into()); }
                 drop(node);
                 cursor = batch.cursor.clone();
