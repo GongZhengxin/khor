@@ -395,6 +395,12 @@ fn bytes_of(conn: &Connection) -> (u64, u64) {
     (s.udp_tx.bytes, s.udp_rx.bytes)
 }
 
+#[derive(Default)]
+struct HopGeneration {
+    token: Arc<()>,
+    changed_at: Option<Instant>,
+}
+
 /// Every wire this node holds, and the counters behind `khor doctor`'s
 /// account of them.
 #[derive(Default)]
@@ -406,7 +412,7 @@ pub(crate) struct Wires {
     dialing: Mutex<HashMap<(String, Proto), DialLock>>,
     pending_dials: Mutex<HashMap<String, std::sync::Weak<PendingDialState>>>,
     /// Replaced when all old-network dial waits are forgiven.
-    hop_generation: Mutex<Arc<()>>,
+    hop_generation: Mutex<HopGeneration>,
     /// A network change not yet judged: wires not heard since it are
     /// retired once their [`Patience::after_change`] has passed.
     changed: Mutex<Option<Instant>>,
@@ -2002,7 +2008,8 @@ impl Wires {
             &self
                 .hop_generation
                 .lock()
-                .unwrap_or_else(|p| p.into_inner()),
+                .unwrap_or_else(|p| p.into_inner())
+                .token,
         )
     }
 
@@ -2018,7 +2025,7 @@ impl Wires {
             .hop_generation
             .lock()
             .unwrap_or_else(|p| p.into_inner());
-        if !epoch.ptr_eq(&Arc::downgrade(&current)) {
+        if !epoch.ptr_eq(&Arc::downgrade(&current.token)) {
             return None;
         }
         Some(commit())
@@ -2030,7 +2037,10 @@ impl Wires {
         *self
             .hop_generation
             .lock()
-            .unwrap_or_else(|p| p.into_inner()) = Arc::new(());
+            .unwrap_or_else(|p| p.into_inner()) = HopGeneration {
+            token: Arc::new(()),
+            changed_at: Some(Instant::now()),
+        };
         for slot in self
             .slots
             .lock()
@@ -2049,6 +2059,14 @@ impl Wires {
         self.forgive_all();
         *self.changed.lock().unwrap_or_else(|p| p.into_inner()) = Some(Instant::now());
         self.counts.network_changes.fetch_add(1, Relaxed);
+    }
+
+    pub(crate) fn recovering_network(&self) -> bool {
+        self.hop_generation
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .changed_at
+            .is_some_and(|at| at.elapsed() < CHANGE_JUDGED_WITHIN)
     }
 
     /// Marks `id`'s wire as one a hop rides, until the guard drops: the
