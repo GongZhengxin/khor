@@ -3022,6 +3022,33 @@ export function TerminalPane({
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [attachmentOpen,setAttachmentOpen]=useState(false);
   const [attachmentInto,setAttachmentInto]=useState<string|null>(null);
+  const attachmentKeyboard = useRef<{ wasUp: boolean } | null>(null);
+  const openAttachment = useCallback(() => {
+    if (attachmentKeyboard.current) return;
+    attachmentKeyboard.current = { wasUp: keyboardUp(termRef.current?.textarea ?? null) };
+    setAttachmentOpen(true);
+  }, []);
+  const restoreAttachmentFocus = useCallback((inGesture = true) => {
+    const field = termRef.current?.textarea;
+    const keyboard = attachmentKeyboard.current;
+    if (!field?.isConnected || !keyboard) return;
+    if (!coarse) {
+      field.focus({ preventScroll: true });
+    } else if (keyboard.wasUp) {
+      if (!keyboardUp(field) && (inGesture || document.activeElement !== field || field.inputMode !== "text")) {
+        raiseKeyboard(field);
+      }
+    } else if (document.activeElement !== field || field.inputMode !== "none") {
+      lowerKeyboard(field);
+    }
+  }, [coarse]);
+  const dismissAttachment = useCallback((inGesture: boolean) => {
+    if (!attachmentKeyboard.current) return;
+    restoreAttachmentFocus(inGesture);
+    attachmentKeyboard.current = null;
+    setAttachmentOpen(false);
+  }, [restoreAttachmentFocus]);
+  const closeAttachment = () => dismissAttachment(true);
   const attachmentsRef = useRef(attachments);
   attachmentsRef.current = attachments;
   const changeAttachments = useCallback((next: Attachment[]) => {
@@ -3162,8 +3189,8 @@ export function TerminalPane({
   dropFromRef.current = dropFrom;
   const queueAttachments=useCallback((items:Attachment[])=>{
     if(dropping.current)return;
-    changeAttachments(addAttachments(attachmentsRef.current,items));setAttachmentOpen(true);
-  },[changeAttachments]);
+    changeAttachments(addAttachments(attachmentsRef.current,items));openAttachment();
+  },[changeAttachments,openAttachment]);
   const drop = useCallback((paths:string[],from:string|null)=>{
     queueAttachments(paths.map(path=>pathAttachment(path,from,from??gui.machine_here,false,null,from===null)));
   },[queueAttachments]);
@@ -3614,7 +3641,7 @@ export function TerminalPane({
         </div>
       )}
     </div>
-    {active&&!attachmentOpen&&attachments.length>0&&<div className="pointer-events-none absolute bottom-0 right-0 z-10 p-row"><Button data-term-attachment-resume className="pointer-events-auto min-h-touch" onClick={()=>setAttachmentOpen(true)}>待发送 · {attachments.length} 项</Button></div>}
+    {active&&!attachmentOpen&&attachments.length>0&&<div className="pointer-events-none absolute bottom-0 right-0 z-10 p-row"><Button data-term-attachment-resume className="pointer-events-auto min-h-touch" onMouseDown={event=>event.preventDefault()} onClick={openAttachment}>待发送 · {attachments.length} 项</Button></div>}
     {/* **Under a finger, the keys a soft keyboard lacks and the switch
         for the keyboard** (`TermKeys`, 2026-10-02). On the narrow face
         they go to the session bar (row 2, and row 1's right end); where
@@ -3678,13 +3705,13 @@ export function TerminalPane({
             `lib/term-tap`'s (`useTermWake`). */}
         <KeyRowSeats field={keysRef} keyboard={wake === "button" && <KeyboardSwitch field={keysRef} />}>
           <TermKeys term={termRef} mods={mods} onMods={latch} files={{ machine: machine ?? null, cwd: doing?.cwd ?? null, selected: attachments,
-            open:()=>setAttachmentOpen(true),opened:attachmentOpen,add:queueAttachments,
+            open:openAttachment,close:dropStopping ? undefined : dropShare !== null ? () => dropCancel.current() : closeAttachment,opened:attachmentOpen,add:queueAttachments,
             remove:item=>changeAttachments(attachmentsRef.current.filter(x=>x.key!==item.key)),
             send:sendAttachments,dropFiles,busy:dropShare!==null,progress:dropShare,cancel:()=>dropCancel.current() }} />
         </KeyRowSeats>
       </>
     )}
-    {active&&<AttachmentPicker viewport={boxRef} open={attachmentOpen} onClose={()=>setAttachmentOpen(false)} onSent={()=>{setAttachmentOpen(false);const field=termRef.current?.textarea;if(field?.isConnected)raiseKeyboard(field);}}
+    {active&&<AttachmentPicker viewport={boxRef} terminalOverlay open={attachmentOpen} onClose={closeAttachment} onSent={() => dismissAttachment(false)} onBeforeSend={restoreAttachmentFocus}
       road={{machine:machine??null,cwd:doing?.cwd??null,selected:attachments,into:attachmentInto,onInto:setAttachmentInto,
        add:items=>changeAttachments(addAttachments(attachmentsRef.current,items)),
        replace:(entry,file)=>changeAttachments(attachmentsRef.current.flatMap(item=>item.key===entry.key?deviceAttachments([file],false,gui.machine_here):[item])),
