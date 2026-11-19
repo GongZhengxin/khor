@@ -137,12 +137,15 @@ def test_direct_network(environment):
 
 def launch_installed(directory):
     with tempfile.TemporaryDirectory(prefix="khor-install-home-") as temporary:
-        runtime = Path(temporary) / "runtime"
-        environment = {**os.environ, "KHOR_HOME": str(Path(temporary) / "node"),
+        # Windows may give Python an 8.3 TEMP path while CIM reports the
+        # executable with the long spelling. Match the same owned directory.
+        scratch = Path(temporary).resolve()
+        runtime = scratch / "runtime"
+        environment = {**os.environ, "KHOR_HOME": str(scratch / "node"),
                        "KHOR_RUNTIME_DIR": str(runtime), "LANG": "en_US.UTF-8"}
         suffix = ".exe" if os.name == "nt" else ""
-        application = directory / ("khor-gui" + suffix)
-        cli = directory / ("khor" + suffix)
+        application = (directory / ("khor-gui" + suffix)).resolve()
+        cli = (directory / ("khor" + suffix)).resolve()
         if os.name == "nt":
             # Debugging is enabled only on this installed-package check, with the
             # private WebView2 profile selected by KHOR_HOME.
@@ -158,7 +161,7 @@ def launch_installed(directory):
             if os.name == "nt":
                 source = run("powershell.exe", "-NoProfile", "-Command",
                              "@(Get-CimInstance Win32_Process | Where-Object { $_.ExecutablePath } | Select-Object ProcessId,ExecutablePath) | ConvertTo-Json -Compress").stdout
-                rows = [(row["ProcessId"], Path(row["ExecutablePath"])) for row in json.loads(source)]
+                rows = [(row["ProcessId"], Path(row["ExecutablePath"]).resolve()) for row in json.loads(source)]
             elif sys.platform == "darwin":
                 lines = run("ps", "-wwax", "-o", "pid=", "-o", "comm=").stdout.splitlines()
                 rows = [(int(parts[0]), Path(parts[1])) for line in lines
@@ -179,7 +182,7 @@ def launch_installed(directory):
         exit_log = None
         try:
             # The packaged CLI must run a real node, not only print metadata.
-            log_path = Path(temporary) / "serve.log"
+            log_path = scratch / "serve.log"
             log = log_path.open("wb")
             if os.name == "nt":
                 environment["KHOR_NAME"] = "installer-client"
@@ -195,7 +198,7 @@ def launch_installed(directory):
             assert not processes(), "Quitting the packaged node must not leave or respawn its resident"
             if os.name == "nt":
                 exit_name = "installer-exit"
-                exit_env = {**environment, "KHOR_HOME": str(Path(temporary) / "exit"),
+                exit_env = {**environment, "KHOR_HOME": str(scratch / "exit"),
                             "KHOR_NAME": exit_name, "KHOR_LOG_FILE": str(logs / "exit.log")}
                 test_direct_network(exit_env)
                 exit_log_path = logs / "exit-serve.log"
@@ -210,7 +213,7 @@ def launch_installed(directory):
                 cmd = Path(os.environ["SystemRoot"]) / "System32/cmd.exe"
                 subprocess.run([str(cli), "open", "-d", "--title", WINDOWS_SESSION_TITLE, "--",
                                 str(cmd), "/d", "/k", "echo", WINDOWS_READY_MARKER],
-                               env=environment, cwd=temporary, check=True, timeout=60)
+                               env=environment, cwd=scratch, check=True, timeout=60)
                 environment["WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS"] = f"--remote-debugging-port={debug_port}"
             subprocess.run([str(cli), "gui"], env=environment, check=True, timeout=30)
             deadline = time.monotonic() + 20
@@ -219,7 +222,7 @@ def launch_installed(directory):
                 if app_pids:
                     if os.name == "nt":
                         check = Path(__file__).resolve().parents[1] / "apps/gui/scripts/check-windows-installed.mjs"
-                        workspace = Path(temporary) / "Khor 项目"
+                        workspace = scratch / "Khor 项目"
                         workspace.mkdir()
                         (workspace / "readme.md").write_text("# Khor installation workspace\n", encoding="utf-8")
                         assert len(app_pids) == 1, "The installer check expects one App process"
