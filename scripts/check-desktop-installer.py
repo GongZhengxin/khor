@@ -58,9 +58,9 @@ def retire_processes(processes, terminate, *, timeout=10, quiet=1,
         sleep(0.1)
 
 
-def close_windows_app(pid):
+def windows_app_window(pid):
     from ctypes import POINTER, Structure, WINFUNCTYPE, WinDLL, WinError, byref, sizeof
-    from ctypes.wintypes import BOOL, DWORD, HWND, LPARAM, RECT, UINT, WORD, WPARAM
+    from ctypes.wintypes import BOOL, DWORD, HWND, LPARAM, RECT, UINT, WORD
 
     class WindowInfo(Structure):
         _fields_ = [("size", DWORD), ("window", RECT), ("client", RECT),
@@ -77,8 +77,6 @@ def close_windows_app(pid):
     user32.IsWindowVisible.restype = BOOL
     user32.GetWindowInfo.argtypes = (HWND, POINTER(WindowInfo))
     user32.GetWindowInfo.restype = BOOL
-    user32.PostMessageW.argtypes = (HWND, UINT, WPARAM, LPARAM)
-    user32.PostMessageW.restype = BOOL
     # WS_CAPTION, WS_SYSMENU, WS_MINIMIZEBOX and WS_MAXIMIZEBOX.
     caption_controls = 0x00C00000 | 0x00080000 | 0x00020000 | 0x00010000
     captioned = []
@@ -101,9 +99,19 @@ def close_windows_app(pid):
 
     if not user32.EnumWindows(collect, 0):
         raise WinError()
-    assert len(captioned) == 1, "The installed App must have one native Windows caption"
+    assert len(captioned) <= 1, "The installed App drew multiple native Windows captions"
+    return captioned[0] if captioned else None
+
+
+def request_windows_close(window):
+    from ctypes import WinDLL, WinError
+    from ctypes.wintypes import BOOL, HWND, LPARAM, UINT, WPARAM
+
+    user32 = WinDLL("user32", use_last_error=True)
+    user32.PostMessageW.argtypes = (HWND, UINT, WPARAM, LPARAM)
+    user32.PostMessageW.restype = BOOL
     # WM_CLOSE follows the same close request and draft guard as the system X.
-    if not user32.PostMessageW(captioned[0], 0x0010, 0, 0):
+    if not user32.PostMessageW(window, 0x0010, 0, 0):
         raise WinError()
 
 
@@ -214,14 +222,23 @@ def launch_installed(directory):
                         workspace = Path(temporary) / "Khor 项目"
                         workspace.mkdir()
                         (workspace / "readme.md").write_text("# Khor installation workspace\n", encoding="utf-8")
-                        subprocess.run(["node", str(check), str(debug_port), WINDOWS_SESSION_TITLE,
-                                        WINDOWS_READY_MARKER, str(workspace), exit_name], check=True, timeout=240)
                         assert len(app_pids) == 1, "The installer check expects one App process"
-                        close_windows_app(app_pids[0])
-                        deadline = time.monotonic() + 15
-                        while any(path == application for _, path in processes()):
-                            assert time.monotonic() < deadline, "Closing the window must exit the installed App"
-                            time.sleep(0.1)
+                        pid = app_pids[0]
+                        deadline = time.monotonic() + 45
+                        while not (window := windows_app_window(pid)) and time.monotonic() < deadline:
+                            time.sleep(0.2)
+                        assert window, "The installed App never drew a visible native Windows caption"
+                        print("The installed App drew one native Windows caption.", flush=True)
+                        try:
+                            subprocess.run(["node", str(check), str(debug_port), WINDOWS_SESSION_TITLE,
+                                            WINDOWS_READY_MARKER, str(workspace), exit_name], check=True, timeout=240)
+                        finally:
+                            request_windows_close(window)
+                            deadline = time.monotonic() + 15
+                            while any(path == application for _, path in processes()):
+                                assert time.monotonic() < deadline, "Closing the window must exit the installed App"
+                                time.sleep(0.1)
+                            print("The installed App exited after the Windows close request.", flush=True)
                     else:
                         time.sleep(1)
                         assert any(path == application for _, path in processes()), "The installed App exited during startup"
