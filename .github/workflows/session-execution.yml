@@ -34,7 +34,7 @@ jobs:
           key: session-execution
           cache-targets: false
           save-if: ${{ github.ref == 'refs/heads/main' }}
-      - name: Check real task workers and interactive MCP terminals
+      - name: Check task workers, interactive MCP terminals and native session recognition
         run: python scripts/session_execution_checks.py
         env:
           SESSION_EXECUTION_EVIDENCE: ${{ runner.temp }}/session-execution

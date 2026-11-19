@@ -423,7 +423,6 @@ jobs:
           cargo test --locked -p khor-node --lib adaptor::media::tests -- --test-threads=1
           cargo test --locked -p khor-node --lib dsh_ -- --test-threads=1
           cargo test --locked -p khor-node --lib adaptor::claude::tests -- --test-threads=1
-          cargo test --locked -p khor-node --lib adaptor::codex::tests -- --test-threads=1
           cargo test --locked -p khor-node --lib gui_host::setting_receipt_tests -- --test-threads=1
           cargo test --locked -p khor-node --lib khor_agent::history::tests -- --test-threads=1
           cargo test --locked -p khor-node --lib khor_agent::updates::tests -- --test-threads=1
