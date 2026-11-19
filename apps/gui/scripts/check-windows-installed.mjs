@@ -108,7 +108,7 @@ try {
 
   // Drag and drop, navigation progress, and close requests use Tauri's
   // event plugin and do not travel over the app's HTTP command bridge.
-  await page.evaluate(async () => {
+  const eventFailure = await page.evaluate(async () => {
     const native = window.__TAURI_INTERNALS__;
     const event = "installer:probe";
     const handler = native.transformCallback(() => {});
@@ -128,6 +128,9 @@ try {
     } finally {
       native.unregisterCallback(handler);
     }
+  }).then(() => null, error => {
+    console.error("Native event subscription failed:", error.message);
+    return error;
   });
 
   await page.locator('[data-landing="sessions"]:visible').first().click();
@@ -173,6 +176,7 @@ try {
 
   // The installer checker closes the native window after CDP disconnects.
   console.log("Installed Windows App verified a live terminal, workspace file and child browser.");
+  if (eventFailure) throw eventFailure;
 } finally {
   await browser.close();
 }

@@ -1978,6 +1978,17 @@ export function hear<T>(event: string, said: (payload: T) => void): () => void {
  */
 export function onQuitRequested(ask: () => boolean): () => void {
   if (!inApp) return () => {};
+  if (windowTransport) {
+    const event = "khor:windows-close-requested";
+    const requested = () => {
+      if (!keepWindowOpen(ask)) quitNow();
+    };
+    window.addEventListener(event, requested);
+    // The native handler can prevent a close only after the receiver is ready.
+    void call<null>("window_close_guard_ready").catch((error: unknown) =>
+      console.error("khor: cannot register the Windows close guard", error));
+    return () => window.removeEventListener(event, requested);
+  }
   let drop: (() => void) | undefined;
   let question: typeof ask | null = ask;
   let gone = false;
@@ -1989,16 +2000,7 @@ export function onQuitRequested(ask: () => boolean): () => void {
         // Match Window.onCloseRequested: await the handler, then destroy
         // only when it did not prevent the close.
         const requested = new CloseRequestedEvent(event);
-        let kept = false;
-        try {
-          kept = !!question?.();
-        } catch (error) {
-          // **A guard that throws must not become a window that cannot
-          // close.** It counts as no objection, and the failure is said out
-          // loud.
-          console.error("khor: the quit guard failed", error);
-        }
-        if (kept) {
+        if (keepWindowOpen(question)) {
           requested.preventDefault();
           return;
         }
@@ -2028,16 +2030,24 @@ export function onQuitRequested(ask: () => boolean): () => void {
   };
 }
 
+function keepWindowOpen(ask: (() => boolean) | null): boolean {
+  try {
+    return ask?.() ?? false;
+  } catch (error) {
+    console.error("khor: the quit guard failed", error);
+    return false;
+  }
+}
+
 /** Closes the app's window for good, past every guard — what 「不存,
     退出」 presses. `destroy` rather than `close`, because `close` asks
     again and the answer would be the same guard that is on screen. */
 export function quitNow(): void {
   if (!inApp) return;
-  void import("@tauri-apps/api/window")
-    .then(({ getCurrentWindow }) => getCurrentWindow().destroy())
-    .catch((e: unknown) => {
-      console.error("khor: cannot close the window", e);
-    });
+  const close = windowTransport
+    ? call<null>("window_destroy")
+    : import("@tauri-apps/api/window").then(({ getCurrentWindow }) => getCurrentWindow().destroy());
+  void close.catch((error: unknown) => console.error("khor: cannot close the window", error));
 }
 
 /**

@@ -5786,6 +5786,12 @@ pub fn run() {
             if window.label() == "main" {
                 use tauri::Manager;
                 match event {
+                    #[cfg(target_os = "windows")]
+                    tauri::WindowEvent::CloseRequested { api, .. } => {
+                        if window_transport::notify_close_guard(window) {
+                            api.prevent_close();
+                        }
+                    }
                     // Only after the draft owner permits the main window
                     // to be destroyed: a cancelled close keeps the auxiliaries.
                     // **The overlay window has to be closed by hand.** It

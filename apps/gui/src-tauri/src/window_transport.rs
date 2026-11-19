@@ -3,7 +3,10 @@
 //! main webview uses this authenticated loopback listener for commands.
 
 use std::io::{self, Read};
-use std::sync::Arc;
+use std::sync::{
+    Arc,
+    atomic::{AtomicBool, Ordering},
+};
 use subtle::ConstantTimeEq;
 use tauri::Manager;
 
@@ -15,6 +18,17 @@ fn main_window(app: &tauri::AppHandle) -> Result<tauri::Window, String> {
     // browser tab adds a child webview.
     app.get_window("main")
         .ok_or_else(|| "no main window".to_owned())
+}
+
+static CLOSE_GUARD_READY: AtomicBool = AtomicBool::new(false);
+
+/// Give the main page a chance to save drafts before retiring the window.
+pub fn notify_close_guard(window: &tauri::Window) -> bool {
+    CLOSE_GUARD_READY.load(Ordering::Acquire)
+        && window.app_handle().get_webview("main").is_some_and(|view| {
+            view.eval("window.dispatchEvent(new Event('khor:windows-close-requested'))")
+                .is_ok()
+        })
 }
 
 /// Commands owned by the window, outside the shared command table.
@@ -42,6 +56,10 @@ fn window_verb(app: &tauri::AppHandle, cmd: &str) -> Option<Result<String, Strin
         // stuck window for lost work. The main window's `Destroyed` handler
         // retires its menu and gives editor windows their own close request.
         "window_close" => window().and_then(|w| w.close().map_err(|e| e.to_string())),
+        "window_close_guard_ready" => {
+            CLOSE_GUARD_READY.store(true, Ordering::Release);
+            Ok(())
+        }
         // After the native close request, the frontend checks its drafts
         // before invoking destroy. This completes that same close without
         // raising a second close request.
