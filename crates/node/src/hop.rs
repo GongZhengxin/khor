@@ -918,10 +918,9 @@ impl Node {
             )
     }
 
-    /// **X's half**: before dialling `y`, open a hop to it through a
-    /// middle when the roadbook names one. Quietly nothing when no hop is
-    /// wanted, none can be had, or it takes past [`HOP_WITHIN`]: the dial
-    /// goes on without it.
+    /// **X's half**: prepare a hop beside the ordinary dial. An active
+    /// request recovering from a network change may recheck a live middle
+    /// once, within the same caller deadline.
     pub(crate) fn hop_ahead<'a>(
         &'a self,
         ep: &'a iroh::Endpoint,
@@ -1003,8 +1002,37 @@ impl Node {
             if purpose != HopUse::Recovery && missed_lately_in_epoch(&me, &y.id, Some(&epoch)) {
                 return;
             }
+            let retry_at = tokio::time::Instant::now() + HOP_WITHIN;
             // Keep the cold preparation state out of every enclosing dial and
             // resident request's future, including requests that need no hop.
+            let opened =
+                Box::pin(self.open_hop_in_epoch(ep, y, &all, &picked, epoch.clone(), purpose))
+                    .await;
+            if opened
+                || purpose != HopUse::Recovery
+                || !self.wires.recovering_network()
+                || !current_miss_epoch(Some(&epoch))
+                || !picked.iter().any(|b| self.road_for_hop(b, &[]).is_some())
+            {
+                return;
+            }
+            // The middle may regain its second leg after the first miss.
+            // Keep the same route generation and per-middle cooldown. The
+            // parent dial drops this wait as soon as another path wins.
+            if crate::deadline::wait(
+                crate::deadline::current(),
+                tokio::time::sleep_until(retry_at),
+            )
+            .await
+            .is_err()
+                || !self.wants_hop(y, &mine)
+                || self.wires.link(&y.id).road.is_some()
+                || self.paused()
+                || crate::pause::peer_on(self.root(), &y.id)
+            {
+                return;
+            }
+            picked.retain(|b| self.road_for_hop(b, &[]).is_some());
             Box::pin(self.open_hop_in_epoch(ep, y, &all, &picked, epoch, purpose)).await;
         })
     }
