@@ -9,20 +9,34 @@ import { chromium } from "playwright-core";
 
 const [, , port, title, ready, workspace, exitMachine] = process.argv;
 const endpoint = `http://127.0.0.1:${port}`;
-const origin = "http://tauri.localhost";
+function isAppPage(url) {
+  try {
+    const parsed = new URL(url);
+    return ["http:", "https:"].includes(parsed.protocol) && parsed.hostname === "tauri.localhost";
+  } catch {
+    return false;
+  }
+}
 
 async function waitForWindow() {
-  const until = Date.now() + 30_000;
+  const until = Date.now() + 60_000;
+  let last = "no response";
   while (Date.now() < until) {
-    const response = await fetch(`${endpoint}/json/list`, {signal: AbortSignal.timeout(1000)})
-      .catch(() => null);
-    if (response?.ok) {
-      const targets = await response.json();
-      if (targets.some(target => target.type === "page" && new URL(target.url).origin === origin)) return;
+    try {
+      const response = await fetch(`${endpoint}/json/list`, {signal: AbortSignal.timeout(1000)});
+      if (response.ok) {
+        const targets = await response.json();
+        if (targets.some(target => target.type === "page" && isAppPage(target.url))) return;
+        last = targets.map(({type, url}) => ({type, url: url?.split(/[?#]/, 1)[0]}));
+      } else {
+        last = `HTTP ${response.status}`;
+      }
+    } catch (error) {
+      last = error.cause?.code ?? error.message;
     }
     await delay(200);
   }
-  throw new Error("The installed App never loaded its bundled frontend in WebView2");
+  throw new Error(`WebView2 did not report the bundled App page on port ${port}: ${JSON.stringify(last)}`);
 }
 
 function command(page, name, args, timeout = 15_000) {
@@ -87,7 +101,7 @@ await waitForWindow();
 const browser = await chromium.connectOverCDP(endpoint, {timeout: 15_000});
 try {
   const page = browser.contexts().flatMap(context => context.pages())
-    .find(page => new URL(page.url()).origin === origin);
+    .find(page => isAppPage(page.url()));
   if (!page) throw new Error("The bundled frontend is missing from the WebView2 session");
   page.setDefaultTimeout(20_000);
   const windowButtons = page.locator("[data-window-controls], [data-window-control]");

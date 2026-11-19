@@ -144,6 +144,7 @@ def launch_installed(directory):
             logs = Path(os.environ.get("RUNNER_TEMP") or tempfile.gettempdir()) / "khor-installer-logs"
             logs.mkdir(parents=True, exist_ok=True)
             environment["KHOR_LOG_FILE"] = str(logs / "window.log")
+            environment["KHOR_GUI_TRACE"] = "1"
 
         def processes():
             if os.name == "nt":

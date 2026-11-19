@@ -2649,6 +2649,10 @@ fn build_the_window(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error::Er
     // start-up — `menu_overlay::desktop::hang` says why that matters — just after
     // the page somebody is looking at has loaded.
     let win = win.on_page_load(|view, payload| {
+        #[cfg(target_os = "windows")]
+        if std::env::var_os("KHOR_GUI_TRACE").is_some() {
+            eprintln!("khor app: main WebView2 navigation {:?}", payload.event());
+        }
         static HUNG: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
         if payload.event() == tauri::webview::PageLoadEvent::Finished
             && !HUNG.swap(true, std::sync::atomic::Ordering::Relaxed)
@@ -2660,7 +2664,17 @@ fn build_the_window(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error::Er
                 .run_on_main_thread(move || menu_overlay::desktop::hang(&app));
         }
     });
+    #[cfg(target_os = "windows")]
+    let traced = std::env::var_os("KHOR_GUI_TRACE").is_some();
+    #[cfg(target_os = "windows")]
+    if traced {
+        eprintln!("khor app: building the Windows main window");
+    }
     let _built = win.build()?;
+    #[cfg(target_os = "windows")]
+    if traced {
+        eprintln!("khor app: Windows main window created");
+    }
     window_surface::apply(app, window_surface::material());
     // The kept numbers against the window they built (`traffic::check`):
     // its own buttons, read, no window of its own.
