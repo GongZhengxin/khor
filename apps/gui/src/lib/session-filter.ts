@@ -42,16 +42,9 @@ export const arrange = () =>
 export const ARRANGE_KEYS = ["recent", "category", "device", "state", "place"] as const;
 
 /**
- * **对话 or 终端** — the axis the sessions landing gained for Windows.
- *
- * The owner, 2026-11-18: 「同意只看对话过滤，windows上这么设定」. It is not
- * a fourth thing the node groups by (that list is the four `AXES`, and
- * this app does not get to invent grouping keys); it is the row's *face*,
- * read off the kind the node already sent. A row is a conversation unless
- * its face is a terminal with nothing but a shell behind it — `shell`,
- * `transfer`, `borrow`. **The unknown kinds stay conversations** on
- * purpose: a newer node's kind this build has never heard of must not
- * vanish from the only list that would show it (`SESSION.md` 开放性).
+ * Filter by conversation or terminal. Only known shell, transfer, and
+ * borrow rows belong to the terminal side. Unknown kinds stay visible
+ * with conversations so a newer node's session can still be opened.
  */
 export const TALK_AXIS = "talk:" as const;
 const TERMINAL_ONLY: readonly string[] = ["shell", "transfer", "borrow"];
@@ -62,51 +55,7 @@ export const isTalk = (kind: string) => !TERMINAL_ONLY.includes(kind);
     by the addition — its rows are already one project. */
 export const ALL_AXES = [...AXES, TALK_AXIS] as const;
 
-const WINDOWS = /win/i.test(
-  typeof navigator === "undefined" ? "" : navigator.platform || navigator.userAgent,
-);
-
-/**
- * What the sessions list opens to on this platform.
- *
- * **Windows hides plain terminals by default** (the owner's ruling above):
- * the list exists to dispatch work and follow conversations, and a
- * machine full of shells makes that list read as a log. The tick is a
- * normal tick — visible in the control, one press away from showing
- * everything — so nothing is hidden silently. Every other platform keeps
- * the empty filter it has always had.
- *
- * The choice is a function of the platform so the branch is testable
- * without a DOM (`check-session-talk.mjs`); the constant is what the app
- * reads.
- */
-export const sessionsWordsDefault = (windows: boolean): string[] =>
-  windows ? [`${TALK_AXIS}yes`] : [];
-export const SESSIONS_WORDS_DEFAULT: readonly string[] = sessionsWordsDefault(WINDOWS);
-
-/**
- * What the list opens to.
- *
- * WeChat's opening — the thing you touched last is the thing you want —
- * is right for a list of *chats*. On Windows this list is mostly agent
- * conversations taken over from elsewhere, and they arrive in groups
- * that already mean something: the directory each was opened in (the
- * node's `place` axis). A person opening the app asks "which project is
- * busy", so that is the arrangement Windows starts on. The stored
- * preference still wins once somebody picks one, and this only decides
- * the answer before there is a preference.
- *
- * **The platform test is spelled here rather than imported**: this
- * module is read by the store the list is derived from, and api.ts
- * already carries the one long reason for `navigator.platform`
- * (`windowsApp`); a second caller importing it would drag the whole API
- * surface into every module that arranges rows.
- */
-export const ARRANGE_DEFAULT = /win/i.test(
-  typeof navigator === "undefined" ? "" : navigator.platform || navigator.userAgent,
-)
-  ? "place"
-  : "recent";
+export const ARRANGE_DEFAULT = "recent";
 const ARRANGE_KEY = "khor.sessions.arrange";
 
 /**
@@ -179,24 +128,6 @@ export function rememberWords(pane: string, words: string[]): void {
   } catch {
     /* the list still filters; only the memory of it is lost */
   }
-}
-
-/**
- * The ticks this device stored for a pane, or `fallback` when it never
- * stored any.
- *
- * **Absent and empty are different answers** (`storedWords`'s `[]` cannot
- * tell them apart, and for this one it matters): a person who unticked
- * everything wants everything, and must not be handed the platform
- * default back on the next launch.
- */
-export function storedWordsDefault(pane: string, fallback: readonly string[]): string[] {
-  try {
-    if (window.localStorage.getItem(filterKey(pane)) === null) return [...fallback];
-  } catch {
-    return [...fallback];
-  }
-  return storedWords(pane);
 }
 
 /**

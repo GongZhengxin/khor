@@ -5641,6 +5641,9 @@ pub fn run() {
     #[cfg(desktop)]
     let context = updater_package::configure(context).expect("bundled updater configuration");
     let builder = tauri::Builder::default().plugin(tauri_plugin_dialog::init());
+    #[cfg(target_os = "windows")]
+    let builder = builder
+        .append_invoke_initialization_script(window_transport::tauri_message_transport_script());
     #[cfg(desktop)]
     let builder = builder.plugin(tauri_plugin_updater::Builder::new().build());
     #[cfg(target_os = "android")]

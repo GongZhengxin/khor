@@ -45,24 +45,10 @@ must(
   "the rule is a whitelist of what to hide, so unknown kinds stay visible",
 );
 
-// The default: Windows opens on 「对话」, everyone else keeps no filter.
-must(
-  /sessionsWordsDefault = \(windows: boolean\): string\[\] =>\s*windows \? \[`\$\{TALK_AXIS\}yes`\] : \[\]/,
-  "the platform default is the talk: yes tick, and only on Windows",
-);
-// The wiring lives in the shell, not in this module: the landing reads the
-// stored choice, and only falls back to the platform default when this
-// device has never chosen.
+// Every desktop starts with the same list and honours saved choices.
+must(/export const ARRANGE_DEFAULT = "recent"/, "new installs use the same order on every platform");
 const app = readFileSync(join(here, "..", "src", "App.tsx"), "utf8");
-assert.match(
-  app,
-  /sessions: storedWordsDefault\("sessions", SESSIONS_WORDS_DEFAULT\)/,
-  "a stored choice wins over the platform default",
-);
-must(
-  /if \(window\.localStorage\.getItem\(filterKey\(pane\)\) === null\) return \[\.\.\.fallback\]/,
-  "absent and empty are different answers — unticking everything must not come back",
-);
+assert.match(app, /sessions: storedWords\("sessions"\)/, "use the saved filter or show every session");
 
 // The axis must be offered on the sessions landing and labelled with the
 // two words the wizard already uses for the same pair.

@@ -1,5 +1,6 @@
 // Called by the Windows installer check after opening the packaged app
 // and creating a local cmd.exe session in an isolated store.
+import assert from "node:assert/strict";
 import { setTimeout as delay } from "node:timers/promises";
 import { chromium } from "playwright-core";
 
@@ -29,11 +30,36 @@ try {
   if (!page) throw new Error("The bundled frontend is missing from the WebView2 session");
   page.setDefaultTimeout(20_000);
 
+  // Drag and drop, navigation progress, and close requests use Tauri's
+  // event plugin and do not travel over the app's HTTP command bridge.
+  await page.evaluate(async () => {
+    const native = window.__TAURI_INTERNALS__;
+    const event = "installer:probe";
+    const handler = native.transformCallback(() => {});
+    const timeout = AbortSignal.timeout(12_000);
+    const stopped = new Promise((_, reject) => timeout.addEventListener("abort", () =>
+      reject(new Error("WebView2 did not answer the native event subscription"))));
+    try {
+      const eventId = await Promise.race([
+        native.invoke("plugin:event|listen", {event, target: {kind: "Any"}, handler}),
+        stopped,
+      ]);
+      if (!Number.isInteger(eventId)) throw new Error("Native event subscription returned no listener ID");
+      await Promise.race([
+        native.invoke("plugin:event|unlisten", {event, eventId}),
+        stopped,
+      ]);
+    } finally {
+      native.unregisterCallback(handler);
+    }
+  });
+
   await page.locator('[data-landing="sessions"]:visible').first().click();
   await page.locator('[data-pane-filter]:visible').click();
   const conversations = page.locator('[data-filter-option="talk:yes"]');
   await conversations.waitFor();
-  if (await conversations.getAttribute("aria-checked") === "true") await conversations.click();
+  assert.equal(await conversations.getAttribute("aria-checked"), "false");
+  assert.equal(await page.locator('[data-arrange-option="recent"]').getAttribute("aria-checked"), "true");
   await page.keyboard.press("Escape");
 
   const row = page.locator(`[data-list] [data-kind="shell"][data-title=${JSON.stringify(title)}]`);

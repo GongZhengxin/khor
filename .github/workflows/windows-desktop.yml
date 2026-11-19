@@ -1,0 +1,67 @@
+name: Windows desktop package
+
+on:
+  workflow_call:
+    inputs:
+      reuse_agent_runtime:
+        description: Use the Windows agent runtime already built in this run
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  package:
+    runs-on: windows-2025
+    timeout-minutes: 120
+    env:
+      TARGET: x86_64-pc-windows-msvc
+      KHOR_AGENT_BUNDLE: ${{ github.workspace }}/apps/agent/dist/khor-agent
+      CARGO_INCREMENTAL: '0'
+      CARGO_BUILD_JOBS: '2'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: ./.github/actions/restore-frontend
+      - uses: ./.github/actions/native-tools
+        with:
+          target: x86_64-pc-windows-msvc
+      - if: inputs.reuse_agent_runtime
+        uses: ./.github/actions/restore-agent
+        with:
+          target: x86_64-pc-windows-msvc
+      - if: '!inputs.reuse_agent_runtime'
+        name: Build the Windows agent runtime
+        shell: bash
+        run: |
+          npm ci --prefix apps/agent
+          node apps/agent/build.mjs "$TARGET" "$KHOR_AGENT_BUNDLE"
+      - run: npm ci --prefix apps/gui
+      - name: Build the App and its bundled CLI
+        shell: bash
+        run: python3 scripts/desktop_installer.py --target "$TARGET" --output desktop-product --frontend frontend
+      - name: Verify the installed App and native interaction
+        run: python scripts/check-desktop-installer.py --package desktop-product/khor-windows-x86_64.msi --output "${{ runner.temp }}/installation.json"
+      - name: Verify the complete artifact is unchanged after installation tests
+        shell: bash
+        run: python3 scripts/release_manifest.py verify --root desktop-product
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: khor-windows-x86_64-app
+          path: desktop-product/
+          if-no-files-found: error
+          retention-days: 14
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: desktop-installation-x86_64-pc-windows-msvc
+          path: ${{ runner.temp }}/installation.json
+          if-no-files-found: error
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: desktop-installer-logs-x86_64-pc-windows-msvc
+          path: ${{ runner.temp }}/khor-installer-logs/*.log
+          if-no-files-found: warn
+          retention-days: 14

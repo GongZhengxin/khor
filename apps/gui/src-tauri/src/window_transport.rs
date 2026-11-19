@@ -81,6 +81,14 @@ const WINDOW_ORIGIN: &str = "http://tauri.localhost";
 #[cfg(dev)]
 const WINDOW_ORIGIN: &str = "http://localhost:1430";
 
+/// Apply the Tauri fallback from document start to every owned Windows
+/// webview, including the menu and editors. Normal browser requests and
+/// the authenticated loopback commands keep their usual fetch path.
+pub fn tauri_message_transport_script() -> String {
+    let origin = serde_json::Value::String(WINDOW_ORIGIN.to_owned());
+    format!("\n;({})({origin});", include_str!("windows_ipc.js"))
+}
+
 fn header<'a>(request: &'a tiny_http::Request, name: &'static str) -> Option<&'a str> {
     let mut values = request.headers().iter().filter(|h| h.field.equiv(name));
     let value = values.next()?.value.as_str();

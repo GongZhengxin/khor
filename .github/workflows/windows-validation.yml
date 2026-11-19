@@ -1,0 +1,21 @@
+name: Windows desktop validation
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ['verify/windows-desktop-*']
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: windows-desktop-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frontend:
+    uses: ./.github/workflows/frontend.yml
+  windows:
+    needs: frontend
+    uses: ./.github/workflows/windows-desktop.yml

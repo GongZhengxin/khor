@@ -117,10 +117,8 @@ import {
   rememberWords,
   sessionAxes as axesOf,
   sessionOptions,
-  SESSIONS_WORDS_DEFAULT,
   storedArrange,
   storedWords,
-  storedWordsDefault,
 } from "@/lib/session-filter";
 import { draftCount, watchDrafts } from "@/lib/drafts";
 import { confirmUpdateUiReady } from "@/lib/update-lifecycle";
@@ -283,12 +281,7 @@ function settled(ms: number): Promise<void> {
     see `WorkspacePane`. */
 function storedWordsAll(): Record<Landing, string[]> {
   return {
-    // **Windows starts on 对话.** The list exists to dispatch work and
-    // follow conversations; a machine full of shells made it read as a log
-    // (the owner, 2026-11-18: 「同意只看对话过滤，windows上这么设定」).
-    // A stored choice always wins — `storedWordsDefault` only answers when
-    // this device has never chosen.
-    sessions: storedWordsDefault("sessions", SESSIONS_WORDS_DEFAULT),
+    sessions: storedWords("sessions"),
     devices: storedWords("devices"),
     workspaces: storedWords("workspaces"),
     browser: storedWords("browser"),
