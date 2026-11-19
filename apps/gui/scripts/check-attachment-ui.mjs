@@ -6,7 +6,7 @@ import {mkdirSync,writeFileSync,existsSync,copyFileSync,rmSync} from 'node:fs';
 import {join,resolve} from 'node:path';
 import {tmpdir} from 'node:os';
 import {fileURLToPath} from 'node:url';
-import {chromium} from 'playwright-core';
+import {chromium,webkit} from 'playwright-core';
 import {fakeHome,fakeUsage} from './fake-home.mjs';
 const gui=process.env.CONTENT_UI_ROOT||fileURLToPath(new URL('..',import.meta.url));
 const repo=resolve(gui,'../..');
@@ -39,12 +39,26 @@ try{
   console.log('attachment frontend:',mode.length?'production dist':'development');
   run(join(gui,'node_modules/.bin/vite'),[...mode,'--host','127.0.0.1','--port',String(port),'--strictPort'],{...process.env,KHOR_FACE_GATE:'1'});
   await until(()=>fetch(`http://127.0.0.1:${port}/`,{signal:AbortSignal.timeout(1000)}).then(r=>r.ok));
+  const useWebKit=process.env.ATTACHMENT_BROWSER==='webkit';
   const channel=(process.env.PLAYWRIGHT_CHROMIUM_CHANNEL??'chrome')||undefined;
-  browser=await chromium.launch({channel,headless:process.env.CONTENT_HEADED!=='1',args:['--no-proxy-server']});
-  console.log('attachment browser:',channel||'bundled Chromium',browser.version());
+  const headless=process.env.CONTENT_HEADED!=='1';
+  browser=useWebKit?await webkit.launch({headless}):await chromium.launch({channel,headless,args:['--no-proxy-server']});
+  console.log('attachment browser:',useWebKit?'WebKit':channel||'bundled Chromium',browser.version());
   const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,reducedMotion:'reduce'});
   // The LAN HTTP face has no secure-context randomUUID API.
   await context.addInitScript(()=>Object.defineProperty(globalThis.crypto,'randomUUID',{configurable:true,value:undefined}));
+  // Simulate the visible space taken by a phone keyboard in the production UI.
+  await context.addInitScript(()=>{
+    const viewport=new EventTarget();
+    let cover=0;
+    Object.assign(viewport,{scale:1,offsetTop:0,offsetLeft:0});
+    Object.defineProperties(viewport,{height:{get:()=>innerHeight-cover},width:{get:()=>innerWidth}});
+    Object.defineProperty(window,'visualViewport',{configurable:true,value:viewport});
+    window.__keyboard=covered=>{
+      cover=covered;
+      viewport.dispatchEvent(new Event('resize'));
+    };
+  });
   await context.addInitScript(ids=>{
     localStorage.setItem('khor.sessions.tabs',JSON.stringify({tabs:ids,active:ids[0]}));localStorage.setItem('khor.place',JSON.stringify({landing:'sessions',screen:'detail'}));localStorage.setItem('khor.lang','zh');
   },sessions);
@@ -55,9 +69,11 @@ try{
   await page.goto(url,{waitUntil:'domcontentloaded',timeout:60000});
   assert(await page.evaluate(()=>typeof globalThis.crypto.randomUUID==='undefined'),'LAN compatibility probe did not run');
   const shown=()=>page.locator('[data-session-content][data-content-visible=true]');
-  const results=[],failures=[],pickerResizes=[];
+  const results=[],failures=[],pickerResizes=[],resizes=[];
   await page.route('**/term_resize',async route=>{
-    if(await page.locator('[data-attachment-picker]').count())pickerResizes.push(route.request().postDataJSON());
+    const size=route.request().postDataJSON();
+    resizes.push(size);
+    if(await page.locator('[data-attachment-picker]').count())pickerResizes.push(size);
     await route.fallback();
   });
   const note=(name,data)=>{results.push({name,...data});console.log(name,JSON.stringify(data));if(data.error)failures.push(name+': '+data.error);};
@@ -76,13 +92,20 @@ try{
   await page.route('**/term_drop_forget',r=>{const {paths}=r.request().postDataJSON();forgotten.push(...paths);return r.fulfill({json:null});});
   await page.route('**/term_drop_progress',r=>r.fulfill({json:null}));
   if(!(await page.locator('[data-deck-title]').isVisible()))await page.locator('[data-session-title]').filter({hasText:/^Content Alpha$/}).click();
-  const keys=page.locator('[data-key-row-switch]:visible');if(await keys.getAttribute('aria-expanded')!=='true')await keys.click();await page.locator('[data-term-key=attach]:visible').click();await page.locator('[data-attachment-picker]').waitFor();
   const panel=()=>page.locator('[data-files-panel]');
-  const reopen=async()=>{if(await panel().count()===0)await page.locator('[data-term-key=attach]:visible').click();await panel().waitFor();};
-  const sentToKeyboard=async()=>{
+  const reopen=async()=>{
+    if(await panel().count()===0){
+      const keys=page.locator('[data-key-row-switch]:visible');
+      if(await keys.getAttribute('aria-expanded')!=='true')await keys.click();
+      await page.locator('[data-term-key=attach]:visible').click();
+    }
+    await panel().waitFor();
+  };
+  await reopen();
+  const sentToKeyboard=async(mode='none')=>{
     await panel().waitFor({state:'detached'});
-    assert.equal(await page.evaluate(()=>document.activeElement?.matches('.xterm-helper-textarea')),true,'Sending returns focus to the same terminal');
-    assert.equal(await page.locator('[data-terminal]:visible .xterm-helper-textarea').getAttribute('inputmode'),'text');
+    await page.locator('[data-terminal]:visible .xterm-helper-textarea:focus').waitFor({state:'attached'});
+    assert.equal(await page.locator('[data-terminal]:visible .xterm-helper-textarea').getAttribute('inputmode'),mode,'Closing preserves the original keyboard state');
   };
   const directory=()=>page.locator('[data-attachment-directory]:visible');
   const preview=()=>page.locator('[data-attachment-file]:visible');
@@ -158,7 +181,9 @@ try{
     }
     const card=panel().locator('[data-files-selected="browser-folder"]');await card.locator('[data-files-name]>button').first().click();
     await directory().locator('[data-files-name="nested"]').waitFor();
-    assert.deepEqual(await directory().locator('[data-files-name]').evaluateAll(nodes=>nodes.map(node=>node.dataset.filesName)),['nested','README.txt','.hidden']);
+    const entries=await directory().locator('[data-files-name]').evaluateAll(nodes=>nodes.map(node=>node.dataset.filesName));
+    // The WebKit folder picker can omit dotfiles before the app gets them.
+    assert.deepEqual(useWebKit?entries.filter(name=>name!=='.hidden'):entries,useWebKit?['nested','README.txt']:['nested','README.txt','.hidden']);
     await directory().locator('[data-files-name="nested"]>button').first().click();
     await directory().locator('[data-files-name="folder-preview.txt"] [data-files-open]').click();await previewReady();
     await preview().getByText('Actual bytes inside the selected browser folder',{exact:false}).last().waitFor();await closePreview();
@@ -168,6 +193,53 @@ try{
     await directory().locator('[data-up]').click();await directory().locator('[data-files-name="nested"]').waitFor();
     await directory().locator('[data-files-directory-back]').click();await card.locator('[data-files-select]').click();await card.waitFor({state:'detached'});
     note('local-folder-preview',{actualBytes:true,selectionPreserved:true,noEagerUpload:true});
+  });
+  const terminalSize=()=>page.locator('[data-terminal]:visible').evaluate(box=>{
+    const {bottom,height}=box.getBoundingClientRect();
+    return {bottom,height,rows:box.__xterm.rows,cols:box.__xterm.cols};
+  });
+  await step('attachment-keyboard-and-size',async()=>{
+    await panel().locator('[data-files-cancel]').click();
+    await sentToKeyboard();
+    const attach=page.locator('[data-term-key=attach]:visible');
+    for(const mode of ['none','text']){
+      await page.locator('[data-terminal]:visible .xterm-helper-textarea').evaluate((field,mode)=>{
+        field.inputMode=mode;
+        field.focus({preventScroll:true});
+        window.__keyboard(mode==='text'?300:0);
+      },mode);
+      await page.waitForTimeout(400); // Let the intentional keyboard resize settle first.
+      const size=await terminalSize(),resizeCount=resizes.length;
+      for(const close of ['cancel','toggle','send']){
+        await reopen();
+        assert.deepEqual(await terminalSize(),size,`Opening with inputmode=${mode} leaves the terminal in place`);
+        if(close==='cancel')await panel().locator('[data-files-cancel]').tap();
+        if(close==='toggle')await attach.tap();
+        if(close==='send'){
+          const before=staged.length;
+          await panel().locator('[data-files-input]').setInputFiles([{name:'keyboard.txt',mimeType:'text/plain',buffer:Buffer.from('keyboard')}]);
+          hold=new Promise(r=>release=r);
+          try{
+            await panel().locator('[data-files-send]').tap();
+            await until(()=>staged.length===before+1);
+            assert.equal(await page.locator(':focus.xterm-helper-textarea').getAttribute('inputmode'),mode,'Sending keeps terminal focus while the upload is pending');
+            assert.deepEqual(await terminalSize(),size,'A pending transfer keeps the terminal in place');
+          }finally{release();hold=null;}
+        }
+        await sentToKeyboard(mode);
+        assert.equal(await attach.getAttribute('aria-expanded'),'false');
+        assert.deepEqual(await terminalSize(),size,`Closing with ${close} leaves the terminal in place`);
+      }
+      await page.waitForTimeout(300); // Include any delayed PTY resize after unmount.
+      assert.equal(resizes.length,resizeCount,`Attachment interactions send no PTY resize with inputmode=${mode}`);
+    }
+    await page.locator('[data-terminal]:visible .xterm-helper-textarea').evaluate(field=>{
+      field.inputMode='none';
+      field.focus({preventScroll:true});
+      window.__keyboard(0);
+    });
+    await page.waitForTimeout(400);
+    note('attachment-keyboard-and-size',{keyboardUp:true,keyboardDown:true,close:['cancel','toggle','send'],ptyStable:true});
   });
   await step('cancel-immediate-retry',async()=>{
     await reopen();
@@ -195,6 +267,7 @@ try{
     assert.equal(await panel().locator('[data-files-selected]').count(),0,'empty change entered a selection');
     assert(await panel().locator('[data-files-pick=device]').isVisible());assert(await panel().locator('[data-files-pick=folder]').isVisible());
     const row=panel().locator('[data-files-machine-row]'),more=row.locator('[data-files-machines]');
+    await row.filter({has:page.locator('[data-files-machine-chip="audit-remote"]')}).waitFor();
     assert.equal(await row.getAttribute('data-files-source-count'),'1','The remote source remains available beside both native local pickers');
     const visible=await row.locator('[data-files-machine-chip]:visible').evaluateAll(nodes=>nodes.map(node=>node.dataset.filesMachineChip));
     const hidden=Number(await more.getAttribute('data-files-machine-count'));

@@ -180,7 +180,7 @@ export function TermKeys({
       // 尾」): 「…」 was pinned at the right end beside the pad.
       className="flex h-key-row flex-none items-center gap-1.5 px-row"
     >
-      <AttachKey onOpen={files.open} on={files.opened} />
+      <AttachKey onOpen={files.open} onClose={files.close} on={files.opened} />
       <div data-term-keys-scroll className="flex min-w-0 flex-1 items-center gap-1.5 self-stretch overflow-x-auto">
         {shown.map((k) => (
           <Cap key={k.name} k={k} mods={mods} onPress={(under) => press(k, under)} />
@@ -208,7 +208,7 @@ function panelKey(term: RefObject<Terminal | null>, want: PanelKind) {
  * reflects whether that task is open. ⚠️ 墓碑: a key of the editable
  * row, scrolled with the rest and never lit.
  */
-function AttachKey({onOpen,on=false}:{onOpen?:()=>void;on?:boolean}) {
+function AttachKey({onOpen,onClose,on=false}:{onOpen?:()=>void;onClose?:()=>void;on?:boolean}) {
   return (
     <button
       type="button"
@@ -217,8 +217,8 @@ function AttachKey({onOpen,on=false}:{onOpen?:()=>void;on?:boolean}) {
       aria-label={gui.key_attach_name}
       aria-expanded={on}
       onMouseDown={(e) => e.preventDefault()}
-      disabled={!onOpen}
-      onClick={onOpen}
+      disabled={on ? !onClose : !onOpen}
+      onClick={on ? onClose : onOpen}
       className={CAP_BOX}
     >
       <span className={capFace(on, on)}>
