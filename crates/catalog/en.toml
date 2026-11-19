@@ -1161,6 +1161,8 @@ no-home-dir = "This machine can't report its own home directory"
 path-not-absolute = "Path must be written from root: {0}"
 
 cant-list-dir = "Can't list {0}: {1}"
+storage-io-busy = "Storage is busy. Try again shortly."
+storage-io-write-pending = "Storage timed out. Check whether the change took effect before retrying."
 unknown-doc = "Unknown doc type: {0}"
 unknown-action = "Unknown action: {0}"
 serve-non-answer = "serve gave an answer that didn't match: {0}"

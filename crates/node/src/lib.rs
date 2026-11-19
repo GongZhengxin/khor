@@ -99,6 +99,7 @@ mod session_drafts;
 pub use khor_sync::drafts::DraftRevision;
 pub mod session_import;
 pub mod shell_start;
+mod storage_io;
 mod store_owner;
 pub mod subscriptions;
 pub mod tabs;
@@ -413,6 +414,7 @@ static USER_PATH: std::sync::OnceLock<String> = std::sync::OnceLock::new();
 
 pub struct Node {
     root: PathBuf,
+    storage_io: storage_io::StorageIo,
     /// The identity key; also what the endpoint binds with. One live
     /// endpoint per key.
     key: iroh::SecretKey,
@@ -1186,6 +1188,7 @@ impl Node {
         let carry = khor_net::carry::Links::new(key.public());
         let mut node = Node {
             root,
+            storage_io: storage_io::StorageIo::default(),
             key,
             device,
             device_str,
