@@ -2650,11 +2650,15 @@ fn build_the_window(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error::Er
     // (medians of twenty and ten cold launches). It is still built during
     // start-up — `menu_overlay::desktop::hang` says why that matters — just after
     // the page somebody is looking at has loaded.
-    let win = win.on_page_load(|view, payload| {
-        #[cfg(target_os = "windows")]
+    // Windows uses the in-page menu while WebView2's native IPC is unavailable.
+    #[cfg(target_os = "windows")]
+    let win = win.on_page_load(|_, payload| {
         if std::env::var_os("KHOR_GUI_TRACE").is_some() {
             eprintln!("khor app: main WebView2 navigation {:?}", payload.event());
         }
+    });
+    #[cfg(not(target_os = "windows"))]
+    let win = win.on_page_load(|view, payload| {
         static HUNG: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
         if payload.event() == tauri::webview::PageLoadEvent::Finished
             && !HUNG.swap(true, std::sync::atomic::Ordering::Relaxed)

@@ -211,6 +211,25 @@ fn native_command(
                 argument(args, "handler")?,
             )?),
             "window_event_unlisten" => encode(events()?.unlisten(argument(args, "eventId")?)?),
+            "reach_probe" => {
+                encode(rt.block_on(crate::reach_probe(text("host")?, argument(args, "port")?))?)
+            }
+            "add_start" => encode(crate::add_start(text("token")?, argument(args, "ask")?)?),
+            "add_read" => encode(crate::add_read(text("token")?)?),
+            "promote_start" => encode(crate::promote_start(text("token")?, text("machine")?)?),
+            "ssh_config_hosts" => encode(crate::ssh_config_hosts()),
+            "open_copy_id" => encode(rt.block_on(crate::open_copy_id(argument(args, "ask")?))?),
+            "pick_key_file" => encode(rt.block_on(crate::pick_key_file(app.clone()))),
+            "open_settings" => encode(rt.block_on(crate::open_settings(
+                app.clone(),
+                argument(args, "pane")?,
+                argument(args, "machine")?,
+            ))?),
+            "notify_finished" => encode(crate::notify_finished(
+                app.clone(),
+                text("title")?,
+                text("body")?,
+            )?),
             "window_appearance_support" => encode(crate::window_appearance_support()),
             "set_window_appearance" => encode(crate::set_window_appearance(
                 app.clone(),

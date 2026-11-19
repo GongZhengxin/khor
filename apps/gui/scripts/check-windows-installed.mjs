@@ -128,6 +128,7 @@ try {
     event: "page:navigation", target: {kind: "Any"}, handler: callback,
   });
   assert(Number.isInteger(eventId), "The Windows event bridge must return its listener ID");
+  assert(Array.isArray(await command(page, "ssh_config_hosts")), "The Windows App must answer the SSH host picker");
 
   await page.locator('[data-landing="sessions"]:visible').first().click();
   await page.locator('[data-pane-filter]:visible').click();

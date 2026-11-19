@@ -373,14 +373,13 @@ export const isMenuFace = params.get("face") === "menu";
 
 // The Windows HTTP bridge also answers shared web commands. These commands
 // belong to the installed App and use its normal Tauri handlers and capability
-// grants. This includes machine setup and the native menu, which are absent
-// from the web server's command table.
+// grants. They are absent from both the web server's command table and
+// the Windows command bridge.
 const desktopCommands = new Set([
-  "reach_probe", "add_start", "add_read", "promote_start",
-  "ssh_config_hosts", "open_copy_id", "pick_key_file", "root_words", "system_unlock",
+  "root_words", "system_unlock",
   "file_handoff_open", "file_preview_open", "page_sheet",
   "show_menu", "hide_menu", "size_menu", "menu_rows", "menu_input", "menu_pick", "menu_state",
-  "face_note", "bell_haptic", "joy_haptic", "haptic", "open_settings", "notify_finished",
+  "face_note", "bell_haptic", "joy_haptic", "haptic",
 ]);
 
 async function call<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
@@ -1847,12 +1846,13 @@ const nativeMenus = nativeMenuQueue<MenuRequest>({
   show: request => call<boolean>("show_menu", { request }),
   hide: id => call<null>("hide_menu", { id }),
 });
+const nativeMenuAvailable = inApp && !windowTransport;
 export const showMenu = (request: MenuRequest): Promise<boolean> =>
-  inApp ? nativeMenus.show(request) : Promise.resolve(false);
+  nativeMenuAvailable ? nativeMenus.show(request) : Promise.resolve(false);
 
 /** Retires only this lease. Desktop reuses its hidden window; iOS removes
     its private sibling presenter. Stale owners cannot close a newer menu. */
-export const hideMenu = (id: string) => (inApp ? nativeMenus.hide(id) : Promise.resolve(null));
+export const hideMenu = (id: string) => (nativeMenuAvailable ? nativeMenus.hide(id) : Promise.resolve(null));
 
 /** The columns that ask the window for their room: the session's 附栏
     (`App`) and the workspace's sessions (`WorkspacePane`). Each one's
