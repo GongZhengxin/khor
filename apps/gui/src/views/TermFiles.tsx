@@ -1,4 +1,4 @@
-/** A keyboard-position selection panel, with the existing file browser/pages above it. */
+/** An attachment selection panel with the existing file browser and preview. */
 import {useEffect,useLayoutEffect,useMemo,useRef,useState,useId,type RefObject} from 'react';
 import {createPortal} from 'react-dom';
 import {fetchDevices,nativeFolders,said,termDropForget,termPickFolders,type DeviceRow} from '@/api';
@@ -30,7 +30,7 @@ export type FilesRoad = {
   add: (entries: Attachment[]) => void;
   remove: (entry: Attachment) => void;
   replace?: (entry: Attachment, file: File) => void;
-  open?: () => void; opened?: boolean;
+  open?: () => void; close?: () => void; opened?: boolean;
   into?: string | null; onInto?: (path: string | null) => void;
   filesOnly?: boolean; action?: string;
   send: (entries: Attachment[], into?: string | null) => Promise<boolean>;
@@ -44,10 +44,20 @@ export function machinesFor(devices: DeviceRow[], machine: string | null): Devic
 }
 
 type Place={machine:DeviceRow;path:string;root?:Attachment};
-export function AttachmentPicker({open,onClose,road,onSent,viewport}:{open:boolean;onClose:()=>void;road:FilesRoad;onSent:()=>void;viewport?:RefObject<HTMLElement|null>}){
- return open?<TermFiles road={road} onClose={onClose} onSent={onSent} viewport={viewport}/>:null;
+type PickerProps = {
+ open: boolean;
+ onClose: () => void;
+ road: FilesRoad;
+ onSent: () => void;
+ viewport?: RefObject<HTMLElement | null>;
+ terminalOverlay?: boolean;
+ onBeforeSend?: () => void;
+};
+
+export function AttachmentPicker({open,...props}:PickerProps){
+ return open?<TermFiles {...props}/>:null;
 }
-export function TermFiles({road,onClose,onSent,viewport}:{road:FilesRoad;onClose:()=>void;onSent:()=>void;viewport?:RefObject<HTMLElement|null>}){
+export function TermFiles({road,onClose,onSent,viewport,terminalOverlay=false,onBeforeSend}:Omit<PickerProps,'open'>){
  const narrow=useNarrow();
  const sourceTitle=useId(),selectedTitle=useId();
  const picker=useRef<HTMLInputElement>(null),folders=useRef<HTMLInputElement>(null),panel=useRef<HTMLDivElement>(null);
@@ -65,13 +75,22 @@ export function TermFiles({road,onClose,onSent,viewport}:{road:FilesRoad;onClose
    const rect=host?.getBoundingClientRect(),left=Math.max(0,rect?.left??0),right=Math.min(window.innerWidth,rect?.right??window.innerWidth);
    const width=right-left;
    sheet.style.left=(width>0?left:0)+'px';sheet.style.width=(width>0?width:window.innerWidth)+'px';
+   // Cover the lower part of the terminal, leaving the key row reachable.
+   // Opening or closing the picker never changes the shell's available height.
+   if(terminalOverlay&&rect){
+    const panelHeight=Math.min(height,rect.height);
+    sheet.style.top=`${rect.bottom-panelHeight}px`;
+    sheet.style.height=`${panelHeight}px`;
+    sheet.style.setProperty('--attachment-panel-height',`${panelHeight}px`);
+   }
   };
   const observer=new ResizeObserver(sync);sync();
   const frame=requestAnimationFrame(sync);
   window.addEventListener('resize',sync);window.addEventListener('transitionend',sync,true);window.addEventListener('animationend',sync,true);window.visualViewport?.addEventListener('resize',sync);
   return()=>{cancelAnimationFrame(frame);observer.disconnect();window.removeEventListener('resize',sync);window.removeEventListener('transitionend',sync,true);window.removeEventListener('animationend',sync,true);window.visualViewport?.removeEventListener('resize',sync);};
- },[viewport]);
+ },[height,terminalOverlay,viewport]);
  useLayoutEffect(()=>{
+  if(terminalOverlay)return;
   const field=document.activeElement;oldHold.current=footHeld();
   // Move chrome to the keyboard's edge while the terminal retains its grid.
   // The terminal's fit guard covers this hold and every nested content page.
@@ -80,8 +99,8 @@ export function TermFiles({road,onClose,onSent,viewport}:{road:FilesRoad;onClose
   if(covered&&field instanceof HTMLElement){restore.current=field;lowerKeyboard(field);}
   else if(field instanceof HTMLElement&&field.matches('input,textarea'))field.blur();
   return()=>{holdFoot(oldHold.current);};
- },[height,narrow]);
- const finish=(sent=false)=>{if(restore.current?.isConnected)raiseKeyboard(restore.current);sent?onSent():onClose();};
+ },[height,narrow,terminalOverlay]);
+ const finish=(sent=false)=>{if(!terminalOverlay&&restore.current?.isConnected)raiseKeyboard(restore.current);sent?onSent():onClose();};
  useEffect(()=>{mounted.current=true;let live=true;void fetchDevices().then(rows=>{if(live)setDevices(rows);},e=>{if(live)setError(said(e));});return()=>{live=false;mounted.current=false;};},[]);
  const sources=machinesFor(devices,road.machine).filter(device=>!device.me);
  const own=(entry:Attachment)=>road.selected.some(item=>item.key===entry.key);
@@ -94,9 +113,23 @@ export function TermFiles({road,onClose,onSent,viewport}:{road:FilesRoad;onClose
  };
  const machineFor=(entry:Attachment)=>devices.find(d=>entry.from?d.name===entry.from:d.me);
  const browse=(entry:Attachment)=>{const machine=machineFor(entry);if(machine)setAt({machine,path:entry.device?'/':entry.path,root:entry.device?entry:undefined});};
- const send=async()=>{if(road.busy||sending.current||!road.selected.length)return;sending.current=true;setError(null);try{if(await road.send(road.selected,road.into)){if(mounted.current)finish(true);}else if(mounted.current)setError('附件未能发送，已保留所选文件，可重试');}catch(e){if(mounted.current)setError(said(e));}finally{sending.current=false;}};
+ const send=async()=>{
+  if(road.busy||sending.current||!road.selected.length)return;
+  sending.current=true;setError(null);
+  try{
+   // A native picker or preview can have taken focus. Restore it during
+   // the send press, while the browser can still open the soft keyboard.
+   onBeforeSend?.();
+   if(await road.send(road.selected,road.into)){if(mounted.current)finish(true);}
+   else if(mounted.current)setError('附件未能发送，已保留所选文件，可重试');
+  }catch(e){if(mounted.current)setError(said(e));}
+  finally{sending.current=false;}
+ };
  return <>
- {createPortal(<div ref={panel} data-attachment-picker data-files-panel style={{height,'--attachment-panel-height':height+'px'} as import('react').CSSProperties} className="fixed bottom-0 z-40 flex min-h-0 flex-col gap-row border-t bg-(--canvas-solid) px-base pt-in pb-safe-bottom shadow-(--shadow-float)" onKeyDown={e=>{if(e.key==='Escape'&&!road.busy){e.preventDefault();finish();}}}>
+ {createPortal(<div ref={panel} data-attachment-picker data-files-panel style={{height,'--attachment-panel-height':height+'px'} as import('react').CSSProperties} className={cn("fixed z-40 flex min-h-0 flex-col gap-row border-t bg-(--canvas-solid) px-base pt-in pb-safe-bottom shadow-(--shadow-float)",!terminalOverlay&&"bottom-0")} onMouseDown={event=>{
+  if(!terminalOverlay||event.button!==0||!document.activeElement?.matches('.xterm-helper-textarea'))return;
+  if(event.target instanceof Element&&!event.target.closest('input,textarea,select,[contenteditable=true]'))event.preventDefault();
+ }} onKeyDown={e=>{if(e.key==='Escape'&&!road.busy){e.preventDefault();finish();}}}>
   <div data-files-actions className="flex min-h-touch flex-none items-center justify-between">
    <Button data-files-cancel variant="ghost" className="min-h-touch" disabled={road.stopping||(road.busy&&!road.cancel)} onClick={()=>road.busy?road.cancel?.():finish()}>{road.busy&&road.cancel?'取消传输':'取消'}</Button>
    <Button data-files-send compactTouch variant={road.selected.length?"primary":"default"} className={road.selected.length?"min-h-touch":"min-h-touch text-muted-foreground"} disabled={road.busy||picking||!road.selected.length} onClick={()=>void send()}>{road.busy?'正在发送':`发送${road.selected.length?' ('+road.selected.length+')':''}`}</Button>

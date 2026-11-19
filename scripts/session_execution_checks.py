@@ -23,6 +23,8 @@ def main():
         # inherited environment, covered by the path and real worker checks.
         filters.remove("user_environment")
         filters.extend(["live::tests::windows_close", "win_process::tests"])
+    # Keep native transcript and file-lock coverage on the same desktop matrix.
+    filters.append("adaptor::codex")
     commands = [
         ["cargo", "test", "--locked", "-p", "khor-node", "--lib", name,
          "--", "--nocapture", "--test-threads=1"]
