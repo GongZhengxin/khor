@@ -150,16 +150,27 @@ def check_installed_powershell(cli, environment, scratch):
         marker = scratch / f"{name} marker.txt"
         literal = str(marker).replace("'", "''")
         command = f"Set-Content -LiteralPath '{literal}' -Value 'KHOR_POWERSHELL_OK' -Encoding ASCII"
-        subprocess.run([str(cli), "open", "-d", "--title", name, "--", str(executable),
-                        "-NoLogo", "-NoProfile", "-NonInteractive", "-Command", command],
-                       env=environment, cwd=scratch, check=True, timeout=60)
+        opened = subprocess.run([str(cli), "open", "-d", "--title", name, "--", str(executable),
+                                 "-NoLogo", "-NoProfile", "-NonInteractive", "-Command", command],
+                                env=environment, cwd=scratch, stdout=subprocess.PIPE,
+                                text=True, encoding="utf-8", check=True, timeout=60)
+        session_id = opened.stdout.strip()
         deadline = time.monotonic() + 20
         while time.monotonic() < deadline:
             if marker.is_file() and marker.read_text(encoding="ascii").strip() == "KHOR_POWERSHELL_OK":
                 break
             time.sleep(0.1)
         else:
-            raise AssertionError(f"The installed Khor did not finish its command in {name}")
+            kind, _, leaf = session_id.partition("/")
+            assert kind == "shell" and leaf.isalnum(), f"Invalid test session ID: {session_id!r}"
+            session = Path(environment["KHOR_HOME"]) / ".khor/sessions" / f"{kind}-{leaf}"
+            for filename in ("state.json", "host-error.txt", "last.txt", "ring.bin"):
+                path = session / filename
+                if path.is_file():
+                    with path.open("rb") as stream:
+                        stream.seek(max(0, path.stat().st_size - 2400))
+                        print(f"{name} {filename}: {stream.read(2400).decode(errors='replace')!r}", flush=True)
+            raise AssertionError(f"The installed Khor did not finish its command in {name} ({session_id})")
         print(f"The installed Khor executed a hosted command in {name}.", flush=True)
 
 
