@@ -1,14 +1,18 @@
 // Called by the Windows installer check after opening the packaged app
 // and creating a local cmd.exe session in an isolated store.
 import assert from "node:assert/strict";
+import { execFile } from "node:child_process";
 import { once } from "node:events";
 import { writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import { basename, join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
+import { fileURLToPath } from "node:url";
+import { promisify } from "node:util";
 import { chromium } from "playwright-core";
 
-const [, , port, title, ready, workspace, exitMachine, acp] = process.argv;
+const [, , port, title, ready, workspace, exitMachine, ...checks] = process.argv;
+const nativeWindow = checks.find(check => check.startsWith("--native-drag="))?.split("=")[1];
 const endpoint = `http://127.0.0.1:${port}`;
 function isAppPage(url) {
   try {
@@ -151,11 +155,23 @@ async function checkTerminalAttachment(page, terminal, shell, readTerminal) {
   await writeFile(path, marker + "\r\n");
   await terminal.evaluate(element => element.__xterm.focus());
   await page.keyboard.type(shell === "cmd" ? "type " : "Get-Content -LiteralPath ");
-  await terminal.evaluate((element, path) => {
-    const data = new DataTransfer();
-    data.setData("application/x-khor-path", JSON.stringify({machine: null, path}));
-    element.dispatchEvent(new DragEvent("drop", {bubbles: true, cancelable: true, dataTransfer: data}));
-  }, path);
+  if (nativeWindow) {
+    const point = await terminal.evaluate(element => {
+      const bounds = element.getBoundingClientRect();
+      return [(bounds.left + bounds.width / 2) * devicePixelRatio,
+        (bounds.top + bounds.height / 2) * devicePixelRatio].map(Math.round);
+    });
+    const drag = fileURLToPath(new URL("../../../scripts/check-windows-drag.ps1", import.meta.url));
+    await promisify(execFile)("powershell.exe", ["-NoProfile", "-NonInteractive", "-Sta",
+      "-ExecutionPolicy", "Bypass", "-File", drag, nativeWindow, ...point.map(String), path],
+    {timeout: 18_000});
+  } else {
+    await terminal.evaluate((element, path) => {
+      const data = new DataTransfer();
+      data.setData("application/x-khor-path", JSON.stringify({machine: null, path}));
+      element.dispatchEvent(new DragEvent("drop", {bubbles: true, cancelable: true, dataTransfer: data}));
+    }, path);
+  }
   const panel = page.locator("[data-files-panel]:visible");
   await panel.getByText(basename(path), {exact: true}).waitFor();
   await panel.locator("[data-files-send]").click();
@@ -163,7 +179,7 @@ async function checkTerminalAttachment(page, terminal, shell, readTerminal) {
   await terminal.evaluate(element => element.__xterm.focus());
   await page.keyboard.press("Enter");
   await readTerminal(marker);
-  console.log(`The installed Windows App opened the attached file in ${shell}.`);
+  console.log(`The installed Windows App opened the ${nativeWindow ? "native drop" : "attachment"} in ${shell}.`);
 }
 
 await waitForWindow();
@@ -252,7 +268,7 @@ try {
     await page.keyboard.press("Enter");
   }
 
-  if (acp === "--acp") await checkAcp(page);
+  if (checks.includes("--acp")) await checkAcp(page);
   await checkBrowser(page, navigation);
   console.log("Windows browser loaded both direct and borrowed localhost pages.");
 

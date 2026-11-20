@@ -9,6 +9,10 @@ on:
       previous_package_run:
         description: Earlier Windows package run to install before testing the upgrade
         type: string
+      native_drag:
+        description: Send a real Windows file drag when replaying an installed package
+        type: boolean
+        default: false
       retry_runner:
         description: Runner for testing an existing MSI
         type: choice
@@ -61,6 +65,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           PACKAGE_RUN: ${{ inputs.package_run }}
           PREVIOUS_PACKAGE_RUN: ${{ inputs.previous_package_run }}
+          NATIVE_DRAG: ${{ inputs.native_drag }}
         run: |
           $source = gh run view $env:PACKAGE_RUN --repo $env:GITHUB_REPOSITORY --json headSha --jq .headSha
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
@@ -73,6 +78,9 @@ jobs:
             python scripts/release_manifest.py verify --root previous-product --sha $previous --run-id $env:PREVIOUS_PACKAGE_RUN
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
             $installerArgs += @("--upgrade-from", "previous-product/khor-windows-x86_64.msi", "--upgrade-source", $previous)
+          }
+          if ($env:NATIVE_DRAG -eq "true") {
+            $installerArgs += "--native-drag"
           }
           python scripts/check-desktop-installer.py @installerArgs
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
