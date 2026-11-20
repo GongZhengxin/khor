@@ -289,8 +289,10 @@ try {
     await page.keyboard.press("Enter");
     await readTerminal(output);
     console.log(`The new-session wizard opened ${label} and an interactive command returned its expected output.`);
-    await checkTerminalAttachment(page, terminal, id, readTerminal);
-    if (id === "cmd") await checkPeerAttachment(page, terminal, readTerminal);
+    if (!checks.includes("--legacy-shell-ui")) {
+      await checkTerminalAttachment(page, terminal, id, readTerminal);
+      if (id === "cmd") await checkPeerAttachment(page, terminal, readTerminal);
+    }
     await page.keyboard.type("exit");
     await page.keyboard.press("Enter");
   }

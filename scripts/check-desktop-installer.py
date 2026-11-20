@@ -161,7 +161,7 @@ def check_installed_powershell(cli, environment, scratch):
         print(f"The installed Khor executed a hosted command in {name}.", flush=True)
 
 
-def launch_installed(directory, acp_fixture=None, native_drag=False):
+def launch_installed(directory, acp_fixture=None, native_drag=False, legacy_shell_ui=False):
     prefix = "Khor 验收 home " if os.name == "nt" else "khor-install-home-"
     with tempfile.TemporaryDirectory(prefix=prefix) as temporary:
         # Windows may give Python an 8.3 TEMP path while CIM reports the
@@ -272,6 +272,8 @@ def launch_installed(directory, acp_fixture=None, native_drag=False):
                                 args.append("--acp")
                             if native_drag:
                                 args.append(f"--native-drag={window}")
+                            if legacy_shell_ui:
+                                args.append("--legacy-shell-ui")
                             subprocess.run(args, check=True, timeout=300)
                         finally:
                             request_windows_close(window)
@@ -391,7 +393,7 @@ def invoke_msi(action, package, destination=None):
     return subprocess.run(command, timeout=600)
 
 
-def windows(package, expected_source, acp_fixture=None, previous=None, native_drag=False):
+def windows(package, expected_source, acp_fixture=None, previous=None, native_drag=False, legacy_shell_ui=False):
     import winreg
     with tempfile.TemporaryDirectory(prefix="khor-desktop-") as temporary:
         destination = Path(temporary) / "Installed Khor"
@@ -430,15 +432,16 @@ def windows(package, expected_source, acp_fixture=None, previous=None, native_dr
             entries = [value.rstrip("\\").casefold() for value in after.split(";")]
             assert entries[0] == str(independent).casefold(), "Independent CLI keeps its PATH priority"
             assert str(destination).casefold() in entries
-            launch_installed(destination, acp_fixture, native_drag)
+            launch_installed(destination, acp_fixture, native_drag, legacy_shell_ui)
             if acp_fixture is not None:
                 proof["installed_acp_conversation"] = True
             proof["installed_powershell_commands"] = True
             proof["installed_powershell_interaction"] = True
             proof["installed_windows_shell_selection"] = True
             proof["installed_terminal_roundtrip"] = True
-            proof["installed_terminal_attachment_paths"] = True
-            proof["installed_paired_node_attachment"] = True
+            if not legacy_shell_ui:
+                proof["installed_terminal_attachment_paths"] = True
+                proof["installed_paired_node_attachment"] = True
             if native_drag:
                 proof["installed_native_file_drag"] = True
             proof["installed_native_caption"] = True
@@ -472,9 +475,12 @@ if __name__ == "__main__":
     parser.add_argument("--upgrade-from", type=Path, help="Earlier MSI to upgrade in place")
     parser.add_argument("--upgrade-source", help="Complete source SHA of the previous MSI")
     parser.add_argument("--native-drag", action="store_true", help="Exercise Windows OLE file drag on the runner desktop")
+    parser.add_argument("--legacy-shell-ui", action="store_true", help="Replay a package before shell-aware attachments")
     args = parser.parse_args()
     if os.environ.get("GITHUB_ACTIONS") != "true":
         parser.error("Installation checks require an isolated GitHub runner")
+    if args.legacy_shell_ui and args.native_drag:
+        parser.error("Native file drag requires the attachment check")
     package = args.package.resolve(strict=True)
     expected_source = args.expected_source or source_sha()
     if len(expected_source) != 40 or any(c not in "0123456789abcdef" for c in expected_source):
@@ -487,7 +493,7 @@ if __name__ == "__main__":
                 or len(source) != 40 or any(c not in "0123456789abcdef" for c in source)):
             parser.error("In-place upgrade checks require a previous Windows MSI from a different complete source SHA")
         previous = (args.upgrade_from.resolve(strict=True), source)
-    proof = windows(package, expected_source, acp_fixture, previous, args.native_drag) if os.name == "nt" else macos(package, expected_source) if sys.platform == "darwin" else linux(package, expected_source)
+    proof = windows(package, expected_source, acp_fixture, previous, args.native_drag, args.legacy_shell_ui) if os.name == "nt" else macos(package, expected_source) if sys.platform == "darwin" else linux(package, expected_source)
     proof["validation"] = {"test_source": source_sha(), "package_source": expected_source, "resident_start_stop": True, "app_launch": True}
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(proof, indent=2) + "\n")
