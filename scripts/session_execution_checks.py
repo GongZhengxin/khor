@@ -24,7 +24,7 @@ def main():
         filters.remove("user_environment")
         filters.extend(["live::tests::windows_close", "win_process::tests"])
     # Keep native transcript and file-lock coverage on the same desktop matrix.
-    filters.append("adaptor::codex")
+    filters.extend(["adaptor::codex", "host::agent_draft::tests"])
     commands = [
         ["cargo", "test", "--locked", "-p", "khor-node", "--lib", name,
          "--", "--nocapture", "--test-threads=1"]
