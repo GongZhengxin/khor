@@ -3,6 +3,7 @@ import argparse
 import json
 import os
 from pathlib import Path
+import shutil
 import socket
 import subprocess
 import sys
@@ -135,6 +136,27 @@ def test_direct_network(environment):
         '{"relays":[{"url":"http://127.0.0.1:9"}],"only_mine":true}', encoding="utf-8")
 
 
+def check_installed_powershell(cli, environment, scratch):
+    legacy = Path(os.environ["SystemRoot"]) / "System32/WindowsPowerShell/v1.0/powershell.exe"
+    modern = shutil.which("pwsh.exe")
+    assert legacy.is_file() and modern, "The Windows installer runner needs both PowerShell versions"
+    for name, executable in (("Windows PowerShell", legacy), ("PowerShell 7", modern)):
+        marker = scratch / f"{name} marker.txt"
+        literal = str(marker).replace("'", "''")
+        command = f"Set-Content -LiteralPath '{literal}' -Value 'KHOR_POWERSHELL_OK' -Encoding ASCII"
+        subprocess.run([str(cli), "open", "-d", "--title", name, "--", str(executable),
+                        "-NoLogo", "-NoProfile", "-NonInteractive", "-Command", command],
+                       env=environment, cwd=scratch, check=True, timeout=60)
+        deadline = time.monotonic() + 20
+        while time.monotonic() < deadline:
+            if marker.is_file() and marker.read_text(encoding="ascii").strip() == "KHOR_POWERSHELL_OK":
+                break
+            time.sleep(0.1)
+        else:
+            raise AssertionError(f"The installed Khor did not finish its command in {name}")
+        print(f"The installed Khor executed a hosted command in {name}.", flush=True)
+
+
 def launch_installed(directory):
     with tempfile.TemporaryDirectory(prefix="khor-install-home-") as temporary:
         # Windows may give Python an 8.3 TEMP path while CIM reports the
@@ -190,6 +212,8 @@ def launch_installed(directory):
             service = subprocess.Popen([str(cli), "serve"],
                                        env=environment, stdout=log, stderr=subprocess.STDOUT)
             wait_for_resident(service, environment["KHOR_HOME"], log_path)
+            if os.name == "nt":
+                check_installed_powershell(cli, environment, scratch)
             subprocess.run([str(cli), "quit"], env=environment, check=True, timeout=30)
             service.wait(timeout=10)
             deadline = time.monotonic() + 10
@@ -380,6 +404,7 @@ def windows(package, expected_source):
             assert entries[0] == str(independent).casefold(), "Independent CLI keeps its PATH priority"
             assert str(destination).casefold() in entries
             launch_installed(destination)
+            proof["installed_powershell_commands"] = True
             proof["installed_terminal_roundtrip"] = True
             proof["installed_native_caption"] = True
             proof["installed_workspace_preview"] = True

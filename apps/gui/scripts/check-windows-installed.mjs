@@ -3,7 +3,7 @@
 import assert from "node:assert/strict";
 import { once } from "node:events";
 import { createServer } from "node:http";
-import { basename } from "node:path";
+import { basename, join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { chromium } from "playwright-core";
 
@@ -116,9 +116,14 @@ await waitForWindow();
 const browser = await chromium.connectOverCDP(endpoint, {timeout: 15_000});
 let page;
 const errors = [];
+const reads = [];
 try {
   page = await findWindowPage(browser);
   page.on("pageerror", error => errors.push(error.message));
+  page.on("response", response => {
+    const route = new URL(response.url()).pathname;
+    if (["/lock_state", "/read_text"].includes(route)) reads.push(`${route} ${response.status()}`);
+  });
   page.setDefaultTimeout(20_000);
   const windowButtons = page.locator("[data-window-controls], [data-window-control]");
 
@@ -193,12 +198,21 @@ try {
       lockUnavailable: !!document.querySelector("[data-lock-unavailable]"),
       faults: Array.from(document.querySelectorAll("[data-fault]"), node => node.getAttribute("data-fault")),
       landings: Array.from(document.querySelectorAll("[data-landing]"), node => node.getAttribute("data-landing")),
+      fileFaces: Array.from(document.querySelectorAll("[data-file-face-toggle]"), node => node.getAttribute("data-file-face-toggle")),
+      editorReady: !!document.querySelector("[data-file-view]"),
+      preview: document.querySelector("[data-file-preview]")?.textContent?.slice(0, 400),
     })).catch(cause => ({error: cause.message}));
-    console.error("Windows App state:", JSON.stringify(state), "page errors:", errors.slice(-5));
+    console.error("Windows App state:", JSON.stringify(state), "page errors:", errors.slice(-5), "reads:", reads.slice(-10));
     if (state.lockWaiting || state.lockUnavailable) {
       const lockOn = await command(page, "lock_state", {}, 5000)
         .then(facts => facts.on, cause => cause.message);
       console.error("The installed App's lock read reports:", lockOn);
+    }
+    if (state.fileFaces?.length) {
+      const read = await command(page, "read_text", {machine: "", path: join(workspace, "readme.md")}, 5000)
+        .then(file => ({hasHeading: file.text.includes("Khor installation workspace"), binary: file.binary}),
+          cause => cause.message);
+      console.error("The installed App's fixture file read reports:", read);
     }
   }
   throw error;
