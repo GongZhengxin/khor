@@ -91,6 +91,7 @@ struct Editor {
     lines: Vec<String>,
     first: usize,
     end: usize,
+    prefix: usize,
     placeholder: bool,
 }
 
@@ -117,7 +118,7 @@ impl Editor {
                     return None;
                 }
                 let footer = (cursor + 2..lines.len()).find(|&index| {
-                    lines[index - 1].trim().is_empty() && codex_status(&lines[index])
+                    lines[index - 1].trim().is_empty() && codex_status(&lines[index..])
                 })?;
                 footer - 1
             }
@@ -129,6 +130,7 @@ impl Editor {
             }
         };
         let text = prompt_text(agent, &lines[first])?;
+        let prefix = lines[first].len() - text.len();
         let at_start = cursor == first && col == 2;
         let placeholder = at_start
             && end == first + 1
@@ -140,6 +142,7 @@ impl Editor {
             lines,
             first,
             end,
+            prefix,
             placeholder,
         })
     }
@@ -153,10 +156,7 @@ impl Editor {
             .enumerate()
             .flat_map(|(i, line)| {
                 let line = if i == 0 {
-                    // Both prompt glyphs occupy one cell followed by a space.
-                    let mut chars = line.chars();
-                    chars.nth(1);
-                    chars.as_str()
+                    &line[self.prefix..]
                 } else {
                     line.strip_prefix("  ").unwrap_or(line)
                 };
@@ -177,11 +177,15 @@ fn prompt_text(agent: Agent, line: &str) -> Option<&str> {
     }
 }
 
-fn codex_status(line: &str) -> bool {
-    let Some(line) = line.strip_prefix("  ") else {
-        return false;
-    };
-    let lower = line.to_ascii_lowercase();
+fn codex_status(lines: &[String]) -> bool {
+    // Codex draws the status bar over several rows on a narrow terminal.
+    let lower = lines
+        .iter()
+        .take(3)
+        .map_while(|line| line.strip_prefix("  "))
+        .collect::<Vec<_>>()
+        .join(" ")
+        .to_ascii_lowercase();
     (lower.contains("context ") && lower.contains("% used")) || lower.contains("% context left")
 }
 
@@ -219,7 +223,13 @@ mod tests {
         assert_eq!(capture.update(source, empty.screen()), Some(None));
         capture.input(b"\x1b[I"); // Focus reporting is not typing.
         let draft = frame(
-            &["\x1b[1m›\x1b[0m 世界", "  second line", "", STATUS],
+            &[
+                "\x1b[1m›\x1b[0m 世界",
+                "  second line",
+                "",
+                "  GPT-6.2-Astra xhigh · Context",
+                "  12% used · Fast · Workspace",
+            ],
             (1, 13),
         );
         assert_eq!(capture.update(source, draft.screen()), Some(None));
