@@ -163,7 +163,9 @@ def check_installed_powershell(cli, environment, scratch):
 
 def launch_installed(directory, acp_fixture=None, native_drag=False, legacy_shell_ui=False, shell_selection=None):
     prefix = "Khor 验收 home " if os.name == "nt" else "khor-install-home-"
-    with tempfile.TemporaryDirectory(prefix=prefix) as temporary:
+    # The runner reaps this scratch directory. Process shutdown is asserted
+    # separately, and short-lived Windows file locks must not hide a failure.
+    with tempfile.TemporaryDirectory(prefix=prefix, ignore_cleanup_errors=os.name == "nt") as temporary:
         # Windows may give Python an 8.3 TEMP path while CIM reports the
         # executable with the long spelling. Match the same owned directory.
         scratch = Path(temporary).resolve()

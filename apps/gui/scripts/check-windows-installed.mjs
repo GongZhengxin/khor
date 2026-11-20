@@ -180,9 +180,10 @@ async function checkTerminalAttachment(page, terminal, shell, readTerminal) {
         (bounds.top + bounds.height / 2) * devicePixelRatio].map(Math.round);
     });
     const drag = fileURLToPath(new URL("../../../scripts/check-windows-drag.ps1", import.meta.url));
-    await promisify(execFile)("powershell.exe", ["-NoProfile", "-NonInteractive", "-Sta",
+    const gesture = await promisify(execFile)("powershell.exe", ["-NoProfile", "-NonInteractive", "-Sta",
       "-ExecutionPolicy", "Bypass", "-File", drag, nativeWindow, ...point.map(String), path],
-    {timeout: 18_000});
+    {timeout: 18_000, windowsHide: true});
+    console.log(gesture.stdout.trim());
   } else {
     await dropKhorPath(terminal, path);
   }
