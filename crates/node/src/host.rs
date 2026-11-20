@@ -27,7 +27,7 @@ use std::net::{TcpListener, TcpStream};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use khor_catalog::msg;
 use khor_core::{SessionId, State};
@@ -42,6 +42,11 @@ use crate::live::LiveKind;
 use crate::proto;
 
 mod agent_draft;
+
+// The installed Windows host has taken over seven seconds to spawn its first
+// console child on a cold machine. Keep its readiness wait within the caller's
+// remote-operation deadline, and still report a failed child as soon as it exits.
+const HOST_READY_TIMEOUT: Duration = Duration::from_secs(if cfg!(windows) { 15 } else { 5 });
 
 /// Every new PTY describes khor's terminal, regardless of which CLI, GUI,
 /// daemon or automation environment happened to create its host. Application
@@ -810,7 +815,8 @@ fn spawn_host_with(
         let mut child = image.spawn(&mut c).map_err(msg::host_wont_start)?;
         crate::startup_trace::mark("client-spawned");
         host_spawned = true;
-        for _ in 0..100 {
+        let deadline = Instant::now() + HOST_READY_TIMEOUT;
+        loop {
             if marker.exists() {
                 crate::startup_trace::mark("client-ready");
                 return Ok(());
@@ -833,9 +839,12 @@ fn spawn_host_with(
                     _ => msg::host_died_mute().to_string(),
                 });
             }
-            std::thread::sleep(Duration::from_millis(50));
+            let remaining = deadline.saturating_duration_since(Instant::now());
+            if remaining.is_zero() {
+                return Err(msg::host_never_ready(HOST_READY_TIMEOUT.as_secs()).into());
+            }
+            std::thread::sleep(remaining.min(Duration::from_millis(50)));
         }
-        Err(msg::host_never_ready().into())
     })();
     // No process exists on this branch. A timeout after spawning is uncertain
     // and must never turn a possibly running execution into a dead row.
@@ -2221,6 +2230,7 @@ fn host_serving(
             pixel_height: 0,
         })
         .map_err(msg::cant_open_pty)?;
+    crate::startup_trace::mark("pty-opened");
     // **The PTY's command is looked up by khor, against a `PATH` that
     // can answer** — `crate::spawn_path`. A `khor serve` under launchd
     // has `/usr/bin:/bin:/usr/sbin:/sbin` and `tmux` lives in

@@ -2282,7 +2282,7 @@ gui-wont-start = "桌面 app 无法启动：{0}"
 # failure there is, and the commonest of them (`tmux` not on a launchd
 # `PATH`) took about a millisecond. **A sentence about waiting, for
 # something that never waited.**
-host-never-ready = "宿主未在 5 秒内就绪"
+host-never-ready = "宿主未在 {0} 秒内就绪"
 # The host process ended before it was reachable and left nothing
 # behind — the residue of the case above, kept honest: khor says the
 # host is gone rather than inventing a reason for it.
