@@ -200,7 +200,7 @@ async function checkPeerAttachment(page, terminal, shell, readTerminal) {
   const bytes = marker + "\r\n";
   await mkdir(destination);
   await writeFile(path, bytes);
-  await command(page, "set_receive_dir", {machine: "", dir: destination});
+  await command(page, "set_receive_dir", {machine: "installer-client", dir: destination});
   await terminal.evaluate(element => element.__xterm.focus());
   await page.keyboard.type(shell === "cmd" ? "type " : "Get-Content -LiteralPath ");
   await dropKhorPath(terminal, path, exitMachine);
