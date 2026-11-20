@@ -270,7 +270,7 @@ mod tests {
             cmd.env,
             [(
                 "PROMPT".into(),
-                r"$e]133;D$e\$e]133;A$e\$e]7;file:///$P$e\$P$G$e]133;B$e\".into()
+                r"$e]133;D$e\$e]133;A$e\$e]9;9;$P$e\$P$G$e]133;B$e\".into()
             )]
         );
         let bash = plan(d, &["/bin/bash".into(), "-l".into(), "-i".into()], env(&[])).unwrap();
