@@ -114,8 +114,11 @@ async function findWindowPage(browser) {
 
 await waitForWindow();
 const browser = await chromium.connectOverCDP(endpoint, {timeout: 15_000});
+let page;
+const errors = [];
 try {
-  const page = await findWindowPage(browser);
+  page = await findWindowPage(browser);
+  page.on("pageerror", error => errors.push(error.message));
   page.setDefaultTimeout(20_000);
   const windowButtons = page.locator("[data-window-controls], [data-window-control]");
 
@@ -129,8 +132,11 @@ try {
   });
   assert(Number.isInteger(eventId), "The Windows event bridge must return its listener ID");
   assert(Array.isArray(await command(page, "ssh_config_hosts")), "The Windows App must answer the SSH host picker");
+  console.log("Windows event registration and SSH host lookup answered.");
 
-  await page.locator('[data-landing="sessions"]:visible').first().click();
+  const sessions = page.locator('[data-landing="sessions"]:visible').first();
+  await sessions.waitFor();
+  if (await sessions.getAttribute("aria-current") !== "page") await sessions.click();
   await page.locator('[data-pane-filter]:visible').click();
   const conversations = page.locator('[data-filter-option="talk:yes"]');
   await conversations.waitFor();
@@ -158,6 +164,7 @@ try {
   await page.keyboard.press("Enter");
   await readTerminal("KHOR_TERMINAL_INPUT_OK");
   assert.equal(await windowButtons.count(), 0, "Session panes inherit the native caption");
+  console.log("Windows terminal accepted keyboard input and displayed the result.");
   await page.keyboard.type("exit");
   await page.keyboard.press("Enter");
 
@@ -169,12 +176,32 @@ try {
   const preview = page.getByText("Khor installation workspace", {exact: true});
   await preview.waitFor();
   assert.equal(await windowButtons.count(), 0, "Workspace panes inherit the native caption");
+  console.log("Windows workspace opened a file and displayed its preview.");
   await checkBrowser(page, navigation);
   await command(page, "window_event_unlisten", {eventId});
   await page.evaluate(id => window.__TAURI_INTERNALS__.unregisterCallback(id), callback);
 
   // The installer checker closes the native window after CDP disconnects.
   console.log("Installed Windows App verified a live terminal, workspace file and child browser.");
+} catch (error) {
+  if (page && !page.isClosed()) {
+    const state = await page.evaluate(() => ({
+      size: [innerWidth, innerHeight],
+      ready: document.readyState,
+      lockWaiting: !!document.querySelector("[data-lock-wait]"),
+      lockShown: !!document.querySelector("[data-lock-screen]"),
+      lockUnavailable: !!document.querySelector("[data-lock-unavailable]"),
+      faults: Array.from(document.querySelectorAll("[data-fault]"), node => node.getAttribute("data-fault")),
+      landings: Array.from(document.querySelectorAll("[data-landing]"), node => node.getAttribute("data-landing")),
+    })).catch(cause => ({error: cause.message}));
+    console.error("Windows App state:", JSON.stringify(state), "page errors:", errors.slice(-5));
+    if (state.lockWaiting || state.lockUnavailable) {
+      const lockOn = await command(page, "lock_state", {}, 5000)
+        .then(facts => facts.on, cause => cause.message);
+      console.error("The installed App's lock read reports:", lockOn);
+    }
+  }
+  throw error;
 } finally {
   await browser.close();
 }
