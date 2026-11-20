@@ -13,6 +13,7 @@ import { chromium } from "playwright-core";
 
 const [, , port, title, ready, workspace, exitMachine, ...checks] = process.argv;
 const nativeWindow = checks.find(check => check.startsWith("--native-drag="))?.split("=")[1];
+const shellSelection = checks.find(check => check.startsWith("--shell-selection="))?.split("=")[1];
 const endpoint = `http://127.0.0.1:${port}`;
 function isAppPage(url) {
   try {
@@ -190,7 +191,7 @@ async function checkTerminalAttachment(page, terminal, shell, readTerminal) {
   console.log(`The installed Windows App opened the ${nativeWindow ? "native drop" : "attachment"} in ${shell}.`);
 }
 
-async function checkPeerAttachment(page, terminal, readTerminal) {
+async function checkPeerAttachment(page, terminal, shell, readTerminal) {
   const file = "Agent's notes 资料.txt";
   const path = join(workspace, file);
   const destination = join(workspace, "Attachment receive");
@@ -200,12 +201,12 @@ async function checkPeerAttachment(page, terminal, readTerminal) {
   await writeFile(path, bytes);
   await command(page, "set_receive_dir", {machine: "", dir: destination});
   await terminal.evaluate(element => element.__xterm.focus());
-  await page.keyboard.type("type ");
+  await page.keyboard.type(shell === "cmd" ? "type " : "Get-Content -LiteralPath ");
   await dropKhorPath(terminal, path, exitMachine);
   await sendAttachment(page, terminal, path);
   assert.equal(await readFile(join(destination, file), "utf8"), bytes);
   await readTerminal(marker);
-  console.log("The installed Windows App transferred the selected attachment between paired nodes and opened it in CMD.");
+  console.log(`The installed Windows App transferred the selected attachment between paired nodes and opened it in ${shell}.`);
 }
 
 await waitForWindow();
@@ -277,10 +278,11 @@ try {
   await page.keyboard.type("exit");
   await page.keyboard.press("Enter");
 
-  for (const {id, label, commandLine, output} of [
+  const shells = [
     {id: "cmd", label: "CMD", commandLine: "echo KHOR_SELECTED_^CMD", output: "KHOR_SELECTED_CMD"},
     {id: "powershell", label: "PowerShell", commandLine: "Write-Output ('KHOR_' + 'SELECTED_POWERSHELL')", output: "KHOR_SELECTED_POWERSHELL"},
-  ]) {
+  ].filter(shell => !shellSelection || shell.id === shellSelection);
+  for (const {id, label, commandLine, output} of shells) {
     await createSession(page, `shell:${id}`, `Khor installer ${label}`, label);
     await terminal.waitFor();
     await terminal.locator("[data-term-opening]").waitFor({state: "hidden"});
@@ -291,7 +293,7 @@ try {
     console.log(`The new-session wizard opened ${label} and an interactive command returned its expected output.`);
     if (!checks.includes("--legacy-shell-ui")) {
       await checkTerminalAttachment(page, terminal, id, readTerminal);
-      if (id === "cmd") await checkPeerAttachment(page, terminal, readTerminal);
+      if (id === shells[0].id) await checkPeerAttachment(page, terminal, id, readTerminal);
     }
     await page.keyboard.type("exit");
     await page.keyboard.press("Enter");
