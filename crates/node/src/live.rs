@@ -1835,7 +1835,21 @@ impl LiveKind {
                     terminate(pid);
                 }
             }
-            fs::remove_dir_all(&dir).map_err(msg::cant_delete)
+            // A terminating host can finish a snapshot or an exit record
+            // while removal is walking the directory. Give those final
+            // writes time to settle if they race the remove.
+            let deadline = std::time::Instant::now() + std::time::Duration::from_secs(1);
+            loop {
+                match fs::remove_dir_all(&dir) {
+                    Err(error)
+                        if error.kind() == std::io::ErrorKind::DirectoryNotEmpty
+                            && std::time::Instant::now() < deadline =>
+                    {
+                        std::thread::sleep(std::time::Duration::from_millis(25));
+                    }
+                    result => return result.map_err(msg::cant_delete),
+                }
+            }
         }
     }
 
