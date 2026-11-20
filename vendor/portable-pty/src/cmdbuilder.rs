@@ -679,7 +679,10 @@ impl CommandBuilder {
         // CreateProcessW accepts forward slashes in the module path, but
         // cmd.exe also reads that path from argv and interprets /cmd.exe as
         // its /c switch. Use native separators in the executable path only.
-        let exe = Path::new(&exe).components().collect::<PathBuf>().into_os_string();
+        let exe = Path::new(&exe)
+            .components()
+            .collect::<std::path::PathBuf>()
+            .into_os_string();
         Self::append_quoted(&exe, &mut cmdline);
 
         // Ensure that we nul terminate the module name, otherwise we'll
