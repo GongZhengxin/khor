@@ -298,3 +298,6 @@ mod pending_drop;
 
 #[path = "normal_release_tests.rs"]
 mod normal_release;
+
+#[path = "pending_recovery_tests.rs"]
+mod pending_recovery;

@@ -41,6 +41,8 @@ use serde::{Deserialize, Serialize};
 use crate::live::LiveKind;
 use crate::proto;
 
+mod agent_draft;
+
 /// Every new PTY describes khor's terminal, regardless of which CLI, GUI,
 /// daemon or automation environment happened to create its host. Application
 /// identity never changes this contract. User shell startup files and an
@@ -1450,6 +1452,7 @@ pub const MODEL_SCROLLBACK_MOST: usize = 10_000;
 struct Model {
     parser: vt100::Parser,
     beside: Beside,
+    agent_draft: agent_draft::Capture,
     /// The rows of history `parser` keeps.
     keeps: usize,
     /// The most any face has asked for ([`ClientOp::Scrollback`]): taken
@@ -1463,6 +1466,7 @@ impl Model {
         Model {
             parser: vt100::Parser::new(rows, cols, MODEL_SCROLLBACK),
             beside: Beside::default(),
+            agent_draft: agent_draft::Capture::default(),
             keeps: MODEL_SCROLLBACK,
             asked: MODEL_SCROLLBACK,
         }
@@ -2390,6 +2394,9 @@ fn host_serving(
         && !mux_client
         && std::env::var("KHOR_SHELL_INTEGRATION").as_deref() != Ok("0");
     let allow_unmarked = integrated.is_none();
+    let direct_agent = (kind == khor_core::kind::TUI && viewer.is_none() && !mux_client)
+        .then(|| agent_draft::Agent::executable(&cmd[0]))
+        .flatten();
 
     // A screen to match patterns against, for an agent TUI khor can
     // name. None for a shell (the process group answers better), and
@@ -2512,19 +2519,25 @@ fn host_serving(
                     screen.lock().unwrap().feed(&buf[..n]);
                 }
                 // Its own lock, never held with another.
-                let marked = commands.as_ref().and_then(|c| {
-                    let mut c = c.lock().unwrap();
-                    c.feed(&buf[..n], crate::live::now_ms().max(0) as u64);
-                    let done = c.take_finished();
-                    if c.take_changes() {
-                        crate::commands::write_saved(&last_dir, &c.saved());
-                    }
-                    (!done.is_empty()).then_some(done)
-                });
-                if let Some(done) = &marked {
-                    crate::commands::append_history(&history, &session, done);
+                let (finished, agent, integrated) =
+                    commands.as_ref().map_or_else(Default::default, |c| {
+                        let mut c = c.lock().unwrap();
+                        c.feed(&buf[..n], crate::live::now_ms().max(0) as u64);
+                        let agent = direct_agent.map(|agent| (agent, 0)).or_else(|| {
+                            if !tracks_shell_input {
+                                return None;
+                            }
+                            let (number, command) = c.running_command()?;
+                            agent_draft::Agent::command(command).map(|agent| (agent, number))
+                        });
+                        if c.take_changes() {
+                            crate::commands::write_saved(&last_dir, &c.saved());
+                        }
+                        (c.take_finished(), agent, c.marked)
+                    });
+                if !finished.is_empty() {
+                    crate::commands::append_history(&history, &session, &finished);
                 }
-                let integrated = commands.as_ref().is_some_and(|c| c.lock().unwrap().marked);
                 if integrated && last_written.is_some() {
                     let _ = std::fs::remove_file(last_dir.join("last.txt"));
                     last_written = None;
@@ -2532,12 +2545,17 @@ fn host_serving(
                 let mut ring = shared.ring.lock().unwrap();
                 ring.push(&buf[..n]);
                 shared.changes.fetch_add(1, Ordering::SeqCst);
-                let lost = shared
-                    .model
-                    .lock()
-                    .unwrap()
-                    .as_mut()
-                    .is_some_and(|m| m.feed(&buf[..n]));
+                let (lost, agent_preview) =
+                    shared
+                        .model
+                        .lock()
+                        .unwrap()
+                        .as_mut()
+                        .map_or((false, None), |m| {
+                            let lost = m.feed(&buf[..n]);
+                            let preview = m.agent_draft.update(agent, m.parser.screen());
+                            (lost, preview)
+                        });
                 let chunk: Arc<[u8]> = Arc::from(&buf[..n]);
                 let mut clients = shared.clients.lock().unwrap();
                 // Queued, never written here: the program must not wait
@@ -2545,6 +2563,13 @@ fn host_serving(
                 clients.retain(|c| c.feed(&chunk));
                 drop(clients);
                 drop(ring);
+                if let (Some(commands), Some(preview)) = (&commands, agent_preview) {
+                    let mut c = commands.lock().unwrap();
+                    c.set_agent_draft(preview);
+                    if c.take_changes() {
+                        crate::commands::write_saved(&last_dir, &c.saved());
+                    }
+                }
                 // **The model lost its picture: the program draws it
                 // again** (item 57), before a face joins and is handed
                 // the blank. The faces attached now saw the bytes
@@ -2582,6 +2607,13 @@ fn host_serving(
                         }
                         last_written = line;
                     }
+                }
+            }
+            if let Some(commands) = &commands {
+                let mut c = commands.lock().unwrap();
+                c.set_agent_draft(None);
+                if c.take_changes() {
+                    crate::commands::write_saved(&last_dir, &c.saved());
                 }
             }
             output_done.store(true, Ordering::SeqCst);
@@ -2879,6 +2911,11 @@ fn host_serving(
                                         continue;
                                     }
                                     let mut w = writer.lock().unwrap();
+                                    if !keys.is_empty()
+                                        && let Some(model) = shared.model.lock().unwrap().as_mut()
+                                    {
+                                        model.agent_draft.input(&keys);
+                                    }
                                     if let Some(commands) = &draft_commands
                                         && !keys.is_empty()
                                     {
