@@ -24,7 +24,7 @@ The scripts are in `crates/node/shell/`. The host writes them under `<khor home>
 | bash | `bash --init-file khor.bash`, which reads `~/.bashrc` first, as bash would. | VS Code |
 | fish | khor's directory goes first in `XDG_DATA_DIRS` (`fish/vendor_conf.d`). The variable is restored at once. | Kitty |
 | PowerShell | `khor.ps1` loads after the native profiles and wraps `prompt` and PSReadLine actions. | VS Code |
-| cmd | `khor.cmd` is a `PROMPT` with A, B, D and OSC 7. The host loads it with `cmd /k`. Cmd has no hook before a command runs. | Windows Terminal |
+| cmd | The host adds A, B, D and OSC 7 to the shell's `PROMPT` environment variable. Cmd has no hook before a command runs. | Windows Terminal |
 
 **When the hooks go in.** In zsh and fish they install at the first prompt, after the person's own startup files, so they come last. zsh re-adds the input mark to `PS1` at every prompt, because themes rebuild `PS1`.
 
