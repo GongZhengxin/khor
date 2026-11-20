@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {readNewSessionChoices, rememberNewSessionChoice, recentLaunchChoices, launchId, preferredLaunch, DEFAULT_AGENT, KHOR_OWN_AGENT} from '../src/lib/new-session-choices.ts';
+import {readNewSessionChoices, rememberNewSessionChoice, recentLaunchChoices, launchId, preferredLaunch, windowsShells, KHOR_OWN_AGENT} from '../src/lib/new-session-choices.ts';
 
 const values = new Map();
 const storage = {getItem: key => values.get(key) ?? null, setItem: (key, value) => values.set(key, value)};
@@ -27,6 +27,18 @@ assert.deepEqual(choices.machines['machine-a'].recent, recent, 'typing does not 
 assert.equal(launchId({kind: 'shell', command: 'before', preset: 'stable-id'}), launchId({kind: 'shell', command: 'after', preset: 'stable-id'}));
 const transient = rememberNewSessionChoice(choices, 'machine-a', {dir: '/not-saved'}, {getItem: () => null, setItem: () => {throw new Error('storage unavailable');}});
 assert.equal(transient.machines['machine-a'].dir, '/not-saved');
+
+assert.deepEqual(windowsShells('windows').map(row => row.shell), ['powershell', 'cmd']);
+for (const system of ['macos', 'linux', undefined]) assert.equal(windowsShells(system).length, 0);
+const cmd = {kind: 'shell', command: '', shell: 'cmd'};
+const powershell = {kind: 'shell', command: '', shell: 'powershell'};
+choices = rememberNewSessionChoice(choices, 'windows-a', {launch: cmd}, storage);
+choices = rememberNewSessionChoice(choices, 'windows-b', {launch: powershell}, storage);
+const restored = readNewSessionChoices(storage);
+assert.deepEqual(restored.machines['windows-a'].launch, cmd);
+assert.deepEqual(restored.machines['windows-b'].launch, powershell);
+assert.deepEqual(restored.machines['windows-a'].recent, ['shell:cmd']);
+assert.deepEqual(restored.machines['windows-b'].recent, ['shell:powershell']);
 
 for (const raw of ['{', 'null', '[]', '{"machine":42,"machines":{}}']) {
   assert.deepEqual(readNewSessionChoices({getItem: () => raw, setItem() {}}), {machine: '', machines: {}});

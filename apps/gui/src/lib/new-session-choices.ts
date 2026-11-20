@@ -1,4 +1,17 @@
-export type SessionLaunch = {kind: 'shell'; command: string; preset?: string} | {kind: 'agent'; agent: string} | {kind: 'khor'};
+export type WindowsShell = 'powershell' | 'cmd';
+
+export type SessionLaunch = {kind: 'shell'; command: string; preset?: string; shell?: WindowsShell} | {kind: 'agent'; agent: string} | {kind: 'khor'};
+
+const WINDOWS_SHELLS = [
+  {shell: 'powershell', label: 'PowerShell', terms: 'pwsh powershell.exe'},
+  {shell: 'cmd', label: 'CMD', terms: 'cmd.exe'},
+] as const;
+
+export function windowsShells(system: string | null | undefined) {
+  return system === 'windows' ? WINDOWS_SHELLS : [];
+}
+
+const isWindowsShell = (value: unknown): value is WindowsShell => WINDOWS_SHELLS.some(option => option.shell === value);
 
 /** The agent the wizard ships pointing at, and the one a machine with
     nothing installed still names: Claude Code is the most common
@@ -81,13 +94,15 @@ function launch(value: unknown): SessionLaunch | undefined {
   if (!object(value)) return;
   if (value.kind === 'khor') return {kind: 'khor'};
   if (value.kind === 'agent' && text(value.agent, 256) && value.agent) return {kind: 'agent', agent: value.agent};
-  if (value.kind === 'shell' && text(value.command, 16384) && (value.preset === undefined || text(value.preset, 256)))
-    return {kind: 'shell', command: value.command, ...(value.preset ? {preset: value.preset} : {})};
+  if (value.kind === 'shell' && text(value.command, 16384) && (value.preset === undefined || text(value.preset, 256)) &&
+      (value.shell === undefined || isWindowsShell(value.shell)))
+    return {kind: 'shell', command: value.command, ...(value.preset ? {preset: value.preset} : {}), ...(value.shell ? {shell: value.shell} : {})};
 }
 export function launchId(value: SessionLaunch): string {
   if (value.kind === 'agent') return `agent:${value.agent}`;
   if (value.kind === 'khor') return 'khor';
   if (value.preset) return `custom:${value.preset}`;
+  if (value.shell) return `shell:${value.shell}`;
   return ['claude', 'codex'].includes(value.command) ? `term:${value.command}` : 'shell';
 }
 export function readNewSessionChoices(storage: StoragePort | null = browserStorage()): NewSessionChoices {

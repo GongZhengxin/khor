@@ -7,7 +7,7 @@ import { basename, join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { chromium } from "playwright-core";
 
-const [, , port, title, ready, workspace, exitMachine, powershellTitle] = process.argv;
+const [, , port, title, ready, workspace, exitMachine] = process.argv;
 const endpoint = `http://127.0.0.1:${port}`;
 function isAppPage(url) {
   try {
@@ -174,15 +174,33 @@ try {
   await page.keyboard.type("exit");
   await page.keyboard.press("Enter");
 
-  await shellRow(powershellTitle).click();
-  await terminal.waitFor();
-  await terminal.evaluate(element => element.__xterm.focus());
-  await page.keyboard.type("Write-Output ('KHOR_' + 'POWERSHELL_INPUT_OK')");
-  await page.keyboard.press("Enter");
-  await readTerminal("KHOR_POWERSHELL_INPUT_OK");
-  console.log("PowerShell 7 accepted keyboard input in the Windows App and displayed the result.");
-  await page.keyboard.type("exit");
-  await page.keyboard.press("Enter");
+  for (const {id, label, commandLine, output} of [
+    {id: "cmd", label: "CMD", commandLine: "echo KHOR_SELECTED_^CMD", output: "KHOR_SELECTED_CMD"},
+    {id: "powershell", label: "PowerShell", commandLine: "Write-Output ('KHOR_' + 'SELECTED_POWERSHELL')", output: "KHOR_SELECTED_POWERSHELL"},
+  ]) {
+    await page.locator("[data-side-head] [data-pane-new]:visible").click();
+    await page.locator('[data-new-item="new"]:visible').click();
+    await page.locator("[data-new-session-dir]").fill(workspace);
+    const launch = page.locator("[data-new-session-launch] [role=combobox]");
+    await launch.click();
+    await page.locator(`[data-choice-option="shell:${id}"]`).click();
+    assert.equal(await launch.inputValue(), label);
+    await page.locator("[data-new-session-name]").fill(`Khor installer ${label}`);
+    await page.locator("[data-new-session-create]").click();
+    await page.waitForFunction(() => {
+      const error = document.querySelector("[data-new-session-error]");
+      if (error) throw new Error(error.textContent);
+      return !document.querySelector("[data-new-session-page]");
+    });
+    await terminal.waitFor();
+    await terminal.evaluate(element => element.__xterm.focus());
+    await page.keyboard.type(commandLine);
+    await page.keyboard.press("Enter");
+    await readTerminal(output);
+    console.log(`The new-session wizard opened ${label} and an interactive command returned its expected output.`);
+    await page.keyboard.type("exit");
+    await page.keyboard.press("Enter");
+  }
 
   await checkBrowser(page, navigation);
   console.log("Windows browser loaded both direct and borrowed localhost pages.");

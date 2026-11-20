@@ -1175,6 +1175,7 @@ impl crate::Node {
             .open_shell_here_from(
                 crate::shell_start::ShellStart {
                     argv: None,
+                    shell: None,
                     headless: false,
                     token: once,
                     title: meta.title,

@@ -4659,6 +4659,7 @@ fn open(rest: &[String]) -> Result<(), String> {
                 cols,
                 rows,
                 headless: detached || on.is_some(),
+                shell: None,
             },
         ))?;
         navigate(&id.0);

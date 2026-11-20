@@ -1,4 +1,5 @@
 import type { ContentView } from '@/lib/content';
+import type { WindowsShell } from '@/lib/new-session-choices';
 import { hasAppUpdates, hasNativeBackend } from '@/lib/backend-context';
 import type { AttachmentKind } from "./gen/bindings/AttachmentKind";
 import { attachmentView } from "./lib/attachment-view";
@@ -1072,8 +1073,8 @@ export type { LaunchPreset } from './gen/bindings/LaunchPreset';
 export const launchPresets = () => call<LaunchPreset[]>('launch_presets');
 export const saveLaunchPreset = (preset: LaunchPreset) => call<LaunchPreset[]>('launch_preset_save', { preset });
 export const deleteLaunchPreset = (id: string) => call<LaunchPreset[]>('launch_preset_delete', { id });
-export const openShell = (machine: string, cwd: string, command: string, title: string, token: string) =>
-  call<string>('open_shell', { machine, cwd, command, title, token, ...termSizeHint() });
+export const openShell = (machine: string, cwd: string, command: string, title: string, token: string, shell?: WindowsShell) =>
+  call<string>('open_shell', { machine, cwd, command, title, token, shell, ...termSizeHint() });
 
 /** 接管 (批C): end the session's terminal side; the conversation continues here. */
 export const takeover = (id: string) => call<null>("takeover", { id });

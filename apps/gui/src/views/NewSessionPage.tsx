@@ -17,7 +17,7 @@ import { Dialog, DialogContent, TaskOverlay, TaskActions, DialogBody, DialogTitl
 import { IconClose, IconGear, IconPencil, IconPlus } from '@/components/icons';
 import { gui } from '@/gen/catalog';
 import { dropHandOff, peekHandOff } from '@/lib/composer-handoff';
-import {launchId, preferredLaunch, readNewSessionChoices, recentLaunchChoices, rememberNewSessionChoice, type SessionLaunch as Launch} from '@/lib/new-session-choices';
+import {launchId, preferredLaunch, readNewSessionChoices, recentLaunchChoices, rememberNewSessionChoice, windowsShells, type SessionLaunch as Launch} from '@/lib/new-session-choices';
 import { useHereHosts } from '@/lib/here';
 import { useSetting } from '@/settings';
 import { imeKey } from '@/lib/ime';
@@ -47,7 +47,7 @@ async function createSession({launch, target, cwd, title, token, environment, se
   environment: SessionEnvironment; selection: Pick<KhorModelSelection, 'account' | 'model'> | null;
 }): Promise<string> {
   if (launch.kind === 'khor') return returnedSession((await khorAgent('create', target.id, {token, title, cwd, selection})).data);
-  if (launch.kind === 'shell') return openShell(target.name, cwd, launch.command, title, token);
+  if (launch.kind === 'shell') return openShell(target.name, cwd, launch.command, title, token, launch.shell);
   if (environment.mcpServers.length || environment.additionalDirectories.length)
     return returnedSession(await managePi(target.name, {operation: 'acp_open', agent: launch.agent, cwd, title, environment, token}));
   return openSession(cwd, title, 'chat', launch.agent, target.name, token);
@@ -199,7 +199,13 @@ export function NewSessionPage({
       kind: 'shell',
       command: ''
     }
-  }, ...['claude', 'codex'].map(name => ({
+  }, ...windowsShells(target?.vitals?.vitals.system).map(({shell, label, terms}) => ({
+    id: launchId({kind: 'shell', command: '', shell}),
+    label,
+    terms,
+    icon: kindIcon('shell', null),
+    launch: {kind: 'shell' as const, command: '', shell},
+  })), ...['claude', 'codex'].map(name => ({
     id: 'term:' + name,
     label: (name === 'claude' ? 'Claude' : 'Codex') + ' · ' + gui.view_terminal,
     terms: name,
@@ -251,6 +257,7 @@ export function NewSessionPage({
   const selected = choices.find(c => c.id === launchId(launch));
   const launchReady = !!selected && !(launch.kind === 'shell' && launch.preset && (selected.launch.kind !== 'shell' || selected.launch.command !== launch.command));
   const command = launch.kind === 'shell' ? launch.command : '';
+  const explicitShell = launch.kind === 'shell' && launch.shell !== undefined;
   const contextReady = launch.kind === 'khor' ? khorSelection?.home === target?.id && !!khorSelection : launch.kind !== 'agent' || contextValid;
   const remember = (id: string, change: Parameters<typeof rememberNewSessionChoice>[2] = {}) => {
     const next = rememberNewSessionChoice(preferences, id, change);
@@ -373,7 +380,7 @@ export function NewSessionPage({
       {directoryFacts?.state==='missing'&&<p data-new-session-directory-missing className="text-callout text-muted-foreground">{gui.new_session_directory_create}</p>}
       {directoryFacts?.state==='unavailable'&&<p data-new-session-directory-error role="status" className="text-callout text-muted-foreground">{String(directoryFacts.error instanceof Error?directoryFacts.error.message:directoryFacts.error)}</p>}
     </div>
-    <FormLabel>{gui.launch_method}</FormLabel><div data-new-session-launch data-kind={launch.kind} data-selected={selected?.id} className="flex min-w-0 flex-col gap-in"><ChoiceField label={gui.launch_method} value={launch.kind === 'shell' ? launch.command : selected?.label || (launch.kind === 'agent' ? launch.agent : 'khor')} selected={selected?.id} options={choices} disabled={opening || !target} multiline placeholder={gui.launch_shell_hint} onInput={text => pickLaunch({
+    <FormLabel>{gui.launch_method}</FormLabel><div data-new-session-launch data-kind={launch.kind} data-selected={selected?.id} className="flex min-w-0 flex-col gap-in"><ChoiceField label={gui.launch_method} value={launch.kind === 'shell' ? (explicitShell ? selected?.label || launch.shell || '' : command) : selected?.label || (launch.kind === 'agent' ? launch.agent : 'khor')} selected={selected?.id} options={choices} disabled={opening || !target} multiline placeholder={gui.launch_shell_hint} onInput={explicitShell ? undefined : text => pickLaunch({
               kind: 'shell',
               command: text
             }, false)} onPick={id => {
@@ -390,7 +397,7 @@ export function NewSessionPage({
               icon: <IconGear />,
               run: () => setManage(true)
             }]} /></div>
-    {launch.kind === 'shell' && <span data-new-session-launch-note className="col-start-2 text-caption text-tertiary">{gui.launch_command_note}</span>}
+    {launch.kind === 'shell' && !explicitShell && <span data-new-session-launch-note className="col-start-2 text-caption text-tertiary">{gui.launch_command_note}</span>}
     {launch.kind === 'khor' && target?.hosts && <KhorSessionSetup key={target.id} machine={target.id} disabled={opening} onChange={setKhorSelection} />}
     {handed && launch.kind === 'agent' && <><FormLabel>{gui.new_session_handed}</FormLabel><span data-new-session-handed className="min-w-0 truncate font-mono text-body">{handed}</span></>}
     <FormLabel htmlFor="new-session-name">{gui.new_session_name}</FormLabel><Input id="new-session-name" data-new-session-name value={name} disabled={opening} placeholder={gui.new_session_name_hint} onChange={e => setName(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !imeKey(e)) { e.preventDefault(); create(); } }} />

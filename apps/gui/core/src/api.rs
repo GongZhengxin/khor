@@ -1245,6 +1245,8 @@ pub fn answer(
                     .zip(args.get("rows").and_then(|v| v.as_u64()))
                     .map(|(c, r)| (c.min(500) as u16, r.min(200) as u16)),
                 &arg("token")?,
+                serde_json::from_value(args.get("shell").cloned().unwrap_or_default())
+                    .map_err(|error| error.to_string())?,
             ))?,
         ),
         "open_on" => to_json(&rt.block_on(crate::open_term_on(

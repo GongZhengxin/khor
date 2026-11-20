@@ -3881,6 +3881,7 @@ async fn open_shell(
     cols: Option<u16>,
     rows: Option<u16>,
     token: String,
+    shell: Option<khor_node::shell_start::WindowsShell>,
 ) -> Result<String, String> {
     khor_gui_core::open_shell(
         &Node::root_from_env(),
@@ -3890,6 +3891,7 @@ async fn open_shell(
         title.as_deref().unwrap_or_default(),
         cols.zip(rows),
         &token,
+        shell,
     )
     .await
 }

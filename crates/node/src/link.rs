@@ -7018,6 +7018,7 @@ impl Node {
         if device.sponsor.is_some() {
             if !start.command.trim().is_empty()
                 || start.argv.as_ref().is_some_and(|args| !args.is_empty())
+                || start.shell.is_some()
             {
                 return Err(msg::terminal_ssh_startup().into());
             }
@@ -7108,22 +7109,24 @@ impl Node {
         self.refuse_unless_hosting()?;
         start.validate()?;
         let _held = crate::once::lock(&start.token).await;
-        let fingerprint = blake3::hash(
-            &serde_json::to_vec(&(
-                &start.title,
-                &start.cwd,
-                &start.command,
-                &start.argv,
-                start.headless,
-                &selected_shell,
-            ))
-            .map_err(|e| e.to_string())?,
-        )
-        .to_hex()
-        .to_string();
+        let intent = (
+            &start.title,
+            &start.cwd,
+            &start.command,
+            &start.argv,
+            start.headless,
+            &selected_shell,
+        );
+        let intent = match start.shell {
+            Some(shell) => serde_json::to_vec(&(intent, shell)),
+            None => serde_json::to_vec(&intent),
+        }
+        .map_err(|error| error.to_string())?;
+        let fingerprint = blake3::hash(&intent).to_hex().to_string();
         if let Some(id) = self.legacy_shell_receipt(&start.token)? {
             let equivalent = !start.headless
                 && start.argv.is_none()
+                && start.shell.is_none()
                 && selected_shell.is_none()
                 && ancestry.is_none();
             let binding = if equivalent {
@@ -7151,7 +7154,10 @@ impl Node {
         let live = self.live.clone();
         let shell_scripts = crate::integration::dir(&self.root().join(".khor"));
         let id = tokio::task::spawn_blocking(move || {
-            let shell = selected_shell.unwrap_or_else(crate::shell_start::default_shell);
+            let shell = match start.shell {
+                Some(shell) => shell.resolve()?,
+                None => selected_shell.unwrap_or_else(crate::shell_start::default_shell),
+            };
             let startup =
                 crate::shell_start::startup_command(&shell, &start.command, start.argv.as_deref())?;
             let argv = crate::shell_start::command(&shell);

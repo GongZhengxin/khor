@@ -20,6 +20,48 @@ pub struct ShellStart {
     /// Structured CLI arguments are quoted only on the machine owning this shell.
     #[serde(default)]
     pub argv: Option<Vec<String>>,
+    /// Optional trailing field. Keep the existing terminal frame byte-for-byte
+    /// when absent. A reader that predates the field refuses a longer frame.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub shell: Option<WindowsShell>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum WindowsShell {
+    PowerShell,
+    Cmd,
+}
+
+impl WindowsShell {
+    pub(crate) fn resolve(self) -> Result<String, String> {
+        #[cfg(windows)]
+        {
+            Ok(match self {
+                Self::PowerShell => windows_powershell(crate::Node::user_path())
+                    .unwrap_or_else(|| "powershell.exe".into()),
+                Self::Cmd => {
+                    windows_system_program("System32/cmd.exe").unwrap_or_else(|| "cmd.exe".into())
+                }
+            })
+        }
+        #[cfg(not(windows))]
+        {
+            Err(khor_catalog::msg::launch_command_invalid().into())
+        }
+    }
+}
+
+#[cfg(windows)]
+fn windows_system_program(relative: &str) -> Option<String> {
+    let file = PathBuf::from(std::env::var_os("SystemRoot")?).join(relative);
+    file.is_file().then(|| file.to_string_lossy().into_owned())
+}
+
+#[cfg(windows)]
+fn windows_powershell(path: &str) -> Option<String> {
+    crate::find_program("pwsh.exe", path)
+        .or_else(|| windows_system_program("System32/WindowsPowerShell/v1.0/powershell.exe"))
 }
 
 impl ShellStart {
@@ -73,14 +115,8 @@ pub fn default_shell() -> String {
     }
     #[cfg(windows)]
     {
-        if let Some(shell) = available("pwsh.exe") {
+        if let Some(shell) = windows_powershell(&path) {
             return shell;
-        }
-        if let Some(root) = std::env::var_os("SystemRoot") {
-            let shell = PathBuf::from(root).join("System32/WindowsPowerShell/v1.0/powershell.exe");
-            if shell.is_file() {
-                return shell.to_string_lossy().into_owned();
-            }
         }
         std::env::var("COMSPEC")
             .ok()
