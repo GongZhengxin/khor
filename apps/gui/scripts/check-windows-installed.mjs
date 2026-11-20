@@ -307,9 +307,9 @@ try {
   await command(page, "ws_add", {machine: "", path: workspace});
   await page.locator('[data-landing="workspaces"]:visible').first().click();
   await page.locator("[data-ws-row]:visible").filter({hasText: basename(workspace)}).click();
-  const treeRows = page.locator('[data-file-tree] button[data-file-path]:visible');
-  await treeRows.filter({hasText: "资料"}).click();
-  await treeRows.filter({hasText: "readme.md"}).click();
+  const fileTree = page.locator("[data-file-tree]:visible");
+  await fileTree.getByRole("button", {name: "资料", exact: true}).click();
+  await fileTree.getByRole("button", {name: "readme.md", exact: true}).click();
   await page.locator('[data-file-face-toggle="source"]:visible').click();
   const preview = page.getByText("Khor installation workspace", {exact: true});
   await preview.waitFor();
