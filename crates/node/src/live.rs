@@ -117,6 +117,9 @@ pub struct Meta {
     /// Fresh shell ancestry is metadata, never an argv replay instruction.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) shell_run: Option<ShellRun>,
+    /// An explicit shell choice stays with this execution when opened anew.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) shell_choice: Option<crate::shell_start::WindowsShell>,
     /// Whose session this is (`khor_core::Session::category`), when
     /// anyone can say. A registry entry written before this field existed
     /// reads as `None`, which is the same thing it means for a fresh one:
@@ -515,6 +518,7 @@ impl LiveKind {
         }
         let meta = Meta {
             shell_run: None,
+            shell_choice: None,
             kind: kind.to_owned(),
             title: title.to_owned(),
             pid,
@@ -703,6 +707,7 @@ impl LiveKind {
         let fresh = previous.is_none();
         let mut meta = previous.unwrap_or(Meta {
             shell_run: None,
+            shell_choice: None,
             kind: khor_core::kind::GUI.into(),
             title: title.into(),
             pid: None,
@@ -850,6 +855,7 @@ impl LiveKind {
         let gate = RowGate::acquire(&dir)?;
         let mut meta = gate.read_meta_or_new()?.unwrap_or(Meta {
             shell_run: None,
+            shell_choice: None,
             kind: kind.to_owned(),
             title: title.to_owned(),
             pid: None,

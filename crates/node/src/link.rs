@@ -7154,9 +7154,10 @@ impl Node {
         let live = self.live.clone();
         let shell_scripts = crate::integration::dir(&self.root().join(".khor"));
         let id = tokio::task::spawn_blocking(move || {
-            let shell = match start.shell {
-                Some(shell) => shell.resolve()?,
-                None => selected_shell.unwrap_or_else(crate::shell_start::default_shell),
+            let shell = match (selected_shell, start.shell) {
+                (Some(resolved), _) => resolved,
+                (None, Some(choice)) => choice.resolve()?,
+                (None, None) => crate::shell_start::default_shell(),
             };
             let startup =
                 crate::shell_start::startup_command(&shell, &start.command, start.argv.as_deref())?;
@@ -7189,8 +7190,8 @@ impl Node {
                 Self::category_of_started(crate::kind::SHELL),
             )?;
             live.learn_place(&id, &cwd)?;
-            if let Some(ancestry) = ancestry {
-                live.record_shell_ancestry(&id, ancestry)?;
+            if ancestry.is_some() || start.shell.is_some() {
+                live.record_shell_start(&id, ancestry, start.shell)?;
             }
             let dir = live
                 .dir_of(&id)

@@ -2404,6 +2404,7 @@ mod tests {
             gate.write_meta(&crate::live::Meta {
                 child_owner: None,
                 shell_run: None,
+                shell_choice: None,
                 kind: khor_core::kind::GUI.into(),
                 title: "fixture".into(),
                 pid: Some(10),
@@ -2844,6 +2845,7 @@ mod tests {
             gate.write_meta(&crate::live::Meta {
                 child_owner: None,
                 shell_run: None,
+                shell_choice: None,
                 kind: khor_core::kind::GUI.into(),
                 title: "same producer".into(),
                 pid: Some(10),
@@ -3192,6 +3194,7 @@ mod tests {
                     gate.write_meta(&crate::live::Meta {
                         child_owner: None,
                         shell_run: None,
+                        shell_choice: None,
                         kind: khor_core::kind::GUI.into(),
                         title: record.title.clone(),
                         pid: Some(std::process::id()),
@@ -3364,6 +3367,7 @@ mod tests {
                 gate.write_meta(&crate::live::Meta {
                     child_owner: None,
                     shell_run: None,
+                    shell_choice: None,
                     kind: khor_core::kind::GUI.into(),
                     title: "partial publication".into(),
                     pid: Some(std::process::id()),
@@ -3489,6 +3493,7 @@ mod tests {
             let mut meta = crate::live::Meta {
                 child_owner: None,
                 shell_run: None,
+                shell_choice: None,
                 kind: khor_core::kind::GUI.into(),
                 title: "collision fixture".into(),
                 pid: None,
@@ -3640,6 +3645,7 @@ mod tests {
                             gate.write_meta(&crate::live::Meta {
                                 child_owner: None,
                                 shell_run: None,
+                                shell_choice: None,
                                 kind: khor_core::kind::GUI.into(),
                                 title: "model new".into(),
                                 pid: Some(std::process::id()),
