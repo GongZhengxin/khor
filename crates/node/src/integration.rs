@@ -185,8 +185,7 @@ pub fn plan(dir: &Path, cmd: &[String], getenv: impl Fn(&str) -> Option<String>)
             let prompt = if original.ends_with(end) {
                 original
             } else {
-                let host = getenv("COMPUTERNAME").unwrap_or_default();
-                format!(r"$e]133;D$e\$e]133;A$e\$e]7;file://{host}/$P$e\{original}{end}")
+                format!(r"$e]133;D$e\$e]133;A$e\$e]9;9;$P$e\{original}{end}")
             };
             Some(Plan {
                 args: Vec::new(),
@@ -308,16 +307,11 @@ mod tests {
     fn cmd_uses_its_native_prompt_without_rewrapping_an_inherited_integration() {
         let dir = Path::new("/ignored/shell");
         let command = ["cmd.exe".into()];
-        let first = plan(
-            dir,
-            &command,
-            env(&[("PROMPT", "Custom $P$G"), ("COMPUTERNAME", "win")]),
-        )
-        .unwrap();
+        let first = plan(dir, &command, env(&[("PROMPT", "Custom $P$G")])).unwrap();
         assert!(first.args.is_empty());
         assert_eq!(
             first.env[0].1,
-            r"$e]133;D$e\$e]133;A$e\$e]7;file://win/$P$e\Custom $P$G$e]133;B$e\"
+            r"$e]133;D$e\$e]133;A$e\$e]9;9;$P$e\Custom $P$G$e]133;B$e\"
         );
         assert_eq!(
             plan(dir, &command, env(&[("PROMPT", &first.env[0].1)])),
@@ -333,7 +327,7 @@ mod tests {
         use std::time::{Duration, Instant};
 
         let root = crate::testdir::TempTree::fresh("cmd-native-prompt");
-        let cwd = root.join("Khor 验收 user's dir");
+        let cwd = root.join("Khor 验收 user's %20 dir");
         std::fs::create_dir(&cwd).unwrap();
         let executable = crate::shell_start::WindowsShell::Cmd.resolve().unwrap();
         let plan = plan(&cwd, &[executable.clone()], env(&[("PROMPT", "Khor $P$G")])).unwrap();
@@ -388,6 +382,11 @@ mod tests {
             "CMD did not render the native prompt and echo the command: {:?}",
             String::from_utf8_lossy(&output)
         );
+        let mut ledger = crate::commands::Ledger::default();
+        ledger.feed(&output, 0);
+        let doing = ledger.doing();
+        let reported = std::fs::canonicalize(doing.cwd.expect("CMD working directory mark"));
+        assert_eq!(reported.unwrap(), cwd.canonicalize().unwrap());
     }
 
     #[cfg(unix)]
