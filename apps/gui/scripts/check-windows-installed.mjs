@@ -11,7 +11,7 @@ import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import { chromium } from "playwright-core";
 
-const [, , port, title, ready, workspace, exitMachine, ...checks] = process.argv;
+const [, , port, title, ready, workspace, exitMachine, peerTitle, peerReady, ...checks] = process.argv;
 const nativeWindow = checks.find(check => check.startsWith("--native-drag="))?.split("=")[1];
 const shellSelection = checks.find(check => check.startsWith("--shell-selection="))?.split("=")[1];
 const endpoint = `http://127.0.0.1:${port}`;
@@ -276,6 +276,16 @@ try {
   await readTerminal("KHOR_TERMINAL_INPUT_OK");
   assert.equal(await windowButtons.count(), 0, "Session panes inherit the native caption");
   console.log("Windows terminal accepted keyboard input and displayed the result.");
+  await page.keyboard.type("exit");
+  await page.keyboard.press("Enter");
+
+  await shellRow(peerTitle).click();
+  await readTerminal(peerReady);
+  await terminal.evaluate(element => element.__xterm.focus());
+  await page.keyboard.type("echo KHOR_PEER_TERMINAL_INPUT_^OK");
+  await page.keyboard.press("Enter");
+  await readTerminal("KHOR_PEER_TERMINAL_INPUT_OK");
+  console.log("The installed Windows App opened the terminal on its paired node and received command output.");
   await page.keyboard.type("exit");
   await page.keyboard.press("Enter");
 

@@ -14,6 +14,8 @@ from release_manifest import executable_info, source_sha
 
 WINDOWS_SESSION_TITLE = "Khor installer terminal"
 WINDOWS_READY_MARKER = "KHOR_TERMINAL_READY"
+WINDOWS_PEER_SESSION_TITLE = "Khor installer peer terminal"
+WINDOWS_PEER_READY_MARKER = "KHOR_PEER_TERMINAL_READY"
 
 
 def run(*args):
@@ -249,6 +251,9 @@ def launch_installed(directory, acp_fixture=None, native_drag=False, legacy_shel
                 subprocess.run([str(cli), "open", "-d", "--title", WINDOWS_SESSION_TITLE, "--",
                                 str(cmd), "/d", "/k", "echo", WINDOWS_READY_MARKER],
                                env=environment, cwd=scratch, check=True, timeout=60)
+                subprocess.run([str(cli), "open", "-d", "--title", WINDOWS_PEER_SESSION_TITLE, "--",
+                                str(cmd), "/d", "/k", "echo", WINDOWS_PEER_READY_MARKER],
+                               env=exit_env, cwd=scratch, check=True, timeout=60)
                 environment["WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS"] = f"--remote-debugging-port={debug_port}"
             subprocess.run([str(cli), "gui"], env=environment, check=True, timeout=30)
             deadline = time.monotonic() + 20
@@ -270,7 +275,8 @@ def launch_installed(directory, acp_fixture=None, native_drag=False, legacy_shel
                         print("The installed App drew one native Windows caption.", flush=True)
                         try:
                             args = ["node", str(check), str(debug_port), WINDOWS_SESSION_TITLE,
-                                    WINDOWS_READY_MARKER, str(workspace), exit_name]
+                                    WINDOWS_READY_MARKER, str(workspace), exit_name,
+                                    WINDOWS_PEER_SESSION_TITLE, WINDOWS_PEER_READY_MARKER]
                             if acp_fixture is not None:
                                 args.append("--acp")
                             if native_drag:
@@ -442,9 +448,11 @@ def windows(package, expected_source, acp_fixture=None, previous=None, native_dr
             if acp_fixture is not None:
                 proof["installed_acp_conversation"] = True
             proof["installed_powershell_commands"] = True
-            proof["installed_powershell_interaction"] = True
-            proof["installed_windows_shell_selection"] = (shell_selection,) if shell_selection else ("cmd", "powershell")
+            checked_shells = (shell_selection,) if shell_selection else ("cmd", "powershell")
+            proof["installed_powershell_interaction"] = "powershell" in checked_shells
+            proof["installed_windows_shell_selection"] = checked_shells
             proof["installed_terminal_roundtrip"] = True
+            proof["installed_paired_node_terminal"] = True
             if not legacy_shell_ui:
                 proof["installed_terminal_attachment_paths"] = True
                 proof["installed_paired_node_attachment"] = True
