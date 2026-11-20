@@ -20,6 +20,7 @@ impl Attached {
         let (peer, _) = listener.accept().unwrap();
         peer.set_read_timeout(Some(Duration::from_secs(3))).unwrap();
         let term = Arc::new(Term {
+            attachment_shell: None,
             far: None,
             conn: crate::connection::Connection::new(conn).unwrap(),
             commands: Default::default(),
