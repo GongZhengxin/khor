@@ -26,7 +26,8 @@ permissions:
   actions: read
 
 concurrency:
-  group: windows-desktop-${{ github.ref }}-${{ inputs.package_run || 'build' }}-${{ inputs.retry_runner || 'default' }}
+  # Manually requested checks pin a revision. Branch pushes can replace stale checks.
+  group: windows-desktop-${{ github.event_name == 'workflow_dispatch' && github.sha || github.ref }}-${{ inputs.package_run || 'build' }}-${{ inputs.previous_package_run || 'fresh' }}-${{ inputs.retry_runner || 'default' }}
   cancel-in-progress: true
 
 jobs:
