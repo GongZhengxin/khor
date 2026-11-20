@@ -2867,6 +2867,7 @@ impl LiveKind {
                         *d = khor_core::Doing {
                             cwd: d.cwd.take(),
                             title: d.title.take(),
+                            editor: d.editor.take(),
                             notice: d.notice.take(),
                             notice_ms: d.notice_ms,
                             bell_ms: d.bell_ms,

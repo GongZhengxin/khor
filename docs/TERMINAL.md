@@ -19,9 +19,13 @@ custom shortcuts, and multiline editing may make the estimate incomplete. If
 Khor cannot follow an edit, the preview clears until the editor reports its
 buffer or a new prompt begins.
 
-Submitting or cancelling clears the preview. Input for foreground programs
-and full-screen applications is excluded from the estimate. Draft previews
-can appear on other devices that can view the session.
+Submitting or cancelling clears the shell preview. Codex and Claude Code can
+also show a preview in terminals hosted directly by Khor. Input activates a
+preview when the terminal shows the agent's editing area. The preview uses the
+text drawn in that area and clears when the editor is empty, obscured, or shows
+more than 1,024 characters. The agent's editor retains the original text. Only an
+available preview is included in the session list sent to other devices that
+can view the session.
 
 ## The path of a byte
 
