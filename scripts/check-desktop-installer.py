@@ -385,7 +385,7 @@ def invoke_msi(action, package, destination=None):
     return subprocess.run(command, timeout=600)
 
 
-def windows(package, expected_source, acp_fixture=None):
+def windows(package, expected_source, acp_fixture=None, previous=None):
     import winreg
     with tempfile.TemporaryDirectory(prefix="khor-desktop-") as temporary:
         destination = Path(temporary) / "Installed Khor"
@@ -399,12 +399,25 @@ def windows(package, expected_source, acp_fixture=None):
                 original, kind = None, winreg.REG_EXPAND_SZ
             before = str(independent) + (";" + original if original else "")
             winreg.SetValueEx(key, "Path", 0, kind, before)
-        installed = False
+        installed = None
         try:
-            result = invoke_msi("/i", package, destination)
+            if previous is not None:
+                previous_package, previous_source = previous
+                baseline = Path(temporary) / "Previous Khor.msi"
+                shutil.copy2(previous_package, baseline)
+                result = invoke_msi("/i", baseline, destination)
+                assert result.returncode in (0, 3010), result.returncode
+                installed = baseline
+                same_programs(destination, previous_source)
+                print("Installed and verified the previous Windows App and CLI.", flush=True)
+            # An in-app upgrade uses the installer's registered location.
+            result = invoke_msi("/i", package, None if previous is not None else destination)
             assert result.returncode in (0, 3010), result.returncode
-            installed = True
+            installed = package
             proof = same_programs(destination, expected_source)
+            if previous is not None:
+                proof["installed_windows_msi_upgrade"] = {"previous_source": previous_source}
+                print("The new MSI upgraded both programs in the existing custom installation directory.", flush=True)
             assert (destination / "cli-owner.json").is_file()
             with winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Environment") as key:
                 after, _ = winreg.QueryValueEx(key, "Path")
@@ -418,24 +431,27 @@ def windows(package, expected_source, acp_fixture=None):
             proof["installed_powershell_interaction"] = True
             proof["installed_windows_shell_selection"] = True
             proof["installed_terminal_roundtrip"] = True
+            proof["installed_terminal_attachment_paths"] = True
             proof["installed_native_caption"] = True
             proof["installed_workspace_preview"] = True
             proof["installed_browser_lifecycle"] = True
             proof["installed_browser_borrowed_loopback"] = True
             return proof
         finally:
-            if installed:
-                result = invoke_msi("/x", package)
-                assert result.returncode in (0, 3010), result.returncode
-                assert not (destination / "khor.exe").exists()
-                with winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Environment") as key:
-                    after, _ = winreg.QueryValueEx(key, "Path")
-                assert str(independent) in after and str(destination).casefold() not in after.casefold()
-            with winreg.CreateKey(winreg.HKEY_CURRENT_USER, "Environment") as key:
-                if original is None:
-                    winreg.DeleteValue(key, "Path")
-                else:
-                    winreg.SetValueEx(key, "Path", 0, kind, original)
+            try:
+                if installed is not None:
+                    result = invoke_msi("/x", installed)
+                    assert result.returncode in (0, 3010), result.returncode
+                    assert not (destination / "khor.exe").exists()
+                    with winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Environment") as key:
+                        after, _ = winreg.QueryValueEx(key, "Path")
+                    assert str(independent) in after and str(destination).casefold() not in after.casefold()
+            finally:
+                with winreg.CreateKey(winreg.HKEY_CURRENT_USER, "Environment") as key:
+                    if original is None:
+                        winreg.DeleteValue(key, "Path")
+                    else:
+                        winreg.SetValueEx(key, "Path", 0, kind, original)
 
 
 if __name__ == "__main__":
@@ -444,6 +460,8 @@ if __name__ == "__main__":
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--expected-source", default=None, help="Pinned package source when checking an earlier build")
     parser.add_argument("--acp-fixture", type=Path, help="Scripted ACP agent for the installed Windows App")
+    parser.add_argument("--upgrade-from", type=Path, help="Earlier MSI to upgrade in place")
+    parser.add_argument("--upgrade-source", help="Complete source SHA of the previous MSI")
     args = parser.parse_args()
     if os.environ.get("GITHUB_ACTIONS") != "true":
         parser.error("Installation checks require an isolated GitHub runner")
@@ -452,7 +470,14 @@ if __name__ == "__main__":
     if len(expected_source) != 40 or any(c not in "0123456789abcdef" for c in expected_source):
         parser.error("Package source must be a complete commit SHA")
     acp_fixture = args.acp_fixture.resolve(strict=True) if args.acp_fixture else None
-    proof = windows(package, expected_source, acp_fixture) if os.name == "nt" else macos(package, expected_source) if sys.platform == "darwin" else linux(package, expected_source)
+    previous = None
+    if args.upgrade_from or args.upgrade_source:
+        source = args.upgrade_source
+        if (os.name != "nt" or not args.upgrade_from or not source or source == expected_source
+                or len(source) != 40 or any(c not in "0123456789abcdef" for c in source)):
+            parser.error("In-place upgrade checks require a previous Windows MSI from a different complete source SHA")
+        previous = (args.upgrade_from.resolve(strict=True), source)
+    proof = windows(package, expected_source, acp_fixture, previous) if os.name == "nt" else macos(package, expected_source) if sys.platform == "darwin" else linux(package, expected_source)
     proof["validation"] = {"test_source": source_sha(), "package_source": expected_source, "resident_start_stop": True, "app_launch": True}
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(proof, indent=2) + "\n")
