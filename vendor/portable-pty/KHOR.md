@@ -24,10 +24,13 @@ reproduced through the host: `cmd.exe /d /c echo hello-host` never reached
 
 ## What changed
 
-Only the flag set in `src/win/psuedocon.rs`: `PSUEDOCONSOLE_INHERIT_CURSOR` is
-no longer passed. `resize` and `spawn_command` are untouched.
+- `src/win/psuedocon.rs` no longer passes `PSUEDOCONSOLE_INHERIT_CURSOR`.
+- `src/cmdbuilder.rs` uses native separators when building the executable
+  path in argv. `CreateProcessW` can open a path like
+  `C:\Windows\System32/cmd.exe`, but the child reads `/c` as a switch and
+  exits. This reproduced on both Windows Server 2022 and 2025.
 
 ## Removing this patch
 
-When portable-pty stops requesting `INHERIT_CURSOR` unconditionally, delete
-`vendor/portable-pty`, this file, and the `[patch.crates-io]` entry.
+Remove the vendored crate and the `[patch.crates-io]` entry once upstream
+works without `INHERIT_CURSOR` and passes the native CMD launch test.
