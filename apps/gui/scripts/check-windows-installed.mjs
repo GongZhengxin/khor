@@ -7,7 +7,7 @@ import { basename, join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { chromium } from "playwright-core";
 
-const [, , port, title, ready, workspace, exitMachine] = process.argv;
+const [, , port, title, ready, workspace, exitMachine, powershellTitle] = process.argv;
 const endpoint = `http://127.0.0.1:${port}`;
 function isAppPage(url) {
   try {
@@ -149,13 +149,14 @@ try {
   assert.equal(await page.locator('[data-arrange-option="recent"]').getAttribute("aria-checked"), "true");
   await page.keyboard.press("Escape");
 
-  const row = page.locator(`[data-list] [data-kind="shell"][data-title=${JSON.stringify(title)}]`);
-  await row.locator('[data-row-open]:visible').click();
+  const shellRow = (name) => page.locator(`[data-list] [data-kind="shell"][data-title=${JSON.stringify(name)}] [data-row-open]:visible`);
+  await shellRow(title).click();
   const terminal = page.locator("[data-terminal]:visible");
   await terminal.waitFor();
 
   const readTerminal = marker => page.waitForFunction(value => {
-    const terminal = document.querySelector("[data-terminal]");
+    const terminal = [...document.querySelectorAll("[data-terminal]")].find(node =>
+      node.getClientRects().length && getComputedStyle(node).visibility === "visible");
     const buffer = terminal?.__xterm?.buffer.active;
     if (!buffer) return false;
     for (let index = Math.max(0, buffer.length - 48); index < buffer.length; index++) {
@@ -173,16 +174,31 @@ try {
   await page.keyboard.type("exit");
   await page.keyboard.press("Enter");
 
+  await shellRow(powershellTitle).click();
+  await terminal.waitFor();
+  await terminal.evaluate(element => element.__xterm.focus());
+  await page.keyboard.type("Write-Output ('KHOR_' + 'POWERSHELL_INPUT_OK')");
+  await page.keyboard.press("Enter");
+  await readTerminal("KHOR_POWERSHELL_INPUT_OK");
+  console.log("PowerShell 7 accepted keyboard input in the Windows App and displayed the result.");
+  await page.keyboard.type("exit");
+  await page.keyboard.press("Enter");
+
+  await checkBrowser(page, navigation);
+  console.log("Windows browser loaded both direct and borrowed localhost pages.");
+
   await command(page, "ws_add", {machine: "", path: workspace});
   await page.locator('[data-landing="workspaces"]:visible').first().click();
   await page.locator("[data-ws-row]:visible").filter({hasText: basename(workspace)}).click();
-  await page.locator('[data-file-tree] button[data-file-path]:visible').filter({hasText: "readme.md"}).click();
+  const treeRows = page.locator('[data-file-tree] button[data-file-path]:visible');
+  await treeRows.filter({hasText: "资料"}).click();
+  await treeRows.filter({hasText: "readme.md"}).click();
   await page.locator('[data-file-face-toggle="source"]:visible').click();
   const preview = page.getByText("Khor installation workspace", {exact: true});
   await preview.waitFor();
   assert.equal(await windowButtons.count(), 0, "Workspace panes inherit the native caption");
   console.log("Windows workspace opened a file and displayed its preview.");
-  await checkBrowser(page, navigation);
+
   await command(page, "window_event_unlisten", {eventId});
   await page.evaluate(id => window.__TAURI_INTERNALS__.unregisterCallback(id), callback);
 
@@ -209,7 +225,7 @@ try {
       console.error("The installed App's lock read reports:", lockOn);
     }
     if (state.fileFaces?.length) {
-      const read = await command(page, "read_text", {machine: "", path: join(workspace, "readme.md")}, 5000)
+      const read = await command(page, "read_text", {machine: "", path: join(workspace, "资料", "readme.md")}, 5000)
         .then(file => ({hasHeading: file.text.includes("Khor installation workspace"), binary: file.binary}),
           cause => cause.message);
       console.error("The installed App's fixture file read reports:", read);

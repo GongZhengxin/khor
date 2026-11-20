@@ -41,25 +41,40 @@ jobs:
           node apps/agent/build.mjs "$TARGET" "$KHOR_AGENT_BUNDLE"
       - run: npm ci --prefix apps/gui
       - name: Build the App and its bundled CLI
-        id: desktop_package
         shell: bash
         run: python3 scripts/desktop_installer.py --target "$TARGET" --output desktop-product --frontend frontend
-      - name: Verify the installed App and native interaction
-        run: python scripts/check-desktop-installer.py --package desktop-product/khor-windows-x86_64.msi --output "${{ runner.temp }}/installation.json"
-      - name: Verify the complete artifact is unchanged after installation tests
-        shell: bash
-        run: python3 scripts/release_manifest.py verify --root desktop-product
-      - if: ${{ !inputs.reuse_agent_runtime }}
-        name: Verify SSH secrets in the Windows credential vault
-        shell: bash
-        run: cargo test --locked --release --target "$TARGET" -p khor-node --lib secret::tests::windows_vault_round_trips_and_removes_only_its_owned_entries
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
-        if: success() || (failure() && !inputs.reuse_agent_runtime && steps.desktop_package.outcome == 'success')
         with:
           name: khor-windows-x86_64-app
           path: desktop-product/
           if-no-files-found: error
           retention-days: 14
+      - if: ${{ !inputs.reuse_agent_runtime }}
+        name: Verify SSH secrets in the Windows credential vault
+        shell: bash
+        run: cargo test --locked --release --target "$TARGET" -p khor-node --lib secret::tests::windows_vault_round_trips_and_removes_only_its_owned_entries
+
+  installed-app:
+    needs: package
+    # The 2025 image builds the package. The 2022 image can attach to
+    # the installed WebView2 over CDP (runner-images#14738).
+    runs-on: windows-2022
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: 22.19.0
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: khor-windows-x86_64-app
+          path: desktop-product
+      - run: python scripts/release_manifest.py verify --root desktop-product
+      - run: npm ci --prefix apps/gui
+      - name: Verify the installed App and native interaction
+        run: python scripts/check-desktop-installer.py --package desktop-product/khor-windows-x86_64.msi --output "${{ runner.temp }}/installation.json"
+      - name: Verify the complete artifact is unchanged after installation tests
+        run: python scripts/release_manifest.py verify --root desktop-product
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: desktop-installation-x86_64-pc-windows-msvc

@@ -14,6 +14,7 @@ from release_manifest import executable_info, source_sha
 
 WINDOWS_SESSION_TITLE = "Khor installer terminal"
 WINDOWS_READY_MARKER = "KHOR_TERMINAL_READY"
+WINDOWS_POWERSHELL_TITLE = "Khor installer PowerShell"
 
 
 def run(*args):
@@ -238,6 +239,8 @@ def launch_installed(directory):
                 subprocess.run([str(cli), "open", "-d", "--title", WINDOWS_SESSION_TITLE, "--",
                                 str(cmd), "/d", "/k", "echo", WINDOWS_READY_MARKER],
                                env=environment, cwd=scratch, check=True, timeout=60)
+                subprocess.run([str(cli), "open", "-d", "--title", WINDOWS_POWERSHELL_TITLE, "--", "pwsh.exe"],
+                               env=environment, cwd=scratch, check=True, timeout=60)
                 environment["WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS"] = f"--remote-debugging-port={debug_port}"
             subprocess.run([str(cli), "gui"], env=environment, check=True, timeout=30)
             deadline = time.monotonic() + 20
@@ -247,8 +250,9 @@ def launch_installed(directory):
                     if os.name == "nt":
                         check = Path(__file__).resolve().parents[1] / "apps/gui/scripts/check-windows-installed.mjs"
                         workspace = scratch / "Khor 项目"
-                        workspace.mkdir()
-                        (workspace / "readme.md").write_text("# Khor installation workspace\n", encoding="utf-8")
+                        folder = workspace / "资料"
+                        folder.mkdir(parents=True)
+                        (folder / "readme.md").write_text("# Khor installation workspace\n", encoding="utf-8")
                         assert len(app_pids) == 1, "The installer check expects one App process"
                         pid = app_pids[0]
                         deadline = time.monotonic() + 45
@@ -258,7 +262,8 @@ def launch_installed(directory):
                         print("The installed App drew one native Windows caption.", flush=True)
                         try:
                             subprocess.run(["node", str(check), str(debug_port), WINDOWS_SESSION_TITLE,
-                                            WINDOWS_READY_MARKER, str(workspace), exit_name], check=True, timeout=240)
+                                            WINDOWS_READY_MARKER, str(workspace), exit_name, WINDOWS_POWERSHELL_TITLE],
+                                           check=True, timeout=240)
                         finally:
                             request_windows_close(window)
                             deadline = time.monotonic() + 15
@@ -405,6 +410,7 @@ def windows(package, expected_source):
             assert str(destination).casefold() in entries
             launch_installed(destination)
             proof["installed_powershell_commands"] = True
+            proof["installed_powershell_interaction"] = True
             proof["installed_terminal_roundtrip"] = True
             proof["installed_native_caption"] = True
             proof["installed_workspace_preview"] = True
