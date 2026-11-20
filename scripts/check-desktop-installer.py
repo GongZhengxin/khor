@@ -185,6 +185,7 @@ def launch_installed(directory, acp_fixture=None, native_drag=False, legacy_shel
             logs.mkdir(parents=True, exist_ok=True)
             environment["KHOR_LOG_FILE"] = str(logs / "window.log")
             environment["KHOR_GUI_TRACE"] = "1"
+            environment["KHOR_STARTUP_TRACE"] = str(logs / "startup.log")
 
         def processes():
             if os.name == "nt":
