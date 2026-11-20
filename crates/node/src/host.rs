@@ -111,6 +111,26 @@ struct ViewerHello<'a> {
     rows: u16,
 }
 
+// A named greeting lets old hosts read their existing fields and ignore
+// the new field. Their unadorned reply keeps the original paste behavior.
+#[derive(Serialize)]
+struct AttachmentHello<'a> {
+    #[serde(flatten)]
+    viewer: ViewerHello<'a>,
+    attachment_paths: bool,
+}
+
+#[derive(Deserialize)]
+struct IncomingHello {
+    cookie: String,
+    cols: u16,
+    rows: u16,
+    #[serde(default)]
+    control: bool,
+    #[serde(default)]
+    attachment_paths: bool,
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct Welcome {
     pub ok: bool,
@@ -145,8 +165,8 @@ pub const HOST_VERSION: u32 = 5;
 /// Bounded automation requests use a distinct connection and protocol.
 pub const CONTROL_VERSION: u32 = 6;
 
-fn hello_version(hello: &Hello) -> u32 {
-    if hello.control {
+fn hello_version(control: bool) -> u32 {
+    if control {
         CONTROL_VERSION
     } else {
         HOST_VERSION
@@ -874,12 +894,43 @@ pub fn connect_terminal(
     cols: u16,
     rows: u16,
 ) -> Result<TcpStream, ConnectError> {
-    let (mut stream, welcome) = connect_welcomed_typed(addr, cookie, cols, rows)?;
-    if welcome.why != format!("{GREETING}{HOST_VERSION}") {
-        return Err(ConnectError::Refused(msg::peer_non_answer(
-            "terminal protocol mismatch",
-        )));
-    }
+    let (stream, welcome) = connect_welcomed_typed(addr, &ViewerHello { cookie, cols, rows })?;
+    finish_terminal_connect(stream, &welcome.why, false).map(|(stream, _)| stream)
+}
+
+pub fn connect_terminal_for_attachments(
+    addr: &str,
+    cookie: &str,
+    cols: u16,
+    rows: u16,
+) -> Result<(TcpStream, Option<crate::shell_start::WindowsShell>), ConnectError> {
+    let (stream, welcome) = connect_welcomed_typed(
+        addr,
+        &AttachmentHello {
+            viewer: ViewerHello { cookie, cols, rows },
+            attachment_paths: true,
+        },
+    )?;
+    finish_terminal_connect(stream, &welcome.why, true)
+}
+
+fn finish_terminal_connect(
+    mut stream: TcpStream,
+    welcome: &str,
+    attachment_paths: bool,
+) -> Result<(TcpStream, Option<crate::shell_start::WindowsShell>), ConnectError> {
+    use crate::shell_start::WindowsShell;
+    let version = format!("{GREETING}{HOST_VERSION}");
+    let shell = match welcome.strip_prefix(&version) {
+        Some("") => None,
+        Some("/cmd") if attachment_paths => Some(WindowsShell::Cmd),
+        Some("/powershell") if attachment_paths => Some(WindowsShell::PowerShell),
+        _ => {
+            return Err(ConnectError::Refused(msg::peer_non_answer(
+                "terminal protocol mismatch",
+            )));
+        }
+    };
     write_handshake(&mut stream, &ClientOp::Version(HOST_VERSION))?;
     stream
         .set_read_timeout(None)
@@ -887,7 +938,7 @@ pub fn connect_terminal(
     stream
         .set_write_timeout(None)
         .map_err(|error| ConnectError::Unavailable(msg::handoff_failed(error)))?;
-    Ok(stream)
+    Ok((stream, shell))
 }
 
 /// The common cookie handshake, before a terminal or GUI selects its protocol.
@@ -898,21 +949,20 @@ pub fn connect_welcomed(
     cols: u16,
     rows: u16,
 ) -> Result<(TcpStream, Welcome), String> {
-    connect_welcomed_typed(addr, cookie, cols, rows).map_err(|error| error.to_string())
+    connect_welcomed_typed(addr, &ViewerHello { cookie, cols, rows })
+        .map_err(|error| error.to_string())
 }
 
 fn connect_welcomed_typed(
     addr: &str,
-    cookie: &str,
-    cols: u16,
-    rows: u16,
+    hello: &impl Serialize,
 ) -> Result<(TcpStream, Welcome), ConnectError> {
     let mut s = TcpStream::connect(addr)
         .map_err(|error| ConnectError::Unavailable(msg::cant_reach_plain(error)))?;
     let _ = s.set_nodelay(true);
     let _ = s.set_read_timeout(Some(HANDSHAKE));
     let _ = s.set_write_timeout(Some(HANDSHAKE));
-    write_handshake(&mut s, &ViewerHello { cookie, cols, rows })?;
+    write_handshake(&mut s, hello)?;
     let welcome: Welcome = read_handshake_typed(&mut s, HANDSHAKE)?;
     if !welcome.ok {
         return Err(ConnectError::Refused(welcome.why));
@@ -2679,6 +2729,9 @@ fn host_serving(
         let master = master.clone();
         let writer = writer.clone();
         let cmd = cmd.clone();
+        let attachment_shell = cmd
+            .first()
+            .and_then(|program| crate::shell_start::WindowsShell::from_program(program));
         let output_done = output_done.clone();
         let draft_commands = commands.clone().filter(|_| tracks_shell_input);
         let draft_dir = dir.clone();
@@ -2686,7 +2739,7 @@ fn host_serving(
             for conn in listener.incoming().flatten() {
                 let _ = conn.set_write_timeout(Some(Duration::from_secs(2)));
                 let mut conn = conn;
-                let Ok(hello) = read_handshake_frame::<Hello>(&mut conn, HANDSHAKE) else {
+                let Ok(hello) = read_handshake_frame::<IncomingHello>(&mut conn, HANDSHAKE) else {
                     continue;
                 };
                 if hello.cookie != cookie {
@@ -2699,12 +2752,21 @@ fn host_serving(
                     );
                     continue;
                 }
-                let version = hello_version(&hello);
+                let version = hello_version(hello.control);
+                let suffix = if hello.attachment_paths && !hello.control {
+                    match attachment_shell {
+                        Some(crate::shell_start::WindowsShell::Cmd) => "/cmd",
+                        Some(crate::shell_start::WindowsShell::PowerShell) => "/powershell",
+                        None => "",
+                    }
+                } else {
+                    ""
+                };
                 if write_frame(
                     &mut conn,
                     &Welcome {
                         ok: true,
-                        why: format!("{GREETING}{version}"),
+                        why: format!("{GREETING}{version}{suffix}"),
                     },
                 )
                 .is_err()
@@ -3987,7 +4049,7 @@ mod handshake_tests {
                 !hello.control,
                 "new hosts accept missing control as a viewer"
             );
-            assert_eq!(hello_version(&hello), 5);
+            assert_eq!(hello_version(hello.control), 5);
             assert_eq!(
                 (hello.cookie.as_str(), hello.cols, hello.rows),
                 ("owned-cookie", 80, 24)
@@ -4017,6 +4079,60 @@ mod handshake_tests {
     }
 
     #[test]
+    fn attachment_viewers_can_connect_to_old_and_current_terminal_hosts() {
+        for (reply, shell) in [
+            ("khor-host/5", None),
+            (
+                "khor-host/5/cmd",
+                Some(crate::shell_start::WindowsShell::Cmd),
+            ),
+            (
+                "khor-host/5/powershell",
+                Some(crate::shell_start::WindowsShell::PowerShell),
+            ),
+        ] {
+            let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+            let addr = listener.local_addr().unwrap().to_string();
+            let host = std::thread::spawn(move || {
+                let (mut stream, _) = listener.accept().unwrap();
+                stream
+                    .set_read_timeout(Some(Duration::from_secs(2)))
+                    .unwrap();
+                let mut size = [0; 4];
+                stream.read_exact(&mut size).unwrap();
+                let mut body = vec![0; u32::from_be_bytes(size) as usize];
+                stream.read_exact(&mut body).unwrap();
+                if shell.is_none() {
+                    let hello: Hello = proto::decode(&body).unwrap();
+                    assert_eq!(
+                        (hello.cookie.as_str(), hello.cols, hello.rows),
+                        ("owned", 80, 24)
+                    );
+                    assert!(!hello.control);
+                } else {
+                    let hello: IncomingHello = proto::decode(&body).unwrap();
+                    assert!(hello.attachment_paths && !hello.control);
+                }
+                write_frame(
+                    &mut stream,
+                    &Welcome {
+                        ok: true,
+                        why: reply.into(),
+                    },
+                )
+                .unwrap();
+                assert!(matches!(
+                    read_frame(&mut stream).unwrap(),
+                    ClientOp::Version(HOST_VERSION)
+                ));
+            });
+            let (_, selected) = connect_terminal_for_attachments(&addr, "owned", 80, 24).unwrap();
+            assert_eq!(selected, shell);
+            host.join().unwrap();
+        }
+    }
+
+    #[test]
     fn control_connections_declare_v6_without_changing_the_viewer_protocol() {
         let hello = Hello {
             cookie: "owned-cookie".into(),
@@ -4024,7 +4140,7 @@ mod handshake_tests {
             rows: 0,
             control: true,
         };
-        assert_eq!(hello_version(&hello), 6);
+        assert_eq!(hello_version(hello.control), 6);
         assert_eq!(HOST_VERSION, 5);
         assert_eq!(CONTROL_VERSION, 6);
         let frame = proto::encode(&hello).unwrap();
