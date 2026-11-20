@@ -177,11 +177,17 @@ pub fn plan(dir: &Path, cmd: &[String], getenv: impl Fn(&str) -> Option<String>)
             env: Vec::new(),
         }),
         "cmd" if args.is_empty() => Some(Plan {
-            args: vec![
-                "/k".into(),
-                format!("\"{}\"", dir.join("khor.cmd").display()),
+            // ConPTY quotes argv using the C runtime rules. cmd.exe parses
+            // the tail after /k itself, where backslash does not escape quotes.
+            // Expand the already quoted path after cmd has read that tail.
+            args: vec!["/k".into(), "%KHOR_CMD_BOOT%".into()],
+            env: vec![
+                (
+                    "KHOR_CMD_BOOT".into(),
+                    format!("\"{}\"", dir.join("khor.cmd").display()),
+                ),
+                ("KHOR_CMD_INTEGRATED".into(), String::new()),
             ],
-            env: vec![("KHOR_CMD_INTEGRATED".into(), String::new())],
         }),
         _ => None,
     }
@@ -256,8 +262,10 @@ mod tests {
         assert!(ps.args[3].contains("finally"));
         assert!(!ps.args.iter().any(|a| a == "-NoProfile"));
         let cmd = plan(d, &["cmd.exe".into()], env(&[])).unwrap();
-        assert_eq!(cmd.args[0], "/k");
-        assert!(cmd.args[1].starts_with('"') && cmd.args[1].ends_with('"'));
+        assert_eq!(cmd.args, ["/k", "%KHOR_CMD_BOOT%"]);
+        assert!(cmd.env.iter().any(|(key, value)| key == "KHOR_CMD_BOOT"
+            && value.starts_with('"')
+            && value.ends_with('"')));
         let bash = plan(d, &["/bin/bash".into(), "-l".into(), "-i".into()], env(&[])).unwrap();
         assert_eq!(bash.args, ["--login", "--noprofile", "--norc", "-i"]);
         assert!(
@@ -285,8 +293,11 @@ mod tests {
         assert_eq!(&ps.args[..3], ["-NoLogo", "-NoExit", "-Command"]);
         let cmd = plan(dir, &["cmd.exe".into()], env(&[])).unwrap();
         assert_eq!(
-            cmd.args,
-            ["/k", r#""C:\Users\中文 user's dir\.khor\shell\khor.cmd""#]
+            cmd.env
+                .iter()
+                .find(|(key, _)| key == "KHOR_CMD_BOOT")
+                .map(|(_, value)| value.as_str()),
+            Some(r#""C:\Users\中文 user's dir\.khor\shell\khor.cmd""#)
         );
         let unc = Path::new(r"\\?\UNC\server\share\shell");
         let ps = plan(unc, &["pwsh.exe".into()], env(&[])).unwrap();
