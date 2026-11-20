@@ -326,11 +326,12 @@ async function answer<T>(r: Response): Promise<T> {
   }
 }
 
-async function post<T>(url: string, headers: Record<string, string>, args?: Record<string, unknown>): Promise<T> {
+async function post<T>(url: string, headers: Record<string, string>, args?: Record<string, unknown>, signal?: AbortSignal): Promise<T> {
   const r = await reach(url, {
     method: "POST",
     headers: { "content-type": "application/json", ...headers },
     body: JSON.stringify(args ?? {}),
+    signal,
   });
   if (!r.ok) throw new Error(unwrap(await r.text()));
   return answer<T>(r);
@@ -382,12 +383,12 @@ const desktopCommands = new Set([
   "face_note", "bell_haptic", "joy_haptic", "haptic",
 ]);
 
-async function call<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
+async function call<T>(cmd: string, args?: Record<string, unknown>, signal?: AbortSignal): Promise<T> {
   if (inApp && (!bridge || (windowTransport && desktopCommands.has(cmd)))) {
     const { invoke } = await import("@tauri-apps/api/core");
     return invoke<T>(cmd, args);
   }
-  if (bridge) return post<T>(`${bridge}/${cmd}`, bridgeHeaders(), args);
+  if (bridge) return post<T>(`${bridge}/${cmd}`, bridgeHeaders(), args, signal);
   // The web face. Same origin — the page came from here — so the
   // address is relative and no CORS is involved in either direction.
   //
@@ -401,6 +402,7 @@ async function call<T>(cmd: string, args?: Record<string, unknown>): Promise<T> 
     `/api/${cmd}`,
     webKey === null ? {} : { authorization: `Bearer ${webKey}` },
     args,
+    signal,
   );
 }
 
@@ -1405,7 +1407,12 @@ export const setConfig = (name: string, value: string) =>
     off the store — so the shell can ask this before it draws anything,
     which is what lets a locked face come up locked rather than flashing
     a conversation first. */
-export const fetchLock = () => call<LockFacts>("lock_state");
+export const fetchLock = () => call<LockFacts>(
+  "lock_state",
+  undefined,
+  // A stalled Windows request must reach useLock's fail-closed retry.
+  windowTransport ? AbortSignal.timeout(5000) : undefined,
+);
 export const setLock = (on: boolean) => call<LockFacts>("set_lock", { on }).then(told(LOCK_TOLD));
 /** An empty PIN clears it, and clearing turns the lock off in the same
     move — splitting those is how a machine claims to be locked with no
