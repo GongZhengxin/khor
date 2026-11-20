@@ -270,6 +270,7 @@ fn blank(line: &[u8]) -> bool {
 #[derive(Debug, Default)]
 pub struct Ledger {
     editor: Option<String>,
+    agent_draft: Option<String>,
     input_draft: input_draft::InputDraft,
     prompt_open: bool,
     saw_prompt: bool,
@@ -329,6 +330,18 @@ impl Ledger {
         Ledger {
             tmux: true,
             ..Ledger::default()
+        }
+    }
+
+    pub(crate) fn running_command(&self) -> Option<(u64, &str)> {
+        let command = self.running.as_ref()?;
+        Some((command.n, command.text.as_deref()?))
+    }
+
+    pub(crate) fn set_agent_draft(&mut self, draft: Option<String>) {
+        if self.agent_draft != draft {
+            self.agent_draft = draft;
+            self.changed = true;
         }
     }
 
@@ -881,6 +894,14 @@ impl Ledger {
 
     /// The row's reading: the running command, else the last one.
     pub fn doing(&self) -> Doing {
+        let mut reading = self.reading(
+            self.pane.as_deref(),
+            self.running.as_ref(),
+            self.cwd.as_ref(),
+        );
+        if self.agent_draft.is_some() {
+            reading.editor = self.agent_draft.clone();
+        }
         Doing {
             title: self.title.clone(),
             // tmux itself holds a client's screen, whatever the pane runs.
@@ -890,11 +911,7 @@ impl Ledger {
             notice: self.notice.as_ref().map(|(t, _)| t.clone()),
             notice_ms: self.notice.as_ref().map_or(0, |(_, at)| *at),
             bell_ms: self.bell,
-            ..self.reading(
-                self.pane.as_deref(),
-                self.running.as_ref(),
-                self.cwd.as_ref(),
-            )
+            ..reading
         }
     }
 
