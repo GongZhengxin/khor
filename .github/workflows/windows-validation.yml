@@ -46,6 +46,7 @@ jobs:
           github-token: ${{ github.token }}
       - run: npm ci --prefix apps/gui
       - name: Verify the existing MSI and native interaction
+        shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
           PACKAGE_RUN: ${{ inputs.package_run }}
