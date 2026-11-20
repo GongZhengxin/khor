@@ -7,7 +7,7 @@ import { basename, join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { chromium } from "playwright-core";
 
-const [, , port, title, ready, workspace, exitMachine] = process.argv;
+const [, , port, title, ready, workspace, exitMachine, acp] = process.argv;
 const endpoint = `http://127.0.0.1:${port}`;
 function isAppPage(url) {
   try {
@@ -112,6 +112,38 @@ async function findWindowPage(browser) {
   throw new Error(`WebView2 connected but did not attach the App page: ${JSON.stringify(targets)}`);
 }
 
+async function createSession(page, launchId, title, expectedLabel) {
+  await page.locator("[data-side-head] [data-pane-new]:visible").click();
+  await page.locator('[data-new-item="new"]:visible').click();
+  await page.locator("[data-new-session-dir]").fill(workspace);
+  const launch = page.locator("[data-new-session-launch] [role=combobox]");
+  await launch.click();
+  await page.locator(`[data-choice-option=${JSON.stringify(launchId)}]`).click();
+  if (expectedLabel) assert.equal(await launch.inputValue(), expectedLabel);
+  await page.locator("[data-new-session-name]").fill(title);
+  await page.locator("[data-new-session-create]").click();
+  await page.waitForFunction(() => {
+    const error = document.querySelector("[data-new-session-error]");
+    if (error) throw new Error(error.textContent);
+    return !document.querySelector("[data-new-session-page]");
+  });
+}
+
+async function checkAcp(page) {
+  await createSession(page, "agent:installer-acp", "Khor installer ACP");
+  const chat = page.locator("[data-detail-pane]:visible");
+  const input = chat.locator("[data-chat-input]:visible");
+  for (const [message, answer] of [["Windows ACP round trip", "go"], ["Continue the same conversation", "stop"]]) {
+    await input.fill(message);
+    await chat.locator("[data-chat-send]:visible").click();
+    await chat.locator(`[data-ask-active] [data-ask-option=${JSON.stringify(answer)}]:visible`).click();
+    await chat.getByText(`picked:${answer}`, {exact: false}).waitFor();
+    await chat.locator("[data-chat-stop]:visible").waitFor({state: "hidden"});
+  }
+  await chat.getByText("picked:go", {exact: false}).waitFor();
+  console.log("The installed Windows App created an ACP session and completed two turns with different permission answers.");
+}
+
 await waitForWindow();
 const browser = await chromium.connectOverCDP(endpoint, {timeout: 15_000});
 let page;
@@ -185,20 +217,7 @@ try {
     {id: "cmd", label: "CMD", commandLine: "echo KHOR_SELECTED_^CMD", output: "KHOR_SELECTED_CMD"},
     {id: "powershell", label: "PowerShell", commandLine: "Write-Output ('KHOR_' + 'SELECTED_POWERSHELL')", output: "KHOR_SELECTED_POWERSHELL"},
   ]) {
-    await page.locator("[data-side-head] [data-pane-new]:visible").click();
-    await page.locator('[data-new-item="new"]:visible').click();
-    await page.locator("[data-new-session-dir]").fill(workspace);
-    const launch = page.locator("[data-new-session-launch] [role=combobox]");
-    await launch.click();
-    await page.locator(`[data-choice-option="shell:${id}"]`).click();
-    assert.equal(await launch.inputValue(), label);
-    await page.locator("[data-new-session-name]").fill(`Khor installer ${label}`);
-    await page.locator("[data-new-session-create]").click();
-    await page.waitForFunction(() => {
-      const error = document.querySelector("[data-new-session-error]");
-      if (error) throw new Error(error.textContent);
-      return !document.querySelector("[data-new-session-page]");
-    });
+    await createSession(page, `shell:${id}`, `Khor installer ${label}`, label);
     await terminal.waitFor();
     await terminal.locator("[data-term-opening]").waitFor({state: "hidden"});
     await terminal.evaluate(element => element.__xterm.focus());
@@ -210,6 +229,7 @@ try {
     await page.keyboard.press("Enter");
   }
 
+  if (acp === "--acp") await checkAcp(page);
   await checkBrowser(page, navigation);
   console.log("Windows browser loaded both direct and borrowed localhost pages.");
 

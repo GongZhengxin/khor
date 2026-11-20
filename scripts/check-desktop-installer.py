@@ -157,7 +157,7 @@ def check_installed_powershell(cli, environment, scratch):
         print(f"The installed Khor executed a hosted command in {name}.", flush=True)
 
 
-def launch_installed(directory):
+def launch_installed(directory, acp_fixture=None):
     prefix = "Khor 验收 home " if os.name == "nt" else "khor-install-home-"
     with tempfile.TemporaryDirectory(prefix=prefix) as temporary:
         # Windows may give Python an 8.3 TEMP path while CIM reports the
@@ -215,6 +215,9 @@ def launch_installed(directory):
             wait_for_resident(service, environment["KHOR_HOME"], log_path)
             if os.name == "nt":
                 check_installed_powershell(cli, environment, scratch)
+                if acp_fixture is not None:
+                    subprocess.run([str(cli), "agents", "add", "installer-acp", "--", str(acp_fixture)],
+                                   env=environment, cwd=scratch, check=True, timeout=60)
             subprocess.run([str(cli), "quit"], env=environment, check=True, timeout=30)
             service.wait(timeout=10)
             deadline = time.monotonic() + 10
@@ -259,9 +262,11 @@ def launch_installed(directory):
                         assert window, "The installed App never drew a visible native Windows caption"
                         print("The installed App drew one native Windows caption.", flush=True)
                         try:
-                            subprocess.run(["node", str(check), str(debug_port), WINDOWS_SESSION_TITLE,
-                                            WINDOWS_READY_MARKER, str(workspace), exit_name],
-                                           check=True, timeout=240)
+                            args = ["node", str(check), str(debug_port), WINDOWS_SESSION_TITLE,
+                                    WINDOWS_READY_MARKER, str(workspace), exit_name]
+                            if acp_fixture is not None:
+                                args.append("--acp")
+                            subprocess.run(args, check=True, timeout=300)
                         finally:
                             request_windows_close(window)
                             deadline = time.monotonic() + 15
@@ -380,7 +385,7 @@ def invoke_msi(action, package, destination=None):
     return subprocess.run(command, timeout=600)
 
 
-def windows(package, expected_source):
+def windows(package, expected_source, acp_fixture=None):
     import winreg
     with tempfile.TemporaryDirectory(prefix="khor-desktop-") as temporary:
         destination = Path(temporary) / "Installed Khor"
@@ -406,7 +411,9 @@ def windows(package, expected_source):
             entries = [value.rstrip("\\").casefold() for value in after.split(";")]
             assert entries[0] == str(independent).casefold(), "Independent CLI keeps its PATH priority"
             assert str(destination).casefold() in entries
-            launch_installed(destination)
+            launch_installed(destination, acp_fixture)
+            if acp_fixture is not None:
+                proof["installed_acp_conversation"] = True
             proof["installed_powershell_commands"] = True
             proof["installed_powershell_interaction"] = True
             proof["installed_windows_shell_selection"] = True
@@ -436,6 +443,7 @@ if __name__ == "__main__":
     parser.add_argument("--package", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--expected-source", default=None, help="Pinned package source when checking an earlier build")
+    parser.add_argument("--acp-fixture", type=Path, help="Scripted ACP agent for the installed Windows App")
     args = parser.parse_args()
     if os.environ.get("GITHUB_ACTIONS") != "true":
         parser.error("Installation checks require an isolated GitHub runner")
@@ -443,7 +451,8 @@ if __name__ == "__main__":
     expected_source = args.expected_source or source_sha()
     if len(expected_source) != 40 or any(c not in "0123456789abcdef" for c in expected_source):
         parser.error("Package source must be a complete commit SHA")
-    proof = windows(package, expected_source) if os.name == "nt" else macos(package, expected_source) if sys.platform == "darwin" else linux(package, expected_source)
+    acp_fixture = args.acp_fixture.resolve(strict=True) if args.acp_fixture else None
+    proof = windows(package, expected_source, acp_fixture) if os.name == "nt" else macos(package, expected_source) if sys.platform == "darwin" else linux(package, expected_source)
     proof["validation"] = {"test_source": source_sha(), "package_source": expected_source, "resident_start_stop": True, "app_launch": True}
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(proof, indent=2) + "\n")
