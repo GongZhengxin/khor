@@ -3,7 +3,7 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
 import { once } from "node:events";
-import { writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import { basename, join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
@@ -149,6 +149,23 @@ async function checkAcp(page) {
   console.log("The installed Windows App created an ACP session and completed two turns with different permission answers.");
 }
 
+async function dropKhorPath(terminal, path, machine = null) {
+  await terminal.evaluate((element, {path, machine}) => {
+    const data = new DataTransfer();
+    data.setData("application/x-khor-path", JSON.stringify({machine, path}));
+    element.dispatchEvent(new DragEvent("drop", {bubbles: true, cancelable: true, dataTransfer: data}));
+  }, {path, machine});
+}
+
+async function sendAttachment(page, terminal, path) {
+  const panel = page.locator("[data-files-panel]:visible");
+  await panel.getByText(basename(path), {exact: true}).waitFor();
+  await panel.locator("[data-files-send]").click();
+  await panel.waitFor({state: "hidden"});
+  await terminal.evaluate(element => element.__xterm.focus());
+  await page.keyboard.press("Enter");
+}
+
 async function checkTerminalAttachment(page, terminal, shell, readTerminal) {
   const path = join(workspace, "John's attachment 资料.txt");
   const marker = `KHOR_${shell.toUpperCase()}_ATTACHMENT_CONTENT`;
@@ -166,20 +183,29 @@ async function checkTerminalAttachment(page, terminal, shell, readTerminal) {
       "-ExecutionPolicy", "Bypass", "-File", drag, nativeWindow, ...point.map(String), path],
     {timeout: 18_000});
   } else {
-    await terminal.evaluate((element, path) => {
-      const data = new DataTransfer();
-      data.setData("application/x-khor-path", JSON.stringify({machine: null, path}));
-      element.dispatchEvent(new DragEvent("drop", {bubbles: true, cancelable: true, dataTransfer: data}));
-    }, path);
+    await dropKhorPath(terminal, path);
   }
-  const panel = page.locator("[data-files-panel]:visible");
-  await panel.getByText(basename(path), {exact: true}).waitFor();
-  await panel.locator("[data-files-send]").click();
-  await panel.waitFor({state: "hidden"});
-  await terminal.evaluate(element => element.__xterm.focus());
-  await page.keyboard.press("Enter");
+  await sendAttachment(page, terminal, path);
   await readTerminal(marker);
   console.log(`The installed Windows App opened the ${nativeWindow ? "native drop" : "attachment"} in ${shell}.`);
+}
+
+async function checkPeerAttachment(page, terminal, readTerminal) {
+  const file = "Agent's notes 资料.txt";
+  const path = join(workspace, file);
+  const destination = join(workspace, "Attachment receive");
+  const marker = "KHOR_PAIRED_NODE_ATTACHMENT_CONTENT";
+  const bytes = marker + "\r\n";
+  await mkdir(destination);
+  await writeFile(path, bytes);
+  await command(page, "set_receive_dir", {machine: "", dir: destination});
+  await terminal.evaluate(element => element.__xterm.focus());
+  await page.keyboard.type("type ");
+  await dropKhorPath(terminal, path, exitMachine);
+  await sendAttachment(page, terminal, path);
+  assert.equal(await readFile(join(destination, file), "utf8"), bytes);
+  await readTerminal(marker);
+  console.log("The installed Windows App transferred the selected attachment between paired nodes and opened it in CMD.");
 }
 
 await waitForWindow();
@@ -264,6 +290,7 @@ try {
     await readTerminal(output);
     console.log(`The new-session wizard opened ${label} and an interactive command returned its expected output.`);
     await checkTerminalAttachment(page, terminal, id, readTerminal);
+    if (id === "cmd") await checkPeerAttachment(page, terminal, readTerminal);
     await page.keyboard.type("exit");
     await page.keyboard.press("Enter");
   }

@@ -33,6 +33,10 @@ def same_programs(directory, expected_source):
     guidance = upgraded.stderr.decode(errors="replace").lower()
     if sys.platform == "darwin":
         assert "settings" in guidance or "设置" in guidance, guidance
+    elif os.name == "nt":
+        # Previous published packages sent users to their installer. This is
+        # also verified when a previous MSI is the baseline for an upgrade.
+        assert "settings" in guidance or "installer" in guidance, guidance
     else:
         assert "installer" in guidance or "安装包" in guidance, guidance
     return {"cli": command, "app": application}
@@ -434,6 +438,7 @@ def windows(package, expected_source, acp_fixture=None, previous=None, native_dr
             proof["installed_windows_shell_selection"] = True
             proof["installed_terminal_roundtrip"] = True
             proof["installed_terminal_attachment_paths"] = True
+            proof["installed_paired_node_attachment"] = True
             if native_drag:
                 proof["installed_native_file_drag"] = True
             proof["installed_native_caption"] = True

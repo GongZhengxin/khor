@@ -5041,7 +5041,6 @@ dependencies = [
  "tiny_http",
  "tokio",
  "webkit2gtk",
- "winreg 0.55.0",
 ]
 
 [[package]]
@@ -5202,6 +5201,7 @@ dependencies = [
  "tar",
  "tempfile",
  "tokio",
+ "winreg 0.55.0",
  "xml-rs",
 ]
 

@@ -1014,7 +1014,7 @@ fn installation_source(build: &BuildIdentity) -> Result<UpdateSource, String> {
         return Ok(UpdateSource::Direct);
     }
     #[cfg(target_os = "windows")]
-    if windows_installer_owns(&executable) {
+    if khor_update::windows_installer_owns(&executable) {
         return Ok(UpdateSource::Direct);
     }
     // An externally owned executable is never silently taken over by the SDK.
@@ -1024,31 +1024,6 @@ fn installation_source(build: &BuildIdentity) -> Result<UpdateSource, String> {
 #[cfg(target_os = "macos")]
 fn automatic_allowed(root: &Path, identity: &khor_update::ReleaseIdentity) -> bool {
     crate::app_update_install::automatic_allowed(root, identity)
-}
-
-#[cfg(target_os = "windows")]
-fn windows_installer_owns(executable: &Path) -> bool {
-    use winreg::{RegKey, enums::HKEY_CURRENT_USER};
-
-    if !executable
-        .file_name()
-        .is_some_and(|name| name.eq_ignore_ascii_case("khor-gui.exe"))
-    {
-        return false;
-    }
-    let installed: std::io::Result<std::ffi::OsString> = RegKey::predef(HKEY_CURRENT_USER)
-        .open_subkey(r"Software\Khor")
-        .and_then(|key| key.get_value("CliPath"));
-    installed
-        .ok()
-        .and_then(|directory| {
-            PathBuf::from(directory)
-                .join("khor-gui.exe")
-                .canonicalize()
-                .ok()
-        })
-        .zip(executable.canonicalize().ok())
-        .is_some_and(|(installed, running)| installed == running)
 }
 
 #[cfg(target_os = "windows")]
