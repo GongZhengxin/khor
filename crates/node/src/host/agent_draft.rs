@@ -165,7 +165,7 @@ impl Editor {
         if self.placeholder {
             return None;
         }
-        let mut text: String = self.lines[self.first..self.end]
+        let mut characters = self.lines[self.first..self.end]
             .iter()
             .enumerate()
             .flat_map(|(i, line)| {
@@ -175,9 +175,11 @@ impl Editor {
                     line.strip_prefix("  ").unwrap_or(line)
                 };
                 (i != 0).then_some('\n').into_iter().chain(line.chars())
-            })
-            .take(PREVIEW_LIMIT)
-            .collect();
+            });
+        let mut text: String = characters.by_ref().take(PREVIEW_LIMIT).collect();
+        if characters.next().is_some() {
+            return None;
+        }
         text.truncate(text.trim_end().len());
         (!text.is_empty()).then_some(text)
     }
@@ -313,6 +315,31 @@ mod tests {
         );
         let menu = frame(&["\x1b[1m›\x1b[0m approval", "  enter to confirm"], (0, 2));
         assert_eq!(capture.update(source, menu.screen()), Some(None));
+    }
+
+    #[test]
+    fn a_large_composer_clears_its_preview_until_it_fits_again() {
+        let source = Some((Agent::Codex, 1));
+        let mut capture = Capture::default();
+        let continuation = format!("  {}", "é".repeat(63));
+        let limit = format!("\x1b[1m›\x1b[0m {}", "é".repeat(64));
+        let mut lines = vec![limit.as_str()];
+        lines.extend(std::iter::repeat_n(continuation.as_str(), 15));
+        lines.extend(["", STATUS]);
+        let at_limit = frame(&lines, (15, 65));
+        assert_eq!(capture.update(source, at_limit.screen()), Some(None));
+        capture.input("é".as_bytes());
+        let preview = capture.update(source, at_limit.screen()).flatten().unwrap();
+        assert_eq!(preview.chars().count(), PREVIEW_LIMIT);
+
+        let over_limit = format!("{limit}é");
+        lines[0] = &over_limit;
+        let oversized = frame(&lines, (15, 65));
+        assert_eq!(capture.update(source, oversized.screen()), Some(None));
+        assert_eq!(
+            capture.update(source, at_limit.screen()),
+            Some(Some(preview))
+        );
     }
 
     #[test]
