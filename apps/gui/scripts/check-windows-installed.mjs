@@ -117,9 +117,16 @@ const browser = await chromium.connectOverCDP(endpoint, {timeout: 15_000});
 let page;
 const errors = [];
 const reads = [];
+const shellRequests = [];
 try {
   page = await findWindowPage(browser);
   page.on("pageerror", error => errors.push(error.message));
+  page.on("request", request => {
+    if (new URL(request.url()).pathname === "/open_shell" && request.method() === "POST") {
+      const {shell, title} = request.postDataJSON();
+      shellRequests.push({shell, title});
+    }
+  });
   page.on("response", response => {
     const route = new URL(response.url()).pathname;
     if (["/lock_state", "/read_text"].includes(route)) reads.push(`${route} ${response.status()}`);
@@ -193,6 +200,7 @@ try {
       return !document.querySelector("[data-new-session-page]");
     });
     await terminal.waitFor();
+    await terminal.locator("[data-term-opening]").waitFor({state: "hidden"});
     await terminal.evaluate(element => element.__xterm.focus());
     await page.keyboard.type(commandLine);
     await page.keyboard.press("Enter");
@@ -236,7 +244,17 @@ try {
       editorReady: !!document.querySelector("[data-file-view]"),
       preview: document.querySelector("[data-file-preview]")?.textContent?.slice(0, 400),
     })).catch(cause => ({error: cause.message}));
-    console.error("Windows App state:", JSON.stringify(state), "page errors:", errors.slice(-5), "reads:", reads.slice(-10));
+    const visibleTerminal = page.locator("[data-terminal]:visible").first();
+    if (await visibleTerminal.count()) {
+      const lines = await visibleTerminal.evaluate(element => {
+        const buffer = element.__xterm?.buffer.active;
+        if (!buffer) return [];
+        return Array.from({length: buffer.length}, (_, index) => buffer.getLine(index)?.translateToString(true))
+          .filter(line => line?.trim()).slice(-12);
+      }).catch(cause => [cause.message]);
+      console.error("Windows terminal output:", JSON.stringify(lines));
+    }
+    console.error("Windows App state:", JSON.stringify(state), "page errors:", errors.slice(-5), "reads:", reads.slice(-10), "shell requests:", shellRequests);
     if (state.lockWaiting || state.lockUnavailable) {
       const lockOn = await command(page, "lock_state", {}, 5000)
         .then(facts => facts.on, cause => cause.message);
